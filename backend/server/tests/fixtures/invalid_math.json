@@ -1,0 +1,21 @@
+{
+    "schema_version": "2.0.0",
+    "audit_ledger": {
+        "initial_score": 100,
+        "entries": [
+            {
+                "penalty_points": -15,
+                "category": "ROOM_RENT",
+                "reason": "Room rent capped",
+                "impact_scenario": "High OOP payment",
+                "clause_ref": {
+                    "clause_id": "4.1",
+                    "page_number": 5,
+                    "text_snippet": "Room rent capped at 1%",
+                    "confidence": 0.99
+                }
+            }
+        ],
+        "final_score": 90
+    }
+}

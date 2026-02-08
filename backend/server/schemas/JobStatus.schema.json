@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://policy.sach.ai/schemas/JobStatus.schema.json",
+  "title": "JobStatus",
+  "description": "Lifecycle status of an analysis job.",
+  "type": "object",
+  "required": [
+    "job_id",
+    "status",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "UPLOADED",
+        "EXTRACTING",
+        "AUDITING",
+        "COMPLETED",
+        "FAILED"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "progress_percentage": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "error": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "OCR_FAILED",
+            "WORDINGS_NOT_FOUND",
+            "MODEL_TIMEOUT",
+            "SCHEMA_VIOLATION",
+            "INTERNAL_ERROR"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object"
+        }
+      }
+    },
+    "result_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    }
+  },
+  "additionalProperties": false,
+  "_compatibility": {
+    "major": "New lifecycle states.",
+    "minor": "New progress metadata."
+  }
+}

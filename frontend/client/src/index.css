@@ -1,0 +1,168 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Import Fonts: Inter (Sans) & Playfair Display (Serif) */
+
+/* =========================================
+   PALETTE: "The Financialist" / IndSure Rebrand
+   Concept: Navy (Trust), Teal (Clarity), Gold (Value), Cream (Canvas)
+   ========================================= */
+
+:root {
+  /* BACKGROUNDS */
+  --color-cream-main: #FAFAF8;
+  /* Main Page Background (Warm White) */
+  --color-white: #FFFFFF;
+  /* Card Background */
+  --color-cream-dark: #F0F0ED;
+  /* Secondary Backgrounds */
+
+  /* BRAND COLORS */
+  --color-navy-900: #0B1120;
+  /* Deepest Navy - Footer / Primary Text */
+  --color-petrol-900: #0B1120;
+  /* Mapped to Navy-900 */
+
+  --color-teal-600: #0D9488;
+  /* Primary Action / Buttons */
+  --color-green-primary: #0D9488;
+  /* Mapped to Teal */
+
+  --color-teal-400: #2DD4BF;
+  /* Highlights / Accents on Dark */
+  --color-green-secondary: #5EEAD4;
+  /* Mapped to Lighter Teal */
+
+  --color-gold-500: #B45309;
+  /* Premium Accents / Borders */
+
+  --color-blue-800: #1E293B;
+  /* Secondary Cards */
+
+  /* TEXT / FOREGROUNDS */
+  --color-text-main: #0F172A;
+  /* Slate 900 - High Contrast Primary */
+  --color-text-secondary: #334155;
+  /* Slate 700 - Readable Secondary */
+  --color-text-muted: #64748B;
+  /* Slate 500 - Captions */
+
+  --color-white-muted: #CBD5E1;
+  /* Text on Dark Backgrounds */
+
+  /* UI ELEMENTS */
+  --color-border-light: #E2E8F0;
+  --color-border-medium: #CBD5E1;
+  --color-border-subtle: #1E293B;
+  /* For dark footer borders */
+
+  /* TYPOGRAPHY */
+  --font-serif: 'Playfair Display', serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'Inter', sans-serif;
+
+  /* SPACING */
+  --space-container: 2rem;
+
+  /* RADIUS */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+/* =========================================
+   GLOBAL RESET
+   ========================================= */
+@layer base {
+  html {
+    background-color: var(--color-cream-main);
+    color: var(--color-text-main);
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--color-text-main);
+  }
+
+  /* HEADINGS */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+    color: var(--color-text-main);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  h1 {
+    font-size: 4rem;
+    letter-spacing: -0.03em;
+  }
+
+  h2 {
+    font-size: 2.5rem;
+  }
+
+  h3 {
+    font-size: 2rem;
+  }
+
+  /* LINKS & BUTTONS */
+  a {
+    color: var(--color-text-main);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--color-green-primary);
+  }
+
+  ::selection {
+    background-color: var(--color-green-secondary);
+    color: var(--color-navy-900);
+  }
+}
+
+/* =========================================
+   UTILITIES & CLASSES
+   ========================================= */
+.container-editorial {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-right: var(--space-container);
+  padding-left: var(--space-container);
+}
+
+.card-white {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.card-white:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  border-color: var(--color-border-medium);
+}
+
+.text-gradient-green {
+  background: linear-gradient(135deg, var(--color-green-primary), var(--color-green-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

@@ -1,0 +1,66 @@
+{
+  "color_meanings": {
+    "SAFE": {
+      "hex": "#10B981",
+      "meaning": "Mathematically Sound Coverage"
+    },
+    "BORDERLINE": {
+      "hex": "#F59E0B",
+      "meaning": "Significant Conditional Logic"
+    },
+    "RISKY": {
+      "hex": "#EF4444",
+      "meaning": "High Probability of Claim Rejection/Deduction"
+    },
+    "UNKNOWN": {
+      "hex": "#6B7280",
+      "meaning": "Insufficient Evidence"
+    }
+  },
+  "score_bands": [
+    {
+      "range": [
+        90,
+        100
+      ],
+      "label": "Excellent",
+      "color": "SAFE"
+    },
+    {
+      "range": [
+        75,
+        89
+      ],
+      "label": "Good but Conditional",
+      "color": "SAFE"
+    },
+    {
+      "range": [
+        60,
+        74
+      ],
+      "label": "Average - Review Carefully",
+      "color": "BORDERLINE"
+    },
+    {
+      "range": [
+        0,
+        59
+      ],
+      "label": "Sub-Standard / Hazardous",
+      "color": "RISKY"
+    }
+  ],
+  "special_treatments": {
+    "NOT_FOUND_IN_POLICY": {
+      "visual": "Strikethrough or Greyed Out",
+      "icon": "SearchOff",
+      "tooltip": "The algorithm searched for this specific term/clause but could not find it in the provided documents."
+    }
+  },
+  "confidence_visualization": {
+    "high": "Solid Shield Icon",
+    "medium": "Hollow Shield Icon",
+    "low": "Warning Triangle (Yield)"
+  }
+}

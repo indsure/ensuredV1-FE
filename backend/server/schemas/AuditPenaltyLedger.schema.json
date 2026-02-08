@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://policy.sach.ai/schemas/AuditPenaltyLedger.schema.json",
+  "title": "AuditPenaltyLedger",
+  "description": "Ledger of all score deductions. Logic: Final Score = 100 + Sum(Penalties).",
+  "allOf": [
+    {
+      "$ref": "BaseAuditObject.schema.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "initial_score",
+        "entries",
+        "final_score"
+      ],
+      "properties": {
+        "initial_score": {
+          "type": "integer",
+          "const": 100,
+          "description": "Score always starts at 100."
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "penalty_points",
+              "category",
+              "reason",
+              "impact_scenario",
+              "clause_ref"
+            ],
+            "properties": {
+              "penalty_points": {
+                "type": "integer",
+                "maximum": 0,
+                "description": "Must be a negative integer or zero."
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "COVERAGE_GAP",
+                  "SUB_LIMIT",
+                  "WAITING_PERIOD",
+                  "COPAY_DEDUCTIBLE",
+                  "ROOM_RENT",
+                  "EXCLUSION",
+                  "AMBIGUITY"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "impact_scenario": {
+                "type": "string"
+              },
+              "clause_ref": {
+                "$ref": "ClauseReference.schema.json"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "final_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Calculated as 100 + sum(entries.penalty_points)."
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "_compatibility": {
+    "major": "Changes to scoring math or categories.",
+    "minor": "New optional metadata fields."
+  }
+}

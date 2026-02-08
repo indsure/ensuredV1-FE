@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://policy.sach.ai/schemas/PolicyMetadata.schema.json",
+  "title": "PolicyMetadata",
+  "description": "Metadata about the policy document and extracted entities.",
+  "allOf": [
+    {
+      "$ref": "BaseAuditObject.schema.json"
+    },
+    {
+      "type": "object",
+      "required": [
+        "insurer_normalized",
+        "plan_name_normalized",
+        "policy_type",
+        "extraction_method",
+        "file_sha256"
+      ],
+      "properties": {
+        "insurer_normalized": {
+          "type": "string"
+        },
+        "plan_name_normalized": {
+          "type": "string"
+        },
+        "policy_type": {
+          "type": "string",
+          "enum": [
+            "HEALTH",
+            "LIFE",
+            "VEHICLE",
+            "TRAVEL",
+            "CRITICAL_ILLNESS",
+            "UNKNOWN"
+          ]
+        },
+        "extraction_method": {
+          "type": "string",
+          "enum": [
+            "OCR_TEXT",
+            "NATIVE_PDF",
+            "VISION_API"
+          ]
+        },
+        "policy_document_page_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "file_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "extracted_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "_compatibility": {
+    "major": "Removal of required identifiers.",
+    "minor": "Addition of analysis meta-flags."
+  }
+}

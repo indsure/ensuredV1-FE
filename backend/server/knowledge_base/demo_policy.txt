@@ -1,0 +1,44 @@
+POLICY NAME: The "Total Shield" Comprehensive Health Plan (Gold Edition)
+PROVIDER: Global Trust Assurance & Co.
+UIN: GTA-HLT-2024-V1
+
+SECTION 1: PREAMBLE
+This Policy is a contract of good faith. We promise to cover your medical expenses subject to the terms, conditions, and cryptic exclusions mentioned hereinafter. By paying the premium, you agree that you have read, understood, and memorized this 400-page document.
+
+SECTION 2: CORE COVERAGE
+2.1. In-patient Hospitalization: We cover room rent, nursing, and boarding charges up to 1% of the Sum Insured per day.
+2.2. ICU Charges: Covered up to 2% of Sum Insured per day.
+    *Proviso:* If you choose a room category higher than eligibility, a "Proportionate Deduction" applies to ALL charges associated with the admission, including doctor fees, medicines, and surgical costs, not just the room rent difference.
+
+SECTION 3: SPECIFIC TREATMENTS & ROBOTIC SURGERY
+3.1. Robotic Surgery: Covered up to ₹1,00,000 per policy year.
+    *Condition 3.1(a):* Robotic surgeries are only covered if performed on a Tuesday between 10 AM and 4 PM. Surgeries performed at other times will be treated as conventional open surgery and reimbursed at 50% of the standard package rate.
+3.2. Modern Treatments: Oral Chemotherapy, Immunotherapy, and Stem Cell Therapy are covered subject to a sub-limit of ₹50,000 per claim.
+
+SECTION 4: WAITING PERIODS
+4.1. Initial Waiting Period: 30 days for all illnesses except accidents.
+4.2. Specific Diseases: 24 months waiting period for stones, cataracts, hernia, hysterectomy, joint replacement (unless due to accident).
+4.3. Pre-Existing Diseases (PED): 48 months waiting period.
+    *Hidden Clause 4.3.1:* If you visited a doctor for *any* symptom in the last 6 months before buying this policy, even if no diagnosis was made, it will be treated as a Pre-Existing Disease.
+
+SECTION 5: AMBIGUOUS EXCLUSIONS
+5.1. "Experimental" Treatments are not covered. We reserve the sole right to define what is "experimental". Currently, we consider all treatments developed after 2020 as experimental until proven otherwise by our internal board.
+5.2. Genetic Disorders: Not covered if they manifest before age 45.
+5.3. Hazardous Activities: Injuries from "adventure sports" are excluded. This includes, but is not limited to, skydiving, bungee jumping, and "aggressively riding a two-wheeler in traffic".
+
+SECTION 6: CLAIMS PROCEDURE
+6.1. Notification: You must notify TPA within 24 hours of emergency hospitalization.
+    *Condition 6.1(a):* Notification must be done via Registered Post or Fax. Emails are accepted only if confirmed by a return acknowledgement from us within 2 hours. If we don't reply to your email, it is considered "Not Notified" and the claim will be rejected.
+6.2. Co-Payment: A mandatory 20% co-payment applies if you live in a Zone B city but take treatment in a Zone A city (Metro).
+    *Condition 6.2(a):* Delhi, Mumbai, Bengaluru are Zone A. However, for the purpose of this policy, we also consider "Greater Noida" as Zone A but "Noida" as Zone B.
+
+SECTION 7: THE "GOTCHA" CLAUSE
+7.1. Restoration Benefit: We will restore 100% of Sum Insured if exhausted.
+    *Condition 7.1(a):* The restored amount cannot be used for the same illness, or any "related" illness, or any complication arising from the same illness, for your entire lifetime. Effectively, you can only use it for a completely new, unrelated accident.
+
+SECTION 8: CANCELLATION
+We may cancel this policy by giving 15 days' notice if we feel you are claiming too frequently. You may cancel by giving us 15 days' notice, but we will retain 80% of the premium if even ₹1 has been claimed.
+
+Signed,
+The Authorized Signatory
+Global Trust Assurance (We Trust You Don't Read This)

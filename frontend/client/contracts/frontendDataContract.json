@@ -1,0 +1,34 @@
+{
+  "contract_name": "ForensicAuditFrontendContract",
+  "version": "2.0.0",
+  "description": "Strict declaration of data consumed by the UI. Frontend DOES NOT compute logic.",
+  "render_rejection_criteria": [
+    "MISSING schema_version",
+    "UNSUPPORTED schema_version (< 2.0.0)",
+    "MISSING prompt_hash (Forensic Traceability Failure)",
+    "MISSING clause_ref IN ANY findings (Explainability Failure)",
+    "data_quality.overall == 'low' AND MISSING warning_banner"
+  ],
+  "consumed_fields": {
+    "audit_score": {
+      "initial_score": "READ_ONLY (Must be 100)",
+      "final_score": "READ_ONLY (Display as is)",
+      "entries": "ITERABLE (Render row by row, no sorting/filtering logic unless user directed)"
+    },
+    "verdict": {
+      "label": "EXACT_MATCH_ONLY (SAFE | BORDERLINE | RISKY)",
+      "summary": "TEXT_RENDER",
+      "clause_refs": "MANDATORY_LINKING"
+    },
+    "timeline": {
+      "policy_tenure_years": "READ_ONLY",
+      "policy_expiry_date": "DATE_FORMAT_ONLY"
+    }
+  },
+  "forbidden_frontend_logic": [
+    "Summing penalty points",
+    "Inferring verdict from score",
+    "Determining color based on arbitrary thresholds (Must use VisualSemantics)",
+    "Parsing raw text for dates (Must rely on ISO-8601 from Server)"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": "2.0.0",
+  "initial_score": 90,
+  "entries": [
+    {
+      "penalty_points": 10,
+      "category": "INVALID_CATEGORY"
+    }
+  ],
+  "final_score": 110
+}
