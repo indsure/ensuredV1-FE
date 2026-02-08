@@ -7,6 +7,7 @@ import {
   Youtube,
   Mail,
 } from "lucide-react";
+import { IndSureLogo } from "@/components/IndSureLogo";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -30,9 +31,10 @@ export function Footer() {
             {/* COL 1: Brand (4 cols) */}
             <div className="lg:col-span-4 pr-4">
               <Link href="/">
-                <span className="font-serif text-4xl font-bold tracking-tighter block mb-6 cursor-pointer text-[var(--color-gold-500)] hover:text-white transition-colors">
-                  IndSure.
-                </span>
+                <IndSureLogo
+                  className="h-20 w-auto mb-6 -ml-4 cursor-pointer opacity-90 hover:opacity-100 transition-opacity text-white"
+                  aria-label="IndSure"
+                />
               </Link>
               <p className="text-xl text-[var(--color-white-muted)] leading-relaxed font-light mb-6">
                 We replace confusion with forensic intelligence.
@@ -119,7 +121,7 @@ export function Footer() {
           {/* Bottom Bar - Constrained Width to bring text blocks inward */}
           <div className="pt-8 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row justify-between items-end gap-6 text-xs font-mono uppercase tracking-widest max-w-5xl mx-auto text-[var(--color-white-muted)]">
             <div className="flex flex-col gap-2">
-              <p>© {currentYear} IndSure Intelligence Inc.</p>
+              <p>© {currentYear}</p>
               <p className="normal-case tracking-normal opacity-70">Built for Indian policy documents. Tested on real claim rejections.</p>
             </div>
             <p className="text-right max-w-xs leading-relaxed normal-case tracking-normal opacity-70">

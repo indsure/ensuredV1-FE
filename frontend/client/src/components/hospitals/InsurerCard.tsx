@@ -39,7 +39,7 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
             <div className="flex items-start justify-between mb-4">
                 <div>
                     <h3 className={clsx(
-                        "text-xl font-bold mb-1 group-hover:text-[var(--color-teal-700)] transition-colors",
+                        "text-xl font-bold mb-1 group-hover:text-[var(--color-teal-600)] transition-colors",
                         type === "pincode" ? "font-mono text-[var(--color-navy-900)]" : "text-[var(--color-navy-900)]"
                     )}>
                         {title}

@@ -1,9 +1,9 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Import Fonts: Inter (Sans) & Playfair Display (Serif) */
+/* Typography: Inter for entire site */
 
 /* =========================================
    PALETTE: "The Financialist" / IndSure Rebrand
@@ -58,8 +58,8 @@
   --color-border-subtle: #1E293B;
   /* For dark footer borders */
 
-  /* TYPOGRAPHY */
-  --font-serif: 'Playfair Display', serif;
+  /* TYPOGRAPHY - Inter site-wide */
+  --font-serif: 'Inter', sans-serif;
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'Inter', sans-serif;
 
@@ -140,10 +140,7 @@
    UTILITIES & CLASSES
    ========================================= */
 .container-editorial {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-right: var(--space-container);
-  padding-left: var(--space-container);
+  @apply mx-20;
 }
 
 .card-white {

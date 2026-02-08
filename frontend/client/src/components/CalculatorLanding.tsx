@@ -35,7 +35,7 @@ export function CalculatorLanding({ onStart }: LandingProps) {
                 animate="visible"
                 className="text-center space-y-8"
             >
-                <motion.div custom={0} variants={fadeIn} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-teal-50)] border border-[var(--color-teal-100)] text-[var(--color-teal-700)] text-xs font-mono tracking-widest uppercase">
+                <motion.div custom={0} variants={fadeIn} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-teal-50)] border border-[var(--color-teal-100)] text-[var(--color-teal-600)] text-xs font-mono tracking-widest uppercase">
                     <Activity className="w-3 h-3" /> IndSure Intelligence Engine
                 </motion.div>
 
@@ -52,7 +52,7 @@ export function CalculatorLanding({ onStart }: LandingProps) {
                     <Button
                         size="lg"
                         onClick={onStart}
-                        className="bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-700)] text-white text-lg px-8 py-6 rounded-full shadow-lg hover:shadow-[var(--color-teal-200)] transition-all duration-300 group"
+                        className="bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-600)] text-white text-lg px-8 py-6 rounded-full shadow-lg hover:shadow-[var(--color-teal-200)] transition-all duration-300 group"
                     >
                         Start Analysis <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
@@ -110,7 +110,7 @@ export function CalculatorLanding({ onStart }: LandingProps) {
                     onClick={() => setIsLogicOpen(!isLogicOpen)}
                     className="w-full flex items-center justify-between p-4 rounded-lg hover:bg-[var(--color-cream-dark)] transition-colors group"
                 >
-                    <span className="font-serif text-lg text-[var(--color-navy-900)] group-hover:text-[var(--color-teal-700)] transition-colors">
+                    <span className="font-serif text-lg text-[var(--color-navy-900)] group-hover:text-[var(--color-teal-600)] transition-colors">
                         How IndSure calculates your coverage
                     </span>
                     {isLogicOpen ? <ChevronUp className="w-5 h-5 text-[var(--color-text-muted)]" /> : <ChevronDown className="w-5 h-5 text-[var(--color-text-muted)]" />}

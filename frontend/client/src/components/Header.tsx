@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 import { motion } from "framer-motion";
+import { IndSureLogo } from "@/components/IndSureLogo";
 
 export function Header() {
   const [location] = useLocation();
@@ -46,18 +47,19 @@ export function Header() {
 
         {/* LOGO */}
         <Link href="/">
-          <div className="flex items-center gap-2 cursor-pointer group">
-            <div className="w-8 h-8 bg-[var(--color-green-primary)] text-[var(--color-white)] flex items-center justify-center rounded-sm font-serif font-bold text-xl group-hover:bg-[var(--color-green-secondary)] transition-colors">
-              I
-            </div>
-            <span className="font-serif text-2xl font-bold tracking-tight text-[var(--color-text-main)]">
+          <div className="flex items-center gap-x-1.5 cursor-pointer group">
+            <IndSureLogo
+              className="h-8 w-auto text-[var(--color-text-main)]"
+              aria-label="IndSure"
+            />
+            <span className="font-serif text-2xl font-bold text-gray-800 tracking-tight">
               IndSure.
             </span>
           </div>
         </Link>
 
         {/* DESKTOP NAV */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-x-6">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href}>
               <span className={`text-sm font-medium tracking-wide cursor-pointer hover:text-[var(--color-green-primary)] transition-colors ${location === link.href ? "text-[var(--color-green-primary)]" : "text-[var(--color-text-main)]"

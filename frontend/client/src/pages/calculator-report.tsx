@@ -38,7 +38,7 @@ export default function CalculatorReportPage() {
 
                     {/* Header */}
                     <div className="text-center space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-teal-50)] text-[var(--color-teal-700)] rounded-full text-sm font-bold tracking-wide">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-teal-50)] text-[var(--color-teal-600)] rounded-full text-sm font-bold tracking-wide">
                             <Check className="w-4 h-4" /> ANALYSIS COMPLETE
                         </div>
                         <h1 className="text-4xl md:text-5xl font-serif text-[var(--color-navy-900)]">
