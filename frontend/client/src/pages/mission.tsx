@@ -43,7 +43,7 @@ export default function Mission() {
     <div className="bg-[var(--color-cream-main)] text-[var(--color-text-main)] font-sans selection:bg-[var(--color-green-secondary)] selection:text-[var(--color-white)] min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-grow pt-32">
+      <main className="flex-grow pt-40">
 
         {/* 1. HERO - WHY INDSURE */}
         <section className="pb-20 container-editorial text-center">

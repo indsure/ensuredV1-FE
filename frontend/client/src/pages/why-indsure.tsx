@@ -9,7 +9,7 @@ export default function WhyIndSure() {
         <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
             <Header />
 
-            <main className="flex-grow pt-32 pb-20 px-6 w-full">
+            <main className="flex-grow pt-40 pb-20 px-6 w-full">
 
                 {/* HERO SECTION */}
                 <section className="max-w-4xl mx-auto text-center mb-24 animate-reveal">

@@ -279,7 +279,7 @@ export default function ComparePage() {
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
       <Header />
 
-      <main className="flex-grow pt-32 pb-20 px-6 w-full">
+      <main className="flex-grow pt-40 pb-20 px-6 w-full">
         <AnimatePresence mode="wait">
           {viewState === "INPUT" && (
             <motion.div

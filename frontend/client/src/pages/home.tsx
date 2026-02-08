@@ -84,7 +84,7 @@ export default function Home() {
 
       <Header />
 
-      <main className="flex-grow pt-32">
+      <main className="flex-grow pt-40">
 
         {/* 1. HERO - DEEP NAVY THEME */}
         <section className="pb-24 bg-[var(--color-navy-900)]">
