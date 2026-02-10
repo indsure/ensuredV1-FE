@@ -1,12 +1,11 @@
 import dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env" });
 
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
-import fetch from "node-fetch";
 
 import { registerRoutes, analysisJobs } from "./routes";
 import { serveStatic } from "./static";
@@ -36,7 +35,7 @@ function cleanupUploadsDirectory() {
           fs.unlinkSync(filePath);
           cleaned++;
         }
-      } catch {}
+      } catch { }
     });
 
     if (cleaned > 0) {
@@ -63,7 +62,8 @@ const server = createServer(app);
 
 app.use(
   cors({
-    methods: ["GET", "POST", "OPTIONS"],
+    origin: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
@@ -227,9 +227,8 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
 
     res.end();
   } catch (err: any) {
-    const errorMsg = `[${new Date().toISOString()}] Sach AI Error: ${
-      err.message
-    }\nStack: ${err.stack}\n\n`;
+    const errorMsg = `[${new Date().toISOString()}] Sach AI Error: ${err.message
+      }\nStack: ${err.stack}\n\n`;
     console.error(errorMsg);
 
     try {
@@ -268,9 +267,9 @@ async function start() {
     serveStatic(app);
   }
 
-  const port = Number(process.env.PORT) || 5000;
+  const port = Number(process.env.PORT) || 8080;
 
-  server.listen(port, "127.0.0.1", () => {
+  server.listen(port, () => {
     console.log(`API server running on http://localhost:${port}`);
   });
 }
