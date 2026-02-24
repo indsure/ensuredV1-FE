@@ -49,12 +49,9 @@ export function Header() {
         <Link href="/">
           <div className="flex items-center gap-x-1.5 cursor-pointer group">
             <IndSureLogo
-              className="h-8 w-auto text-[var(--color-text-main)]"
+              className="h-20 w-auto text-[var(--color-text-main)]"
               aria-label="IndSure"
             />
-            <span className="font-serif text-2xl font-bold text-gray-800 tracking-tight">
-              IndSure.
-            </span>
           </div>
         </Link>
 
