@@ -42,12 +42,12 @@ export function PolicyCheckerLanding({
   return (
     <div className="w-full max-w-7xl mx-auto">
       {/* 1. HERO & UPLOAD SECTION */}
-      <div className="grid lg:grid-cols-2 gap-16 items-start py-12">
+      <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-start py-8 sm:py-10 lg:py-12">
         {/* Left: Intelligence Copy */}
         <motion.div
           initial="hidden"
           animate="visible"
-          className="space-y-8 pt-4">
+          className="space-y-5 sm:space-y-8 pt-0 sm:pt-4">
           <motion.div custom={0} variants={fadeIn}>
             <span className="inline-block py-1 px-3 border border-[var(--color-teal-200)] bg-[var(--color-teal-50)] rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-teal-600)]">
               Policy Decoder
@@ -57,21 +57,21 @@ export function PolicyCheckerLanding({
           <motion.h1
             custom={1}
             variants={fadeIn}
-            className="text-5xl md:text-6xl font-serif leading-[1.1] text-[var(--color-navy-900)]">
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif leading-[1.1] text-[var(--color-navy-900)]">
             The fine print, <br />{" "}
             <span className="italic text-[var(--color-teal-600)]">
               translated.
             </span>
           </motion.h1>
 
-          <motion.div custom={2} variants={fadeIn} className="space-y-6">
-            <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-lg">
+          <motion.div custom={2} variants={fadeIn} className="space-y-4 sm:space-y-6">
+            <p className="text-base sm:text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-lg">
               Upload your health insurance policy. Our engine audits every
               clause, exclusion, and rider to tell you whether you are correctly
               insured — or exposed.
             </p>
-            <p className="text-sm text-[var(--color-text-muted)] opacity-70 font-mono">
-              Built for modern Indian policyholders. <br /> Independent.
+            <p className="text-xs sm:text-sm text-[var(--color-text-muted)] opacity-70 font-mono">
+              Built for modern Indian policyholders. <br className="hidden sm:block" /> Independent.
               Product-agnostic.
             </p>
           </motion.div>
@@ -95,11 +95,11 @@ export function PolicyCheckerLanding({
           transition={{ duration: 0.8, delay: 0.2 }}
           className="relative">
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 p-4 rounded flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-              <div>
+            <div className="mb-4 bg-red-50 border border-red-200 p-3 sm:p-4 rounded flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+              <div className="min-w-0">
                 <p className="text-sm font-bold text-red-700">Upload Error</p>
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm text-red-600 break-words">{error}</p>
               </div>
             </div>
           )}
@@ -107,7 +107,7 @@ export function PolicyCheckerLanding({
           <div
             {...getRootProps()}
             className={cn(
-              "group relative bg-white border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer min-h-[400px] flex flex-col items-center justify-center overflow-hidden shadow-sm",
+              "group relative bg-white border-2 border-dashed rounded-xl p-6 sm:p-8 lg:p-10 text-center transition-all cursor-pointer min-h-[280px] sm:min-h-[340px] lg:min-h-[400px] flex flex-col items-center justify-center overflow-hidden shadow-sm",
               isDragActive
                 ? "border-[var(--color-teal-600)] bg-[var(--color-teal-50)] shadow-md"
                 : "border-[var(--color-border-medium)] hover:border-[var(--color-teal-300)] hover:bg-gray-50",
@@ -120,13 +120,13 @@ export function PolicyCheckerLanding({
                 <motion.div
                   animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="w-20 h-20 rounded-full bg-[var(--color-teal-50)] flex items-center justify-center mb-6 border border-[var(--color-teal-200)]">
-                  <FileText className="w-8 h-8 text-[var(--color-teal-600)]" />
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[var(--color-teal-50)] flex items-center justify-center mb-4 sm:mb-6 border border-[var(--color-teal-200)]">
+                  <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-[var(--color-teal-600)]" />
                 </motion.div>
-                <span className="font-serif text-xl text-[var(--color-navy-900)] mb-2">
+                <span className="font-serif text-lg sm:text-xl text-[var(--color-navy-900)] mb-2">
                   Auditing 50+ Clauses...
                 </span>
-                <div className="w-48 h-1 bg-[var(--color-border-light)] rounded-full overflow-hidden">
+                <div className="w-40 sm:w-48 h-1 bg-[var(--color-border-light)] rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: "100%" }}
@@ -137,29 +137,29 @@ export function PolicyCheckerLanding({
               </div>
             ) : (
               <div className="z-10 flex flex-col items-center">
-                <div className="w-16 h-16 mb-6 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center border border-[var(--color-border-light)] group-hover:scale-110 group-hover:border-[var(--color-teal-200)] transition-all duration-300">
-                  <FileUp className="w-6 h-6 text-[var(--color-teal-600)]" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 mb-4 sm:mb-6 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center border border-[var(--color-border-light)] group-hover:scale-110 group-hover:border-[var(--color-teal-200)] transition-all duration-300">
+                  <FileUp className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--color-teal-600)]" />
                 </div>
-                <h3 className="font-serif text-2xl mb-2 text-[var(--color-navy-900)]">
+                <h3 className="font-serif text-xl sm:text-2xl mb-2 text-[var(--color-navy-900)] px-2">
                   Drop policy PDF here
                 </h3>
-                <p className="text-[var(--color-text-muted)] mb-8 font-mono text-xs uppercase tracking-widest">
+                <p className="text-[var(--color-text-muted)] mb-6 sm:mb-8 font-mono text-xs uppercase tracking-widest">
                   or click to browse
                 </p>
 
-                <div className="flex items-center gap-6 text-xs font-medium text-[var(--color-text-muted)] bg-[var(--color-cream-main)] px-4 py-2 rounded-full border border-[var(--color-border-light)]">
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs font-medium text-[var(--color-text-muted)] bg-[var(--color-cream-main)] px-3 sm:px-4 py-2 rounded-full border border-[var(--color-border-light)]">
                   <span className="flex items-center gap-1.5">
-                    <Lock className="w-3 h-3 text-[var(--color-teal-600)]" />{" "}
+                    <Lock className="w-3 h-3 text-[var(--color-teal-600)] shrink-0" />{" "}
                     Private
                   </span>
-                  <span className="w-px h-3 bg-[var(--color-border-medium)]"></span>
+                  <span className="hidden sm:block w-px h-3 bg-[var(--color-border-medium)]"></span>
                   <span className="flex items-center gap-1.5">
-                    <Clock className="w-3 h-3 text-[var(--color-teal-600)]" />{" "}
+                    <Clock className="w-3 h-3 text-[var(--color-teal-600)] shrink-0" />{" "}
                     ~60 seconds
                   </span>
-                  <span className="w-px h-3 bg-[var(--color-border-medium)]"></span>
+                  <span className="hidden sm:block w-px h-3 bg-[var(--color-border-medium)]"></span>
                   <span className="flex items-center gap-1.5">
-                    <FileText className="w-3 h-3 text-[var(--color-teal-600)]" />{" "}
+                    <FileText className="w-3 h-3 text-[var(--color-teal-600)] shrink-0" />{" "}
                     PDF only
                   </span>
                 </div>
@@ -181,12 +181,12 @@ export function PolicyCheckerLanding({
       </div>
 
       {/* 4. WHAT WE ANALYZE (Logic Transparency) */}
-      <div className="border-t border-[var(--color-border-light)] py-12">
-        <p className="text-base font-mono uppercase tracking-widest text-[var(--color-text-muted)] mb-12 text-center">
+      <div className="border-t border-[var(--color-border-light)] py-8 sm:py-12">
+        <p className="text-sm sm:text-base font-mono uppercase tracking-widest text-[var(--color-text-muted)] mb-8 sm:mb-12 text-center px-2">
           What this analysis actually checks
         </p>
 
-        <div className="grid md:grid-cols-4 gap-8 px-24">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 px-0 sm:px-8 md:px-16 lg:px-24 place-items-center sm:place-items-stretch">
           {[
             {
               title: "Coverage Reality",
@@ -221,17 +221,17 @@ export function PolicyCheckerLanding({
               ],
             },
           ].map((cat, i) => (
-            <div key={i} className="space-y-4">
+            <div key={i} className="space-y-4 w-full max-w-[280px] sm:max-w-none text-center sm:text-left">
               <div>
-                <h4 className="font-bold text-[var(--color-teal-600)] w-max text-sm uppercase tracking-wide border-b pr-4 border-gray-400 pb-2 mb-2">
+                <h4 className="font-bold text-[var(--color-teal-600)] w-max text-xs sm:text-sm uppercase tracking-wide border-b md:pr-4 border-gray-400 pb-2 mb-2 mx-auto sm:mx-0">
                   {cat.title}
                 </h4>
               </div>
-              <ul className="space-y-2">
+              <ul className="space-y-2 flex flex-col items-center sm:items-stretch">
                 {cat.items.map((item, j) => (
                   <li
                     key={j}
-                    className="text-sm text-[var(--color-text-secondary)] flex items-start gap-2">
+                    className="text-sm text-[var(--color-text-secondary)] flex items-start justify-center sm:justify-start gap-2">
                     <span className="w-1 h-1 rounded-full bg-[var(--color-teal-400)] mt-2 shrink-0" />
                     {item}
                   </li>
@@ -243,8 +243,8 @@ export function PolicyCheckerLanding({
       </div>
 
       {/* 5. WHAT YOU'LL GET (Outcome Preview) */}
-      <div className="grid md:grid-cols-3 gap-6 px-12 py-12">
-        <div className="bg-white group/search p-8 rounded-xl border hover:scale-105 transition-all duration-300 border-gray-200 shadow-sm hover:shadow-md">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 px-0 sm:px-6 md:px-12 py-8 sm:py-12">
+        <div className="bg-white group/search p-5 sm:p-6 md:p-8 rounded-xl border hover:scale-[1.02] sm:hover:scale-105 transition-all duration-300 border-gray-200 shadow-sm hover:shadow-md">
           <div className="w-10 h-10 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center mb-4 text-[var(--color-navy-900)]">
             <Search className="w-5 h-5 group-hover/search:text-[var(--color-teal-600)] transition-colors" />
           </div>
@@ -256,7 +256,7 @@ export function PolicyCheckerLanding({
           </p>
         </div>
 
-        <div className="bg-white group/filetext p-8 rounded-xl border hover:scale-105 transition-all duration-300 border-gray-200 shadow-sm hover:shadow-md">
+        <div className="bg-white group/filetext p-5 sm:p-6 md:p-8 rounded-xl border hover:scale-[1.02] sm:hover:scale-105 transition-all duration-300 border-gray-200 shadow-sm hover:shadow-md">
           <div className="w-10 h-10 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center mb-4 text-[var(--color-navy-900)]">
             <FileText className="w-5 h-5 group-hover/filetext:text-[var(--color-teal-600)] transition-colors" />
           </div>
@@ -269,7 +269,7 @@ export function PolicyCheckerLanding({
           </p>
         </div>
 
-        <div className="bg-white group/zap p-8 rounded-xl border hover:scale-105 transition-all duration-300 border-gray-200 shadow-sm hover:shadow-md">
+        <div className="bg-white group/zap p-5 sm:p-6 md:p-8 rounded-xl border hover:scale-[1.02] sm:hover:scale-105 transition-all duration-300 border-gray-200 shadow-sm hover:shadow-md">
           <div className="w-10 h-10 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center mb-4 text-[var(--color-navy-900)]">
             <Zap className="w-5 h-5 group-hover/zap:text-[var(--color-teal-600)] transition-colors" />
           </div>
@@ -284,29 +284,29 @@ export function PolicyCheckerLanding({
       </div>
 
       {/* 6. SAMPLE REPORTS */}
-      <div className="text-center py-12 border-t border-[var(--color-border-light)]">
-        <p className="text-base font-mono uppercase tracking-widest text-[var(--color-text-muted)] mb-6">
+      <div className="text-center py-8 sm:py-12 border-t border-[var(--color-border-light)] px-2">
+        <p className="text-sm sm:text-base font-mono uppercase tracking-widest text-[var(--color-text-muted)] mb-4 sm:mb-6">
           See what the analysis looks like
         </p>
-        <div className="flex flex-wrap justify-center gap-4">
-          <Link href="/report/sample-health">
+        <div className="flex flex-col sm:flex-row flex-wrap justify-center items-stretch sm:items-center gap-3 sm:gap-4 max-w-md sm:max-w-none mx-auto">
+          <Link href="/report/sample-health" className="w-full sm:w-auto">
             <Button
               variant="outline"
-              className="cursor-pointer rounded-md text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:bg-gray-100 transition-colors">
+              className="w-full sm:w-auto cursor-pointer rounded-md text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:bg-gray-100 transition-colors text-sm sm:text-base">
               Sample Health Policy
             </Button>
           </Link>
-          <Link href="/report/sample-life">
+          <Link href="/report/sample-life" className="w-full sm:w-auto">
             <Button
               variant="outline"
-              className="cursor-pointer rounded-md text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:bg-gray-100 transition-colors">
+              className="w-full sm:w-auto cursor-pointer rounded-md text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:bg-gray-100 transition-colors text-sm sm:text-base">
               Sample Term Life
             </Button>
           </Link>
-          <Link href="/report/sample-vehicle">
+          <Link href="/report/sample-vehicle" className="w-full sm:w-auto">
             <Button
               variant="outline"
-              className="cursor-pointer rounded-md text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:bg-gray-100 transition-colors">
+              className="w-full sm:w-auto cursor-pointer rounded-md text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:bg-gray-100 transition-colors text-sm sm:text-base">
               Sample Car Insurance
             </Button>
           </Link>
