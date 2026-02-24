@@ -237,7 +237,7 @@ export default function TermPage() {
 
       {/* Hero Section */}
       <section 
-        className="bg-gradient-to-br from-[#0F1419] to-[#00B4D8] py-20 md:py-24 px-6 md:px-14 text-center text-white"
+        className="bg-gradient-to-br from-[#0F1419] to-[#00B4D8] pt-32 sm:pt-36 md:pt-40 pb-20 md:pb-24 px-6 md:px-14 text-center text-white"
         style={{ background: "linear-gradient(15deg, #0F1419 0%, #00B4D8 100%)" }}
       >
         <div className="max-w-4xl mx-auto">

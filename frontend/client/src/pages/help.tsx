@@ -93,7 +93,7 @@ export default function Help() {
         { label: "Help & Support", href: "/help" }
       ]} />
 
-      <main id="main-content" className="flex-1 container mx-auto px-4 sm:px-6 py-8 sm:py-12" role="main">
+      <main id="main-content" className="flex-1 container mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-8 sm:pb-12" role="main">
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">

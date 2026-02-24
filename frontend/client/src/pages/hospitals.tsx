@@ -184,7 +184,7 @@ export default function HospitalFilter() {
         <div className="bg-[var(--color-navy-900)] text-white font-sans min-h-screen flex flex-col">
             <Header />
 
-            <main className="flex-grow pt-40 pb-24">
+            <main className="flex-grow pt-32 sm:pt-36 md:pt-40 pb-12 md:pb-24 overflow-x-hidden">
                 {/* Pre-Search Leading Hero */}
                 {!results && (
                     <section className="min-h-[60vh] flex flex-col justify-center items-center pb-16 bg-[var(--color-navy-900)] px-4">

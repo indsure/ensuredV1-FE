@@ -70,19 +70,19 @@ function ComparisonSetup({
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="card-white p-8 md:p-12 relative overflow-hidden shadow-lg border-t-4 border-[var(--color-teal-600)]">
+      <div className="card-white p-5 sm:p-6 md:p-8 lg:p-12 relative overflow-hidden shadow-lg border-t-4 border-[var(--color-teal-600)]">
 
         {/* Section A: Context */}
-        <div className="mb-12 border-b border-[var(--color-border-light)] pb-12">
-          <h2 className="font-serif text-2xl text-[var(--color-navy-900)] mb-6 flex items-center gap-3">
-            <MapPin className="text-[var(--color-teal-600)]" />
+        <div className="mb-8 sm:mb-12 border-b border-[var(--color-border-light)] pb-8 sm:pb-12">
+          <h2 className="font-serif text-xl sm:text-2xl text-[var(--color-navy-900)] mb-4 sm:mb-6 flex items-center gap-3">
+            <MapPin className="text-[var(--color-teal-600)] shrink-0" />
             Review Context
           </h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest text-[var(--color-navy-900)] font-semibold">State</label>
               <Select value={state} onValueChange={setState}>
-                <SelectTrigger className="bg-[var(--color-cream-main)] border-[var(--color-border-medium)] text-[var(--color-text-main)] h-12 focus:border-[var(--color-teal-600)] focus:ring-0">
+                <SelectTrigger className="bg-[var(--color-cream-main)] border-[var(--color-border-medium)] text-[var(--color-text-main)] h-11 sm:h-12 focus:border-[var(--color-teal-600)] focus:ring-0">
                   <SelectValue placeholder="Select State" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
@@ -93,7 +93,7 @@ function ComparisonSetup({
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest text-[var(--color-navy-900)] font-semibold">City</label>
               <Select value={city} onValueChange={setCity} disabled={!state}>
-                <SelectTrigger className="bg-[var(--color-cream-main)] border-[var(--color-border-medium)] text-[var(--color-text-main)] h-12 focus:border-[var(--color-teal-600)] focus:ring-0">
+                <SelectTrigger className="bg-[var(--color-cream-main)] border-[var(--color-border-medium)] text-[var(--color-text-main)] h-11 sm:h-12 focus:border-[var(--color-teal-600)] focus:ring-0">
                   <SelectValue placeholder={state ? "Select City" : "-"} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
@@ -103,8 +103,8 @@ function ComparisonSetup({
             </div>
           </div>
           {tier && (
-            <p className="mt-4 text-sm text-[var(--color-teal-600)] flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" />
+            <p className="mt-4 text-sm text-[var(--color-teal-600)] flex items-center gap-2 flex-wrap">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
               Analysis will be calibrated for <strong>{getTierDescription(tier)}</strong>.
             </p>
           )}
@@ -112,31 +112,31 @@ function ComparisonSetup({
 
         {/* Section B: Policies */}
         <div>
-          <h2 className="font-serif text-2xl text-[var(--color-navy-900)] mb-6 flex items-center gap-3">
-            <Upload className="text-[var(--color-gold-500)]" />
+          <h2 className="font-serif text-xl sm:text-2xl text-[var(--color-navy-900)] mb-4 sm:mb-6 flex items-center gap-3">
+            <Upload className="text-[var(--color-gold-500)] shrink-0" />
             Add Policies
           </h2>
 
           <div
             {...dropProps}
-            className="border-2 hover:border-[var(--color-teal-600)] border-dashed border-[var(--color-border-medium)] rounded-xl p-10 text-center cursor-pointer transition-all bg-[var(--color-cream-main)] hover:bg-white group"
+            className="border-2 hover:border-[var(--color-teal-600)] border-dashed border-[var(--color-border-medium)] rounded-xl p-6 sm:p-8 md:p-10 text-center cursor-pointer transition-all bg-[var(--color-cream-main)] hover:bg-white group"
           >
             <input {...inputProps} />
-            <div className="w-14 h-14 rounded-full border border-[var(--color-border-medium)] flex items-center justify-center mx-auto mb-4 group-hover:bg-[var(--color-teal-600)] group-hover:text-white transition-colors bg-white text-[var(--color-text-muted)] group-hover:border-[var(--color-teal-600)] shadow-sm">
-              <Plus className="w-6 h-6" />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-[var(--color-border-medium)] flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:bg-[var(--color-teal-600)] group-hover:text-white transition-colors bg-white text-[var(--color-text-muted)] group-hover:border-[var(--color-teal-600)] shadow-sm">
+              <Plus className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <p className="text-[var(--color-navy-900)] font-medium mb-1 text-lg">Upload Policy PDFs</p>
+            <p className="text-[var(--color-navy-900)] font-medium mb-1 text-base sm:text-lg">Upload Policy PDFs</p>
             <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-widest">or Drag & Drop here</p>
           </div>
 
-          <div className="flex items-center justify-center gap-4 mt-8">
-            <div className="h-[1px] bg-[var(--color-border-light)] flex-grow"></div>
-            <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-widest">OR</span>
-            <div className="h-[1px] bg-[var(--color-border-light)] flex-grow"></div>
+          <div className="flex items-center justify-center gap-3 sm:gap-4 mt-6 sm:mt-8">
+            <div className="h-[1px] bg-[var(--color-border-light)] flex-grow min-w-0"></div>
+            <span className="text-xs text-[var(--color-text-muted)] uppercase tracking-widest shrink-0">OR</span>
+            <div className="h-[1px] bg-[var(--color-border-light)] flex-grow min-w-0"></div>
           </div>
 
-          <div className="mt-8 text-center">
-            <Button onClick={onLoadSample} variant="outline" className="text-[var(--color-teal-600)] border-[var(--color-teal-600)] hover:bg-[var(--color-teal-600)] hover:text-white h-12 px-6">
+          <div className="mt-6 sm:mt-8 text-center">
+            <Button onClick={onLoadSample} variant="outline" className="w-full sm:w-auto text-[var(--color-teal-600)] border-[var(--color-teal-600)] hover:bg-[var(--color-teal-600)] hover:text-white h-11 sm:h-12 px-4 sm:px-6 text-sm sm:text-base">
               Load Sample Comparison (3 Policies)
             </Button>
           </div>
@@ -150,27 +150,27 @@ function ComparisonSetup({
 // 2. Comparison Matrix (Premium Table)
 function ComparisonMatrix({ names, data, onReset }: any) {
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full max-w-6xl mx-auto px-0 sm:px-2">
 
-      <div className="flex justify-between items-end mb-8 border-b border-[var(--color-border-light)] pb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-6 sm:mb-8 border-b border-[var(--color-border-light)] pb-4 sm:pb-6">
         <div>
-          <span className="inline-block py-1 px-3 border border-[var(--color-teal-400)] rounded-full text-[10px] font-mono uppercase tracking-widest text-[var(--color-teal-600)] mb-4 bg-white">
+          <span className="inline-block py-1 px-3 border border-[var(--color-teal-400)] rounded-full text-[10px] font-mono uppercase tracking-widest text-[var(--color-teal-600)] mb-2 sm:mb-4 bg-white">
             Analysis Complete
           </span>
-          <h2 className="text-4xl font-serif text-[var(--color-navy-900)]">Head-to-Head</h2>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif text-[var(--color-navy-900)]">Head-to-Head</h2>
         </div>
-        <Button variant="ghost" onClick={onReset} className="text-[var(--color-text-secondary)] hover:text-[var(--color-teal-600)]">
+        <Button variant="ghost" onClick={onReset} className="self-start sm:self-auto text-[var(--color-text-secondary)] hover:text-[var(--color-teal-600)] text-sm sm:text-base -ml-2 sm:ml-0">
           ← Start Over
         </Button>
       </div>
 
-      <div className="overflow-x-auto border border-[var(--color-border-light)] rounded-xl bg-white shadow-lg">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto -mx-4 sm:mx-0 border border-[var(--color-border-light)] rounded-xl bg-white shadow-lg">
+        <table className="w-full min-w-[640px] text-left border-collapse">
           <thead>
             <tr className="border-b border-[var(--color-border-light)]">
-              <th className="p-6 w-1/4 bg-[var(--color-cream-dark)] sticky left-0 z-10"></th>
+              <th className="p-3 sm:p-4 md:p-6 min-w-[140px] sm:min-w-0 w-1/4 bg-[var(--color-cream-dark)] sticky left-0 z-10"></th>
               {names.map((name: string, i: number) => (
-                <th key={i} className="p-6 w-1/4 font-serif text-xl text-[var(--color-navy-900)] bg-[var(--color-cream-dark)] border-l border-[var(--color-border-light)] align-bottom pb-8">
+                <th key={i} className="p-3 sm:p-4 md:p-6 min-w-[120px] w-1/4 font-serif text-sm sm:text-base md:text-xl text-[var(--color-navy-900)] bg-[var(--color-cream-dark)] border-l border-[var(--color-border-light)] align-bottom pb-4 md:pb-8">
                   {name}
                 </th>
               ))}
@@ -179,7 +179,7 @@ function ComparisonMatrix({ names, data, onReset }: any) {
           <tbody className="divide-y divide-[var(--color-border-light)]">
             {data.map((row: any, i: number) => (
               <tr key={i} className="group hover:bg-[var(--color-cream-main)] transition-colors">
-                <td className="p-6 font-mono text-xs uppercase tracking-widest text-[var(--color-text-secondary)] bg-[var(--color-cream-dark)]/30 sticky left-0 border-r border-[var(--color-border-light)] group-hover:bg-[var(--color-cream-dark)]">
+                <td className="p-3 sm:p-4 md:p-6 font-mono text-[10px] sm:text-xs uppercase tracking-widest text-[var(--color-text-secondary)] bg-[var(--color-cream-dark)]/30 sticky left-0 border-r border-[var(--color-border-light)] group-hover:bg-[var(--color-cream-dark)]">
                   {row.feature}
                 </td>
 
@@ -193,9 +193,9 @@ function ComparisonMatrix({ names, data, onReset }: any) {
       </div>
 
       {/* Verdict Note */}
-      <div className="mt-12 p-8 border-l-4 border-[var(--color-gold-500)] bg-white shadow-md rounded-r-lg">
-        <h4 className="font-serif text-xl text-[var(--color-gold-500)] mb-2">Sach AI Verdict</h4>
-        <p className="text-[var(--color-text-secondary)] leading-relaxed text-lg">
+      <div className="mt-8 sm:mt-12 p-4 sm:p-6 md:p-8 border-l-4 border-[var(--color-gold-500)] bg-white shadow-md rounded-r-lg">
+        <h4 className="font-serif text-lg sm:text-xl text-[var(--color-gold-500)] mb-2">Sach AI Verdict</h4>
+        <p className="text-[var(--color-text-secondary)] leading-relaxed text-sm sm:text-base md:text-lg">
           <strong>{names[1]}</strong> offers the best value for money regarding waiting periods (1 Year for PED),
           but <strong>{names[0]}</strong> provides better room rent flexibility ("No Cap").
           Given your location in a Tier 1 city, prioritize "No Cap" on Room Rent to avoid proportionate deductions.
@@ -212,9 +212,9 @@ function Cell({ data }: any) {
   if (data.status === "bad") color = "text-red-500 font-semibold";
 
   return (
-    <td className="p-6 border-l border-[var(--color-border-light)] align-top">
-      <div className={`text-lg mb-1 ${color}`}>{data.value}</div>
-      <div className="text-sm text-[var(--color-text-muted)]">{data.sub}</div>
+    <td className="p-3 sm:p-4 md:p-6 border-l border-[var(--color-border-light)] align-top">
+      <div className={`text-sm sm:text-base md:text-lg mb-1 ${color}`}>{data.value}</div>
+      <div className="text-xs sm:text-sm text-[var(--color-text-muted)]">{data.sub}</div>
     </td>
   )
 }
@@ -279,7 +279,7 @@ export default function ComparePage() {
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
       <Header />
 
-      <main className="flex-grow pt-40 pb-20 px-6 w-full">
+      <main className="flex-grow pt-32 sm:pt-36 md:pt-40 pb-12 md:pb-20 px-4 sm:px-6 w-full overflow-x-hidden">
         <AnimatePresence mode="wait">
           {viewState === "INPUT" && (
             <motion.div
@@ -289,12 +289,12 @@ export default function ComparePage() {
               exit={{ opacity: 0, y: -20 }}
               variants={fadeInUp}
             >
-              <div className="text-center mb-16">
-                <span className="inline-block py-1 px-3 border border-[var(--color-teal-400)] rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-teal-600)] mb-6 bg-white">
+              <div className="text-center mb-10 sm:mb-16 px-2">
+                <span className="inline-block py-1 px-3 border border-[var(--color-teal-400)] rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-teal-600)] mb-4 sm:mb-6 bg-white">
                   Policy Comparison
                 </span>
-                <h1 className="text-5xl md:text-6xl font-serif mb-6 tracking-tight text-[var(--color-navy-900)]">Compare Policies</h1>
-                <p className="text-xl text-[var(--color-text-secondary)] max-w-2xl mx-auto font-light leading-relaxed">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif mb-4 sm:mb-6 tracking-tight text-[var(--color-navy-900)]">Compare Policies</h1>
+                <p className="text-base sm:text-lg md:text-xl text-[var(--color-text-secondary)] max-w-2xl mx-auto font-light leading-relaxed">
                   An unbiased, line-by-line audit of coverage, limitations, and hidden clauses.
                   See what they aren't telling you.
                 </p>

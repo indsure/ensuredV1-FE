@@ -56,7 +56,7 @@ export function PolicyAuditReport({ data }: PolicyAuditReportProps) {
         <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-navy-900)] pb-20">
             <Header />
 
-            <main className="max-w-5xl mx-auto pt-32 px-6 print:pt-10 print:px-8">
+            <main className="max-w-5xl mx-auto pt-32 sm:pt-36 md:pt-40 px-4 sm:px-6 print:pt-10 print:px-8 overflow-x-hidden">
 
                 {/* --- TOP BAR (ACTIONS) --- */}
                 <div className="flex justify-between items-center mb-8 print:hidden">
