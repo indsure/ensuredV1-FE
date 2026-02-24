@@ -140,7 +140,7 @@
    UTILITIES & CLASSES
    ========================================= */
 .container-editorial {
-  @apply mx-20;
+  @apply mx-4 sm:mx-6 md:mx-12 lg:mx-20;
 }
 
 .card-white {
