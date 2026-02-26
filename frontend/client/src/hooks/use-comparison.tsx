@@ -21,6 +21,7 @@ export interface ComparisonProfile {
   preExistingConditions: string[];
   householdIncome: number | undefined;
   familySize: number | undefined;
+  priorityNeed?: string;
 }
 
 interface ComparisonContextType {
@@ -35,7 +36,7 @@ const ComparisonContext = createContext<ComparisonContextType | undefined>(undef
 
 export function ComparisonProvider({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  
+
   // Load initial state from sessionStorage if in compare flow
   const loadInitialPolicies = (): UploadedPolicy[] => {
     try {
@@ -83,7 +84,7 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
     const isInCompareFlow = window.location.pathname.startsWith("/compare");
     return isInCompareFlow ? loadInitialPolicies() : [];
   });
-  
+
   const [profile, setProfileState] = useState<ComparisonProfile>(() => {
     const isInCompareFlow = window.location.pathname.startsWith("/compare");
     return isInCompareFlow ? loadInitialProfile() : {
@@ -100,7 +101,7 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
   // Reload from sessionStorage when navigating between compare steps
   useEffect(() => {
     const isInCompareFlow = location.startsWith("/compare");
-    
+
     if (isInCompareFlow) {
       // Load policies from sessionStorage when navigating between steps
       try {
@@ -122,19 +123,19 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
               // Check if we need to update by comparing policyData (the actual extracted data)
               const currentHasData = prev.some(p => p.policyData);
               const loadedHasData = loadedPolicies.some((p: any) => p.policyData);
-              
+
               // If loaded has data but current doesn't, or IDs are different, update
               if (loadedHasData && !currentHasData) {
                 return loadedPolicies;
               }
-              
+
               // Compare IDs to see if policies changed
               const currentIds = prev.map(p => p.id).sort().join(',');
               const loadedIds = loadedPolicies.map((p: any) => p.id).sort().join(',');
               if (currentIds !== loadedIds || (loadedHasData && !currentHasData)) {
                 return loadedPolicies;
               }
-              
+
               return prev;
             });
           }

@@ -18,7 +18,7 @@ import { loadSampleReport, mockReportHealth, mockReportLife, mockReportVehicle }
 import { PolicyCheckerLanding } from "@/components/PolicyCheckerLanding";
 
 export default function PolicyChecker() {
-  const { analyze, error: analysisError, setPolicyText } = useAnalysis();
+  const { analyze, error: analysisError, setPolicyText, clearAuditState } = useAnalysis();
   const [, setLocation] = useLocation();
 
   useSEO({
@@ -45,6 +45,7 @@ export default function PolicyChecker() {
     setLocation("/processing");
 
     try {
+      clearAuditState();
       setPolicyText(`Policy: ${file.name}`);
       await analyze(file);
     } catch (err: any) {
@@ -66,7 +67,7 @@ export default function PolicyChecker() {
     <div className="min-h-screen bg-[var(--color-cream-main)] flex flex-col font-sans text-[var(--color-navy-900)]">
       <Header />
 
-      <main className="flex-grow pt-24 px-6 max-w-7xl mx-auto w-full">
+      <main className="flex-grow pt-24 pb-20 px-6 max-w-7xl mx-auto w-full">
         <PolicyCheckerLanding
           getRootProps={getRootProps}
           getInputProps={getInputProps}

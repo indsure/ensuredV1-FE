@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { useAnalysis } from "@/hooks/use-analysis";
-import { getApiBase } from "@/lib/api";
 import { Send, X, Trash2, Bot, Sparkles, Loader2 } from "lucide-react";
 
 // Simple markdown parser for bold, italic, and lists
@@ -84,7 +83,7 @@ export default function SachAIChat() {
     setIsTyping(true);
 
     try {
-      const res = await fetch(`${getApiBase()}/api/sach-ai`, {
+      const res = await fetch("/api/sach-ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

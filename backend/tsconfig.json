@@ -1,11 +1,20 @@
 {
-  "include": ["server/**/*"],
-  "exclude": ["node_modules", "dist", "server/vite.ts"],
+  "include": [
+    "server/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "server/vite.ts"
+  ],
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM"],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
     "outDir": "dist",
     "rootDir": "server",
     "strict": true,
@@ -14,6 +23,15 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "noEmit": true
+    "noEmit": true,
+    "typeRoots": [
+      "./node_modules/@types"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": [
+        "../shared/*"
+      ]
+    }
   }
 }

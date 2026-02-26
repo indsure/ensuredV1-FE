@@ -1,15 +1,24 @@
 import dotenv from "dotenv";
-dotenv.config({ path: ".env" });
+dotenv.config({ path: ".env.local" });
 
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import cors from "cors";
+import session from "express-session";
 import fs from "fs";
 import path from "path";
+import fetch, { Headers as NodeFetchHeaders, Request as NodeFetchRequest, Response as NodeFetchResponse } from "node-fetch";
+
+// Fix Node 18+ undici fetch IPv6 timeout issues with Gemini
+globalThis.fetch = fetch as any;
+globalThis.Headers = NodeFetchHeaders as any;
+globalThis.Request = NodeFetchRequest as any;
+globalThis.Response = NodeFetchResponse as any;
 
 import { registerRoutes, analysisJobs } from "./routes";
 import { serveStatic } from "./static";
 import { SACH_AI_SYSTEM_PROMPT } from "./sachAI.prompt";
+// ARCHIVED: import authRouter from "./auth";
 
 /* ---------------- UPLOAD DIRECTORY CLEANUP ---------------- */
 
@@ -39,9 +48,7 @@ function cleanupUploadsDirectory() {
     });
 
     if (cleaned > 0) {
-      console.log(
-        `🧹 Cleaned up ${cleaned} old file(s) from uploads directory`,
-      );
+      console.log(`🧹 Cleaned up ${cleaned} old file(s) from uploads directory`);
     }
   } catch (err) {
     console.error("Failed to cleanup uploads directory:", err);
@@ -62,16 +69,37 @@ const server = createServer(app);
 
 app.use(
   cors({
-    origin: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
+    origin: "http://localhost:5174",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+    credentials: true,
+  })
+);
+
+/* ---------------- SESSION ────────────────────── */
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "indsure-local-dev-secret-change-in-prod",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false,           // localhost — no HTTPS
+      sameSite: "lax" as const,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    },
+  })
 );
 
 /* ---------------- BODY PARSING ---------------- */
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ limit: "10mb", extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: false, limit: "50mb" }));
+
+/* ---------------- AUTH ROUTES ────────────────── */
+
+// ARCHIVED: app.use("/api/auth", authRouter);
 
 /* ---------------- API LOGGER ---------------- */
 
@@ -106,12 +134,7 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
     // fallback to demo policy if no job text
     if (!policyText) {
       try {
-        const demoPath = path.join(
-          process.cwd(),
-          "server",
-          "knowledge_base",
-          "demo_policy.txt",
-        );
+        const demoPath = path.join(process.cwd(), "server", "knowledge_base", "demo_policy.txt");
         console.log("Loading Demo Policy from:", demoPath); // Debug log
         policyText = fs.readFileSync(demoPath, "utf-8");
       } catch (e) {
@@ -132,7 +155,7 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     // Aligning with routes.ts to use the model that is known to work with this key
-    const model = genAI.getGenerativeModel({ model: "gemini-3-pro-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview" });
 
     // Format history for SDK
     const history = messages.slice(0, -1).map((m: any) => ({
@@ -147,25 +170,19 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
       throw new Error("Invalid message format: missing content");
     }
 
-    const { HarmCategory, HarmBlockThreshold } = await import(
-      "@google/generative-ai"
-    );
+    const { HarmCategory, HarmBlockThreshold } = await import("@google/generative-ai");
 
     const chat = model.startChat({
       history: [
         {
           role: "user",
-          parts: [{ text: systemPrompt }],
+          parts: [{ text: systemPrompt }]
         },
         {
           role: "model",
-          parts: [
-            {
-              text: "Understood. I am Sach AI, ready to tell the truth about this policy.",
-            },
-          ],
+          parts: [{ text: "Understood. I am Sach AI, ready to tell the truth about this policy." }]
         },
-        ...history,
+        ...history
       ],
       generationConfig: {
         maxOutputTokens: 8192,
@@ -191,7 +208,7 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
         {
           category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
           threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
+        }
       ],
     });
 
@@ -207,16 +224,12 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
           const chunkText = chunk.text();
           res.write(chunkText);
         } catch (chunkError) {
-          const logMsg = `[CHUNK ERROR] ${chunkError} | FinishReason: ${JSON.stringify(
-            chunk.candidates?.[0]?.finishReason,
-          )}\n`;
+          const logMsg = `[CHUNK ERROR] ${chunkError} | FinishReason: ${JSON.stringify(chunk.candidates?.[0]?.finishReason)}\n`;
           fs.appendFileSync(path.join(process.cwd(), "sach_debug.log"), logMsg);
 
           // If safety filter triggered, send a message to user
           if (!res.headersSent) {
-            res.write(
-              "\n\n(Note: The response was interrupted by safety filters. We are tuning them.)",
-            );
+            res.write("\n\n(Note: The response was interrupted by safety filters. We are tuning them.)");
           }
         }
       }
@@ -227,8 +240,7 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
 
     res.end();
   } catch (err: any) {
-    const errorMsg = `[${new Date().toISOString()}] Sach AI Error: ${err.message
-      }\nStack: ${err.stack}\n\n`;
+    const errorMsg = `[${new Date().toISOString()}] Sach AI Error: ${err.message}\nStack: ${err.stack}\n\n`;
     console.error(errorMsg);
 
     try {
@@ -241,7 +253,7 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
       res.status(500).json({
         message: "Sach AI service failed",
         details: err.message,
-        hint: "Check sach_debug.log",
+        hint: "Check sach_debug.log"
       });
     } else {
       res.end();
@@ -267,9 +279,9 @@ async function start() {
     serveStatic(app);
   }
 
-  const port = Number(process.env.PORT) || 8080;
+  const port = Number(process.env.PORT) || 5000;
 
-  server.listen(port, () => {
+  server.listen(port, "127.0.0.1", () => {
     console.log(`API server running on http://localhost:${port}`);
   });
 }

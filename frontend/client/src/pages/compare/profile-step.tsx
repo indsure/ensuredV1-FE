@@ -56,7 +56,7 @@ export default function ProfileStep() {
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="h-1 bg-[#E5E7EB] dark:bg-[#374151] rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-[#00B4D8] to-[#10B981] rounded-full transition-all duration-600 ease-out"
               style={{ width: '67%' }}
             />
@@ -89,7 +89,7 @@ export default function ProfileStep() {
                     const value = e.target.value ? parseInt(e.target.value) : undefined;
                     setProfile((prev) => ({ ...prev, age: value }));
                     if (profileErrors.age) {
-                      setProfileErrors((prev) => ({ ...prev, age: undefined }));
+                      setProfileErrors(({ age: _a, ...rest }) => rest);
                     }
                   }}
                   placeholder="Enter your age"
@@ -117,7 +117,7 @@ export default function ProfileStep() {
                     const value = e.target.value ? parseInt(e.target.value) : undefined;
                     setProfile((prev) => ({ ...prev, householdIncome: value }));
                     if (profileErrors.householdIncome) {
-                      setProfileErrors((prev) => ({ ...prev, householdIncome: undefined }));
+                      setProfileErrors(({ householdIncome: _h, ...rest }) => rest);
                     }
                   }}
                   placeholder="e.g., 1000000"
@@ -146,7 +146,7 @@ export default function ProfileStep() {
                     setSelectedState(value);
                     setProfile((prev) => ({ ...prev, state: value, city: "" }));
                     if (profileErrors.state) {
-                      setProfileErrors((prev) => ({ ...prev, state: undefined }));
+                      setProfileErrors(({ state: _s, ...rest }) => rest);
                     }
                   }}
                   placeholder="Select your state"
@@ -177,7 +177,7 @@ export default function ProfileStep() {
                     onValueChange={(value) => {
                       setProfile((prev) => ({ ...prev, city: value }));
                       if (profileErrors.city) {
-                        setProfileErrors((prev) => ({ ...prev, city: undefined }));
+                        setProfileErrors(({ city: _c, ...rest }) => rest);
                       }
                     }}
                     placeholder="Select your city"
@@ -213,7 +213,7 @@ export default function ProfileStep() {
                     const value = e.target.value ? parseInt(e.target.value) : undefined;
                     setProfile((prev) => ({ ...prev, familySize: value }));
                     if (profileErrors.familySize) {
-                      setProfileErrors((prev) => ({ ...prev, familySize: undefined }));
+                      setProfileErrors(({ familySize: _f, ...rest }) => rest);
                     }
                   }}
                   placeholder="Number of family members"

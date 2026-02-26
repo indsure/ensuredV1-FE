@@ -45,7 +45,7 @@ export function ConfirmationDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} blocking={true}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

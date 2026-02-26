@@ -1,5 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Switch, Route } from "wouter";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MobileNav } from "@/components/MobileNav";
@@ -8,6 +10,9 @@ import { ThemeProvider } from "@/hooks/use-theme";
 import { ComparisonProvider } from "@/hooks/use-comparison";
 import { usePageTransition } from "@/hooks/use-page-transition";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { TooltipProvider } from "@/components/ui/tooltip";
+// ARCHIVED: import { AuthProvider } from "@/hooks/use-auth";
+const AuthProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
 /* ===================== ADD (Sach AI) ===================== */
 import SachAIChat from "@/components/SachAIChat";
@@ -35,6 +40,8 @@ const WhyIndSure = lazy(() => import("@/pages/why-indsure"));
 const Help = lazy(() => import("@/pages/help"));
 const Account = lazy(() => import("@/pages/account"));
 const Hospitals = lazy(() => import("@/pages/hospitals"));
+// ARCHIVED: const LoginPage = lazy(() => import("@/pages/login"));
+// ARCHIVED: const SignupPage = lazy(() => import("@/pages/signup"));
 
 
 // Loading fallback component
@@ -101,6 +108,11 @@ function Router() {
 
         {/* Hospital Network Finder */}
         <Route path="/find-provider" component={Hospitals} />
+        <Route path="/hospitals" component={Hospitals} />
+
+        {/* Auth Pages */}
+        {/* ARCHIVED: <Route path="/login" component={LoginPage} /> */}
+        {/* ARCHIVED: <Route path="/signup" component={SignupPage} /> */}
 
         <Route component={NotFound} />
       </Switch>
@@ -111,16 +123,22 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <AnalysisProvider>
-          <ComparisonProvider>
-            <Toaster />
-            <Router />
-            <MobileNav />
-            <SachAIChat />
-          </ComparisonProvider>
-        </AnalysisProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <AnalysisProvider>
+              <ComparisonProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Router />
+                  <MobileNav />
+                  <SachAIChat />
+                </TooltipProvider>
+              </ComparisonProvider>
+            </AnalysisProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

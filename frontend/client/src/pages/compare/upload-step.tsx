@@ -21,7 +21,6 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { useSEO } from "@/hooks/use-seo";
-import { getApiBase } from "@/lib/api";
 import { LifeInsuranceComparer } from "@/components/LifeInsuranceComparer";
 import { TermInsuranceComparer } from "@/components/TermInsuranceComparer";
 import { VehicleInsuranceComparer } from "@/components/VehicleInsuranceComparer";
@@ -56,20 +55,20 @@ export default function UploadStep() {
     title: compareType === "life"
       ? "Compare Term Life Insurance Plans | Best Life Insurance Comparison | Ensured"
       : compareType === "term"
-      ? "Compare Term Life Insurance Plans | Pure Protection Comparison | Ensured"
-      : compareType === "vehicle"
-      ? "Compare Vehicle Insurance Plans | Car Insurance Comparison | Ensured"
-      : "Compare Health Insurance Policies Side-by-Side | Ensured",
+        ? "Compare Term Life Insurance Plans | Pure Protection Comparison | Ensured"
+        : compareType === "vehicle"
+          ? "Compare Vehicle Insurance Plans | Car Insurance Comparison | Ensured"
+          : "Compare Health Insurance Policies Side-by-Side | Ensured",
     description: compareType === "life" || compareType === "term"
       ? "Compare top term life insurance plans: HDFC, ICICI, Religare, LIC, Canara HSBC. See premiums, claim settlement ratios, riders. Get unbiased recommendations for maximum coverage per rupee."
       : compareType === "vehicle"
-      ? "Compare vehicle insurance plans: HDFC Ergo, ICICI Lombard, Bajaj Allianz, New India Assurance. See premiums, add-ons, claim settlement ratios, deductibles. Find the best car insurance for your vehicle."
-      : "Upload up to 4 health insurance policies. Compare room limits, co-pays, coverage areas, and exclusions. Find the best policy for your needs.",
+        ? "Compare vehicle insurance plans: HDFC Ergo, ICICI Lombard, Bajaj Allianz, New India Assurance. See premiums, add-ons, claim settlement ratios, deductibles. Find the best car insurance for your vehicle."
+        : "Upload up to 4 health insurance policies. Compare room limits, co-pays, coverage areas, and exclusions. Find the best policy for your needs.",
     keywords: compareType === "life" || compareType === "term"
       ? "compare term life insurance, term life insurance comparison, best term life insurance India, maximum coverage per rupee, pure protection comparison"
       : compareType === "vehicle"
-      ? "compare vehicle insurance, car insurance comparison, motor insurance comparison, vehicle insurance plans India, comprehensive vs third party"
-      : "compare health insurance, insurance comparison tool, compare insurance policies, health insurance comparison India, side-by-side insurance comparison",
+        ? "compare vehicle insurance, car insurance comparison, motor insurance comparison, vehicle insurance plans India, comprehensive vs third party"
+        : "compare health insurance, insurance comparison tool, compare insurance policies, health insurance comparison India, side-by-side insurance comparison",
     canonical: compareType === "life" ? "/compare?type=life" : compareType === "term" ? "/compare?type=term" : compareType === "vehicle" ? "/compare?type=vehicle" : "/compare",
   });
   const { requestPermission, showNotification, permission } = useNotifications();
@@ -98,7 +97,7 @@ export default function UploadStep() {
     const allComplete = policies.length > 0 && policies.every(
       (p) => p.status === "success" || p.status === "error"
     );
-    
+
     if (hasActiveUploads) {
       setShowBackgroundBanner(true);
     } else if (allComplete && showBackgroundBanner) {
@@ -139,8 +138,8 @@ export default function UploadStep() {
       )
     );
 
-    let uploadProgressInterval: NodeJS.Timeout | null = null;
-    let extractionProgressInterval: NodeJS.Timeout | null = null;
+    let uploadProgressInterval: ReturnType<typeof setInterval> | null = null;
+    let extractionProgressInterval: ReturnType<typeof setInterval> | null = null;
 
     try {
       const formData = new FormData();
@@ -165,7 +164,7 @@ export default function UploadStep() {
         });
       }, 200);
 
-      const response = await fetch(`${getApiBase()}/api/extract-policy`, {
+      const response = await fetch("/api/extract-policy", {
         method: "POST",
         body: formData,
       });
@@ -217,12 +216,12 @@ export default function UploadStep() {
         prev.map((p) =>
           p.id === policyId
             ? {
-                ...p,
-                status: "success",
-                policyData: result.extracted_data,
-                progress: undefined,
-                progressPercent: 100,
-              }
+              ...p,
+              status: "success",
+              policyData: result.extracted_data,
+              progress: undefined,
+              progressPercent: 100,
+            }
             : p
         )
       );
@@ -237,12 +236,12 @@ export default function UploadStep() {
         prev.map((p) =>
           p.id === policyId
             ? {
-                ...p,
-                status: "error",
-                error: error.message || "Failed to extract policy",
-                progress: undefined,
-                progressPercent: undefined,
-              }
+              ...p,
+              status: "error",
+              error: error.message || "Failed to extract policy",
+              progress: undefined,
+              progressPercent: undefined,
+            }
             : p
         )
       );
@@ -342,19 +341,19 @@ export default function UploadStep() {
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-6 leading-tight">
             Find Your Best-Fit Health Policy
           </h1>
-          
+
           <p className="text-xl md:text-2xl text-[#4B5563] dark:text-[#D1D5DB] mb-8 max-w-3xl mx-auto leading-relaxed">
             Comparing 4 policies by hand = 2 hours of spreadsheet hell.
           </p>
-          
+
           <p className="text-base md:text-lg text-[#6B7280] dark:text-[#D1D5DB] mb-8 max-w-2xl mx-auto leading-relaxed">
             Room limits buried in one doc, co-pay in another, exclusions on PDF page 12. You give up and pick randomly—or stick with your mediocre plan.
           </p>
-          
+
           <p className="text-base md:text-lg font-medium text-[#0F1419] dark:text-[#FAFBFC] mb-8 max-w-2xl mx-auto">
             Upload up to 4 PDFs. We align them on room limits, co-pays, coverage areas, exclusions, and riders. See which policy covers your needs best—instantly.
           </p>
-          
+
           <div className="flex flex-wrap justify-center gap-6 mb-8">
             <div className="flex items-center gap-2 text-sm font-medium text-[#0F1419] dark:text-[#FAFBFC]">
               <CheckCircle2 className="w-4 h-4 text-[#00B4D8]" />
@@ -393,7 +392,7 @@ export default function UploadStep() {
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="h-1 bg-[#E5E7EB] dark:bg-[#374151] rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-[#00B4D8] to-[#10B981] rounded-full transition-all duration-600 ease-out"
               style={{ width: '33%' }}
             />
@@ -404,130 +403,129 @@ export default function UploadStep() {
           {/* Glow effect on hover */}
           <div className="absolute -inset-0.5 bg-gradient-to-r from-[#00B4D8]/20 to-[#10B981]/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
           <div className="relative z-10">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Upload Policies
-            </CardTitle>
-            <CardDescription className="text-base mt-1 text-gray-700 dark:text-gray-300">
-              Add up to 4 policies for comparison
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Upload Area */}
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${
-                isDragActive
-                  ? "border-[#1A3A52] dark:border-[#4A9B9E] bg-blue-50 dark:bg-blue-900/20"
-                  : "border-gray-300 dark:border-gray-600 hover:border-[#4A9B9E] dark:hover:border-[#3CBBA0]"
-              } ${policies.length >= 4 ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <input {...getInputProps()} />
-              <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
-              <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                {isDragActive
-                  ? "Drop policies here"
-                  : policies.length >= 4
-                  ? "Maximum 4 policies reached"
-                  : "Drag & drop policy PDFs here, or click to browse"}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {policies.length >= 4
-                  ? "Remove a policy to add another"
-                  : `${policies.length}/4 policies uploaded`}
-              </p>
-              {policies.length === 0 && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPolicies(getSampleHealthPoliciesForCompare());
-                    setProfile(getSampleProfile());
-                    setLocation("/compare/results");
-                  }}
-                  className="mt-4 inline-flex items-center justify-center gap-2 text-sm text-[#00B4D8] hover:text-[#0099B4] dark:text-cyan-400 dark:hover:text-cyan-300"
-                >
-                  <FileText className="w-4 h-4" />
-                  View sample comparison
-                </button>
-              )}
-            </div>
-
-            {/* Uploaded Policies List */}
-            {policies.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                  Uploaded Policies
-                </h3>
-                {policies.map((policy) => (
-                  <div
-                    key={policy.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700/50"
+            <CardHeader className="pb-4">
+              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                Upload Policies
+              </CardTitle>
+              <CardDescription className="text-base mt-1 text-gray-700 dark:text-gray-300">
+                Add up to 4 policies for comparison
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Upload Area */}
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${isDragActive
+                    ? "border-[#1A3A52] dark:border-[#4A9B9E] bg-blue-50 dark:bg-blue-900/20"
+                    : "border-gray-300 dark:border-gray-600 hover:border-[#4A9B9E] dark:hover:border-[#3CBBA0]"
+                  } ${policies.length >= 4 ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <input {...getInputProps()} />
+                <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
+                <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  {isDragActive
+                    ? "Drop policies here"
+                    : policies.length >= 4
+                      ? "Maximum 4 policies reached"
+                      : "Drag & drop policy PDFs here, or click to browse"}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {policies.length >= 4
+                    ? "Remove a policy to add another"
+                    : `${policies.length}/4 policies uploaded`}
+                </p>
+                {policies.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPolicies(getSampleHealthPoliciesForCompare());
+                      setProfile(getSampleProfile());
+                      setLocation("/compare/results");
+                    }}
+                    className="mt-4 inline-flex items-center justify-center gap-2 text-sm text-[#00B4D8] hover:text-[#0099B4] dark:text-cyan-400 dark:hover:text-cyan-300"
                   >
-                    <div className="flex items-center gap-3 flex-1">
-                      <FileText className="w-5 h-5 text-gray-400" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                          {policy.file.name}
-                        </p>
-                        {policy.status === "success" && policy.policyData && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {policy.policyData.basic_info.insurer} - {policy.policyData.basic_info.plan_name} • {policy.policyData.coverage.base_si.display} • {policy.policyData.coverage.annual_premium.display}
+                    <FileText className="w-4 h-4" />
+                    View sample comparison
+                  </button>
+                )}
+              </div>
+
+              {/* Uploaded Policies List */}
+              {policies.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    Uploaded Policies
+                  </h3>
+                  {policies.map((policy) => (
+                    <div
+                      key={policy.id}
+                      className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700/50"
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <FileText className="w-5 h-5 text-gray-400" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                            {policy.file.name}
                           </p>
-                        )}
-                        {(policy.status === "uploading" || policy.status === "extracting") && policy.progress && (
-                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                            {policy.progress}
-                            {policy.progressPercent !== undefined && (
-                              <>
-                                {" "}
-                                {policy.progressPercent < 50 
-                                  ? `(${Math.round(policy.progressPercent)}%)` 
-                                  : policy.progressPercent < 95
-                                  ? `(${Math.round(policy.progressPercent)}%) - Processing...`
-                                  : `(${Math.round(policy.progressPercent)}%) - Almost done...`}
-                              </>
-                            )}
-                          </p>
-                        )}
-                        {policy.status === "error" && policy.error && (
-                          <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                            {policy.error}
-                          </p>
-                        )}
+                          {policy.status === "success" && policy.policyData && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {policy.policyData.basic_info.insurer} - {policy.policyData.basic_info.plan_name} • {policy.policyData.coverage.base_si.display} • {policy.policyData.coverage.annual_premium.display}
+                            </p>
+                          )}
+                          {(policy.status === "uploading" || policy.status === "extracting") && policy.progress && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                              {policy.progress}
+                              {policy.progressPercent !== undefined && (
+                                <>
+                                  {" "}
+                                  {policy.progressPercent < 50
+                                    ? `(${Math.round(policy.progressPercent)}%)`
+                                    : policy.progressPercent < 95
+                                      ? `(${Math.round(policy.progressPercent)}%) - Processing...`
+                                      : `(${Math.round(policy.progressPercent)}%) - Almost done...`}
+                                </>
+                              )}
+                            </p>
+                          )}
+                          {policy.status === "error" && policy.error && (
+                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                              {policy.error}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {policy.status === "uploading" || policy.status === "extracting" ? (
-                        <CircularProgress progress={policy.progressPercent || 0} size={48} />
-                      ) : policy.status === "success" ? (
-                        <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                      ) : policy.status === "error" ? (
+                      <div className="flex items-center gap-2">
+                        {policy.status === "uploading" || policy.status === "extracting" ? (
+                          <CircularProgress progress={policy.progressPercent || 0} size={48} />
+                        ) : policy.status === "success" ? (
+                          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        ) : policy.status === "error" ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => extractPolicy(policy.id)}
+                            className="text-xs"
+                          >
+                            Retry
+                          </Button>
+                        ) : null}
                         <Button
                           variant="ghost"
-                          size="sm"
-                          onClick={() => extractPolicy(policy.id)}
-                          className="text-xs"
+                          size="icon"
+                          onClick={() => removePolicy(policy.id)}
+                          className="h-8 w-8"
+                          aria-label={`Remove ${policy.file.name} from upload list`}
                         >
-                          Retry
+                          <X className="w-4 h-4" />
                         </Button>
-                      ) : null}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removePolicy(policy.id)}
-                        className="h-8 w-8"
-                        aria-label={`Remove ${policy.file.name} from upload list`}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
 
-          </CardContent>
+            </CardContent>
           </div>
         </Card>
 
@@ -560,159 +558,159 @@ export default function UploadStep() {
       {/* What to Look For Section */}
       {policies.length === 0 && (
         <>
-        <section className="relative z-10 py-10 md:py-12 px-6">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-10">
-              Key Dimensions for Comparison
-            </h2>
+          <section className="relative z-10 py-10 md:py-12 px-6">
+            <div className="max-w-7xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-10">
+                Key Dimensions for Comparison
+              </h2>
 
-            <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-              {/* Coverage Limit */}
-              <div className="bg-[#DBEAFE] dark:bg-[#00B4D8]/10 rounded-xl p-6 border-l-4 border-[#00B4D8] flex flex-col">
-                <h3 className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Total Coverage Limit</h3>
-                <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed mb-4 flex-grow">
-                  ₹5L, ₹10L, ₹15L? Higher is generally better, but look at room limits too. A ₹10L limit with a ₹1.5k room cap may not be better than ₹5L with ₹5k cap.
-                </p>
-                <div className="space-y-2 pt-2 border-t border-[#00B4D8]/20">
-                  <div className="text-sm font-semibold text-[#EF4444] flex items-start gap-2">
-                    <span>🚩</span>
-                    <span>Coverage limit less than ₹3 lakh in a metro city</span>
-                  </div>
-                  <div className="text-sm font-semibold text-[#10B981] flex items-start gap-2">
-                    <span>✓</span>
-                    <span>Coverage limit ₹5L+ with no co-pay</span>
+              <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                {/* Coverage Limit */}
+                <div className="bg-[#DBEAFE] dark:bg-[#00B4D8]/10 rounded-xl p-6 border-l-4 border-[#00B4D8] flex flex-col">
+                  <h3 className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Total Coverage Limit</h3>
+                  <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed mb-4 flex-grow">
+                    ₹5L, ₹10L, ₹15L? Higher is generally better, but look at room limits too. A ₹10L limit with a ₹1.5k room cap may not be better than ₹5L with ₹5k cap.
+                  </p>
+                  <div className="space-y-2 pt-2 border-t border-[#00B4D8]/20">
+                    <div className="text-sm font-semibold text-[#EF4444] flex items-start gap-2">
+                      <span>🚩</span>
+                      <span>Coverage limit less than ₹3 lakh in a metro city</span>
+                    </div>
+                    <div className="text-sm font-semibold text-[#10B981] flex items-start gap-2">
+                      <span>✓</span>
+                      <span>Coverage limit ₹5L+ with no co-pay</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Room Limit */}
-              <div className="bg-[#FFEDD5] dark:bg-[#F59E0B]/10 rounded-xl p-6 border-l-4 border-[#F59E0B] flex flex-col">
-                <h3 className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Room Limit Per Day</h3>
-                <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed mb-4 flex-grow">
-                  Most critical. Hotels charge ₹4k–8k/day in metros. A ₹2k room cap means you pay the gap. Higher is better.
-                </p>
-                <div className="space-y-2 pt-2 border-t border-[#F59E0B]/20">
-                  <div className="text-sm font-semibold text-[#EF4444] flex items-start gap-2">
-                    <span>🚩</span>
-                    <span>Room limit ₹2k or less in metro cities</span>
-                  </div>
-                  <div className="text-sm font-semibold text-[#10B981] flex items-start gap-2">
-                    <span>✓</span>
-                    <span>Room limit ₹5k+ (metro-realistic)</span>
+                {/* Room Limit */}
+                <div className="bg-[#FFEDD5] dark:bg-[#F59E0B]/10 rounded-xl p-6 border-l-4 border-[#F59E0B] flex flex-col">
+                  <h3 className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Room Limit Per Day</h3>
+                  <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed mb-4 flex-grow">
+                    Most critical. Hotels charge ₹4k–8k/day in metros. A ₹2k room cap means you pay the gap. Higher is better.
+                  </p>
+                  <div className="space-y-2 pt-2 border-t border-[#F59E0B]/20">
+                    <div className="text-sm font-semibold text-[#EF4444] flex items-start gap-2">
+                      <span>🚩</span>
+                      <span>Room limit ₹2k or less in metro cities</span>
+                    </div>
+                    <div className="text-sm font-semibold text-[#10B981] flex items-start gap-2">
+                      <span>✓</span>
+                      <span>Room limit ₹5k+ (metro-realistic)</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Co-pay */}
-              <div className="bg-[#DDD6FE] dark:bg-[#A78BFA]/10 rounded-xl p-6 border-l-4 border-[#A78BFA] flex flex-col">
-                <h3 className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Co-pay %</h3>
-                <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed mb-4 flex-grow">
-                  You pay this % after hitting room limits. Lower is better. 0% co-pay is ideal but rare.
-                </p>
-                <div className="space-y-2 pt-2 border-t border-[#A78BFA]/20">
-                  <div className="text-sm font-semibold text-[#EF4444] flex items-start gap-2">
-                    <span>🚩</span>
-                    <span>Co-pay 30%+ or applies to all claims</span>
-                  </div>
-                  <div className="text-sm font-semibold text-[#10B981] flex items-start gap-2">
-                    <span>✓</span>
-                    <span>0% co-pay or co-pay only on specific treatments</span>
+                {/* Co-pay */}
+                <div className="bg-[#DDD6FE] dark:bg-[#A78BFA]/10 rounded-xl p-6 border-l-4 border-[#A78BFA] flex flex-col">
+                  <h3 className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Co-pay %</h3>
+                  <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed mb-4 flex-grow">
+                    You pay this % after hitting room limits. Lower is better. 0% co-pay is ideal but rare.
+                  </p>
+                  <div className="space-y-2 pt-2 border-t border-[#A78BFA]/20">
+                    <div className="text-sm font-semibold text-[#EF4444] flex items-start gap-2">
+                      <span>🚩</span>
+                      <span>Co-pay 30%+ or applies to all claims</span>
+                    </div>
+                    <div className="text-sm font-semibold text-[#10B981] flex items-start gap-2">
+                      <span>✓</span>
+                      <span>0% co-pay or co-pay only on specific treatments</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Exclusions */}
-              <div className="bg-[#ECFDF5] dark:bg-[#10B981]/10 rounded-xl p-6 border-l-4 border-[#10B981] flex flex-col">
-                <h3 className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Exclusions & Waiting Periods</h3>
-                <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed mb-4 flex-grow">
-                  Pre-existing conditions (usually 2–4 years), maternity (10–12 months), certain surgeries. Compare waiting periods; shorter is better.
-                </p>
-                <div className="space-y-2 pt-2 border-t border-[#10B981]/20">
-                  <div className="text-sm font-semibold text-[#EF4444] flex items-start gap-2">
-                    <span>🚩</span>
-                    <span>Maternity waiting period &gt; 2 years; no maternity coverage</span>
-                  </div>
-                  <div className="text-sm font-semibold text-[#10B981] flex items-start gap-2">
-                    <span>✓</span>
-                    <span>Maternity covered after 10 months; pre-existing after 2 years</span>
+                {/* Exclusions */}
+                <div className="bg-[#ECFDF5] dark:bg-[#10B981]/10 rounded-xl p-6 border-l-4 border-[#10B981] flex flex-col">
+                  <h3 className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Exclusions & Waiting Periods</h3>
+                  <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed mb-4 flex-grow">
+                    Pre-existing conditions (usually 2–4 years), maternity (10–12 months), certain surgeries. Compare waiting periods; shorter is better.
+                  </p>
+                  <div className="space-y-2 pt-2 border-t border-[#10B981]/20">
+                    <div className="text-sm font-semibold text-[#EF4444] flex items-start gap-2">
+                      <span>🚩</span>
+                      <span>Maternity waiting period &gt; 2 years; no maternity coverage</span>
+                    </div>
+                    <div className="text-sm font-semibold text-[#10B981] flex items-start gap-2">
+                      <span>✓</span>
+                      <span>Maternity covered after 10 months; pre-existing after 2 years</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Typical Comparison Results Section */}
-        <section className="relative z-10 py-10 md:py-12 px-6">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-bold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-12">
-              Example: Three Popular Plans Compared
-            </h2>
+          {/* Typical Comparison Results Section */}
+          <section className="relative z-10 py-10 md:py-12 px-6">
+            <div className="max-w-7xl mx-auto">
+              <h2 className="text-4xl md:text-5xl font-bold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-12">
+                Example: Three Popular Plans Compared
+              </h2>
 
-            <div className="overflow-x-auto mb-8">
-              <table className="w-full border-collapse bg-white dark:bg-[#0F1419] rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                <thead>
-                  <tr className="bg-[#0F1419] dark:bg-[#0F1419] text-white">
-                    <th className="text-left p-4 text-xs font-semibold">Feature</th>
-                    <th className="text-center p-4 text-xs font-semibold">Policy A</th>
-                    <th className="text-center p-4 text-xs font-semibold">Policy B</th>
-                    <th className="text-center p-4 text-xs font-semibold">Policy C</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
-                    <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Coverage Limit</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹3 lakh</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹5 lakh</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹10 lakh</td>
-                  </tr>
-                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
-                    <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Room Limit/Day</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹2k</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹4k</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹5k</td>
-                  </tr>
-                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
-                    <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Co-pay</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">20%</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">15%</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">10%</td>
-                  </tr>
-                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
-                    <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Maternity</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">Not covered</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹1.5L rider (extra ₹2k/yr)</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹2L included</td>
-                  </tr>
-                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
-                    <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Pre-existing</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">4 years</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">3 years</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">2 years</td>
-                  </tr>
-                  <tr className="bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
-                    <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Annual Premium</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹8k</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹12k</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹18k</td>
-                  </tr>
-                  <tr className="bg-[#F9FAFB] dark:bg-[#1F2937]">
-                    <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Best For</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">Budget-conscious</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">Balanced</td>
-                    <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">Comprehensive</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="overflow-x-auto mb-8">
+                <table className="w-full border-collapse bg-white dark:bg-[#0F1419] rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                  <thead>
+                    <tr className="bg-[#0F1419] dark:bg-[#0F1419] text-white">
+                      <th className="text-left p-4 text-xs font-semibold">Feature</th>
+                      <th className="text-center p-4 text-xs font-semibold">Policy A</th>
+                      <th className="text-center p-4 text-xs font-semibold">Policy B</th>
+                      <th className="text-center p-4 text-xs font-semibold">Policy C</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
+                      <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Coverage Limit</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹3 lakh</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹5 lakh</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹10 lakh</td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
+                      <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Room Limit/Day</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹2k</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹4k</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹5k</td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
+                      <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Co-pay</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">20%</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">15%</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">10%</td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
+                      <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Maternity</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">Not covered</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹1.5L rider (extra ₹2k/yr)</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹2L included</td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
+                      <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Pre-existing</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">4 years</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">3 years</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">2 years</td>
+                    </tr>
+                    <tr className="bg-white dark:bg-[#0F1419] even:bg-[#F9FAFB] dark:even:bg-[#1F2937]">
+                      <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Annual Premium</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹8k</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹12k</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">₹18k</td>
+                    </tr>
+                    <tr className="bg-[#F9FAFB] dark:bg-[#1F2937]">
+                      <td className="p-4 text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Best For</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">Budget-conscious</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">Balanced</td>
+                      <td className="p-4 text-xs text-center text-[#6B7280] dark:text-[#D1D5DB]">Comprehensive</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="bg-[#EFF6FF] dark:bg-[#00B4D8]/20 rounded-xl p-6 border-l-4 border-[#00B4D8]">
+                <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
+                  <strong className="text-[#0F1419] dark:text-[#FAFBFC]">Verdict:</strong> Policy B offers the best balance of room limit, co-pay, and premium. Policy C is best if you need maternity and don't mind higher premiums. Policy A is risky for metro residents due to low room limit.
+                </p>
+              </div>
             </div>
-
-            <div className="bg-[#EFF6FF] dark:bg-[#00B4D8]/20 rounded-xl p-6 border-l-4 border-[#00B4D8]">
-              <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                <strong className="text-[#0F1419] dark:text-[#FAFBFC]">Verdict:</strong> Policy B offers the best balance of room limit, co-pay, and premium. Policy C is best if you need maternity and don't mind higher premiums. Policy A is risky for metro residents due to low room limit.
-              </p>
-            </div>
-          </div>
-        </section>
+          </section>
         </>
       )}
 

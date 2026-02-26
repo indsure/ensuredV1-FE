@@ -55,7 +55,7 @@ function isPreExistingUnderWaitingPeriod(
     const startDate = new Date(policyStartDate);
     const today = new Date();
     const monthsSinceStart = differenceInMonths(today, startDate);
-    
+
     return monthsSinceStart < waitingPeriodMonths;
   } catch {
     // If date parsing fails, assume active if waiting period > 0
@@ -74,7 +74,7 @@ function hasHighCopayOnAllClaims(policy: PolicyData): boolean {
 
   // Check if co-pay applies to all claims (not just specific treatments)
   const appliesToAll = copay.type === "all_claims" || copay.applies_to?.length === 0;
-  
+
   return appliesToAll && copay.percent > THRESHOLDS.COPAY_HIGH_THRESHOLD;
 }
 
@@ -137,9 +137,9 @@ function hasMinorGaps(policy: PolicyData): string[] {
   }
 
   // Check ambulance cap
-  const ambulanceLimit = coverageDetails?.ambulance?.limit_amount || 
-                         policy.sub_limits?.icu_charges?.limit_amount; // Some policies list ambulance under ICU
-  const ambulanceCapLow = ambulanceLimit !== undefined && ambulanceLimit < THRESHOLDS.AMBULANCE_MIN;
+  const ambulanceLimit = coverageDetails?.ambulance?.limit_amount ||
+    policy.sub_limits?.icu_charges?.limit_amount; // Some policies list ambulance under ICU
+  const ambulanceCapLow = ambulanceLimit !== undefined && ambulanceLimit !== null && ambulanceLimit < THRESHOLDS.AMBULANCE_MIN;
 
   if (ambulanceCapLow) {
     gaps.push(`Ambulance charges capped at ₹${ambulanceLimit.toLocaleString("en-IN")}, which may be insufficient`);
@@ -147,7 +147,7 @@ function hasMinorGaps(policy: PolicyData): string[] {
 
   // Check diagnostics cap
   const diagnosticsLimit = coverageDetails?.diagnostic_tests?.limit_amount;
-  const diagnosticsCapLow = diagnosticsLimit !== undefined && diagnosticsLimit < THRESHOLDS.DIAGNOSTICS_MIN;
+  const diagnosticsCapLow = diagnosticsLimit !== undefined && diagnosticsLimit !== null && diagnosticsLimit < THRESHOLDS.DIAGNOSTICS_MIN;
 
   if (diagnosticsCapLow) {
     gaps.push(`Diagnostic tests capped at ₹${diagnosticsLimit.toLocaleString("en-IN")}, which may be insufficient`);
@@ -155,7 +155,7 @@ function hasMinorGaps(policy: PolicyData): string[] {
 
   // Check pharmacy cap
   const pharmacyLimit = coverageDetails?.pharmacy?.limit_amount;
-  const pharmacyCapLow = pharmacyLimit !== undefined && pharmacyLimit < THRESHOLDS.PHARMACY_MIN;
+  const pharmacyCapLow = pharmacyLimit !== undefined && pharmacyLimit !== null && pharmacyLimit < THRESHOLDS.PHARMACY_MIN;
 
   if (pharmacyCapLow) {
     gaps.push(`Pharmacy expenses capped at ₹${pharmacyLimit.toLocaleString("en-IN")}, which may be insufficient`);
@@ -165,6 +165,7 @@ function hasMinorGaps(policy: PolicyData): string[] {
   const copay = c?.copay;
   const mildCopay =
     copay?.exists &&
+    copay.percent !== null &&
     copay.percent !== undefined &&
     copay.percent > 0 &&
     copay.percent <= THRESHOLDS.COPAY_MINOR_THRESHOLD &&
@@ -191,7 +192,7 @@ export function evaluateRiskMeter(
   const reasons: string[] = [];
 
   // STEP 1: HARD FAIL CHECKS (OVERRIDE EVERYTHING)
-  
+
   // Check 1: Sum Insured too low
   const siThreshold = isMetro ? THRESHOLDS.SI_MIN_METRO : THRESHOLDS.SI_MIN_NON_METRO;
   if (baseSI < siThreshold) {
@@ -245,7 +246,7 @@ export function evaluateRiskMeter(
   }
 
   // STEP 2: CORE ADEQUACY CHECK
-  
+
   const coreChecks: { name: string; passed: boolean; reason?: string }[] = [];
 
   // Check 1: SI adequacy

@@ -18,10 +18,13 @@ import {
   mockReportVehicle
 } from "@/lib/mock-data";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
-import { validateForensicAuditReport } from "@/types/master_audit_schema";
+// FIXED: Correct relative path to server types
+import { validateForensicAuditReport } from "../../../../backend/server/types/policy";
+import { useAnalysis } from "@/hooks/use-analysis";
 
 export default function Report({ params }: { params?: { id?: string } }) {
   const [, setLocation] = useLocation();
+  const { clearAuditState } = useAnalysis();
   const [data, setData] = useState(null as any | null);
   const [loading, setLoading] = useState(true);
 
@@ -64,6 +67,11 @@ export default function Report({ params }: { params?: { id?: string } }) {
       }
     }
     setLoading(false);
+
+    // CLEANUP: Reset state on unmount
+    return () => {
+      clearAuditState();
+    };
   }, [params?.id]);
 
   if (loading) return null;

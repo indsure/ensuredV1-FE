@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { AnalysisResponse, AnalysisState } from "@/lib/types";
-import { getApiBase } from "@/lib/api";
 
 interface AnalysisContextType {
   state: AnalysisState;
@@ -16,6 +15,7 @@ interface AnalysisContextType {
 
   analyze: (file: File, type?: string) => Promise<{ jobId: string }>;
   checkJobStatus: (jobId: string) => Promise<{ status: string; result?: any; error?: string }>;
+  clearAuditState: () => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(undefined);
@@ -39,11 +39,30 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
 
+  const clearAuditState = () => {
+    setState({
+      analysis: null,
+      analysisId: null,
+      lastUpdated: null,
+      error: null,
+    });
+    setStatus("idle");
+    setError(null);
+    setCurrentJobId(null);
+    setPolicyText("");
+    sessionStorage.removeItem("ensured_current_job");
+    sessionStorage.removeItem("ensured_report");
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  };
+
   const checkJobStatus = async (
     jobId: string
   ): Promise<{ status: string; result?: any; error?: string }> => {
     try {
-      const response = await fetch(`${getApiBase()}/api/analyze/status/${jobId}`);
+      const response = await fetch(`/api/analyze/status/${jobId}`);
       if (!response.ok) {
         throw new Error(`Status check failed: ${response.status}`);
       }
@@ -67,8 +86,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         formData.append("type", type);
       }
 
-      console.log("📤 Sending POST to /api/analyze", type ? `(type: ${type})` : "");
-      const response = await fetch(`${getApiBase()}/api/analyze`, {
+      const response = await fetch("/api/analyze", {
         method: "POST",
         body: formData,
       });
@@ -81,8 +99,6 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           const errorText = await response.text();
           errorData = { error: errorText };
         }
-        console.error("❌ Backend error response:", errorData);
-
         throw new Error(
           `Backend returned ${response.status}: ${errorData.error || "Unknown error"}`
         );
@@ -90,35 +106,21 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
 
-      if (data.jobId) {
-        console.log("✅ Job created:", data.jobId);
-        setCurrentJobId(data.jobId);
-        sessionStorage.setItem("ensured_current_job", data.jobId);
-        return { jobId: data.jobId };
-      } else {
-        console.log("✅ Received full result (legacy mode)");
-        if (!data.page1 || !data.details) {
-          throw new Error("Backend response missing required fields");
-        }
-
-        setState({
-          analysis: data,
-          analysisId: data.id || `report-${Date.now()}`,
-          lastUpdated: Date.now(),
-          error: null,
-        });
-
-        sessionStorage.setItem("ensured_report", JSON.stringify(data));
-        setStatus("success");
-        return { jobId: `legacy-${Date.now()}` };
+      if (!data.jobId) {
+        throw new Error("Backend response missing jobId");
       }
+
+      console.log("✅ Job created:", data.jobId);
+      setCurrentJobId(data.jobId);
+      sessionStorage.setItem("ensured_current_job", data.jobId);
+      return { jobId: data.jobId };
     } catch (err: any) {
       console.error("❌ Analysis error:", err);
-      let errorMessage = err.message || "Analysis failed - check console for details";
+      let errorMessage = err.message || "Analysis failed";
 
       if (err.name === "TypeError" && err.message === "Failed to fetch") {
         errorMessage =
-          "Cannot connect to backend server. Please make sure the backend is running on port 5000.";
+          "Cannot connect to backend server. Please ensure the server is running.";
       }
 
       setError(errorMessage);
@@ -128,17 +130,20 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Adaptive polling: 3s for the first 60s, then 5s after
   useEffect(() => {
     isMountedRef.current = true;
     const jobId = currentJobId || sessionStorage.getItem("ensured_current_job");
-    if (!jobId || jobId.startsWith("legacy-")) return;
+    if (!jobId) return;
 
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
     }
 
-    pollingIntervalRef.current = setInterval(async () => {
+    const jobStartTime = Date.now();
+
+    const poll = async () => {
       if (!isMountedRef.current) {
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
@@ -152,7 +157,10 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
 
       if (status.status === "completed" && status.result) {
         console.log("✅ Job completed, storing result");
+        console.log('[Debug] auditResult set:', !!status.result);
+        console.log('[Debug] Setting isProcessing to false...');
 
+        // 1. Set result into state FIRST
         setState({
           analysis: status.result,
           analysisId: jobId,
@@ -161,10 +169,18 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         });
 
         sessionStorage.setItem("ensured_report", JSON.stringify(status.result));
-        sessionStorage.removeItem("ensured_current_job");
-        setCurrentJobId(null);
-        setStatus("success");
 
+        // 2. ONLY THEN stop the loader (set success)
+        setStatus("success");
+        console.log('[Debug] isProcessing set to false');
+
+        // Fix Race Condition: Delay teardown to give processing.tsx time to redirect
+        setTimeout(() => {
+          sessionStorage.removeItem("ensured_current_job");
+          setCurrentJobId(null);
+        }, 2000);
+
+        // 3. Clear the polling interval
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
@@ -186,8 +202,20 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
         }
+      } else {
+        // Adaptive interval: fast polling for first 60s, then slower
+        const elapsed = Date.now() - jobStartTime;
+        const nextInterval = elapsed < 60_000 ? 3_000 : 5_000;
+
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+        }
+        pollingIntervalRef.current = setInterval(poll, nextInterval);
       }
-    }, 30000);
+    };
+
+    // Start first poll after 3s
+    pollingIntervalRef.current = setInterval(poll, 3_000);
 
     return () => {
       isMountedRef.current = false;
@@ -205,14 +233,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         status,
         error,
         currentJobId,
-
-        /* ================= ADD (STEP 2) ================= */
         policyText,
         setPolicyText,
-        /* =============================================== */
-
         analyze,
         checkJobStatus,
+        clearAuditState,
       }}
     >
       {children}

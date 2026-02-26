@@ -43,24 +43,29 @@ export class PolicyWordingsFetcher {
    * Main Entry Point: Deterministic Fetch
    */
   public async getPolicyWordings(
-    insurer_raw: string,
-    plan_raw: string,
+    insurerName: string,
+    planName: string,
     policy_issue_date: string,
     language: "en" | "hi" = "en",
     force_refresh: boolean = false
   ): Promise<PolicyWordingsResult> {
 
     // 1. Normalization
-    const insurer = this.normalizeInsurer(insurer_raw);
-    if (!insurer) throw this.createError(WordingFailureCode.INSURER_NOT_FOUND, `Unknown insurer: ${insurer_raw}`);
+    const insurer = this.normalizeInsurer(insurerName);
+    if (!insurer) throw this.createError(WordingFailureCode.INSURER_NOT_FOUND, `Unknown insurer: ${insurerName}`);
 
-    const plan = this.normalizePlan(plan_raw);
-    if (!plan) throw this.createError(WordingFailureCode.PLAN_NOT_FOUND, `Unknown plan: ${plan_raw}`);
+    const plan = this.normalizePlan(planName);
+    if (!plan) throw this.createError(WordingFailureCode.PLAN_NOT_FOUND, `Unknown plan: ${planName}`);
 
     const versionYear = this.resolveWordingYear(policy_issue_date);
     if (!versionYear) throw this.createError(WordingFailureCode.WORDING_VERSION_UNRESOLVABLE, `Invalid date: ${policy_issue_date}`);
 
+    const currentSessionInsurer = insurerName;
     console.log(`[Fetcher] Looking for: ${insurer} | ${plan} | ${versionYear}`);
+    console.assert(
+      insurerName === currentSessionInsurer,
+      '[Fetcher] MISMATCH: Fetcher insurer does not match current session'
+    );
 
     // 2. Strict Lookup Order
 
@@ -197,7 +202,6 @@ export const policyFetcher = new PolicyWordingsFetcher();
 // --- Named Exports for Routes (Bridge) ---
 
 export async function extractPolicyMetadata(text: string): Promise<{ insurer: string | null, product: string | null, plan: string | null, year: string | number | null }> {
-  // Simple regex-based extraction for deterministic metadata
   const textLower = text.toLowerCase();
 
   // 1. Extract Insurer
@@ -209,14 +213,69 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
     }
   }
 
-  // 2. Extract Plan
+  // 2. Extract Plan (Priority Order)
   let plan = null;
-  for (const [key, val] of Object.entries(planAliases)) {
-    if (val.aliases.some(alias => textLower.includes(alias))) {
-      plan = val.canonical;
-      break;
+  let sourceField = null;
+
+  // Normalization helper
+  function normalizePlanName(raw: string): string {
+    return raw
+      .replace(/_/g, ' ')
+      .replace(/ New(\s|$)/i, '$1')
+      .replace(/ Individual(\s|$)/i, '$1')
+      .replace(/ Adult(\s|$)/i, '$1')
+      .replace(/ \d+Year(\s|$)/i, '$1')
+      .trim();
+  }
+
+  // Priority 1: Field "Plan Name"
+  const planNameMatch = text.match(/Plan Name\s*[:\-\n]\s*([a-zA-Z0-9_\- ]+)/i);
+  if (planNameMatch && planNameMatch[1].trim()) {
+    plan = normalizePlanName(planNameMatch[1].trim());
+    sourceField = 'Plan Name';
+  }
+
+  // Priority 2: Field "Product name"
+  if (!plan) {
+    const productNameMatch = text.match(/Product name\s*[:\-\n]\s*([a-zA-Z0-9_\- ]+)/i);
+    if (productNameMatch && productNameMatch[1].trim()) {
+      plan = normalizePlanName(productNameMatch[1].trim());
+      sourceField = 'Product name';
     }
   }
+
+  // Priority 3: CIS string
+  if (!plan) {
+    if (textLower.includes("complete health insurance - health shield") || textLower.includes("complete health insurance plan - health shield")) {
+      plan = "Complete Health Insurance - Health Shield";
+      sourceField = 'CIS / String match';
+    } else if (textLower.includes("medi classic")) {
+      plan = "Medi Classic";
+      sourceField = 'CIS / String match';
+    }
+  }
+
+  // Priority 4: UIN mapping
+  if (!plan) {
+    if (text.includes("ICIHLIP25035V082425")) {
+      plan = "Complete Health Insurance - Health Shield";
+      sourceField = 'UIN';
+    }
+  }
+
+  // Fallback to alias loop if priorities fail
+  if (!plan) {
+    for (const [key, val] of Object.entries(planAliases)) {
+      if (val.aliases.some(alias => textLower.includes(alias))) {
+        plan = val.canonical;
+        sourceField = 'Alias Map Fallback';
+        break;
+      }
+    }
+  }
+
+  console.log('[Fetcher] Extracted plan name:', plan);
+  console.log('[Fetcher] Source field:', sourceField);
 
   // 3. Extract Year (heuristics for policy period)
   // Look for 4 digits around "Period" or "Date"
@@ -231,13 +290,19 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
   };
 }
 
-export async function fetchPolicyWordings(insurer: string, product: string, plan: string, year: string | number): Promise<string | null> {
+export async function fetchPolicyWordings(insurerName: string, product: string, planName: string, year: string | number): Promise<string | null> {
+  // Guard against stale cache / missing session data
+  if (!insurerName || !planName) {
+    console.warn('[Fetcher] Skipping — no valid insurer/plan in current session');
+    return null;
+  }
+
   // Adapter: resolving arguments to match getPolicyWordings
   // product/plan might be redundant, taking plan as primary
   try {
     const result = await policyFetcher.getPolicyWordings(
-      insurer || "",
-      plan || product || "",
+      insurerName || "",
+      planName || product || "",
       String(year),
       "en",
       false

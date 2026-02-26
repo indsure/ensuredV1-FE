@@ -77,7 +77,9 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   badge: {
-    display: 'inline-block',
+    display: 'flex',
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
     backgroundColor: '#4A9B9E',
     color: '#FFFFFF',
     padding: '4 8',
@@ -117,10 +119,10 @@ interface PDFReportProps {
 
 export const PDFReport: React.FC<PDFReportProps> = ({ data }) => {
   const { policyholderInfo, page1, details, recommendations } = data;
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
 
   return (
@@ -298,11 +300,11 @@ export const PDFReport: React.FC<PDFReportProps> = ({ data }) => {
                   const cleanRec = rec.replace(/\*\*\[Priority:\s*(High|Medium|Low)\]\*\*\s*/, '');
                   const priorityMatch = rec.match(/\*\*\[Priority:\s*(High|Medium|Low)\]\*\*/);
                   const priority = priorityMatch ? priorityMatch[1] : null;
-                  
+
                   return (
                     <View key={i} style={[styles.card, { marginBottom: 8 }]}>
                       {priority && (
-                        <Text style={[styles.label, { 
+                        <Text style={[styles.label, {
                           color: priority === 'High' ? '#DC2626' : priority === 'Medium' ? '#D97706' : '#2563EB',
                           fontWeight: 'bold',
                           marginBottom: 4

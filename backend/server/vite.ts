@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import { createServer as createViteServer, createLogger } from "vite";
-import viteConfig from "../vite.config";
+// @ts-ignore
+import viteConfig from "../../../frontend/vite.config";
 import fs from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
@@ -35,7 +36,7 @@ export async function setupVite(server: Server, app: Express) {
       const indexPath = path.resolve(
         import.meta.dirname,
         "..",
-        "client",
+        "../../frontend/client",
         "index.html",
       );
 

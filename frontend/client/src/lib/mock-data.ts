@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ForensicAuditReport } from "@/types/master_audit_schema";
+import { ForensicAuditReport } from "../../../../backend/server/types/policy";
 import { TERM_RIDERS_DATABASE } from "./data/term-rider-data";
 import { VEHICLE_RIDERS_DATABASE } from "./data/vehicle-rider-data";
 
