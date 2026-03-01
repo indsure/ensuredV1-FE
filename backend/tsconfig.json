@@ -1,13 +1,13 @@
 {
-  "include": ["server/**/*"],
-  "exclude": ["node_modules", "dist", "server/vite.ts"],
+  "include": ["src/**/*", "app.ts", "server.ts"],
+  "exclude": ["node_modules", "dist"],
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2022", "DOM"],
     "outDir": "dist",
-    "rootDir": "server",
+    "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

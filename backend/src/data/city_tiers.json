@@ -1,0 +1,24 @@
+{
+  "tier1": [
+    "Mumbai", "Delhi", "New Delhi", "Bangalore", "Bengaluru", "Hyderabad",
+    "Chennai", "Kolkata", "Pune", "Ahmedabad"
+  ],
+  "tier2": [
+    "Jaipur", "Lucknow", "Chandigarh", "Indore", "Nagpur", "Coimbatore",
+    "Kochi", "Patna", "Bhopal", "Visakhapatnam", "Vadodara", "Surat",
+    "Thiruvananthapuram", "Ludhiana", "Agra", "Nashik", "Ranchi", "Varanasi",
+    "Guwahati", "Bhubaneswar", "Dehradun", "Raipur", "Mysore", "Mysuru",
+    "Jodhpur", "Madurai", "Amritsar", "Allahabad", "Prayagraj", "Vijayawada",
+    "Gwalior", "Jabalpur", "Aurangabad", "Tiruchirappalli", "Salem",
+    "Hubli", "Belgaum", "Belagavi", "Mangalore", "Mangaluru", "Bareilly",
+    "Moradabad", "Aligarh", "Gorakhpur", "Bikaner", "Udaipur", "Ajmer",
+    "Kota", "Bhavnagar", "Rajkot", "Jammu", "Srinagar", "Gurgaon",
+    "Gurugram", "Noida", "Faridabad", "Ghaziabad", "Meerut", "Navi Mumbai",
+    "Thane", "Howrah", "Durgapur", "Asansol", "Siliguri", "Cuttack",
+    "Warangal", "Guntur", "Solapur", "Kolhapur", "Sangli", "Nellore",
+    "Tirupati", "Tirumala", "Kozhikode", "Calicut", "Thrissur", "Kannur",
+    "Kollam", "Ernakulam", "Pondicherry", "Puducherry", "Shimla", "Gangtok",
+    "Shillong", "Imphal", "Aizawl", "Itanagar", "Kohima", "Agartala",
+    "Panaji", "Silvassa", "Daman", "Leh", "Port Blair", "Kavaratti"
+  ]
+}

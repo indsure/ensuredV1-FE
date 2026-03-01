@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://policy.sach.ai/schemas/BaseAuditObject.schema.json",
+  "title": "BaseAuditObject",
+  "description": "Canonical base schema for all audit artifacts. Ensures traceability and version control.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "analysis_id",
+    "generated_at",
+    "prompt_hash",
+    "model_version",
+    "policy_wordings_checksum"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the schema used (e.g., 2.0.0)."
+    },
+    "analysis_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this specific analysis run."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of generation."
+    },
+    "prompt_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 hash of the prompt used."
+    },
+    "model_version": {
+      "type": "string",
+      "description": "Identifier of the AI model used (e.g., gemini-1.5-pro-002)."
+    },
+    "policy_wordings_checksum": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 checksum of the policy wordings file."
+    }
+  },
+  "additionalProperties": false,
+  "_compatibility": {
+    "major": "Breaking changes requiring frontend update.",
+    "minor": "Backward compatible additions.",
+    "frontend_rejection_condition": "If schema_version major version > frontend supported version."
+  }
+}

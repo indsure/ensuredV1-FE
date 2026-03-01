@@ -1,0 +1,14 @@
+SAMPLE POLICY WORDING FOR NIVA BUPA REASSURE 2.0 (2024)
+(Official text placeholder for strict provenance verification)
+
+This file exists to validate the Internal KB lookup path in policyWordingsFetcher.ts.
+
+Metdata:
+Insurer: Niva Bupa Health Insurance Company Limited
+Plan: ReAssure 2.0 (Verified via plan_aliases.json)
+Year: 2024
+
+Clauses:
+Clause 4.1: Room Rent capped at Single Private Room.
+Clause 5.2: 30 days initial waiting period.
+Clause 6.1: Pre-existing disease waiting period is 36 months.
