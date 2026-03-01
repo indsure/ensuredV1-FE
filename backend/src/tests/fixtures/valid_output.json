@@ -1,0 +1,172 @@
+{
+    "schema_version": "2.0.0",
+    "analysis_id": "123e4567-e89b-12d3-a456-426614174000",
+    "generated_at": "2026-02-03T12:00:00Z",
+    "prompt_hash": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+    "model_version": "gemini-3-pro-preview",
+    "policy_wordings_checksum": "f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5",
+    "identity": {
+        "insured_names": [
+            "John Doe"
+        ],
+        "confidence": "high",
+        "assumed_zone": "A",
+        "ages": [
+            "35"
+        ],
+        "genders": [
+            "Male"
+        ],
+        "city": "Mumbai",
+        "health_flags": []
+    },
+    "audit_ledger": {
+        "initial_score": 100,
+        "entries": [
+            {
+                "penalty_points": -15,
+                "category": "ROOM_RENT",
+                "reason": "Room rent capped",
+                "impact_scenario": "High OOP payment",
+                "clause_ref": {
+                    "clause_id": "4.1",
+                    "page_number": 5,
+                    "text_snippet": "Room rent capped at 1%",
+                    "confidence": 0.99
+                }
+            }
+        ],
+        "final_score": 85
+    },
+    "policy_metadata": {
+        "insurer_normalized": "Niva Bupa",
+        "plan_name_normalized": "ReAssure",
+        "policy_type": "HEALTH",
+        "extraction_method": "OCR_TEXT",
+        "policy_document_page_count": 12,
+        "file_sha256": "f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5",
+        "extracted_date": "2026-02-01"
+    },
+    "policy_timeline": {
+        "policy_tenure_years": 1,
+        "analysis_date": "2026-02-03",
+        "confidence": "high",
+        "policy_inception_date": "2024-01-01",
+        "policy_expiry_date": "2025-01-01",
+        "policy_age_days": 365
+    },
+    "coverage_structure": {
+        "base_sum_insured": 500000,
+        "total_effective_coverage": 500000,
+        "confidence": "high",
+        "riders": [],
+        "top_up": {
+            "exists": false,
+            "remarks": null,
+            "sum_insured": null,
+            "deductible": null,
+            "type": null,
+            "deductible_achievable": null
+        },
+        "super_top_up": {
+            "exists": false,
+            "remarks": null,
+            "sum_insured": null,
+            "deductible": null,
+            "deductible_achievable": null
+        },
+        "restoration": {
+            "exists": false,
+            "remarks": null,
+            "type": null,
+            "restore_amount": null,
+            "trigger_conditions": null,
+            "actually_useful": null
+        }
+    },
+    "waiting_period_analysis": {
+        "initial_waiting_period": {
+            "duration_days": 30,
+            "end_date": "2024-02-01",
+            "is_active_today": false,
+            "risk_commentary": null
+        },
+        "pre_existing_disease": {
+            "duration_months": 24,
+            "months_remaining": 0,
+            "start_date": "2024-01-01",
+            "end_date": "2026-01-01",
+            "is_active_today": false,
+            "risk_commentary": null,
+            "clause_ref": {
+                "clause_id": "6.1",
+                "page_number": 8,
+                "text_snippet": "PED 24 months",
+                "confidence": 0.99
+            }
+        },
+        "specific_diseases": {
+            "duration_months": 24,
+            "diseases_covered": [
+                "Cataract"
+            ],
+            "end_date": "2026-01-01",
+            "is_active_today": false,
+            "risk_commentary": null,
+            "clause_ref": {
+                "clause_id": "6.2",
+                "page_number": 8,
+                "text_snippet": "Specific diseases 24 months",
+                "confidence": 0.99
+            }
+        },
+        "policy_fully_active": true
+    },
+    "claim_risk_analysis": {
+        "room_rent": {
+            "limit_type": "percentage_of_si",
+            "limit_value": "1%",
+            "risk_level": "medium",
+            "explanation": "Capped at 1%",
+            "clause_ref": {
+                "clause_id": "4.1",
+                "page_number": 5,
+                "text_snippet": "Room rent 1%",
+                "confidence": 0.99
+            }
+        },
+        "co_payment": {
+            "exists": false,
+            "percentage": null,
+            "conditions": null,
+            "risk_level": "low",
+            "oop_on_5L_claim": null,
+            "clause_ref": {
+                "clause_id": "4.2",
+                "page_number": 5,
+                "text_snippet": "No copay",
+                "confidence": 0.99
+            }
+        },
+        "sub_limits": {
+            "exists": false,
+            "risk_level": "low",
+            "remarks": null,
+            "categories": []
+        },
+        "deductibles": {
+            "base_deductible": 0,
+            "per_claim_impact": null,
+            "remarks": null
+        }
+    },
+    "supplementary_coverage": {},
+    "final_verdict": {
+        "label": "SAFE",
+        "summary": "Good policy",
+        "key_failure_points": [],
+        "will_this_policy_protect_in_real_claim": "Yes",
+        "verdict_clause_refs": []
+    },
+    "confidence_notes": []
+}
