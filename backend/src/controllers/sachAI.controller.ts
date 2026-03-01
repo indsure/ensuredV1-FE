@@ -3,20 +3,31 @@ import fs from "fs";
 import path from "path";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SACH_AI_SYSTEM_PROMPT } from "../constants";
+import { AI_CONFIG } from "../config";
 import { analysisJobs } from "../utils/jobManager";
+import { getRAGService } from "../services/rag.service";
+import type { UserProfile } from "../types/userProfile";
 
 export async function handleSachAI(req: Request, res: Response) {
+  const requestId = `sach-${Date.now()}`;
+
   try {
-    const { messages = [], jobId } = req.body;
+    const { messages = [], jobId, userProfile } = req.body;
 
     let policyText = "";
+    let insurer: string | null = null;
+    let plan: string | null = null;
+    let year: number | null = null;
 
     if (jobId) {
       const job = analysisJobs.get(jobId);
       policyText = job?.result?.__internal?.policyText || "";
+      insurer = job?.result?.__internal?.insurer || null;
+      plan = job?.result?.__internal?.plan || null;
+      year = job?.result?.__internal?.year ? Number(job.result.__internal.year) : null;
     }
 
-    // fallback to demo policy if no job text
+    // Fallback to demo policy if no job text
     if (!policyText) {
       try {
         const demoPath = path.join(
@@ -25,18 +36,53 @@ export async function handleSachAI(req: Request, res: Response) {
           "knowledge_base",
           "demo_policy.txt"
         );
-        console.log("Loading Demo Policy from:", demoPath);
         policyText = fs.readFileSync(demoPath, "utf-8");
       } catch (e) {
-        console.error("FAILED to load demo policy:", e);
         policyText = "No policy uploaded yet.";
+      }
+    }
+
+    // Build context: use per-question RAG retrieval if DB available
+    let contextText = policyText;
+    const lastMessage = messages[messages.length - 1];
+
+    if (
+      process.env.DATABASE_URL &&
+      insurer &&
+      plan &&
+      lastMessage?.content
+    ) {
+      try {
+        const ragService = getRAGService();
+        const ragContext = await ragService.assembleContext({
+          uploadedPolicyText: policyText,
+          insurer,
+          plan,
+          year: year ?? undefined,
+          userProfile: userProfile as UserProfile | undefined,
+          queryType: "chat",
+          chatQuery: lastMessage.content,
+        });
+
+        contextText = ragContext.contextText;
+        console.log(
+          `[SachAI] RAG: ${ragContext.chunksUsed} chunks retrieved for query`
+        );
+
+        // Add RAG headers for transparency
+        res.setHeader("X-Request-Id", requestId);
+        res.setHeader("X-RAG-Chunks-Used", ragContext.chunksUsed.toString());
+        res.setHeader("X-KB-Coverage", ragContext.kbCoverage);
+      } catch (ragErr) {
+        console.warn("[SachAI] RAG failed, using full policy text:", (ragErr as Error).message);
+        // Fall through to use full policyText
       }
     }
 
     const systemPrompt =
       SACH_AI_SYSTEM_PROMPT +
-      "\n\nUPLOADED POLICY TEXT (SOURCE OF TRUTH):\n" +
-      policyText;
+      "\n\nPOLICY CONTEXT (SOURCE OF TRUTH):\n" +
+      contextText;
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -47,7 +93,7 @@ export async function handleSachAI(req: Request, res: Response) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-pro-preview",
+      model: AI_CONFIG.model,
     });
 
     // Format history for SDK
@@ -55,8 +101,6 @@ export async function handleSachAI(req: Request, res: Response) {
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     }));
-
-    const lastMessage = messages[messages.length - 1];
 
     if (!lastMessage || !lastMessage.content) {
       throw new Error("Invalid message format: missing content");
@@ -114,6 +158,7 @@ export async function handleSachAI(req: Request, res: Response) {
     res.setHeader("Content-Type", "text/plain");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Request-Id", requestId);
 
     try {
       for await (const chunk of result.stream) {
@@ -160,9 +205,12 @@ export async function handleSachAI(req: Request, res: Response) {
 
     if (!res.headersSent) {
       res.status(500).json({
-        message: "Sach AI service failed",
-        details: err.message,
-        hint: "Check sach_debug.log",
+        success: false,
+        error: {
+          code: "AI_ERROR",
+          message: "Sach AI service failed",
+          details: err.message,
+        },
       });
     } else {
       res.end();

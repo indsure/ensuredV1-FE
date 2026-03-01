@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { upload } from "../middlewares";
 import { extractPolicyText } from "../services/extraction.service";
 import { POLICY_EXTRACTION_PROMPT } from "../constants";
+import { AI_CONFIG } from "../config";
 import { transformRawExtraction } from "../utils/policyTransformer";
 import type { RawPolicyExtraction } from "../types/policy";
 import {
@@ -126,10 +127,10 @@ export async function handleExtractPolicy(req: Request, res: Response) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-pro-preview",
+      model: AI_CONFIG.model,
       generationConfig: {
-        temperature: 0,
-        topP: 0.95,
+        temperature: AI_CONFIG.generation_config.temperature,
+        topP: AI_CONFIG.generation_config.top_p,
       },
     });
 

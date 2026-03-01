@@ -9,6 +9,9 @@ import {
   handlePdfTest,
   handleGeneratePdf,
   handleSachAI,
+  handleCreateProfile,
+  handleGetProfile,
+  handleGetHistory,
 } from "../controllers";
 
 const router = Router();
@@ -29,5 +32,10 @@ router.post("/generate-pdf", handleGeneratePdf);
 
 // Sach AI
 router.post("/sach-ai", handleSachAI);
+
+// User profiles
+router.post("/user/profile", handleCreateProfile);
+router.get("/user/profile/:id", handleGetProfile);
+router.get("/user/history/:profileId", handleGetHistory);
 
 export default router;

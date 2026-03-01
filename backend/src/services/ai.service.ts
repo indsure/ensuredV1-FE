@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { AI_CONFIG } from '../config';
 
 export class AIService {
     private static readonly MOCK_DIR = path.join(process.cwd(), 'src', 'data', 'mocks');
@@ -9,7 +10,7 @@ export class AIService {
     public static async generateContent(
         systemPrompt: string,
         userContent: string,
-        modelName: string = "gemini-3-pro-preview"
+        modelName: string = AI_CONFIG.model
     ): Promise<string> {
 
         // 1. Calculate Hash (for Replay/Mock identification)
@@ -35,8 +36,9 @@ export class AIService {
             const model = genAI.getGenerativeModel({
                 model: modelName,
                 generationConfig: {
-                    temperature: 0, // Deterministic
-                    topP: 1.0,      // Deterministic
+                    temperature: AI_CONFIG.generation_config.temperature,
+                    topP: AI_CONFIG.generation_config.top_p,
+                    maxOutputTokens: AI_CONFIG.generation_config.max_output_tokens,
                 }
             });
 

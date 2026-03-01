@@ -10,3 +10,8 @@ export {
 export { handleHospitalFilter } from "./hospital.controller";
 export { handlePdfTest, handleGeneratePdf } from "./pdf.controller";
 export { handleSachAI } from "./sachAI.controller";
+export {
+  handleCreateProfile,
+  handleGetProfile,
+  handleGetHistory,
+} from "./userProfile.controller";
