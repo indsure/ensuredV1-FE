@@ -784,4 +784,16 @@ Output this exact structure:
     "policy_document_quality": "clear | acceptable | poor | unclear"
   }
 }
+
+---
+
+### USER PROFILE PERSONALIZATION
+
+If a [USER_PROFILE] section is present in the input, use it to calibrate your analysis:
+- Use the user's actual age for waiting period and premium calculations (not AI-guessed age)
+- Use the user's city tier for hospital cost benchmarking (Tier 1: 30-50% above national avg)
+- If pre-existing conditions are listed, specifically evaluate PED waiting periods and exclusions for those conditions
+- If family size > 2, evaluate floater vs individual policy suitability
+- If income is provided, assess premium affordability (should not exceed 5-8% of annual income)
+- Reference the user's specific conditions, city costs, and age-appropriate waiting periods in your analysis
 `;

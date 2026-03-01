@@ -15,10 +15,18 @@ export class ContextAssembler {
     public static async assemble(
         schemaJson: string,
         userEvidenceText: string,
-        officialWordingsText: string
+        officialWordingsText: string,
+        userProfileContext?: string,
+        retrievedContext?: string
     ): Promise<AssembledContext> {
 
-        let masterPrompt = fs.readFileSync(this.PROMPT_PATH, 'utf-8');
+        let masterPrompt: string;
+        try {
+            masterPrompt = fs.readFileSync(this.PROMPT_PATH, 'utf-8');
+        } catch {
+            // If the file doesn't exist, use a minimal template
+            masterPrompt = '[SYSTEM_RULES]\n[AUDIT_TASK]';
+        }
 
         const systemRules = this.extractSection(masterPrompt, '[SYSTEM_RULES]');
         const taskInstructions = this.extractSection(masterPrompt, '[AUDIT_TASK]');
@@ -30,20 +38,25 @@ export class ContextAssembler {
         if (truncatedEvidence.length < userEvidenceText.length) truncatedSections.push('USER_EVIDENCE');
         if (truncatedWordings.length < officialWordingsText.length) truncatedSections.push('OFFICIAL_POLICY_WORDINGS');
 
-        const finalPrompt = `
-${systemRules}
+        const parts = [
+            systemRules,
+            `[SCHEMA_DEFINITION]\n${schemaJson}`,
+            `[USER_EVIDENCE]\n${truncatedEvidence}`,
+            `[OFFICIAL_POLICY_WORDINGS]\n${truncatedWordings}`,
+        ];
 
-[SCHEMA_DEFINITION]
-${schemaJson}
+        // New sections: user profile and retrieved context
+        if (retrievedContext) {
+            parts.push(`[RETRIEVED_CONTEXT]\n${retrievedContext}`);
+        }
 
-[USER_EVIDENCE]
-${truncatedEvidence}
+        if (userProfileContext) {
+            parts.push(`[USER_PROFILE]\n${userProfileContext}`);
+        }
 
-[OFFICIAL_POLICY_WORDINGS]
-${truncatedWordings}
+        parts.push(taskInstructions);
 
-${taskInstructions}
-    `.trim();
+        const finalPrompt = parts.filter(Boolean).join('\n\n').trim();
 
         const hash = crypto.createHash('sha256').update(finalPrompt).update(JSON.stringify(AI_CONFIG)).digest('hex');
 

@@ -3,6 +3,7 @@ import type { Express } from "express";
 import type { AnalysisJob } from "../interfaces";
 import { extractPolicyText } from "./extraction.service";
 import { AIService } from "./ai.service";
+import { AI_CONFIG } from "../config";
 import {
   MASTER_AUDIT_PROMPT,
   LIFE_INSURANCE_PROMPT,
@@ -14,12 +15,15 @@ import {
   mergePolicyTexts,
 } from "../utils/policyWordingsFetcher";
 import { SuitabilityEngine } from "./suitability.service";
+import { getRAGService } from "./rag.service";
+import type { UserProfile } from "../types/userProfile";
 
 export async function runAnalysisPipeline(
   job: AnalysisJob,
   jobId: string,
   uploadedFile: Express.Multer.File,
-  insuranceType: string
+  insuranceType: string,
+  userProfile?: UserProfile
 ): Promise<void> {
   let globalTimeout: NodeJS.Timeout | undefined;
 
@@ -57,37 +61,38 @@ export async function runAnalysisPipeline(
     const metadata = await extractPolicyMetadata(uploadedPolicyText);
     console.log(`[Job ${jobId}] Metadata extracted:`, metadata);
 
-    // Step 2: Fetch official policy wordings if metadata available
-    let wordingsText: string | null = null;
-    if (metadata.insurer && metadata.product) {
-      console.log(
-        `[Job ${jobId}] Fetching policy wordings for ${metadata.insurer} - ${metadata.product}...`
-      );
-      wordingsText = await fetchPolicyWordings(
-        metadata.insurer,
-        metadata.product || "",
-        metadata.plan || "",
-        metadata.year || ""
-      );
-      if (wordingsText) {
+    // Step 2: Try RAG-based context assembly first, fallback to legacy
+    let policyText: string;
+    let ragProvenance: any = null;
+
+    if (process.env.DATABASE_URL && metadata.insurer && metadata.product) {
+      try {
+        console.log(`[Job ${jobId}] Using RAG pipeline for context assembly...`);
+        const ragService = getRAGService();
+        const ragContext = await ragService.assembleContext({
+          uploadedPolicyText,
+          insurer: metadata.insurer,
+          plan: metadata.product || metadata.plan || "",
+          year: metadata.year ? Number(metadata.year) : undefined,
+          userProfile,
+          queryType: "analyze",
+        });
+
+        policyText = ragContext.contextText;
+        ragProvenance = ragContext.provenance;
+
         console.log(
-          `[Job ${jobId}] Policy wordings fetched, length:`,
-          wordingsText.length
+          `[Job ${jobId}] RAG context assembled: ${ragContext.chunksUsed} chunks, coverage=${ragContext.kbCoverage}`
         );
-      } else {
-        console.log(
-          `[Job ${jobId}] Policy wordings not found, proceeding with uploaded document only`
-        );
+      } catch (ragErr) {
+        console.warn(`[Job ${jobId}] RAG failed, falling back to legacy:`, (ragErr as Error).message);
+        policyText = await legacyContextAssembly(jobId, uploadedPolicyText, metadata);
       }
     } else {
-      console.log(
-        `[Job ${jobId}] Insufficient metadata to fetch wordings, proceeding with uploaded document only`
-      );
+      policyText = await legacyContextAssembly(jobId, uploadedPolicyText, metadata);
     }
 
-    // Step 3: Merge uploaded text with wordings
-    const policyText = mergePolicyTexts(uploadedPolicyText, wordingsText);
-    console.log(`[Job ${jobId}] Merged text length:`, policyText.length);
+    console.log(`[Job ${jobId}] Final context length:`, policyText.length);
 
     // Select prompt based on insurance type
     let promptToUse = MASTER_AUDIT_PROMPT;
@@ -98,15 +103,15 @@ export async function runAnalysisPipeline(
       promptToUse = VEHICLE_INSURANCE_PROMPT;
     }
 
-    // Call AIService
-    console.log(`[Job ${jobId}] Calling AIService...`);
+    // Call AIService with correct model name
+    console.log(`[Job ${jobId}] Calling AIService with model: ${AI_CONFIG.model}...`);
 
     let rawText: string;
     try {
       rawText = await AIService.generateContent(
         promptToUse,
         policyText,
-        "gemini-3-pro-preview"
+        AI_CONFIG.model
       );
     } catch (aiError: any) {
       console.error(`[Job ${jobId}] AI Service Error:`, aiError);
@@ -135,21 +140,26 @@ export async function runAnalysisPipeline(
       return;
     }
 
-    // Structural suitability check
-    const userProfile = {
-      age: parsed.identity?.ages?.[0]
+    // Structural suitability check — prefer user profile over AI-parsed data
+    const suitabilityProfile = {
+      age: userProfile?.age ?? (parsed.identity?.ages?.[0]
         ? parseInt(parsed.identity.ages[0])
-        : 35,
-      cityTier:
+        : 35),
+      cityTier: userProfile?.cityTier ?? (
         parsed.identity?.assumed_zone === "A"
           ? ("Tier 1" as const)
-          : ("Tier 2" as const),
-      hasPED: parsed.identity?.health_flags?.length > 0,
+          : ("Tier 2" as const)
+      ),
+      hasPED: userProfile?.preExistingConditions?.length
+        ? userProfile.preExistingConditions.length > 0
+        : parsed.identity?.health_flags?.length > 0,
+      pedCount: userProfile?.preExistingConditions?.length ?? undefined,
+      familySize: userProfile?.familySize,
     };
 
     const suitability = SuitabilityEngine.evaluate(
       parsed.coverage_structure?.base_sum_insured || 500000,
-      userProfile,
+      suitabilityProfile,
       parsed.claim_risk_analysis
     );
 
@@ -170,8 +180,12 @@ export async function runAnalysisPipeline(
     job.result = {
       ...parsed,
       suitability_analysis: suitability,
+      rag_provenance: ragProvenance,
       __internal: {
-        policyText,
+        policyText: uploadedPolicyText,
+        insurer: metadata.insurer,
+        plan: metadata.product || metadata.plan,
+        year: metadata.year,
       },
     };
     job.completedAt = Date.now();
@@ -197,7 +211,7 @@ export async function runAnalysisPipeline(
       errorMessage.includes("404") ||
       errorMessage.includes("not found")
     ) {
-      errorMessage = `Model 'gemini-3-pro-preview' not found or not available. This could mean: 1) The model name is incorrect, 2) Your API key doesn't have access to this model, 3) The model is not available in your region. Please check your GEMINI_API_KEY and verify model availability.`;
+      errorMessage = `AI model '${AI_CONFIG.model}' not found or not available. Please check your API key and model availability.`;
     } else if (
       errorMessage.includes("fetch failed") ||
       errorMessage.includes("ECONNREFUSED") ||
@@ -225,4 +239,36 @@ export async function runAnalysisPipeline(
     job.completedAt = Date.now();
     if (globalTimeout) clearTimeout(globalTimeout);
   }
+}
+
+// Legacy context assembly (fallback when DB is not available)
+async function legacyContextAssembly(
+  jobId: string,
+  uploadedPolicyText: string,
+  metadata: { insurer: string | null; product: string | null; plan: string | null; year: string | number | null }
+): Promise<string> {
+  let wordingsText: string | null = null;
+  if (metadata.insurer && metadata.product) {
+    console.log(
+      `[Job ${jobId}] Fetching policy wordings for ${metadata.insurer} - ${metadata.product}...`
+    );
+    wordingsText = await fetchPolicyWordings(
+      metadata.insurer,
+      metadata.product || "",
+      metadata.plan || "",
+      metadata.year || ""
+    );
+    if (wordingsText) {
+      console.log(
+        `[Job ${jobId}] Policy wordings fetched, length:`,
+        wordingsText.length
+      );
+    } else {
+      console.log(
+        `[Job ${jobId}] Policy wordings not found, proceeding with uploaded document only`
+      );
+    }
+  }
+
+  return mergePolicyTexts(uploadedPolicyText, wordingsText);
 }

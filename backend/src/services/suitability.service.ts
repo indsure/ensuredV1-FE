@@ -3,6 +3,7 @@ export interface UserProfile {
     cityTier?: 'Tier 1' | 'Tier 2' | 'Tier 3';
     hasPED?: boolean;
     pedCount?: number;
+    familySize?: number;
 }
 
 export interface SuitabilityResult {
@@ -69,6 +70,11 @@ export class SuitabilityEngine {
 
         if (profile.pedCount && profile.pedCount > 1) multiplier *= 1.7;
         else if (profile.hasPED || (profile.pedCount === 1)) multiplier *= 1.4;
+
+        // Family size adjustment: each member beyond 2 adds 15% to RBC
+        if (profile.familySize && profile.familySize > 2) {
+            multiplier *= (1 + (profile.familySize - 2) * 0.15);
+        }
 
         return this.BASE_COST * multiplier;
     }

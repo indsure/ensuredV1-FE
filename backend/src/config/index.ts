@@ -1,5 +1,7 @@
 export const AI_CONFIG = {
-    model: "gemini-1.5-pro-preview-0514", // Locked version
+    model: "gemini-2.0-flash",
+    embedding_model: "text-embedding-004",
+    embedding_dimensions: 768,
     generation_config: {
         temperature: 0.0,      // Maximum determinism
         top_p: 1.0,           // No nucleus sampling randomness
@@ -21,6 +23,25 @@ export const AI_CONFIG = {
         audit_task: 500
     },
     timeout_ms: 120000 // 2 minutes hard timeout
+};
+
+export const RAG_CONFIG = {
+    policy: {
+        topK: 5,
+        scoreThreshold: 0.3,
+        maxChunkChars: 1200,
+        chunkOverlap: 150,
+        minChunkChars: 200,
+    },
+    hospital: {
+        topK: 10,
+        scoreThreshold: 0.3,
+    },
+    embedding: {
+        batchSize: 50,
+        rateLimitDelayMs: 100,
+        maxRetries: 3,
+    },
 };
 
 export const APP_CONFIG = {
