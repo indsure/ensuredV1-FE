@@ -69,10 +69,9 @@ const server = createServer(app);
 
 app.use(
   cors({
-    origin: "http://localhost:5174",
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"],
-    credentials: true,
+    origin: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -94,8 +93,8 @@ app.use(
 
 /* ---------------- BODY PARSING ---------------- */
 
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: false, limit: "50mb" }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 
 /* ---------------- AUTH ROUTES ────────────────── */
 
