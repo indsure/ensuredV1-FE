@@ -220,7 +220,7 @@ export default function VehiclePage() {
       <Header />
 
       {/* Hero Section with Upload on Right */}
-      <section className="relative z-10 pt-6 pb-10 md:pt-10 md:pb-16 px-6">
+      <section className="relative z-10 pt-32 sm:pt-36 md:pt-40 pb-10 md:pb-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
             {/* Left: Content */}

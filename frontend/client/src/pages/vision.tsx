@@ -107,7 +107,7 @@ export default function Vision() {
       <Header />
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 max-w-6xl mx-auto px-6 py-12 w-full">
+      <main className="relative z-10 flex-1 max-w-6xl mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-12 w-full">
         {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#1A3A52] via-[#4A9B9E] to-[#3CBBA0] mb-6 shadow-xl relative group">

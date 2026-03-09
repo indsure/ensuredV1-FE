@@ -200,7 +200,7 @@ export default function CalculatorPage() {
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans flex flex-col">
       <Header />
-      <main className="flex-grow flex flex-col items-center justify-center p-6 pt-24">
+      <main className="flex-grow flex flex-col items-center justify-center p-4 sm:p-6 pt-32 sm:pt-36 md:pt-40">
 
         {/* Progress Bar (Optional) */}
         {currentStepIndex > 0 && (

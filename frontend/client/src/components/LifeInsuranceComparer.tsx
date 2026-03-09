@@ -114,7 +114,7 @@ export function LifeInsuranceComparer() {
     <div className="min-h-screen bg-white dark:bg-[#0F1419] flex flex-col">
       <Header />
 
-      <div className="flex-1 py-12 px-6 md:px-14">
+      <div className="flex-1 pt-32 sm:pt-36 md:pt-40 pb-12 px-4 sm:px-6 md:px-14 overflow-x-hidden">
         <div className="max-w-[1200px] mx-auto">
           {/* Header */}
           <div className="mb-8">

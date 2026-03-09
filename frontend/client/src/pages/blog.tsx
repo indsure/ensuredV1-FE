@@ -95,7 +95,7 @@ export default function Blog() {
       <Breadcrumbs items={[{ label: "Blog" }]} />
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 max-w-7xl mx-auto px-6 py-8 md:py-12 w-full">
+      <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-8 md:pb-12 w-full">
         {/* Hero Section */}
         <div className="text-center mb-16 pt-8 md:pt-12">
           <h1 className="text-4xl md:text-5xl lg:text-[48px] font-bold font-serif text-[var(--color-text-main)] mb-4 leading-[1.1]">

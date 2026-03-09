@@ -67,7 +67,7 @@ export default function PolicyChecker() {
     <div className="min-h-screen bg-[var(--color-cream-main)] flex flex-col font-sans text-[var(--color-navy-900)]">
       <Header />
 
-      <main className="flex-grow pt-24 pb-20 px-6 max-w-7xl mx-auto w-full">
+      <main className="flex-grow pt-32 sm:pt-36 md:pt-40 px-4 sm:px-6 max-w-7xl mx-auto w-full overflow-x-hidden">
         <PolicyCheckerLanding
           getRootProps={getRootProps}
           getInputProps={getInputProps}
