@@ -11,11 +11,8 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": [
-      "ES2022",
-      "DOM"
-    ],
-    "outDir": "dist",
+    "lib": ["ES2022", "DOM"],
+    "outDir": "build",
     "rootDir": "server",
     "strict": true,
     "esModuleInterop": true,
