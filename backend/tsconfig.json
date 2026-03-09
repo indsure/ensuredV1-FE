@@ -6,7 +6,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2022", "DOM"],
-    "outDir": "dist",
+    "outDir": "build",
     "rootDir": "server",
     "strict": true,
     "esModuleInterop": true,
