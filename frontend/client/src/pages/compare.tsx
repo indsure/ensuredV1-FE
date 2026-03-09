@@ -39,7 +39,7 @@ export interface PolicyReport {
     waiting_period_analysis?: { pre_existing_disease?: { duration_months?: number } };
     benefit_evaluation?: { no_claim_bonus?: { exists?: boolean; percentage?: number; remarks?: string } };
     audit_ledger?: { final_score?: number };
-    final_verdict?: { label?: string; summary?: string };
+    final_verdict?: { label?: string; summary?: string; key_failure_points?: string[] };
   };
 }
 
@@ -573,7 +573,7 @@ export default function ComparePage() {
 
       <main className="flex-grow pt-32 sm:pt-36 md:pt-40 pb-12 md:pb-20 px-4 sm:px-6 w-full overflow-x-hidden">
         <AnimatePresence mode="wait">
-          {viewState === "INPUT" && (
+          {!policies && (
             <motion.div
               key="input"
               initial="hidden"
