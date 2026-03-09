@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getApiBase } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -164,7 +165,7 @@ export default function UploadStep() {
         });
       }, 200);
 
-      const response = await fetch("/api/extract-policy", {
+      const response = await fetch(`${getApiBase()}/api/extract-policy`, {
         method: "POST",
         body: formData,
       });

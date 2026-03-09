@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { getApiBase } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import {
   Upload, CheckCircle2, MapPin, Plus, Loader2, AlertCircle, X, FileText, ChevronDown,
@@ -538,7 +539,7 @@ export default function ComparePage() {
         filledSlots.map(async (file) => {
           const formData = new FormData();
           formData.append("policy_pdf", file);
-          const res = await fetch("/api/extract-policy", { method: "POST", body: formData, credentials: "include" });
+          const res = await fetch(`${getApiBase()}/api/extract-policy`, { method: "POST", body: formData, credentials: "include" });
           if (!res.ok) {
             const err = await res.json().catch(() => ({ error: "Unknown error" }));
             throw new Error(err.error || `Failed to extract "${file.name}"`);

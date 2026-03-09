@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { getApiBase } from "@/lib/queryClient";
 import {
     Shield, CheckCircle2, AlertCircle,
     ChevronDown, ChevronUp, FileText, Printer,
@@ -349,7 +350,7 @@ export function PolicyAuditReport({ data }: PolicyAuditReportProps) {
         const city = data.identity?.city;
         if (!city) return;
 
-        fetch(`/api/hospitals/filter?city=${encodeURIComponent(city)}`)
+        fetch(`${getApiBase()}/api/hospitals/filter?city=${encodeURIComponent(city)}`)
             .then(r => r.json())
             .then((result) => {
                 const cityRow = result.cityLevel?.[0];

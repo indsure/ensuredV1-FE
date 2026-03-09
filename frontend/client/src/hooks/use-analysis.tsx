@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { getApiBase } from "@/lib/queryClient";
 import type { ReactNode } from "react";
 import { AnalysisResponse, AnalysisState } from "@/lib/types";
 
@@ -62,7 +63,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     jobId: string
   ): Promise<{ status: string; result?: any; error?: string }> => {
     try {
-      const response = await fetch(`/api/analyze/status/${jobId}`);
+      const response = await fetch(`${getApiBase()}/api/analyze/status/${jobId}`);
       if (!response.ok) {
         throw new Error(`Status check failed: ${response.status}`);
       }
@@ -86,7 +87,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         formData.append("type", type);
       }
 
-      const response = await fetch("/api/analyze", {
+      const response = await fetch(`${getApiBase()}/api/analyze`, {
         method: "POST",
         body: formData,
       });

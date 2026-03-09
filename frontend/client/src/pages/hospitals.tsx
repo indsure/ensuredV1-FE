@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { getApiBase } from "@/lib/queryClient";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AnimatePresence, motion } from "framer-motion";
@@ -148,7 +149,7 @@ export default function HospitalFilter() {
             if (city) params.append("city", city);
             if (pincode) params.append("pincode", pincode);
 
-            const response = await fetch(`/api/hospitals/filter?${params.toString()}`);
+            const response = await fetch(`${getApiBase()}/api/hospitals/filter?${params.toString()}`);
             const data = await response.json();
 
             if (!response.ok) {
