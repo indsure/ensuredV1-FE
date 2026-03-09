@@ -14,10 +14,7 @@ export function handleAnalyze(req: Request, res: Response) {
 
   try {
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        error: { code: "VALIDATION_ERROR", message: "No file uploaded" },
-      });
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
     uploadedFile = req.file;
@@ -49,10 +46,7 @@ export function handleAnalyze(req: Request, res: Response) {
     };
     setJob(jobId, job);
 
-    res.json({
-      success: true,
-      data: { jobId, status: "pending" },
-    });
+    res.json({ jobId, status: "pending" });
 
     // Process in background (don't await)
     runAnalysisPipeline(
@@ -64,10 +58,7 @@ export function handleAnalyze(req: Request, res: Response) {
     );
   } catch (err: any) {
     console.error("Job creation error:", err);
-    return res.status(500).json({
-      success: false,
-      error: { code: "INTERNAL", message: "Failed to create analysis job" },
-    });
+    return res.status(500).json({ error: "Failed to create analysis job" });
   }
 }
 
@@ -81,11 +72,8 @@ export function handleAnalyzeStatus(req: Request, res: Response) {
   if (!job) {
     console.log(`[Status Check] Job not found: ${jobId}`);
     return res.status(404).json({
-      success: false,
-      error: {
-        code: "NOT_FOUND",
-        message: "Job not found. It may have expired or never existed.",
-      },
+      status: "not_found",
+      error: "Job not found. It may have expired or never existed.",
     });
   }
 
@@ -95,15 +83,12 @@ export function handleAnalyzeStatus(req: Request, res: Response) {
   const { __internal, ...publicResult } = job.result || {};
 
   res.json({
-    success: true,
-    data: {
-      id: job.id,
-      status: job.status,
-      result: job.result ? publicResult : undefined,
-      error: job.error,
-      createdAt: job.createdAt,
-      completedAt: job.completedAt,
-    },
+    id: job.id,
+    status: job.status,
+    result: job.result ? publicResult : undefined,
+    error: job.error,
+    createdAt: job.createdAt,
+    completedAt: job.completedAt,
   });
 }
 
@@ -112,11 +97,7 @@ export const analyzeUploadMiddleware = (req: Request, res: Response, next: Funct
     if (err) {
       console.error("MULTER ERROR:", err);
       return res.status(400).json({
-        success: false,
-        error: {
-          code: "VALIDATION_ERROR",
-          message: "File upload failed: " + (err.message || "Unknown error"),
-        },
+        error: "File upload failed: " + (err.message || "Unknown error"),
       });
     }
     const files = (req as any).files || [];

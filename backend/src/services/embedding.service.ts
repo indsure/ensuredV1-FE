@@ -73,7 +73,8 @@ export class EmbeddingService {
         requests: texts.map((text) => ({
           content: { role: "user", parts: [{ text }] },
           taskType,
-        })),
+          outputDimensionality: AI_CONFIG.embedding_dimensions,
+        } as any)),
       });
 
       return result.embeddings.map((e) => e.values);
@@ -106,7 +107,8 @@ export class EmbeddingService {
         const result = await model.embedContent({
           content: { role: "user", parts: [{ text }] },
           taskType,
-        });
+          outputDimensionality: AI_CONFIG.embedding_dimensions,
+        } as any);
         return result.embedding.values;
       } catch (error: any) {
         if (attempt === retries) {

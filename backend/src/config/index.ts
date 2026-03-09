@@ -1,6 +1,6 @@
 export const AI_CONFIG = {
     model: "gemini-2.0-flash",
-    embedding_model: "text-embedding-004",
+    embedding_model: "gemini-embedding-001",
     embedding_dimensions: 768,
     generation_config: {
         temperature: 0.0,      // Maximum determinism

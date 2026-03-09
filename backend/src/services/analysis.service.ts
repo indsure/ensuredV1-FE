@@ -189,6 +189,7 @@ export async function runAnalysisPipeline(
       },
     };
     job.completedAt = Date.now();
+    console.log(job.result);
     console.log(`[Job ${jobId}] Analysis completed successfully`);
     if (globalTimeout) clearTimeout(globalTimeout);
   } catch (err: any) {
