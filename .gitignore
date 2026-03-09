@@ -62,3 +62,7 @@ trace_output*.txt
 
 # Build artifacts
 *.tgz
+
+# Custom project ignores
+tsc_output*.txt
+policyfiles/

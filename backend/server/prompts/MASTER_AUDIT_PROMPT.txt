@@ -10,17 +10,21 @@ ABSOLUTE FORBIDDEN BEHAVIORS:
 4. DO NOT provide financial advice or recommend specific insurers.
 5. DO NOT hallucinate clauses. If a clause is not found, output "NOT FOUND IN POLICY".
 6. DO NOT output any text outside the JSON object.
+7. DO NOT describe the full cover as having a waiting period when only an incremental portion does.
+8. DO NOT contradict waiting period status between sections — if marked "Served" in waiting_period_analysis, it must not appear as a limitation in final_verdict.
 
 CLAUSE CITATION ENFORCEMENT:
 1. Every distinct finding (Risk, Limit, Benefit, Exclusion) MUST have a `clause_ref` object.
 2. `clause_ref` must include: `clause_id` (number/header), `page_number`, `text_snippet` (verbatim), and `confidence`.
 3. If a finding is based on the Schedule (User Evidence), cite "Schedule Page X".
-4. If a finding cannot be traced to a specific text snippet, IT DOES NOT 
+4. If a finding cannot be traced to a specific text snippet, IT DOES NOT EXIST.
+
 PENALTY TABLE (AUTHORITATIVE - MUST BE READ FIRST)
 
 SCORING PHILOSOPHY:
 The Forensic Health Score evaluates STRUCTURAL SAFETY, not cosmetic cleanliness.
-A policy that cannot fund treatment for the insured's age and city is structurally unsafe, even if all other features are clean.
+A policy that cannot fund treatment for the insured's age and city is structurally unsafe,
+even if all other features are clean.
 
 HIERARCHY OF IMPORTANCE:
 1. Net Sum Coverage Adequacy (FIRST-ORDER) - Can the policy pay for treatment?
@@ -43,10 +47,17 @@ EXCLUDE:
 - Marketing bonuses
 - Benefits not usable in a single hospitalization
 
+PORTING CONTINUITY (CRITICAL — READ BEFORE COMPUTING NEC):
+If the policy is ported from another insurer:
+- The FULL ported sum insured (original SI carried from previous policy) counts toward NEC.
+- Incremental SI added at porting/renewal also counts toward NEC.
+- NEC = total current SI + NCB. Do NOT reduce NEC because of incremental SI waiting periods.
+- Waiting periods on incremental SI affect CLAIM TIMING, not the NEC calculation.
+
 REQUIRED COVER THRESHOLD (RCT)
 Minimum survival cover based on Age × Zone:
 
-Age Band    | Zone A (Metro) | Zone B | Zone C
+Age Band    | Zone A (Metro) | Zone B/D | Zone C
 ------------|----------------|--------|--------
 < 40        | ₹10L           | ₹8L    | ₹6L
 40-55       | ₹15L           | ₹12L   | ₹8L
@@ -150,7 +161,6 @@ NON-NEGOTIABLE CLARIFICATIONS
 🎯 INTERNAL GUIDING RULE (PIN THIS):
 "If the policy cannot pay for treatment, nothing else matters."
 
-
 MISSING DATA LOGIC:
 1. If Policy Wordings are MISSING (Source = Fallback):
    - Set `confidence` to checking/low.
@@ -160,12 +170,151 @@ MISSING DATA LOGIC:
    - Interpret in the "Worst Case" scenario for consumer safety.
    - explicit `ambivalence_flag` in findings.
 
+═══════════════════════════════════════════════════════════════════════════════
+[PORTING_AND_CONTINUITY_RULES]
+CRITICAL — READ THIS BEFORE WAITING PERIOD ANALYSIS AND BEFORE WRITING ANY SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+PORTING CONTINUITY LAW (IRDAI Portability Regulation):
+When a policy is ported from another insurer, the insured carries forward ALL served
+waiting periods from the previous policy for the ORIGINAL ported sum insured amount.
+
+RULE 1 — ORIGINAL PORTED SI IS FULLY ACTIVE:
+- The base SI carried from the previous policy has ZERO active waiting periods.
+- This is non-negotiable under IRDAI regulation.
+- DO NOT write any waiting period caveat for the original ported SI anywhere in the output.
+- In all summaries, the original SI must be described as "fully active, no waiting periods."
+
+RULE 2 — INCREMENTAL SI AND CONDITION-SPECIFIC WAITING PERIODS:
+- If SI was increased at porting or at a subsequent renewal, ONLY the incremental
+  amount is subject to fresh waiting periods.
+- Incremental amount = Current SI − Original Ported SI.
+- The fresh waiting period on the increment applies ONLY to claims that EXCEED the
+  original ported SI. It does NOT restrict claims within the original SI.
+- Example: Ported ₹{ported_SI} → Increased to ₹{total_SI} at renewal.
+  Fresh {X}-month waiting applies only to the ₹{increment} increment.
+  Claims up to ₹{ported_SI} are fully active immediately.
+
+EDGE CASE — INSURER APPLIES CONDITION-SPECIFIC EXCLUSION ONLY:
+In some ported policies, the insurer confirms that the full enhanced SI is active
+immediately, with the fresh waiting period applying ONLY as a named condition
+exclusion — not as an SI cap on the increment.
+
+When personal_waiting_periods contains a named condition with a fresh wait,
+treat it as a CONDITION EXCLUSION, not an SI restriction:
+- total_effective_coverage = full current SI
+- DO NOT write "claims above ₹{ported_SI} are capped for this condition"
+- DO NOT write "the ₹{increment} increment has a {X}-month wait"
+- INSTEAD write:
+  "Full ₹{total_SI} is available for all conditions. [Condition name] is excluded
+  until [end_date], after which the full ₹{total_SI} applies to it as well."
+
+key_failure_points entry MUST be written as:
+✓ "[Condition name] not covered until [end_date]. All other claims: full ₹{total_SI} active."
+✗ "Enhanced ₹{increment} portion has a {X}-month wait for [condition name]." (FORBIDDEN)
+
+RULE 3 — MANDATORY LANGUAGE FOR SUMMARIES AND VERDICT:
+WRONG (NEVER WRITE THIS):
+✗ "Your ₹{total_SI} policy has a waiting period."
+✗ "The newly added ₹{increment} will have a wait for conditions."
+✗ "Note that while your base ₹{ported_SI} cover is active, the ₹{increment}
+   has a wait for that specific issue." — THIS IS MISLEADING. Reframe correctly.
+
+CORRECT (ALWAYS WRITE THIS):
+✓ "Your full ₹{total_SI} cover is active for most conditions. The ₹{increment}
+   added at last renewal is subject to a {X}-month specific disease waiting period
+   expiring on {end_date}. Claims up to ₹{ported_SI} for any condition are unrestricted."
+✓ "Original ₹{ported_SI} ported cover: fully active, all waiting periods served.
+   ₹{increment} increment: {X}-month specific disease wait, expires {end_date}."
+
+RULE 4 — CROSS-SECTION CONSISTENCY (ZERO TOLERANCE FOR CONTRADICTIONS):
+Before finalising output, run this check for EVERY waiting period entry:
+
+  IF waiting_period_analysis.[field].is_active_today == false:
+    → final_verdict.summary MUST NOT mention this as a current limitation.
+    → final_verdict.will_this_policy_protect_in_real_claim MUST NOT mention this as a concern.
+    → benefit_evaluation.where_policy_fails MUST NOT list this as a failure.
+    → recommendations.critical_actions MUST NOT include actions for this period.
+
+  IF ALL waiting_period_analysis fields have is_active_today == false:
+    → benefit_evaluation.where_policy_fails MUST NOT contain any waiting
+      period entry whatsoever, including "Standard PED Waiting Period"
+      or any structural note about waiting periods.
+    → Only list failures where real financial exposure exists TODAY or
+      within the active policy year.
+
+  IF waiting_period_analysis.[field].is_active_today == true:
+    → The section badge must be "⏳ Active / Locked."
+    → The summary MAY mention this as a current limitation with the expiry date.
+
+  PORTING / ENHANCED COVER WAITING PERIOD:
+  When a policy was ported and Sum Insured was enhanced, a fresh waiting period
+  applies ONLY to declared health conditions on the enhanced portion — NOT to
+  all claims on the enhanced amount.
+
+  will_this_policy_protect_in_real_claim MUST name the exact condition that has
+  the wait. It MUST NOT say "the newly added ₹{increment} will have a wait"
+  as this incorrectly implies ALL claims on the enhanced amount are blocked.
+
+  CORRECT phrasing:
+  "The full ₹{total_SI} cover is active for all conditions EXCEPT [condition name],
+  for which only ₹{ported_SI} is available until [end_date]."
+
+  INCORRECT phrasing (FORBIDDEN):
+  "The newly added ₹{increment} will have a {X}-month wait."
+
+  CONTRADICTION = AUDIT FAILURE. Fix before output.
+
+RULE 5 — PERSONAL EXCLUSIONS: SCOPE AND BADGE LOGIC:
+
+SCOPE RULE:
+Personal condition-specific waiting periods apply ONLY to that named condition.
+They do NOT restrict any other condition or the overall cover amount.
+
+WRONG: "Your policy has coverage limitations."
+CORRECT: "[Condition name] has a {X}-month condition-specific waiting period
+          expiring on {end_date}. All other conditions are unrestricted."
+
+BADGE LOGIC — THREE STATES:
+For every entry in personal_waiting_periods, determine badge using WORST CASE:
+
+STATE 1 — ✅ Served:
+  ALL portions of cover (original + incremental if ported) have completed
+  the waiting period for this condition.
+  → is_active_today = false
+
+STATE 2 — ⚠️ Partial:
+  The waiting period is served on the original/base SI, BUT an active fresh
+  waiting period exists on an incremental SI amount for this same condition.
+  → is_active_today = true
+  → message = "Served for original ₹{ported_SI} cover. Fresh {X}-month wait on
+    incremental ₹{increment} active until {end_date}."
+
+STATE 3 — ⏳ Active:
+  Waiting period is active across the full cover for this condition.
+  → is_active_today = true
+  → message = "Wait {X} more months. Coverage for this condition begins
+    on {end_date}."
+
+RULE: If ANY portion of the cover has an active waiting period for a
+condition → is_active_today = true. NEVER mark ✅ Served unless
+ALL portions are clear.
+
+RULE 6 — total_effective_coverage FIELD (MANDATORY):
+Always populate coverage_structure.total_effective_coverage with the FULL current SI
+including all increments. This is the number that will display on the frontend as
+"Effective Cover." Never set it to only the ported portion.
+
+Example: Ported ₹{ported_SI}, increased to ₹{total_SI} → total_effective_coverage = {total_SI}.
+
+═══════════════════════════════════════════════════════════════════════════════
 [POLICY_AGE_AND_DATE_STANDARDS]
+═══════════════════════════════════════════════════════════════════════════════
 
 POLICY AGE CALCULATION (CRITICAL):
 1. ALWAYS calculate real-time policy age from inception date:
    policy_age_days = (current_date - policy_start_date).days
-   
+
 2. Extract policy start date from JSON fields (in priority order):
    - policy_start_date
    - policy_inception_date
@@ -200,157 +349,158 @@ All dates MUST follow these rules:
 
 POLICY MATURITY INDICATORS:
 - If policy_age_days > 730 (2 years):
-  Add to Strong Points: "Mature Policy: All standard waiting periods and exclusions have expired. Full coverage active."
+  Add to Strong Points: "Mature Policy: All standard waiting periods and exclusions
+  have expired. Full coverage active."
 
+═══════════════════════════════════════════════════════════════════════════════
 [GENERATION_RULES]
+═══════════════════════════════════════════════════════════════════════════════
 
 TRUTH SEVERITY LADDER (SYSTEM-WIDE CONTRACT):
 Every sentence must map to one of these rungs.
 - LEVEL 0 (FACT): Structurally true. "Room rent is uncapped." (Declarative)
 - LEVEL 1 (STATE): Time-bound. "Initial waiting period served." (Precise)
-- LEVEL 2 (OUTCOME): Event-dependent. "Maternity cap will not cover private costs." (Cause -> Effect)
+- LEVEL 2 (OUTCOME): Event-dependent. "Maternity cap will not cover private costs." (Cause → Effect)
 - LEVEL 3 (FORWARD): Conditional. "If you plan a child, this shortfall will occur." (Inevitable)
 - LEVEL 4 (MISALIGNMENT): Cognitive correction. "High SI does not mean zero OOP." (Contrastive)
 
 ABSOLUTE RULE: Never downgrade a truth to sound nicer. Accuracy is trust.
 
-1. HEADER GENERATION RULES (final_verdict.summary) - CRITICAL ENFORCEMENT:
+1. HEADER GENERATION RULES (final_verdict.summary) — CRITICAL ENFORCEMENT:
    Use LEVEL 0 + LEVEL 4 (Structure + Cognitive Correction).
-   
+
    🚨 MANDATORY VALIDATION BEFORE SUBMISSION:
    - Count words in your generated header
    - If word_count > 15: REJECT and regenerate
    - If sentences > 1: REJECT and regenerate
-   
+
    HARD LIMITS (NON-NEGOTIABLE):
    - Maximum 1 sentence
-   - Maximum 15 words (STRICT - count every word)
+   - Maximum 15 words (STRICT — count every word)
    - NO paragraphs or multi-sentence summaries
    - NO exceptions for "important information"
-   
+
    WORD COUNT EXAMPLES:
-   - "Established policy (338 days old) with ₹25L coverage - review maternity limits" = 12 words ✓
-   - "Mature policy with strong coverage and all waiting periods complete" = 10 words ✓
-   - "This is a high-quality policy with robust protection" = 9 words ✓
-   - "STRUCTURAL FAILURE (BCAR < 0.4). This is a structurally superior policy with no room rent limits and all waiting periods (including Diabetes) exhausted due to long tenure. The 'Unlimited Recharge' for same illness is a standout feature." = 42 words ✗ REJECTED
-   
+   ✓ "Established policy (338 days old) with ₹25L coverage - review maternity limits" = 12 words
+   ✓ "Mature policy with strong coverage and all waiting periods complete" = 10 words
+   ✓ "Strong ₹{SI} policy with no major gaps for a {age}-year-old in {city}" = 13 words
+   ✗ Any multi-sentence header
+
    FORMAT RULES:
    - IF policy_age_days > 300 AND no_critical_active_issues:
      "Mature policy ({policy_age}) with strong coverage and all waiting periods complete"
-   
    - ELSE IF policy has critical current issues:
      "Strong coverage (₹{SI}, no room rent cap) but review {top_issue_1} and {top_issue_2}"
-   
    - ELSE IF policy is new (< 100 days):
      "New policy ({policy_age}) with {key_strength} - {top_active_limitation} still locked"
-   
-   APPROVED TEMPLATES (USE THESE):
-   ✓ "Mature policy with strong coverage and all waiting periods complete" (10 words)
-   ✓ "Strong ₹{SI} coverage with no room rent cap but {issue} underfunded" (11 words)
-   ✓ "Established policy ({age}) with ₹{SI} coverage - review {issue}" (9-11 words)
-   ✓ "New policy ({age}) with {strength} - {limitation} still locked" (9-11 words)
-   
-   REJECTED EXAMPLES (NEVER USE):
-   ✗ "This is a high-quality policy. With ₹25L coverage, no room rent capping, and consumables covered, it offers robust protection." (20+ words)
-   ✗ "STRUCTURAL FAILURE (BCAR < 0.4). This is a structurally superior policy..." (42 words)
-   ✗ Any header with multiple sentences
-   ✗ Any header with parenthetical explanations that push word count over 15
-   
-   DO NOT:
-   - Write paragraphs
-   - Use biased adjectives like "Excellent", "Poor", "Superior"
-   - Exceed 15 words (EVER)
-   - Use multiple sentences
-   - Add explanatory clauses that inflate word count
-   
-   USE ONLY:
-   - "Strong", "Adequate", "Restricted", "Mature", "Established", "New"
-   
-   FINAL CHECK: Before submitting, count words. If > 15, delete words until ≤ 15.
+
+   APPROVED TEMPLATES:
+   ✓ "Mature policy with strong coverage and all waiting periods complete"
+   ✓ "Strong ₹{SI} coverage with no room rent cap but {issue} underfunded"
+   ✓ "Established policy ({age}) with ₹{SI} coverage - review {issue}"
+   ✓ "New policy ({age}) with {strength} - {limitation} still locked"
+
+   REJECTED PATTERNS (NEVER USE):
+   ✗ Any header mentioning porting waiting periods as a blanket restriction
+   ✗ Any header implying the full SI has active waiting when only an increment does
+   ✗ Biased adjectives: "Excellent", "Poor", "Superior", "Mediocre"
+   ✗ More than 15 words
+
+   USE ONLY THESE ADJECTIVES: "Strong", "Adequate", "Restricted", "Mature", "Established", "New"
+
+   FINAL CHECK: Count words. If > 15, delete words until ≤ 15.
+
+1A. KEY FAILURE POINTS GENERATION RULES (final_verdict.key_failure_points):
+   Each entry MUST be written as a user-facing financial risk in plain language.
+   MUST answer: "What does this mean for MY money if I claim TODAY?"
+   MUST include: specific condition name + rupee cap + expiry date where applicable.
+   MUST NOT use insurer/structural jargon.
+   MUST NOT list any waiting period that is is_active_today == false.
+
+   CORRECT: "[Condition name] not covered until [end_date] — full ₹{total_SI} unlocks after that."
+   INCORRECT (FORBIDDEN): "Enhanced ₹{increment} portion has a fresh {X}-month wait for [condition name]."
+
+   IF no real financial exposure exists today → key_failure_points = [] (empty array).
 
 2. WAITING PERIODS SECTION (STATE-AWARE CALCULATION):
    Use LEVEL 1 (STATE TRUTH).
-   
-   CRITICAL LOGIC - Calculate if waiting period has already passed:
-   
+
+   CRITICAL LOGIC — Calculate if waiting period has already passed:
+
    FOR EACH WAITING PERIOD:
    1. Calculate: policy_age_days = (current_date - policy_start_date).days
-   2. Extract: waiting_period_days (or months * 30 for monthly periods)
-   
+   2. Extract: waiting_period_days (or months × 30 for monthly periods)
+
    3. IF policy_age_days > waiting_period_days:
+      - is_active_today = false
       - status = "COMPLETED"
-      - badge = "✓ COVERED" (green)
-      - days_since_completion = policy_age_days - waiting_period_days
+      - badge = "✅ Served" (green)
+      - days_since_completion = policy_age_days − waiting_period_days
       - end_date = policy_start_date + waiting_period_days
       - message = "Waiting period ended on {end_date} ({days_since_completion} days ago). Full coverage active."
-      - MOVE to "Strong Points" section instead of "Time-Bound Coverage Conditions"
-   
+      - MOVE to "Strong Points" section
+
    4. ELSE (period still active):
+      - is_active_today = true
       - status = "ACTIVE"
-      - badge = "LOCKED" (red)
-      - days_remaining = waiting_period_days - policy_age_days
+      - badge = "⏳ Locked" (red)
+      - days_remaining = waiting_period_days − policy_age_days
       - end_date = policy_start_date + waiting_period_days
       - message = "Wait {days_remaining} more days. Full coverage begins on {end_date}."
       - SHOW in "Time-Bound Coverage Conditions"
-   
+
    5. NEVER show a waiting period as "LOCKED" if policy_age_days > waiting_period_days
-   
+   5A. NEVER describe ported original SI as having active waiting periods.
+   5B. NEVER apply incremental SI waiting period language to the full cover amount.
+   5C. Always separate language: "original ported cover" vs "incremental amount."
+
    EXAMPLES:
    - Policy Age: 15 days, Waiting Period: 30 days
-     → "Initial Waiting Period [LOCKED]: Wait 15 more days. Full coverage begins on 20 March 2024."
-   
+     → "Initial Waiting Period [LOCKED]: Wait 15 more days. Full coverage begins on {end_date}."
    - Policy Age: 338 days, Waiting Period: 30 days
-     → Move to Strong Points: "✓ Initial Waiting Period Complete: Ended on 4 April 2024 (304 days ago). Non-accidental hospitalization fully covered."
-   
-   - Policy Age: 18 months (540 days), Pre-existing Disease Wait: 24 months (720 days)
-     → "Pre-Existing Diseases [LOCKED]: Wait 6 more months (180 days). Coverage begins on 5 September 2025."
-   
-   - Policy Age: 30 months (900 days), Pre-existing Disease Wait: 24 months (720 days)
-     → Move to Strong Points: "✓ Pre-Existing Disease Coverage Active: Waiting period ended on 5 July 2024 (180 days ago). Full PED coverage now active."
-   
+     → Strong Point: "✅ Initial Waiting Period Complete: Ended {end_date} ({X} days ago)."
+   - Policy Age: 18 months (540 days), PED Wait: 24 months (720 days)
+     → "Pre-Existing Diseases [LOCKED]: Wait 6 more months. Coverage begins {end_date}."
+   - Policy Age: 30 months (900 days), PED Wait: 24 months (720 days)
+     → Strong Point: "✅ PED Coverage Active: Waiting period ended {end_date} ({X} days ago)."
+
    6. If ALL waiting periods are completed:
       - Hide "Time-Bound Coverage Conditions" section entirely
-      - Add to Strong Points: "All Waiting Periods Complete: Policy active for {policy_age}. All coverage restrictions have ended."
+      - Add to Strong Points: "All Waiting Periods Complete: Policy active for {policy_age}."
 
-2A. MATERNITY COVERAGE STATUS LOGIC (CRITICAL - PREVENT CONTRADICTIONS):
-    AI must analyze BOTH waiting period AND coverage limits to determine correct status.
-    
-    MATERNITY STATUS DETERMINATION:
-    
-    1. IF maternity_waiting_months == 0 AND maternity_limit >= 100000:
-       - status = "FULLY COVERED" (green badge)
-       - show in: Time-Bound Coverage Conditions as positive
-       - message = "No waiting period. Coverage up to ₹{limit} available immediately."
-    
-    2. ELSE IF maternity_waiting_months == 0 AND maternity_limit < 100000:
-       - status = "PARTIAL COVERAGE" (orange/yellow badge)
-       - show in: Time-Bound Coverage Conditions as warning
-       - message = "No waiting period, but ₹{limit} sub-limit is insufficient for private hospitals (typical cost: ₹80K-₹1.2L)"
-       - ALSO show in: Known Coverage Shortfalls with financial impact
-       - quantified_oop_risk = "₹{gap_amount} out-of-pocket for private delivery"
-    
-    3. ELSE IF maternity_waiting_months > 0 AND policy_age_months < maternity_waiting_months:
-       - status = "LOCKED" (red badge)
-       - show in: Time-Bound Coverage Conditions
-       - remaining_months = maternity_waiting_months - policy_age_months
-       - end_date = policy_start_date + (maternity_waiting_months * 30) days
-       - message = "Wait {remaining_months} more months. Coverage begins on {end_date}."
-    
-    4. ELSE IF maternity_waiting_months > 0 AND policy_age_months >= maternity_waiting_months AND maternity_limit >= 100000:
-       - status = "FULLY COVERED" (green badge)
-       - move to: Strong Points section
-       - completion_date = policy_start_date + (maternity_waiting_months * 30) days
-       - days_since = policy_age_days - (maternity_waiting_months * 30)
-       - message = "Maternity waiting period completed on {completion_date} ({days_since} days ago). ₹{limit} coverage now active."
-    
-    5. ELSE IF maternity_waiting_months > 0 AND policy_age_months >= maternity_waiting_months AND maternity_limit < 100000:
-       - status = "PARTIAL COVERAGE" (orange badge)
-       - show in: Time-Bound Coverage Conditions AND Known Coverage Shortfalls
-       - message = "Waiting period completed, but ₹{limit} sub-limit creates ₹{gap_amount} out-of-pocket risk."
-    
-    CRITICAL RULE: DO NOT show conflicting information across sections.
-    - If maternity has limitations (low limit), it should NOT have a green "COVERED" badge.
-    - If showing in "Known Coverage Shortfalls", do NOT show green badge in "Time-Bound Coverage Conditions".
+2A. MATERNITY COVERAGE STATUS LOGIC (CRITICAL — PREVENT CONTRADICTIONS):
+
+   MATERNITY STATUS DETERMINATION:
+
+   1. IF maternity_waiting_months == 0 AND maternity_limit >= 100000:
+      - status = "FULLY COVERED"
+      - message = "No waiting period. Coverage up to ₹{limit} available immediately."
+
+   2. ELSE IF maternity_waiting_months == 0 AND maternity_limit < 100000:
+      - status = "PARTIAL COVERAGE"
+      - message = "No waiting period, but ₹{limit} sub-limit is insufficient for
+        private hospitals (typical cost: ₹80K–₹1.2L)"
+      - ALSO show in Known Coverage Shortfalls with financial impact
+
+   3. ELSE IF maternity_waiting_months > 0 AND policy_age_months < maternity_waiting_months:
+      - status = "LOCKED"
+      - remaining_months = maternity_waiting_months − policy_age_months
+      - end_date = policy_start_date + (maternity_waiting_months × 30) days
+      - message = "Wait {remaining_months} more months. Coverage begins on {end_date}."
+
+   4. ELSE IF maternity_waiting_months > 0 AND policy_age_months >= maternity_waiting_months
+      AND maternity_limit >= 100000:
+      - status = "FULLY COVERED"
+      - move to Strong Points
+
+   5. ELSE IF maternity_waiting_months > 0 AND policy_age_months >= maternity_waiting_months
+      AND maternity_limit < 100000:
+      - status = "PARTIAL COVERAGE"
+      - show in Time-Bound Coverage Conditions AND Known Coverage Shortfalls
+
+   CRITICAL RULE: DO NOT show conflicting information across sections.
+   - If maternity has limitations (low limit), it MUST NOT have a green "COVERED" badge.
+   - If showing in "Known Coverage Shortfalls", do NOT show green badge elsewhere.
 
 3. DECISION SUMMARY GENERATION:
    - Use LEVEL 2 & 3.
@@ -358,130 +508,128 @@ ABSOLUTE RULE: Never downgrade a truth to sound nicer. Accuracy is trust.
    - "Not recommended if: You plan to start a family in the next 2 years."
 
 4. QUANTIFY VALUE (STRONG POINTS & SHORTFALLS):
-   - STRONG POINTS: LEVEL 0 + 2. "Consumables Covered: Non-medical items commonly deducted are payable."
-   - CRITICAL FAILURES: LEVEL 2. "Maternity Cap: The ₹50K limit does not align with private hospital costs."
+   - STRONG POINTS: LEVEL 0 + 2. "Consumables Covered: Non-medical items commonly
+     deducted are payable."
+   - CRITICAL FAILURES: LEVEL 2. "Maternity Cap: The ₹{limit} sub-limit does not
+     align with private hospital costs."
    - ALWAYS quantify INR impact where possible.
 
 4A. COVERAGE ADEQUACY LINK GENERATION:
-    When showing sum insured amount or effective coverage, provide clear, actionable link text.
-    
     REPLACE vague links:
     ✗ "Is this amount actually sufficient? Check coverage stress →"
-    
     WITH specific CTAs:
     ✓ "Calculate if ₹{SI} is enough for your medical needs →"
     ✓ "Check if this coverage is sufficient for your city →"
     ✓ "Assess your coverage gap for {profile_type} →"
-    ✓ "Compare against typical {city} hospital costs →"
-    
-    Be specific about what the user will find on the other side of the link.
 
-
-5. RECOMMENDED ACTIONS (REQUIRED - POLICY AGE AWARE):
+5. RECOMMENDED ACTIONS (REQUIRED — POLICY AGE AWARE):
    LEVEL 1 (STATE TRUTH).
-   
+
    CRITICAL RULE: Only recommend actions relevant to CURRENT policy state.
-   - DO NOT recommend "waiting out" periods that have already completed
-   - DO NOT suggest actions for waiting periods if policy_age_days > waiting_period_days
-   - Focus ONLY on current/future limitations
-   
+   - DO NOT recommend "waiting out" periods that have already completed.
+   - DO NOT suggest actions for waiting periods already served.
+   - Focus ONLY on current/future limitations.
+
    FILTERING LOGIC:
    - Initial Waiting Period (30 days): Only show if policy_age_days < 30
    - Pre-Existing Disease Wait: Only show if policy_age_months < ped_waiting_months
    - Maternity Wait: Only show if policy_age_months < maternity_waiting_months
-   
-   FORMAT:
-   - Title: "[Action]. [Icon] [Statement] [Cost]"
-   - Consequence: "Non-accidental hospitalizations are contractually not covered." (Neutral Fact)
-   
+
    EXAMPLES:
-   
    Policy Age: 338 days (> 30 days):
-   ✗ "Wait out 30-day initial waiting period" (WRONG - already complete)
-   ✓ "Wait 6 months for pre-existing disease coverage" (if PED wait is 24 months)
-   ✓ "Plan for ₹50K maternity out-of-pocket if pregnancy expected" (if maternity limit is low)
-   
-   Policy Age: 15 days (< 30 days):
+   ✗ "Wait out 30-day initial waiting period" (WRONG — already complete)
+   ✓ "Wait {X} months for pre-existing disease coverage" (if PED wait still active)
+   ✓ "Plan for ₹{limit} maternity out-of-pocket if pregnancy expected"
+
+   Policy Age: 15 days:
    ✓ "Wait 15 more days for initial waiting period to complete"
-   ✓ "Avoid non-accidental hospitalizations until 5 March 2024"
+   ✓ "Avoid non-accidental hospitalizations until {end_date}"
 
 9. FORWARD TRUTH ENGINE (WHAT MATTERS NEXT):
    Generate 2-3 "Conditional Certainties" ONLY if no required actions exist.
    These are NOT suggestions. They are facts about future outcomes. Use LEVEL 3 + 4.
 
-   TYPES & TRIGGERS (Strict Cause -> Effect):
-   
+   TYPES & TRIGGERS:
+
    A. MATERNITY (Age 22-35, Benefit < Private Cost):
-      - Title: "Maternity Coverage Reality"
-      - Statement: "If you plan to have a child, this policy will not cover the full cost."
-      - Implication: "Private hospital deliveries typically exceed the limit. Shortfall will be out-of-pocket."
+      "If you plan to have a child, this policy will not cover the full cost."
+      "Private hospital deliveries typically exceed the limit. Shortfall will be OOP."
 
    B. UNUSED BENEFITS (Wellness included, Usage=0):
-      - Title: "Unused Policy Value"
-      - Statement: "You are leaving free benefits unused."
-      - Implication: "This policy includes annual checkups that do not affect claims."
+      "You are leaving free benefits unused."
+      "This policy includes annual checkups that do not affect claims."
 
    C. BONUS ACCUMULATION (NCB exists, early tenure):
-      - Title: "Claim-Free Growth"
-      - Statement: "Staying claim-free increases your effective cover over time."
-      - Implication: "Claims permanently reduce this compounding benefit."
+      "Staying claim-free increases your effective cover over time."
+      "Claims permanently reduce this compounding benefit."
 
    D. STRUCTURAL STRENGTH (Score > 90):
-      - Title: "Structural Integrity"
-      - Statement: "This policy is structurally clean."
-      - Implication: "No room rent limits and consumables coverage materially reduce billing leakage."
+      "This policy is structurally clean."
+      "No room rent limits and consumables coverage materially reduce billing leakage."
 
    TONE RULES:
-   - NO "Optional", "Consider", "You may", "Recommended".
-   - Use declarative sentences. State the outcome plainly.
-   - Do not style as alerts. They are neutral facts.
+   - NO "Optional", "Consider", "You may", "Recommended."
+   - Declarative sentences. State the outcome plainly.
 
 10. STATE-AWARE SECTION RENDERING (positive_state_assertions):
     This section replaces "Required Actions" when no actions are needed.
-    
+
     LOGIC:
-    - IF critical failures/waiting periods exist -> Generate `critical_actions` (FAILURE MODE).
-    - ELSE -> Generate `positive_state_assertions` (AFFIRMATION MODE).
+    - IF critical failures/waiting periods exist → Generate critical_actions (FAILURE MODE).
+    - ELSE → Generate positive_state_assertions (AFFIRMATION MODE).
 
     AFFIRMATION MODE RULES:
     - Title: "Policy Status: No Immediate Risks"
-    - Content: Generate 3-5 "Affirmation Cards" (Level 0 + Level 1 Truths).
+    - Content: 3-5 Affirmation Cards (Level 0 + Level 1 Truths).
     - EXAMPLES:
-      - Label: "Initial Waiting Period" | Status: "Served. Non-accidental hospitalization is covered."
-      - Label: "Room Rent" | Status: "No room rent restrictions apply."
-      - Label: "Consumables" | Status: "Non-medical consumables are payable under this policy."
-      - Label: "Network Access" | Status: "Wide hospital network available in {Zone}."
-
+      "Initial Waiting Period — Served. Non-accidental hospitalization is covered."
+      "Room Rent — No room rent restrictions apply."
+      "Consumables — Non-medical consumables are payable under this policy."
+      "Network Access — Wide hospital network available in {Zone}."
     - DO NOT say "Good job", "Excellent", or upsell.
-    - Confirm the system ran and concluded with structure/state truths.
 
 8. CONDITIONAL RISK INDICATOR (CRI) GENERATION:
    Generate "Future Planning Considerations" ONLY if specific Age/Profile gates are met.
    These are INFORMATIONAL ONLY. Never use "risk", "critical", or alert language.
 
-   GATES & TRIGGERS (Must match ALL conditions to generate):
+   GATES & TRIGGERS:
+
    A. MATERNITY (Age 22-35 AND (Maternity Benefit Exists OR Limit Capped)):
-      - Title: "Maternity Coverage — Planning Context"
-      - Body: "This becomes relevant only if you plan to start a family in the future."
-      - Disclosure: "The current maternity limit (₹X) is below private hospital delivery costs in most cities."
-      - Neutral Context: "This does not affect current coverage or claims."
+      "Maternity Coverage — Planning Context"
+      "This becomes relevant only if you plan to start a family in the future."
+      "The current maternity limit (₹{limit}) is below private hospital delivery costs."
+      "This does not affect current coverage or claims."
 
    B. CHRONIC CONDITIONS (Age ≥ 30 AND OPD/Chronic limits exist):
-      - Title: "Long-term Outpatient Care — Planning Context"
-      - Body: "Chronic condition management typically increases with age and involves recurring outpatient costs."
-      - Disclosure: "Current OPD limits may be insufficient for long-term management."
-      - Neutral Context: "This is a future consideration, not a present risk."
+      "Long-term Outpatient Care — Planning Context"
+      "Current OPD limits may be insufficient for long-term management."
+      "This is a future consideration, not a present risk."
 
    C. LIFESTYLE CONDITIONS (Age ≥ 35):
-      - Title: "Lifestyle-Linked Conditions — Long-Term Context"
-      - Body: "The probability of cardiac and metabolic conditions increases with age."
-      - Disclosure: "While hospitalization is covered, outpatient diagnostics and follow-ups may incur out-of-pocket costs."
-      - Neutral Context: "This does not indicate current illness or claim risk."
+      "Lifestyle-Linked Conditions — Long-Term Context"
+      "The probability of cardiac and metabolic conditions increases with age."
+      "This does not indicate current illness or claim risk."
 
    STRICT RULE: If gates are not met, DO NOT generate the item.
 
+═══════════════════════════════════════════════════════════════════════════════
 [AUDIT_TASK]
+═══════════════════════════════════════════════════════════════════════════════
+
 Analyze the [USER_EVIDENCE] against [OFFICIAL_POLICY_WORDINGS].
-Populate the `ForensicAuditReport` schema.
-Calculate `audit_score` using the Penalty Table.
-Trace every verdict to a specific [clause_id].
+Populate the ForensicAuditReport schema.
+Calculate audit_score using the Penalty Table above.
+Trace every verdict to a specific clause_id.
+
+PRE-OUTPUT CHECKLIST (RUN BEFORE RETURNING JSON):
+□ total_effective_coverage = full current SI (not just ported portion)
+□ No waiting period marked is_active_today: false appears as a limitation in final_verdict
+□ Ported original SI is not described as having active waiting periods anywhere
+□ Incremental SI waiting is described precisely with expiry date, not as a blanket caveat
+□ final_verdict.summary is ≤ 15 words, 1 sentence
+□ final_verdict.key_failure_points entries are user-facing, plain language, with condition names, rupee caps, and dates
+□ final_verdict.key_failure_points is empty [] if no real financial exposure exists today
+□ personal_waiting_periods badges use WORST CASE: ✅ Served / ⚠️ Partial / ⏳ Active
+□ Waiting period section badges match is_active_today values exactly
+□ No section contradicts another section on the same waiting period
+□ All clause_refs populated for every finding

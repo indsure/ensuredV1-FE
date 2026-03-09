@@ -50,7 +50,7 @@ export function getAllCities(): string[] {
   INDIAN_STATES_CITIES.forEach(({ cities }) => {
     allCities.push(...cities);
   });
-  return [...new Set(allCities)].sort();
+  return Array.from(new Set(allCities)).sort();
 }
 
 // Get state by city name (useful for reverse lookup)

@@ -1,13 +1,22 @@
 {
-  "include": ["client/src/**/*"],
-  "exclude": ["node_modules", "dist"],
+  "include": [
+    "client/src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/.tsbuildinfo",
     "noEmit": true,
     "module": "ESNext",
     "strict": true,
-    "lib": ["esnext", "dom", "dom.iterable"],
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable"
+    ],
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -15,8 +24,13 @@
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "baseUrl": ".",
+    "typeRoots": [
+      "./node_modules/@types"
+    ],
     "paths": {
-      "@/*": ["./client/src/*"]
+      "@/*": [
+        "./client/src/*"
+      ]
     }
   }
 }

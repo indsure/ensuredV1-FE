@@ -9,7 +9,7 @@ export class AIService {
     public static async generateContent(
         systemPrompt: string,
         userContent: string,
-        modelName: string = "gemini-3-pro-preview"
+        modelName: string = "gemini-3.1-pro-preview"
     ): Promise<string> {
 
         // 1. Calculate Hash (for Replay/Mock identification)
@@ -30,34 +30,46 @@ export class AIService {
 
         // 4. Live Execution
         console.log(`[AIService] Live Execution. Model: ${modelName}. Hash: ${inputHash}`);
-        try {
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({
-                model: modelName,
-                generationConfig: {
-                    temperature: 0, // Deterministic
-                    topP: 1.0,      // Deterministic
+
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY_MS = 2000;
+
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                const genAI = new GoogleGenerativeAI(apiKey);
+                const model = genAI.getGenerativeModel({
+                    model: modelName,
+                    generationConfig: {
+                        temperature: 0, // Deterministic
+                        topP: 1.0,      // Deterministic
+                    }
+                });
+
+                const result = await model.generateContent({
+                    contents: [{
+                        role: "user",
+                        parts: [{ text: fullInput }]
+                    }]
+                });
+
+                const responseText = result.response.text();
+
+                // (Optional) Auto-record for future replays?
+                // this.saveRecordedOutput(inputHash, responseText);
+
+                return responseText;
+
+            } catch (error: any) {
+                console.error(`[AIService] Live Execution Failed (Attempt ${attempt}/${MAX_RETRIES}):`, error.message);
+                if (attempt === MAX_RETRIES) {
+                    throw error;
                 }
-            });
-
-            const result = await model.generateContent({
-                contents: [{
-                    role: "user",
-                    parts: [{ text: fullInput }]
-                }]
-            });
-
-            const responseText = result.response.text();
-
-            // (Optional) Auto-record for future replays?
-            // this.saveRecordedOutput(inputHash, responseText);
-
-            return responseText;
-
-        } catch (error: any) {
-            console.error("[AIService] Live Execution Failed:", error.message);
-            throw error;
+                // Exponential backoff
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+            }
         }
+
+        throw new Error("INFRA_ERROR: Live Execution failed after retries.");
     }
 
     private static loadRecordedOutput(hash: string): string {

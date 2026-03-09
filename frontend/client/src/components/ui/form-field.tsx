@@ -45,7 +45,7 @@ export function FormField({
           </span>
         )}
       </label>
-      {React.cloneElement(children as React.ReactElement, {
+      {React.cloneElement(children as React.ReactElement<any>, {
         id: fieldId,
         error,
         helperText,
@@ -53,8 +53,8 @@ export function FormField({
         "aria-describedby": error
           ? `${fieldId}-error`
           : helperText
-          ? `${fieldId}-helper`
-          : undefined,
+            ? `${fieldId}-helper`
+            : undefined,
       })}
     </div>
   )

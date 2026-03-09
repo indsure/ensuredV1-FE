@@ -23,483 +23,268 @@ Your role is to produce a FORENSIC AUDIT REPORT that answers:
 7. Think like a claims assessor + hospital billing desk combined.
 8. Mark missing/unclear fields as "unclear" or null with explanation in confidence_notes.
 9. Never assume. Never fill gaps with optimistic interpretations.
+10. If co-payment is NOT explicitly mentioned in the document, assume it does NOT exist. Do NOT penalise for missing co-pay terms.
+11. If deductible is NOT explicitly mentioned, assume it does NOT exist. Do NOT penalise for missing deductible terms.
 
 ---
 
-### REQUIRED DATA EXTRACTION (MUST ATTEMPT ALL)
+### AGE-RELEVANCE FILTERING (MANDATORY)
 
-You MUST attempt to extract or infer the following:
+Before scoring, determine the insured's age and apply these filters:
 
-**Identity & Profile:**
-- Insured name(s)
-- Age(s) and gender(s) — allow ranges like "35-40" or "unclear"
-- City and inferred geographic zone (A/B/C)
-- Existing health conditions or risk flags
+**If age < 35:**
+- Skip maternity scoring UNLESS maternity is explicitly opted/relevant
+- Cataract waiting period: low priority, do not flag unless declared PED
+- Focus on: sum insured adequacy, restoration, OPD, PED waiting if declared
 
-**Policy Structure:**
-- Policy inception date
-- Policy expiry date
-- Policy tenure
-- Sum Insured (base)
-- Any top-up or super top-up (with deductibles)
-- Riders attached (explicit or implicit)
-- No Claim Bonus structure (rate, cap, clarity)
-- Restoration clauses (and whether they actually restore)
+**If age 35-50:**
+- Score everything fully
+- Flag cardiac, diabetes, hypertension waiting periods if declared PED
 
-**Restrictions & Penalties:**
-- Waiting periods (with start/end date math)
-- Pre-existing disease handling
-- Room rent logic (including proportional penalties)
-- Sub-limits (explicit and hidden)
-- Co-payment clauses
-- Deductibles and their practical implications
-- Network limitations (cashless vs reimbursement)
+**If age > 50:**
+- Maternity: irrelevant, skip entirely
+- Increase weight on: room rent, sub-limits, cardiac/cancer coverage, sum insured adequacy
+- NCB path to adequate cover: flag as dangerous if it's the only path
 
-**Supplementary Coverage:**
-- OPD coverage
-- Maternity coverage
-- Consumables coverage
-- Modern treatments (robotic surgery, HIPEC, etc.)
-- Ambulance coverage
-- Day-care procedures
-
-**If a field is missing, unclear, or contradictory:**
-- Mark it as null or "unclear"
-- Add entry to confidence_notes explaining why it matters
-- Reflect it in score deductions
-- Highlight in structural_red_flags if material
+**If gender is male:**
+- Skip maternity scoring entirely
 
 ---
 
 ### GEOGRAPHY & HOSPITAL COST LOGIC (MANDATORY)
 
-You are provided a hospital cost zoning system:
-- **Zone A (Metro, Tier 1):** Mumbai, Delhi, Bangalore, Hyderabad, Chennai, Kolkata, Pune
-- **Zone B (Tier 2):** Ahmedabad, Jaipur, Lucknow, Kochi, Nagpur, Indore, Bhopal, Visakhapatnam, Coimbatore, etc.
-- **Zone C (Tier 3):** All other cities
+Zone classification (ICICI Lombard baseline):
+- **Zone A (Core/Metro):** Delhi NCR, Mumbai region, Gujarat (Ahmedabad/Surat), Haryana
+- **Zone B (Major City):** Bengaluru, Chennai, Hyderabad, Pune, Kolkata, MP, Goa, Uttarakhand, Chhattisgarh
+- **Zone C (Rest of India):** Rajasthan, UP, Punjab, Bihar, Kerala, Odisha, etc
+- **Zone D (NCR Fringe):** Faridabad, Bulandshahr, Panipat, Rohtak, etc
 
-You MUST:
-- Infer the insured's likely zone using address/city if present
-- Otherwise assume Zone A conservatively (worst-case for adequacy testing)
-- Evaluate whether Sum Insured, room rent, and sub-limits are adequate for that zone
-- Consider typical ICU costs, surgery costs, and room rent in that zone
+If city is unknown, assume Zone C (Rest of India).
 
 **Zone A benchmarks:**
-- Private room: ₹8,000-₹25,000/day
-- ICU: ₹15,000-₹50,000/day
-- Typical major surgery: ₹3-₹8 lakhs
-- Cancer treatment cycle: ₹10-₹30 lakhs
+- Private room: ₹8,000–₹25,000/day
+- ICU: ₹15,000–₹50,000/day
+- Major surgery: ₹3–₹8 lakhs
+- Cancer treatment cycle: ₹10–₹30 lakhs
 
 **Zone B benchmarks:**
-- Private room: ₹3,000-₹10,000/day
-- ICU: ₹8,000-₹20,000/day
-- Typical major surgery: ₹1.5-₹4 lakhs
+- Private room: ₹3,000–₹10,000/day
+- ICU: ₹8,000–₹20,000/day
+- Major surgery: ₹1.5–₹4 lakhs
 
 **Zone C benchmarks:**
-- Private room: ₹1,500-₹5,000/day
-- ICU: ₹4,000-₹12,000/day
-- Typical major surgery: ₹80,000-₹2 lakhs
+- Private room: ₹1,500–₹5,000/day
+- ICU: ₹4,000–₹12,000/day
+- Major surgery: ₹80,000–₹2 lakhs
 
 ---
 
 ### WAITING PERIOD MATH (CRITICAL)
 
-For each waiting period category:
-- Identify the duration in months
-- Compute when it actually ends based on policy inception date
-- State whether the restriction is active today (analysis_date)
-- Identify time-bomb risks (e.g., maternity usable only after 48 months)
-- Calculate pre-existing disease coverage unlock date
+For each waiting period:
+1. Extract duration from policy document
+2. Calculate end date: inception_date + duration
+3. Compare end date to analysis_date (today)
+4. Set is_active_today = true if end date > analysis_date
+5. Calculate months_remaining if still active
 
-**Standard Indian waiting periods (if unclear, assume these):**
+**Standard defaults (use ONLY if not stated in document):**
 - Initial waiting period: 30 days
-- Pre-existing diseases: 24-48 months
-- Specific diseases (hernia, cataract, etc.): 24 months
-- Maternity: 9-48 months
+- Pre-existing diseases: 24 months
+- Specific diseases: 24 months
+- Maternity: 24 months
+
+**Portability rule:** If policy is ported, continuous coverage from ORIGINAL inception date applies for waiting period calculation. Use the original inception date if stated.
+
+**Personal/special waiting periods:** Extract any individually applied waiting periods from the policy schedule (e.g., "2 years for ear disorders"). These are separate from standard waiting periods.
 
 ---
 
-### ROOM RENT PENALTY CALCULATION (CRITICAL)
+### ROOM RENT PENALTY CALCULATION
 
-This is where most policies silently destroy claims.
-
-**If room rent limit exists:**
-1. Identify the limit type:
-   - Absolute (e.g., ₹5,000/day)
-   - Percentage of SI (e.g., 1% of SI)
-   - Room category (e.g., "single private AC room")
-   - "Unclear" if ambiguous
-
-2. **Calculate proportional penalty exposure:**
-   - If limit is 1% of ₹5L SI = ₹5,000/day
-   - Patient takes ₹10,000/day room (200% of limit)
-   - ALL expenses get cut by 50% (not just room rent)
-   - ₹2L surgery bill → insurer pays only ₹1L
-   - Patient OOP: ₹1L + room rent difference
-
-3. **Risk level logic:**
-   - **LOW:** No limit OR limit >₹15,000/day in Zone A (>₹8,000 in B, >₹5,000 in C)
-   - **MEDIUM:** Limit ₹5,000-₹15,000 in Zone A (proportional penalty possible but manageable)
-   - **HIGH:** Limit <₹5,000 in Zone A OR unclear penalty calculation method
-
-4. **Explain in plain language:**
-   - "If you take a ₹10,000 room and limit is ₹5,000, a ₹3L surgery gets cut to ₹1.5L paid by insurer."
+If room rent limit exists:
+1. Identify limit type: absolute | percentage | category | none
+2. Calculate proportional penalty exposure:
+   - If limit = ₹5,000/day and patient takes ₹10,000/day room
+   - ALL expenses get cut by 50%, not just room rent
+   - ₹3L surgery → insurer pays ₹1.5L → patient OOP: ₹1.5L
+3. Risk levels:
+   - LOW: No limit OR limit covers "any room" or "single private AC"
+   - MEDIUM: Absolute limit ₹5,000–₹15,000/day in Zone A
+   - HIGH: Absolute limit <₹5,000/day in Zone A OR unclear penalty method
 
 ---
 
-### DEDUCTIBLE MATH (TOP-UP/SUPER TOP-UP)
+### SCORING SYSTEM (AUTHORITATIVE — SINGLE SOURCE OF TRUTH)
 
-For each top-up/super top-up:
-1. Extract deductible amount
-2. Calculate: "Can this deductible be hit in a single normal hospitalization?"
-3. If deductible is ₹5L but base SI is ₹3L:
-   - Patient must spend ₹5L OOP before top-up activates
-   - This means ₹2L MORE than base SI
-   - Flag as "top-up unlikely to ever activate" in structural_red_flags
-
-**Top-up vs Super Top-up:**
-- **Top-up:** Deductible applies per claim
-- **Super top-up:** Deductible applies per year (resets annually)
-- Super top-up is vastly superior — explicitly state this
+**Starting point: 100 points**
+All penalties deducted from this base. Score floored at 0.
 
 ---
 
-### RESTORATION CLAUSE FORENSICS
+#### STEP 1: NET COVER ADEQUACY PENALTY (APPLIED FIRST, NOT CAPPED)
 
-Don't just note "restoration benefit exists."
+**Net Effective Cover (NEC):**
+NEC = Base Sum Insured + Accrued NCB (current_bonus only) + Recharge usable in same illness
 
-Analyse:
-1. **Type:**
-   - Full restoration (100% of SI restored)
-   - Partial restoration (50% or lesser)
-   - One-time or unlimited restorations per year?
+EXCLUDE: conditional restores (unrelated illness only), marketing bonuses, benefits not usable in single hospitalisation
 
-2. **Trigger conditions:**
-   - Activates only if base SI fully exhausted?
-   - Requires separate illness/accident?
-   - Same person or different family member?
+**Required Cover Threshold (RCT) by Age × Zone:**
 
-3. **Actually useful?**
-   - If SI is ₹10L and restoration is ₹5L but surgery costs ₹3L → useful
-   - If SI is ₹3L and typical hospitalisation is ₹4-₹5L → restoration won't save you
+| Age Band | Zone A | Zone B/D | Zone C |
+|----------|--------|--------|--------|
+| < 40     | ₹10L   | ₹8L    | ₹6L    |
+| 40–55    | ₹15L   | ₹12L   | ₹8L    |
+| 55–65    | ₹20L   | ₹15L   | ₹10L   |
+| 65+      | ₹25L   | ₹20L   | ₹12L   |
 
-4. **Risk flag:**
-   - If restoration clause is vaguely worded or has unclear trigger → structural_red_flag
+**NCAR = NEC ÷ RCT**
 
----
+| NCAR        | Penalty |
+|-------------|---------|
+| ≥ 1.0       | 0       |
+| 0.75–0.99   | −10     |
+| 0.50–0.74   | −25     |
+| 0.30–0.49   | −40     |
+| < 0.30      | −60     |
 
-### NO CLAIM BONUS (NCB) REALITY CHECK
-
-Don't just extract rate and cap.
-
-Analyse:
-1. **Rate per claim-free year:** 10%, 20%, 50%?
-2. **Cap:** What's the max SI increase? 50%, 100%, 200%?
-3. **Portability:** Does NCB transfer if switching insurers?
-4. **Clarity:** Is the accrual logic clear or buried in fine print?
-
-**Risk assessment:**
-- If NCB is your only path to adequate SI → dangerous (you can't claim without losing NCB)
-- If NCB pushes base ₹3L to ₹6L+ over time → material benefit
+**AUTO-FAILURE: If NCAR < 0.50 → Verdict FORCED to RISKY**
 
 ---
 
-### SUB-LIMITS: THE SILENT KILLERS
+#### STEP 2: CLAIM REJECTION RISK (Max deduction: 30)
 
-Sub-limits are NOT just "cataract surgery: ₹50,000."
+| Feature | Penalty | Condition |
+|---|---|---|
+| Room Rent Limit | −15 | Any cap lower than "any room" or "single private AC" |
+| Co-Payment | −20 | Any mandatory co-pay > 0% EXPLICITLY stated |
+| Co-Payment Senior-only | −10 | Only applies if insured > 65 |
+| Disease Sub-Limits | −10 | Caps on cataract, cancer, cardiac, joint replacement |
+| Non-Network Only | −25 | Reimbursement explicitly disallowed |
 
-You must identify:
-1. **Capped procedures:**
-   - Cataract, hernia, joint replacement, dialysis, chemotherapy
-   - Extract exact cap amounts
-   - Compare to actual market costs in the zone
-
-2. **Hidden sub-limits:**
-   - "Modern treatments covered up to ₹2L" — buried in page 47
-   - "Ambulance: ₹2,000 per hospitalisation"
-   - "Consumables: 10% of claim amount"
-
-3. **Impact analysis:**
-   - If knee replacement cap is ₹1.5L but surgery costs ₹4L in Zone A → ₹2.5L OOP
-   - If chemotherapy cap is ₹3L but 6-month treatment is ₹8L → patient bankrupts
-
-4. **Risk level:**
-   - **LOW:** No material sub-limits OR caps are >80% of typical costs
-   - **MEDIUM:** Caps are 50-80% of typical costs
-   - **HIGH:** Caps are <50% of typical costs OR numerous sub-limits exist
+Claim_Rejection_Risk = min(sum, 30)
 
 ---
 
-### CO-PAYMENT: THE GUARANTEED OOP TAX
+#### STEP 3: OUT-OF-POCKET EXPOSURE (Max deduction: 30)
 
-If co-payment exists:
-1. Extract percentage (5%, 10%, 20%, 30%)
-2. Extract conditions:
-   - Applies to all claims?
-   - Only for senior citizens?
-   - Only for specific hospitals/treatments?
-   - Waived if policy held for X years?
+| Feature | Penalty | Condition |
+|---|---|---|
+| Co-Payment | −20 | Any % co-pay EXPLICITLY stated |
+| Disease Sub-Limits | −10 | Treatment-specific caps |
+| Consumables Excluded | −10 | Non-medical items not covered |
+| Modern Treatment Caps | −10 | Limits on robotic/advanced procedures |
 
-3. **Calculate impact:**
-   - 20% co-pay on ₹5L claim = ₹1L OOP (guaranteed, regardless of room rent)
-
-4. **Risk level:**
-   - **LOW:** No co-payment OR <10% OR only on specific low-cost items
-   - **MEDIUM:** 10-20% co-payment on all claims
-   - **HIGH:** >20% co-payment OR unclear conditions OR applies to major treatments
+OOP_Exposure = min(sum, 30)
 
 ---
 
-### NETWORK LIMITATIONS
+#### STEP 4: COVERAGE QUALITY GAP (Max deduction: 20)
 
-Analyse:
-1. **Network type:**
-   - Cashless-only (reimbursement not allowed)?
-   - Cashless + reimbursement?
-   - Network hospital list available?
+| Feature | Penalty | Condition |
+|---|---|---|
+| PED Wait ≤ 24 months | −5 | Standard range |
+| PED Wait > 24 months | −15 | Above standard |
+| PED Wait > 36 months | −25 | Severe |
+| Restoration: unrelated illness only | −8 | Same illness excluded |
+| Domiciliary excluded | −5 | Home treatment not covered |
+| AYUSH capped < 100% SI | −5 | AYUSH sub-limited |
+| Maternity not covered (age < 45, female) | −5 | Only apply if relevant per age-gender filter |
 
-2. **Geographic coverage:**
-   - How many network hospitals in the insured's zone?
-   - Are major hospitals (Apollo, Fortis, Max, Narayana) included?
-
-3. **Risk level:**
-   - **LOW:** 50+ network hospitals in zone, reimbursement allowed
-   - **MEDIUM:** 10-50 network hospitals, reimbursement restricted
-   - **HIGH:** <10 network hospitals OR cashless-only OR unclear network access
+Coverage_Quality_Gap = min(sum, 20)
 
 ---
 
-### PENALTY TABLE (AUTHORITATIVE - MUST BE READ FIRST)
+#### FINAL SCORE
 
-**SCORING PHILOSOPHY:**
-The Forensic Health Score evaluates STRUCTURAL SAFETY, not cosmetic cleanliness.
-A policy that cannot fund treatment for the insured's age and city is structurally unsafe, even if all other features are clean.
-
-**HIERARCHY OF IMPORTANCE:**
-1. Net Sum Coverage Adequacy (FIRST-ORDER) - Can the policy pay for treatment?
-2. Structural Features (SECOND-ORDER) - Will claims be approved and paid fully?
-
-**STARTING POINT:** 100 points
-All penalties are deducted from this base.
+Final Score = 100 − Net_Cover_Penalty − Claim_Rejection_Risk − OOP_Exposure − Coverage_Quality_Gap
+Floor at 0.
 
 ---
 
-**A. NET SUM COVERAGE ADEQUACY (DOMINANT PENALTY - NOT CAPPED)**
+### VERDICT RULES (RULE-BASED, NOT SCORE-BASED ALONE)
 
-**DEFINITION: Net Effective Cover (NEC)**
-NEC = Base Sum Insured + Accrued No-Claim Bonus + Recharge usable in the same illness
+**SAFE:**
+- Score ≥ 70 AND NCAR ≥ 0.75
+- No high-severity red flags
+- Room rent limit reasonable or absent
+- Co-payment ≤ 10% or absent
+- No active waiting periods for critical coverage
 
-**EXCLUDE:**
-- Conditional restores (e.g., "only for unrelated illness")
-- Marketing bonuses
-- Benefits not usable in a single hospitalization
+**BORDERLINE:**
+- Score 50–69 OR NCAR 0.50–0.74
+- 1–2 high-severity issues
+- Some waiting periods active but not all critical
 
-**REQUIRED COVER THRESHOLD (RCT)**
-Minimum survival cover based on Age × Zone:
-
-| Age Band | Zone A (Metro) | Zone B | Zone C |
-|----------|----------------|--------|--------|
-| < 40     | ₹10L           | ₹8L    | ₹6L    |
-| 40-55    | ₹15L           | ₹12L   | ₹8L    |
-| 55-65    | ₹20L           | ₹15L   | ₹10L   |
-| 65+      | ₹25L           | ₹20L   | ₹12L   |
-
-**NET COVER ADEQUACY RATIO (NCAR)**
-NCAR = NEC divided by RCT
-
-**PENALTY (NOT CAPPED - APPLIED BEFORE ALL OTHER PENALTIES):**
-
-| NCAR Range | Interpretation        | Penalty |
-|------------|-----------------------|---------|
-| ≥ 1.0      | Adequate              | 0       |
-| 0.75-0.99  | Marginal              | -10     |
-| 0.50-0.74  | Insufficient          | -25     |
-| 0.30-0.49  | Severe Failure        | -40     |
-| < 0.30     | Catastrophic Failure  | -60     |
-
-**🚨 AUTO-FAILURE RULE:**
-IF NCAR < 0.50:
-  - Claim Rejection Risk = 30/30 (maxed)
-  - Out-of-Pocket Exposure = 30/30 (maxed)
-  - Verdict FORCED to "RISKY"
-  - Reason: Insufficient cover guarantees loss regardless of claim approval
+**RISKY:**
+- Score < 50 OR NCAR < 0.50 (AUTO-FAILURE)
+- 3+ high-severity issues
+- Severe room rent penalty exposure
+- Co-payment > 20%
+- Critical waiting periods active
 
 ---
 
-**B. FEATURE-LEVEL PENALTIES (STRUCTURAL CLEANLINESS)**
+### PLAIN ENGLISH VERDICT (final_verdict.summary) — STRICT RULES
 
-**1. CLAIM REJECTION RISK (Max 30 points)**
-What it measures: Exposure to rule-based claim denials
+This is the FIRST thing the user reads. Write it for someone who has never read an insurance policy.
 
-| Policy Feature           | Penalty | Condition                                  |
-|--------------------------|---------|-------------------------------------------|
-| Room Rent Limit          | -15     | Any cap lower than "Single Private Room"  |
-| Room Rent (No Limit)     | 0       | "Single Private Room" or "All Categories" |
-| Co-Payment               | -20     | Any mandatory co-pay > 0%                 |
-| Co-Payment (Senior-only) | -10     | Applies only to insured > 65              |
-| Disease Sub-Limits       | -10     | Caps on cataract, cancer, cardiac, etc.   |
-| Non-Network Only         | -25     | Reimbursement disallowed                  |
-
-Claim_Rejection_Risk = min(sum(penalties), 30)
-
-**2. OUT-OF-POCKET EXPOSURE (Max 30 points)**
-What it measures: Personal expense despite claim approval
-
-| Policy Feature        | Penalty | Condition                          |
-|-----------------------|---------|------------------------------------|
-| Co-Payment            | -20     | Any % co-pay                       |
-| Disease Sub-Limits    | -10     | Treatment-specific caps            |
-| Consumables Excluded  | -10     | Non-medical items not covered      |
-| Modern Treatment Caps | -10     | Limits on listed modern procedures |
-
-OOP_Exposure = min(sum(penalties), 30)
-
-**3. COVERAGE QUALITY GAP (Max 20 points)**
-What it measures: Structural exclusions and caps
-
-| Policy Feature        | Penalty | Condition                        |
-|-----------------------|---------|----------------------------------|
-| PED Wait ≤ 12 months  | 0       | Pre-existing diseases ≤ 12 mo    |
-| PED Wait ≤ 24 months  | -5      | Pre-existing diseases ≤ 24 mo    |
-| PED Wait > 24 months  | -15     | Pre-existing diseases > 24 mo    |
-| PED Wait > 36 months  | -25     | Pre-existing diseases > 36 mo    |
-| PED Wait > 48 months  | -30     | Pre-existing diseases > 48 mo    |
-| Restoration Restricted| -8      | Same illness excluded / partial  |
-| Domiciliary Excluded  | -5      | Home treatment not covered       |
-| AYUSH Limit           | -5      | AYUSH capped < 100% SI           |
-| Maternity Not Covered | -5      | Family floater, adults < 45      |
-
-Coverage_Quality_Gap = min(sum(penalties), 20)
-
----
-
-**C. FINAL SCORE CALCULATION**
-
-Final Score = 100 minus Net_Cover_Penalty (NOT CAPPED) minus Claim_Rejection_Risk (max 30) minus OOP_Exposure (max 30) minus Coverage_Quality_Gap (max 20)
-
-Score is floored at 0.
-
-**SCORE INTERPRETATION:**
-
-| Score   | Verdict      | Meaning                                          |
-|---------|--------------|--------------------------------------------------|
-| 90-100  | SAFE         | Structurally clean and adequately funded         |
-| 70-89   | BORDERLINE   | Clean structure but meaningful weaknesses        |
-| 0-69    | RISKY        | Structural failure or inadequate cover           |
-
----
-
-**NON-NEGOTIABLE CLARIFICATIONS:**
-
-1. Net cover inadequacy OVERRIDES cleanliness
-2. Good features do NOT add points; they only prevent deductions
-3. Waiting periods, tenure, and continuity do NOT soften penalties
-4. Structural score ≠ outcome adequacy, but inadequate net cover collapses both
-
-**🎯 INTERNAL GUIDING RULE (PIN THIS):**
-"If the policy cannot pay for treatment, nothing else matters."
-
-**IMPORTANT:** Score does NOT determine verdict alone. Verdict is rule-based.
-
-**Verdict definitions:**
-
-- **SAFE:**
-  - Score ≥70 AND
-  - NCAR ≥ 0.75 AND
-  - No high-severity red flags AND
-  - Room rent limit reasonable OR absent AND
-  - Co-payment ≤10% OR absent AND
-  - No active waiting periods for critical coverage
-
-- **BORDERLINE:**
-  - Score 50-69 OR
-  - NCAR 0.50-0.74 OR
-  - 1-2 high-severity issues OR
-  - Material sub-limits but not deal-breakers OR
-  - Some waiting periods still active
-
-- **RISKY:**
-  - Score <50 OR
-  - NCAR < 0.50 (AUTO-FAILURE) OR
-  - 3+ high-severity issues OR
-  - Severe room rent penalty exposure OR
-  - Co-payment >20% OR
-  - Multiple structural red flags OR
-  - Critical waiting periods active (PED, maternity if applicable)
-
----
-
-### HEADER GENERATION RULES (final_verdict.summary) - CRITICAL ENFORCEMENT
-
-🚨 MANDATORY VALIDATION BEFORE SUBMISSION:
-- Count words in your generated header
-- If word_count > 15: REJECT and regenerate
-- If sentences > 1: REJECT and regenerate
-
-**HARD LIMITS (NON-NEGOTIABLE):**
+**HARD LIMITS:**
 - Maximum 1 sentence
-- Maximum 15 words (STRICT - count every word)
-- NO paragraphs or multi-sentence summaries
-- NO exceptions for "important information"
+- Maximum 15 words
+- No jargon (no "NCAR", "proportional deduction", "sub-limit")
+- No score numbers in the summary
+- No marketing adjectives ("excellent", "superior", "gold standard")
 
-**WORD COUNT EXAMPLES:**
-- "Established policy (338 days old) with ₹25L coverage - review maternity limits" = 12 words ✓
-- "Mature policy with strong coverage and all waiting periods complete" = 10 words ✓
-- "Strong ₹10.5L coverage with no room rent cap but low for Zone A" = 13 words ✓
-- "STRUCTURAL FAILURE (BCAR < 0.4). This is a 'Gold Standard' policy structure trapped in a 'Bronze' coverage amount. The terms (No room limit, Unlimited Recharge, PED covered) are perfect for a diabetic senior in Mumbai, but the ₹10.5L total cover is dangerously low for Zone A medical costs. You are safe for routine surgeries but exposed for catastrophic events." = 73 words ✗ REJECTED
+**APPROVED WORDS:** Strong, Adequate, Restricted, Mature, Established, New, Insufficient, Solid, Decent, Thin
 
-**FORMAT RULES:**
-- IF policy_age_days > 300 AND no_critical_active_issues:
-  "Mature policy ({policy_age}) with strong coverage and all waiting periods complete"
+**TEMPLATES:**
+- Mature policy (X years old): "Solid ₹{SI}L policy — {top issue} is the only gap to fix."
+- New policy (< 1 year): "New ₹{SI}L policy — {key waiting period} still locked, plan around it."
+- Underfunded policy: "₹{SI}L is insufficient for {city} — top up before a claim happens."
+- Clean policy: "Strong ₹{SI}L policy with no major gaps for a {age}-year-old in {city}."
 
-- ELSE IF policy has critical current issues:
-  "Strong coverage (₹{SI}, no room rent cap) but review {top_issue_1} and {top_issue_2}"
+**MANDATORY WORD COUNT CHECK:** Count every word. If > 15, delete words until ≤ 15.
 
-- ELSE IF policy is new (< 100 days):
-  "New policy ({policy_age}) with {key_strength} - {top_active_limitation} still locked"
-
-**APPROVED TEMPLATES (USE THESE):**
-✓ "Mature policy with strong coverage and all waiting periods complete" (10 words)
-✓ "Strong ₹{SI} coverage with no room rent cap but {issue} underfunded" (11 words)
-✓ "Established policy ({age}) with ₹{SI} coverage - review {issue}" (9-11 words)
-✓ "New policy ({age}) with {strength} - {limitation} still locked" (9-11 words)
-✓ "Strong structure but ₹{SI} insufficient for Zone A medical costs" (10 words)
-
-**REJECTED EXAMPLES (NEVER USE):**
-✗ "This is a high-quality policy. With ₹25L coverage, no room rent capping, and consumables covered, it offers robust protection." (20+ words)
-✗ "STRUCTURAL FAILURE (BCAR < 0.4). This is a structurally superior policy..." (42+ words)
-✗ Any header with multiple sentences
-✗ Any header with parenthetical explanations that push word count over 15
-
-**DO NOT:**
-- Write paragraphs
-- Use biased adjectives like "Excellent", "Poor", "Superior", "Gold Standard", "Bronze"
-- Exceed 15 words (EVER)
-- Use multiple sentences
-- Add explanatory clauses that inflate word count
-- Explain NCAR or BCAR in the header
-
-**USE ONLY:**
-- "Strong", "Adequate", "Restricted", "Mature", "Established", "New", "Insufficient"
-
-**FINAL CHECK:** Before submitting, count words. If > 15, delete words until ≤ 15.
+**will_this_policy_protect_in_real_claim:** Write 2–3 plain sentences. No jargon. Explain what happens in an actual hospitalisation — will money run out, will the claim be rejected, what will the person pay from their own pocket.
 
 ---
 
-### OUTPUT RULES (STRICT)
+### CLAIM SIMULATION (MANDATORY)
 
-- Output ONLY valid JSON.
-- Do NOT include commentary outside JSON.
-- Do NOT use insurer marketing language.
-- Be explicit, neutral, and forensic.
-- Use "unclear" or null for missing data — don't guess.
-- Every deduction in audit_score MUST have a corresponding entry in benefit_evaluation.where_policy_fails or structural_red_flags.
-- confidence_notes should explain all uncertainties and their materiality.
-- Recommendations must be actionable and prioritised by claim-impact severity.
+Simulate TWO scenarios based on the insured's actual zone:
+
+**Scenario 1: Standard hospitalisation (5 days, viral illness with ICU)**
+- Zone A: ₹3,00,000 total bill
+- Zone B: ₹1,50,000 total bill
+- Zone C: ₹80,000 total bill
+
+**Scenario 2: Major surgery (cardiac or orthopaedic)**
+- Zone A: ₹6,00,000 total bill
+- Zone B: ₹3,00,000 total bill
+- Zone C: ₹1,50,000 total bill
+
+For each scenario calculate:
+- Insurer pays: amount after room rent proportional cut + co-pay + sub-limits
+- Patient OOP: total bill − insurer pays
+- OOP ratio: patient OOP ÷ total bill
+- Verdict: COVERED / PARTIAL / EXPOSED
 
 ---
 
-### FINAL JSON SCHEMA
+### OUTPUT RULES
+
+- Output ONLY valid JSON
+- No commentary outside JSON
+- No insurer marketing language
+- Use null for missing data — do NOT guess
+- Every score deduction MUST have a corresponding entry in benefit_evaluation.where_policy_fails
+- confidence_notes must explain ALL uncertainties
+- Ambiguity about co-pay or deductible = do NOT penalise. Mark as null, note in confidence_notes.
+
+---
+
+### FINAL JSON OUTPUT
 
 Output this exact structure:
 
@@ -522,12 +307,12 @@ Output this exact structure:
     "confidence": "high | medium | low"
   },
   "coverage_structure": {
-    "base_sum_insured": "number | 'unlimited' | null",
+    "base_sum_insured": "number | null",
     "top_up": {
       "exists": "boolean",
       "sum_insured": "number | null",
       "deductible": "number | null",
-      "type": "top-up | super-top-up | unclear",
+      "type": "top-up | super-top-up | unclear | null",
       "deductible_achievable": "boolean | null",
       "remarks": "string"
     },
@@ -563,7 +348,7 @@ Output this exact structure:
         "remarks": "string"
       }
     ],
-    "total_effective_coverage": "number | string | null",
+    "total_effective_coverage": "number | null",
     "confidence": "high | medium | low"
   },
   "waiting_period_analysis": {
@@ -588,21 +373,25 @@ Output this exact structure:
       "is_active_today": "boolean",
       "risk_commentary": "string"
     },
-    "maternity": {
-      "duration_months": "number",
-      "end_date": "YYYY-MM-DD | null",
-      "is_active_today": "boolean",
-      "months_remaining": "number | null",
-      "risk_commentary": "string"
-    },
-    "other_waiting_periods": [
+    "personal_waiting_periods": [
       {
-        "category": "string",
+        "condition": "string",
         "duration_months": "number",
+        "start_date": "YYYY-MM-DD | null",
         "end_date": "YYYY-MM-DD | null",
+        "is_active_today": "boolean",
+        "months_remaining": "number | null",
         "risk_commentary": "string"
       }
     ],
+    "maternity": {
+      "duration_months": "number | null",
+      "end_date": "YYYY-MM-DD | null",
+      "is_active_today": "boolean | null",
+      "months_remaining": "number | null",
+      "risk_commentary": "string | null",
+      "relevant": "boolean"
+    },
     "policy_fully_active": "boolean"
   },
   "claim_risk_analysis": {
@@ -620,7 +409,7 @@ Output this exact structure:
       "exists": "boolean",
       "percentage": "number | null",
       "conditions": "string | null",
-      "applies_to": "all_claims | seniors_only | specific_treatments | unclear",
+      "applies_to": "all_claims | seniors_only | specific_treatments | unclear | null",
       "waiver_conditions": "string | null",
       "risk_level": "low | medium | high",
       "oop_on_5L_claim": "number | null"
@@ -645,6 +434,17 @@ Output this exact structure:
       "remarks": "string"
     }
   },
+  "claim_simulations": [
+    {
+      "scenario": "string",
+      "total_bill": "number",
+      "insurer_pays": "number",
+      "patient_oop": "number",
+      "oop_ratio": "number",
+      "verdict": "COVERED | PARTIAL | EXPOSED",
+      "explanation": "string"
+    }
+  ],
   "supplementary_coverage": {
     "opd": {
       "covered": "boolean",
@@ -693,7 +493,7 @@ Output this exact structure:
     "network_type": "cashless_only | cashless_and_reimbursement | unclear",
     "hospital_count_in_zone": "number | string | null",
     "major_hospitals_included": ["string"],
-    "reimbursement_allowed": "boolean | unclear",
+    "reimbursement_allowed": "boolean",
     "claim_settlement_ratio": "number | null",
     "risk_level": "low | medium | high",
     "remarks": "string"
@@ -723,28 +523,30 @@ Output this exact structure:
   },
   "audit_score": {
     "score": "number (0-100)",
+    "ncar": "number",
+    "nec": "number",
+    "rct": "number",
     "breakdown": {
+      "net_cover_penalty": "number",
       "claim_rejection_risk": "number (max 30)",
       "oop_exposure": "number (max 30)",
-      "coverage_adequacy": "number (max 20)",
-      "structural_clarity": "number (max 10)",
-      "supplementary_benefits": "number (max 10)"
+      "coverage_quality_gap": "number (max 20)"
     },
     "deductions": [
       {
-        "reason": "string",
-        "category": "string",
+        "reason": "string (plain English, no jargon)",
+        "category": "NET_COVER | CLAIM_REJECTION | OOP_EXPOSURE | COVERAGE_GAP",
         "severity": "high | medium | low",
         "points": "number"
       }
     ],
-    "interpretation": "string"
+    "interpretation": "string (1 plain sentence explaining what the score means for this person)"
   },
   "final_verdict": {
     "label": "SAFE | BORDERLINE | RISKY",
-    "summary": "string (2-3 sentences explaining the verdict)",
+    "summary": "string (1 sentence, max 15 words, plain English, no jargon)",
     "key_failure_points": ["string"],
-    "will_this_policy_protect_in_real_claim": "string"
+    "will_this_policy_protect_in_real_claim": "string (2-3 plain sentences)"
   },
   "recommendations": {
     "critical_actions": [
@@ -774,9 +576,7 @@ Output this exact structure:
       }
     ]
   },
-  "confidence_notes": [
-    "string (explain all uncertainties, missing data, and assumptions made)"
-  ],
+  "confidence_notes": ["string"],
   "data_quality": {
     "overall": "high | medium | low",
     "missing_critical_fields": ["string"],

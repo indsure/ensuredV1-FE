@@ -64,15 +64,18 @@ export function PolicyCheckerLanding({
             </span>
           </motion.h1>
 
-          <motion.div custom={2} variants={fadeIn} className="space-y-4 sm:space-y-6">
+          <motion.div
+            custom={2}
+            variants={fadeIn}
+            className="space-y-4 sm:space-y-6">
             <p className="text-base sm:text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-lg">
               Upload your health insurance policy. Our engine audits every
               clause, exclusion, and rider to tell you whether you are correctly
               insured — or exposed.
             </p>
             <p className="text-xs sm:text-sm text-[var(--color-text-muted)] opacity-70 font-mono">
-              Built for modern Indian policyholders. <br className="hidden sm:block" /> Independent.
-              Product-agnostic.
+              Built for modern Indian policyholders.{" "}
+              <br className="hidden sm:block" /> Independent. Product-agnostic.
             </p>
           </motion.div>
 
@@ -165,17 +168,6 @@ export function PolicyCheckerLanding({
                 </div>
               </div>
             )}
-
-            {/* Subtle Grid Background (Light) */}
-            <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
-          </div>
-
-          {/* Desktop Trust Bar */}
-          <div className="hidden lg:flex mt-6 justify-center">
-            <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] opacity-70">
-              <Shield className="w-3 h-3" />
-              We don’t store, sell, or reuse your policy. Analysis is ephemeral.
-            </div>
           </div>
         </motion.div>
       </div>
@@ -221,7 +213,9 @@ export function PolicyCheckerLanding({
               ],
             },
           ].map((cat, i) => (
-            <div key={i} className="space-y-4 w-full max-w-[280px] sm:max-w-none text-center sm:text-left">
+            <div
+              key={i}
+              className="space-y-4 w-full max-w-[280px] sm:max-w-none text-center sm:text-left">
               <div>
                 <h4 className="font-bold text-[var(--color-teal-600)] w-max text-xs sm:text-sm uppercase tracking-wide border-b md:pr-4 border-gray-400 pb-2 mb-2 mx-auto sm:mx-0">
                   {cat.title}

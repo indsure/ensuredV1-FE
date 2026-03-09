@@ -4,11 +4,11 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev:client": "vite dev --port 5173",
-    "dev": "tsx server/index.ts",
-    "build": "tsx script/build.ts",
-    "start": "node dist/index.cjs",
-    "check": "tsc",
+    "dev:client": "npm run dev --prefix frontend",
+    "dev": "tsx backend/server/index.ts",
+    "build": "tsx backend/script/build.ts",
+    "start": "node backend/dist/index.cjs",
+    "check": "tsc --noEmit --project backend/tsconfig.json",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
@@ -85,6 +85,7 @@
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.23",
+    "get-tsconfig": "^4.13.6",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
     "tsx": "^4.21.0",

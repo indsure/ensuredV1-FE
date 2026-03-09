@@ -37,7 +37,7 @@ import { loadSampleReport, mockReportLife } from "@/lib/mock-data";
 
 export default function LifePage() {
   const [, setLocation] = useLocation();
-  const { analyze, error: analysisError } = useAnalysis();
+  const { analyze, error: analysisError, clearAuditState } = useAnalysis();
 
   // SEO
   useSEO({
@@ -137,47 +137,48 @@ export default function LifePage() {
     if (!acceptedFiles.length) return;
 
     const file = acceptedFiles[0];
-    
+
     // Validate file type
     const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'text/plain'];
-    const isValidType = validTypes.includes(file.type) || 
-                        file.name.toLowerCase().endsWith('.pdf') ||
-                        file.name.toLowerCase().endsWith('.png') ||
-                        file.name.toLowerCase().endsWith('.jpg') ||
-                        file.name.toLowerCase().endsWith('.jpeg');
-    
+    const isValidType = validTypes.includes(file.type) ||
+      file.name.toLowerCase().endsWith('.pdf') ||
+      file.name.toLowerCase().endsWith('.png') ||
+      file.name.toLowerCase().endsWith('.jpg') ||
+      file.name.toLowerCase().endsWith('.jpeg');
+
     if (!isValidType) {
       setError(`Unsupported file type. Please upload a PDF, PNG, JPG, or text file.`);
       return;
     }
-    
+
     // Validate file size (max 25MB)
     const maxSize = 25 * 1024 * 1024;
     if (file.size > maxSize) {
       setError(`File is too large (${formatFileSize(file.size)}). Maximum size is 25 MB.`);
       return;
     }
-    
+
     setSelectedFile(file);
     setFileSize(formatFileSize(file.size));
     setError(null);
-    
+
     // Store file in sessionStorage
     await storeFileInSession(file);
-    
+
     sessionStorage.removeItem("ensured_report");
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
     setUploading(true);
     setLocation("/processing");
 
     try {
+      clearAuditState();
       await analyze(file, "life");
       // If successful, job is created and processing page will poll for status
     } catch (err: any) {
       console.error("Analysis failed:", err);
-      
-      
+
+
       let errorMessage = "Analysis failed";
       if (err?.message) {
         if (err.message.includes("timeout") || err.message.includes("took too long")) {
@@ -190,7 +191,7 @@ export default function LifePage() {
           errorMessage = err.message;
         }
       }
-      
+
       setError(errorMessage);
       setLocation("/life");
       setUploading(false);
@@ -199,7 +200,7 @@ export default function LifePage() {
 
   const dropzoneOptions = {
     onDrop,
-    accept: { 
+    accept: {
       "application/pdf": [".pdf"],
       "image/png": [".png"],
       "image/jpeg": [".jpg", ".jpeg"],
@@ -234,7 +235,7 @@ export default function LifePage() {
               <p className="text-lg md:text-xl text-[#4B5563] dark:text-[#D1D5DB] mb-6 leading-relaxed">
                 Upload a PDF. See if your sum assured is enough. No agents, no storage, no sales pitch.
               </p>
-              
+
               {/* Trust badges */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-xs font-medium text-[#6B7280] dark:text-[#9CA3AF]">
                 <div className="flex items-center gap-1.5">
@@ -313,27 +314,25 @@ export default function LifePage() {
               {/* Upload Card */}
               <div
                 {...getRootProps()}
-                className={`relative group transition-all duration-300 ${
-                  uploading 
-                    ? "cursor-wait" 
-                    : isDragActive 
-                    ? "scale-[1.01]" 
-                    : "hover:scale-[1.005] cursor-pointer"
-                }`}
+                className={`relative group transition-all duration-300 ${uploading
+                    ? "cursor-wait"
+                    : isDragActive
+                      ? "scale-[1.01]"
+                      : "hover:scale-[1.005] cursor-pointer"
+                  }`}
               >
                 {/* Subtle glow on hover */}
                 <div className="absolute -inset-1 bg-gradient-to-r from-[#00B4D8]/20 via-[#10B981]/20 to-[#00B4D8]/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
-                
-                <div className={`relative bg-white dark:bg-[#1F2937] rounded-2xl border-2 transition-all shadow-xl ${
-                  isDragActive 
-                    ? "border-[#00B4D8] dark:border-[#00B4D8] bg-[#EFF6FF] dark:bg-[#00B4D8]/10 ring-4 ring-[#00B4D8]/20" 
+
+                <div className={`relative bg-white dark:bg-[#1F2937] rounded-2xl border-2 transition-all shadow-xl ${isDragActive
+                    ? "border-[#00B4D8] dark:border-[#00B4D8] bg-[#EFF6FF] dark:bg-[#00B4D8]/10 ring-4 ring-[#00B4D8]/20"
                     : selectedFile && !uploading
-                    ? "border-[#10B981] dark:border-[#10B981] bg-[#F0FDF4] dark:bg-[#10B981]/10"
-                    : "border-gray-200 dark:border-gray-700 hover:border-[#00B4D8] dark:hover:border-[#00B4D8] hover:shadow-2xl"
-                }`}>
+                      ? "border-[#10B981] dark:border-[#10B981] bg-[#F0FDF4] dark:bg-[#10B981]/10"
+                      : "border-gray-200 dark:border-gray-700 hover:border-[#00B4D8] dark:hover:border-[#00B4D8] hover:shadow-2xl"
+                  }`}>
                   {/* @ts-ignore */}
                   <input {...getInputProps()} />
-                  
+
                   <div className="p-8">
                     {selectedFile && !uploading ? (
                       <div className="flex flex-col items-center justify-center gap-4 text-center">
@@ -375,7 +374,7 @@ export default function LifePage() {
                             <Upload className="w-10 h-10 text-white" />
                           </div>
                         </div>
-                        
+
                         {/* Main text */}
                         <div className="space-y-2">
                           <p className="text-xl font-bold text-[#0F1419] dark:text-[#FAFBFC]">Drop your PDF here</p>
@@ -428,7 +427,7 @@ export default function LifePage() {
           <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto relative">
             {/* Connector Line 1-2 - Desktop only */}
             <div className="hidden md:block absolute top-[104px] left-[calc(16.666%+2rem)] w-[calc(33.333%-1rem)] h-0.5 bg-[#00B4D8] opacity-60" />
-            
+
             {/* Connector Line 2-3 - Desktop only */}
             <div className="hidden md:block absolute top-[104px] left-[calc(50%+2rem)] w-[calc(33.333%-1rem)] h-0.5 bg-[#00B4D8] opacity-60" />
 
@@ -495,7 +494,7 @@ export default function LifePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-8">
             What You'll Understand After Analysis
           </h2>
-          
+
           <div className="grid md:grid-cols-3 gap-6">
             {/* Sum Assured Adequacy */}
             <div className="relative group bg-gradient-to-br from-white via-blue-50/30 to-white dark:from-gray-800 dark:via-blue-950/20 dark:to-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1">
@@ -557,7 +556,7 @@ export default function LifePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-8">
             Questions About Your Analysis
           </h2>
-          
+
           <div className="space-y-3">
             <details className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <summary className="flex items-center justify-between cursor-pointer list-none">
@@ -618,7 +617,7 @@ export default function LifePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-8">
             Now What?
           </h2>
-          
+
           <div className="grid md:grid-cols-3 gap-6">
             {/* Calculate Needs */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 text-center">

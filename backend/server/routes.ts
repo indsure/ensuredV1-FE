@@ -8,19 +8,21 @@ import { MASTER_AUDIT_PROMPT } from "./promptTemplate";
 import { LIFE_INSURANCE_PROMPT } from "./lifeInsurancePrompt";
 import { VEHICLE_INSURANCE_PROMPT } from "./vehicleInsurancePrompt";
 import { POLICY_EXTRACTION_PROMPT } from "./policyExtractionPrompt";
-import { transformRawExtraction } from "./utils/policyTransformer";
-import type { RawPolicyExtraction } from "./types/policy";
+// ARCHIVED: import { runExtractionPipeline, type PolicyReport } from "./utils/pipelineOrchestrator";
+// ARCHIVED: import { normalizePolicyForComparison, comparePolicies } from "./utils/comparisonEngine";
 import { AIService } from "./services/aiService";
+// ARCHIVED: import { filterHospitalNetwork } from "./data/insurance_networks/filter_engine";
+// ARCHIVED: import { requireAuth } from "./middleware/auth";
 
 
 const upload = multer({
   dest: "uploads/",
   limits: {
-    fileSize: 25 * 1024 * 1024, // 25MB limit
+    fileSize: 25 * 1024 * 1024,
   },
 });
 
-// Background job tracking
+
 interface AnalysisJob {
   id: string;
   status: "pending" | "processing" | "completed" | "failed";
@@ -28,11 +30,18 @@ interface AnalysisJob {
   error?: string;
   createdAt: number;
   completedAt?: number;
+  extractionStartedAt?: number;
+  extractionEndedAt?: number;
+  fetchStartedAt?: number;
+  fetchEndedAt?: number;
+  aiStartedAt?: number;
+  aiEndedAt?: number;
 }
+
 
 export const analysisJobs = new Map<string, AnalysisJob>();
 
-// Clean up old jobs (older than 1 hour)
+
 setInterval(() => {
   const oneHourAgo = Date.now() - 60 * 60 * 1000;
   Array.from(analysisJobs.entries()).forEach(([id, job]) => {
@@ -40,50 +49,79 @@ setInterval(() => {
       analysisJobs.delete(id);
     }
   });
-}, 5 * 60 * 1000); // Run every 5 minutes
+}, 5 * 60 * 1000);
+
 
 /* ---------- TEXT EXTRACTION HELPERS ---------- */
 
+
 async function extractTextFromPDF(filePath: string): Promise<string> {
-  const data = new Uint8Array(fs.readFileSync(filePath));
+  const fileData = fs.readFileSync(filePath);
+  const data = new Uint8Array(fileData);
 
   try {
-    const loadingTask = pdfjs.getDocument({
-      data,
-    });
-
+    const loadingTask = pdfjs.getDocument({ data });
     const pdf = await loadingTask.promise;
+    console.log(`[PDF Extraction] PDF loaded. Pages: ${pdf.numPages}`);
+
+    if (pdf.numPages === 0) {
+      console.warn("[PDF Extraction] PDF has 0 pages — trying pdf-parse fallback");
+      return await extractTextWithPdfParse(fileData);
+    }
 
     let text = "";
     for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      text += content.items.map((it: any) => it.str).join(" ") + "\n";
+      try {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map((it: any) => it.str).join(" ");
+        text += pageText + "\n";
+      } catch (pageErr: any) {
+        console.warn(`[PDF Extraction] Page ${i} failed: ${pageErr.message} — skipping`);
+      }
     }
 
+    if (!text.trim()) {
+      console.warn("[PDF Extraction] pdfjs returned empty text — trying pdf-parse fallback");
+      return await extractTextWithPdfParse(fileData);
+    }
+
+    console.log(`[PDF Extraction] Total text length: ${text.length}`);
     return text;
   } catch (error: any) {
-    // Log error for debugging
-    console.log("[PDF Extraction] Error:", error.message?.substring(0, 100));
-    throw error;
+    console.log("[PDF Extraction] pdfjs error:", error.message?.substring(0, 150));
+    console.log("[PDF Extraction] Trying pdf-parse fallback...");
+    try {
+      return await extractTextWithPdfParse(fileData);
+    } catch (fallbackErr: any) {
+      console.error("[PDF Extraction] pdf-parse fallback also failed:", fallbackErr.message);
+      throw new Error(`PDF text extraction failed: ${error.message}`);
+    }
   }
 }
+
+
+async function extractTextWithPdfParse(buffer: Buffer | Uint8Array): Promise<string> {
+  const pdfParseModule = await import("pdf-parse");
+  const pdfParse = (pdfParseModule as any).default ?? pdfParseModule;
+  const result = await (pdfParse as any)(Buffer.from(buffer));
+  console.log(`[PDF Extraction] pdf-parse extracted ${result.text.length} chars from ${result.numpages} pages`);
+  return result.text;
+}
+
 
 async function extractTextFromPlain(filePath: string): Promise<string> {
   return fs.readFileSync(filePath, "utf-8");
 }
+
 
 async function extractTextFromImage(
   file: Express.Multer.File,
   apiKey: string
 ): Promise<string> {
   const buffer = fs.readFileSync(file.path);
-
   const genAI = new GoogleGenerativeAI(apiKey);
-  // UPDATED: Reverted to gemini-3-pro-preview as requested
-  const model = genAI.getGenerativeModel({
-    model: "gemini-3-pro-preview",
-  });
+  const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview" });
 
   const result = await model.generateContent({
     contents: [
@@ -109,36 +147,28 @@ async function extractTextFromImage(
   return result.response.text();
 }
 
-async function extractPolicyText(
-  file: Express.Multer.File
-): Promise<string> {
+
+async function extractPolicyText(file: Express.Multer.File): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
-  if (file.mimetype.includes("pdf")) {
-    return extractTextFromPDF(file.path);
-  }
-
-  if (file.mimetype.startsWith("image/")) {
-    return extractTextFromImage(file, apiKey);
-  }
-
-  if (file.mimetype === "text/plain") {
-    return extractTextFromPlain(file.path);
-  }
+  if (file.mimetype.includes("pdf")) return extractTextFromPDF(file.path);
+  if (file.mimetype.startsWith("image/")) return extractTextFromImage(file, apiKey);
+  if (file.mimetype === "text/plain") return extractTextFromPlain(file.path);
 
   throw new Error(`Unsupported file type: ${file.mimetype}`);
 }
 
+
 /* ---------- ROUTES ---------- */
+
 
 export async function registerRoutes(
   _httpServer: Server,
   app: Express
 ): Promise<Server> {
-  console.log('[ROUTES] Starting route registration... (v2.1)');
+  console.log('[ROUTES] Starting route registration... (v3.0)');
 
-  // Handle multer errors
   app.post(
     "/api/analyze",
     (req, res, next) => {
@@ -149,17 +179,13 @@ export async function registerRoutes(
             error: "File upload failed: " + (err.message || "Unknown error")
           });
         }
-        // Find the file field and assign to req.file for compatibility
         const files = (req as any).files || [];
         const fileField = files.find((f: any) => f.fieldname === "file");
-        if (fileField) {
-          req.file = fileField;
-        }
+        if (fileField) req.file = fileField;
         next();
       });
     },
     async (req, res) => {
-      // 🔧 FIX: Declare these OUTSIDE the try block so they're accessible in the async IIFE
       let job: AnalysisJob | undefined;
       let jobId: string | undefined;
       let insuranceType: string | undefined;
@@ -170,16 +196,10 @@ export async function registerRoutes(
           return res.status(400).json({ error: "No file uploaded" });
         }
 
-        // Store file reference for background processing
         uploadedFile = req.file;
-
-        // Get type from request body if provided
-        insuranceType = req.body.type || "health"; // Default to health for backward compatibility
-
-        // Create job ID
+        insuranceType = req.body.type || "health";
         jobId = `job-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-        // Create job entry
         job = {
           id: jobId,
           status: "pending",
@@ -187,27 +207,22 @@ export async function registerRoutes(
         };
         analysisJobs.set(jobId, job);
 
-        // Return job ID immediately
         res.json({ jobId, status: "pending" });
       } catch (err: any) {
         console.error("Job creation error:", err);
         return res.status(500).json({ error: "Failed to create analysis job" });
       }
 
-      // 🔧 FIX: Check that job was created successfully before processing
       if (!job || !jobId || !uploadedFile) {
         console.error("Job creation failed - missing required data");
         return;
       }
 
-      // Process in background (don't await)
+      // ─── BACKGROUND PROCESSING ────────────────────────────────────────────
       (async () => {
-        // Declare timeout variable outside try/catch for access in both
         let globalTimeout: NodeJS.Timeout | undefined;
 
         try {
-          // GLOBAL SAFETY TIMEOUT: Ensure the entire process doesn't run longer than 6 minutes
-          // The Gemini call has its own 5-minute timeout, but we want to catch other hangs too
           globalTimeout = setTimeout(() => {
             if (job && job.status === "processing") {
               console.error(`[Job ${jobId}] GLOBAL TIMEOUT - Force failing job`);
@@ -215,12 +230,14 @@ export async function registerRoutes(
               job.error = "Analysis timed out (global limit exceeded). Please try again.";
               job.completedAt = Date.now();
             }
-          }, 6 * 60 * 1000); // 6 minutes
+          }, 6 * 60 * 1000);
 
           job!.status = "processing";
           console.log(`[Job ${jobId}] Starting background analysis...`);
 
+          job!.extractionStartedAt = Date.now();
           const uploadedPolicyText = await extractPolicyText(uploadedFile!);
+          job!.extractionEndedAt = Date.now();
           fs.unlinkSync(uploadedFile!.path);
 
           if (!uploadedPolicyText.trim()) {
@@ -232,22 +249,24 @@ export async function registerRoutes(
 
           console.log(`[Job ${jobId}] EXTRACTED TEXT LENGTH:`, uploadedPolicyText.length);
 
-          // Step 1: Extract policy metadata (insurer, product, plan, year)
+          // Step 1: Extract metadata
           console.log(`[Job ${jobId}] Extracting policy metadata...`);
           const { extractPolicyMetadata, fetchPolicyWordings, mergePolicyTexts } = await import("./utils/policyWordingsFetcher");
           const metadata = await extractPolicyMetadata(uploadedPolicyText);
           console.log(`[Job ${jobId}] Metadata extracted:`, metadata);
 
-          // Step 2: Fetch official policy wordings if metadata available
+          // Step 2: Fetch official wordings if available
           let wordingsText: string | null = null;
           if (metadata.insurer && metadata.product) {
             console.log(`[Job ${jobId}] Fetching policy wordings for ${metadata.insurer} - ${metadata.product}...`);
+            job!.fetchStartedAt = Date.now();
             wordingsText = await fetchPolicyWordings(
               metadata.insurer,
               metadata.product || "",
               metadata.plan || "",
               metadata.year || ""
             );
+            job!.fetchEndedAt = Date.now();
             if (wordingsText) {
               console.log(`[Job ${jobId}] Policy wordings fetched, length:`, wordingsText.length);
             } else {
@@ -257,40 +276,36 @@ export async function registerRoutes(
             console.log(`[Job ${jobId}] Insufficient metadata to fetch wordings, proceeding with uploaded document only`);
           }
 
-          // Step 3: Merge uploaded text with wordings
+          // Step 3: Merge texts
           const policyText = mergePolicyTexts(uploadedPolicyText, wordingsText);
           console.log(`[Job ${jobId}] Merged text length:`, policyText.length);
 
-          // Select prompt based on insurance type
-          let promptToUse = MASTER_AUDIT_PROMPT; // Default to health insurance
+          // Step 4: Select prompt
+          let promptToUse = MASTER_AUDIT_PROMPT;
+          if (insuranceType === "life") promptToUse = LIFE_INSURANCE_PROMPT;
+          else if (insuranceType === "vehicle") promptToUse = VEHICLE_INSURANCE_PROMPT;
 
-          if (insuranceType === "life") {
-            promptToUse = LIFE_INSURANCE_PROMPT;
-          } else if (insuranceType === "vehicle") {
-            promptToUse = VEHICLE_INSURANCE_PROMPT;
-          }
-
-          // REFACTORED: Use AIService for Guarded/Replay execution
+          // Step 5: Call AI — prompt is the SINGLE source of scoring truth
           console.log(`[Job ${jobId}] Calling AIService...`);
-
           let rawText: string;
           try {
-            // Using mergePolicyTexts result (policyText) which contains wordings + user evidence
-            // And passing the prompt separately
+            job!.aiStartedAt = Date.now();
             rawText = await AIService.generateContent(
               promptToUse,
               policyText,
-              "gemini-3-pro-preview"
+              "gemini-3.1-pro-preview"
             );
+            job!.aiEndedAt = Date.now();
           } catch (aiError: any) {
             console.error(`[Job ${jobId}] AI Service Error:`, aiError);
-            throw aiError; // Handled by outer catch
+            throw aiError;
           }
 
           console.log(`[Job ${jobId}] AI Response received (length: ${rawText.length})`);
 
+          // Step 6: Parse JSON
           const cleanedText = rawText.replace(/```json|```/g, "").trim();
-          let parsed;
+          let parsed: any;
           try {
             parsed = JSON.parse(cleanedText);
           } catch {
@@ -307,69 +322,47 @@ export async function registerRoutes(
             return;
           }
 
-          // Legacy logic removed. We rely on the Prompt ("Sach AI" Persona) to generate the correct schema and verdict.
-
-          // 🔍 STRUCTURAL SUITABILITY CHECK
-          const { SuitabilityEngine } = await import("./utils/suitabilityEngine");
-
-          // Heuristic Profile Extraction (Refine later)
-          const userProfile = {
-            age: parsed.identity?.ages?.[0] ? parseInt(parsed.identity.ages[0]) : 35,
-            cityTier: parsed.identity?.assumed_zone === 'A' ? 'Tier 1' : 'Tier 2' as any,
-            hasPED: parsed.identity?.health_flags?.length > 0
-          };
-
-          const suitability = SuitabilityEngine.evaluate(
-            parsed.coverage_structure?.base_sum_insured || 500000,
-            userProfile,
-            parsed.claim_risk_analysis
-          );
-
-          // ⚠️ HARD OVERRIDE
-          if (suitability.structural_verdict === 'RISKY') {
-            console.log(`[Job ${jobId}] STRUCTURAL FAILURE: BCAR ${suitability.bcar_ratio}. Forcing RISKY.`);
-            parsed.final_verdict.label = 'RISKY';
-            parsed.final_verdict.summary = `STRUCTURAL FAILURE (BCAR < 0.4). ${parsed.final_verdict.summary}`;
-            if (parsed.audit_ledger?.final_score > 50) {
-              parsed.audit_ledger.final_score = 50; // Cap score
-            }
-          }
-
-          // Store result (ADD policyText for Sach AI)
+          // Step 7: Store result — no scoring override, no second engine
+          // The prompt has already computed: NCAR, score, verdict, claim simulations
           job!.status = "completed";
           job!.result = {
             ...parsed,
-            suitability_analysis: suitability, // Inject analysis
             __internal: {
-              policyText, // merged + authoritative policy text
+              policyText,
             },
           };
           job!.completedAt = Date.now();
+
+          const durationMs = job!.completedAt - job!.createdAt;
+          const extractionMs = (job!.extractionEndedAt || 0) - (job!.extractionStartedAt || 0);
+          const fetchMs = (job!.fetchEndedAt || 0) - (job!.fetchStartedAt || 0);
+          const aiMs = (job!.aiEndedAt || 0) - (job!.aiStartedAt || 0);
+          const overheadMs = durationMs - extractionMs - fetchMs - aiMs;
+
+          console.log(`[Timing] Job ${jobId} done in ${durationMs}ms | extract: ${extractionMs}ms | fetch: ${fetchMs}ms | ai: ${aiMs}ms | overhead: ${overheadMs}ms`);
+
           console.log(`[Job ${jobId}] Analysis completed successfully`);
+          console.log("[DEBUG] full parsed:", JSON.stringify(parsed, null, 2));
+          console.log(`  -> base_sum_insured:`, parsed?.coverage_structure?.base_sum_insured);
+          console.log(`  -> total_effective_coverage:`, parsed?.coverage_structure?.total_effective_coverage);
           if (globalTimeout) clearTimeout(globalTimeout);
 
         } catch (err: any) {
           console.error(`[Job ${jobId}] Processing error:`, err);
           console.error("Error stack:", err.stack);
 
-          // Clean up uploaded file if it exists
           if (uploadedFile && fs.existsSync(uploadedFile.path)) {
-            try {
-              fs.unlinkSync(uploadedFile.path);
-            } catch (unlinkErr) {
-              console.error("Failed to delete uploaded file:", unlinkErr);
-            }
+            try { fs.unlinkSync(uploadedFile.path); } catch { }
           }
 
-          // Provide more helpful error messages
           let errorMessage = err.message || "Unknown error";
 
           if (errorMessage.includes("404") || errorMessage.includes("not found")) {
-            errorMessage = `Model 'gemini-3-pro-preview' not found or not available. This could mean: 1) The model name is incorrect, 2) Your API key doesn't have access to this model, 3) The model is not available in your region. Please check your GEMINI_API_KEY and verify model availability.`;
+            errorMessage = `Model 'gemini-3.1-pro-preview' not found or not available. Check your GEMINI_API_KEY and verify model availability.`;
           } else if (errorMessage.includes("fetch failed") || errorMessage.includes("ECONNREFUSED") || errorMessage.includes("ENOTFOUND")) {
-            errorMessage = "Network error: Unable to connect to Gemini API. Please check your internet connection and try again.";
+            errorMessage = "Network error: Unable to connect to Gemini API. Please check your internet connection.";
           } else if (errorMessage.includes("API_KEY") || errorMessage.includes("401") || errorMessage.includes("403")) {
-            errorMessage = "API authentication failed. Please check your GEMINI_API_KEY in the .env.local file.";
+            errorMessage = "API authentication failed. Please check your GEMINI_API_KEY in .env.local.";
           } else if (errorMessage.includes("quota") || errorMessage.includes("429")) {
             errorMessage = "API quota exceeded. Please check your Gemini API usage limits.";
           }
@@ -379,14 +372,14 @@ export async function registerRoutes(
           job!.completedAt = Date.now();
           if (globalTimeout) clearTimeout(globalTimeout);
         }
-      })(); // Execute the async IIFE
+      })();
     }
   );
 
-  // Status endpoint for background jobs
+
+  // ─── Status endpoint ──────────────────────────────────────────────────────
   app.get("/api/analyze/status/:jobId", (req, res) => {
     const { jobId } = req.params;
-
     console.log(`[Status Check] Checking status for job: ${jobId}`);
 
     const job = analysisJobs.get(jobId);
@@ -401,6 +394,30 @@ export async function registerRoutes(
 
     console.log(`[Status Check] Job ${jobId} status: ${job.status}`);
 
+    if (job.status === "completed") {
+      const durationMs = (job.completedAt || Date.now()) - job.createdAt;
+      const extractionMs = (job.extractionEndedAt || 0) - (job.extractionStartedAt || 0);
+      const fetchMs = (job.fetchEndedAt || 0) - (job.fetchStartedAt || 0);
+      const aiMs = (job.aiEndedAt || 0) - (job.aiStartedAt || 0);
+      const overheadMs = durationMs - extractionMs - fetchMs - aiMs;
+
+      return res.json({
+        id: job.id,
+        status: job.status,
+        result: job.result,
+        durationMs,
+        breakdown: {
+          extractionMs,
+          fetchMs,
+          aiMs,
+          overheadMs
+        },
+        error: job.error,
+        createdAt: job.createdAt,
+        completedAt: job.completedAt,
+      });
+    }
+
     res.json({
       id: job.id,
       status: job.status,
@@ -411,7 +428,8 @@ export async function registerRoutes(
     });
   });
 
-  // Policy extraction endpoint for comparison feature (client sends field "policy_pdf")
+
+  // ─── Policy extraction for comparison ────────────────────────────────────
   app.post(
     "/api/extract-policy",
     (req, res, next) => {
@@ -429,53 +447,42 @@ export async function registerRoutes(
       try {
         console.log("POLICY EXTRACTION - REQUEST RECEIVED");
         console.log("POLICY EXTRACTION - req.file:", req.file ? "EXISTS" : "MISSING");
-        console.log("POLICY EXTRACTION - req.body:", Object.keys(req.body));
 
         if (!req.file) {
-          console.error("POLICY EXTRACTION - No file in request!");
           return res.status(400).json({ error: "No file uploaded" });
         }
 
         console.log("POLICY EXTRACTION - FILE RECEIVED:", req.file.originalname);
-        console.log("POLICY EXTRACTION - File size:", req.file.size, "bytes");
-        console.log("POLICY EXTRACTION - File mimetype:", req.file.mimetype);
-        console.log("POLICY EXTRACTION - File path:", req.file.path);
 
-        // Step 1: Extract text from PDF using existing parser
-        console.log("POLICY EXTRACTION - Starting text extraction...");
         let uploadedPolicyText: string;
         try {
           uploadedPolicyText = await extractPolicyText(req.file);
           console.log("POLICY EXTRACTION - Text extraction successful, length:", uploadedPolicyText.length);
         } catch (extractError: any) {
           console.error("POLICY EXTRACTION - Text extraction failed:", extractError);
-
           fs.unlinkSync(req.file.path);
           return res.status(500).json({
             error: "Failed to extract text from PDF: " + extractError.message
           });
         }
 
+        const fileBuffer = fs.readFileSync(req.file.path);
         fs.unlinkSync(req.file.path);
 
         if (!uploadedPolicyText.trim()) {
-          console.error("POLICY EXTRACTION - Extracted text is empty!");
-          return res
-            .status(400)
-            .json({ error: "No text extracted from file" });
+          return res.status(400).json({
+            error: "No text extracted from file. (Is this a scanned PDF? Try converting to searchable text PDF first)"
+          });
         }
 
         console.log("POLICY EXTRACTION - TEXT LENGTH:", uploadedPolicyText.length);
 
-        // Step 2: Extract policy metadata and fetch wordings
-        console.log("POLICY EXTRACTION - Extracting metadata and fetching wordings...");
         const { extractPolicyMetadata, fetchPolicyWordings, mergePolicyTexts } = await import("./utils/policyWordingsFetcher");
         const metadata = await extractPolicyMetadata(uploadedPolicyText);
         console.log("POLICY EXTRACTION - Metadata:", metadata);
 
         let wordingsText: string | null = null;
         if (metadata.insurer && metadata.product) {
-          console.log(`POLICY EXTRACTION - Fetching wordings for ${metadata.insurer} - ${metadata.product}...`);
           wordingsText = await fetchPolicyWordings(
             metadata.insurer,
             metadata.product || "",
@@ -487,96 +494,37 @@ export async function registerRoutes(
           }
         }
 
-        // Step 3: Merge texts
         const policyText = mergePolicyTexts(uploadedPolicyText, wordingsText);
         console.log("POLICY EXTRACTION - Merged text length:", policyText.length);
 
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-          return res
-            .status(500)
-            .json({ error: "GEMINI_API_KEY not set" });
+          return res.status(500).json({ error: "GEMINI_API_KEY not set" });
         }
 
-        console.log("POLICY EXTRACTION - CALLING GEMINI...");
+        const pageCount = (policyText.match(/\f/g) || []).length + 1;
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-          model: "gemini-3-pro-preview",
-          generationConfig: {
-            temperature: 0,
-            topP: 0.95,
-          },
-        });
+        // ARCHIVED: const report: PolicyReport = await runExtractionPipeline({
+        // ARCHIVED:   policyText,
+        // ARCHIVED:   fileBuffer,
+        // ARCHIVED:   pageCount,
+        // ARCHIVED:   apiKey,
+        // ARCHIVED: });
 
-        // Step 2: Send to Gemini with extraction prompt
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Request timeout: Gemini API took too long to respond (5 minutes)")), 5 * 60 * 1000);
-        });
+        // ARCHIVED: return res.json({
+        // ARCHIVED:   policy_id: report.analysis_id,
+        // ARCHIVED:   extracted_data: report,
+        // ARCHIVED:   extraction_metadata: {
+        // ARCHIVED:     confidence: report.data_quality.extraction_confidence_score,
+        // ARCHIVED:     missing_fields: report.data_quality.missing_fields,
+        // ARCHIVED:     needs_verification: report.data_quality.extraction_confidence_score < 0.5,
+        // ARCHIVED:   },
+        // ARCHIVED: });
 
-        const generatePromise = model.generateContent({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: POLICY_EXTRACTION_PROMPT + "\n\n" + policyText,
-                },
-              ],
-            },
-          ],
-        });
-
-        const result = await Promise.race([generatePromise, timeoutPromise]) as any;
-        const responseText = result.response.text();
-
-        console.log("POLICY EXTRACTION - GEMINI RESPONSE RECEIVED");
-
-        // Step 3: Parse JSON response
-        let rawExtraction: RawPolicyExtraction;
-        try {
-          // Try to extract JSON from markdown code blocks if present
-          const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) ||
-            responseText.match(/(\{[\s\S]*\})/);
-          const jsonText = jsonMatch ? jsonMatch[1] : responseText;
-          rawExtraction = JSON.parse(jsonText);
-        } catch (parseError: any) {
-          console.error("POLICY EXTRACTION - JSON PARSE ERROR:", parseError);
-          return res.status(500).json({
-            error: "Failed to parse extraction response",
-            details: "Gemini returned invalid JSON. Please try again or verify the PDF is readable.",
-            raw_response_preview: responseText.substring(0, 500),
-          });
-        }
-
-        // Step 4: Validate critical fields
-        const missingFields: string[] = [];
-        if (!rawExtraction.policy_metadata?.insurer) missingFields.push("insurer");
-        if (!rawExtraction.policy_metadata?.policy_name) missingFields.push("plan_name");
-        if (!rawExtraction.coverage?.sum_insured) missingFields.push("sum_insured");
-        if (!rawExtraction.coverage?.annual_premium) missingFields.push("annual_premium");
-
-        if (missingFields.length > 0) {
-          console.warn("POLICY EXTRACTION - Missing critical fields:", missingFields);
-        }
-
-        // Step 5: Transform to full policy structure
-        const policyData = transformRawExtraction(rawExtraction, req.file.originalname);
-
-        // Step 6: Return extracted policy
-        return res.json({
-          policy_id: policyData.policy_id,
-          extracted_data: policyData,
-          extraction_metadata: {
-            confidence: policyData.extraction_metadata.extraction_confidence,
-            missing_fields: policyData.extraction_metadata.missing_fields,
-            needs_verification: policyData.extraction_metadata.manual_verification_needed,
-          },
-        });
+        return res.status(501).json({ error: "Extraction pipeline archived." });
 
       } catch (err: any) {
         console.error("POLICY EXTRACTION ERROR:", err);
-        console.error("POLICY EXTRACTION ERROR STACK:", err.stack);
 
         let errorMessage = err.message || "Unknown error occurred";
         let statusCode = 500;
@@ -586,61 +534,83 @@ export async function registerRoutes(
           statusCode = 408;
         } else if (errorMessage.includes("GEMINI_API_KEY")) {
           errorMessage = "API key not configured";
-          statusCode = 500;
         } else if (errorMessage.includes("quota") || errorMessage.includes("429")) {
           errorMessage = "API quota exceeded. Please check your Gemini API usage limits.";
           statusCode = 429;
         }
 
-        // Clean up file if it still exists
         if (req.file && fs.existsSync(req.file.path)) {
-          try {
-            fs.unlinkSync(req.file.path);
-          } catch (unlinkErr) {
-            console.error("Failed to clean up file:", unlinkErr);
-          }
+          try { fs.unlinkSync(req.file.path); } catch { }
         }
 
-        return res
-          .status(statusCode)
-          .json({
-            error: "Policy extraction failed: " + errorMessage,
-            details: process.env.NODE_ENV === "development" ? err.stack : undefined
-          });
+        return res.status(statusCode).json({
+          error: "Policy extraction failed: " + errorMessage,
+          details: process.env.NODE_ENV === "development" ? err.stack : undefined
+        });
       }
     }
   );
 
-  // Hospital Network Filter Endpoint
-  app.get("/api/hospitals/filter", async (req, res) => {
+
+  // ─── Deterministic Policy Comparison ─────────────────────────────────────
+  // ARCHIVED: app.post("/api/compare-policies", requireAuth, async (req, res) => {
+  app.post("/api/compare-policies", async (req, res) => {
     try {
-      const { state, city, pincode } = req.query;
+      const { policyA, policyB } = req.body as {
+        policyA: any; // ARCHIVED: PolicyReport;
+        policyB: any; // ARCHIVED: PolicyReport;
+      };
 
-      // Load filter engine
-      const filterEnginePath = "./data/insurance_networks/filter_engine";
-      const { filterHospitalNetwork } = await import(filterEnginePath);
+      if (!policyA || !policyB) {
+        return res.status(400).json({
+          error: "Both policyA and policyB are required in request body",
+        });
+      }
 
-      // Apply filters
-      const result = filterHospitalNetwork({
-        state: state as string | undefined,
-        city: city as string | undefined,
-        pincode: pincode as string | undefined
-      });
+      console.log("[Compare] Normalizing policies...");
+      // ARCHIVED: const normA = normalizePolicyForComparison(policyA);
+      // ARCHIVED: const normB = normalizePolicyForComparison(policyB);
 
-      res.json(result);
-    } catch (error: any) {
-      console.error('[Hospital Filter] Error:', error);
-      res.status(500).json({
-        error: "Failed to filter hospital network data",
-        details: error.message
+      console.log("[Compare] Running deterministic comparison...");
+      // ARCHIVED: const result = comparePolicies(normA, normB, policyA, policyB);
+
+      // ARCHIVED: console.log(`[Compare] ✓ Result: large=${result.better_for_large_claims}, small=${result.better_for_small_claims}`);
+
+      return res.json({ archived: true });
+    } catch (err: any) {
+      console.error("[Compare] Error:", err);
+      return res.status(500).json({
+        error: "Comparison failed: " + (err.message || "Unknown error"),
       });
     }
   });
 
-  // PDF Generation Endpoint (Headless Browser)
+
+  // ─── Hospital Network Filter ──────────────────────────────────────────────
+  app.get("/api/hospitals/filter", async (req, res) => {
+    try {
+      const { state, city, pincode } = req.query;
+
+      // ARCHIVED: const result = filterHospitalNetwork({
+      // ARCHIVED:   state: state as string | undefined,
+      // ARCHIVED:   city: city as string | undefined,
+      // ARCHIVED:   pincode: pincode as string | undefined,
+      // ARCHIVED: });
+
+      res.json({ archived: true });
+    } catch (error: any) {
+      console.error('[Hospital Filter] Error:', error);
+      res.status(500).json({
+        error: "Failed to filter hospital network data",
+        details: error.message,
+      });
+    }
+  });
+
+
+  // ─── PDF Generation ───────────────────────────────────────────────────────
   console.log('[ROUTES] Registering PDF generation endpoints...');
 
-  // Test endpoint to verify route registration
   app.get("/api/generate-pdf/test", (req, res) => {
     console.log('[PDF] Test endpoint hit');
     res.json({ status: "PDF endpoint is registered and working" });
@@ -655,7 +625,6 @@ export async function registerRoutes(
         return res.status(400).json({ error: "URL is required" });
       }
 
-      // Ensure URL is absolute - if relative, construct from request
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         const protocol = req.protocol;
         const host = req.get('host');
@@ -664,7 +633,6 @@ export async function registerRoutes(
 
       console.log('[PDF] Generating PDF from URL:', url);
 
-      // Dynamic import of playwright (only load when needed)
       const { chromium } = await import("playwright");
 
       let browser;
@@ -675,44 +643,19 @@ export async function registerRoutes(
         });
 
         const page = await browser.newPage();
-
-        // Set viewport to match typical desktop size
         await page.setViewportSize({ width: 1200, height: 1600 });
 
-        console.log('[PDF] Navigating to URL...');
-        // Navigate to the URL
-        await page.goto(url, {
-          waitUntil: 'networkidle',
-          timeout: 30000
-        });
-
-        console.log('[PDF] Waiting for fonts...');
-        // Wait for fonts to load
-        await page.evaluate(() => {
-          return document.fonts.ready;
-        });
-
-        console.log('[PDF] Waiting for DOM content...');
-        // Wait for any dynamic content to load
+        await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+        await page.evaluate(() => document.fonts.ready);
         await page.waitForLoadState('domcontentloaded');
-
-        console.log('[PDF] Waiting for layout to stabilize...');
-        // Wait for layout to stabilize (especially for React hydration)
         await page.waitForTimeout(2000);
 
-        console.log('[PDF] Generating PDF...');
-        // Generate PDF with exact visual preservation
         const pdfBuffer = await page.pdf({
           format: 'A4',
-          printBackground: true, // Preserve colors and backgrounds
-          margin: {
-            top: '1cm',
-            right: '1cm',
-            bottom: '1cm',
-            left: '1cm'
-          },
+          printBackground: true,
+          margin: { top: '1cm', right: '1cm', bottom: '1cm', left: '1cm' },
           preferCSSPageSize: false,
-          scale: 0.8, // Adjust scale for readability while preserving layout
+          scale: 0.8,
           displayHeaderFooter: false
         });
 
@@ -721,26 +664,23 @@ export async function registerRoutes(
 
         console.log('[PDF] PDF generated successfully, size:', pdfBuffer.length, 'bytes');
 
-        // Set headers for PDF download
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="ensured-report.pdf"`);
         res.send(pdfBuffer);
       } catch (browserError: any) {
-        if (browser) {
-          await browser.close().catch(() => { });
-        }
+        if (browser) await browser.close().catch(() => { });
         throw browserError;
       }
 
     } catch (error: any) {
       console.error('[PDF] PDF generation error:', error);
-      console.error('[PDF] Error stack:', error.stack);
       res.status(500).json({
         error: error.message || "PDF generation failed",
         details: process.env.NODE_ENV === "development" ? error.stack : undefined
       });
     }
   });
+
 
   console.log('[ROUTES] All routes registered successfully');
   return _httpServer;

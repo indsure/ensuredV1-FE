@@ -2,636 +2,372 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "$id": "https://policy.sach.ai/schemas/ForensicAuditReport.schema.json",
     "title": "ForensicAuditReport",
-    "description": "The hardened master contract for policy analysis output.",
-    "allOf": [
-        {
-            "$ref": "BaseAuditObject.schema.json"
-        },
-        {
+    "description": "Master contract for IndSure forensic policy analysis output. Prompt is single source of scoring truth.",
+    "type": "object",
+    "required": [
+        "identity",
+        "policy_timeline",
+        "coverage_structure",
+        "waiting_period_analysis",
+        "claim_risk_analysis",
+        "claim_simulations",
+        "supplementary_coverage",
+        "network_limitations",
+        "benefit_evaluation",
+        "audit_score",
+        "final_verdict",
+        "recommendations",
+        "data_quality"
+    ],
+    "properties": {
+        "identity": {
             "type": "object",
             "required": [
-                "policy_metadata",
-                "audit_ledger",
-                "identity",
-                "policy_timeline",
-                "coverage_structure",
-                "waiting_period_analysis",
-                "claim_risk_analysis",
-                "supplementary_coverage",
-                "network_limitations",
-                "benefit_evaluation",
-                "audit_score",
-                "suitability_analysis",
-                "final_verdict",
-                "recommendations",
-                "data_quality"
+                "insured_names",
+                "confidence",
+                "assumed_zone"
             ],
             "properties": {
-                "suitability_analysis": {
-                    "type": "object",
-                    "required": [
-                        "rbc_value",
-                        "bcar_ratio",
-                        "structural_verdict"
-                    ],
-                    "properties": {
-                        "rbc_value": {
-                            "type": "number"
-                        },
-                        "bcar_ratio": {
-                            "type": "number"
-                        },
-                        "structural_verdict": {
-                            "type": "string",
-                            "enum": [
-                                "SAFE",
-                                "BORDERLINE",
-                                "RISKY"
-                            ]
-                        },
-                        "first_claim_simulation": {
-                            "type": "object",
-                            "properties": {
-                                "scenario_cost": {
-                                    "type": "number"
-                                },
-                                "estimated_oop": {
-                                    "type": "number"
-                                },
-                                "oop_ratio": {
-                                    "type": "number"
-                                },
-                                "verdict": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                },
-                "policy_metadata": {
-                    "$ref": "PolicyMetadata.schema.json"
-                },
-                "audit_ledger": {
-                    "$ref": "AuditPenaltyLedger.schema.json"
-                },
-                "identity": {
-                    "type": "object",
-                    "required": [
-                        "insured_names",
-                        "confidence",
-                        "assumed_zone"
-                    ],
-                    "properties": {
-                        "insured_names": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "ages": {
-                            "type": "array",
-                            "items": {
-                                "type": [
-                                    "string",
-                                    "null"
-                                ]
-                            }
-                        },
-                        "genders": {
-                            "type": "array",
-                            "items": {
-                                "type": [
-                                    "string",
-                                    "null"
-                                ]
-                            }
-                        },
-                        "city": {
-                            "type": [
-                                "string",
-                                "null"
-                            ]
-                        },
-                        "assumed_zone": {
-                            "type": "string",
-                            "enum": [
-                                "A",
-                                "B",
-                                "C",
-                                "D",
-                                "Unknown"
-                            ]
-                        },
-                        "health_flags": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "confidence": {
-                            "type": "string",
-                            "enum": [
-                                "high",
-                                "medium",
-                                "low"
-                            ]
-                        }
-                    },
-                    "additionalProperties": false
-                },
-                "policy_timeline": {
-                    "type": "object",
-                    "required": [
-                        "policy_tenure_years",
-                        "analysis_date",
-                        "confidence"
-                    ],
-                    "properties": {
-                        "policy_inception_date": {
-                            "type": [
-                                "string",
-                                "null"
-                            ],
-                            "format": "date"
-                        },
-                        "policy_expiry_date": {
-                            "type": [
-                                "string",
-                                "null"
-                            ],
-                            "format": "date"
-                        },
-                        "policy_tenure_years": {
-                            "type": "number"
-                        },
-                        "policy_age_days": {
-                            "type": "number"
-                        },
-                        "analysis_date": {
-                            "type": "string",
-                            "format": "date"
-                        },
-                        "confidence": {
-                            "type": "string",
-                            "enum": [
-                                "high",
-                                "medium",
-                                "low"
-                            ]
-                        }
-                    },
-                    "additionalProperties": false
-                },
-                "coverage_structure": {
-                    "type": "object",
-                    "required": [
-                        "base_sum_insured",
-                        "riders",
-                        "total_effective_coverage",
-                        "confidence"
-                    ],
-                    "properties": {
-                        "base_sum_insured": {
-                            "type": "number"
-                        },
-                        "top_up": {
-                            "type": "object",
-                            "required": [
-                                "exists"
-                            ],
-                            "properties": {
-                                "exists": {
-                                    "type": "boolean"
-                                },
-                                "sum_insured": {
-                                    "type": [
-                                        "number",
-                                        "null"
-                                    ]
-                                },
-                                "deductible": {
-                                    "type": [
-                                        "number",
-                                        "null"
-                                    ]
-                                },
-                                "type": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                },
-                                "deductible_achievable": {
-                                    "type": [
-                                        "boolean",
-                                        "null"
-                                    ]
-                                },
-                                "remarks": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                },
-                                "clause_ref": {
-                                    "$ref": "ClauseReference.schema.json"
-                                }
-                            }
-                        },
-                        "super_top_up": {
-                            "type": "object",
-                            "required": [
-                                "exists"
-                            ],
-                            "properties": {
-                                "exists": {
-                                    "type": "boolean"
-                                },
-                                "sum_insured": {
-                                    "type": [
-                                        "number",
-                                        "null"
-                                    ]
-                                },
-                                "deductible": {
-                                    "type": [
-                                        "number",
-                                        "null"
-                                    ]
-                                },
-                                "deductible_achievable": {
-                                    "type": [
-                                        "boolean",
-                                        "null"
-                                    ]
-                                },
-                                "remarks": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                },
-                                "clause_ref": {
-                                    "$ref": "ClauseReference.schema.json"
-                                }
-                            }
-                        },
-                        "restoration": {
-                            "type": "object",
-                            "required": [
-                                "exists"
-                            ],
-                            "properties": {
-                                "exists": {
-                                    "type": "boolean"
-                                },
-                                "type": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                },
-                                "restore_amount": {
-                                    "type": [
-                                        "number",
-                                        "null"
-                                    ]
-                                },
-                                "trigger_conditions": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                },
-                                "actually_useful": {
-                                    "type": [
-                                        "boolean",
-                                        "null"
-                                    ]
-                                },
-                                "remarks": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                },
-                                "clause_ref": {
-                                    "$ref": "ClauseReference.schema.json"
-                                }
-                            }
-                        },
-                        "riders": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "required": [
-                                    "name",
-                                    "is_material"
-                                ],
-                                "properties": {
-                                    "name": {
-                                        "type": "string"
-                                    },
-                                    "coverage_amount": {
-                                        "type": [
-                                            "number",
-                                            "null"
-                                        ]
-                                    },
-                                    "is_material": {
-                                        "type": "boolean"
-                                    },
-                                    "remarks": {
-                                        "type": [
-                                            "string",
-                                            "null"
-                                        ]
-                                    },
-                                    "clause_ref": {
-                                        "$ref": "ClauseReference.schema.json"
-                                    }
-                                }
-                            }
-                        },
-                        "total_effective_coverage": {
-                            "type": "number"
-                        },
-                        "confidence": {
-                            "type": "string"
-                        }
-                    },
-                    "additionalProperties": false
-                },
-                "claim_risk_analysis": {
-                    "type": "object",
-                    "required": [
-                        "room_rent",
-                        "co_payment",
-                        "sub_limits",
-                        "deductibles"
-                    ],
-                    "properties": {
-                        "room_rent": {
-                            "type": "object",
-                            "required": [
-                                "limit_type",
-                                "risk_level"
-                            ],
-                            "properties": {
-                                "limit_type": {
-                                    "type": "string",
-                                    "enum": [
-                                        "none",
-                                        "specific_amount",
-                                        "room_category",
-                                        "percentage_of_si"
-                                    ]
-                                },
-                                "limit_value": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                },
-                                "risk_level": {
-                                    "type": "string",
-                                    "enum": [
-                                        "low",
-                                        "medium",
-                                        "high",
-                                        "critical"
-                                    ]
-                                },
-                                "explanation": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                },
-                                "clause_ref": {
-                                    "$ref": "ClauseReference.schema.json"
-                                }
-                            }
-                        },
-                        "co_payment": {
-                            "type": "object",
-                            "required": [
-                                "exists",
-                                "risk_level"
-                            ],
-                            "properties": {
-                                "exists": {
-                                    "type": "boolean"
-                                },
-                                "percentage": {
-                                    "type": [
-                                        "number",
-                                        "null"
-                                    ]
-                                },
-                                "conditions": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                },
-                                "risk_level": {
-                                    "type": "string"
-                                },
-                                "oop_on_5L_claim": {
-                                    "type": [
-                                        "number",
-                                        "null"
-                                    ]
-                                },
-                                "clause_ref": {
-                                    "$ref": "ClauseReference.schema.json"
-                                }
-                            }
-                        },
-                        "sub_limits": {
-                            "type": "object",
-                            "required": [
-                                "exists",
-                                "risk_level"
-                            ],
-                            "properties": {
-                                "exists": {
-                                    "type": "boolean"
-                                },
-                                "categories": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "name": {
-                                                "type": "string"
-                                            },
-                                            "limit": {
-                                                "type": "string"
-                                            },
-                                            "clause_ref": {
-                                                "$ref": "ClauseReference.schema.json"
-                                            }
-                                        }
-                                    }
-                                },
-                                "risk_level": {
-                                    "type": "string"
-                                },
-                                "remarks": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                }
-                            }
-                        },
-                        "deductibles": {
-                            "type": "object",
-                            "required": [
-                                "base_deductible"
-                            ],
-                            "properties": {
-                                "base_deductible": {
-                                    "type": "number"
-                                },
-                                "per_claim_impact": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                },
-                                "remarks": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
-                                },
-                                "clause_ref": {
-                                    "$ref": "ClauseReference.schema.json"
-                                }
-                            }
-                        }
-                    },
-                    "additionalProperties": false
-                },
-                "audit_score": {
-                    "$ref": "AuditPenaltyLedger.schema.json"
-                },
-                "final_verdict": {
-                    "type": "object",
-                    "required": [
-                        "label",
-                        "summary",
-                        "key_failure_points"
-                    ],
-                    "properties": {
-                        "label": {
-                            "type": "string",
-                            "enum": [
-                                "SAFE",
-                                "BORDERLINE",
-                                "RISKY"
-                            ]
-                        },
-                        "summary": {
-                            "type": "string"
-                        },
-                        "key_failure_points": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "will_this_policy_protect_in_real_claim": {
-                            "type": "string"
-                        },
-                        "verdict_clause_refs": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "ClauseReference.schema.json"
-                            }
-                        }
-                    },
-                    "additionalProperties": false
-                },
-                "recommendations": {
-                    "type": "object",
-                    "required": [
-                        "should_port_to_better_policy"
-                    ],
-                    "properties": {
-                        "critical_actions": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "action": {
-                                        "type": "string"
-                                    },
-                                    "clause_ref": {
-                                        "$ref": "ClauseReference.schema.json"
-                                    }
-                                }
-                            }
-                        },
-                        "should_port_to_better_policy": {
-                            "type": "object",
-                            "required": [
-                                "recommendation",
-                                "reason"
-                            ],
-                            "properties": {
-                                "recommendation": {
-                                    "type": "string",
-                                    "enum": [
-                                        "yes",
-                                        "no",
-                                        "maybe"
-                                    ]
-                                },
-                                "reason": {
-                                    "type": "string"
-                                },
-                                "what_to_look_for": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "additionalProperties": false
-                },
-                "waiting_period_analysis": {
-                    "$ref": "#/definitions/WaitingPeriodAnalysis"
-                },
-                "supplementary_coverage": {
-                    "$ref": "#/definitions/SupplementaryCoverage"
-                },
-                "network_limitations": {
-                    "$ref": "#/definitions/NetworkLimitations"
-                },
-                "benefit_evaluation": {
-                    "$ref": "#/definitions/BenefitEvaluation"
-                },
-                "data_quality": {
-                    "$ref": "#/definitions/DataQuality"
-                },
-                "confidence_notes": {
+                "insured_names": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
+                },
+                "ages": {
+                    "type": "array",
+                    "items": {
+                        "type": [
+                            "number",
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "genders": {
+                    "type": "array",
+                    "items": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "city": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "assumed_zone": {
+                    "type": "string",
+                    "enum": [
+                        "A",
+                        "B",
+                        "C"
+                    ],
+                    "description": "A=Metro, B=Tier2, C=Tier3. Never Unknown — default to A if city unclear."
+                },
+                "health_flags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "confidence": {
+                    "type": "string",
+                    "enum": [
+                        "high",
+                        "medium",
+                        "low"
+                    ]
                 }
             },
             "additionalProperties": false
-        }
-    ],
-    "definitions": {
-        "WaitingPeriodAnalysis": {
+        },
+        "policy_timeline": {
+            "type": "object",
+            "required": [
+                "policy_tenure_years",
+                "analysis_date",
+                "confidence"
+            ],
+            "properties": {
+                "policy_inception_date": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date"
+                },
+                "policy_expiry_date": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date"
+                },
+                "policy_tenure_years": {
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "policy_age_days": {
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "analysis_date": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "confidence": {
+                    "type": "string",
+                    "enum": [
+                        "high",
+                        "medium",
+                        "low"
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "coverage_structure": {
+            "type": "object",
+            "required": [
+                "base_sum_insured",
+                "riders",
+                "total_effective_coverage",
+                "confidence"
+            ],
+            "properties": {
+                "base_sum_insured": {
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "top_up": {
+                    "type": "object",
+                    "required": [
+                        "exists"
+                    ],
+                    "properties": {
+                        "exists": {
+                            "type": "boolean"
+                        },
+                        "sum_insured": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "deductible": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "type": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "deductible_achievable": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "super_top_up": {
+                    "type": "object",
+                    "required": [
+                        "exists"
+                    ],
+                    "properties": {
+                        "exists": {
+                            "type": "boolean"
+                        },
+                        "sum_insured": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "deductible": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "deductible_achievable": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "restoration": {
+                    "type": "object",
+                    "required": [
+                        "exists"
+                    ],
+                    "properties": {
+                        "exists": {
+                            "type": "boolean"
+                        },
+                        "type": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "restore_amount": {
+                            "type": [
+                                "number",
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "trigger_conditions": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "actually_useful": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "no_claim_bonus": {
+                    "type": "object",
+                    "required": [
+                        "exists"
+                    ],
+                    "properties": {
+                        "exists": {
+                            "type": "boolean"
+                        },
+                        "rate_per_year": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "cap_percentage": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "current_bonus": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "portability": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "yes",
+                                "no",
+                                "unclear",
+                                null
+                            ]
+                        },
+                        "clarity": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "clear",
+                                "unclear",
+                                null
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "riders": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "name",
+                            "is_material"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "coverage_amount": {
+                                "type": [
+                                    "number",
+                                    "null"
+                                ]
+                            },
+                            "is_material": {
+                                "type": "boolean"
+                            },
+                            "remarks": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "total_effective_coverage": {
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                },
+                "confidence": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "waiting_period_analysis": {
             "type": "object",
             "required": [
                 "initial_waiting_period",
@@ -666,13 +402,15 @@
                                 "null"
                             ]
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "pre_existing_disease": {
                     "type": "object",
                     "required": [
                         "duration_months",
-                        "months_remaining"
+                        "months_remaining",
+                        "is_active_today"
                     ],
                     "properties": {
                         "duration_months": {
@@ -696,24 +434,26 @@
                             "type": "boolean"
                         },
                         "months_remaining": {
-                            "type": "number"
+                            "type": [
+                                "number",
+                                "null"
+                            ]
                         },
                         "risk_commentary": {
                             "type": [
                                 "string",
                                 "null"
                             ]
-                        },
-                        "clause_ref": {
-                            "$ref": "ClauseReference.schema.json"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 },
                 "specific_diseases": {
                     "type": "object",
                     "required": [
                         "duration_months",
-                        "diseases_covered"
+                        "diseases_covered",
+                        "is_active_today"
                     ],
                     "properties": {
                         "duration_months": {
@@ -739,11 +479,103 @@
                                 "string",
                                 "null"
                             ]
-                        },
-                        "clause_ref": {
-                            "$ref": "ClauseReference.schema.json"
                         }
+                    },
+                    "additionalProperties": false
+                },
+                "personal_waiting_periods": {
+                    "type": "array",
+                    "description": "Individually applied waiting periods from policy schedule (e.g. ear disorders, specific conditions).",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "condition",
+                            "duration_months",
+                            "is_active_today"
+                        ],
+                        "properties": {
+                            "condition": {
+                                "type": "string"
+                            },
+                            "duration_months": {
+                                "type": "number"
+                            },
+                            "start_date": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "date"
+                            },
+                            "end_date": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "date"
+                            },
+                            "is_active_today": {
+                                "type": "boolean"
+                            },
+                            "months_remaining": {
+                                "type": [
+                                    "number",
+                                    "null"
+                                ]
+                            },
+                            "risk_commentary": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "additionalProperties": false
                     }
+                },
+                "maternity": {
+                    "type": "object",
+                    "required": [
+                        "relevant"
+                    ],
+                    "properties": {
+                        "duration_months": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "end_date": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "date"
+                        },
+                        "is_active_today": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ]
+                        },
+                        "months_remaining": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "risk_commentary": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "relevant": {
+                            "type": "boolean",
+                            "description": "false if male or age > 45. Skip scoring entirely if false."
+                        }
+                    },
+                    "additionalProperties": false
                 },
                 "policy_fully_active": {
                     "type": "boolean"
@@ -751,42 +583,523 @@
             },
             "additionalProperties": false
         },
-        "SupplementaryCoverage": {
+        "claim_risk_analysis": {
             "type": "object",
-            "additionalProperties": {
+            "required": [
+                "room_rent",
+                "co_payment",
+                "sub_limits",
+                "deductibles"
+            ],
+            "properties": {
+                "room_rent": {
+                    "type": "object",
+                    "required": [
+                        "limit_type",
+                        "risk_level"
+                    ],
+                    "properties": {
+                        "limit_type": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "specific_amount",
+                                "room_category",
+                                "percentage_of_si",
+                                "unclear"
+                            ]
+                        },
+                        "limit_value": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "limit_amount_per_day": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "penalty_type": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "none",
+                                "proportional",
+                                "unclear",
+                                null
+                            ]
+                        },
+                        "penalty_calculation": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "risk_level": {
+                            "type": "string",
+                            "enum": [
+                                "low",
+                                "medium",
+                                "high"
+                            ]
+                        },
+                        "zone_adequacy": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "adequate",
+                                "marginal",
+                                "inadequate",
+                                null
+                            ]
+                        },
+                        "explanation": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "co_payment": {
+                    "type": "object",
+                    "required": [
+                        "exists",
+                        "risk_level"
+                    ],
+                    "properties": {
+                        "exists": {
+                            "type": "boolean"
+                        },
+                        "percentage": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "conditions": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "applies_to": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "all_claims",
+                                "seniors_only",
+                                "specific_treatments",
+                                "unclear",
+                                null
+                            ]
+                        },
+                        "waiver_conditions": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "risk_level": {
+                            "type": "string",
+                            "enum": [
+                                "low",
+                                "medium",
+                                "high"
+                            ]
+                        },
+                        "oop_on_5L_claim": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "sub_limits": {
+                    "type": "object",
+                    "required": [
+                        "exists",
+                        "risk_level"
+                    ],
+                    "properties": {
+                        "exists": {
+                            "type": "boolean"
+                        },
+                        "categories": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "procedure": {
+                                        "type": "string"
+                                    },
+                                    "limit": {
+                                        "type": [
+                                            "number",
+                                            "null"
+                                        ]
+                                    },
+                                    "typical_cost_in_zone": {
+                                        "type": [
+                                            "number",
+                                            "null"
+                                        ]
+                                    },
+                                    "gap": {
+                                        "type": [
+                                            "number",
+                                            "null"
+                                        ]
+                                    },
+                                    "severity": {
+                                        "type": "string",
+                                        "enum": [
+                                            "low",
+                                            "medium",
+                                            "high"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "risk_level": {
+                            "type": "string",
+                            "enum": [
+                                "low",
+                                "medium",
+                                "high"
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "deductibles": {
+                    "type": "object",
+                    "required": [
+                        "base_deductible"
+                    ],
+                    "properties": {
+                        "base_deductible": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "per_claim_impact": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false
+        },
+        "claim_simulations": {
+            "type": "array",
+            "description": "Two scenarios: standard hospitalisation + major surgery, both zone-calibrated.",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
                 "type": "object",
                 "required": [
-                    "covered"
+                    "scenario",
+                    "total_bill",
+                    "insurer_pays",
+                    "patient_oop",
+                    "oop_ratio",
+                    "verdict"
                 ],
                 "properties": {
-                    "covered": {
-                        "type": "boolean"
+                    "scenario": {
+                        "type": "string"
                     },
-                    "limit": {
+                    "total_bill": {
+                        "type": "number"
+                    },
+                    "insurer_pays": {
+                        "type": "number"
+                    },
+                    "patient_oop": {
+                        "type": "number"
+                    },
+                    "oop_ratio": {
+                        "type": "number"
+                    },
+                    "verdict": {
+                        "type": "string",
+                        "enum": [
+                            "COVERED",
+                            "PARTIAL",
+                            "EXPOSED"
+                        ]
+                    },
+                    "explanation": {
                         "type": [
                             "string",
                             "null"
                         ]
-                    },
-                    "conditions": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "remarks": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "clause_ref": {
-                        "$ref": "ClauseReference.schema.json"
                     }
-                }
+                },
+                "additionalProperties": false
             }
         },
-        "NetworkLimitations": {
+        "supplementary_coverage": {
+            "type": "object",
+            "properties": {
+                "opd": {
+                    "type": "object",
+                    "required": [
+                        "covered"
+                    ],
+                    "properties": {
+                        "covered": {
+                            "type": "boolean"
+                        },
+                        "limit_per_year": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "conditions": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "utility": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "high",
+                                "medium",
+                                "low",
+                                "none",
+                                null
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "maternity": {
+                    "type": "object",
+                    "required": [
+                        "covered"
+                    ],
+                    "properties": {
+                        "covered": {
+                            "type": "boolean"
+                        },
+                        "limit_per_delivery": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "waiting_period_over": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ]
+                        },
+                        "conditions": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "utility": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "high",
+                                "medium",
+                                "low",
+                                "none",
+                                null
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "consumables": {
+                    "type": "object",
+                    "required": [
+                        "covered"
+                    ],
+                    "properties": {
+                        "covered": {
+                            "type": "boolean"
+                        },
+                        "coverage_type": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "full",
+                                "partial",
+                                "none",
+                                "unclear",
+                                null
+                            ]
+                        },
+                        "limit": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "modern_treatments": {
+                    "type": "object",
+                    "required": [
+                        "covered"
+                    ],
+                    "properties": {
+                        "covered": {
+                            "type": "boolean"
+                        },
+                        "examples": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "conditions": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "ambulance": {
+                    "type": "object",
+                    "required": [
+                        "covered"
+                    ],
+                    "properties": {
+                        "covered": {
+                            "type": "boolean"
+                        },
+                        "limit_per_trip": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "day_care_procedures": {
+                    "type": "object",
+                    "required": [
+                        "covered"
+                    ],
+                    "properties": {
+                        "covered": {
+                            "type": "boolean"
+                        },
+                        "number_of_procedures": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                },
+                "preventive_health_checkup": {
+                    "type": "object",
+                    "required": [
+                        "covered"
+                    ],
+                    "properties": {
+                        "covered": {
+                            "type": "boolean"
+                        },
+                        "limit_per_year": {
+                            "type": [
+                                "number",
+                                "null"
+                            ]
+                        },
+                        "remarks": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                }
+            },
+            "additionalProperties": true
+        },
+        "network_limitations": {
             "type": "object",
             "required": [
                 "network_type",
@@ -795,7 +1108,25 @@
             ],
             "properties": {
                 "network_type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "cashless_only",
+                        "cashless_and_reimbursement",
+                        "unclear"
+                    ]
+                },
+                "hospital_count_in_zone": {
+                    "type": [
+                        "number",
+                        "string",
+                        "null"
+                    ]
+                },
+                "major_hospitals_included": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "reimbursement_allowed": {
                     "type": "boolean"
@@ -807,21 +1138,23 @@
                     ]
                 },
                 "risk_level": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                    ]
                 },
                 "remarks": {
                     "type": [
                         "string",
                         "null"
                     ]
-                },
-                "clause_ref": {
-                    "$ref": "ClauseReference.schema.json"
                 }
             },
             "additionalProperties": false
         },
-        "BenefitEvaluation": {
+        "benefit_evaluation": {
             "type": "object",
             "required": [
                 "what_actually_works",
@@ -843,10 +1176,14 @@
                             "why_it_matters_in_claim": {
                                 "type": "string"
                             },
-                            "clause_ref": {
-                                "$ref": "ClauseReference.schema.json"
+                            "quantified_value": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             }
-                        }
+                        },
+                        "additionalProperties": false
                     }
                 },
                 "where_policy_fails": {
@@ -869,17 +1206,300 @@
                                     "string",
                                     "null"
                                 ]
-                            },
-                            "clause_ref": {
-                                "$ref": "ClauseReference.schema.json"
                             }
-                        }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "structural_red_flags": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "flag",
+                            "why_it_is_dangerous",
+                            "severity"
+                        ],
+                        "properties": {
+                            "flag": {
+                                "type": "string"
+                            },
+                            "why_it_is_dangerous": {
+                                "type": "string"
+                            },
+                            "severity": {
+                                "type": "string",
+                                "enum": [
+                                    "high",
+                                    "medium",
+                                    "low"
+                                ]
+                            }
+                        },
+                        "additionalProperties": false
                     }
                 }
             },
             "additionalProperties": false
         },
-        "DataQuality": {
+        "audit_score": {
+            "type": "object",
+            "required": [
+                "score",
+                "ncar",
+                "nec",
+                "rct",
+                "breakdown",
+                "deductions"
+            ],
+            "description": "All scoring computed by prompt. Server does not modify these values.",
+            "properties": {
+                "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                },
+                "ncar": {
+                    "type": "number"
+                },
+                "nec": {
+                    "type": "number"
+                },
+                "rct": {
+                    "type": "number"
+                },
+                "breakdown": {
+                    "type": "object",
+                    "required": [
+                        "net_cover_penalty",
+                        "claim_rejection_risk",
+                        "oop_exposure",
+                        "coverage_quality_gap"
+                    ],
+                    "properties": {
+                        "net_cover_penalty": {
+                            "type": "number"
+                        },
+                        "claim_rejection_risk": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 30
+                        },
+                        "oop_exposure": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 30
+                        },
+                        "coverage_quality_gap": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 20
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "deductions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "reason",
+                            "category",
+                            "severity",
+                            "points"
+                        ],
+                        "properties": {
+                            "reason": {
+                                "type": "string"
+                            },
+                            "category": {
+                                "type": "string",
+                                "enum": [
+                                    "NET_COVER",
+                                    "CLAIM_REJECTION",
+                                    "OOP_EXPOSURE",
+                                    "COVERAGE_GAP"
+                                ]
+                            },
+                            "severity": {
+                                "type": "string",
+                                "enum": [
+                                    "high",
+                                    "medium",
+                                    "low"
+                                ]
+                            },
+                            "points": {
+                                "type": "number",
+                                "maximum": 0
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "interpretation": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "final_verdict": {
+            "type": "object",
+            "required": [
+                "label",
+                "summary",
+                "key_failure_points",
+                "will_this_policy_protect_in_real_claim"
+            ],
+            "properties": {
+                "label": {
+                    "type": "string",
+                    "enum": [
+                        "SAFE",
+                        "BORDERLINE",
+                        "RISKY"
+                    ]
+                },
+                "summary": {
+                    "type": "string",
+                    "description": "Max 15 words. Plain English. No jargon. No score numbers."
+                },
+                "key_failure_points": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "will_this_policy_protect_in_real_claim": {
+                    "type": "string",
+                    "description": "2-3 plain sentences. What actually happens in a real claim."
+                }
+            },
+            "additionalProperties": false
+        },
+        "recommendations": {
+            "type": "object",
+            "required": [
+                "critical_actions",
+                "should_port_to_better_policy"
+            ],
+            "properties": {
+                "critical_actions": {
+                    "type": "array",
+                    "description": "Required field. Must be populated if ANY coverage gap exists.",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "action",
+                            "reason"
+                        ],
+                        "properties": {
+                            "action": {
+                                "type": "string"
+                            },
+                            "reason": {
+                                "type": "string"
+                            },
+                            "oop_risk_if_ignored": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "suggested_riders_or_topups": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "estimated_cost": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "should_port_to_better_policy": {
+                    "type": "object",
+                    "required": [
+                        "recommendation",
+                        "reason"
+                    ],
+                    "properties": {
+                        "recommendation": {
+                            "type": "string",
+                            "enum": [
+                                "yes",
+                                "no",
+                                "consider"
+                            ]
+                        },
+                        "reason": {
+                            "type": "string"
+                        },
+                        "what_to_look_for": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "medium_priority": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "action",
+                            "reason"
+                        ],
+                        "properties": {
+                            "action": {
+                                "type": "string"
+                            },
+                            "reason": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "low_priority": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "action",
+                            "reason"
+                        ],
+                        "properties": {
+                            "action": {
+                                "type": "string"
+                            },
+                            "reason": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                }
+            },
+            "additionalProperties": false
+        },
+        "confidence_notes": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "data_quality": {
             "type": "object",
             "required": [
                 "overall"
@@ -906,14 +1526,21 @@
                     }
                 },
                 "policy_document_quality": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "clear",
+                        "acceptable",
+                        "poor",
+                        "unclear"
+                    ]
                 }
             },
             "additionalProperties": false
         }
     },
-    "_compatibility": {
-        "major": "Breaking changes requiring frontend update.",
-        "minor": "Backward compatible additions."
+    "additionalProperties": false,
+    "_version": "3.0",
+    "_changelog": {
+        "3.0": "Removed duplicate audit_ledger/audit_score. Removed zone D and Unknown. Added no_claim_bonus. Added personal_waiting_periods. Added claim_simulations as top-level array. Made critical_actions required. Prompt is single source of scoring truth."
     }
 }

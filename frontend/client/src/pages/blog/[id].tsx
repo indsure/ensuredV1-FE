@@ -20,7 +20,7 @@ export default function BlogPost() {
   const [, setLocation] = useLocation();
   const postId = params?.id ? parseInt(params.id) : null;
   const post = postId ? blogPosts.find((p) => p.id === postId) : null;
-  const contentRef = useRef<HTMLElement>(null);
+  const contentRef = useRef<HTMLElement>(null!);
   const [activeFAQ, setActiveFAQ] = useState<number | null>(null);
 
   // SEO

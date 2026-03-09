@@ -9,11 +9,11 @@ export interface LifeInsurancePlan {
   insurer: string;
   logo?: string;
   rating: number; // 1-5 stars
-  
+
   // Premiums (varies by sum assured and age)
   getMonthlyPremium: (sumAssured: number, age: number) => number;
   getAnnualPremium: (sumAssured: number, age: number) => number;
-  
+
   // Features
   sumAssuredRange: { min: number; max: number };
   termLengths: number[]; // Available term lengths in years
@@ -38,7 +38,7 @@ function calculatePremium(
   age: number
 ): number {
   const inLakhs = sumAssured / 100000;
-  
+
   // Age multiplier (premiums increase with age)
   let ageMultiplier = 1.0;
   if (age >= 30 && age < 35) ageMultiplier = 1.0;
@@ -47,7 +47,7 @@ function calculatePremium(
   else if (age >= 45 && age < 50) ageMultiplier = 2.5;
   else if (age >= 50 && age < 55) ageMultiplier = 3.5;
   else ageMultiplier = 4.5;
-  
+
   return Math.round(baseRate * inLakhs * ageMultiplier);
 }
 
@@ -213,7 +213,7 @@ export function getRecommendedPlan(
 
   if (winner.claimSettlementRatio >= 98) {
     reason = "Highest claim settlement ratio with competitive premium.";
-  } else if (winner.getMonthlyPremium(sumAssured, age) <= Math.min(...eligiblePlans.map((p) => p.getMonthlyPremium(sumAssured, age)) * 1.1)) {
+  } else if (winner.getMonthlyPremium(sumAssured, age) <= Math.min(...eligiblePlans.map((p) => p.getMonthlyPremium(sumAssured, age))) * 1.1) {
     reason = "Competitive premium with excellent reliability.";
   }
 

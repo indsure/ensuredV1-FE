@@ -30,7 +30,14 @@ export default function Processing() {
   const [insightIndex, setInsightIndex] = useState(0);
   const [isWhyOpen, setIsWhyOpen] = useState(false);
 
-  // Poll for job status
+  // Safely trigger redirect when global analysis hooks confirm success
+  useEffect(() => {
+    if (status === "success") {
+      setTimeout(() => setLocation("/report"), 800);
+    }
+  }, [status, setLocation]);
+
+  // Poll for job status (Fallback)
   useEffect(() => {
     const jobId = currentJobId || sessionStorage.getItem("ensured_current_job");
     if (!jobId || jobId.startsWith("legacy-")) return;
@@ -123,7 +130,7 @@ export default function Processing() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.5 }}
-                  className="text-sm font-mono text-[var(--color-teal-600)] text-center w-full absolute top-0"
+                  className="text-sm font-mono text-[var(--color-teal-700)] text-center w-full absolute top-0"
                 >
                   {">"} {LIVE_INSIGHTS[insightIndex]}
                 </motion.div>
@@ -143,7 +150,7 @@ export default function Processing() {
                   <div className={`
                         w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono border mt-0.5 shrink-0 transition-colors duration-500
                         ${isCompleted
-                      ? "bg-[var(--color-teal-100)] border-[var(--color-teal-200)] text-[var(--color-teal-600)]"
+                      ? "bg-[var(--color-teal-100)] border-[var(--color-teal-200)] text-[var(--color-teal-700)]"
                       : isActive
                         ? "bg-[var(--color-teal-600)] border-[var(--color-teal-600)] text-white shadow-[0_0_15px_rgba(20,184,166,0.2)]"
                         : "border-[var(--color-border-light)] text-[var(--color-text-muted)]"

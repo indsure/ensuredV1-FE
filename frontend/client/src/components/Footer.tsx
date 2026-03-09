@@ -7,7 +7,6 @@ import {
   Youtube,
   Mail,
 } from "lucide-react";
-import { IndSureLogo } from "@/components/IndSureLogo";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -23,7 +22,7 @@ export function Footer() {
       <div className="container-editorial py-24">
 
         {/* Constrain width further to standard 'editorial' limits (max-w-6xl) to fix "floating islands" */}
-        <div className="max-w-6xl">
+        <div className="max-w-6xl mx-auto">
 
           {/* Reduce horizontal gap from 24 to 12/16 to tighten the system */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-12 gap-x-8 lg:gap-x-12 mb-20 items-start">
@@ -31,12 +30,11 @@ export function Footer() {
             {/* COL 1: Brand (4 cols) */}
             <div className="lg:col-span-4 pr-4">
               <Link href="/">
-                <IndSureLogo
-                  className="h-20 w-auto mb-6 -ml-4 cursor-pointer opacity-90 hover:opacity-100 transition-opacity text-white"
-                  aria-label="IndSure"
-                />
+                <span className="font-serif text-4xl font-bold tracking-tighter block mb-6 cursor-pointer text-[var(--color-gold-500)] hover:text-white transition-colors">
+                  IndSure.
+                </span>
               </Link>
-              <p className="text-lg text-[var(--color-white-muted)] leading-relaxed font-light mb-6">
+              <p className="text-xl text-[var(--color-white-muted)] leading-relaxed font-light mb-6">
                 We replace confusion with forensic intelligence.
                 <br />
                 The only insurance audit engine engineered for the modern Indian policyholder.
@@ -80,8 +78,8 @@ export function Footer() {
                 <li>
                   <Link href="/policychecker">
                     <div className="group cursor-pointer">
-                      <span className="font-serif text-lg text-[var(--color-white)] group/start-audit group-hover:text-[var(--color-gold-500)] transition-colors flex items-center gap-2">
-                        Start an Audit <span className="text-[var(--color-gold-500)] group-hover/start-audit:scale-x-150 transition-transform group-hover/start-audit:translate-x-1">→</span>
+                      <span className="font-serif text-lg text-[var(--color-white)] group-hover:text-[var(--color-gold-500)] transition-colors flex items-center gap-2">
+                        Start an Audit <span className="text-[var(--color-gold-500)]">→</span>
                       </span>
                       <p className="text-sm text-[var(--color-white-muted)] mt-1 group-hover:text-white transition-colors">
                         Upload your policy. Takes ~2 minutes.
@@ -119,9 +117,9 @@ export function Footer() {
           </div>
 
           {/* Bottom Bar - Constrained Width to bring text blocks inward */}
-          <div className="pt-8 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row justify-between items-end gap-6 text-xs font-mono uppercase tracking-widest w-full mx-auto text-[var(--color-white-muted)]">
+          <div className="pt-8 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row justify-between items-end gap-6 text-xs font-mono uppercase tracking-widest max-w-5xl mx-auto text-[var(--color-white-muted)]">
             <div className="flex flex-col gap-2">
-              <p>© {currentYear}</p>
+              <p>© {currentYear} IndSure Intelligence Inc.</p>
               <p className="normal-case tracking-normal opacity-70">Built for Indian policy documents. Tested on real claim rejections.</p>
             </div>
             <p className="text-right max-w-xs leading-relaxed normal-case tracking-normal opacity-70">

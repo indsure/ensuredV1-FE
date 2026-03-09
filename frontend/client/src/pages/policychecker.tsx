@@ -18,7 +18,7 @@ import { loadSampleReport, mockReportHealth, mockReportLife, mockReportVehicle }
 import { PolicyCheckerLanding } from "@/components/PolicyCheckerLanding";
 
 export default function PolicyChecker() {
-  const { analyze, error: analysisError, setPolicyText } = useAnalysis();
+  const { analyze, error: analysisError, setPolicyText, clearAuditState } = useAnalysis();
   const [, setLocation] = useLocation();
 
   useSEO({
@@ -45,6 +45,7 @@ export default function PolicyChecker() {
     setLocation("/processing");
 
     try {
+      clearAuditState();
       setPolicyText(`Policy: ${file.name}`);
       await analyze(file);
     } catch (err: any) {

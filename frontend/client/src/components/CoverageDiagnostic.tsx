@@ -17,7 +17,7 @@ import {
     ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ForensicAuditReport, formatINR } from "@/types/master_audit_schema";
+import { ForensicAuditReport, formatINR } from "../../../../backend/server/types/policy";
 
 // --- STRICT EXTERNAL BENCHMARKS (PROMPT 3) ---
 const STRESS_TEST_SCENARIOS = [

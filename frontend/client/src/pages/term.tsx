@@ -43,29 +43,29 @@ function TermAnalyzer({ onFileUpload }: { onFileUpload: (file: File) => void }) 
     if (!acceptedFiles.length) return;
 
     const file = acceptedFiles[0];
-    
+
     const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'text/plain'];
-    const isValidType = validTypes.includes(file.type) || 
-                        file.name.toLowerCase().endsWith('.pdf') ||
-                        file.name.toLowerCase().endsWith('.png') ||
-                        file.name.toLowerCase().endsWith('.jpg') ||
-                        file.name.toLowerCase().endsWith('.jpeg');
-    
+    const isValidType = validTypes.includes(file.type) ||
+      file.name.toLowerCase().endsWith('.pdf') ||
+      file.name.toLowerCase().endsWith('.png') ||
+      file.name.toLowerCase().endsWith('.jpg') ||
+      file.name.toLowerCase().endsWith('.jpeg');
+
     if (!isValidType) {
       setError(`Unsupported file type. Please upload a PDF, PNG, JPG, or text file.`);
       return;
     }
-    
+
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       setError(`File is too large (${formatFileSize(file.size)}). Maximum size is 10 MB.`);
       return;
     }
-    
+
     setSelectedFile(file);
     setError(null);
     setUploading(true);
-    
+
     try {
       await onFileUpload(file);
     } catch (err: any) {
@@ -76,7 +76,7 @@ function TermAnalyzer({ onFileUpload }: { onFileUpload: (file: File) => void }) 
 
   const dropzoneOptions = {
     onDrop,
-    accept: { 
+    accept: {
       "application/pdf": [".pdf"],
       "image/png": [".png"],
       "image/jpeg": [".jpg", ".jpeg"],
@@ -102,23 +102,21 @@ function TermAnalyzer({ onFileUpload }: { onFileUpload: (file: File) => void }) 
 
       <div
         {...getRootProps()}
-        className={`relative transition-all duration-300 ${
-          uploading 
-            ? "cursor-wait" 
-            : isDragActive 
-            ? "scale-[1.01]" 
-            : "hover:scale-[1.005] cursor-pointer"
-        }`}
+        className={`relative transition-all duration-300 ${uploading
+            ? "cursor-wait"
+            : isDragActive
+              ? "scale-[1.01]"
+              : "hover:scale-[1.005] cursor-pointer"
+          }`}
       >
-        <div className={`relative bg-white dark:bg-[#1F2937] rounded-xl border-2 transition-all ${
-          isDragActive 
-            ? "border-[#00B4D8] dark:border-[#00B4D8] bg-[#F0FFFE] dark:bg-[#00B4D8]/10 ring-4 ring-[#00B4D8]/20" 
+        <div className={`relative bg-white dark:bg-[#1F2937] rounded-xl border-2 transition-all ${isDragActive
+            ? "border-[#00B4D8] dark:border-[#00B4D8] bg-[#F0FFFE] dark:bg-[#00B4D8]/10 ring-4 ring-[#00B4D8]/20"
             : selectedFile && !uploading
-            ? "border-[#10B981] dark:border-[#10B981] bg-[#F0FFFE] dark:bg-[#10B981]/10"
-            : "border-[#00B4D8] dark:border-[#00B4D8] bg-[#F0FFFE] dark:bg-[#00B4D8]/5 hover:bg-[#E0F7FA] dark:hover:bg-[#00B4D8]/10"
-        }`}>
+              ? "border-[#10B981] dark:border-[#10B981] bg-[#F0FFFE] dark:bg-[#10B981]/10"
+              : "border-[#00B4D8] dark:border-[#00B4D8] bg-[#F0FFFE] dark:bg-[#00B4D8]/5 hover:bg-[#E0F7FA] dark:hover:bg-[#00B4D8]/10"
+          }`}>
           <input {...getInputProps()} />
-          
+
           <div className="p-10 min-h-[150px] flex flex-col items-center justify-center text-center">
             {selectedFile && !uploading ? (
               <div className="flex flex-col items-center gap-4">
@@ -157,7 +155,7 @@ function TermAnalyzer({ onFileUpload }: { onFileUpload: (file: File) => void }) 
 
 export default function TermPage() {
   const [, setLocation] = useLocation();
-  const { analyze } = useAnalysis();
+  const { analyze, clearAuditState } = useAnalysis();
 
   // SEO
   useSEO({
@@ -214,14 +212,15 @@ export default function TermPage() {
       answer: "NO (standard term life). You pay premium, get death protection only. If policy expires and you're alive, you get ₹0 (no return). This is WHY it's affordable—pure protection, maximum coverage per rupee. BUT: Some insurers offer optional add-ons: ✅ Return of premium rider (if alive at end, get all premiums back). Cost: 2–3x higher premium. Example: 20-year term, ₹1000/month → ₹2000–3000/month with rider. Verdict: Usually not worth it (better to invest separately). ❌ Money-back policies (insurer pays 10% every 5 years if alive). Cost: 1.5–2x higher premium. Verdict: Waste (invest separately instead). ❌ ULIPs (Unit-linked insurance) – Part insurance, part mutual fund. Cost: 2–4x higher than term life. Risk: Returns depend on market (can lose money). My take: Keep term life PURE and cheap. Buy term life ₹1cr and invest ₹1000/month separately in mutual funds. Better returns, lower insurance cost.",
     },
   ];
-  
+
   const faqData = createFAQSchema(faqList);
 
   const handleFileUpload = async (file: File) => {
     sessionStorage.removeItem("ensured_report");
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
     try {
+      clearAuditState();
       await analyze(file);
       setLocation("/processing");
     } catch (err: any) {
@@ -249,8 +248,8 @@ export default function TermPage() {
             Understand Your Term Life Insurance Policy
           </h1>
           <p className="text-base md:text-lg text-white/90 leading-relaxed mb-8 max-w-2xl mx-auto">
-            Upload your term life insurance PDF. Instantly see if your sum assured 
-            is enough for your family's future, understand claim conditions, 
+            Upload your term life insurance PDF. Instantly see if your sum assured
+            is enough for your family's future, understand claim conditions,
             exclusions, and maximize coverage per rupee. Pure protection, maximum affordability.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
@@ -285,24 +284,24 @@ export default function TermPage() {
             <div className="flex gap-3">
               <span className="text-lg">1️⃣</span>
               <p>
-                Whether your ₹1cr / ₹50L / ₹2cr sum assured is actually enough for your 
-                dependents' needs—based on your income, loans, children's education costs, 
+                Whether your ₹1cr / ₹50L / ₹2cr sum assured is actually enough for your
+                dependents' needs—based on your income, loans, children's education costs,
                 and spouse's retirement timeline (20–30 years pure protection)
               </p>
             </div>
             <div className="flex gap-3">
               <span className="text-lg">2️⃣</span>
               <p>
-                The real claim conditions, suicide clause waiting period, 
-                non-disclosure penalties that could get your entire claim rejected 
+                The real claim conditions, suicide clause waiting period,
+                non-disclosure penalties that could get your entire claim rejected
                 (most common reason: not telling insurer about diabetes at purchase)
               </p>
             </div>
             <div className="flex gap-3">
               <span className="text-lg">3️⃣</span>
               <p>
-                How your riders (accidental death, critical illness, disability) 
-                actually trigger and what they don't cover—most people get this 
+                How your riders (accidental death, critical illness, disability)
+                actually trigger and what they don't cover—most people get this
                 completely wrong and are shocked at claim time
               </p>
             </div>
@@ -332,7 +331,7 @@ export default function TermPage() {
           <h2 className="text-3xl md:text-4xl font-semibold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-8">
             Frequently Asked Questions
           </h2>
-          
+
           <div className="space-y-3">
             {faqList.map((faq, index) => (
               <details key={index} className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
@@ -357,7 +356,7 @@ export default function TermPage() {
           <h3 className="text-2xl font-semibold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-8">
             Use our tools to maximize coverage per rupee:
           </h3>
-          
+
           <div className="grid md:grid-cols-2 gap-6">
             {/* Calculator Card */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-[#E5E7EB] dark:border-gray-700 p-6 text-center">
@@ -428,8 +427,8 @@ export default function TermPage() {
           Ready to maximize your coverage per rupee?
         </h3>
         <p className="text-base text-white/90 mb-6 leading-relaxed">
-          Get the right amount of pure protection based on your actual needs. 
-          Our calculator shows exactly what you need—and our comparer finds 
+          Get the right amount of pure protection based on your actual needs.
+          Our calculator shows exactly what you need—and our comparer finds
           the best term plan for maximum coverage, minimum cost.
         </p>
         <Button

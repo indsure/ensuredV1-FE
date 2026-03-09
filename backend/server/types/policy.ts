@@ -1,407 +1,524 @@
-/* Policy Data Structure Types */
+/**
+ * IndSure Forensic Policy Audit — TypeScript Types
+ * Version: 3.0
+ * Single source of truth. Matches ForensicAuditReport.schema.json v3.0
+ * Prompt computes all scoring. Server only validates shape.
+ */
 
-export interface PolicyExtractionMetadata {
-  extracted_by: string;
-  extraction_confidence: number;
-  extraction_timestamp: string;
-  missing_fields: string[];
-  manual_verification_needed: boolean;
-  extraction_notes: string;
+// ─── Primitives ───────────────────────────────────────────────────────────────
+
+export type Zone = "A" | "B" | "C";
+export type Confidence = "high" | "medium" | "low";
+export type RiskLevel = "low" | "medium" | "high";
+export type Severity = "high" | "medium" | "low";
+export type Verdict = "SAFE" | "BORDERLINE" | "RISKY";
+export type SimulationVerdict = "COVERED" | "PARTIAL" | "EXPOSED";
+export type DocumentQuality = "clear" | "acceptable" | "poor" | "unclear";
+
+// ─── Identity ─────────────────────────────────────────────────────────────────
+
+export interface Identity {
+  insured_names: string[];
+  ages: (number | string | null)[];
+  genders: (string | null)[];
+  city: string | null;
+  assumed_zone: Zone;
+  health_flags: string[];
+  confidence: Confidence;
 }
 
-export interface BasicInfo {
-  insurer: string;
-  plan_name: string;
-  plan_code?: string;
-  policy_type: string;
-  inception_date: string | null;
-  expiry_date: string | null;
+// ─── Policy Timeline ──────────────────────────────────────────────────────────
+
+export interface PolicyTimeline {
+  policy_inception_date: string | null;
+  policy_expiry_date: string | null;
+  policy_tenure_years: number | null;
+  policy_age_days: number | null;
+  analysis_date: string;
+  confidence: Confidence;
 }
 
-export interface CoverageAmount {
-  amount: number;
-  currency: string;
-  display: string;
-}
+// ─── Coverage Structure ───────────────────────────────────────────────────────
 
-export interface RoomRent {
-  type: "daily_limit" | "percentage" | "unlimited";
-  amount: number | null;
-  currency: string;
-  percent_of_si: number | null;
-  display: string;
-  unlimited: boolean;
-  capped_at?: number | null;
-}
-
-export interface Copay {
+export interface TopUp {
   exists: boolean;
-  type: "all_claims" | "specific_treatments" | null;
-  percent: number | null;
-  flat_amount: number | null;
-  note: string;
-  applies_to: string[];
+  sum_insured: number | null;
+  deductible: number | null;
+  type: "top-up" | "super-top-up" | "unclear" | null;
+  deductible_achievable: boolean | null;
+  remarks: string | null;
 }
 
-export interface Deductible {
+export interface SuperTopUp {
   exists: boolean;
-  amount: number | null;
-  note: string;
-}
-
-export interface Coverage {
-  base_si: CoverageAmount;
-  annual_premium: CoverageAmount & { premium_per_month?: number };
-  room_rent: RoomRent;
-  copay: Copay;
-  deductible: Deductible;
-}
-
-export interface SubLimit {
-  capped: boolean;
-  limit_amount: number | null;
-  limit_percent_of_si?: number | null;
-  display: string;
-  unlimited: boolean;
-}
-
-export interface SubLimits {
-  cancer: SubLimit;
-  cardiac: SubLimit;
-  organ_transplant: SubLimit;
-  dialysis?: SubLimit;
-  orthopedic_implants?: SubLimit;
-  icu_charges?: SubLimit;
-  other_major?: Record<string, { capped: boolean; limit_amount: number }>;
-}
-
-export interface WaitingPeriod {
-  days: number;
-  months: number;
-  note?: string;
-  covered?: boolean;
-}
-
-export interface SpecificDiseaseWaiting {
-  [disease: string]: WaitingPeriod;
-}
-
-export interface WaitingPeriods {
-  general_waiting_period: WaitingPeriod;
-  specific_diseases: SpecificDiseaseWaiting & {
-    other_major_diseases?: Array<{ disease: string; waiting_months: number }>;
-  };
-  pre_existing_disease: WaitingPeriod & {
-    can_be_waived?: boolean;
-  };
-}
-
-export interface CoverageDetails {
-  hospitalization: {
-    covered: boolean;
-    note?: string;
-  };
-  pre_hospitalization: {
-    covered: boolean;
-    days_before_admission: number;
-    display: string;
-  };
-  post_hospitalization: {
-    covered: boolean;
-    days_after_discharge: number;
-    display: string;
-  };
-  domiciliary_care: {
-    covered: boolean;
-    limit_type: "percentage_of_si" | "fixed_amount";
-    limit_amount: number;
-    limit_percent: number;
-    display: string;
-    minimum_hospitalization_days?: number;
-    note?: string;
-  };
-  daycare_procedures: {
-    covered: boolean;
-    note?: string;
-    examples?: string[];
-  };
-  opd: {
-    covered: boolean;
-    limit: number | null;
-    note: string;
-  };
-  consultation_charges?: {
-    covered: boolean;
-    note: string;
-  };
-  diagnostic_tests?: {
-    covered: boolean;
-    note: string;
-    limit?: string;
-  };
-  pathology_radiology?: {
-    covered: boolean;
-    note: string;
-  };
-}
-
-export interface Rider {
-  available: boolean;
-  base_premium_addition?: number;
-  base_premium_addition_display?: string;
-  total_premium_with_rider?: number;
-  coverage_amount?: number;
-  coverage_display?: string;
-  diseases_covered?: string[];
-  covers?: string[];
-  waiting_period_months?: number;
-  note?: string;
-}
-
-export interface Riders {
-  critical_illness: Rider;
-  personal_accident: Rider;
-  maternity: Rider;
-  accidental_hospitalization?: Rider;
-  dental?: Rider;
-}
-
-export interface Exclusions {
-  major_exclusions: string[];
-  conditions_not_covered?: string[];
-  pre_existing_exclusion: {
-    applies: boolean;
-    waiting_period_months: number;
-    note: string;
-  };
+  sum_insured: number | null;
+  deductible: number | null;
+  deductible_achievable: boolean | null;
+  remarks: string | null;
 }
 
 export interface Restoration {
-  type: "unlimited" | "limited" | null;
-  note: string;
-  times_per_year: number;
-  cost?: string;
-  automatic: boolean;
-  example?: string;
+  exists: boolean;
+  type: "full" | "partial" | "unclear" | null;
+  restore_amount: number | string | null;
+  trigger_conditions: string | null;
+  actually_useful: boolean | null;
+  remarks: string | null;
 }
 
-export interface Network {
-  hospital_network_count?: {
-    total: number;
-    note?: string;
-    international?: boolean;
-  };
-  cashless_available: boolean;
-  third_party_administrator?: string;
-  tpa_contact?: {
-    phone?: string;
-    email?: string;
-    website?: string;
-    helpline_24_7?: boolean;
-  };
+export interface NoClaimBonus {
+  exists: boolean;
+  rate_per_year: number | null;
+  cap_percentage: number | null;
+  current_bonus: number | null;
+  portability: "yes" | "no" | "unclear" | null;
+  clarity: "clear" | "unclear" | null;
+  remarks: string | null;
 }
 
-export interface ClaimProcess {
-  claim_settlement_days?: {
-    target: number;
-    maximum: number;
-    note: string;
-  };
-  pre_authorization?: {
-    required: boolean;
-    processing_time_hours?: number;
-    processing_time_range?: string;
-    contact?: string;
-    documents_needed?: string[];
-  };
-  reimbursement?: {
-    available: boolean;
-    processing_time_days?: number;
-    documents_needed?: string[];
-  };
-  dispute_resolution?: {
-    available: boolean;
-    escalation_to_ombudsman?: boolean;
-    ombudsman_contact?: string;
-  };
+export interface Rider {
+  name: string;
+  coverage_amount: number | null;
+  is_material: boolean;
+  remarks: string | null;
 }
 
-export interface PolicyData {
-  policy_id: string;
-  upload_date: string;
-  file_name: string;
-  extraction_metadata: PolicyExtractionMetadata;
-  basic_info: BasicInfo;
-  coverage: Coverage;
-  sub_limits: SubLimits;
-  waiting_periods: WaitingPeriods;
-  coverage_details: CoverageDetails;
-  riders: Riders;
-  exclusions: Exclusions;
+export interface CoverageStructure {
+  base_sum_insured: number | null;
+  top_up: TopUp;
+  super_top_up: SuperTopUp;
   restoration: Restoration;
-  network: Network;
-  claim_process?: ClaimProcess;
-  irdai_updates?: Record<string, any>;
-  user_ratings?: {
-    covered: boolean;
-    note?: string;
-  };
-  additional_info?: {
-    policy_link?: string;
-    download_brochure?: string;
-    faq_link?: string;
-    source: string;
-    verified: boolean;
-    verified_by?: string | null;
-    verification_date?: string | null;
+  no_claim_bonus: NoClaimBonus;
+  riders: Rider[];
+  total_effective_coverage: number | null;
+  confidence: Confidence;
+}
+
+// ─── Waiting Period Analysis ──────────────────────────────────────────────────
+
+export interface InitialWaitingPeriod {
+  duration_days: number;
+  end_date: string | null;
+  is_active_today: boolean;
+  risk_commentary: string | null;
+}
+
+export interface PEDWaitingPeriod {
+  duration_months: number;
+  start_date: string | null;
+  end_date: string | null;
+  is_active_today: boolean;
+  months_remaining: number | null;
+  risk_commentary: string | null;
+}
+
+export interface SpecificDiseaseWaiting {
+  duration_months: number;
+  diseases_covered: string[];
+  end_date: string | null;
+  is_active_today: boolean;
+  risk_commentary: string | null;
+}
+
+export interface PersonalWaitingPeriod {
+  condition: string;
+  duration_months: number;
+  start_date: string | null;
+  end_date: string | null;
+  is_active_today: boolean;
+  months_remaining: number | null;
+  risk_commentary: string | null;
+}
+
+export interface MaternityWaiting {
+  duration_months: number | null;
+  end_date: string | null;
+  is_active_today: boolean | null;
+  months_remaining: number | null;
+  risk_commentary: string | null;
+  relevant: boolean;
+}
+
+export interface WaitingPeriodAnalysis {
+  initial_waiting_period: InitialWaitingPeriod;
+  pre_existing_disease: PEDWaitingPeriod;
+  specific_diseases: SpecificDiseaseWaiting;
+  personal_waiting_periods: PersonalWaitingPeriod[];
+  maternity: MaternityWaiting;
+  policy_fully_active: boolean;
+}
+
+// ─── Claim Risk Analysis ──────────────────────────────────────────────────────
+
+export interface RoomRentAnalysis {
+  limit_type: "none" | "specific_amount" | "room_category" | "percentage_of_si" | "unclear";
+  limit_value: string | null;
+  limit_amount_per_day: number | null;
+  penalty_type: "none" | "proportional" | "unclear" | null;
+  penalty_calculation: string | null;
+  risk_level: RiskLevel;
+  zone_adequacy: "adequate" | "marginal" | "inadequate" | null;
+  explanation: string | null;
+}
+
+export interface CoPaymentAnalysis {
+  exists: boolean;
+  percentage: number | null;
+  conditions: string | null;
+  applies_to: "all_claims" | "seniors_only" | "specific_treatments" | "unclear" | null;
+  waiver_conditions: string | null;
+  risk_level: RiskLevel;
+  oop_on_5L_claim: number | null;
+}
+
+export interface SubLimitCategory {
+  procedure: string;
+  limit: number | null;
+  typical_cost_in_zone: number | null;
+  gap: number | null;
+  severity: Severity;
+}
+
+export interface SubLimitsAnalysis {
+  exists: boolean;
+  categories: SubLimitCategory[];
+  risk_level: RiskLevel;
+  remarks: string | null;
+}
+
+export interface DeductibleAnalysis {
+  base_deductible: number | null;
+  per_claim_impact: string | null;
+  remarks: string | null;
+}
+
+export interface ClaimRiskAnalysis {
+  room_rent: RoomRentAnalysis;
+  co_payment: CoPaymentAnalysis;
+  sub_limits: SubLimitsAnalysis;
+  deductibles: DeductibleAnalysis;
+}
+
+// ─── Claim Simulations ────────────────────────────────────────────────────────
+
+export interface ClaimSimulation {
+  scenario: string;
+  total_bill: number;
+  insurer_pays: number;
+  patient_oop: number;
+  oop_ratio: number;
+  verdict: SimulationVerdict;
+  explanation: string | null;
+}
+
+// ─── Supplementary Coverage ───────────────────────────────────────────────────
+
+export type CoverageUtility = "high" | "medium" | "low" | "none" | null;
+
+export interface OPDCoverage {
+  covered: boolean;
+  limit_per_year: number | null;
+  conditions: string | null;
+  utility: CoverageUtility;
+  remarks: string | null;
+}
+
+export interface MaternityCoverage {
+  covered: boolean;
+  limit_per_delivery: number | null;
+  waiting_period_over: boolean | null;
+  conditions: string | null;
+  utility: CoverageUtility;
+  remarks: string | null;
+}
+
+export interface ConsumablesCoverage {
+  covered: boolean;
+  coverage_type: "full" | "partial" | "none" | "unclear" | null;
+  limit: string | null;
+  remarks: string | null;
+}
+
+export interface ModernTreatmentsCoverage {
+  covered: boolean;
+  examples: string[];
+  conditions: string | null;
+  remarks: string | null;
+}
+
+export interface AmbulanceCoverage {
+  covered: boolean;
+  limit_per_trip: number | null;
+  remarks: string | null;
+}
+
+export interface DayCareCoverage {
+  covered: boolean;
+  number_of_procedures: number | null;
+  remarks: string | null;
+}
+
+export interface PreventiveCoverage {
+  covered: boolean;
+  limit_per_year: number | null;
+  remarks: string | null;
+}
+
+export interface SupplementaryCoverage {
+  opd: OPDCoverage;
+  maternity: MaternityCoverage;
+  consumables: ConsumablesCoverage;
+  modern_treatments: ModernTreatmentsCoverage;
+  ambulance: AmbulanceCoverage;
+  day_care_procedures: DayCareCoverage;
+  preventive_health_checkup: PreventiveCoverage;
+  [key: string]: any;
+}
+
+// ─── Network Limitations ──────────────────────────────────────────────────────
+
+export interface NetworkLimitations {
+  network_type: "cashless_only" | "cashless_and_reimbursement" | "unclear";
+  hospital_count_in_zone: number | string | null;
+  major_hospitals_included: string[];
+  reimbursement_allowed: boolean;
+  claim_settlement_ratio: number | null;
+  risk_level: RiskLevel;
+  remarks: string | null;
+}
+
+// ─── Benefit Evaluation ───────────────────────────────────────────────────────
+
+export interface BenefitWorking {
+  benefit: string;
+  why_it_matters_in_claim: string;
+  quantified_value: string | null;
+}
+
+export interface BenefitFailure {
+  issue: string;
+  real_world_claim_impact: string;
+  quantified_oop_risk: string | null;
+}
+
+export interface StructuralRedFlag {
+  flag: string;
+  why_it_is_dangerous: string;
+  severity: Severity;
+}
+
+export interface BenefitEvaluation {
+  what_actually_works: BenefitWorking[];
+  where_policy_fails: BenefitFailure[];
+  structural_red_flags: StructuralRedFlag[];
+}
+
+// ─── Audit Score ──────────────────────────────────────────────────────────────
+
+export interface ScoreBreakdown {
+  net_cover_penalty: number;
+  claim_rejection_risk: number;
+  oop_exposure: number;
+  coverage_quality_gap: number;
+}
+
+export interface ScoreDeduction {
+  reason: string;
+  category: "NET_COVER" | "CLAIM_REJECTION" | "OOP_EXPOSURE" | "COVERAGE_GAP";
+  severity: Severity;
+  points: number;
+}
+
+export interface AuditScore {
+  score: number;
+  ncar: number;
+  nec: number;
+  rct: number;
+  breakdown: ScoreBreakdown;
+  deductions: ScoreDeduction[];
+  interpretation: string | null;
+}
+
+// ─── Final Verdict ────────────────────────────────────────────────────────────
+
+export interface FinalVerdict {
+  label: Verdict;
+  summary: string;
+  key_failure_points: string[];
+  will_this_policy_protect_in_real_claim: string;
+}
+
+// ─── Recommendations ──────────────────────────────────────────────────────────
+
+export interface CriticalAction {
+  action: string;
+  reason: string;
+  oop_risk_if_ignored: string | null;
+  suggested_riders_or_topups: string[];
+  estimated_cost: string | null;
+}
+
+export interface PortingRecommendation {
+  recommendation: "yes" | "no" | "consider";
+  reason: string;
+  what_to_look_for: string[];
+}
+
+export interface PriorityAction {
+  action: string;
+  reason: string;
+}
+
+export interface Recommendations {
+  critical_actions: CriticalAction[];
+  should_port_to_better_policy: PortingRecommendation;
+  medium_priority: PriorityAction[];
+  low_priority: PriorityAction[];
+}
+
+// ─── Data Quality ─────────────────────────────────────────────────────────────
+
+export interface DataQuality {
+  overall: Confidence;
+  missing_critical_fields: string[];
+  ambiguous_clauses: string[];
+  policy_document_quality: DocumentQuality;
+}
+
+// ─── Master Report Interface ──────────────────────────────────────────────────
+
+export interface ForensicAuditReport {
+  identity: Identity;
+  policy_timeline: PolicyTimeline;
+  coverage_structure: CoverageStructure;
+  waiting_period_analysis: WaitingPeriodAnalysis;
+  claim_risk_analysis: ClaimRiskAnalysis;
+  claim_simulations: ClaimSimulation[];
+  supplementary_coverage: SupplementaryCoverage;
+  network_limitations: NetworkLimitations;
+  benefit_evaluation: BenefitEvaluation;
+  audit_score: AuditScore;
+  final_verdict: FinalVerdict;
+  recommendations: Recommendations;
+  confidence_notes: string[];
+  data_quality: DataQuality;
+  __internal?: {
+    policyText: string;
   };
 }
 
-/* Evidence-based extraction response from Gemini (before transformation) */
-export interface EvidenceBasedField {
-  status: "explicit" | "excluded" | "not_mentioned";
-  value: string;
-  evidence: string;
-}
+// ─── Type Guards ──────────────────────────────────────────────────────────────
 
-export interface RawPolicyExtraction {
-  policy_metadata: {
-    insurer: string;
-    policy_name: string;
-    document_source: string;
-    policy_date: string;
-    extraction_confidence: number;
-  };
-  coverage: {
-    sum_insured: EvidenceBasedField;
-    annual_premium?: EvidenceBasedField; // Optional - may not be in document
-    room_rent: EvidenceBasedField;
-    icu_charges: EvidenceBasedField;
-    pre_hospitalization: EvidenceBasedField;
-    post_hospitalization: EvidenceBasedField;
-    domiciliary_hospitalization: EvidenceBasedField;
-    daycare_procedures: EvidenceBasedField;
-  };
-  waiting_periods: {
-    general: EvidenceBasedField;
-    pre_existing_disease: EvidenceBasedField;
-    specific_ailments: Array<{
-      condition: string;
-      status: "explicit" | "excluded" | "not_mentioned";
-      value: string;
-      evidence: string;
-    }>;
-  };
-  sub_limits: {
-    room_rent_limit: EvidenceBasedField;
-    icu_limit: EvidenceBasedField;
-    disease_specific_limits: Array<{
-      condition: string;
-      limit: string;
-      evidence: string;
-    }>;
-  };
-  restoration: EvidenceBasedField;
-  riders: {
-    critical_illness: EvidenceBasedField;
-    personal_accident: EvidenceBasedField;
-    maternity: EvidenceBasedField;
-  };
-  network: {
-    cashless_hospitals: EvidenceBasedField;
-  };
-  exclusions: {
-    explicit_exclusions: string[];
-    evidence: string;
-  };
-  notes: string;
-}
+export const isValidVerdict = (v: string): v is Verdict =>
+  ["SAFE", "BORDERLINE", "RISKY"].includes(v);
 
-/* Legacy format for backward compatibility (will be removed after migration) */
-export interface LegacyRawPolicyExtraction {
-  basic_info: {
-    insurer: string;
-    plan_name: string;
-    policy_type: string;
-    inception_date: string; // YYYY-MM-DD or "" if not found
-    expiry_date: string; // YYYY-MM-DD or "" if not found
-  };
-  coverage: {
-    base_si: number; // Must be > 0
-    annual_premium: number; // Must be > 0
-    room_rent_amount: number; // 0 if unlimited or percentage-based
-    room_rent_percent: number; // 0 if not percentage-based
-    room_rent_unlimited: boolean;
-    copay_percent: number; // 0 if no co-pay
-    copay_type: "all_claims" | "specific_treatments" | ""; // "" if no co-pay
-    deductible: number; // 0 if no deductible
-  };
-  sub_limits: {
-    cancer_sublimit: number; // 0 if unlimited
-    cardiac_sublimit: number; // 0 if unlimited
-    organ_transplant_sublimit: number; // 0 if unlimited
-    icu_sublimit: number; // 0 if unlimited
-    orthopedic_sublimit: number; // 0 if unlimited
-    dialysis_sublimit: number; // 0 if unlimited
-    other_sublimits: Array<{ disease: string; amount: number }>; // [] if none
-  };
-  waiting_periods: {
-    general_waiting: number; // Must be >= 0 (in months)
-    cataract_waiting: number; // 0 if not specified
-    cardiac_waiting: number; // 0 if not specified
-    cancer_waiting: number; // 0 if not specified
-    knee_replacement_waiting: number; // 0 if not specified
-    pre_existing_waiting: number; // 0 if not specified
-    arthritis_waiting: number; // 0 if not specified
-    hernia_waiting: number; // 0 if not specified
-    piles_waiting: number; // 0 if not specified
-    other_waiting_periods: Array<{ disease: string; months: number }>; // [] if none
-  };
-  coverage_details: {
-    hospitalization_covered: boolean;
-    pre_hosp_days: number; // 0 if not covered
-    post_hosp_days: number; // 0 if not covered
-    domiciliary_care_covered: boolean;
-    domiciliary_care_limit: number; // 0 if not covered or percentage-based
-    domiciliary_care_percent: number; // 0 if not percentage-based
-    daycare_covered: boolean;
-    opd_covered: boolean;
-    opd_limit: number; // 0 if not covered
-    diagnostic_tests_covered: boolean;
-  };
-  riders: {
-    critical_illness_available: boolean;
-    critical_illness_premium: number; // 0 if not available
-    critical_illness_amount: number; // 0 if not available
-    critical_illness_diseases: string[]; // [] if not available
-    personal_accident_available: boolean;
-    personal_accident_premium: number; // 0 if not available
-    personal_accident_amount: number; // 0 if not available
-    maternity_available: boolean;
-    maternity_premium: number; // 0 if not available
-    maternity_waiting: number; // 0 if not available
-    maternity_amount: number; // 0 if not available
-  };
-  exclusions: {
-    major_exclusions: string[]; // [] if none listed
-    pre_existing_excluded: boolean;
-    pre_existing_waiting: number; // 0 if not excluded
-  };
-  restoration: {
-    restoration_type: "unlimited" | "limited" | "none" | ""; // "" if not specified
-    restoration_times_per_year: number; // 0 if none
-    restoration_automatic: boolean;
-  };
-  network: {
-    network_hospital_count: number; // 0 if not specified
-    cashless_available: boolean;
-    tpa_provider: string; // "" if not specified
-    claim_settlement_days: number; // 0 if not specified
-  };
-  extraction_metadata: {
-    extraction_confidence: number; // 0.0 to 1.0
-    missing_fields: string[]; // Should be [] in hard mode
-    extraction_notes: string; // "" if no notes
-  };
-}
+export const isValidZone = (z: string): z is Zone =>
+  ["A", "B", "C"].includes(z);
 
+export const isValidConfidence = (c: string): c is Confidence =>
+  ["high", "medium", "low"].includes(c);
+
+export const isValidRiskLevel = (r: string): r is RiskLevel =>
+  ["low", "medium", "high"].includes(r);
+
+export const isValidSeverity = (s: string): s is Severity =>
+  ["high", "medium", "low"].includes(s);
+
+// ─── Validation ───────────────────────────────────────────────────────────────
+
+export const validateForensicAuditReport = (data: any): data is ForensicAuditReport => {
+  try {
+    if (!data?.identity || !data?.policy_timeline || !data?.coverage_structure) return false;
+    if (!isValidZone(data.identity.assumed_zone)) return false;
+    if (!isValidVerdict(data.final_verdict?.label)) return false;
+    if (typeof data.audit_score?.score !== "number") return false;
+    if (data.audit_score.score < 0 || data.audit_score.score > 100) return false;
+    if (!Array.isArray(data.claim_simulations) || data.claim_simulations.length === 0) return false;
+    if (!Array.isArray(data.recommendations?.critical_actions)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+export const calculateEffectiveCoverage = (report: ForensicAuditReport): number | null => {
+  const base = typeof report.coverage_structure.base_sum_insured === "number"
+    ? report.coverage_structure.base_sum_insured
+    : null;
+  if (base === null) return null;
+
+  const topUp = report.coverage_structure.top_up?.exists
+    ? (report.coverage_structure.top_up.sum_insured ?? 0)
+    : 0;
+
+  const superTopUp = report.coverage_structure.super_top_up?.exists
+    ? (report.coverage_structure.super_top_up.sum_insured ?? 0)
+    : 0;
+
+  // Trust prompt's total_effective_coverage if it computed one directly
+  // (accounts for porting continuity, NCB, riders that component math would miss)
+  const promptTotal = typeof report.coverage_structure.total_effective_coverage === "number"
+    ? report.coverage_structure.total_effective_coverage
+    : null;
+
+  const computed = base + topUp + superTopUp;
+  return promptTotal && promptTotal > computed ? promptTotal : computed;
+};
+
+export const getVerdictColor = (verdict: Verdict): string => {
+  const colors: Record<Verdict, string> = {
+    SAFE: "#10B981",
+    BORDERLINE: "#F59E0B",
+    RISKY: "#EF4444",
+  };
+  return colors[verdict];
+};
+
+export const formatINR = (value: number | string | null): string => {
+  if (value === null) return "N/A";
+  const numeric = typeof value === "string"
+    ? parseFloat(value.replace(/[₹,]/g, ""))
+    : value;
+
+  if (isNaN(numeric)) return "N/A";
+
+  if (numeric >= 100000) return `₹${(numeric / 100000).toFixed(1)}L`;
+  if (numeric >= 1000) return `₹${Math.round(numeric / 1000)}K`;
+  return `₹${numeric.toLocaleString("en-IN")}`;
+};
+
+export const getNCARLabel = (ncar: number): string => {
+  if (ncar >= 1.0) return "Adequate";
+  if (ncar >= 0.75) return "Marginal";
+  if (ncar >= 0.50) return "Insufficient";
+  if (ncar >= 0.30) return "Severely Insufficient";
+  return "Critical";
+};
+
+export const computeUnlockDate = (
+  inceptionDate: string | null,
+  durationDays: number
+): string | null => {
+  if (!inceptionDate) return null;
+  const start = new Date(inceptionDate);
+  if (isNaN(start.getTime())) return null;
+  start.setUTCDate(start.getUTCDate() + durationDays);
+  return start.toISOString().split("T")[0];
+};
+
+export const getWaitingPeriodStatus = (
+  isActive: boolean,
+  monthsRemaining: number | null,
+  endDate: string | null
+): { status: "active" | "served"; label: string } => {
+  if (!isActive) return { status: "served", label: "✅ Served" };
+  if (monthsRemaining !== null) {
+    return { status: "active", label: `⏳ ${monthsRemaining} months remaining` };
+  }
+  if (endDate) {
+    return { status: "active", label: `⏳ Unlocks ${endDate}` };
+  }
+  return { status: "active", label: "⏳ Active" };
+};

@@ -76,7 +76,7 @@ function createSamplePolicyData(opts: {
     },
     waiting_periods: {
       general_waiting_period: { days: 30, months: 1, note: "30 days" },
-      specific_diseases: { other_major_diseases: [] },
+      specific_diseases: {},
       pre_existing_disease: { days: 0, months: 24, note: "2 years", can_be_waived: false },
     },
     coverage_details: {

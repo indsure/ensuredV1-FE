@@ -138,10 +138,29 @@ export interface CoverageDetails {
     covered: boolean;
     note: string;
     limit?: string;
+    limit_amount?: number;
   };
   pathology_radiology?: {
     covered: boolean;
     note: string;
+  };
+  consumables?: {
+    covered: boolean;
+    note?: string;
+    limit_amount?: number;
+    coverage_type?: string;
+  };
+  ambulance?: {
+    covered: boolean;
+    note?: string;
+    limit_amount?: number;
+    limit?: string;
+  };
+  pharmacy?: {
+    covered: boolean;
+    note?: string;
+    limit_amount?: number;
+    limit?: string;
   };
 }
 
