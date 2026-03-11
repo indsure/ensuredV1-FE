@@ -72,7 +72,7 @@ export default function Team() {
       <Breadcrumbs items={[{ label: "Team" }]} />
 
       {/* Main Content */}
-      <main id="main-content" className="flex-1 container mx-auto px-4 py-8 md:py-12">
+      <main id="main-content" className="flex-1 container mx-auto px-4 pt-32 sm:pt-36 md:pt-40 pb-8 md:pb-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#1A3A52] to-[#4A9B9E] mb-6 shadow-2xl">

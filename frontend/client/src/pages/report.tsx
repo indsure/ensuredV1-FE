@@ -88,7 +88,7 @@ export default function Report({ params }: { params?: { id?: string } }) {
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] pb-20">
       <Header />
-      <main className="max-w-5xl mx-auto pt-40 px-6">
+      <main className="max-w-5xl mx-auto pt-32 sm:pt-36 md:pt-40 px-4 sm:px-6 overflow-x-hidden">
         <div className="p-12 text-center border border-dashed border-red-200 bg-red-50/50 rounded-xl mb-12">
           <div className="inline-flex p-4 bg-red-100 rounded-full mb-6 text-red-600">
             <AlertCircle className="w-8 h-8" />

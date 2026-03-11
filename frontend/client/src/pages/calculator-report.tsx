@@ -33,7 +33,7 @@ export default function CalculatorReportPage() {
     return (
         <div className="min-h-screen bg-[var(--color-cream-main)] font-sans flex flex-col">
             <Header />
-            <main className="flex-grow pt-24 pb-20 px-6">
+            <main className="flex-grow pt-32 sm:pt-36 md:pt-40 pb-12 md:pb-20 px-4 sm:px-6 overflow-x-hidden">
                 <div className="max-w-4xl mx-auto space-y-12">
 
                     {/* Header */}

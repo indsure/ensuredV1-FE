@@ -52,7 +52,7 @@ export default function ProfileStep() {
       <Header />
       <Breadcrumbs items={[{ label: "Compare" }]} />
 
-      <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-6 sm:pb-8">
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="h-1 bg-[#E5E7EB] dark:bg-[#374151] rounded-full overflow-hidden">

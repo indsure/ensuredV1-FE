@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getApiBase } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -336,7 +337,7 @@ export default function UploadStep() {
       <Breadcrumbs items={[{ label: "Compare" }]} />
 
       {/* Mini-Landing Section */}
-      <section className="relative z-10 bg-gradient-to-b from-[#FAFBFC] to-white dark:from-[#0F1419] dark:to-[#1F2937] py-16 md:py-20 px-6">
+      <section className="relative z-10 bg-gradient-to-b from-[#FAFBFC] to-white dark:from-[#0F1419] dark:to-[#1F2937] pt-32 sm:pt-36 md:pt-40 pb-16 md:pb-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-6 leading-tight">
             Find Your Best-Fit Health Policy
@@ -388,7 +389,7 @@ export default function UploadStep() {
         </div>
       </section>
 
-      <main id="upload-section" className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main id="upload-section" className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-6 sm:pb-8">
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="h-1 bg-[#E5E7EB] dark:bg-[#374151] rounded-full overflow-hidden">

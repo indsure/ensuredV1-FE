@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { getApiBase } from "@/lib/queryClient";
 import { useAnalysis } from "@/hooks/use-analysis";
 import { Send, X, Trash2, Bot, Sparkles, Loader2 } from "lucide-react";
 

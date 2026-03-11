@@ -36,7 +36,7 @@ export default function BlogPost() {
       <div className="min-h-screen bg-[var(--color-cream-main)] flex flex-col">
         <Header />
         <Breadcrumbs items={[{ label: "Blog" }]} />
-        <main className="relative z-10 flex-1 max-w-4xl mx-auto px-6 py-12 text-center">
+        <main className="relative z-10 flex-1 max-w-4xl mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-12 text-center">
           <h1 className="text-3xl font-bold font-serif mb-4 text-[var(--color-text-main)]">Article Not Found</h1>
           <p className="text-[var(--color-text-secondary)] mb-6">
             The article you're looking for doesn't exist.
@@ -91,7 +91,7 @@ export default function BlogPost() {
       <Header />
 
       {/* Sticky Breadcrumb */}
-      <div className="sticky top-16 z-30 bg-[var(--color-cream-main)]/95 backdrop-blur-sm border-b border-[var(--color-border-light)]">
+      <div className="sticky top-32 z-30 bg-[var(--color-cream-main)]/95 backdrop-blur-sm border-b border-[var(--color-border-light)]">
         <div className="max-w-7xl mx-auto px-6 py-3">
           <Breadcrumbs items={[{ label: "Blog", href: "/blog" }, { label: post.category }, { label: post.title }]} />
         </div>
@@ -100,7 +100,7 @@ export default function BlogPost() {
       {/* TOC Sidebar */}
       <TableOfContents contentRef={contentRef} />
 
-      <main className="relative z-10 flex-1 max-w-7xl mx-auto px-6 py-8 md:py-12 w-full">
+      <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-8 md:pb-12 w-full">
         <div className="grid lg:grid-cols-[280px_1fr_280px] gap-8">
           {/* Left spacer for TOC (desktop) */}
           <div className="hidden lg:block"></div>

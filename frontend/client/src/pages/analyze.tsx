@@ -76,7 +76,7 @@ export default function AnalyzePage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-[#0F1419] to-[#00B4D8] py-20 md:py-24 px-6 md:px-14 text-center text-white">
+      <section className="bg-gradient-to-br from-[#0F1419] to-[#00B4D8] pt-32 sm:pt-36 md:pt-40 pb-20 md:pb-24 px-6 md:px-14 text-center text-white">
         <div className="max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#00B4D8]/20 rounded-full text-xs font-medium text-white/90 mb-4">
             <FileText className="w-3 h-3" />
