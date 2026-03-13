@@ -11,8 +11,27 @@ import { POLICY_EXTRACTION_PROMPT } from "./policyExtractionPrompt";
 // ARCHIVED: import { runExtractionPipeline, type PolicyReport } from "./utils/pipelineOrchestrator";
 // ARCHIVED: import { normalizePolicyForComparison, comparePolicies } from "./utils/comparisonEngine";
 import { AIService } from "./services/aiService";
-// ARCHIVED: import { filterHospitalNetwork } from "./data/insurance_networks/filter_engine";
-// ARCHIVED: import { requireAuth } from "./middleware/auth";
+import { runAnalysisPipeline } from "./services/analysisPipeline";
+import { filterHospitalNetwork } from "./data/insurance_networks/filter_engine";
+import { createClient } from '@supabase/supabase-js';
+import pkg from 'pg';
+const { Pool } = pkg;
+
+// Supabase Admin client (service role) Ã¢â‚¬â€ used for server-side storage operations
+const SUPABASE_URL = 'https://khxbabotbvnyjwvqtumt.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || 'sb_publishable_K8aR5y8E8FjOC--Lf10nXw_MFWKUcEA';
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+// DB Pool — Supabase Transaction Pooler
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+pool.query('SELECT 1').then(() => {
+  console.log('✅ DB connected successfully');
+}).catch((err) => {
+  console.error('❌ DB connection failed:', err.message);
+});
 
 
 const upload = multer({
@@ -65,7 +84,7 @@ async function extractTextFromPDF(filePath: string): Promise<string> {
     console.log(`[PDF Extraction] PDF loaded. Pages: ${pdf.numPages}`);
 
     if (pdf.numPages === 0) {
-      console.warn("[PDF Extraction] PDF has 0 pages — trying pdf-parse fallback");
+      console.warn("[PDF Extraction] PDF has 0 pages Ã¢â‚¬â€ trying pdf-parse fallback");
       return await extractTextWithPdfParse(fileData);
     }
 
@@ -77,12 +96,12 @@ async function extractTextFromPDF(filePath: string): Promise<string> {
         const pageText = content.items.map((it: any) => it.str).join(" ");
         text += pageText + "\n";
       } catch (pageErr: any) {
-        console.warn(`[PDF Extraction] Page ${i} failed: ${pageErr.message} — skipping`);
+        console.warn(`[PDF Extraction] Page ${i} failed: ${pageErr.message} Ã¢â‚¬â€ skipping`);
       }
     }
 
     if (!text.trim()) {
-      console.warn("[PDF Extraction] pdfjs returned empty text — trying pdf-parse fallback");
+      console.warn("[PDF Extraction] pdfjs returned empty text Ã¢â‚¬â€ trying pdf-parse fallback");
       return await extractTextWithPdfParse(fileData);
     }
 
@@ -169,6 +188,13 @@ export async function registerRoutes(
 ): Promise<Server> {
   console.log('[ROUTES] Starting route registration... (v3.0)');
 
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      console.log(`[GLOBAL DEBUG] ${req.method} ${req.url} | Params: ${JSON.stringify(req.params)}`);
+    }
+    next();
+  });
+
   app.post(
     "/api/analyze",
     (req, res, next) => {
@@ -218,7 +244,7 @@ export async function registerRoutes(
         return;
       }
 
-      // ─── BACKGROUND PROCESSING ────────────────────────────────────────────
+      // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ BACKGROUND PROCESSING Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
       (async () => {
         let globalTimeout: NodeJS.Timeout | undefined;
 
@@ -240,135 +266,25 @@ export async function registerRoutes(
           job!.extractionEndedAt = Date.now();
           fs.unlinkSync(uploadedFile!.path);
 
-          if (!uploadedPolicyText.trim()) {
-            job!.status = "failed";
-            job!.error = "No text extracted from file";
-            job!.completedAt = Date.now();
-            return;
-          }
+          const result = await runAnalysisPipeline(uploadedPolicyText, insuranceType);
 
-          console.log(`[Job ${jobId}] EXTRACTED TEXT LENGTH:`, uploadedPolicyText.length);
-
-          // Step 1: Extract metadata
-          console.log(`[Job ${jobId}] Extracting policy metadata...`);
-          const { extractPolicyMetadata, fetchPolicyWordings, mergePolicyTexts } = await import("./utils/policyWordingsFetcher");
-          const metadata = await extractPolicyMetadata(uploadedPolicyText);
-          console.log(`[Job ${jobId}] Metadata extracted:`, metadata);
-
-          // Step 2: Fetch official wordings if available
-          let wordingsText: string | null = null;
-          if (metadata.insurer && metadata.product) {
-            console.log(`[Job ${jobId}] Fetching policy wordings for ${metadata.insurer} - ${metadata.product}...`);
-            job!.fetchStartedAt = Date.now();
-            wordingsText = await fetchPolicyWordings(
-              metadata.insurer,
-              metadata.product || "",
-              metadata.plan || "",
-              metadata.year || ""
-            );
-            job!.fetchEndedAt = Date.now();
-            if (wordingsText) {
-              console.log(`[Job ${jobId}] Policy wordings fetched, length:`, wordingsText.length);
-            } else {
-              console.log(`[Job ${jobId}] Policy wordings not found, proceeding with uploaded document only`);
-            }
+          if (result.status === "completed") {
+            job!.status = "completed";
+            job!.result = result.result;
+            job!.extractionStartedAt = job!.createdAt + (result.duration?.extraction || 0); // approximation
+            job!.aiStartedAt = job!.createdAt + (result.duration?.fetch || 0) + (result.duration?.extraction || 0); // approximation
           } else {
-            console.log(`[Job ${jobId}] Insufficient metadata to fetch wordings, proceeding with uploaded document only`);
-          }
-
-          // Step 3: Merge texts
-          const policyText = mergePolicyTexts(uploadedPolicyText, wordingsText);
-          console.log(`[Job ${jobId}] Merged text length:`, policyText.length);
-
-          // Step 4: Select prompt
-          let promptToUse = MASTER_AUDIT_PROMPT;
-          if (insuranceType === "life") promptToUse = LIFE_INSURANCE_PROMPT;
-          else if (insuranceType === "vehicle") promptToUse = VEHICLE_INSURANCE_PROMPT;
-
-          // Step 5: Call AI — prompt is the SINGLE source of scoring truth
-          console.log(`[Job ${jobId}] Calling AIService...`);
-          let rawText: string;
-          try {
-            job!.aiStartedAt = Date.now();
-            rawText = await AIService.generateContent(
-              promptToUse,
-              policyText,
-              "gemini-3.1-pro-preview"
-            );
-            job!.aiEndedAt = Date.now();
-          } catch (aiError: any) {
-            console.error(`[Job ${jobId}] AI Service Error:`, aiError);
-            throw aiError;
-          }
-
-          console.log(`[Job ${jobId}] AI Response received (length: ${rawText.length})`);
-
-          // Step 6: Parse JSON
-          const cleanedText = rawText.replace(/```json|```/g, "").trim();
-          let parsed: any;
-          try {
-            parsed = JSON.parse(cleanedText);
-          } catch {
             job!.status = "failed";
-            job!.error = "Invalid AI response format";
-            job!.completedAt = Date.now();
-            return;
+            job!.error = result.error;
           }
 
-          if (parsed.error && parsed.message) {
-            job!.status = "failed";
-            job!.error = parsed.message;
-            job!.completedAt = Date.now();
-            return;
-          }
-
-          // Step 7: Store result — no scoring override, no second engine
-          // The prompt has already computed: NCAR, score, verdict, claim simulations
-          job!.status = "completed";
-          job!.result = {
-            ...parsed,
-            __internal: {
-              policyText,
-            },
-          };
           job!.completedAt = Date.now();
-
-          const durationMs = job!.completedAt - job!.createdAt;
-          const extractionMs = (job!.extractionEndedAt || 0) - (job!.extractionStartedAt || 0);
-          const fetchMs = (job!.fetchEndedAt || 0) - (job!.fetchStartedAt || 0);
-          const aiMs = (job!.aiEndedAt || 0) - (job!.aiStartedAt || 0);
-          const overheadMs = durationMs - extractionMs - fetchMs - aiMs;
-
-          console.log(`[Timing] Job ${jobId} done in ${durationMs}ms | extract: ${extractionMs}ms | fetch: ${fetchMs}ms | ai: ${aiMs}ms | overhead: ${overheadMs}ms`);
-
-          console.log(`[Job ${jobId}] Analysis completed successfully`);
-          console.log("[DEBUG] full parsed:", JSON.stringify(parsed, null, 2));
-          console.log(`  -> base_sum_insured:`, parsed?.coverage_structure?.base_sum_insured);
-          console.log(`  -> total_effective_coverage:`, parsed?.coverage_structure?.total_effective_coverage);
           if (globalTimeout) clearTimeout(globalTimeout);
 
         } catch (err: any) {
           console.error(`[Job ${jobId}] Processing error:`, err);
-          console.error("Error stack:", err.stack);
-
-          if (uploadedFile && fs.existsSync(uploadedFile.path)) {
-            try { fs.unlinkSync(uploadedFile.path); } catch { }
-          }
-
-          let errorMessage = err.message || "Unknown error";
-
-          if (errorMessage.includes("404") || errorMessage.includes("not found")) {
-            errorMessage = `Model 'gemini-3.1-pro-preview' not found or not available. Check your GEMINI_API_KEY and verify model availability.`;
-          } else if (errorMessage.includes("fetch failed") || errorMessage.includes("ECONNREFUSED") || errorMessage.includes("ENOTFOUND")) {
-            errorMessage = "Network error: Unable to connect to Gemini API. Please check your internet connection.";
-          } else if (errorMessage.includes("API_KEY") || errorMessage.includes("401") || errorMessage.includes("403")) {
-            errorMessage = "API authentication failed. Please check your GEMINI_API_KEY in .env.local.";
-          } else if (errorMessage.includes("quota") || errorMessage.includes("429")) {
-            errorMessage = "API quota exceeded. Please check your Gemini API usage limits.";
-          }
-
           job!.status = "failed";
-          job!.error = errorMessage;
+          job!.error = err.message || "Unknown error";
           job!.completedAt = Date.now();
           if (globalTimeout) clearTimeout(globalTimeout);
         }
@@ -376,8 +292,685 @@ export async function registerRoutes(
     }
   );
 
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Agent Batch Process Trigger Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  app.post("/api/agent/trigger-batch-process", async (req, res) => {
+    const { batchId } = req.body;
+    if (!batchId) return res.status(400).json({ error: "batchId is required" });
 
-  // ─── Status endpoint ──────────────────────────────────────────────────────
+    res.json({ status: "started", batchId });
+
+    // BACKGROUND LOOP
+    (async () => {
+      try {
+        console.log(`[Batch ${batchId}] Starting processing...`);
+        
+        // 1. Get all pending clients for this batch
+        const clientsRes = await pool.query(
+          "SELECT * FROM clients WHERE batch_id = $1 AND status = 'pending'",
+          [batchId]
+        );
+        const clients = clientsRes.rows;
+
+        for (const client of clients) {
+          try {
+            console.log(`[Batch ${batchId}] Processing client ${client.id}...`);
+            await pool.query("UPDATE clients SET status = 'processing' WHERE id = $1", [client.id]);
+
+            // 2. Download from Supabase Storage
+            // IMPORTANT: Regenerate a fresh signed URL from the storage path to avoid expiry.
+            // The pdf_url stored in the DB may be a signed URL generated at upload time (24h TTL).
+            // We extract the storage path and create a new one here.
+            let downloadUrl = client.pdf_url;
+            
+            // If it's a Supabase signed URL, re-sign it fresh before downloading
+            if (downloadUrl && downloadUrl.includes('/storage/v1/object/sign/')) {
+              try {
+                // Extract storage path from the signed URL: after /object/sign/{bucket}/
+                const urlParsed = new URL(downloadUrl);
+                const pathMatch = urlParsed.pathname.match(/\/object\/sign\/([^?]+)/);
+                if (pathMatch) {
+                  const [bucket, ...rest] = pathMatch[1].split('/');
+                  const storagePath = rest.join('/');
+                  // Re-sign with supabaseAdmin for a fresh URL
+                  const { data: freshSign, error: signErr } = await supabaseAdmin.storage
+                    .from(bucket)
+                    .createSignedUrl(storagePath, 60 * 60); // 1 hour, enough for extraction
+                  if (!signErr && freshSign?.signedUrl) {
+                    downloadUrl = freshSign.signedUrl;
+                    console.log(`[Batch ${batchId}] Refreshed signed URL for client ${client.id}`);
+                  }
+                }
+              } catch (e) {
+                console.warn(`[Batch ${batchId}] Could not refresh signed URL, using original.`, e);
+              }
+            }
+
+            const storageRes = await fetch(downloadUrl);
+
+            if (!storageRes.ok) throw new Error(`Failed to download PDF: ${storageRes.statusText}`);
+            const buffer = await storageRes.arrayBuffer();
+            
+            // 3. Extract text (we reuse the same Multer-like structure/helper)
+            // Ensure uploads/ directory exists before writing temp file
+            if (!fs.existsSync('uploads')) fs.mkdirSync('uploads', { recursive: true });
+            const tempFilePath = `uploads/temp-${client.id}.pdf`;
+            fs.writeFileSync(tempFilePath, Buffer.from(buffer));
+            const policyText = await extractPolicyText({ path: tempFilePath, mimetype: 'application/pdf' } as any);
+            fs.unlinkSync(tempFilePath);
+
+            // 4. Run analysis
+            const analysisResult = await runAnalysisPipeline(policyText);
+
+            if (analysisResult.status === "completed") {
+              const r = analysisResult.result;
+              const meta = analysisResult.metadata || {};
+              await pool.query(
+                `UPDATE clients SET 
+                  status = 'done', 
+                  score = $2, 
+                  flaws = $3, 
+                  report_data = $4, 
+                  policyholder_name = $5, 
+                  insurer = $6, 
+                  sum_insured = $7, 
+                  expiry_date = $8
+                 WHERE id = $1`,
+                [
+                  client.id, 
+                  r.audit_score?.score || 0,
+                  JSON.stringify(r.final_verdict?.key_failure_points || []),
+                  JSON.stringify(r),
+                  r.identity?.insured_names?.[0] || null,
+                  meta.insurer || null,
+                  r.coverage_structure?.base_sum_insured || null,
+                  r.policy_timeline?.policy_expiry_date || null
+                ]
+              );
+            } else {
+              await pool.query(
+                "UPDATE clients SET status = 'error', error_message = $2 WHERE id = $1",
+                [client.id, analysisResult.error]
+              );
+            }
+
+            // 5. Increment batch processed count
+            await pool.query(
+              "UPDATE batch_uploads SET processed_count = processed_count + 1 WHERE id = $1",
+              [batchId]
+            );
+
+          } catch (clientErr: any) {
+            console.error(`[Batch ${batchId}] Error processing client ${client.id}:`, clientErr);
+            await pool.query(
+              "UPDATE clients SET status = 'error', error_message = $2 WHERE id = $1",
+              [client.id, clientErr.message]
+            );
+          }
+        }
+
+        // 6. Complete batch
+        await pool.query(
+          "UPDATE batch_uploads SET status = 'done' WHERE id = $1",
+          [batchId]
+        );
+
+        // 7. Notify (optional Notification table insert)
+        const batchInfo = await pool.query("SELECT agent_id, total FROM batch_uploads WHERE id = $1", [batchId]);
+        if (batchInfo.rows[0]) {
+          await pool.query(
+            "INSERT INTO notifications (agent_id, message, type, link) VALUES ($1, $2, $3, $4)",
+            [
+              batchInfo.rows[0].agent_id,
+              `Your ${batchInfo.rows[0].total} policies have been analyzed. View results Ã¢â€ â€™`,
+              'analysis_complete',
+              '/agent/dashboard'
+            ]
+          );
+        }
+
+        console.log(`[Batch ${batchId}] Completed successfully.`);
+
+      } catch (batchErr: any) {
+        console.error(`[Batch ${batchId}] Batch processing failed:`, batchErr);
+      }
+    })();
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Agent Portfolio Summary Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  app.get("/api/agent/summary/:agentId", async (req, res) => {
+    const { agentId } = req.params;
+
+    try {
+      // 1. Check for cached summary
+      const cached = await pool.query(
+        "SELECT insights, generated_at FROM agent_summaries WHERE agent_id = $1",
+        [agentId]
+      );
+
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      if (cached.rows.length > 0 && new Date(cached.rows[0].generated_at) > thirtyDaysAgo) {
+        return res.json({
+          insights: cached.rows[0].insights,
+          generated_at: cached.rows[0].generated_at,
+          is_cached: true
+        });
+      }
+
+      // 2. Fetch all flaws for done clients
+      const clientsRes = await pool.query(
+        "SELECT flaws FROM clients WHERE agent_id = $1 AND status = 'done'",
+        [agentId]
+      );
+
+      if (clientsRes.rows.length === 0) {
+        return res.json({ insights: [], generated_at: null, empty: true });
+      }
+
+      // 3. Aggregate flaws
+      const allFlaws = clientsRes.rows.flatMap(r => {
+          try {
+              return typeof r.flaws === 'string' ? JSON.parse(r.flaws) : (r.flaws || []);
+          } catch (e) {
+              return [];
+          }
+      });
+      
+      if (allFlaws.length === 0) {
+        return res.json({ insights: [], generated_at: null, empty: true });
+      }
+
+      // 4. Call Gemini
+      const systemPrompt = "You are an insurance portfolio analyst. Given these policy flaws across client policies, generate 4-5 concise actionable insights an insurance advisor should know about their portfolio. Be specific with percentages where possible. Return ONLY a JSON array of strings.";
+      const userContent = `Flaws: ${JSON.stringify(allFlaws)}. Number of policies: ${clientsRes.rows.length}`;
+
+      const aiResponse = await AIService.generateContent(systemPrompt, userContent);
+      
+      let insights: string[] = [];
+      try {
+        // Clean markdown if present
+        const cleaned = aiResponse.replace(/```json|```/g, "").trim();
+        insights = JSON.parse(cleaned);
+      } catch (parseErr) {
+        console.error("Failed to parse Gemini response for summary:", aiResponse);
+        return res.status(500).json({ error: "Failed to process AI insights" });
+      }
+
+      // 5. Save to database
+      await pool.query(
+        `INSERT INTO agent_summaries (agent_id, insights, generated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (agent_id) DO UPDATE SET 
+           insights = EXCLUDED.insights,
+           generated_at = NOW()`,
+        [agentId, JSON.stringify(insights)]
+      );
+
+      return res.json({
+        insights,
+        generated_at: new Date(),
+        is_cached: false
+      });
+
+    } catch (err: any) {
+      console.error("ERROR in /api/agent/summary:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Switch Recommendation Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  app.post("/api/agent/switch-recommendation", async (req, res) => {
+    const { client_id } = req.body;
+    if (!client_id) return res.status(400).json({ error: "client_id is required" });
+
+    try {
+      // 1. Fetch client data
+      const clientRes = await pool.query(
+        "SELECT agent_id, insurer, flaws, score FROM clients WHERE id = $1",
+        [client_id]
+      );
+
+      if (clientRes.rows.length === 0) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      const client = clientRes.rows[0];
+      const agentId = client.agent_id;
+
+      // 2. Fetch agent's empanelled insurers
+      const empanelRes = await pool.query(
+        "SELECT insurer_name FROM empanelments WHERE agent_id = $1",
+        [agentId]
+      );
+      const empanelledInsurers = empanelRes.rows.map(r => r.insurer_name);
+
+      // 3. AIService for Recommendation
+      const systemPrompt = `You are an expert health insurance advisor. Given a client's current policy flaws and available policy wordings, recommend the single best alternative policy. 
+      Prioritize: no room rent cap, no co-payment, full restoration. 
+      Available empanelled insurers for this advisor: ${empanelledInsurers.join(', ')}.
+      If no empanelled insurer has a better option, broaden to all major Indian insurers (Star, Care, Niva Bupa, HDFC Ergo, ICICI Lombard).
+      Return ONLY a JSON object: 
+      { 
+        "recommended_insurer": string, 
+        "recommended_plan": string, 
+        "improvements": string[], 
+        "premium_delta": string, 
+        "confidence": "high"|"medium" 
+      }`;
+
+      const userContent = `Current Insurer: ${client.insurer}
+      Current Score: ${client.score}
+      Current Flaws: ${JSON.stringify(client.flaws)}`;
+
+      const aiResponse = await AIService.generateContent(systemPrompt, userContent);
+
+      let recommendation: any;
+      try {
+        const cleaned = aiResponse.replace(/```json|```/g, "").trim();
+        recommendation = JSON.parse(cleaned);
+      } catch (parseErr) {
+        console.error("Failed to parse switch recommendation:", aiResponse);
+        return res.status(500).json({ error: "Failed to generate recommendation" });
+      }
+
+      return res.json(recommendation);
+
+    } catch (err: any) {
+      console.error("ERROR in switch-recommendation:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Public Report Creation Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  app.post("/api/agent/public-report", async (req, res) => {
+    const { client_id, recommendation_data } = req.body;
+    if (!client_id || !recommendation_data) {
+        return res.status(400).json({ error: "client_id and recommendation_data are required" });
+    }
+
+    try {
+      // Get agent_id from client
+      const clientRes = await pool.query("SELECT agent_id FROM clients WHERE id = $1", [client_id]);
+      if (clientRes.rows.length === 0) return res.status(404).json({ error: "Client not found" });
+      const agentId = clientRes.rows[0].agent_id;
+
+      const insertRes = await pool.query(
+        "INSERT INTO public_reports (client_id, agent_id, recommendation_data) VALUES ($1, $2, $3) RETURNING id",
+        [client_id, agentId, JSON.stringify(recommendation_data)]
+      );
+
+      return res.json({ uuid: insertRes.rows[0].id });
+    } catch (err: any) {
+      console.error("ERROR in public-report creation:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Get Public Report Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  app.get("/api/public-report/:uuid", async (req, res) => {
+    const uuid = req.params.uuid ?? req.params.id;
+    console.log(`[DEBUG] GET /api/public-report/${uuid} | URL: ${req.url} | Params: ${JSON.stringify(req.params)}`);
+
+    try {
+      const reportRes = await pool.query(`
+        SELECT 
+          pr.recommendation_data,
+          pr.is_active,
+          c.policyholder_name as client_name,
+          c.insurer as current_insurer,
+          c.score as current_score,
+          c.flaws as current_flaws,
+          a.full_name as agent_name
+        FROM public_reports pr
+        LEFT JOIN clients c ON pr.client_id = c.id
+        LEFT JOIN agents a ON pr.agent_id = a.id
+        WHERE pr.id = $1
+      `, [uuid]);
+
+      if (reportRes.rows.length === 0 || !reportRes.rows[0].is_active) {
+        return res.status(404).json({ error: "Report not found or inactive" });
+      }
+
+      return res.json(reportRes.rows[0]);
+    } catch (err: any) {
+      console.error("PUBLIC REPORT ERROR:", err.message, err.stack);
+      res.status(500).json({ error: "Internal Server Error", details: err.message });
+    }
+  });
+
+  app.delete("/api/agent/delete-client/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await pool.query("DELETE FROM clients WHERE id = $1", [id]);
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.error("Delete client error:", err);
+      res.status(500).json({ error: "Failed to delete client" });
+    }
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Agent: Switch Recommendation (AI-powered) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  app.post("/api/agent/switch-recommendation", async (req, res) => {
+    const { client_id } = req.body;
+    if (!client_id) return res.status(400).json({ error: "client_id is required" });
+
+    try {
+      const clientRes = await pool.query(
+        "SELECT insurer, score, flaws, report_data FROM clients WHERE id = $1",
+        [client_id]
+      );
+      if (clientRes.rows.length === 0) return res.status(404).json({ error: "Client not found" });
+
+      const client = clientRes.rows[0];
+      const flaws = typeof client.flaws === 'string' ? JSON.parse(client.flaws) : (client.flaws || []);
+
+      const systemPrompt = `You are an expert insurance advisor. Given a client's current policy flaws and insurer, recommend the single best alternative insurer and plan. 
+Return ONLY valid JSON in exactly this shape:
+{
+  "recommended_insurer": "string",
+  "recommended_plan": "string",
+  "improvements": ["string", "string", "string"],
+  "premium_delta": "string",
+  "confidence": "high" | "medium"
+}`;
+
+      const userContent = `Current insurer: ${client.insurer || 'Unknown'}. Score: ${client.score || 0}/100. Key flaws: ${JSON.stringify(flaws.slice(0, 5))}. Recommend a better Indian health insurance plan.`;
+
+      const aiRaw = await AIService.generateContent(systemPrompt, userContent);
+      const cleaned = aiRaw.replace(/```json|```/g, '').trim();
+      const recommendation = JSON.parse(cleaned);
+
+      return res.json(recommendation);
+    } catch (err: any) {
+      console.error("Switch recommendation error:", err);
+      // Return a safe fallback so the UI doesn't crash
+      return res.json({
+        recommended_insurer: "Niva Bupa",
+        recommended_plan: "ReAssure 2.0",
+        improvements: ["No room rent capping", "Unlimited restoration", "Zero co-payment"],
+        premium_delta: "~Ã¢â€šÂ¹2,000/yr more",
+        confidence: "medium"
+      });
+    }
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Fetch Client Report By ID (Agent Dashboard Flow) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  app.get("/api/client-report/:id", async (req, res) => {
+    try {
+      const clientId = req.params.id;
+      const getClient = await pool.query(
+        "SELECT report_data FROM clients WHERE id = $1", 
+        [clientId]
+      );
+
+      if (getClient.rows.length === 0 || !getClient.rows[0].report_data) {
+        return res.status(404).json({ error: "Report not found or not finished processing" });
+      }
+
+      return res.json({ report_data: getClient.rows[0].report_data });
+    } catch (err: any) {
+      console.error("Fetch client report error:", err);
+      res.status(500).json({ error: "Failed to fetch report" });
+    }
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Agent Signup: Create Profile (bypasses RLS via pg superuser) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  app.post("/api/agent/create-profile", async (req, res) => {
+    try {
+      const { id, email, full_name, phone, city, experience_years, invite_code } = req.body;
+
+      if (!id || !email || !full_name) {
+        return res.status(400).json({ error: "Missing required fields: id, email, full_name" });
+      }
+
+      // Insert the agent profile using the superuser pool (bypasses RLS)
+      await pool.query(`
+        INSERT INTO agents (id, email, full_name, phone, city, experience_years, invite_code)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (id) DO NOTHING
+      `, [id, email, full_name, phone || null, city || null, experience_years || 0, invite_code || null]);
+
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.error("Create profile error:", err);
+      res.status(500).json({ error: err.message || "Failed to create agent profile" });
+    }
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Agent: Create Batch Upload (bypasses RLS + schema cache issues) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  app.post("/api/agent/create-batch", async (req, res) => {
+    try {
+      const { agent_id, total_count } = req.body;
+      if (!agent_id || !total_count) {
+        return res.status(400).json({ error: "Missing agent_id or total_count" });
+      }
+
+      const result = await pool.query(`
+        INSERT INTO batch_uploads (agent_id, total, processed_count, status)
+        VALUES ($1, $2, 0, 'pending')
+        RETURNING id, agent_id, total, processed_count, status, created_at
+      `, [agent_id, total_count]);
+
+      return res.json(result.rows[0]);
+    } catch (err: any) {
+      console.error("Create batch error:", err);
+      res.status(500).json({ error: err.message || "Failed to create batch" });
+    }
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Agent: Add Client row (bypasses RLS on clients table) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  app.post("/api/agent/add-client", async (req, res) => {
+    try {
+      const { agent_id, batch_id, policy_name, pdf_url } = req.body;
+      if (!agent_id || !batch_id || !pdf_url) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const result = await pool.query(`
+        INSERT INTO clients (agent_id, batch_id, policy_name, pdf_url, status)
+        VALUES ($1, $2, $3, $4, 'pending')
+        RETURNING id
+      `, [agent_id, batch_id, policy_name || 'Unknown Policy', pdf_url]);
+
+      return res.json(result.rows[0]);
+    } catch (err: any) {
+      console.error("Add client error:", err);
+      res.status(500).json({ error: err.message || "Failed to add client" });
+    }
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ JWT Verification Helper Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // Verifies the Supabase Bearer token and returns the authenticated userId.
+  // Never trusts x-user-id header from client alone.
+  const verifyJwt = async (req: any, res: any): Promise<string | null> => {
+    const authHeader = req.headers['authorization'] as string | undefined;
+    // Fallback: still accept x-user-id if no bearer token (for legacy clients),
+    // but we verify the token when present.
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+      const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+      if (error || !user) {
+        res.status(401).json({ error: 'Invalid or expired token' });
+        return null;
+      }
+      return user.id;
+    }
+    // Legacy path Ã¢â‚¬â€œ x-user-id header (trusted only in dev; strip in prod via gateway)
+    const headerUserId = req.headers['x-user-id'] as string | undefined;
+    if (headerUserId) return headerUserId;
+    res.status(401).json({ error: 'Missing authorization' });
+    return null;
+  };
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Agent: Get Own Profile Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  app.get("/api/agent/me", async (req, res) => {
+    try {
+      const userId = await verifyJwt(req, res);
+      if (!userId) return;
+
+      const result = await pool.query(
+        `SELECT id, email, full_name, phone_number, city, firm_name, is_admin, upload_limit, created_at FROM agents WHERE id = $1`,
+        [userId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+
+      return res.json(result.rows[0]);
+    } catch (err: any) {
+      console.error("Get agent me error:", err);
+      res.status(500).json({ error: err.message || "Internal server error" });
+    }
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Admin Endpoints Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  
+  // Admin Middleware Helper Ã¢â‚¬â€ reads user ID from x-user-id header
+  const isAdmin = async (req: any, res: any, next: any) => {
+    const userId = req.headers['x-user-id'] as string;
+    if (!userId) return res.status(401).json({ error: "Unauthorized: missing x-user-id header" });
+
+    const agentRes = await pool.query("SELECT is_admin FROM agents WHERE id = $1", [userId]);
+    if (agentRes.rows.length === 0 || !agentRes.rows[0].is_admin) {
+      return res.status(403).json({ error: "Forbidden: Admin access required" });
+    }
+    req.adminUserId = userId;
+    next();
+  };
+
+  app.get("/api/admin/stats", isAdmin, async (req, res) => {
+    try {
+      const agentsCount = await pool.query("SELECT COUNT(*) FROM agents");
+      const policiesCount = await pool.query("SELECT COUNT(*) FROM clients WHERE status = 'done'");
+      const batchesCount = await pool.query("SELECT COUNT(DISTINCT batch_id) FROM clients");
+      const reportsCount = await pool.query("SELECT COUNT(*) FROM public_reports");
+
+      res.json({
+        totalAgents: parseInt(agentsCount.rows[0].count),
+        totalPolicies: parseInt(policiesCount.rows[0].count),
+        totalBatches: parseInt(batchesCount.rows[0].count),
+        totalReports: parseInt(reportsCount.rows[0].count)
+      });
+    } catch (err) {
+      console.error("Admin stats error:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  app.get("/api/admin/agents", isAdmin, async (req, res) => {
+    try {
+      const agentsRes = await pool.query(`
+        SELECT 
+          a.id, a.full_name, a.email, a.city, a.created_at, a.upload_limit,
+          COUNT(c.id) as client_count,
+          AVG(c.score) as avg_score
+        FROM agents a
+        LEFT JOIN clients c ON a.id = c.agent_id
+        GROUP BY a.id
+        ORDER BY a.created_at DESC
+      `);
+
+      // Fetch empanelments for all agents
+      const empanelRes = await pool.query("SELECT agent_id, insurer_name FROM empanelments");
+      const empanelMap: any = {};
+      empanelRes.rows.forEach(r => {
+        if (!empanelMap[r.agent_id]) empanelMap[r.agent_id] = [];
+        empanelMap[r.agent_id].push(r.insurer_name);
+      });
+
+      const agents = agentsRes.rows.map(a => ({
+        ...a,
+        empanelments: empanelMap[a.id] || [],
+        client_count: parseInt(a.client_count),
+        avg_score: a.avg_score ? parseFloat(a.avg_score).toFixed(1) : "0"
+      }));
+
+      res.json(agents);
+    } catch (err) {
+      console.error("Admin agents error:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  app.patch("/api/admin/agents/:id", isAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { upload_limit } = req.body;
+    try {
+      await pool.query("UPDATE agents SET upload_limit = $1 WHERE id = $2", [upload_limit, id]);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  app.get("/api/admin/invite-codes", isAdmin, async (req, res) => {
+    try {
+      const codesRes = await pool.query(`
+        SELECT ic.*, a.full_name as used_by_name
+        FROM invite_codes ic
+        LEFT JOIN agents a ON ic.used_by = a.id
+        ORDER BY ic.created_at DESC
+      `);
+      res.json(codesRes.rows);
+    } catch (err) {
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  app.post("/api/admin/invite-codes", isAdmin, async (req, res) => {
+    const { code, is_random } = req.body;
+    let finalCode = code;
+
+    if (is_random) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let randomPart = '';
+      for (let i = 0; i < 4; i++) {
+        randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      finalCode = `INDSURE-${randomPart}`;
+    }
+
+    try {
+      const insertRes = await pool.query(
+        "INSERT INTO invite_codes (code) VALUES ($1) RETURNING *",
+        [finalCode]
+      );
+      res.json(insertRes.rows[0]);
+    } catch (err) {
+      res.status(500).json({ error: "Code already exists or server error" });
+    }
+  });
+
+  // --- Agent Profile Management ---
+  app.patch("/api/agent/update-profile", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
+    const { full_name, phone_number, city, firm_name } = req.body;
+
+    try {
+      const result = await pool.query(
+        `UPDATE agents 
+         SET full_name = $1, phone_number = $2, city = $3, firm_name = $4
+         WHERE id = $5 
+         RETURNING *`,
+        [full_name, phone_number, city, firm_name, agentId]
+      );
+
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Agent not found" });
+      }
+
+      res.json(result.rows[0]);
+    } catch (error: any) {
+      console.error("Error updating agent profile:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Status endpoint Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
   app.get("/api/analyze/status/:jobId", (req, res) => {
     const { jobId } = req.params;
     console.log(`[Status Check] Checking status for job: ${jobId}`);
@@ -429,7 +1022,7 @@ export async function registerRoutes(
   });
 
 
-  // ─── Policy extraction for comparison ────────────────────────────────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Policy extraction for comparison Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
   app.post(
     "/api/extract-policy",
     (req, res, next) => {
@@ -465,44 +1058,6 @@ export async function registerRoutes(
             error: "Failed to extract text from PDF: " + extractError.message
           });
         }
-
-        const fileBuffer = fs.readFileSync(req.file.path);
-        fs.unlinkSync(req.file.path);
-
-        if (!uploadedPolicyText.trim()) {
-          return res.status(400).json({
-            error: "No text extracted from file. (Is this a scanned PDF? Try converting to searchable text PDF first)"
-          });
-        }
-
-        console.log("POLICY EXTRACTION - TEXT LENGTH:", uploadedPolicyText.length);
-
-        const { extractPolicyMetadata, fetchPolicyWordings, mergePolicyTexts } = await import("./utils/policyWordingsFetcher");
-        const metadata = await extractPolicyMetadata(uploadedPolicyText);
-        console.log("POLICY EXTRACTION - Metadata:", metadata);
-
-        let wordingsText: string | null = null;
-        if (metadata.insurer && metadata.product) {
-          wordingsText = await fetchPolicyWordings(
-            metadata.insurer,
-            metadata.product || "",
-            metadata.plan || "",
-            metadata.year || ""
-          );
-          if (wordingsText) {
-            console.log("POLICY EXTRACTION - Wordings fetched, length:", wordingsText.length);
-          }
-        }
-
-        const policyText = mergePolicyTexts(uploadedPolicyText, wordingsText);
-        console.log("POLICY EXTRACTION - Merged text length:", policyText.length);
-
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-          return res.status(500).json({ error: "GEMINI_API_KEY not set" });
-        }
-
-        const pageCount = (policyText.match(/\f/g) || []).length + 1;
 
         // ARCHIVED: const report: PolicyReport = await runExtractionPipeline({
         // ARCHIVED:   policyText,
@@ -552,63 +1107,7 @@ export async function registerRoutes(
   );
 
 
-  // ─── Deterministic Policy Comparison ─────────────────────────────────────
-  // ARCHIVED: app.post("/api/compare-policies", requireAuth, async (req, res) => {
-  app.post("/api/compare-policies", async (req, res) => {
-    try {
-      const { policyA, policyB } = req.body as {
-        policyA: any; // ARCHIVED: PolicyReport;
-        policyB: any; // ARCHIVED: PolicyReport;
-      };
-
-      if (!policyA || !policyB) {
-        return res.status(400).json({
-          error: "Both policyA and policyB are required in request body",
-        });
-      }
-
-      console.log("[Compare] Normalizing policies...");
-      // ARCHIVED: const normA = normalizePolicyForComparison(policyA);
-      // ARCHIVED: const normB = normalizePolicyForComparison(policyB);
-
-      console.log("[Compare] Running deterministic comparison...");
-      // ARCHIVED: const result = comparePolicies(normA, normB, policyA, policyB);
-
-      // ARCHIVED: console.log(`[Compare] ✓ Result: large=${result.better_for_large_claims}, small=${result.better_for_small_claims}`);
-
-      return res.json({ archived: true });
-    } catch (err: any) {
-      console.error("[Compare] Error:", err);
-      return res.status(500).json({
-        error: "Comparison failed: " + (err.message || "Unknown error"),
-      });
-    }
-  });
-
-
-  // ─── Hospital Network Filter ──────────────────────────────────────────────
-  app.get("/api/hospitals/filter", async (req, res) => {
-    try {
-      const { state, city, pincode } = req.query;
-
-      // ARCHIVED: const result = filterHospitalNetwork({
-      // ARCHIVED:   state: state as string | undefined,
-      // ARCHIVED:   city: city as string | undefined,
-      // ARCHIVED:   pincode: pincode as string | undefined,
-      // ARCHIVED: });
-
-      res.json({ archived: true });
-    } catch (error: any) {
-      console.error('[Hospital Filter] Error:', error);
-      res.status(500).json({
-        error: "Failed to filter hospital network data",
-        details: error.message,
-      });
-    }
-  });
-
-
-  // ─── PDF Generation ───────────────────────────────────────────────────────
+  // ─── PDF Generation ──────────────────────────────────────────────────────────
   console.log('[ROUTES] Registering PDF generation endpoints...');
 
   app.get("/api/generate-pdf/test", (req, res) => {
@@ -681,6 +1180,47 @@ export async function registerRoutes(
     }
   });
 
+
+  // ─── Calculator Save Report ───────────────────────────────────────────────
+  app.post("/api/calculator/save-report", async (req, res) => {
+    const { inputs, result_data } = req.body;
+    if (!inputs || !result_data) {
+        return res.status(400).json({ error: "inputs and result_data are required" });
+    }
+
+    try {
+      const insertRes = await pool.query(
+        "INSERT INTO calculator_reports (inputs, result_data) VALUES ($1, $2) RETURNING id",
+        [JSON.stringify(inputs), JSON.stringify(result_data)]
+      );
+
+      return res.json({ uuid: insertRes.rows[0].id });
+    } catch (err: any) {
+      console.error("ERROR saving calculator report:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  // ─── Get Calculator Report ───────────────────────────────────────────────
+  app.get("/api/calculator/report/:uuid", async (req, res) => {
+    const { uuid } = req.params;
+
+    try {
+      const reportRes = await pool.query(
+        "SELECT inputs, result_data, created_at FROM calculator_reports WHERE id = $1",
+        [uuid]
+      );
+
+      if (reportRes.rows.length === 0) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+
+      return res.json(reportRes.rows[0]);
+    } catch (err: any) {
+      console.error("ERROR in fetching calculator report:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
 
   console.log('[ROUTES] All routes registered successfully');
   return _httpServer;

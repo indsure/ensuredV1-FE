@@ -23,7 +23,10 @@ import { validateForensicAuditReport } from "../../../../backend/server/types/po
 import { useAnalysis } from "@/hooks/use-analysis";
 
 export default function Report({ params }: { params?: { id?: string } }) {
-  const [, setLocation] = useLocation();
+  // Custom navigation handler that works with both routers
+  const setLocation = (path: string) => {
+    window.location.pathname = path;
+  };
   const { clearAuditState } = useAnalysis();
   const [data, setData] = useState(null as any | null);
   const [loading, setLoading] = useState(true);
@@ -49,23 +52,42 @@ export default function Report({ params }: { params?: { id?: string } }) {
       return;
     }
 
-    // 2. Try to load from session (Real User Data)
+    // 2. Try to load from session (Real User Data - D2C Flow)
     const raw = sessionStorage.getItem("ensured_report");
-    if (raw) {
+    if (raw && !params?.id) {
       try {
         const parsed = JSON.parse(raw);
-        // STRICT VALIDATION: Only accept if it matches V3 Schema
-        // NO FALLBACKS allowed for main product flow
         if (validateForensicAuditReport(parsed)) {
           setData(parsed);
+          setLoading(false);
+          return;
         } else {
-          console.error("Session data failed V3 validation.", parsed);
-          // Data remains null, triggering Error UI
+          console.error("Session data failed V3 validation.");
         }
       } catch (e) {
         console.error("Failed to parse report JSON", e);
       }
     }
+
+    // 3. Try to fetch from database using ID (Agent Flow)
+    if (params?.id && params.id !== "sample-health" && params.id !== "sample-life" && params.id !== "sample-vehicle") {
+      fetch(`/api/client-report/${params.id}`)
+        .then(res => res.json())
+        .then(dbData => {
+          if (dbData && dbData.report_data && validateForensicAuditReport(dbData.report_data)) {
+            setData(dbData.report_data);
+          } else {
+            console.error("DB data missing or failed validation", dbData);
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch report from DB", err);
+          setLoading(false);
+        });
+      return;
+    }
+
     setLoading(false);
 
     // CLEANUP: Reset state on unmount

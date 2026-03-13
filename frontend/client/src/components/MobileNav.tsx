@@ -16,6 +16,11 @@ export function MobileNav() {
   const { currentJobId } = useAnalysis();
   const [hasActiveJob, setHasActiveJob] = useState(false);
 
+  // Fix 2: Hide D2C chrome on agent/admin routes
+  if (window.location.pathname.startsWith('/agent') || window.location.pathname.startsWith('/admin')) {
+    return null;
+  }
+
   useEffect(() => {
     const jobId = currentJobId || sessionStorage.getItem("ensured_current_job");
     setHasActiveJob(!!jobId && !jobId.startsWith("legacy-"));

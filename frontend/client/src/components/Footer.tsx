@@ -12,9 +12,9 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   const socialLinks = [
-    { name: "LinkedIn", icon: Linkedin, href: "#" },
-    { name: "Twitter", icon: Twitter, href: "#" },
-    { name: "Instagram", icon: Instagram, href: "#" },
+    { name: "LinkedIn", icon: Linkedin, href: "https://www.linkedin.com/company/indsure" },
+    { name: "Twitter", icon: Twitter, href: "https://www.x.com/indsure" },
+    { name: "Instagram", icon: Instagram, href: "https://www.instagram.com/indsure.in" },
   ];
 
   return (
@@ -119,7 +119,8 @@ export function Footer() {
           {/* Bottom Bar - Constrained Width to bring text blocks inward */}
           <div className="pt-8 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row justify-between items-end gap-6 text-xs font-mono uppercase tracking-widest max-w-5xl mx-auto text-[var(--color-white-muted)]">
             <div className="flex flex-col gap-2">
-              <p>© {currentYear} IndSure Intelligence Inc.</p>
+              <p>© {currentYear} Indsuretech Intelligence Private Limited</p>
+              <p className="normal-case tracking-normal opacity-60 text-[10px]">CIN: U62099MR2026PTC473468</p>
               <p className="normal-case tracking-normal opacity-70">Built for Indian policy documents. Tested on real claim rejections.</p>
             </div>
             <p className="text-right max-w-xs leading-relaxed normal-case tracking-normal opacity-70">

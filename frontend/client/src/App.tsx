@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Switch, Route } from "wouter";
+import { BrowserRouter, Routes, Route as ReactRoute } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,6 +12,8 @@ import { ComparisonProvider } from "@/hooks/use-comparison";
 import { usePageTransition } from "@/hooks/use-page-transition";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import ReportDispatcher from "@/components/ReportDispatcher";
+
 // ARCHIVED: import { AuthProvider } from "@/hooks/use-auth";
 const AuthProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
@@ -18,7 +21,32 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => <>{childre
 import SachAIChat from "@/components/SachAIChat";
 /* ========================================================= */
 
-// Lazy load routes for code splitting
+// --- Agent Auth ---
+const AgentLogin = lazy(() => import("@/pages/agent/Login"));
+const AgentSignupStep1 = lazy(() => import("@/pages/agent/SignupStep1"));
+const AgentSignupStep2 = lazy(() => import("@/pages/agent/SignupStep2"));
+
+// --- Agent App ---
+const AgentDashboard = lazy(() => import("@/pages/agent/Dashboard"));
+const AgentPolicies = lazy(() => import("@/pages/agent/Clients"));
+const AgentClientDetail = lazy(() => import("@/pages/agent/ClientDetail"));
+const AgentUploads = lazy(() => import("@/pages/agent/Uploads"));
+const AgentReports = lazy(() => import("@/pages/agent/Reports"));
+const AgentSettings = lazy(() => import("@/pages/agent/Settings"));
+const AgentResetPassword = lazy(() => import("@/pages/agent/ResetPassword"));
+import AgentProtectedRoute from "@/components/agent/ProtectedRoute";
+
+// --- Public ---
+const PublicReport = lazy(() => import("@/pages/report/PublicReport"));
+
+// --- Admin ---
+const AdminPanel = lazy(() => import("@/pages/admin/AdminPanel"));
+
+// --- Compare Fix ---
+const CompareMaintenance = lazy(() => import("@/pages/CompareMaintenance"));
+const CompareSample = lazy(() => import("@/pages/CompareSample"));
+
+// --- Existing D2C Lazy Loads ---
 const Home = lazy(() => import("@/pages/home"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Processing = lazy(() => import("@/pages/processing"));
@@ -40,9 +68,6 @@ const WhyIndSure = lazy(() => import("@/pages/why-indsure"));
 const Help = lazy(() => import("@/pages/help"));
 const Account = lazy(() => import("@/pages/account"));
 const Hospitals = lazy(() => import("@/pages/hospitals"));
-// ARCHIVED: const LoginPage = lazy(() => import("@/pages/login"));
-// ARCHIVED: const SignupPage = lazy(() => import("@/pages/signup"));
-
 
 // Loading fallback component
 function PageLoader() {
@@ -57,9 +82,11 @@ function PageLoader() {
   );
 }
 
-// ✅ FIX: Make Router a proper component (not just a function)
-function Router() {
-  // ✅ Now hooks can be called safely inside this component
+// ------------------------------------------------------------
+// WOUTER APP (LEGACY D2C ROUTES)
+// ------------------------------------------------------------
+function WouterApp() {
+  // Execute page transition hook inside the wouter context
   usePageTransition();
 
   return (
@@ -92,7 +119,8 @@ function Router() {
         <Route path="/calculator/report" component={CalculatorReportPage} />
 
         {/* Policy Comparison - Single Page Redesign */}
-        <Route path="/compare" component={ComparePage} />
+        {/* React Router DOM handles this path now */}
+        {/* <Route path="/compare" component={ComparePage} /> */}
 
         {/* Company Pages */}
         <Route path="/blog" component={Blog} />
@@ -110,17 +138,26 @@ function Router() {
         <Route path="/find-provider" component={Hospitals} />
         <Route path="/hospitals" component={Hospitals} />
 
-        {/* Auth Pages */}
-        {/* ARCHIVED: <Route path="/login" component={LoginPage} /> */}
-        {/* ARCHIVED: <Route path="/signup" component={SignupPage} /> */}
-
         <Route component={NotFound} />
       </Switch>
     </Suspense>
   );
 }
 
+// ------------------------------------------------------------
+// MAIN APP ROOT (CONDITIONAL ROUTER)
+// ------------------------------------------------------------
 function App() {
+  const currentPath = window.location.pathname;
+
+  // Isolate routing domains completely to prevent React Router DOM and Wouter
+  // from conflicting over the exact same React Hook context
+  const isReactRouter =
+    currentPath.startsWith('/agent') ||
+    currentPath.startsWith('/admin') ||
+    currentPath.startsWith('/compare') ||
+    currentPath.startsWith('/report/');
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -130,7 +167,49 @@ function App() {
               <ComparisonProvider>
                 <TooltipProvider>
                   <Toaster />
-                  <Router />
+
+                  {isReactRouter ? (
+                    <BrowserRouter>
+                      <Routes>
+                        {/* --- Agent Auth --- */}
+                        <ReactRoute path="/agent/login" element={<Suspense fallback={<PageLoader />}><AgentLogin /></Suspense>} />
+                        <ReactRoute path="/agent/signup" element={<Suspense fallback={<PageLoader />}><AgentSignupStep1 /></Suspense>} />
+                        <ReactRoute path="/agent/signup/empanelment" element={<Suspense fallback={<PageLoader />}><AgentSignupStep2 /></Suspense>} />
+
+                        {/* --- Agent Protected App --- */}
+                        <ReactRoute element={<AgentProtectedRoute />}>
+                          <ReactRoute path="/agent/dashboard" element={<Suspense fallback={<PageLoader />}><AgentDashboard /></Suspense>} />
+                          <ReactRoute path="/agent/policies" element={<Suspense fallback={<PageLoader />}><AgentPolicies /></Suspense>} />
+                          <ReactRoute path="/agent/uploads" element={<Suspense fallback={<PageLoader />}><AgentUploads /></Suspense>} />
+                          <ReactRoute path="/agent/reports" element={<Suspense fallback={<PageLoader />}><AgentReports /></Suspense>} />
+                          <ReactRoute path="/agent/settings" element={<Suspense fallback={<PageLoader />}><AgentSettings /></Suspense>} />
+                          
+                          {/* Keep original routes to avoid breaking legacy links if any */}
+                          <ReactRoute path="/agent/clients" element={<Suspense fallback={<PageLoader />}><AgentPolicies /></Suspense>} />
+                          <ReactRoute path="/agent/clients/:id" element={<Suspense fallback={<PageLoader />}><AgentClientDetail /></Suspense>} />
+                        </ReactRoute>
+
+                        <ReactRoute path="/agent/reset-password" element={<Suspense fallback={<PageLoader />}><AgentResetPassword /></Suspense>} />
+
+
+                        {/* --- Public Shareable Report --- */}
+                        <ReactRoute path="/report/:uuid" element={<ReportDispatcher />} />
+
+                        {/* --- Admin --- */}
+                        <ReactRoute path="/admin" element={<Suspense fallback={<PageLoader />}><AdminPanel /></Suspense>} />
+
+                        {/* --- Compare Maintenance Fix --- */}
+                        <ReactRoute path="/compare" element={<Suspense fallback={<PageLoader />}><CompareMaintenance /></Suspense>} />
+                        <ReactRoute path="/compare/sample" element={<Suspense fallback={<PageLoader />}><CompareSample /></Suspense>} />
+
+                        {/* Catch-all for react-router mode just in case */}
+                        <ReactRoute path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
+                      </Routes>
+                    </BrowserRouter>
+                  ) : (
+                    <WouterApp />
+                  )}
+
                   <MobileNav />
                   <SachAIChat />
                 </TooltipProvider>
@@ -144,3 +223,4 @@ function App() {
 }
 
 export default App;
+
