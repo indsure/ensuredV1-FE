@@ -17,6 +17,7 @@ import { supabase } from '../../lib/supabase';
 import AdminOverview from '../../components/admin/AdminOverview';
 import AdminAgents from '../../components/admin/AdminAgents';
 import AdminInviteCodes from '../../components/admin/AdminInviteCodes';
+import { apiFetch } from '@/lib/api';
 
 const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'agents' | 'codes'>('overview');
@@ -38,7 +39,7 @@ const AdminPanel: React.FC = () => {
     }
 
     // Use backend API to fetch agent profile (bypasses RLS)
-    const res = await fetch('/api/agent/me', {
+    const res = await apiFetch('/api/agent/me', {
       headers: { 'x-user-id': user.id }
     });
 

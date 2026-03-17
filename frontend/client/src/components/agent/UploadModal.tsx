@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, UploadCloud, FileText, Trash2, Mail, AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
+import { apiFetch } from '@/lib/api';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -34,7 +35,7 @@ export default function UploadModal({ isOpen, onClose, agentId }: UploadModalPro
 
     try {
       // 1. Create Batch Upload Row via backend (bypasses RLS + schema cache)
-      const batchRes = await fetch('/api/agent/create-batch', {
+      const batchRes = await apiFetch('/api/agent/create-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent_id: agentId, total_count: files.length }),
@@ -67,7 +68,7 @@ export default function UploadModal({ isOpen, onClose, agentId }: UploadModalPro
         if (signError) throw signError;
 
         // Create Client Row via backend (bypasses RLS on clients table)
-        const clientRes = await fetch('/api/agent/add-client', {
+        const clientRes = await apiFetch('/api/agent/add-client', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -91,7 +92,7 @@ export default function UploadModal({ isOpen, onClose, agentId }: UploadModalPro
       // but we'll simulate the trigger here or rely on a backend worker)
       // For now, we follow the requirement: "A background async function then processes each PDF one by one"
       // We trigger the backend process
-      fetch('/api/agent/trigger-batch-process', {
+      apiFetch('/api/agent/trigger-batch-process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ batchId: batch.id })

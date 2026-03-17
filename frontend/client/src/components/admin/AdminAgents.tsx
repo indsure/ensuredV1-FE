@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '../../lib/supabase';
+import { apiFetch } from '@/lib/api';
 
 interface Agent {
   id: string;
@@ -44,7 +45,7 @@ const AdminAgents: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const response = await fetch('/api/admin/agents', {
+      const response = await apiFetch('/api/admin/agents', {
         headers: { 'x-user-id': user.id }
       });
       if (!response.ok) return;

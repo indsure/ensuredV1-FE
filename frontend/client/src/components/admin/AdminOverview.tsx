@@ -10,6 +10,7 @@ import {
   Activity
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { apiFetch } from '@/lib/api';
 
 interface AdminStats {
   totalAgents: number;
@@ -30,7 +31,7 @@ const AdminOverview: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const response = await fetch('/api/admin/stats', {
+      const response = await apiFetch('/api/admin/stats', {
         headers: { 'x-user-id': user.id }
       });
       if (!response.ok) {

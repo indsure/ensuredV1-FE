@@ -6,13 +6,15 @@ import {
   ChevronRight,
   RefreshCw,
   AlertTriangle,
-  Plus
+  Plus,
+  FileText
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { format } from 'date-fns';
-import { Link } from 'react-router-dom';
+import { Link } from 'wouter';
 import UploadModal from '../../components/agent/UploadModal';
 import { useToast } from '../../hooks/use-toast';
+import { apiFetch } from '@/lib/api';
 
 interface Client {
   id: string;
@@ -39,7 +41,7 @@ export default function AgentUploads() {
   const [expandedBatch, setExpandedBatch] = useState<string | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
-  
+
   const { toast } = useToast();
 
   const fetchUploads = async (uid: string) => {
@@ -53,11 +55,11 @@ export default function AgentUploads() {
       const batchesMap = new Map<string, Batch>();
       clientData.forEach(c => {
         if (!batchesMap.has(c.batch_id)) {
-          batchesMap.set(c.batch_id, { 
-            id: c.batch_id, 
-            created_at: c.created_at, 
-            total: 0, 
-            processed: 0, 
+          batchesMap.set(c.batch_id, {
+            id: c.batch_id,
+            created_at: c.created_at,
+            total: 0,
+            processed: 0,
             failed: 0,
             clients: [],
             isComplete: false
@@ -69,12 +71,12 @@ export default function AgentUploads() {
         if (c.status === 'done') batch.processed += 1;
         if (c.status === 'error') batch.failed += 1;
       });
-      
+
       const batchesArray = Array.from(batchesMap.values()).map(b => ({
         ...b,
         isComplete: (b.processed + b.failed) === b.total
       })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      
+
       setBatches(batchesArray);
     }
   };
@@ -107,7 +109,7 @@ export default function AgentUploads() {
     setIsUpdating(client.id);
     try {
       await supabase.from('clients').update({ status: 'pending', error_message: null }).eq('id', client.id);
-      await fetch('/api/agent/trigger-batch-process', {
+      await apiFetch('/api/agent/trigger-batch-process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ batchId: client.batch_id })
@@ -131,8 +133,8 @@ export default function AgentUploads() {
           <h1 className="font-['Playfair_Display'] text-3xl font-semibold text-[#0F172A]">Uploads</h1>
           <p className="text-[#64748B] text-sm mt-1">View your batch history and track processing status.</p>
         </div>
-        
-        <button 
+
+        <button
           onClick={() => setIsUploadModalOpen(true)}
           className="flex items-center gap-2 px-6 py-2 bg-[#0D9488] hover:bg-[#0f766e] text-white text-sm font-semibold rounded-lg shadow-[0_4px_14px_0_rgba(13,148,136,0.39)] transition-all hover:-translate-y-0.5"
         >
@@ -161,11 +163,11 @@ export default function AgentUploads() {
               <div className="col-span-2 text-center">Failed</div>
               <div className="col-span-2 text-right">Status</div>
             </div>
-            
+
             <div className="divide-y divide-slate-50">
               {batches.map(batch => (
                 <div key={batch.id} className="group">
-                  <div 
+                  <div
                     onClick={() => toggleExpand(batch.id)}
                     className={`cursor-pointer transition-colors p-4 md:px-6 hover:bg-slate-50 ${expandedBatch === batch.id ? 'bg-slate-50' : ''}`}
                   >
@@ -178,27 +180,27 @@ export default function AgentUploads() {
                           <p className="text-sm font-semibold text-[#0F172A]">
                             {format(new Date(batch.created_at), 'MMMM d, yyyy • h:mm a')}
                           </p>
-                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {batch.id.substring(0,8)}</p>
+                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {batch.id.substring(0, 8)}</p>
                         </div>
                       </div>
-                      
+
                       <div className="col-span-4 md:col-span-2 flex justify-between md:justify-center items-center">
                         <span className="text-xs text-slate-500 md:hidden">Total:</span>
                         <span className="text-sm font-medium text-slate-700">{batch.total} Files</span>
                       </div>
-                      
+
                       <div className="col-span-4 md:col-span-2 flex justify-between md:justify-center items-center">
                         <span className="text-xs text-slate-500 md:hidden">Processed:</span>
                         <span className="text-sm font-medium text-green-600">{batch.processed}</span>
                       </div>
-                      
+
                       <div className="col-span-4 md:col-span-2 flex justify-between md:justify-center items-center">
                         <span className="text-xs text-slate-500 md:hidden">Failed:</span>
                         <span className={`text-sm font-bold ${batch.failed > 0 ? 'text-red-600' : 'text-slate-400'}`}>
                           {batch.failed}
                         </span>
                       </div>
-                      
+
                       <div className="col-span-12 md:col-span-2 flex justify-end">
                         {batch.isComplete ? (
                           <span className="px-2.5 py-1 bg-teal-50 text-teal-700 rounded text-[10px] font-bold uppercase border border-teal-100">
@@ -212,11 +214,10 @@ export default function AgentUploads() {
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Expanded Row */}
+
                   <AnimatePresence>
                     {expandedBatch === batch.id && (
-                      <motion.div 
+                      <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
@@ -224,7 +225,7 @@ export default function AgentUploads() {
                       >
                         <div className="p-4 md:px-12 md:py-6">
                           <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-                            <FileText size={14}/> Batch Contents
+                            <FileText size={14} /> Batch Contents
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {batch.clients.map(client => (
@@ -246,18 +247,18 @@ export default function AgentUploads() {
                                     )}
                                     {(client.status === 'pending' || client.status === 'processing') && (
                                       <span className="shrink-0 text-xs font-semibold text-blue-600 flex items-center gap-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"/>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-xs text-slate-500 font-mono">ID: {client.id.substring(0,8)}</p>
+                                  <p className="text-xs text-slate-500 font-mono">ID: {client.id.substring(0, 8)}</p>
                                 </div>
-                                
+
                                 <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
                                   {client.status === 'done' ? (
                                     <Link to={`/agent/policies?view=${client.id}`} className="text-xs font-semibold text-[#0D9488] hover:underline">View Policy</Link>
                                   ) : client.status === 'error' ? (
-                                    <button 
+                                    <button
                                       onClick={() => handleRetry(client)}
                                       disabled={isUpdating === client.id}
                                       className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 disabled:opacity-50"
@@ -282,10 +283,10 @@ export default function AgentUploads() {
         )}
       </div>
 
-      <UploadModal 
-        isOpen={isUploadModalOpen} 
-        onClose={() => setIsUploadModalOpen(false)} 
-        agentId={userId || ''} 
+      <UploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        agentId={userId || ''}
       />
     </div>
   );

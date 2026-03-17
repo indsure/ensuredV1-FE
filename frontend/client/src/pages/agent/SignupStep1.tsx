@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link, useLocation } from 'wouter'
 import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
+import { apiFetch } from '@/lib/api';
 
 export default function AgentSignupStep1() {
-    const navigate = useNavigate()
+    const [, setLocation] = useLocation()
     const [form, setForm] = useState({
         inviteCode: '',
         fullName: '',
@@ -55,7 +56,7 @@ export default function AgentSignupStep1() {
         const userId = authData.user.id
 
         // Insert into agents table via backend API (bypasses Supabase RLS)
-        const profileRes = await fetch('/api/agent/create-profile', {
+        const profileRes = await apiFetch('/api/agent/create-profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -83,7 +84,7 @@ export default function AgentSignupStep1() {
             .eq('code', form.inviteCode.trim().toUpperCase())
 
         setLoading(false)
-        navigate('/agent/signup/empanelment')
+        setLocation('/agent/signup/empanelment')
     }
 
     const inputClass =

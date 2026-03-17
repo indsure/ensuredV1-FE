@@ -1,5 +1,5 @@
 import { useState, useEffect, ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -18,6 +18,7 @@ import UploadModal from './UploadModal';
 import NotificationDropdown from './NotificationDropdown';
 import { useToast } from '../../hooks/use-toast';
 import { Toaster } from '../ui/toaster';
+import { apiFetch } from '@/lib/api';
 
 interface AgentLayoutProps {
   children: ReactNode;
@@ -28,14 +29,13 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
   const [userId, setUserId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const { toast } = useToast();
-  const location = useLocation();
+  const [location] = useLocation();
 
   const fetchNotifications = async (id: string) => {
     const { data, error } = await supabase
@@ -87,8 +87,8 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-        
-        const meRes = await fetch('/api/agent/me', { headers: { 'x-user-id': user.id } });
+
+        const meRes = await apiFetch('/api/agent/me', { headers: { 'x-user-id': user.id } });
         if (meRes.ok) {
           const agentData = await meRes.json();
           if (agentData?.full_name) setAgentName(agentData.full_name);
@@ -141,15 +141,13 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            // @ts-ignore
             onClick={() => setMobileMenuOpen(false)}
-            // @ts-ignore
             className="fixed inset-0 bg-black/50 z-40 md:hidden"
           />
         )}
       </AnimatePresence>
 
-      <div 
+      <div
         className={`fixed md:static inset-y-0 left-0 z-50 w-[240px] bg-[#1E293B] shadow-xl md:shadow-none transform transition-transform duration-300 ease-in-out flex flex-col ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
@@ -163,7 +161,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
               IndSure.
             </span>
           </Link>
-          <button 
+          <button
             className="ml-auto md:hidden text-slate-300 hover:text-white"
             onClick={() => setMobileMenuOpen(false)}
           >
@@ -173,7 +171,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
 
         <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto">
           {navLinks.map((link) => {
-            const isActive = location.pathname === link.path || (link.path === '/agent' && location.pathname === '/agent/dashboard');
+            const isActive = location === link.path || (link.path === '/agent' && location === '/agent/dashboard');
             return (
               <Link
                 key={link.name}
@@ -187,7 +185,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                 {link.icon}
                 {link.name}
               </Link>
-            )
+            );
           })}
         </nav>
 
@@ -209,26 +207,24 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <header className="h-[64px] shrink-0 bg-[#0B1120] flex items-center justify-between px-6 shadow-md z-10 w-full relative">
           <div className="flex items-center gap-4 flex-1">
-            <button 
+            <button
               className="md:hidden text-slate-300 hover:text-white transition-colors shrink-0"
               onClick={() => setMobileMenuOpen(true)}
             >
               <Menu size={24} />
             </button>
-            
-            {/* Global Search Stub */}
+
             <div className="max-w-md w-full ml-2 relative hidden md:block">
-               <div className="relative">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                 <input 
-                   type="text" 
-                   className="w-full bg-[#1E293B] border border-slate-700 text-sm text-white rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] placeholder:text-slate-500 transition-all"
-                   placeholder="Search policies or clients..."
-                   value={searchQuery}
-                   onChange={(e) => setSearchQuery(e.target.value)}
-                 />
-                 {/* Search Dropdown implementation goes here later */}
-               </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="text"
+                  className="w-full bg-[#1E293B] border border-slate-700 text-sm text-white rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] placeholder:text-slate-500 transition-all"
+                  placeholder="Search policies or clients..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -240,9 +236,9 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
               <Plus size={18} />
               New Upload
             </button>
-            
+
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setIsNotificationOpen(!isNotificationOpen)}
                 className={`relative text-slate-300 hover:text-white transition-colors p-2 rounded-full hover:bg-white/5 ${isNotificationOpen ? 'text-white bg-white/5' : ''}`}
               >
@@ -253,8 +249,8 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                   </span>
                 )}
               </button>
-              
-              <NotificationDropdown 
+
+              <NotificationDropdown
                 isOpen={isNotificationOpen}
                 onClose={() => setIsNotificationOpen(false)}
                 notifications={notifications}
@@ -273,10 +269,10 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         </main>
       </div>
 
-      <UploadModal 
-        isOpen={isUploadModalOpen} 
-        onClose={() => setIsUploadModalOpen(false)} 
-        agentId={userId || ''} 
+      <UploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        agentId={userId || ''}
       />
       <Toaster />
     </div>

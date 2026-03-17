@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, ArrowRight, Share2, Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { apiFetch } from '@/lib/api';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -42,7 +43,7 @@ const SwitchModal: React.FC<SwitchModalProps> = ({ isOpen, onClose, client }) =>
   const fetchRecommendation = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/agent/switch-recommendation', {
+      const response = await apiFetch('/api/agent/switch-recommendation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_id: client.id }),
@@ -60,7 +61,7 @@ const SwitchModal: React.FC<SwitchModalProps> = ({ isOpen, onClose, client }) =>
     if (!recommendation) return;
     setIsSharing(true);
     try {
-      const response = await fetch('/api/agent/public-report', {
+      const response = await apiFetch('/api/agent/public-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../hooks/use-toast';
+import { apiFetch } from '@/lib/api';
 
 const INSURERS = [
   'Star Health', 'Care Health', 'Niva Bupa', 'HDFC ERGO', 'ICICI Lombard',
@@ -47,7 +48,7 @@ export default function AgentSettings() {
   const fetchProfile = async (uid: string) => {
     try {
       // 1. Fetch from custom /me endpoint since RLS blocks direct client query to `agents`
-      const res = await fetch('/api/agent/me', { headers: { 'x-user-id': uid } });
+      const res = await apiFetch('/api/agent/me', { headers: { 'x-user-id': uid } });
       if (res.ok) {
         const data = await res.json();
         setProfile({
@@ -95,7 +96,7 @@ export default function AgentSettings() {
     if (!userId) return;
     setIsSaving(true);
     try {
-      const res = await fetch('/api/agent/update-profile', {
+      const res = await apiFetch('/api/agent/update-profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
         body: JSON.stringify({

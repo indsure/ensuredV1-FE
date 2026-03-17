@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { supabase } from '../../lib/supabase';
 // @ts-ignore
 import InviteCodeModal from './InviteCodeModal';
+import { apiFetch } from '@/lib/api';
 
 interface InviteCode {
   id: string;
@@ -39,7 +40,7 @@ const AdminInviteCodes: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const response = await fetch('/api/admin/invite-codes', {
+      const response = await apiFetch('/api/admin/invite-codes', {
         headers: { 'x-user-id': user.id }
       });
       if (!response.ok) return;

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation } from 'wouter'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
 
@@ -10,7 +10,7 @@ const POPULAR_INSURERS = [
 ]
 
 export default function AgentSignupStep2() {
-    const navigate = useNavigate()
+    const [, setLocation] = useLocation()
     const [search, setSearch] = useState('')
     const [selected, setSelected] = useState<string[]>([])
     const [loading, setLoading] = useState(false)
@@ -57,7 +57,7 @@ export default function AgentSignupStep2() {
             }
         }
 
-        navigate('/agent/dashboard')
+        setLocation('/agent/dashboard')
     }
 
     return (

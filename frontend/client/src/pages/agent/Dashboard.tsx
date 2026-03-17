@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'wouter';
 import { motion } from 'framer-motion';
 import {
   Users,
@@ -15,6 +15,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import AgentSummaryCard from '../../components/agent/AgentSummaryCard';
 import { format, differenceInDays } from 'date-fns';
+import { apiFetch } from '@/lib/api';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -83,7 +84,7 @@ export default function AgentDashboard() {
     setIsUpdating(client.id);
     try {
       await supabase.from('clients').update({ status: 'pending', error_message: null }).eq('id', client.id);
-      await fetch('/api/agent/trigger-batch-process', {
+      await apiFetch('/api/agent/trigger-batch-process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ batchId: client.batch_id })

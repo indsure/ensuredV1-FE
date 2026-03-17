@@ -276,7 +276,7 @@ export function LifeInsuranceCalculator({ variant = "life" }: { variant?: "life"
                       <SelectValue placeholder="Select state" />
                     </SelectTrigger>
                     <SelectContent>
-                      {allStates.map((state) => (
+                      {allStates.map((state: string) => (
                         <SelectItem key={state} value={state}>
                           {state}
                         </SelectItem>
@@ -293,7 +293,7 @@ export function LifeInsuranceCalculator({ variant = "life" }: { variant?: "life"
                     Your City
                   </Label>
                   <Combobox
-                    options={availableCities.map((city) => ({ value: city, label: city }))}
+                    options={availableCities.map((city: string) => ({ value: city, label: city }))}
                     value={formData.city || ""}
                     onValueChange={(value) => updateFormData("city", value)}
                     placeholder="Select city"
