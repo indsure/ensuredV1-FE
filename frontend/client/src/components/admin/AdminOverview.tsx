@@ -9,7 +9,7 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { apiFetch } from '@/lib/api';
 
 interface AdminStats {
@@ -35,13 +35,11 @@ const AdminOverview: React.FC = () => {
         headers: { 'x-user-id': user.id }
       });
       if (!response.ok) {
-        console.error('Admin stats fetch failed:', response.status);
         return;
       }
       const data = await response.json();
       setStats(data);
     } catch (err) {
-      console.error('Failed to fetch admin stats:', err);
     } finally {
       setLoading(false);
     }

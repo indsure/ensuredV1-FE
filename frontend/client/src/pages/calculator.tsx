@@ -289,6 +289,9 @@ export default function CalculatorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ inputs: finalInputs, result_data: analysis }),
       });
+      if (!res.ok) {
+        throw new Error("Failed to save report to server");
+      }
       const { uuid } = await res.json();
       setIsAnalyzing(false);
       setLocation(`/calculator/report/${uuid}`);

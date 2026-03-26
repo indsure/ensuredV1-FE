@@ -1,10 +1,9 @@
-// @ts-nocheck
-import { ForensicAuditReport } from "../../../../backend/server/types/policy";
+import { ForensicAuditReport } from "@/lib/policy-types";
 import { TERM_RIDERS_DATABASE } from "./data/term-rider-data";
 import { VEHICLE_RIDERS_DATABASE } from "./data/vehicle-rider-data";
 
 export function loadSampleReport(data: any): void {
-  sessionStorage.setItem("ensured_report", JSON.stringify(data));
+  sessionStorage.setItem("IndSure_report", JSON.stringify(data));
 }
 
 // --- SAMPLE 1: HEALTH (Care Supreme - "Perfectly Flawed") ---

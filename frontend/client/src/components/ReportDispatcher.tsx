@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams } from "wouter";
 import CalculatorReportPage from "../pages/calculator-report";
 import PublicReport from "../pages/report/PublicReport";
 import Report from "../pages/report";
 import { Skeleton } from "./ui/skeleton";
+import { apiFetch } from "@/lib/api";
 
 function PageLoader() {
   return (
@@ -28,7 +29,6 @@ export default function ReportDispatcher() {
       return;
     }
 
-    // Special case for samples
     if (reportId.startsWith("sample-")) {
       setReportType("legacy");
       setLoading(false);
@@ -37,34 +37,29 @@ export default function ReportDispatcher() {
 
     const detectReportType = async () => {
       try {
-        // 1. Try public-report (Agent share) first as it's common for shares
-        const publicRes = await fetch(`/api/public-report/${reportId}`);
+        const publicRes = await apiFetch(`/api/public-report/${reportId}`);
         if (publicRes.ok) {
           setReportType("agent");
           setLoading(false);
           return;
         }
 
-        // 2. Try calculator report
-        const calcRes = await fetch(`/api/calculator/report/${reportId}`);
+        const calcRes = await apiFetch(`/api/calculator/report/${reportId}`);
         if (calcRes.ok) {
           setReportType("calculator");
           setLoading(false);
           return;
         }
 
-        // 3. Fallback to legacy client-report if needed
-        const clientRes = await fetch(`/api/client-report/${reportId}`);
+        const clientRes = await apiFetch(`/api/client-report/${reportId}`);
         if (clientRes.ok) {
           setReportType("legacy");
           setLoading(false);
           return;
         }
 
-        // Default to legacy for error handling component in Report.tsx
         setReportType("legacy");
       } catch (err) {
-        console.error("Error detecting report type:", err);
         setReportType("legacy");
       } finally {
         setLoading(false);
@@ -77,16 +72,8 @@ export default function ReportDispatcher() {
   if (loading) return <PageLoader />;
   if (!reportId) return <Report />;
 
-  if (reportType === "agent") {
-    // We pass the id if needed, PublicReport uses useParams internally anyway
-    // but ensures it works with react-router-dom context
-    return <PublicReport />;
-  }
+  if (reportType === "agent") return <PublicReport />;
+  if (reportType === "calculator") return <CalculatorReportPage />;
 
-  if (reportType === "calculator") {
-    return <CalculatorReportPage />;
-  }
-
-  // Fallback to the main Report component that handles samples and legacy session data
   return <Report params={{ id: reportId }} />;
 }

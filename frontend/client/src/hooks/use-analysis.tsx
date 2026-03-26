@@ -51,8 +51,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setError(null);
     setCurrentJobId(null);
     setPolicyText("");
-    sessionStorage.removeItem("ensured_current_job");
-    sessionStorage.removeItem("ensured_report");
+    sessionStorage.removeItem("IndSure_current_job");
+    sessionStorage.removeItem("IndSure_report");
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
@@ -70,13 +70,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       return { status: data.status, result: data.result, error: data.error };
     } catch (err: any) {
-      console.error("Error checking job status:", err);
       return { status: "failed", error: err.message };
     }
   };
 
   const analyze = async (file: File, type?: string): Promise<{ jobId: string }> => {
-    console.log("🔍 Starting analysis for file:", file.name, type ? `(type: ${type})` : "");
     setStatus("loading");
     setError(null);
 
@@ -111,12 +109,10 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         throw new Error("Backend response missing jobId");
       }
 
-      console.log("✅ Job created:", data.jobId);
       setCurrentJobId(data.jobId);
-      sessionStorage.setItem("ensured_current_job", data.jobId);
+      sessionStorage.setItem("IndSure_current_job", data.jobId);
       return { jobId: data.jobId };
     } catch (err: any) {
-      console.error("❌ Analysis error:", err);
       let errorMessage = err.message || "Analysis failed";
 
       if (err.name === "TypeError" && err.message === "Failed to fetch") {
@@ -133,9 +129,14 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
 
   // Adaptive polling: 3s for the first 60s, then 5s after
   useEffect(() => {
-    isMountedRef.current = true;
-    const jobId = currentJobId || sessionStorage.getItem("ensured_current_job");
+    const jobId = currentJobId || sessionStorage.getItem("IndSure_current_job");
     if (!jobId) return;
+
+    // Per-effect cancel flag — avoids the isMountedRef reset race condition.
+    // Each time this effect re-runs (new jobId), the previous run's 'cancelled'
+    // closure is set to true, so any in-flight async callback from the old job
+    // stops processing even if it resolves after the new effect starts.
+    let cancelled = false;
 
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
@@ -145,23 +146,13 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     const jobStartTime = Date.now();
 
     const poll = async () => {
-      if (!isMountedRef.current) {
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-        }
-        return;
-      }
+      if (cancelled) return;
 
       const status = await checkJobStatus(jobId);
-      if (!isMountedRef.current) return;
+      if (cancelled) return;
 
       if (status.status === "completed" && status.result) {
-        console.log("✅ Job completed, storing result");
-        console.log('[Debug] auditResult set:', !!status.result);
-        console.log('[Debug] Setting isProcessing to false...');
 
-        // 1. Set result into state FIRST
         setState({
           analysis: status.result,
           analysisId: jobId,
@@ -169,35 +160,31 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           error: null,
         });
 
-        sessionStorage.setItem("ensured_report", JSON.stringify(status.result));
-
-        // 2. ONLY THEN stop the loader (set success)
+        sessionStorage.setItem("IndSure_report", JSON.stringify(status.result));
         setStatus("success");
-        console.log('[Debug] isProcessing set to false');
 
-        // Fix Race Condition: Delay teardown to give processing.tsx time to redirect
         setTimeout(() => {
-          sessionStorage.removeItem("ensured_current_job");
-          setCurrentJobId(null);
+          if (!cancelled) {
+            sessionStorage.removeItem("IndSure_current_job");
+            setCurrentJobId(null);
+          }
         }, 2000);
 
-        // 3. Clear the polling interval
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
         }
       } else if (status.status === "failed") {
-        console.error("❌ Job failed:", status.error);
-
-        setError(status.error || "Analysis failed");
-        setState((prev: AnalysisState) => ({
-          ...prev,
-          error: status.error || "Analysis failed",
-        }));
-        setStatus("error");
-
-        setCurrentJobId(null);
-        sessionStorage.removeItem("ensured_current_job");
+        if (!cancelled) {
+          setError(status.error || "Analysis failed");
+          setState((prev: AnalysisState) => ({
+            ...prev,
+            error: status.error || "Analysis failed",
+          }));
+          setStatus("error");
+          setCurrentJobId(null);
+          sessionStorage.removeItem("IndSure_current_job");
+        }
 
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
@@ -211,7 +198,9 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
         }
-        pollingIntervalRef.current = setInterval(poll, nextInterval);
+        if (!cancelled) {
+          pollingIntervalRef.current = setInterval(poll, nextInterval);
+        }
       }
     };
 
@@ -219,7 +208,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     pollingIntervalRef.current = setInterval(poll, 3_000);
 
     return () => {
-      isMountedRef.current = false;
+      cancelled = true;
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;

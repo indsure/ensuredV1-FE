@@ -9,14 +9,23 @@ coverage/
 # Production builds
 dist/
 build/
+frontend/dist/
+backend/dist/
 
-# Environment variables
+# Environment variables (root and all subdirectories)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 .env.example
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+**/.env.example
+**/.env.*
 
 # Logs
 logs
@@ -59,6 +68,7 @@ trace_output*.txt
 
 # Playwright browsers (large binaries)
 .playwright/
+playwright-report/
 
 # Build artifacts
 *.tgz

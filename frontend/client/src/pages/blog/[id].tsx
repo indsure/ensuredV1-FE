@@ -25,7 +25,7 @@ export default function BlogPost() {
 
   // SEO
   useSEO({
-    title: post ? `${post.title} | Ensured Blog` : "Blog Article | Ensured",
+    title: post ? `${post.title} | IndSure Blog` : "Blog Article | IndSure",
     description: post ? post.excerpt : "Insurance insights and guides",
     keywords: post ? `${post.category.toLowerCase()}, insurance, ${post.title.toLowerCase()}` : "insurance blog",
     canonical: post ? `/blog/${post.id}` : "/blog",
@@ -62,10 +62,10 @@ export default function BlogPost() {
     dateModified: post.date,
     publisher: {
       "@type": "Organization",
-      name: "Ensured",
+      name: "IndSure",
       logo: {
         "@type": "ImageObject",
-        url: "https://ensured.com/favicon.png",
+        url: "https://IndSure.com/favicon.png",
       },
     },
   } : null;
@@ -180,7 +180,9 @@ export default function BlogPost() {
                 ) : (
                   <div className="text-[var(--color-text-muted)]">
                     <p className="text-lg mb-4">{post.excerpt}</p>
-                    <p className="mt-4 italic">Full article content coming soon...</p>
+                    <p className="mt-4 italic">
+                      Full article content isn’t available for this post right now. Use the policy analysis tool below for tailored insights.
+                    </p>
                   </div>
                 )}
               </div>
@@ -240,7 +242,7 @@ export default function BlogPost() {
                       E
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-[var(--color-text-main)] mb-1">Ensured Team</h3>
+                      <h3 className="text-sm font-semibold text-[var(--color-text-main)] mb-1">IndSure Team</h3>
                       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
                         We decode insurance so you don't have to. Health, life, vehicle—everything explained clearly.
                       </p>

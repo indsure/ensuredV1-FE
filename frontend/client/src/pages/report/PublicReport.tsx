@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useParams } from 'wouter';
 import { Shield, Check, X, Info, Loader2, AlertCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { apiFetch } from '@/lib/api';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -25,13 +26,9 @@ interface PublicReportData {
 }
 
 const PublicReport: React.FC = () => {
-    // Try to get UUID from either router (params or window.location)
-    const { uuid: uuidFromParams } = useParams();
-    const pathname = window.location.pathname;
-    const uuidFromUrl = pathname.includes('/report/') ? pathname.split('/report/')[1] : null;
-    const uuid = uuidFromParams || uuidFromUrl;
+  const { uuid } = useParams<{ uuid: string }>();
 
-    const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [report, setReport] = useState<PublicReportData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +38,7 @@ const PublicReport: React.FC = () => {
 
   const fetchReport = async () => {
     try {
-      const response = await fetch(`/api/public-report/${uuid}`);
+      const response = await apiFetch(`/api/public-report/${uuid}`);
       if (!response.ok) throw new Error('Report not found or expired');
       const data = await response.json();
       setReport(data);
@@ -79,7 +76,7 @@ const PublicReport: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FAFAF8] py-12 px-6">
       {/* Top Banner */}
-      <motion.div 
+      <motion.div
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         // @ts-ignore
@@ -141,7 +138,7 @@ const PublicReport: React.FC = () => {
                   Key Constraints
                 </h4>
                 <ul className="space-y-3">
-                  {currentFlaws.slice(0, 4).map((flaw, i) => (
+                  {currentFlaws.slice(0, 4).map((flaw: any, i: number) => (
                     <li key={i} className="flex gap-3 text-sm text-slate-600 leading-relaxed font-medium">
                       <X size={18} className="text-red-500 shrink-0" />
                       <span>{flaw}</span>
@@ -153,14 +150,14 @@ const PublicReport: React.FC = () => {
               {/* Recommendation */}
               <div className="space-y-4">
                 <h4 className="flex items-center gap-2 text-teal-600 font-bold text-sm uppercase tracking-wider">
-                   <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />
-                   Recommended Switch
+                  <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse" />
+                  Recommended Switch
                 </h4>
                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-teal-100 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-teal-50 rounded-full -mr-12 -mt-12" />
                   <p className="text-lg font-bold text-[#0F172A] relative z-10">{rec.recommended_insurer}</p>
                   <p className="text-sm font-semibold text-[#0D9488] mt-1 relative z-10">{rec.recommended_plan}</p>
-                  
+
                   <ul className="mt-5 space-y-3 relative z-10">
                     {rec.improvements.map((imp, i) => (
                       <li key={i} className="flex gap-2 text-xs text-slate-700 font-semibold">
@@ -199,7 +196,7 @@ const PublicReport: React.FC = () => {
         </motion.div>
 
         {/* Action button */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}

@@ -14,7 +14,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { apiFetch } from '@/lib/api';
 
 interface Agent {
@@ -52,7 +52,6 @@ const AdminAgents: React.FC = () => {
       const data = await response.json();
       setAgents(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Failed to fetch agents:', err);
     } finally {
       setLoading(false);
     }
@@ -62,7 +61,7 @@ const AdminAgents: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await fetch(`/api/admin/agents/${agentId}`, {
+      await apiFetch(`/api/admin/agents/${agentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
         body: JSON.stringify({ upload_limit: editLimit }),
@@ -70,7 +69,6 @@ const AdminAgents: React.FC = () => {
       setAgents(prev => prev.map(a => a.id === agentId ? { ...a, upload_limit: editLimit } : a));
       setEditingId(null);
     } catch (err) {
-      console.error('Update limit failed:', err);
     }
   };
 

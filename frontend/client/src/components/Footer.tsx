@@ -108,9 +108,26 @@ export function Footer() {
             <div className="lg:col-span-2">
               <h4 className="font-mono text-xs uppercase tracking-widest text-[var(--color-gold-500)] mb-6 mt-2">Legal</h4>
               <ul className="space-y-4 font-normal text-sm">
-                <li><a href="#" className="text-[var(--color-gold-500)] hover:text-white transition-colors">Privacy Protocol</a></li>
-                <li><a href="#" className="text-[var(--color-gold-500)] hover:text-white transition-colors">Service Terms</a></li>
-                <li><a href="#" className="text-[var(--color-gold-500)] hover:text-white transition-colors">Security</a></li>
+                <li>
+                  <a href="/privacy-policy" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="/terms" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href="/cookie-policy" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
+                    Cookie Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="/grievance" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
+                    Grievance Officer
+                  </a>
+                </li>
               </ul>
             </div>
 

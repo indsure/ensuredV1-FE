@@ -61,7 +61,6 @@ export class PolicyWordingsFetcher {
     if (!versionYear) throw this.createError(WordingFailureCode.WORDING_VERSION_UNRESOLVABLE, `Invalid date: ${policy_issue_date}`);
 
     const currentSessionInsurer = insurerName;
-    console.log(`[Fetcher] Looking for: ${insurer} | ${plan} | ${versionYear}`);
     console.assert(
       insurerName === currentSessionInsurer,
       '[Fetcher] MISMATCH: Fetcher insurer does not match current session'
@@ -107,9 +106,9 @@ export class PolicyWordingsFetcher {
       // Check canonical
       if (data.canonical.toLowerCase() === key) return data.canonical;
       // Check aliases
-      if (data.aliases.some(alias => key.includes(alias))) return data.canonical;
+      if (data.aliases.some((alias: string) => key.includes(alias))) return data.canonical;
     }
-    return null;
+    return raw.trim();
   }
 
   private resolveWordingYear(issueDate: string): number | null {
@@ -273,9 +272,6 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
       }
     }
   }
-
-  console.log('[Fetcher] Extracted plan name:', plan);
-  console.log('[Fetcher] Source field:', sourceField);
 
   // 3. Extract Year (heuristics for policy period)
   // Look for 4 digits around "Period" or "Date"

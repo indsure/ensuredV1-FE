@@ -13,8 +13,6 @@ export function NewsletterSignup({ compact = false }: NewsletterSignupProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Integrate with email service
-    console.log("Newsletter signup:", email);
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);

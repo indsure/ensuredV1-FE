@@ -2,12 +2,13 @@ import "./loadEnv";
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import cors from "cors";
-import session from "express-session";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import fetch, { Headers as NodeFetchHeaders, Request as NodeFetchRequest, Response as NodeFetchResponse } from "node-fetch";
+import pkg from "pg";
 
-// Fix Node 18+ undici fetch IPv6 timeout issues with Gemini
+
 globalThis.fetch = fetch as any;
 globalThis.Headers = NodeFetchHeaders as any;
 globalThis.Request = NodeFetchRequest as any;
@@ -16,12 +17,15 @@ globalThis.Response = NodeFetchResponse as any;
 import { registerRoutes, analysisJobs } from "./routes";
 import { serveStatic } from "./static";
 import { SACH_AI_SYSTEM_PROMPT } from "./sachAI.prompt";
-// ARCHIVED: import authRouter from "./auth";
+
+const { Pool } = pkg;
 
 /* ---------------- UPLOAD DIRECTORY CLEANUP ---------------- */
 
 function cleanupUploadsDirectory() {
-  const uploadsDir = path.resolve(import.meta.dirname, "..", "uploads");
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const uploadsDir = path.resolve(__dirname, "..", "uploads");
 
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -31,7 +35,7 @@ function cleanupUploadsDirectory() {
   try {
     const files = fs.readdirSync(uploadsDir);
     const now = Date.now();
-    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+    const maxAge = 24 * 60 * 60 * 1000;
 
     let cleaned = 0;
     files.forEach((file) => {
@@ -46,7 +50,6 @@ function cleanupUploadsDirectory() {
     });
 
     if (cleaned > 0) {
-      console.log(`🧹 Cleaned up ${cleaned} old file(s) from uploads directory`);
     }
   } catch (err) {
     console.error("Failed to cleanup uploads directory:", err);
@@ -55,6 +58,40 @@ function cleanupUploadsDirectory() {
 
 cleanupUploadsDirectory();
 setInterval(cleanupUploadsDirectory, 60 * 60 * 1000);
+
+/* ---------------- DPDP RETENTION CLEANUP ---------------- */
+async function cleanupDpdpRetention() {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  try {
+    const cutoffMs = Date.now() - 90 * 24 * 60 * 60 * 1000;
+
+    // analysis_jobs: in this codebase, created_at may be either bigint(ms) or timestamptz.
+    try {
+      await pool.query("DELETE FROM analysis_jobs WHERE created_at < $1", [cutoffMs]);
+    } catch (e) {
+      // ignore and try timestamptz-based deletion
+    }
+    try {
+      await pool.query("DELETE FROM analysis_jobs WHERE created_at < NOW() - interval '90 days'");
+    } catch (e) {
+      // ignore
+    }
+
+    // calculator_reports: created_at is created with DEFAULT NOW(), stored as timestamptz.
+    try {
+      await pool.query("DELETE FROM calculator_reports WHERE created_at < NOW() - interval '90 days'");
+    } catch (e) {
+      // ignore
+    }
+  } catch (err) {
+    console.error("Failed to cleanup DPDP retention tables:", err);
+  } finally {
+    await pool.end().catch(() => {});
+  }
+}
+
+// Nightly-ish run (every 24h). Replace with real cron in infra if needed.
+setInterval(cleanupDpdpRetention, 24 * 60 * 60 * 1000);
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -67,26 +104,24 @@ const server = createServer(app);
 
 app.use(
   cors({
-    origin: "http://localhost:5174",
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"],
-    credentials: true,
-  })
-);
+    // If no CORS env is provided, allow the request origin to avoid blocking the chat UI.
+    origin: (origin, callback) => {
+      const corsOriginEnv = process.env.CORS_ORIGIN;
+      const allowedOrigins = corsOriginEnv
+        ? corsOriginEnv
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : null;
 
-/* ---------------- SESSION ────────────────────── */
-
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "indsure-local-dev-secret-change-in-prod",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: false,           // localhost — no HTTPS
-      sameSite: "lax" as const,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      if (!origin) return callback(null, true);
+      if (!allowedOrigins) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(null, false);
     },
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-user-id", "x-sach-session-id"],
+    credentials: true,
   })
 );
 
@@ -95,9 +130,18 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
-/* ---------------- AUTH ROUTES ────────────────── */
+/* ---------------- RATE LIMITING (DISABLED) ---------------- */
+// Rate limiting has been disabled as per user request.
+/* ---------------- HEALTH CHECK ---------------- */
 
-// ARCHIVED: app.use("/api/auth", authRouter);
+app.get("/api/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    env: process.env.NODE_ENV || "development",
+  });
+});
 
 /* ---------------- API LOGGER ---------------- */
 
@@ -115,70 +159,111 @@ app.use((req, res, next) => {
 });
 
 /* =========================================================
-   SACH AI — TRUTH MODE (NEW, STANDALONE)
+   SACH AI — TRUTH MODE
    ========================================================= */
+
+type SachAiRateState = { count: number; resetAt: number };
+const sachAiRateMap = new Map<string, SachAiRateState>();
+const SACH_AI_MAX_MESSAGES_PER_SESSION = 20;
+const SACH_AI_MAX_INPUT_CHARS = 500;
+
+function containsPersonalData(text: string): boolean {
+  // Minimal guardrails: block common personal identifiers.
+  // (We reject rather than attempt to redact because mixed/partial identifiers
+  // frequently slip through and can cause model prompt leakage.)
+  const t = text;
+  const email = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
+  const phone = /\b(?:\+?91[\s-]?)?\d{10}\b/;
+  const aadhaar = /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/; // xxxx-xxxx-xxxx
+  const aadhaarPlain = /\b\d{12}\b/;
+  const policyLike = /\b(?:POLICY|POL|POL-\s*)?[A-Z0-9]{0,10}?\d{3,}\b/i;
+
+  return email.test(t) || phone.test(t) || aadhaar.test(t) || aadhaarPlain.test(t) || policyLike.test(t);
+}
+
+function getSachAiSessionKey(req: Request, sessionId: unknown): string {
+  const sid = typeof sessionId === "string" && sessionId.trim() ? sessionId.trim() : "";
+  if (sid) return `sid:${sid}`;
+  const userId = (req.headers["x-user-id"] as string | undefined) || "";
+  return userId ? `user:${userId}` : `ip:${req.ip}`;
+}
 
 app.post("/api/sach-ai", async (req: Request, res: Response) => {
   try {
-    const { messages = [], jobId } = req.body;
+    const { messages = [], jobId: _jobId, sessionId, language, stream } = req.body || {};
+    const streamEnabled = stream !== false;
 
-    let policyText = "";
-
-    if (jobId) {
-      const job = (analysisJobs as any)?.get?.(jobId);
-      policyText = job?.result?.__internal?.policyText || "";
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ message: "Invalid request: messages must be a non-empty array" });
     }
-
-    // fallback to demo policy if no job text
-    if (!policyText) {
-      try {
-        const demoPath = path.join(process.cwd(), "server", "knowledge_base", "demo_policy.txt");
-        console.log("Loading Demo Policy from:", demoPath); // Debug log
-        policyText = fs.readFileSync(demoPath, "utf-8");
-      } catch (e) {
-        console.error("FAILED to load demo policy:", e);
-        policyText = "No policy uploaded yet.";
-      }
-    }
-
-    const systemPrompt =
-      SACH_AI_SYSTEM_PROMPT +
-      "\n\nUPLOADED POLICY TEXT (SOURCE OF TRUTH):\n" +
-      policyText;
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not defined in environment variables");
+      return res.status(500).json({
+        message: "Sach AI misconfigured",
+        details: "GEMINI_API_KEY is not defined in environment variables",
+      });
     }
 
+    const lastMessage = messages[messages.length - 1] as any;
+    if (!lastMessage || typeof lastMessage.content !== "string") {
+      return res.status(400).json({ message: "Invalid request: last message is missing content" });
+    }
+
+    const lastText = lastMessage.content.trim();
+    if (!lastText) {
+      return res.status(400).json({ message: "Invalid request: message content cannot be empty" });
+    }
+
+    if (lastText.length > SACH_AI_MAX_INPUT_CHARS) {
+      return res.status(400).json({ message: `Message too long (max ${SACH_AI_MAX_INPUT_CHARS} characters)` });
+    }
+
+    const userTexts = messages
+      .filter((m: any) => m?.role === "user" && typeof m?.content === "string")
+      .map((m: any) => m.content)
+      .join("\n");
+    if (containsPersonalData(userTexts)) {
+      return res.status(400).json({
+        message: "Personal data detected",
+        details: "Please remove personal identifiers like Aadhaar numbers, phone numbers, email addresses, and policy numbers.",
+      });
+    }
+
+    // Rate limit per session.
+    const sessionKey = getSachAiSessionKey(req, sessionId);
+    const now = Date.now();
+    const existing = sachAiRateMap.get(sessionKey);
+    const resetAt = existing?.resetAt && existing.resetAt > now ? existing.resetAt : now + 60 * 60 * 1000; // 1 hour
+    const nextCount = existing?.count != null ? existing.count : 0;
+    if (nextCount >= SACH_AI_MAX_MESSAGES_PER_SESSION) {
+      return res.status(429).json({
+        message: "Rate limit exceeded",
+        details: `Max ${SACH_AI_MAX_MESSAGES_PER_SESSION} messages per session.`,
+      });
+    }
+    sachAiRateMap.set(sessionKey, { count: nextCount + 1, resetAt });
+
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Aligning with routes.ts to use the model that is known to work with this key
     const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview" });
 
-    // Format history for SDK
     const history = messages.slice(0, -1).map((m: any) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     }));
 
-    const lastMessage = messages[messages.length - 1];
-
-    // Safety check for empty message
-    if (!lastMessage || !lastMessage.content) {
-      throw new Error("Invalid message format: missing content");
-    }
-
     const { HarmCategory, HarmBlockThreshold } = await import("@google/generative-ai");
+
+    const userTextForModel =
+      typeof language === "string" && language.trim() && language !== "auto"
+        ? `Respond entirely in ${language.trim()}. Do not mix languages. Write only in ${language.trim()}. User message: ${lastText}`
+        : `Detect the language of this message and respond entirely in that language: ${lastText}. If unsure, respond in English. Do not mix languages. Write only in the detected language.`;
 
     const chat = model.startChat({
       history: [
         {
           role: "user",
-          parts: [{ text: systemPrompt }]
-        },
-        {
-          role: "model",
-          parts: [{ text: "Understood. I am Sach AI, ready to tell the truth about this policy." }]
+          parts: [{ text: SACH_AI_SYSTEM_PROMPT }]
         },
         ...history
       ],
@@ -186,57 +271,50 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
         maxOutputTokens: 8192,
       },
       safetySettings: [
-        {
-          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        // Adding more explicit categories just in case
-        {
-          category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        }
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE },
       ],
     });
 
-    const result = await chat.sendMessageStream(lastMessage.content);
+    // Non-stream mode for stable fallback.
+    if (!streamEnabled) {
+      const result = await chat.sendMessage(userTextForModel);
+      const content = result?.response?.text?.() ?? "";
+      return res.json({ content });
+    }
 
-    res.setHeader("Content-Type", "text/plain");
+    const result = await chat.sendMessageStream(userTextForModel);
+
+    // Only set streaming headers after the model request has succeeded.
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
+    let sentAny = false;
     try {
       for await (const chunk of result.stream) {
-        try {
-          const chunkText = chunk.text();
-          res.write(chunkText);
-        } catch (chunkError) {
-          const logMsg = `[CHUNK ERROR] ${chunkError} | FinishReason: ${JSON.stringify(chunk.candidates?.[0]?.finishReason)}\n`;
-          fs.appendFileSync(path.join(process.cwd(), "sach_debug.log"), logMsg);
-
-          // If safety filter triggered, send a message to user
-          if (!res.headersSent) {
-            res.write("\n\n(Note: The response was interrupted by safety filters. We are tuning them.)");
-          }
-        }
+        const chunkText = chunk?.text?.() ?? "";
+        if (!chunkText) continue;
+        sentAny = true;
+        res.write(chunkText);
       }
     } catch (streamError: any) {
-      const logMsg = `[STREAM ERROR] ${streamError.message}\n`;
+      const logMsg = `[STREAM ERROR] ${streamError?.message || streamError}\n`;
       fs.appendFileSync(path.join(process.cwd(), "sach_debug.log"), logMsg);
-    }
 
-    res.end();
+      // If streaming fails before we sent anything, return a full response.
+      if (!sentAny) {
+        const fallback = await chat.sendMessage(userTextForModel);
+        res.write(fallback?.response?.text?.() ?? "");
+      } else {
+        res.write("\n\n(Temporary streaming interruption. Please resend your question for the full answer.)");
+      }
+    } finally {
+      res.end();
+    }
   } catch (err: any) {
     const errorMsg = `[${new Date().toISOString()}] Sach AI Error: ${err.message}\nStack: ${err.stack}\n\n`;
     console.error(errorMsg);
@@ -262,9 +340,7 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
 /* ---------------- BOOTSTRAP ---------------- */
 
 async function start() {
-  console.log("[SERVER] Registering routes...");
   await registerRoutes(server, app);
-  console.log("[SERVER] Routes registered successfully");
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error("API ERROR:", err);
@@ -277,9 +353,9 @@ async function start() {
     serveStatic(app);
   }
 
-  const port = Number(process.env.PORT) || 5002;
+  const port = Number(process.env.PORT) || 5000;
 
-  server.listen(port, "127.0.0.1", () => {
+  server.listen(port, "0.0.0.0", () => {
     console.log(`API server running on http://localhost:${port}`);
   });
 }

@@ -8,10 +8,10 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { EngineResult, UserInputs } from "@/lib/health-engine-logic";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Convert raw rupees to "₹X Lakhs" / "₹X.X Lakhs" / "₹X Cr" display string */
 function formatLakhs(n: number): string {
     if (n >= 10000000) {
         const cr = n / 10000000;
@@ -22,14 +22,12 @@ function formatLakhs(n: number): string {
     return `₹${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)} Lakhs`;
 }
 
-/** Format a rupee number with Indian comma grouping */
 function formatINR(n: number): string {
     return "₹" + n.toLocaleString("en-IN");
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-/** Addition 6: Tooltip wrapper */
 function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
     const [visible, setVisible] = useState(false);
     return (
@@ -62,33 +60,31 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function CalculatorReportPage() {
-// Custom navigation handler that works with both routers
-const setLocation = (path: string) => {
-    window.location.pathname = path;
-};
-    
-    // Check if we are mounted under React Router DOM (e.g. /report/:uuid)
-    // If so, we need to extract the uuid param manually since we are using heterogeneous routers
+    const setLocation = (path: string) => {
+        window.location.pathname = path;
+    };
+
     const pathname = window.location.pathname;
-    const isReportLink = pathname.startsWith("/report/");
-    const matchUuid = isReportLink ? pathname.split("/report/")[1] : null;
+    const pathParts = pathname.split("/");
+    const lastSegment = pathParts[pathParts.length - 1];
+    const isUuidRoute = pathname.includes("/calculator/report/") && lastSegment !== "report";
+    const matchUuid = isUuidRoute ? lastSegment : null;
 
     const [result, setResult] = useState<EngineResult | null>(null);
     const [inputs, setInputs] = useState<UserInputs | null>(null);
-    const [loading, setLoading] = useState(isReportLink);
+    const [loading, setLoading] = useState(isUuidRoute);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadReport = async () => {
             if (matchUuid) {
                 try {
-                    const res = await fetch(`/api/calculator/report/${matchUuid}`);
+                    const res = await apiFetch(`/api/calculator/report/${matchUuid}`);
                     if (!res.ok) throw new Error("Report not found");
                     const data = await res.json();
                     setInputs(typeof data.inputs === "string" ? JSON.parse(data.inputs) : data.inputs);
                     setResult(typeof data.result_data === "string" ? JSON.parse(data.result_data) : data.result_data);
                 } catch (err: any) {
-                    console.error("Failed to load report from server:", err);
                     setError("This report link is invalid or has expired.");
                 } finally {
                     setLoading(false);
@@ -105,9 +101,9 @@ const setLocation = (path: string) => {
                 }
             }
         };
-        
+
         loadReport();
-    }, [matchUuid, setLocation]);
+    }, [matchUuid]);
 
     if (loading) {
         return (
@@ -116,7 +112,7 @@ const setLocation = (path: string) => {
             </div>
         );
     }
-    
+
     if (error) {
         return (
             <div className="h-screen flex flex-col items-center justify-center bg-[var(--color-cream-main)] p-6">
@@ -130,18 +126,29 @@ const setLocation = (path: string) => {
         );
     }
 
-    if (!result || !inputs) return null;
+    if (!result || !inputs) {
+        return (
+            <div className="h-screen flex flex-col items-center justify-center bg-[var(--color-cream-main)] p-6 text-center">
+                <AlertTriangle className="w-16 h-16 text-yellow-500 mb-5" />
+                <h1 className="text-3xl font-serif text-[var(--color-navy-900)] mb-2">Report data missing</h1>
+                <p className="text-[var(--color-text-secondary)] max-w-md mb-8">
+                    This report link doesn’t have the required calculator data in the current session. Start a new calculator run.
+                </p>
+                <Button onClick={() => setLocation("/calculator")} className="bg-[var(--color-teal-600)] text-white px-8">
+                    Back to Calculator
+                </Button>
+            </div>
+        );
+    }
 
-    // ── Derived values ────────────────────────────────────────────────────────
     const hasPremium = !!result.premiumEstimate;
     const hasBreakdown = !!result.coverageBreakdown;
     const hasProjection = result.fiveYearProjection && result.fiveYearProjection.length > 0;
     const hasCorporateGap =
         !!result.corporateGap && result.corporateGap.personalNeeded > 0;
 
-    // Minimum SI for compare link
     const minSI = result.coverageBreakdown?.finalOptimal
-        ? Math.round(result.coverageBreakdown.finalOptimal / 100000) // in Lakhs
+        ? Math.round(result.coverageBreakdown.finalOptimal / 100000)
         : 0;
 
     return (
@@ -164,11 +171,8 @@ const setLocation = (path: string) => {
                         </p>
                     </div>
 
-                    {/* ── 1. Coverage Tiles (now 4-col, Addition 1) ────────────────── */}
-                    <div
-                        className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200"
-                    >
-                        {/* Base Policy */}
+                    {/* ── Coverage Tiles ────────────────────────────────────────────── */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
                         <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
                             <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
                                 Base Policy
@@ -181,7 +185,6 @@ const setLocation = (path: string) => {
                             </div>
                         </div>
 
-                        {/* Super Top-Up — Addition 6: tooltip */}
                         <div className="bg-[var(--color-teal-600)] text-white p-6 rounded-xl shadow-md col-span-1 md:transform md:-translate-y-3">
                             <div className="text-xs font-bold text-white/80 uppercase tracking-wider mb-2 flex items-center">
                                 <Tooltip text="A Super Top-Up policy activates after your base cover is exhausted. It provides large coverage at a fraction of the cost of a base policy.">
@@ -194,7 +197,6 @@ const setLocation = (path: string) => {
                             </div>
                         </div>
 
-                        {/* Total Shield — Addition 7: removed hardcoded stat */}
                         <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
                             <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
                                 Total Shield
@@ -202,13 +204,11 @@ const setLocation = (path: string) => {
                             <div className="text-3xl font-serif text-[var(--color-navy-900)]">
                                 {result.totalProtection}
                             </div>
-                            {/* Addition 7: replaced hardcoded 99.5% stat */}
                             <div className="text-xs text-[var(--color-text-muted)] mt-2">
                                 Covers your actuarially-derived worst-case scenario for {inputs.cityTier} costs.
                             </div>
                         </div>
 
-                        {/* Addition 1: Premium Estimate tile */}
                         {hasPremium && (
                             <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
                                 <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
@@ -228,7 +228,7 @@ const setLocation = (path: string) => {
                         )}
                     </div>
 
-                    {/* ── Addition 3: Corporate Gap banner (conditional) ───────────── */}
+                    {/* ── Corporate Gap banner ─────────────────────────────────────── */}
                     {hasCorporateGap && (
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
                             <div className="flex items-start gap-3 bg-[var(--color-teal-50)] border border-[var(--color-teal-200)] rounded-2xl px-6 py-4">
@@ -250,7 +250,7 @@ const setLocation = (path: string) => {
                         </div>
                     )}
 
-                    {/* ── Addition 2: Coverage Breakdown ───────────────────────────── */}
+                    {/* ── Coverage Breakdown ───────────────────────────────────────── */}
                     {hasBreakdown && (
                         <div className="bg-white rounded-2xl p-8 border border-[var(--color-border-light)] animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
                             <h3 className="font-serif text-2xl text-[var(--color-navy-900)] mb-6 flex items-center gap-3">
@@ -295,7 +295,7 @@ const setLocation = (path: string) => {
                         </div>
                     )}
 
-                    {/* ── 2. Reasoning ─────────────────────────────────────────────── */}
+                    {/* ── Reasoning ────────────────────────────────────────────────── */}
                     <div className="bg-white rounded-2xl p-8 border border-[var(--color-border-light)] animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
                         <h3 className="font-serif text-2xl text-[var(--color-navy-900)] mb-6 flex items-center gap-3">
                             <Activity className="text-[var(--color-teal-600)]" /> Why this structure?
@@ -312,7 +312,7 @@ const setLocation = (path: string) => {
                         </ul>
                     </div>
 
-                    {/* ── 3. Riders ────────────────────────────────────────────────── */}
+                    {/* ── Riders ───────────────────────────────────────────────────── */}
                     <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
                         <h3 className="font-serif text-2xl text-[var(--color-navy-900)] mb-6 flex items-center gap-3 ml-2">
                             <Shield className="text-[var(--color-teal-600)]" /> Recommended Riders
@@ -354,7 +354,7 @@ const setLocation = (path: string) => {
                         </div>
                     </div>
 
-                    {/* ── Addition 4: 5-Year Premium Projection ────────────────────── */}
+                    {/* ── 5-Year Premium Projection ────────────────────────────────── */}
                     {hasProjection && (
                         <div className="bg-white rounded-2xl p-8 border border-[var(--color-border-light)] animate-in fade-in slide-in-from-bottom-8 duration-700 delay-600">
                             <h3 className="font-serif text-2xl text-[var(--color-navy-900)] mb-6">
@@ -406,7 +406,7 @@ const setLocation = (path: string) => {
                         </div>
                     )}
 
-                    {/* ── 4. Education & Mistakes ───────────────────────────────────── */}
+                    {/* ── Education & Mistakes ──────────────────────────────────────── */}
                     <div className="grid md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-700">
                         <div className="bg-red-50 p-8 rounded-2xl border border-red-100">
                             <h3 className="font-serif text-xl text-red-800 mb-4 flex items-center gap-2">
@@ -438,7 +438,7 @@ const setLocation = (path: string) => {
                         </div>
                     </div>
 
-                    {/* ── Addition 5: Personalised CTA block ───────────────────────── */}
+                    {/* ── CTA block ─────────────────────────────────────────────────── */}
                     <div className="animate-in fade-in duration-1000 delay-1000 pt-4">
                         <div className="bg-white rounded-2xl border border-[var(--color-border-light)] shadow-sm p-8 space-y-4">
                             <h3 className="font-serif text-xl text-[var(--color-navy-900)] text-center mb-6">
@@ -446,7 +446,6 @@ const setLocation = (path: string) => {
                             </h3>
 
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                {/* Primary CTA */}
                                 <Button
                                     size="lg"
                                     className="bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-700)] text-white shadow-md px-8 py-5 text-base"
@@ -457,7 +456,6 @@ const setLocation = (path: string) => {
                                     Compare Plans With This Coverage
                                 </Button>
 
-                                {/* Secondary CTA */}
                                 <Button
                                     size="lg"
                                     variant="outline"
@@ -467,7 +465,6 @@ const setLocation = (path: string) => {
                                     Analyse My Existing Policy
                                 </Button>
 
-                                {/* Ghost CTA */}
                                 <Button
                                     size="lg"
                                     variant="ghost"
@@ -482,7 +479,6 @@ const setLocation = (path: string) => {
                                 </Button>
                             </div>
 
-                            {/* Trust line */}
                             <p className="text-center text-xs text-[var(--color-text-muted)] pt-4 border-t border-[var(--color-border-light)]">
                                 IndSure does not sell insurance or earn commissions. These recommendations are
                                 purely analytical.

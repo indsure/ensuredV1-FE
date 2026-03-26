@@ -13,7 +13,7 @@ import {
   Plus,
   RefreshCw
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '../../hooks/use-toast';
 import { apiFetch } from '@/lib/api';
 
@@ -73,7 +73,6 @@ export default function AgentSettings() {
         setEmpanelments(empData.map((e: any) => e.insurer_name));
       }
     } catch (err) {
-      console.error("Failed to load profile", err);
     }
   };
 

@@ -5,13 +5,14 @@ import {
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { Header } from "@/components/Header";
-import { getAllStates, getCitiesForState } from "@/lib/indian-cities-data";
+import { getAllStates, getCitiesForState } from "@/lib/data/indian-cities-data";
 import { getCityTier, getTierDescription, type CityTier } from "@/lib/city-tier-util";
 import { Footer } from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 // ARCHIVED: import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
+import { apiFetch } from "@/lib/api";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -397,7 +398,7 @@ export default function ComparePage() {
         filledSlots.map(async (file) => {
           const formData = new FormData();
           formData.append("policy_pdf", file);
-          const res = await fetch("/api/extract-policy", { method: "POST", body: formData, credentials: "include" });
+          const res = await apiFetch("/api/extract-policy", { method: "POST", body: formData, credentials: "include" });
           if (!res.ok) {
             const err = await res.json().catch(() => ({ error: "Unknown error" }));
             throw new Error(err.error || `Failed to extract "${file.name}"`);

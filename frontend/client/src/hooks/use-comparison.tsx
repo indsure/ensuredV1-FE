@@ -40,7 +40,7 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
   // Load initial state from sessionStorage if in compare flow
   const loadInitialPolicies = (): UploadedPolicy[] => {
     try {
-      const stored = sessionStorage.getItem("ensured_comparison_policies");
+      const stored = sessionStorage.getItem("IndSure_comparison_policies");
       if (stored) {
         const parsed = JSON.parse(stored);
         // Convert stored data back to UploadedPolicy format
@@ -56,19 +56,17 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
         }));
       }
     } catch (e) {
-      console.error("Failed to load policies from sessionStorage:", e);
     }
     return [];
   };
 
   const loadInitialProfile = (): ComparisonProfile => {
     try {
-      const stored = sessionStorage.getItem("ensured_comparison_profile");
+      const stored = sessionStorage.getItem("IndSure_comparison_profile");
       if (stored) {
         return JSON.parse(stored);
       }
     } catch (e) {
-      console.error("Failed to load profile from sessionStorage:", e);
     }
     return {
       age: undefined,
@@ -105,7 +103,7 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
     if (isInCompareFlow) {
       // Load policies from sessionStorage when navigating between steps
       try {
-        const storedPolicies = sessionStorage.getItem("ensured_comparison_policies");
+        const storedPolicies = sessionStorage.getItem("IndSure_comparison_policies");
         if (storedPolicies) {
           const parsed = JSON.parse(storedPolicies);
           const loadedPolicies = parsed.map((p: any) => ({
@@ -141,24 +139,22 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (e) {
-        console.error("Failed to load policies from sessionStorage:", e);
       }
 
       // Load profile from sessionStorage
       try {
-        const storedProfile = sessionStorage.getItem("ensured_comparison_profile");
+        const storedProfile = sessionStorage.getItem("IndSure_comparison_profile");
         if (storedProfile) {
           const loadedProfile = JSON.parse(storedProfile);
           // Always sync profile from sessionStorage
           setProfileState(loadedProfile);
         }
       } catch (e) {
-        console.error("Failed to load profile from sessionStorage:", e);
       }
     } else {
       // Not in compare flow - clear sessionStorage
-      sessionStorage.removeItem("ensured_comparison_policies");
-      sessionStorage.removeItem("ensured_comparison_profile");
+      sessionStorage.removeItem("IndSure_comparison_policies");
+      sessionStorage.removeItem("IndSure_comparison_profile");
       setPoliciesState([]);
       setProfileState({
         age: undefined,
@@ -186,10 +182,8 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
           progress: p.progress,
           progressPercent: p.progressPercent,
         }));
-        sessionStorage.setItem("ensured_comparison_policies", JSON.stringify(toStore));
-        console.log("💾 Saved policies to sessionStorage:", toStore.length, "policies");
+        sessionStorage.setItem("IndSure_comparison_policies", JSON.stringify(toStore));
       } catch (e) {
-        console.error("Failed to save policies to sessionStorage:", e);
       }
       return newPolicies;
     });
@@ -200,9 +194,8 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
       const newProfile = typeof value === "function" ? value(prev) : value;
       // Save to sessionStorage (clears on tab close)
       try {
-        sessionStorage.setItem("ensured_comparison_profile", JSON.stringify(newProfile));
+        sessionStorage.setItem("IndSure_comparison_profile", JSON.stringify(newProfile));
       } catch (e) {
-        console.error("Failed to save profile to sessionStorage:", e);
       }
       return newProfile;
     });
@@ -210,9 +203,9 @@ export function ComparisonProvider({ children }: { children: ReactNode }) {
 
   const clearAll = () => {
     // Clear sessionStorage
-    sessionStorage.removeItem("ensured_comparison_policies");
-    sessionStorage.removeItem("ensured_comparison_profile");
-    sessionStorage.removeItem("ensured_force_clear");
+    sessionStorage.removeItem("IndSure_comparison_policies");
+    sessionStorage.removeItem("IndSure_comparison_profile");
+    sessionStorage.removeItem("IndSure_force_clear");
     // Clear state immediately
     setPoliciesState([]);
     setProfileState({

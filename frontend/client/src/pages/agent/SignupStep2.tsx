@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 const POPULAR_INSURERS = [
     'HDFC ERGO', 'Tata AIG', 'Niva Bupa', 'Star Health', 'Manipal Cigna',

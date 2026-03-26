@@ -2,7 +2,7 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 import dotenv from "dotenv";
-dotenv.config({ path: "d:/ensuredV1-FE/backend/.env.local" });
+dotenv.config({ path: "d:/IndSureV1-FE/backend/.env.local" });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

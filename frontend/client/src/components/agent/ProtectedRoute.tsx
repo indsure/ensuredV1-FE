@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Navigate, Outlet } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import { Redirect } from 'wouter'
+import { supabase } from '@/lib/supabase'
 import AgentLayout from './AgentLayout'
+import { AgentProvider } from '../../context/AgentContext'
 
-export default function AgentProtectedRoute() {
+export default function AgentProtectedRoute({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true)
     const [session, setSession] = useState<any>(null)
 
@@ -25,10 +26,12 @@ export default function AgentProtectedRoute() {
     )
 
     return session ? (
-        <AgentLayout>
-            <Outlet />
-        </AgentLayout>
+        <AgentProvider>
+            <AgentLayout>
+                {children}
+            </AgentLayout>
+        </AgentProvider>
     ) : (
-        <Navigate to="/agent/login" replace />
+        <Redirect to="/agent/login" />
     )
 }

@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link, useLocation } from 'wouter'
 import { motion } from 'framer-motion'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 export default function AgentLogin() {
-    const navigate = useNavigate()
+    const [, navigate] = useLocation()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -50,7 +50,6 @@ export default function AgentLogin() {
                 transition={{ duration: 0.6, ease: 'easeOut' }}
                 className="w-full max-w-md"
             >
-                {/* Logo */}
                 <div className="text-center mb-8">
                     <h1 className="font-['Playfair_Display'] text-3xl font-semibold text-[#0F172A] tracking-tight">
                         IndSure
@@ -58,7 +57,6 @@ export default function AgentLogin() {
                     <p className="text-[#64748B] text-sm mt-1">Agent Portal</p>
                 </div>
 
-                {/* Card */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-3xl border border-[#E2E8F0] p-8 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
                     <h2 className="font-['Playfair_Display'] text-2xl font-semibold text-[#0F172A] mb-1">
                         {isResetMode ? 'Reset password' : 'Welcome back'}
@@ -88,7 +86,7 @@ export default function AgentLogin() {
                                     <label className="block text-sm font-medium text-[#334155]">
                                         Password
                                     </label>
-                                    <button 
+                                    <button
                                         type="button"
                                         onClick={() => setIsResetMode(true)}
                                         className="text-xs font-semibold text-[#0D9488] hover:underline"

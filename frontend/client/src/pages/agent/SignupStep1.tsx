@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'wouter'
 import { motion } from 'framer-motion'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { apiFetch } from '@/lib/api';
 
 export default function AgentSignupStep1() {

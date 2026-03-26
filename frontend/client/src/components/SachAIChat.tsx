@@ -52,20 +52,75 @@ type Message = {
   content: string;
 };
 
+const SACH_AI_MAX_INPUT_CHARS = 500;
+const SACH_AI_RATE_LIMIT = 20;
+const SACH_AI_SESSION_ID_KEY = "sach_ai_session_id";
+const SACH_AI_MESSAGE_COUNT_KEY = "sach_ai_message_count";
+
+const LANGUAGE_OPTIONS = [
+  { value: "auto", label: "Auto-detect" },
+  { value: "English", label: "English" },
+  { value: "Hindi", label: "Hindi" },
+  { value: "Marathi", label: "Marathi" },
+  { value: "Gujarati", label: "Gujarati" },
+  { value: "Tamil", label: "Tamil" },
+  { value: "Telugu", label: "Telugu" },
+  { value: "Kannada", label: "Kannada" },
+  { value: "Bengali", label: "Bengali" },
+];
+
+function containsPersonalData(text: string): boolean {
+  const email = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
+  const phone = /\b(?:\+?91[\s-]?)?\d{10}\b/;
+  const aadhaar = /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/; // xxxx-xxxx-xxxx
+  const aadhaarPlain = /\b\d{12}\b/;
+  const policyLike = /\b(?:POLICY|POL|POL-\s*)?[A-Z0-9]{0,10}?\d{3,}\b/i;
+
+  return email.test(text) || phone.test(text) || aadhaar.test(text) || aadhaarPlain.test(text) || policyLike.test(text);
+}
+
 export default function SachAIChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [language, setLanguage] = useState<string>("auto");
 
-  const { currentJobId } = useAnalysis();
+  const [sachSessionId] = useState(() => {
+    try {
+      const existing = window.sessionStorage.getItem(SACH_AI_SESSION_ID_KEY);
+      if (existing) return existing;
+      const id =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `sach-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      window.sessionStorage.setItem(SACH_AI_SESSION_ID_KEY, id);
+      if (!window.sessionStorage.getItem(SACH_AI_MESSAGE_COUNT_KEY)) {
+        window.sessionStorage.setItem(SACH_AI_MESSAGE_COUNT_KEY, "0");
+      }
+      return id;
+    } catch {
+      return `sach-local-${Date.now()}`;
+    }
+  });
+
+  const [messageCount, setMessageCount] = useState<number>(() => {
+    try {
+      return Number(window.sessionStorage.getItem(SACH_AI_MESSAGE_COUNT_KEY) ?? "0") || 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const { currentJobId, state } = useAnalysis();
+  const hasPolicy = !!(currentJobId || state?.analysis);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+  }, [messages]);
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -74,31 +129,115 @@ export default function SachAIChat() {
   }, [open]);
 
   async function sendMessage(text?: string) {
-    const messageText = text ?? input;
-    if (!messageText.trim() || loading) return;
+    const raw = text ?? input;
+    const messageText = raw.trim();
+    if (!messageText || loading) return;
 
     const userMessage: Message = { role: "user", content: messageText };
 
-    setMessages((prev: Message[]) => [...prev, userMessage]);
+    const setLastAssistantContent = (content: string) => {
+      setMessages((prev: Message[]) => {
+        const copy = [...prev];
+        const last = copy[copy.length - 1];
+        if (last?.role === "assistant") {
+          copy[copy.length - 1] = { role: "assistant", content };
+        } else {
+          copy.push({ role: "assistant", content });
+        }
+        return copy;
+      });
+    };
+
+    // Frontend guardrails (backend will enforce too).
+    if (userMessage.content.length > SACH_AI_MAX_INPUT_CHARS) {
+      setMessages((prev: Message[]) => [
+        ...prev,
+        userMessage,
+        {
+          role: "assistant",
+          content: `Please keep your message under ${SACH_AI_MAX_INPUT_CHARS} characters and try again.`,
+        },
+      ]);
+      setInput("");
+      return;
+    }
+
+    if (messageCount >= SACH_AI_RATE_LIMIT) {
+      setMessages((prev: Message[]) => [
+        ...prev,
+        userMessage,
+        { role: "assistant", content: "Rate limit reached (20 messages). Please wait and try again." },
+      ]);
+      setInput("");
+      return;
+    }
+
+    if (containsPersonalData(userMessage.content)) {
+      setMessages((prev: Message[]) => [
+        ...prev,
+        userMessage,
+        {
+          role: "assistant",
+          content:
+            "I can only answer general health insurance education. Please remove personal identifiers (Aadhaar/phone/email/policy numbers) and resend your question.",
+        },
+      ]);
+      setInput("");
+      return;
+    }
+
+    const historyForRequest: Message[] = [...messages, userMessage];
+
+    // Add placeholder immediately to avoid race conditions while streaming.
+    setMessages((prev: Message[]) => [...prev, userMessage, { role: "assistant", content: "" }]);
     setInput("");
     setLoading(true);
     setIsTyping(true);
+    // Mirror backend rate limiting (it increments once the request passes guardrails).
+    setMessageCount((prev) => {
+      const next = prev + 1;
+      try {
+        window.sessionStorage.setItem(SACH_AI_MESSAGE_COUNT_KEY, String(next));
+      } catch {}
+      return next;
+    });
+
+    const parseError = async (res: Response) => {
+      try {
+        const data = await res.json();
+        const msg = data?.message || `API Error: ${res.status}`;
+        const details = data?.details ? ` (${data.details})` : "";
+        return `${msg}${details}`;
+      } catch {
+        try {
+          const t = await res.text();
+          return t ? t : `API Error: ${res.status}`;
+        } catch {
+          return `API Error: ${res.status}`;
+        }
+      }
+    };
 
     try {
       const res = await apiFetch("/api/sach-ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
+          messages: historyForRequest,
           jobId: currentJobId,
+          sessionId: sachSessionId,
+          language,
+          stream: true,
         }),
       });
 
-      if (!res.ok) throw new Error(`API Error: ${res.status}`);
-      if (!res.body) throw new Error("No response body");
+      if (!res.ok) {
+        const msg = await parseError(res);
+        setLastAssistantContent(msg);
+        return;
+      }
 
-      setIsTyping(false);
-      setMessages((prev: Message[]) => [...prev, { role: "assistant", content: "" }]);
+      if (!res.body) throw new Error("STREAM_UNAVAILABLE");
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -109,18 +248,41 @@ export default function SachAIChat() {
         if (value) {
           const chunk = decoder.decode(value, { stream: true });
           assistantText += chunk;
-          setMessages((prev: Message[]) => {
-            const copy = [...prev];
-            copy[copy.length - 1] = { role: "assistant", content: assistantText };
-            return copy;
-          });
+          setLastAssistantContent(assistantText);
         }
         if (done) break;
       }
-    } catch (err) {
-      console.error("Chat error:", err);
-      setIsTyping(false);
-      setMessages((prev: Message[]) => [...prev, { role: "assistant", content: "Sach AI is currently unavailable." }]);
+
+      // success
+    } catch (err: any) {
+      // Streaming fallback: full response until streaming is stable.
+      try {
+        const fallbackRes = await apiFetch("/api/sach-ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: historyForRequest,
+            jobId: currentJobId,
+            sessionId: sachSessionId,
+            language,
+            stream: false,
+          }),
+        });
+
+        if (!fallbackRes.ok) {
+          const msg = await parseError(fallbackRes);
+          setLastAssistantContent(msg);
+          return;
+        }
+
+        const data = await fallbackRes.json();
+        const content = typeof data?.content === "string" ? data.content : "";
+        setLastAssistantContent(content || "Sach AI is currently unavailable.");
+      } catch (fallbackErr: any) {
+        setLastAssistantContent(
+          fallbackErr?.message ? `Sach AI error: ${fallbackErr.message}` : "Sach AI is currently unavailable."
+        );
+      }
     } finally {
       setLoading(false);
       setIsTyping(false);
@@ -180,9 +342,20 @@ export default function SachAIChat() {
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <p className="font-serif text-[var(--color-text-main)] text-xl mb-2 font-bold">How can I help?</p>
-                <p className="text-xs font-mono text-[var(--color-text-secondary)] uppercase tracking-wide mb-8">
+                <p className="text-xs font-mono text-[var(--color-text-secondary)] uppercase tracking-wide mb-4">
                   Ask about exclusions, limits, or jargon.
                 </p>
+
+                {!hasPolicy && (
+                  <div className="w-full mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-left">
+                    <p className="text-xs font-semibold text-amber-700 mb-1">No policy loaded</p>
+                    <p className="text-xs text-amber-600 leading-relaxed">
+                      For specific analysis,{" "}
+                      <a href="/policychecker" className="underline font-medium">upload a policy first</a>.
+                      I can still answer general insurance questions.
+                    </p>
+                  </div>
+                )}
 
                 <div className="w-full space-y-2">
                   {SUGGESTED_QUESTIONS.map((q, i) => (
@@ -225,6 +398,24 @@ export default function SachAIChat() {
 
           {/* Input Area */}
           <div className="p-4 bg-white border-t border-[var(--color-border-light)] shrink-0">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-muted)]">
+                Language
+              </span>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                disabled={loading}
+                className="flex-1 min-w-0 py-2 px-3 rounded-lg border border-[var(--color-border-light)] bg-[var(--color-cream-main)] text-xs text-[var(--color-text-main)] focus:border-[var(--color-green-primary)] outline-none"
+                aria-label="Select language"
+              >
+                {LANGUAGE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="relative flex items-center">
               <input
                 ref={inputRef}

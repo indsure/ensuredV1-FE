@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
     Sheet,
@@ -17,7 +16,16 @@ import {
     ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ForensicAuditReport, formatINR } from "../../../../backend/server/types/policy";
+
+// Moved here from backend — keeps FE/BE decoupled
+export type ForensicAuditReport = any;
+
+export function formatINR(amount: number): string {
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+  if (amount >= 1000) return `₹${(amount / 1000).toFixed(0)}K`;
+  return `₹${amount}`;
+}
 
 // --- STRICT EXTERNAL BENCHMARKS (PROMPT 3) ---
 const STRESS_TEST_SCENARIOS = [
@@ -40,7 +48,6 @@ interface CoverageDiagnosticProps {
 
 export function CoverageDiagnostic({ report, effectiveCoverage }: CoverageDiagnosticProps) {
 
-    // Helper to determine status
     const getStatus = (ratio: number) => {
         if (ratio >= 1.0) return { label: "Sufficient", color: "text-green-700 bg-green-50 border-green-200", barColor: "bg-green-500" };
         if (ratio >= 0.70) return { label: "Borderline", color: "text-amber-700 bg-amber-50 border-amber-200", barColor: "bg-amber-500" };
@@ -48,10 +55,8 @@ export function CoverageDiagnostic({ report, effectiveCoverage }: CoverageDiagno
         return { label: "Severe Gap", color: "text-red-700 bg-red-50 border-red-200", barColor: "bg-red-600" };
     };
 
-    // --- SUMMARY STATS ---
     const failedScenarios = STRESS_TEST_SCENARIOS.filter(s => effectiveCoverage < s.cost);
     const failCount = failedScenarios.length;
-    // Highest uncovered risk = Most expensive scenario that isn't covered
     const highestRisk = failedScenarios.length > 0
         ? failedScenarios.reduce((prev, current) => (current.cost > prev.cost ? current : prev))
         : null;
@@ -67,7 +72,6 @@ export function CoverageDiagnostic({ report, effectiveCoverage }: CoverageDiagno
                 </SheetTrigger>
                 <SheetContent side="right" className="flex flex-col h-full overflow-hidden w-full sm:w-[450px] sm:max-w-md p-0 border-l border-[var(--color-border-medium)] shadow-xl">
 
-                    {/* DRAWER HEADER */}
                     <div className="flex-none p-6 bg-[var(--color-cream-main)] border-b border-[var(--color-border-medium)] z-10">
                         <SheetTitle className="font-serif text-2xl text-[var(--color-navy-900)] mb-1">
                             Medical Cost Coverage Analysis
@@ -82,18 +86,16 @@ export function CoverageDiagnostic({ report, effectiveCoverage }: CoverageDiagno
                         </div>
                     </div>
 
-                    {/* SCROLLABLE LIST */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-8">
                         <div className="space-y-6">
                             {STRESS_TEST_SCENARIOS.map((scenario) => {
                                 const coverageRatio = effectiveCoverage / scenario.cost;
                                 const status = getStatus(coverageRatio);
-                                const percentage = Math.min(100, Math.round(coverageRatio * 100)); // Cap at 100% for display
+                                const percentage = Math.min(100, Math.round(coverageRatio * 100));
                                 const gapAmount = Math.max(0, scenario.cost - effectiveCoverage);
 
                                 return (
                                     <div key={scenario.name} className="relative">
-                                        {/* Name & Cost */}
                                         <div className="flex justify-between items-end mb-2">
                                             <div>
                                                 <div className="font-bold text-sm text-[var(--color-navy-900)]">{scenario.name}</div>
@@ -104,16 +106,13 @@ export function CoverageDiagnostic({ report, effectiveCoverage }: CoverageDiagno
                                             </div>
                                         </div>
 
-                                        {/* Visualization Bar */}
                                         <div className="h-4 w-full bg-slate-100 rounded-sm overflow-hidden mb-2 relative border border-slate-200">
-                                            {/* Covered Portion */}
                                             <div
                                                 className={cn("h-full transition-all duration-500 ease-out", status.barColor)}
                                                 style={{ width: `${percentage}%` }}
                                             />
                                         </div>
 
-                                        {/* Footer Stats */}
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-2">
                                                 <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded border", status.color)}>
@@ -124,7 +123,6 @@ export function CoverageDiagnostic({ report, effectiveCoverage }: CoverageDiagno
                                                 </span>
                                             </div>
 
-                                            {/* Optional Inline Detail: Primary Limitation */}
                                             {gapAmount > 0 ? (
                                                 <div className="text-[10px] text-red-600 font-medium flex items-center gap-1">
                                                     <AlertTriangle className="w-3 h-3" />
@@ -148,7 +146,6 @@ export function CoverageDiagnostic({ report, effectiveCoverage }: CoverageDiagno
                         </div>
                     </div>
 
-                    {/* GLOBAL SUMMARY (KILL SHOT) */}
                     <div className="flex-none p-6 bg-[var(--color-navy-900)] text-white border-t border-[var(--color-navy-800)] z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.15)]">
                         {highestRisk ? (
                             <>

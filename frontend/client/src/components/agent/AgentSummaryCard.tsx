@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, RefreshCw, AlertCircle, TrendingUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { apiFetch } from '@/lib/api';
 
 interface AgentSummaryCardProps {
   agentId: string;
@@ -22,7 +23,7 @@ const AgentSummaryCard: React.FC<AgentSummaryCardProps> = ({ agentId, hasClients
     setError(null);
     
     try {
-      const response = await fetch(`/api/agent/summary/${agentId}`);
+      const response = await apiFetch(`/api/agent/summary/${agentId}`);
       const data = await response.json();
       
       if (data.empty) {
@@ -36,7 +37,6 @@ const AgentSummaryCard: React.FC<AgentSummaryCardProps> = ({ agentId, hasClients
         setError(data.error);
       }
     } catch (err) {
-      console.error('Failed to fetch agent summary:', err);
       setError('Failed to load portfolio insights');
     } finally {
       if (showLoading) setLoading(false);

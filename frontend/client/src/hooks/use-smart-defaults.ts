@@ -48,7 +48,6 @@ export function useSmartDefaults() {
             }))
             setLocationPermission("granted")
           } catch (error) {
-            console.error("Failed to get location data:", error)
             setLocationPermission("denied")
           }
         },
@@ -84,7 +83,6 @@ export function useSmartDefaults() {
             }))
             setLocationPermission("granted")
           } catch (error) {
-            console.error("Failed to get location data:", error)
           }
         },
         () => {

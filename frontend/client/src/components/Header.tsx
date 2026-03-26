@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X, ChevronDown } from "lucide-react";
@@ -8,7 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-// ARCHIVED: import { useAuth } from "@/hooks/use-auth";
 import { motion, AnimatePresence } from "framer-motion";
 
 const toolsItems = [
@@ -18,16 +16,11 @@ const toolsItems = [
 ];
 
 export function Header() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const user: any = null; // ARCHIVED: const { user } = useAuth();
 
-  // Fix 2: Hide D2C chrome on agent/admin routes
-  if (window.location.pathname.startsWith('/agent') || window.location.pathname.startsWith('/admin')) {
-    return null;
-  }
-
+  // Hooks MUST come before any conditional return
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
@@ -38,14 +31,17 @@ export function Header() {
     setMobileMenuOpen(false);
   }, [location]);
 
+  // Agent / Admin pages manage their own nav — render nothing here
+  if (location.startsWith("/agent") || location.startsWith("/admin")) {
+    return null;
+  }
+
   return (
-    // @ts-ignore - framer-motion version typing vs className
     <motion.header
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[var(--color-cream-main)] border-b border-[var(--color-border-light)] ${isScrolled ? "py-3 shadow-sm" : "py-5"
-        }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[var(--color-cream-main)] border-b border-[var(--color-border-light)] ${isScrolled ? "py-3 shadow-sm" : "py-5"}`}
     >
       <div className="container-editorial flex items-center justify-between">
 
@@ -64,10 +60,11 @@ export function Header() {
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/#how-it-works">
               <span
-                className={`text-xs font-semibold tracking-[0.15em] uppercase cursor-pointer hover:text-[var(--color-green-primary)] transition-colors ${location === "/#how-it-works"
-                  ? "text-[var(--color-green-primary)]"
-                  : "text-[var(--color-text-main)]"
-                  }`}
+                className={`text-xs font-semibold tracking-[0.15em] uppercase cursor-pointer hover:text-[var(--color-green-primary)] transition-colors ${
+                  location === "/#how-it-works"
+                    ? "text-[var(--color-green-primary)]"
+                    : "text-[var(--color-text-main)]"
+                }`}
               >
                 How It Works
               </span>
@@ -99,7 +96,7 @@ export function Header() {
           </nav>
         </div>
 
-        {/* ─── RIGHT: CTA + Login ─── */}
+        {/* ─── RIGHT: CTA + Login Dropdown ─── */}
         <div className="hidden md:flex items-center gap-6">
           <Link href="/find-provider">
             <button className="px-5 py-2.5 text-sm font-semibold bg-[var(--color-green-primary)] text-white rounded-lg hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer shadow-md shadow-teal-900/10">
@@ -107,19 +104,33 @@ export function Header() {
             </button>
           </Link>
 
-          {/* Fix 1: For Advisors CTA */}
-          <button 
-            onClick={() => window.location.href = '/agent/login'}
-            className="px-5 py-2.5 text-sm font-semibold border-2 border-[var(--color-green-primary)] text-[var(--color-green-primary)] rounded-lg hover:bg-[var(--color-green-primary)] hover:text-white transition-all cursor-pointer"
-          >
-            For Advisors
-          </button>
-
-          <a href={user ? "/account" : "/agent/login"}>
-            <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer">
-              {user ? user.username : "Login"}
-            </span>
-          </a>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.15em] uppercase text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer outline-none">
+                Login
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              sideOffset={12}
+              className="min-w-[200px] bg-white border border-[var(--color-border-light)] rounded-lg shadow-xl p-1"
+            >
+              <DropdownMenuItem
+                className="p-0 outline-none cursor-pointer"
+                onSelect={(e) => {
+                  e.preventDefault();
+                  // Delay navigation slightly so Radix UI has time to clean up focus 
+                  // before the Header unmounts itself on the /agent route.
+                  setTimeout(() => setLocation("/agent/login"), 50);
+                }}
+              >
+                <div className="block w-full px-3 py-2.5 text-sm font-medium text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] cursor-pointer rounded-md">
+                  🏢 Advisor Login
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* ─── MOBILE TOGGLE ─── */}
@@ -135,7 +146,6 @@ export function Header() {
       {/* ─── MOBILE NAV ─── */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          // @ts-ignore - framer-motion version typing vs className
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -180,21 +190,21 @@ export function Header() {
                 </div>
               </Link>
 
-              <div
-                className="py-3 px-3 text-center rounded-lg text-sm font-semibold border-2 border-[var(--color-green-primary)] text-[var(--color-green-primary)] hover:bg-[var(--color-green-primary)] hover:text-white transition-all cursor-pointer"
-                onClick={() => window.location.href = '/agent/login'}
-              >
-                For Advisors
+              <div className="py-2 px-3">
+                <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--color-text-muted)]">
+                  Login
+                </span>
               </div>
 
-              <a href={user ? "/account" : "/agent/login"}>
-                <div
-                  className="py-3 px-3 text-center rounded-lg text-sm font-semibold tracking-wide uppercase text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {user ? user.username : "Login"}
-                </div>
-              </a>
+              <div
+                className="py-3 px-6 rounded-lg text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-cream-dark)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setTimeout(() => setLocation("/agent/login"), 50);
+                }}
+              >
+                🏢 Advisor Login
+              </div>
             </div>
           </motion.div>
         )}

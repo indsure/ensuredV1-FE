@@ -50,7 +50,7 @@ let cachedAggregates: any = null;
 let insurersByCityMap = new Map<string, InsurerCount[]>();
 let insurersByPincodeMap = new Map<string, InsurerCount[]>();
 
-function ensureDataLoaded() {
+function IndSureataLoaded() {
     if (cachedHospitals && cachedIndexes && cachedAggregates && insurersByCityMap.size > 0) return;
 
     try {
@@ -107,7 +107,7 @@ function ensureDataLoaded() {
  * Filter hospitals based on geo parameters (Optimized)
  */
 function filterHospitalsOptimized(params: FilterParams): HospitalRecord[] {
-    ensureDataLoaded();
+    IndSureataLoaded();
     if (!cachedHospitals || !cachedIndexes) return [];
 
     let indices: number[] | null = null;
@@ -142,7 +142,7 @@ function filterHospitalsOptimized(params: FilterParams): HospitalRecord[] {
  * Main filter engine function (Optimized)
  */
 export function filterHospitalNetwork(params: FilterParams): FilterEngineResult {
-    ensureDataLoaded();
+    IndSureataLoaded();
     
     if (!cachedIndexes || !cachedAggregates) {
         console.warn('Filter engine data not fully loaded. Falling back to manual filter.');

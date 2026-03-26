@@ -1,4 +1,4 @@
-# Ensured Frontend (React + Vite)
+# IndSure Frontend (React + Vite)
 
 Standalone React frontend. Deploy to **Vercel** or run locally with the backend.
 

@@ -1,4 +1,4 @@
-# Ensured Backend (Express API)
+# IndSure Backend (Express API)
 
 Standalone Express API. Run locally or deploy to any Node host (Railway, Render, Fly, etc.).
 

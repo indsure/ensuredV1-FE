@@ -58,7 +58,7 @@ export default function Blog() {
 
   // SEO
   useSEO({
-    title: "Insurance Insights & Guides | Health Insurance Explained | Ensured",
+    title: "Insurance Insights & Guides | Health Insurance Explained | IndSure",
     description: "Expert guides, tips, and insights to help you make informed decisions about your health insurance. Learn about room limits, co-pay, exclusions, and more.",
     keywords: "insurance insights, health insurance explained, insurance guides, insurance tips, room limit explained, co-pay explained, insurance education",
     canonical: "/blog",

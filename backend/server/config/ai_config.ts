@@ -1,5 +1,5 @@
 export const AI_CONFIG = {
-    model: "gemini-1.5-pro-preview-0514", // Locked version
+    model: "gemini-3.1-pro-preview",
     generation_config: {
         temperature: 0.0,      // Maximum determinism
         top_p: 1.0,           // No nucleus sampling randomness
@@ -19,6 +19,5 @@ export const AI_CONFIG = {
         user_evidence: 4000,
         official_wordings: 30000, // Large context window for Gemini 1.5 Pro
         audit_task: 500
-    },
-    timeout_ms: 120000 // 2 minutes hard timeout
+    }
 };

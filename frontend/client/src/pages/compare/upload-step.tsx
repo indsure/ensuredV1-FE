@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getApiBase } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -54,12 +55,12 @@ export default function UploadStep() {
   // SEO - Dynamic based on type
   useSEO({
     title: compareType === "life"
-      ? "Compare Term Life Insurance Plans | Best Life Insurance Comparison | Ensured"
+      ? "Compare Term Life Insurance Plans | Best Life Insurance Comparison | IndSure"
       : compareType === "term"
-        ? "Compare Term Life Insurance Plans | Pure Protection Comparison | Ensured"
+        ? "Compare Term Life Insurance Plans | Pure Protection Comparison | IndSure"
         : compareType === "vehicle"
-          ? "Compare Vehicle Insurance Plans | Car Insurance Comparison | Ensured"
-          : "Compare Health Insurance Policies Side-by-Side | Ensured",
+          ? "Compare Vehicle Insurance Plans | Car Insurance Comparison | IndSure"
+          : "Compare Health Insurance Policies Side-by-Side | IndSure",
     description: compareType === "life" || compareType === "term"
       ? "Compare top term life insurance plans: HDFC, ICICI, Religare, LIC, Canara HSBC. See premiums, claim settlement ratios, riders. Get unbiased recommendations for maximum coverage per rupee."
       : compareType === "vehicle"
@@ -83,8 +84,8 @@ export default function UploadStep() {
       setTimeout(() => {
         const isStillInCompareFlow = window.location.pathname.startsWith("/compare");
         if (!isStillInCompareFlow) {
-          sessionStorage.removeItem("ensured_comparison_policies");
-          sessionStorage.removeItem("ensured_comparison_profile");
+          sessionStorage.removeItem("IndSure_comparison_policies");
+          sessionStorage.removeItem("IndSure_comparison_profile");
         }
       }, 0);
     };
@@ -120,7 +121,6 @@ export default function UploadStep() {
       setPolicies((prev) => {
         const policy = prev.find((p) => p.id === policyId);
         if (!policy) {
-          console.error("❌ Policy not found:", policyId);
           return prev;
         }
         policyFile = policy.file;
@@ -129,7 +129,6 @@ export default function UploadStep() {
     }
 
     if (!policyFile) {
-      console.error("❌ No policy file found!");
       return;
     }
 
@@ -165,7 +164,7 @@ export default function UploadStep() {
         });
       }, 200);
 
-      const response = await fetch("/api/extract-policy", {
+      const response = await apiFetch("/api/extract-policy", {
         method: "POST",
         body: formData,
       });

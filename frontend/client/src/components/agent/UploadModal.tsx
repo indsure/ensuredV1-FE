@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UploadCloud, FileText, Trash2, Mail, AlertTriangle, Loader2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { apiFetch } from '@/lib/api';
 
@@ -96,13 +96,12 @@ export default function UploadModal({ isOpen, onClose, agentId }: UploadModalPro
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ batchId: batch.id })
-      }).catch(err => console.error('Failed to trigger background processing:', err));
+      }).catch(() => {});
 
       onClose();
       // Reset state
       setFiles([]);
     } catch (err: any) {
-      console.error('Upload Error:', err);
       setError(err.message || 'Failed to upload policies. Please try again.');
     } finally {
       setIsUploading(false);

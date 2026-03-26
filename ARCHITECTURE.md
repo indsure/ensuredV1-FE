@@ -1,6 +1,6 @@
-# Architecture Overview - Ensured Platform
+# Architecture Overview - IndSure Platform
 
-This document outlines the high-level architecture of the Ensured platform, describing its core components and their interactions.
+This document outlines the high-level architecture of the IndSure platform, describing its core components and their interactions.
 
 ## 🏗️ System Layers
 

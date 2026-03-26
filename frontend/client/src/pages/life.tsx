@@ -41,7 +41,7 @@ export default function LifePage() {
 
   // SEO
   useSEO({
-    title: "Understand Your Life Insurance Policy | Ensured",
+    title: "Understand Your Life Insurance Policy | IndSure",
     description: "Upload your life insurance PDF. Instantly see if your sum assured is enough for your family's future, understand claim conditions, exclusions, and how your riders actually protect you.",
     keywords: "life insurance analyzer, term life insurance, life insurance policy checker, sum assured calculator, life insurance riders",
     canonical: "/life",
@@ -80,7 +80,7 @@ export default function LifePage() {
         reader.onloadend = () => {
           try {
             const base64String = reader.result as string;
-            sessionStorage.setItem("ensured_pending_file", JSON.stringify({
+            sessionStorage.setItem("IndSure_pending_file", JSON.stringify({
               name: file.name,
               type: file.type,
               size: file.size,
@@ -102,7 +102,7 @@ export default function LifePage() {
   // Helper function to restore file from sessionStorage
   const restoreFileFromSession = (): File | null => {
     try {
-      const stored = sessionStorage.getItem("ensured_pending_file");
+      const stored = sessionStorage.getItem("IndSure_pending_file");
       if (stored) {
         const fileData = JSON.parse(stored);
         // Convert base64 back to blob, then to File
@@ -114,11 +114,10 @@ export default function LifePage() {
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: fileData.type });
         const file = new File([blob], fileData.name, { type: fileData.type });
-        sessionStorage.removeItem("ensured_pending_file");
+        sessionStorage.removeItem("IndSure_pending_file");
         return file;
       }
     } catch (err) {
-      console.error("Failed to restore file from sessionStorage:", err);
     }
     return null;
   };
@@ -165,7 +164,7 @@ export default function LifePage() {
     // Store file in sessionStorage
     await storeFileInSession(file);
 
-    sessionStorage.removeItem("ensured_report");
+    sessionStorage.removeItem("IndSure_report");
     await new Promise(resolve => setTimeout(resolve, 800));
 
     setUploading(true);
@@ -174,9 +173,11 @@ export default function LifePage() {
     try {
       clearAuditState();
       await analyze(file, "life");
+      // DPDP: remove sensitive pending upload data as soon as the analysis request is sent/accepted.
+      sessionStorage.removeItem("IndSure_pending_file");
       // If successful, job is created and processing page will poll for status
     } catch (err: any) {
-      console.error("Analysis failed:", err);
+      sessionStorage.removeItem("IndSure_pending_file");
 
 
       let errorMessage = "Analysis failed";
@@ -401,10 +402,10 @@ export default function LifePage() {
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); loadSampleReport(mockReportLife); setLocation("/report?sample=life"); }}
-                            className="mt-3 text-xs font-medium text-[#00B4D8] hover:underline inline-flex items-center gap-1"
+                            className="mt-4 text-sm font-semibold text-[#00B4D8] hover:text-[#0099B4] hover:underline inline-flex items-center gap-2"
                           >
-                            <FileText className="w-3.5 h-3.5" />
-                            View sample report
+                            <FileText className="w-4 h-4" />
+                            View sample life analysis directly
                           </button>
                         </div>
                       </div>
@@ -417,7 +418,7 @@ export default function LifePage() {
         </div>
       </section>
 
-      {/* How Ensured Works Section */}
+      {/* How IndSure Works Section */}
       <section className="relative z-10 py-8 md:py-12 px-6">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl md:text-[48px] font-semibold text-center text-black dark:text-[#FAFBFC] mb-12 md:mb-16 leading-[1.15] tracking-[-0.01em]">

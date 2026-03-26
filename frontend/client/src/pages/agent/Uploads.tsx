@@ -1,293 +1,487 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  UploadCloud,
-  ChevronDown,
-  ChevronRight,
-  RefreshCw,
-  AlertTriangle,
-  Plus,
-  FileText
-} from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { format } from 'date-fns';
-import { Link } from 'wouter';
-import UploadModal from '../../components/agent/UploadModal';
-import { useToast } from '../../hooks/use-toast';
-import { apiFetch } from '@/lib/api';
+import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "wouter";
+import { AlertTriangle, Copy, ExternalLink, FileText, Loader2, RefreshCw, UploadCloud } from "lucide-react";
 
-interface Client {
+import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useAgent } from "@/context/AgentContext";
+import { toast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+
+type SessionState = "uploading" | "processing" | "ready" | "failed";
+type UploadSession = {
   id: string;
-  batch_id: string;
-  policyholder_name: string | null;
-  status: string;
-  score: number;
+  fileName: string;
+  fileSize: number;
+  progress: number;
+  status: SessionState;
+  policyId?: string;
+  reportMarkdown?: string | null;
+  summary?: string | null;
+  shareToken?: string | null;
+  error?: string;
+};
+type PolicyRow = {
+  id: string;
+  client_name: string | null;
+  insurer_name: string | null;
+  product_name: string | null;
+  status: string | null;
+  score: number | null;
   created_at: string;
+};
+type ReportRow = {
+  id: string;
+  policy_id: string;
+  score: number | null;
+  summary: string | null;
+  report_markdown: string | null;
+  created_at: string;
+};
+type HistoryRow = {
+  id: string;
+  policyholderName: string;
+  insurerName: string;
+  planName: string;
+  uploadDate: string;
+  status: "Processing" | "Ready" | "Failed";
+  score: number | null;
+  shareToken: string | null;
+  fileName: string | null;
+};
+
+const WAIT_MS = 3000;
+const ATTEMPTS = 20;
+
+const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+const slug = (value: string) => value.replace(/[^a-zA-Z0-9._-]+/g, "-");
+const baseName = (value: string) => value.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ").trim();
+const makeId = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+const bytes = (value: number) => (value > 1024 * 1024 ? `${(value / 1024 / 1024).toFixed(1)} MB` : `${Math.ceil(value / 1024)} KB`);
+const shareUrl = (origin: string, token: string | null) => (token ? `${origin}/report/${token}` : "");
+
+async function copy(text: string, title: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast({ variant: "success", title, description: "Link copied to clipboard." });
+  } catch {
+    toast({ variant: "destructive", title: "Copy failed", description: "Clipboard access was blocked." });
+  }
 }
 
-interface Batch {
-  id: string;
-  created_at: string;
-  total: number;
-  processed: number;
-  failed: number;
-  clients: Client[];
-  isComplete: boolean;
+async function ensureShare(reportId: string, agentId: string) {
+  const existing = await supabase
+    .from("report_shares")
+    .select("token")
+    .eq("report_id", reportId)
+    .is("revoked_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!existing.error && existing.data?.token) return existing.data.token;
+
+  const token = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+  const created = await supabase.from("report_shares").insert({ report_id: reportId, token, created_by_agent_id: agentId });
+  if (created.error) throw new Error(created.error.message);
+  return token;
+}
+
+async function getSnapshot(policyId: string, agentId: string) {
+  const [policyRes, reportRes] = await Promise.all([
+    supabase
+      .from("policies")
+      .select("id, client_name, insurer_name, product_name, status, score, created_at")
+      .eq("id", policyId)
+      .or(`created_by_agent_id.eq.${agentId},assigned_agent_id.eq.${agentId}`)
+      .maybeSingle(),
+    supabase
+      .from("reports")
+      .select("id, policy_id, score, summary, report_markdown, created_at")
+      .eq("policy_id", policyId)
+      .order("created_at", { ascending: false })
+      .limit(1),
+  ]);
+
+  const policy = (policyRes.data as PolicyRow | null) ?? null;
+  const report = (((reportRes.data as ReportRow[] | null) ?? [])[0] ?? null) as ReportRow | null;
+  const token = report?.id ? await ensureShare(report.id, agentId).catch(() => null) : null;
+  return { policy, report, token };
 }
 
 export default function AgentUploads() {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [batches, setBatches] = useState<Batch[]>([]);
-  const [expandedBatch, setExpandedBatch] = useState<string | null>(null);
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const { agent } = useAgent();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const [sessions, setSessions] = useState<UploadSession[]>([]);
+  const [history, setHistory] = useState<HistoryRow[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const origin = useMemo(() => (typeof window === "undefined" ? "" : window.location.origin), []);
 
-  const { toast } = useToast();
+  function patchSession(id: string, updates: Partial<UploadSession>) {
+    setSessions((current) => current.map((session) => (session.id === id ? { ...session, ...updates } : session)));
+  }
 
-  const fetchUploads = async (uid: string) => {
-    const { data: clientData, error } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('agent_id', uid)
-      .order('created_at', { ascending: false });
+  async function loadHistory() {
+    if (!agent?.agentId) return;
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const policiesRes = await supabase
+        .from("policies")
+        .select("id, client_name, insurer_name, product_name, status, score, created_at")
+        .or(`created_by_agent_id.eq.${agent.agentId},assigned_agent_id.eq.${agent.agentId}`)
+        .order("created_at", { ascending: false });
+      if (policiesRes.error) throw new Error(policiesRes.error.message);
 
-    if (!error && clientData) {
-      const batchesMap = new Map<string, Batch>();
-      clientData.forEach(c => {
-        if (!batchesMap.has(c.batch_id)) {
-          batchesMap.set(c.batch_id, {
-            id: c.batch_id,
-            created_at: c.created_at,
-            total: 0,
-            processed: 0,
-            failed: 0,
-            clients: [],
-            isComplete: false
-          });
-        }
-        const batch = batchesMap.get(c.batch_id)!;
-        batch.total += 1;
-        batch.clients.push(c);
-        if (c.status === 'done') batch.processed += 1;
-        if (c.status === 'error') batch.failed += 1;
+      const policies = (policiesRes.data as PolicyRow[] | null) ?? [];
+      const ids = policies.map((policy) => policy.id);
+      if (ids.length === 0) {
+        setHistory([]);
+        return;
+      }
+
+      const [filesRes, reportsRes] = await Promise.all([
+        supabase.from("policy_files").select("policy_id, file_path, uploaded_at").in("policy_id", ids).order("uploaded_at", { ascending: false }),
+        supabase.from("reports").select("id, policy_id, score, summary, report_markdown, created_at").in("policy_id", ids).order("created_at", { ascending: false }),
+      ]);
+      if (filesRes.error) throw new Error(filesRes.error.message);
+      if (reportsRes.error) throw new Error(reportsRes.error.message);
+
+      const reportMap = new Map<string, ReportRow>();
+      (((reportsRes.data as ReportRow[] | null) ?? [])).forEach((row) => {
+        if (!reportMap.has(row.policy_id)) reportMap.set(row.policy_id, row);
+      });
+      const fileMap = new Map<string, { file_path: string | null; uploaded_at: string | null }>();
+      ((((filesRes.data as { policy_id: string; file_path: string | null; uploaded_at: string | null }[] | null) ?? []))).forEach((row) => {
+        if (!fileMap.has(row.policy_id)) fileMap.set(row.policy_id, row);
       });
 
-      const batchesArray = Array.from(batchesMap.values()).map(b => ({
-        ...b,
-        isComplete: (b.processed + b.failed) === b.total
-      })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      const reportIds = Array.from(reportMap.values()).map((report) => report.id);
+      const sharesRes =
+        reportIds.length === 0
+          ? { data: [] as { report_id: string; token: string }[], error: null }
+          : await supabase.from("report_shares").select("report_id, token").in("report_id", reportIds).is("revoked_at", null).order("created_at", { ascending: false });
+      if (sharesRes.error) throw new Error(sharesRes.error.message);
 
-      setBatches(batchesArray);
+      const shareMap = new Map<string, string>();
+      ((((sharesRes.data as { report_id: string; token: string }[] | null) ?? []))).forEach((row) => {
+        if (!shareMap.has(row.report_id)) shareMap.set(row.report_id, row.token);
+      });
+
+      setHistory(
+        policies.map((policy) => {
+          const report = reportMap.get(policy.id) ?? null;
+          const file = fileMap.get(policy.id) ?? null;
+          return {
+            id: policy.id,
+            policyholderName: policy.client_name || "Pending extraction",
+            insurerName: policy.insurer_name || "Pending analysis",
+            planName: policy.product_name || "Uploaded policy PDF",
+            uploadDate: file?.uploaded_at || policy.created_at,
+            status: report || policy.status === "done" ? "Ready" : policy.status === "failed" ? "Failed" : "Processing",
+            score: report?.score ?? policy.score ?? null,
+            shareToken: report ? shareMap.get(report.id) ?? null : null,
+            fileName: file?.file_path ? file.file_path.split("/").pop() ?? null : null,
+          };
+        })
+      );
+    } catch (error) {
+      setHistoryError(error instanceof Error ? error.message : "Could not load upload history.");
+    } finally {
+      setHistoryLoading(false);
     }
-  };
+  }
 
   useEffect(() => {
-    let channel: any;
+    void loadHistory();
+  }, [agent?.agentId]);
 
-    async function initialize() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        fetchUploads(user.id);
+  async function triggerAnalysis(policyId: string, filePath: string, fileName: string) {
+    const payload = { policyId, agentId: agent?.agentId, filePath, fileName };
+    const targets = ["/api/agent/analyze-policy", "/api/agent/analyze", `/api/policies/${policyId}/analyze`, "/api/analyses"];
 
-        channel = supabase
-          .channel('uploads_changes')
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'clients', filter: `agent_id=eq.${user.id}` },
-            () => { fetchUploads(user.id); }
-          )
-          .subscribe();
+    for (const target of targets) {
+      try {
+        const res = await apiFetch(target, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) return true;
+      } catch {
+        // try next endpoint
       }
     }
 
-    initialize();
-    return () => { if (channel) supabase.removeChannel(channel); };
-  }, []);
-
-  const handleRetry = async (client: Client) => {
-    setIsUpdating(client.id);
     try {
-      await supabase.from('clients').update({ status: 'pending', error_message: null }).eq('id', client.id);
-      await apiFetch('/api/agent/trigger-batch-process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batchId: client.batch_id })
+      await supabase.from("analysis_jobs").insert({
+        policy_id: policyId,
+        triggered_by_agent_id: agent?.agentId,
+        status: "queued",
+        pipeline_version: "agent-dashboard",
+        model_name: "gemini",
       });
-      toast({ title: "Retry started", description: "The policy is being re-analyzed in the background." });
-    } catch (err: any) {
-      toast({ title: "Retry failed", description: err.message, variant: "destructive" });
-    } finally {
-      setIsUpdating(null);
+    } catch {
+      // best-effort; do not block UX if insert fails
     }
-  };
+    return false;
+  }
 
-  const toggleExpand = (batchId: string) => {
-    setExpandedBatch(prev => prev === batchId ? null : batchId);
-  };
+  async function watchResult(sessionId: string, policyId: string) {
+    if (!agent?.agentId) return;
+    for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
+      await sleep(WAIT_MS);
+      const { policy, report, token } = await getSnapshot(policyId, agent.agentId);
+      if (report) {
+        patchSession(sessionId, {
+          status: "ready",
+          progress: 100,
+          reportMarkdown: report.report_markdown,
+          summary: report.summary,
+          shareToken: token,
+        });
+        void loadHistory();
+        return;
+      }
+      if (policy?.status === "failed") {
+        patchSession(sessionId, { status: "failed", progress: 100, error: "Analysis failed. Re-run it from the policy detail page." });
+        void loadHistory();
+        return;
+      }
+    }
+    patchSession(sessionId, { status: "processing", progress: 100 });
+    void loadHistory();
+  }
+
+  async function uploadFile(file: File) {
+    if (!agent?.agentId) return;
+    const sessionId = makeId();
+    const policyId = makeId();
+    const filePath = `${agent.agentId}/${policyId}/${slug(file.name)}`;
+    setSessions((current) => [{ id: sessionId, fileName: file.name, fileSize: file.size, progress: 10, status: "uploading", policyId }, ...current]);
+    setExpandedId(sessionId);
+
+    try {
+      const policyRes = await supabase.from("policies").insert({
+        id: policyId,
+        client_name: baseName(file.name),
+        insurer_name: "Pending analysis",
+        product_name: "Uploaded policy PDF",
+        policy_number: `POL-${Date.now().toString(36).toUpperCase()}`,
+        status: "processing",
+        created_by_agent_id: agent.agentId,
+        assigned_agent_id: agent.agentId,
+      });
+      if (policyRes.error) throw new Error(policyRes.error.message);
+      patchSession(sessionId, { progress: 35 });
+
+      const storageRes = await supabase.storage.from("policy-pdfs").upload(filePath, file, { contentType: "application/pdf", upsert: false });
+      if (storageRes.error) throw new Error(storageRes.error.message);
+      patchSession(sessionId, { progress: 60, status: "processing" });
+
+      try {
+        await supabase.from("policy_files").insert({
+          policy_id: policyId,
+          file_path: filePath,
+          file_type: "policy_pdf",
+          uploaded_by_agent_id: agent.agentId,
+        });
+      } catch {
+        // best-effort; do not block UX if insert fails
+      }
+
+      const triggered = await triggerAnalysis(policyId, filePath, file.name);
+      patchSession(sessionId, { progress: triggered ? 80 : 70, status: "processing" });
+      if (!triggered) {
+        toast({ title: "Upload stored", description: "Analysis is queued. If the analyzer is offline, re-run from the policy detail page." });
+      }
+      void watchResult(sessionId, policyId);
+      void loadHistory();
+    } catch (error) {
+      patchSession(sessionId, {
+        status: "failed",
+        progress: 100,
+        error: error instanceof Error ? error.message : "Upload failed.",
+      });
+      toast({ variant: "destructive", title: "Upload failed", description: error instanceof Error ? error.message : "The PDF could not be uploaded." });
+    }
+  }
+
+  function handleFiles(input: FileList | File[]) {
+    const files = Array.from(input).filter((file) => file.type === "application/pdf" || /\.pdf$/i.test(file.name));
+    if (files.length === 0) {
+      toast({ variant: "destructive", title: "PDF files only", description: "Please choose policy PDFs." });
+      return;
+    }
+    files.forEach((file) => void uploadFile(file));
+  }
+
+  function onInputChange(event: ChangeEvent<HTMLInputElement>) {
+    if (event.target.files) handleFiles(event.target.files);
+    event.target.value = "";
+  }
+
+  function onDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragging(false);
+    if (event.dataTransfer.files?.length) handleFiles(event.dataTransfer.files);
+  }
 
   return (
-    <div className="h-full">
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-8 pb-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-['Playfair_Display'] text-3xl font-semibold text-[#0F172A]">Uploads</h1>
-          <p className="text-[#64748B] text-sm mt-1">View your batch history and track processing status.</p>
+          <h1 className="font-['Playfair_Display'] text-3xl font-bold text-slate-900">Analyze Policies</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-500">
+            Upload one or more policy PDFs, track each file while analysis runs, and jump straight into the internal policy detail once the report is ready.
+          </p>
         </div>
-
-        <button
-          onClick={() => setIsUploadModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-2 bg-[#0D9488] hover:bg-[#0f766e] text-white text-sm font-semibold rounded-lg shadow-[0_4px_14px_0_rgba(13,148,136,0.39)] transition-all hover:-translate-y-0.5"
-        >
-          <Plus size={18} />
-          New Upload
-        </button>
+        <Button variant="outline" className="border-slate-200 bg-white text-slate-600" onClick={() => inputRef.current?.click()}>
+          <UploadCloud className="mr-2 h-4 w-4" />
+          Select PDFs
+        </Button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden">
-        {batches.length === 0 ? (
-          <div className="py-20 text-center">
-            <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
-              <div className="w-16 h-16 bg-[#0D9488]/10 text-[#0D9488] rounded-full flex items-center justify-center mb-4">
-                <UploadCloud size={32} />
-              </div>
-              <h4 className="font-['Playfair_Display'] text-xl font-semibold text-[#0F172A] mb-2">No uploads yet</h4>
-              <p className="text-[#64748B] text-sm mb-6">You haven't uploaded any batches. Click New Upload to get started.</p>
+      <Card className="border-slate-100 shadow-sm">
+        <CardContent className="p-0">
+          <div
+            className={`rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${dragging ? "border-[#0D9488] bg-[#0D9488]/5" : "border-[#0D9488]/20 bg-[#0D9488]/[0.04]"}`}
+            onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
+            onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+            onDragLeave={(event) => { event.preventDefault(); setDragging(false); }}
+            onDrop={onDrop}
+          >
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#0D9488]/10 text-[#0D9488]">
+              <UploadCloud className="h-8 w-8" />
             </div>
+            <h2 className="mt-5 text-xl font-semibold text-slate-900">Drop policy PDFs here</h2>
+            <p className="mt-2 text-sm text-slate-500">PDF only, multiple files supported, and each file gets its own live processing status.</p>
+            <div className="mt-6">
+              <Button className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={() => inputRef.current?.click()}>Choose Files</Button>
+            </div>
+            <input ref={inputRef} type="file" accept=".pdf,application/pdf" multiple className="hidden" onChange={onInputChange} />
           </div>
-        ) : (
-          <div className="w-full">
-            <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-[#F8FAFC] border-b border-slate-100 text-[11px] uppercase tracking-wider text-[#64748B] font-semibold">
-              <div className="col-span-4">Batch Date / ID</div>
-              <div className="col-span-2 text-center">Uploaded</div>
-              <div className="col-span-2 text-center">Processed</div>
-              <div className="col-span-2 text-center">Failed</div>
-              <div className="col-span-2 text-right">Status</div>
-            </div>
+        </CardContent>
+      </Card>
 
-            <div className="divide-y divide-slate-50">
-              {batches.map(batch => (
-                <div key={batch.id} className="group">
-                  <div
-                    onClick={() => toggleExpand(batch.id)}
-                    className={`cursor-pointer transition-colors p-4 md:px-6 hover:bg-slate-50 ${expandedBatch === batch.id ? 'bg-slate-50' : ''}`}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                      <div className="col-span-12 md:col-span-4 flex items-center gap-3">
-                        <button className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
-                          {expandedBatch === batch.id ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                        </button>
-                        <div>
-                          <p className="text-sm font-semibold text-[#0F172A]">
-                            {format(new Date(batch.created_at), 'MMMM d, yyyy • h:mm a')}
-                          </p>
-                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {batch.id.substring(0, 8)}</p>
+      {sessions.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900">Current uploads</h2>
+            <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{sessions.length} active</span>
+          </div>
+          {sessions.map((session) => {
+            const url = shareUrl(origin, session.shareToken ?? null);
+            const expanded = expandedId === session.id;
+            return (
+              <Card key={session.id} className="border-slate-100 shadow-sm">
+                <CardContent className="p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-600"><FileText className="h-5 w-5" /></div>
+                        <div className="min-w-0">
+                          <div className="truncate font-semibold text-slate-900">{session.fileName}</div>
+                          <div className="text-xs text-slate-500">{bytes(session.fileSize)}</div>
                         </div>
                       </div>
-
-                      <div className="col-span-4 md:col-span-2 flex justify-between md:justify-center items-center">
-                        <span className="text-xs text-slate-500 md:hidden">Total:</span>
-                        <span className="text-sm font-medium text-slate-700">{batch.total} Files</span>
-                      </div>
-
-                      <div className="col-span-4 md:col-span-2 flex justify-between md:justify-center items-center">
-                        <span className="text-xs text-slate-500 md:hidden">Processed:</span>
-                        <span className="text-sm font-medium text-green-600">{batch.processed}</span>
-                      </div>
-
-                      <div className="col-span-4 md:col-span-2 flex justify-between md:justify-center items-center">
-                        <span className="text-xs text-slate-500 md:hidden">Failed:</span>
-                        <span className={`text-sm font-bold ${batch.failed > 0 ? 'text-red-600' : 'text-slate-400'}`}>
-                          {batch.failed}
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${session.status === "ready" ? "bg-emerald-50 text-emerald-700" : session.status === "failed" ? "bg-red-50 text-red-700" : session.status === "processing" ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700"}`}>
+                          {session.status === "failed" ? <AlertTriangle className="h-3.5 w-3.5" /> : <Loader2 className={`h-3.5 w-3.5 ${session.status === "ready" ? "" : "animate-spin"}`} />}
+                          {session.status}
                         </span>
+                        {session.policyId && <Link to={`/agent/policies/${session.policyId}`} className="text-sm font-semibold text-[#0D9488] hover:underline">Open policy</Link>}
+                        {session.shareToken && <button type="button" className="text-sm font-semibold text-slate-600 hover:text-slate-900" onClick={() => void copy(url, "Report link copied")}>Copy link</button>}
                       </div>
-
-                      <div className="col-span-12 md:col-span-2 flex justify-end">
-                        {batch.isComplete ? (
-                          <span className="px-2.5 py-1 bg-teal-50 text-teal-700 rounded text-[10px] font-bold uppercase border border-teal-100">
-                            Completed
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded text-[10px] font-bold uppercase border border-blue-100 flex items-center gap-1">
-                            <RefreshCw size={12} className="animate-spin" /> Processing
-                          </span>
-                        )}
+                      <div className="mt-4">
+                        <Progress value={session.progress} className="h-2 bg-slate-100" />
+                        <div className="mt-2 text-xs text-slate-500">{session.error || (session.status === "ready" ? "Analysis completed and linked." : "Uploading and waiting for the report to land.")}</div>
                       </div>
                     </div>
+                    {session.reportMarkdown && <Button variant="outline" size="sm" className="border-slate-200 bg-white" onClick={() => setExpandedId(expanded ? null : session.id)}>{expanded ? "Hide report" : "View report"}</Button>}
                   </div>
-
-                  <AnimatePresence>
-                    {expandedBatch === batch.id && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden bg-slate-50/50 border-t border-slate-100"
-                      >
-                        <div className="p-4 md:px-12 md:py-6">
-                          <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
-                            <FileText size={14} /> Batch Contents
-                          </h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {batch.clients.map(client => (
-                              <div key={client.id} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm flex flex-col justify-between">
-                                <div>
-                                  <div className="flex justify-between items-start mb-2">
-                                    <p className="text-sm font-semibold truncate pr-2 text-[#0F172A]" title={client.policyholder_name || "Unknown Name"}>
-                                      {client.policyholder_name || "Unknown Name"}
-                                    </p>
-                                    {client.status === 'done' && (
-                                      <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold border ${client.score >= 75 ? 'bg-green-50 border-green-200 text-green-700' : client.score >= 50 ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                                        {client.score}/100
-                                      </span>
-                                    )}
-                                    {client.status === 'error' && (
-                                      <span className="shrink-0 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-50 text-red-700 border border-red-200 flex items-center gap-1">
-                                        <AlertTriangle size={10} /> Failed
-                                      </span>
-                                    )}
-                                    {(client.status === 'pending' || client.status === 'processing') && (
-                                      <span className="shrink-0 text-xs font-semibold text-blue-600 flex items-center gap-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-slate-500 font-mono">ID: {client.id.substring(0, 8)}</p>
-                                </div>
-
-                                <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
-                                  {client.status === 'done' ? (
-                                    <Link to={`/agent/policies?view=${client.id}`} className="text-xs font-semibold text-[#0D9488] hover:underline">View Policy</Link>
-                                  ) : client.status === 'error' ? (
-                                    <button
-                                      onClick={() => handleRetry(client)}
-                                      disabled={isUpdating === client.id}
-                                      className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 disabled:opacity-50"
-                                    >
-                                      <RefreshCw size={12} className={isUpdating === client.id ? 'animate-spin' : ''} /> Retry Extraction
-                                    </button>
-                                  ) : (
-                                    <span className="text-xs text-slate-400 italic">Processing in background...</span>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                  {expanded && session.reportMarkdown && (
+                    <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-5">
+                      {session.summary && <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">{session.summary}</div>}
+                      <pre className="whitespace-pre-wrap text-sm leading-7 text-slate-700">{session.reportMarkdown}</pre>
+                      {session.shareToken && (
+                        <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-[#0D9488]/10 bg-white p-4">
+                          <div className="min-w-0 flex-1 truncate text-sm text-slate-700">{url}</div>
+                          <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={() => void copy(url, "Report link copied")}><Copy className="mr-2 h-4 w-4" />Copy</Button>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ))}
-            </div>
-          </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-900">Upload history</h2>
+          <Button variant="outline" size="sm" className="border-slate-200 bg-white text-slate-600" onClick={() => void loadHistory()} disabled={historyLoading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${historyLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+        {historyError ? (
+          <InlineErrorState onRetry={loadHistory} />
+        ) : (
+          <Card className="overflow-hidden border-slate-100 shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-white">
+              <CardTitle className="text-base font-semibold text-slate-900">All past uploads for this agent</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-left text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    <tr>
+                      <th className="px-6 py-4">Policyholder</th>
+                      <th className="px-6 py-4">Company / Plan</th>
+                      <th className="px-6 py-4">Upload date</th>
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4">Score</th>
+                      <th className="px-6 py-4">Shareable link</th>
+                      <th className="px-6 py-4 text-right">Detail</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {historyLoading && <tr><td colSpan={7} className="px-6 py-10 text-center text-slate-400">Loading upload history...</td></tr>}
+                    {!historyLoading && history.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400">No uploaded policies yet.</td></tr>}
+                    {!historyLoading && history.map((item) => {
+                      const url = shareUrl(origin, item.shareToken ?? null);
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50/70">
+                          <td className="px-6 py-4"><div className="font-semibold text-slate-900">{item.policyholderName}</div><div className="text-xs text-slate-500">{item.fileName || "Uploaded PDF"}</div></td>
+                          <td className="px-6 py-4"><div className="font-medium text-slate-800">{item.insurerName}</div><div className="text-xs text-slate-500">{item.planName}</div></td>
+                          <td className="px-6 py-4 text-slate-600">{new Date(item.uploadDate).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" })}</td>
+                          <td className="px-6 py-4"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${item.status === "Ready" ? "bg-emerald-50 text-emerald-700" : item.status === "Failed" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>{item.status}</span></td>
+                          <td className="px-6 py-4 font-semibold text-slate-900">{item.score == null ? "-" : item.score}</td>
+                          <td className="px-6 py-4">{url ? <button type="button" className="inline-flex items-center gap-2 text-sm font-semibold text-[#0D9488] hover:underline" onClick={() => void copy(url, "Share link copied")}><Copy className="h-4 w-4" />Copy link</button> : <span className="text-xs text-slate-400">Unavailable</span>}</td>
+                          <td className="px-6 py-4 text-right"><Link to={`/agent/policies/${item.id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-[#0D9488] hover:underline">View policy<ExternalLink className="h-3.5 w-3.5" /></Link></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
-
-      <UploadModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        agentId={userId || ''}
-      />
     </div>
   );
 }

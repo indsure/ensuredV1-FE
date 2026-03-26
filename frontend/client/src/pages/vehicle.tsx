@@ -37,7 +37,7 @@ export default function VehiclePage() {
 
   // SEO
   useSEO({
-    title: "Know Your Vehicle Coverage Before Claim Time | Vehicle Insurance Analyzer | Ensured",
+    title: "Know Your Vehicle Coverage Before Claim Time | Vehicle Insurance Analyzer | IndSure",
     description: "Upload your car or bike policy. Instantly see if you're third-party or comprehensive, your actual deductibles, IDV, no-claim bonus impact, and what a ₹50k or ₹2L accident will really cost you.",
     keywords: "vehicle insurance analyzer, car insurance checker, motor insurance policy checker, vehicle insurance explained, comprehensive vs third party, IDV calculator, NCB impact",
     canonical: "/vehicle",
@@ -76,7 +76,7 @@ export default function VehiclePage() {
         reader.onloadend = () => {
           try {
             const base64String = reader.result as string;
-            sessionStorage.setItem("ensured_pending_file", JSON.stringify({
+            sessionStorage.setItem("IndSure_pending_file", JSON.stringify({
               name: file.name,
               type: file.type,
               size: file.size,
@@ -98,7 +98,7 @@ export default function VehiclePage() {
   // Helper function to restore file from sessionStorage
   const restoreFileFromSession = (): File | null => {
     try {
-      const stored = sessionStorage.getItem("ensured_pending_file");
+      const stored = sessionStorage.getItem("IndSure_pending_file");
       if (stored) {
         const fileData = JSON.parse(stored);
         // Convert base64 back to blob, then to File
@@ -110,11 +110,10 @@ export default function VehiclePage() {
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: fileData.type });
         const file = new File([blob], fileData.name, { type: fileData.type });
-        sessionStorage.removeItem("ensured_pending_file");
+        sessionStorage.removeItem("IndSure_pending_file");
         return file;
       }
     } catch (err) {
-      console.error("Failed to restore file from sessionStorage:", err);
     }
     return null;
   };
@@ -161,7 +160,7 @@ export default function VehiclePage() {
     // Store file in sessionStorage
     await storeFileInSession(file);
 
-    sessionStorage.removeItem("ensured_report");
+    sessionStorage.removeItem("IndSure_report");
     await new Promise(resolve => setTimeout(resolve, 800));
 
     setUploading(true);
@@ -170,9 +169,11 @@ export default function VehiclePage() {
     try {
       clearAuditState();
       await analyze(file, "vehicle");
+      // DPDP: remove sensitive pending upload data as soon as the analysis request is sent/accepted.
+      sessionStorage.removeItem("IndSure_pending_file");
       // If successful, job is created and processing page will poll for status
     } catch (err: any) {
-      console.error("Analysis failed:", err);
+      sessionStorage.removeItem("IndSure_pending_file");
 
 
       let errorMessage = "Analysis failed";
@@ -394,14 +395,18 @@ export default function VehiclePage() {
                               <span className="text-xs font-medium text-[#0F1419] dark:text-[#FAFBFC]">Private</span>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); loadSampleReport(mockReportVehicle); setLocation("/report?sample=vehicle"); }}
-                            className="mt-3 text-xs font-medium text-[#00B4D8] hover:underline inline-flex items-center gap-1"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                            View sample report
-                          </button>
+                          <div className="pt-2 w-full flex justify-center">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={(e) => { e.stopPropagation(); loadSampleReport(mockReportVehicle); setLocation("/report?sample=vehicle"); }}
+                              className="w-full max-wxs border-[#00B4D8] text-[#00B4D8] hover:bg-[#00B4D8]/10 hover:text-[#00B4D8] h-10 font-bold shadow-sm relative overflow-hidden group"
+                            >
+                              <div className="absolute inset-0 bg-[#00B4D8]/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 slant" />
+                              <FileText className="w-4 h-4 mr-2" />
+                              View sample vehicle analysis
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -413,7 +418,7 @@ export default function VehiclePage() {
         </div>
       </section>
 
-      {/* How Ensured Works Section */}
+      {/* How IndSure Works Section */}
       <section className="relative z-10 py-8 md:py-12 px-6">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl md:text-[48px] font-semibold text-center text-black dark:text-[#FAFBFC] mb-12 md:mb-16 leading-[1.15] tracking-[-0.01em]">

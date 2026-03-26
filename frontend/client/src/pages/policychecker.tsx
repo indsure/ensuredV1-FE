@@ -22,7 +22,7 @@ export default function PolicyChecker() {
   const [, setLocation] = useLocation();
 
   useSEO({
-    title: "Decode Your Health Policy | Ensured",
+    title: "Decode Your Health Policy | IndSure",
     description: "Upload your health insurance policy PDF. Get a clear verdict.",
   });
 
@@ -49,7 +49,6 @@ export default function PolicyChecker() {
       setPolicyText(`Policy: ${file.name}`);
       await analyze(file);
     } catch (err: any) {
-      console.error("Analysis failed:", err);
       setError(err?.message || "Analysis failed");
       setLocation("/policychecker");
       setUploading(false);

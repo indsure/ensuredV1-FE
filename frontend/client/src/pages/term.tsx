@@ -24,9 +24,11 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
+import { loadSampleReport, mockReportLife } from "@/lib/mock-data";
 
 // TermAnalyzer Component
 function TermAnalyzer({ onFileUpload }: { onFileUpload: (file: File) => void }) {
+  const [, setLocation] = useLocation();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -144,6 +146,14 @@ function TermAnalyzer({ onFileUpload }: { onFileUpload: (file: File) => void }) 
                     PDF, JPG, or PNG (max 10MB)
                   </p>
                 </div>
+                <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); loadSampleReport(mockReportLife); setLocation("/report?sample=life"); }}
+                    className="mt-2 text-sm font-semibold text-[#00B4D8] hover:text-[#0099B4] hover:underline inline-flex items-center gap-2"
+                >
+                    <FileText className="w-4 h-4" />
+                    View sample term life analysis directly
+                </button>
               </div>
             )}
           </div>
@@ -159,7 +169,7 @@ export default function TermPage() {
 
   // SEO
   useSEO({
-    title: "Understand Your Term Life Insurance Policy | Pure Protection Analyzer | Ensured",
+    title: "Understand Your Term Life Insurance Policy | Pure Protection Analyzer | IndSure",
     description: "Upload your term life insurance PDF. Instantly see if your sum assured is enough for your family's future, understand claim conditions, exclusions, and maximize coverage per rupee. Pure protection, maximum affordability.",
     keywords: "term life insurance analyzer, term insurance policy checker, term life insurance explained, pure protection insurance, affordable term life, term insurance calculator",
     canonical: "/term",
@@ -216,7 +226,7 @@ export default function TermPage() {
   const faqData = createFAQSchema(faqList);
 
   const handleFileUpload = async (file: File) => {
-    sessionStorage.removeItem("ensured_report");
+    sessionStorage.removeItem("IndSure_report");
     await new Promise(resolve => setTimeout(resolve, 800));
 
     try {
@@ -224,7 +234,6 @@ export default function TermPage() {
       await analyze(file);
       setLocation("/processing");
     } catch (err: any) {
-      console.error("Analysis failed:", err);
       throw err;
     }
   };

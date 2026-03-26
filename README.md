@@ -1,4 +1,4 @@
-# Ensured Advisor
+# IndSure Advisor
 
 **AI-Powered Health Insurance Policy Analysis Platform**
 
@@ -22,7 +22,7 @@ Decision-first insurance review. No chatbots. No upsell. No storage after analys
 
 ```bash
 git clone <repository-url>
-cd Ensured-Advisor-main
+cd IndSure-Advisor-main
 npm install
 ```
 

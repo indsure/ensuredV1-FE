@@ -6,10 +6,12 @@
   "scripts": {
     "dev:client": "npm run dev --prefix frontend",
     "dev": "tsx backend/server/index.ts",
-    "build": "tsx backend/script/build.ts",
-    "start": "node backend/dist/index.cjs",
+    "dev:all": "concurrently \"tsx backend/server/index.ts\" \"tsx backend/src/index.ts\" \"npm run dev --prefix frontend\" \"npm run dev --prefix dashboard -- -p 3000\" \"npm run dev --prefix admin-app -- -p 3002\" \"npm run dev --prefix next-api -- -p 3001\"",
+    "build": "npm run build --prefix frontend && tsc --project backend/tsconfig.json",
+    "start": "node backend/dist/index.js",
     "check": "tsc --noEmit --project backend/tsconfig.json",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "health-check": "ts-node backend/server/tests/engineHealthCheck.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -52,6 +54,7 @@
     "drizzle-zod": "^0.8.3",
     "embla-carousel-react": "^8.6.0",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.3.1",
     "framer-motion": "^10.18.0",
     "html2pdf.js": "^0.14.0",
     "input-otp": "^1.4.2",
@@ -87,6 +90,7 @@
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.23",
+    "concurrently": "^9.2.1",
     "get-tsconfig": "^4.13.6",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",

@@ -1,4 +1,4 @@
-// Blog posts data with full content following the Ensured Blog Writing Framework
+// Blog posts data with full content following the IndSure Blog Writing Framework
 import {
   BookOpen,
   AlertCircle,
@@ -186,7 +186,7 @@ const article1Content = `
 
   <p>Arun could have caught this gap before the surgery. He didn't have a tool that explained sufficiency in plain English.</p>
 
-  <p>That's why we built Ensured.</p>
+  <p>That's why we built IndSure.</p>
 
   <p>Upload your policy (3 minutes), tell us your age and city, and we'll calculate YOUR optimal coverage. Not generic advice. YOUR number.</p>
 
@@ -258,7 +258,7 @@ const article2Content = `
 
   <p>Neha could have caught her cancer sub-limit before the diagnosis. She didn't have a tool that explained gaps in plain English.</p>
 
-  <p>That's why we built Ensured. Upload your policy (3 minutes), and we'll tell you exactly where your gaps are. Not to scare you—to prepare you.</p>
+  <p>That's why we built IndSure. Upload your policy (3 minutes), and we'll tell you exactly where your gaps are. Not to scare you—to prepare you.</p>
 </div>
 `;
 
@@ -335,7 +335,7 @@ const article3Content = `
 
   <p>Your city's healthcare costs aren't something you can change. But your coverage? That's in your control.</p>
 
-  <p>Upload your policy to Ensured, tell us your city, and we'll calculate YOUR optimal coverage. Not generic advice. YOUR number for YOUR city.</p>
+  <p>Upload your policy to IndSure, tell us your city, and we'll calculate YOUR optimal coverage. Not generic advice. YOUR number for YOUR city.</p>
 </div>
 `;
 
@@ -417,7 +417,7 @@ const article4Content = `
 
   <p>Priya could have caught this gap before the surgery. She didn't have a tool that explained room rent in plain English.</p>
 
-  <p>That's why we built Ensured. Upload your policy (3 minutes), answer a few questions about your city, and we'll tell you exactly where your gaps are. Not to scare you—to prepare you.</p>
+  <p>That's why we built IndSure. Upload your policy (3 minutes), answer a few questions about your city, and we'll tell you exactly where your gaps are. Not to scare you—to prepare you.</p>
 
   <p>Because the best time to find a gap is before you're in a hospital bed, not after.</p>
 </div>
@@ -483,7 +483,7 @@ const article5Content = `
 
   <p>Rajesh could have avoided this. He didn't understand waiting periods until it was too late.</p>
 
-  <p>That's why we built Ensured. Upload your policy, and we'll explain your waiting periods in plain English. Not legal jargon. Plain English.</p>
+  <p>That's why we built IndSure. Upload your policy, and we'll explain your waiting periods in plain English. Not legal jargon. Plain English.</p>
 </div>
 `;
 
@@ -560,7 +560,7 @@ const article6Content = `
 
   <p>The Sharma family could have avoided the gap. They didn't understand that floater = shared risk.</p>
 
-  <p>That's why we built Ensured. Upload your policy, tell us your family size, and we'll recommend the best structure. Floater? Individual? Hybrid? We'll tell you.</p>
+  <p>That's why we built IndSure. Upload your policy, tell us your family size, and we'll recommend the best structure. Floater? Individual? Hybrid? We'll tell you.</p>
 </div>
 `;
 
@@ -615,7 +615,7 @@ const article7Content = `
 
   <p>Vikram's policy had restoration. It saved him ₹10L. Without it, he'd be bankrupt.</p>
 
-  <p>That's why we built Ensured. Upload your policy, and we'll tell you if you have restoration, how it works, and if you need more.</p>
+  <p>That's why we built IndSure. Upload your policy, and we'll tell you if you have restoration, how it works, and if you need more.</p>
 </div>
 `;
 
@@ -709,7 +709,7 @@ const article8Content = `
 
   <p>Anjali could have gone to an average surgeon (cashless). She chose the best surgeon (reimbursement). That choice saved her life.</p>
 
-  <p>That's why we built Ensured. Upload your policy, and we'll explain your claim options. Cashless? Reimbursement? When to use each? We'll tell you.</p>
+  <p>That's why we built IndSure. Upload your policy, and we'll explain your claim options. Cashless? Reimbursement? When to use each? We'll tell you.</p>
 </div>
 `;
 
@@ -718,7 +718,7 @@ export const blogPosts: BlogPost[] = [
     id: 1,
     title: "Understanding Health Insurance Sufficiency: A Complete Guide",
     excerpt: "Your ₹10L policy might be enough. Or it might leave you bankrupt. The difference? Nobody explained what 'sufficient' means for YOU.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2025-12-27",
     readTime: "7 min read",
     category: "Education",
@@ -730,7 +730,7 @@ export const blogPosts: BlogPost[] = [
     id: 2,
     title: "Top 5 Gaps in Health Insurance Policies You Should Know",
     excerpt: "Your policy covers cancer. But only ₹5L of it. You need ₹12L. Welcome to the gap nobody sees coming.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-01-03",
     readTime: "8 min read",
     category: "Tips",
@@ -742,7 +742,7 @@ export const blogPosts: BlogPost[] = [
     id: 3,
     title: "How to Choose the Right Sum Insured for Your City",
     excerpt: "Mumbai's ₹10L and Delhi's ₹10L are NOT the same coverage. Here's why your city matters more than you think.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-01-10",
     readTime: "6 min read",
     category: "Guide",
@@ -754,7 +754,7 @@ export const blogPosts: BlogPost[] = [
     id: 4,
     title: "Room Rent Caps: The Hidden Cost in Your Policy",
     excerpt: "You're in the hospital. Surgery was ₹4 lakhs. Your policy? ₹10 lakhs. Should cover it, right? Wrong. The insurer sends a letter: Room rent claim denied.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-01-17",
     readTime: "8 min read",
     category: "Education",
@@ -766,7 +766,7 @@ export const blogPosts: BlogPost[] = [
     id: 5,
     title: "Pre-Existing Diseases: Waiting Periods Explained",
     excerpt: "You have diabetes for 10 years. You finally buy insurance. Diabetes is excluded. For 3 years. How is that fair? Waiting periods aren't punishment. They're insurance math. But they suck.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-01-24",
     readTime: "6 min read",
     category: "Education",
@@ -778,7 +778,7 @@ export const blogPosts: BlogPost[] = [
     id: 6,
     title: "Family Floater vs Individual Policies: Which is Better?",
     excerpt: "You bought a ₹25L family floater. Your mom got sick. ₹20L used. Now your kid needs appendicitis surgery. ₹8L remaining. Not enough. Family floater is NOT always cheaper.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-01",
     readTime: "7 min read",
     category: "Guide",
@@ -790,7 +790,7 @@ export const blogPosts: BlogPost[] = [
     id: 7,
     title: "Restoration Benefit: What It Means and Why It Matters",
     excerpt: "You claimed ₹8L and exhausted your SI. Bad luck strikes again that year. Can you claim again? If your policy has restoration: YES. If not: You're ₹500K out of pocket.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-08",
     readTime: "5 min read",
     category: "Education",
@@ -802,7 +802,7 @@ export const blogPosts: BlogPost[] = [
     id: 8,
     title: "Cashless vs Reimbursement: Understanding Claim Processes",
     excerpt: "Your hospital isn't empaneled. Insurer says: 'We won't pay.' But if you understand reimbursement, you can pay yourself and get ₹8L back later. Cashless sounds better. But reimbursement gives you choice.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-15",
     readTime: "6 min read",
     category: "Tips",
@@ -815,7 +815,7 @@ export const blogPosts: BlogPost[] = [
     id: 9,
     title: "What Is Health Insurance? A Complete Guide for Indians",
     excerpt: "Understanding health insurance in India. Learn how it works, what it covers, room limits, co-pay, and why ₹5L+ healthcare costs make insurance essential—not optional.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-01-27",
     readTime: "12 min read",
     category: "Health Insurance",
@@ -832,7 +832,7 @@ export const blogPosts: BlogPost[] = [
     id: 10,
     title: "What Is Life Insurance? Complete Guide for Indian Families",
     excerpt: "If you die today, is your family financially secure? Life insurance is your family's safety net. Learn about term life, whole life, endowment plans, and what ₹1cr coverage actually means for your loved ones.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-01-28",
     readTime: "12 min read",
     category: "Life Insurance",
@@ -849,7 +849,7 @@ export const blogPosts: BlogPost[] = [
     id: 11,
     title: "Car Insurance Explained: Third-Party vs Comprehensive",
     excerpt: "Accident statistics show why vehicle insurance isn't optional. Understand third-party (mandatory) vs comprehensive coverage, no-claim bonus, deductibles, and how to save ₹5k+ while staying protected.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-01-29",
     readTime: "11 min read",
     category: "Vehicle Insurance",
@@ -866,7 +866,7 @@ export const blogPosts: BlogPost[] = [
     id: 12,
     title: "Home Insurance Explained: Building vs Contents Coverage",
     excerpt: "Your ₹50L home is likely your biggest asset. Fire, theft, floods—home insurance protects your investment. Learn building vs contents coverage, landlord insurance, and what's actually covered.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-01-30",
     readTime: "10 min read",
     category: "Home Insurance",
@@ -883,7 +883,7 @@ export const blogPosts: BlogPost[] = [
     id: 13,
     title: "Travel Insurance Explained: Domestic vs International",
     excerpt: "Flight cancelled? Medical emergency abroad? Lost baggage? Travel insurance = peace of mind. Learn what's covered, what's not, and when ₹500 insurance saves you ₹2L+.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-01-31",
     readTime: "10 min read",
     category: "Travel Insurance",
@@ -900,7 +900,7 @@ export const blogPosts: BlogPost[] = [
     id: 14,
     title: "What Is General Insurance? Types Explained",
     excerpt: "General insurance covers everything except life: health, vehicle, home, travel, business. Understand the broad category and how it differs from life insurance in India.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-01",
     readTime: "9 min read",
     category: "General",
@@ -917,7 +917,7 @@ export const blogPosts: BlogPost[] = [
     id: 15,
     title: "Health Insurance vs Mediclaim: What's the Difference?",
     excerpt: "Mediclaim vs health insurance—same thing? Not exactly. Understand the differences, evolution in India, and which one suits your needs better.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-02",
     readTime: "10 min read",
     category: "Health Insurance",
@@ -934,7 +934,7 @@ export const blogPosts: BlogPost[] = [
     id: 16,
     title: "Term Life Insurance Basics: Pure Protection Explained",
     excerpt: "Term life is the cheapest, purest form of life insurance. ₹500/month for ₹1cr coverage. Understand why it's perfect for young professionals and families—and what you're actually buying.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-03",
     readTime: "9 min read",
     category: "Life Insurance",
@@ -951,7 +951,7 @@ export const blogPosts: BlogPost[] = [
     id: 17,
     title: "Property Insurance Explained: Commercial & Residential",
     excerpt: "Protect your property investments—commercial or residential. Learn about property damage coverage, liability, rent loss, and how property insurance differs from home insurance.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-04",
     readTime: "9 min read",
     category: "Home Insurance",
@@ -968,7 +968,7 @@ export const blogPosts: BlogPost[] = [
     id: 18,
     title: "Personal Accident Insurance: Complete Guide",
     excerpt: "Accidents happen. Personal accident insurance covers death, disability, and medical expenses from accidents—separate from health insurance. Learn what ₹5L coverage actually means.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-05",
     readTime: "9 min read",
     category: "General",
@@ -985,7 +985,7 @@ export const blogPosts: BlogPost[] = [
     id: 19,
     title: "Business Insurance 101: Protecting Your Enterprise",
     excerpt: "Your business needs protection too. From fire to liability, business insurance covers risks that could shut down your company. Learn what types exist and what you actually need.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-06",
     readTime: "10 min read",
     category: "Business Insurance",
@@ -1002,7 +1002,7 @@ export const blogPosts: BlogPost[] = [
     id: 20,
     title: "Liability Insurance Explained: Professional & General",
     excerpt: "When you're liable for damages—professional errors, public injuries, product defects—liability insurance protects you. Understand professional indemnity, public liability, and product liability.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-07",
     readTime: "9 min read",
     category: "Business Insurance",
@@ -1019,7 +1019,7 @@ export const blogPosts: BlogPost[] = [
     id: 21,
     title: "Workers Compensation Insurance: Employer's Guide",
     excerpt: "Employers are legally required to cover employees for workplace injuries. Workers compensation insurance protects both you and your team. Learn what's mandatory and what's recommended.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-08",
     readTime: "9 min read",
     category: "Business Insurance",
@@ -1036,7 +1036,7 @@ export const blogPosts: BlogPost[] = [
     id: 22,
     title: "Marine & Cargo Insurance: Shipping Protection",
     excerpt: "Importing or exporting goods? Marine insurance covers cargo in transit—by sea, air, or land. Learn about coverage, exclusions, and when ₹50k insurance protects ₹50L shipments.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-09",
     readTime: "8 min read",
     category: "Business Insurance",
@@ -1053,7 +1053,7 @@ export const blogPosts: BlogPost[] = [
     id: 23,
     title: "Cyber Insurance: Protecting Digital Assets",
     excerpt: "Data breaches cost companies crores. Cyber insurance covers hacking, ransomware, data loss, and liability from cyberattacks. Essential for businesses in the digital age.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-10",
     readTime: "9 min read",
     category: "Business Insurance",
@@ -1070,7 +1070,7 @@ export const blogPosts: BlogPost[] = [
     id: 24,
     title: "What Is Reinsurance? The Insurance for Insurers",
     excerpt: "Insurance companies need insurance too. Reinsurance spreads risk across multiple insurers. Understand how it works and why it matters for policyholders.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-11",
     readTime: "7 min read",
     category: "General",
@@ -1087,7 +1087,7 @@ export const blogPosts: BlogPost[] = [
     id: 25,
     title: "Retirement & Pension Plans: Securing Your Future",
     excerpt: "Retirement planning isn't just savings—it's insurance-backed pension plans. Understand annuity plans, pension schemes, and how to secure ₹50L+ for retirement.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-12",
     readTime: "10 min read",
     category: "Life Insurance",
@@ -1104,7 +1104,7 @@ export const blogPosts: BlogPost[] = [
     id: 26,
     title: "Agricultural Insurance: Crop Protection Explained",
     excerpt: "Farmers face weather risks, pests, and crop failures. Agricultural insurance protects against losses. Learn about PMFBY, crop insurance, and what ₹10k premium covers.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-13",
     readTime: "9 min read",
     category: "General",
@@ -1121,7 +1121,7 @@ export const blogPosts: BlogPost[] = [
     id: 27,
     title: "Micro-Insurance: Affordable Protection for All",
     excerpt: "Low-income households need insurance too. Micro-insurance offers affordable, simplified coverage—₹100/month for health, ₹50/month for life. Learn what's available and how it works.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-14",
     readTime: "8 min read",
     category: "General",
@@ -1138,7 +1138,7 @@ export const blogPosts: BlogPost[] = [
     id: 28,
     title: "Top Types of Insurance: Complete Overview",
     excerpt: "A comprehensive guide to all insurance types in India—health, life, vehicle, home, travel, business, and more. Understand what each covers and when you need it.",
-    author: "Ensured Team",
+    author: "IndSure Team",
     date: "2026-02-15",
     readTime: "11 min read",
     category: "General",

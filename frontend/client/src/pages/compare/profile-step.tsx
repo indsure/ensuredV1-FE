@@ -16,7 +16,7 @@ import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { useComparison } from "@/hooks/use-comparison";
 import { useTheme } from "@/hooks/use-theme";
 import { Combobox } from "@/components/ui/combobox";
-import { getAllStates, getCitiesForState } from "@/lib/indian-cities-data";
+import { getAllStates, getCitiesForState } from "@/lib/data/indian-cities-data";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -33,8 +33,8 @@ export default function ProfileStep() {
     return () => {
       const isStillInCompareFlow = window.location.pathname.startsWith("/compare");
       if (!isStillInCompareFlow) {
-        sessionStorage.removeItem("ensured_comparison_policies");
-        sessionStorage.removeItem("ensured_comparison_profile");
+        sessionStorage.removeItem("IndSure_comparison_policies");
+        sessionStorage.removeItem("IndSure_comparison_profile");
       }
     };
   }, []);

@@ -1,0 +1,122 @@
+[
+  {
+    "table_name": "agents",
+    "column_name": "id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "agents",
+    "column_name": "full_name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "agents",
+    "column_name": "email",
+    "data_type": "text"
+  },
+  {
+    "table_name": "agents",
+    "column_name": "phone",
+    "data_type": "text"
+  },
+  {
+    "table_name": "agents",
+    "column_name": "city",
+    "data_type": "text"
+  },
+  {
+    "table_name": "agents",
+    "column_name": "experience_years",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "agents",
+    "column_name": "invite_code",
+    "data_type": "text"
+  },
+  {
+    "table_name": "agents",
+    "column_name": "is_admin",
+    "data_type": "boolean"
+  },
+  {
+    "table_name": "agents",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "agents",
+    "column_name": "upload_limit",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "agents",
+    "column_name": "firm_name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "id",
+    "data_type": "text"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "status",
+    "data_type": "text"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "result",
+    "data_type": "jsonb"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "error",
+    "data_type": "text"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "insurance_type",
+    "data_type": "text"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "created_at",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "completed_at",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "extraction_started_at",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "extraction_ended_at",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "fetch_started_at",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "fetch_ended_at",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "ai_started_at",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "analysis_jobs",
+    "column_name": "ai_ended_at",
+    "data_type": "bigint"
+  }
+]

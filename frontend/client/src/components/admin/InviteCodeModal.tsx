@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Key, Wand2, Check, Loader2 } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 interface InviteCodeModalProps {
   isOpen: boolean;
@@ -28,7 +29,7 @@ const InviteCodeModal: React.FC<InviteCodeModalProps> = ({ isOpen, onClose, onSu
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/admin/invite-codes', {
+      const response = await apiFetch('/api/admin/invite-codes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, is_random: false }),
@@ -44,7 +45,6 @@ const InviteCodeModal: React.FC<InviteCodeModalProps> = ({ isOpen, onClose, onSu
         onClose();
       }, 1500);
     } catch (err) {
-      console.error('Invite code creation error:', err);
     } finally {
       setIsSubmitting(false);
     }

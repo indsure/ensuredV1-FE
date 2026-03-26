@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Shield, CheckCircle2, AlertCircle,
     ChevronDown, ChevronUp, FileText, Printer,
@@ -24,13 +24,12 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { getZoneForCity } from "@/lib/data/zones";
 import { pdf } from '@react-pdf/renderer';
 import { PolicyPDFDocument } from './PolicyPDFDocument';
+import { apiFetch } from "@/lib/api";
 
 interface PolicyAuditReportProps {
     data: ForensicAuditReport;
     hideNav?: boolean;
 }
-
-// â”€â”€â”€ Risk Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function getRiskColor(level: "low" | "medium" | "high") {
     switch (level) {
@@ -72,8 +71,6 @@ function getSimulationVerdictColor(verdict: "COVERED" | "PARTIAL" | "EXPOSED") {
     }
 }
 
-// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportProps) {
     const [showDeductions, setShowDeductions] = useState(false);
     const [hospitalCount, setHospitalCount] = useState<number | null>(null);
@@ -95,7 +92,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
         setOpenBreakdown(prev => ({ ...prev, [category]: !prev[category] }));
     };
 
-    // â”€â”€â”€ Dynamic Risk Logic (Where It May Cost You) â”€â”€â”€
     const getRiskItems = (auditResult: ForensicAuditReport) => {
         const items: { issue: string; real_world_claim_impact: string; quantified_oop_risk?: string; severity: "high" | "medium" | "low" }[] = [];
 
@@ -116,13 +112,10 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
             const supp = auditResult.supplementary_coverage;
             const riders = auditResult.coverage_structure?.riders || [];
 
-            // Geographic Formatting Context
             const isZoneA = actualZone === "A";
             const isZoneB = actualZone === "B";
             const zoneContext = isZoneA ? "metro hospitals" : (isZoneB ? "major city hospitals" : "local hospitals");
-            const zoneCostContext = isZoneA ? "â‚¹3â€“8 Lakhs for major surgery" : (isZoneB ? "â‚¹1.5â€“4 Lakhs for major surgery" : "standard costs in your city");
 
-            // 1. Zone Co-Payment
             if (copay?.exists) {
                 const isZoneCopay = copay.conditions?.toLowerCase().includes("zone");
                 const ZONE_RANK: Record<string, number> = { A: 1, B: 2, C: 3, D: 4 };
@@ -131,16 +124,16 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                 if (isZoneCopay) {
                     if (isLivingInHigherZone) {
                         items.push({
-                            issue: "Zone Mismatch â€” Extra Costs at Home",
+                            issue: "Zone Mismatch — Extra Costs at Home",
                             real_world_claim_impact: `Your policy is registered as Zone ${policyZone}, but your city (${city || "your city"}) is Zone ${actualZone}. Every hospitalisation here triggers a ${copay.percentage || "mandatory"}% co-payment automatically.`,
-                            quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 100000)} out of pocket on a â‚¹5L claim.`,
+                            quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 100000)} out of pocket on a ₹5L claim.`,
                             severity: "high"
                         });
                     } else {
                         items.push({
                             issue: "Zone Upgrade Co-payment",
                             real_world_claim_impact: `Your policy is Zone ${policyZone}. You have full coverage in your city, but if you get treated in a more expensive zone (like a Zone A metro hospital), an ${copay.percentage || "mandatory"}% co-payment applies.`,
-                            quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 100000)} out of pocket on a â‚¹5L claim if treated outside your zone.`,
+                            quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 100000)} out of pocket on a ₹5L claim if treated outside your zone.`,
                             severity: "low"
                         });
                     }
@@ -148,24 +141,21 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                     items.push({
                         issue: "Mandatory Co-payment on Every Claim",
                         real_world_claim_impact: `This policy requires you to pay ${copay.percentage || "a portion"}% of every claim bill regardless of hospital.`,
-                        quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 50000)} out of pocket on a â‚¹5L claim.`,
+                        quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 50000)} out of pocket on a ₹5L claim.`,
                         severity: copay.percentage && copay.percentage > 10 ? "high" : "medium"
                     });
                 }
             }
 
-            // 2. Room Rent Capping
             if (roomRent && roomRent.limit_type !== "none") {
-                let impact = roomRent.explanation || "Room rent is capped, leading to proportional deductions on all hospital bills.";
                 items.push({
                     issue: "Room Rent Capping Penalty",
-                    real_world_claim_impact: impact,
+                    real_world_claim_impact: roomRent.explanation || "Room rent is capped, leading to proportional deductions on all hospital bills.",
                     quantified_oop_risk: "If your room costs more than this limit, the insurer cuts the entire bill proportionally.",
                     severity: roomRent.risk_level || "high"
                 });
             }
 
-            // 3. Sub-Limits (Age Filtered)
             if (subLimitsWrapper?.exists && subLimitsWrapper.categories) {
                 subLimitsWrapper.categories.forEach(cat => {
                     const proc = cat.procedure.toLowerCase();
@@ -176,7 +166,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                     if (proc.includes("cataract")) {
                         if (age < 45) shouldShow = false;
                         else {
-                            customBody = `${formatINR(cat.limit || 0)} limit per eye. For bilateral surgery the total cap is ${formatINR((cat.limit || 0) * 2)}. Premium IOL lenses cost â‚¹20,000â€“â‚¹40,000 more per eye than this limit.`;
+                            customBody = `${formatINR(cat.limit || 0)} limit per eye. For bilateral surgery the total cap is ${formatINR((cat.limit || 0) * 2)}. Premium IOL lenses cost ₹20,000–₹40,000 more per eye than this limit.`;
                             customRed = cat.gap ? `Gap: ${formatINR(cat.gap)} per eye for premium lenses.` : "Gap expected for premium lenses.";
                         }
                     } else if (proc.includes("joint") || proc.includes("knee")) {
@@ -196,7 +186,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                 });
             }
 
-            // 4. Deductible Risk
             if (deduct && deduct.base_deductible && deduct.base_deductible > 0) {
                 items.push({
                     issue: "Base Deductible Applied",
@@ -206,7 +195,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                 });
             }
 
-            // 5. Waiting Periods (ONLY Active)
             if (waiting) {
                 if (waiting.pre_existing_disease?.is_active_today) {
                     items.push({
@@ -239,14 +227,13 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                 }
             }
 
-            // 6. Maternity Gap
             if (gender.toLowerCase() === "female" && age >= 22 && age <= 42) {
                 const mat = supp?.maternity;
                 if (!mat || mat.covered === false) {
                     items.push({
                         issue: "Maternity Not Covered",
                         real_world_claim_impact: "This policy does not cover delivery or pregnancy-related hospitalisation.",
-                        quantified_oop_risk: `Normal delivery costs â‚¹50,000â€“â‚¹1,50,000; C-section â‚¹1,00,000â€“â‚¹2,50,000 in ${zoneContext}.`,
+                        quantified_oop_risk: `Normal delivery costs ₹50,000–₹1,50,000; C-section ₹1,00,000–₹2,50,000 in ${zoneContext}.`,
                         severity: "medium"
                     });
                 } else if (waiting?.maternity?.is_active_today) {
@@ -259,7 +246,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                 }
             }
 
-            // 7. Critical Illness Gap
             if (age >= 25 && age <= 55) {
                 const hasCI = riders.some(r => r.name.toLowerCase().includes("critical") && r.is_material);
                 if (!hasCI) {
@@ -269,14 +255,13 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                     }
                     items.push({
                         issue: "No Critical Illness Cover",
-                        real_world_claim_impact: `This policy only reimburses hospital bills. A cancer, heart attack, or stroke diagnosis triggers no lump-sum payout â€” leaving income loss and long-term treatment costs entirely on you. At age ${age}, this is a material gap.${flagNote}`,
-                        quantified_oop_risk: `Recommended: standalone CI cover of â‚¹25â€“50 Lakhs.`,
+                        real_world_claim_impact: `This policy only reimburses hospital bills. A cancer, heart attack, or stroke diagnosis triggers no lump-sum payout — leaving income loss and long-term treatment costs entirely on you. At age ${age}, this is a material gap.${flagNote}`,
+                        quantified_oop_risk: `Recommended: standalone CI cover of ₹25–50 Lakhs.`,
                         severity: "medium"
                     });
                 }
             }
 
-            // 8. OPD Gap
             const opd = supp?.opd;
             if (!opd || opd.covered === false || (opd.limit_per_year && opd.limit_per_year < 5000)) {
                 const limit = opd?.limit_per_year || 0;
@@ -293,13 +278,9 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
             }
 
         } catch (e) {
-            console.error("Error building risk items", e);
         }
 
-        // De-duplicate items by issue name
         const uniqueItems = Array.from(new Map(items.map(item => [item.issue, item])).values());
-
-        // Sort: High -> Medium -> Low, then by name
         const severityWeight = { high: 3, medium: 2, low: 1 };
         return uniqueItems.sort((a, b) => {
             if (severityWeight[a.severity] !== severityWeight[b.severity]) {
@@ -319,22 +300,18 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
         return (
             <ul className="list-disc space-y-1 ml-4 text-sm text-gray-600">
                 {deductions.map((d, i) => (
-                    <li key={i}>
-                        {d.reason} â€” {Math.abs(d.points)} pts
-                    </li>
+                    <li key={i}>{d.reason} — {Math.abs(d.points)} pts</li>
                 ))}
             </ul>
         );
     };
 
-    // All values come from the prompt-computed fields now
     const verdict = data.final_verdict?.label ?? "RISKY";
     const score = data.audit_score?.score ?? 0;
     const ncar = data.audit_score?.ncar ?? 0;
     const simulations = data.claim_simulations ?? [];
     const effectiveCoverage = calculateEffectiveCoverage(data);
 
-    // Real-time policy age
     const realTimePolicyAgeDays = (() => {
         if (!data.policy_timeline?.policy_inception_date) return 0;
         const start = new Date(data.policy_timeline.policy_inception_date);
@@ -344,33 +321,36 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
 
     const portingRec = data.recommendations?.should_port_to_better_policy;
 
-    // â”€â”€ Live hospital network lookup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     useEffect(() => {
         const city = data.identity?.city;
         if (!city) return;
 
-        fetch(`/api/hospitals/filter?city=${encodeURIComponent(city)}`)
+        apiFetch(`/api/hospitals/filter?city=${encodeURIComponent(city)}`)
             .then(r => r.json())
             .then((result) => {
                 const cityRow = result.cityLevel?.[0];
                 if (!cityRow) return;
-                setHospitalCount(cityRow.unique_hospital_count);
 
-                // Try to match this policy's insurer from network_limitations remarks
-                // or fall back to first insurer in the list
-                const insurerHint = data.network_limitations?.remarks?.toLowerCase() ?? "";
+                // Sum all insurer counts to get total unique hospitals in city
+                const total = cityRow.insurers?.reduce(
+                    (sum: number, ins: any) => sum + (ins.hospital_count ?? 0), 0
+                ) ?? 0;
+                setHospitalCount(total);
+
+                // Match insurer slug against policy insurer name + remarks
+                const insurerHint = [
+                    data.identity?.insured_names?.join(" ") ?? "",
+                    data.network_limitations?.remarks ?? "",
+                ].join(" ").toLowerCase();
+
                 const matched = cityRow.insurers?.find((ins: any) => {
-                    const slug = ins.insurer_slug.toLowerCase();
-                    return insurerHint.includes(slug.replace(/-/g, " ").split(" ")[0]);
+                    const slugWords = ins.insurer_slug.toLowerCase().replace(/_/g, " ").split(" ");
+                    return slugWords.some((word: string) => word.length > 3 && insurerHint.includes(word));
                 });
-                if (matched) {
-                    setInsurerHospitalCount(matched.hospital_count);
-                } else if (cityRow.insurers?.length > 0) {
-                    // No match â€” don't show insurer-specific count, just total
-                    setInsurerHospitalCount(null);
-                }
+
+                setInsurerHospitalCount(matched?.hospital_count ?? null);
             })
-            .catch(() => { }); // Non-critical â€” fail silently
+            .catch(() => { });
     }, [data.identity?.city]);
 
     return (
@@ -379,7 +359,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
 
             <main className={`max-w-5xl mx-auto ${!hideNav ? 'pt-32 px-6 print:pt-10 print:px-8' : 'pt-4 px-2'}`}>
 
-                {/* â”€â”€ TOP BAR â”€â”€ */}
+                {/* TOP BAR */}
                 <div className="flex justify-between items-center mb-8 print:hidden">
                     <div className="text-sm text-[var(--color-text-secondary)] font-mono">
                         AUDIT ID: {auditId.current}
@@ -389,7 +369,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                     </Button>
                 </div>
 
-                {/* â”€â”€ 1. VERDICT HEADER â”€â”€ */}
+                {/* 1. VERDICT HEADER */}
                 <div className="mb-12 border-b border-[var(--color-border-light)] pb-12">
                     <span className={cn(
                         "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-6 border",
@@ -403,7 +383,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                         Verdict: {
                             verdict === "SAFE" ? "Strong Structural Coverage" :
                                 verdict === "BORDERLINE" ? "Good Core Coverage with Areas to Improve" :
-                                    "Limited Structural Protection â€“ Improvement Recommended"
+                                    "Limited Structural Protection — Improvement Recommended"
                         }
                     </span>
 
@@ -443,10 +423,9 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                     </div>
                 </div>
 
-                {/* â”€â”€ 2. SCORECARD + SCORE BREAKDOWN â”€â”€ */}
+                {/* 2. SCORECARD + SCORE BREAKDOWN */}
                 <div className="grid md:grid-cols-12 gap-8 mb-16">
 
-                    {/* LEFT: BIG NUMBER */}
                     <div className="md:col-span-4 bg-white border border-[var(--color-border-light)] rounded-xl p-8 flex flex-col justify-center items-center text-center shadow-sm relative overflow-hidden">
                         <div className={cn(
                             "absolute inset-0 opacity-5",
@@ -462,10 +441,10 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                             {score}
                         </div>
                         <div className="text-xs text-[var(--color-text-secondary)] mb-3">
-                            NCAR: <span className="font-mono font-bold">{ncar.toFixed(2)}Ã—</span>
-                            {" â€” "}<span className="italic">{getNCARLabel(ncar)}</span>
+                            NCAR: <span className="font-mono font-bold">{ncar.toFixed(2)}×</span>
+                            {" — "}<span className="italic">{getNCARLabel(ncar)}</span>
                             <div className="text-xs text-slate-500 mt-1">
-                                Your cover is {ncar.toFixed(2)}Ã— the minimum recommended for your age and city.
+                                Your cover is {ncar.toFixed(2)}× the minimum recommended for your age and city.
                             </div>
                         </div>
                         <div className="text-xs text-[var(--color-text-secondary)] max-w-[220px] leading-relaxed mx-auto space-y-1">
@@ -475,18 +454,16 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                         </div>
                     </div>
 
-                    {/* RIGHT: SCORE BREAKDOWN */}
                     {data.audit_score?.breakdown && (
                         <div className="md:col-span-8 bg-white border border-[var(--color-border-light)] rounded-xl p-8 shadow-sm">
                             <h3 className="font-serif text-lg text-[var(--color-navy-900)] mb-6">What Could Cost You at Claim Time</h3>
                             <div className="space-y-5">
 
-                                {/* Claim Rejection Risk */}
                                 <div className="group cursor-pointer" onClick={() => toggleBreakdown('CLAIM_REJECTION')}>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="font-medium">
                                             Claim Rejection Risk
-                                            <span title="Measures exposure to rule-based claim denials â€” room rent limits, co-payments, sub-limits, and network restrictions." className="ml-1 text-slate-400 cursor-help">â“˜</span>
+                                            <span title="Measures exposure to rule-based claim denials — room rent limits, co-payments, sub-limits, and network restrictions." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
                                             {Math.abs(data.audit_score.breakdown.claim_rejection_risk)} / 30 pts
@@ -494,26 +471,22 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-red-400 rounded-full transition-all"
-                                            style={{ width: `${(data.audit_score.breakdown.claim_rejection_risk / 30) * 100}%` }}
-                                        />
+                                        <div className="h-full bg-red-400 rounded-full transition-all" style={{ width: `${(data.audit_score.breakdown.claim_rejection_risk / 30) * 100}%` }} />
                                     </div>
                                     {openBreakdown['CLAIM_REJECTION'] && (
-                                            <div className="overflow-hidden">
-                                                <div className="mt-3 bg-slate-50 pl-4 pr-3 py-3 rounded">
-                                                    {renderDeductionsList('CLAIM_REJECTION')}
-                                                </div>
+                                        <div className="overflow-hidden">
+                                            <div className="mt-3 bg-slate-50 pl-4 pr-3 py-3 rounded">
+                                                {renderDeductionsList('CLAIM_REJECTION')}
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
+                                </div>
 
-                                {/* OOP Exposure */}
                                 <div className="group cursor-pointer" onClick={() => toggleBreakdown('OOP_EXPOSURE')}>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="font-medium">
                                             Out-of-Pocket Exposure
-                                            <span title="Measures personal expenses you bear even when a claim is approved â€” co-pays, consumable exclusions, and sub-limits." className="ml-1 text-slate-400 cursor-help">â“˜</span>
+                                            <span title="Measures personal expenses you bear even when a claim is approved — co-pays, consumable exclusions, and sub-limits." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
                                             {Math.abs(data.audit_score.breakdown.oop_exposure)} / 30 pts
@@ -521,26 +494,22 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-amber-400 rounded-full transition-all"
-                                            style={{ width: `${(data.audit_score.breakdown.oop_exposure / 30) * 100}%` }}
-                                        />
+                                        <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${(data.audit_score.breakdown.oop_exposure / 30) * 100}%` }} />
                                     </div>
                                     {openBreakdown['OOP_EXPOSURE'] && (
-                                            <div className="overflow-hidden">
-                                                <div className="mt-3 bg-slate-50 pl-4 pr-3 py-3 rounded">
-                                                    {renderDeductionsList('OOP_EXPOSURE')}
-                                                </div>
+                                        <div className="overflow-hidden">
+                                            <div className="mt-3 bg-slate-50 pl-4 pr-3 py-3 rounded">
+                                                {renderDeductionsList('OOP_EXPOSURE')}
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
+                                </div>
 
-                                {/* Coverage Quality Gap */}
                                 <div className="group cursor-pointer" onClick={() => toggleBreakdown('COVERAGE_GAP')}>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="font-medium">
                                             Coverage Quality Gap
-                                            <span title="Measures structural exclusions â€” waiting periods, missing restoration, AYUSH limits, and maternity gaps." className="ml-1 text-slate-400 cursor-help">â“˜</span>
+                                            <span title="Measures structural exclusions — waiting periods, missing restoration, AYUSH limits, and maternity gaps." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
                                             {Math.abs(data.audit_score.breakdown.coverage_quality_gap)} / 20 pts
@@ -548,26 +517,22 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-blue-400 rounded-full transition-all"
-                                            style={{ width: `${(data.audit_score.breakdown.coverage_quality_gap / 20) * 100}%` }}
-                                        />
+                                        <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${(data.audit_score.breakdown.coverage_quality_gap / 20) * 100}%` }} />
                                     </div>
                                     {openBreakdown['COVERAGE_GAP'] && (
-                                            <div className="overflow-hidden">
-                                                <div className="mt-3 bg-slate-50 pl-4 pr-3 py-3 rounded">
-                                                    {renderDeductionsList('COVERAGE_GAP')}
-                                                </div>
+                                        <div className="overflow-hidden">
+                                            <div className="mt-3 bg-slate-50 pl-4 pr-3 py-3 rounded">
+                                                {renderDeductionsList('COVERAGE_GAP')}
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
+                                </div>
 
-                                {/* Net Cover Penalty */}
                                 <div className="group cursor-pointer" onClick={() => toggleBreakdown('NET_COVER')}>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="font-medium">
                                             Net Cover Penalty
-                                            <span title="Applied when your effective cover is below the minimum recommended for your age and city. This penalty is uncapped and overrides all other scores." className="ml-1 text-slate-400 cursor-help">â“˜</span>
+                                            <span title="Applied when your effective cover is below the minimum recommended for your age and city. This penalty is uncapped and overrides all other scores." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
                                             {Math.abs(data.audit_score.breakdown.net_cover_penalty)} pts
@@ -575,26 +540,23 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-slate-400 rounded-full transition-all"
-                                            style={{ width: `${Math.min(Math.abs(data.audit_score.breakdown.net_cover_penalty) / 20 * 100, 100)}%` }}
-                                        />
+                                        <div className="h-full bg-slate-400 rounded-full transition-all" style={{ width: `${Math.min(Math.abs(data.audit_score.breakdown.net_cover_penalty) / 20 * 100, 100)}%` }} />
                                     </div>
                                     {openBreakdown['NET_COVER'] && (
-                                            <div className="overflow-hidden">
-                                                <div className="mt-3 bg-slate-50 pl-4 pr-3 py-3 rounded">
-                                                    {renderDeductionsList('NET_COVER')}
-                                                </div>
+                                        <div className="overflow-hidden">
+                                            <div className="mt-3 bg-slate-50 pl-4 pr-3 py-3 rounded">
+                                                {renderDeductionsList('NET_COVER')}
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
+                                </div>
 
                             </div>
                         </div>
                     )}
                 </div>
 
-                {/* â”€â”€ 3. BENEFIT EVALUATION (STRENGTHS & FAILURES) â”€â”€ */}
+                {/* 3. BENEFIT EVALUATION */}
                 {data.benefit_evaluation && (
                     <section className="mb-16">
                         <div className="flex items-center gap-3 mb-6">
@@ -603,7 +565,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-6 items-stretch">
-                            {/* What works */}
                             <div className="border border-[var(--color-border-light)] bg-white p-8 rounded-xl shadow-sm flex flex-col h-full">
                                 <div className="text-sm font-bold uppercase tracking-wider text-green-700 mb-6 flex items-center gap-2">
                                     <CheckCircle2 className="w-5 h-5" /> What Actually Works
@@ -625,7 +586,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                 </ul>
                             </div>
 
-                            {/* Where it fails */}
                             <div className="border border-[var(--color-border-light)] bg-white p-8 rounded-xl shadow-sm flex flex-col h-full">
                                 <div className="text-sm font-bold uppercase tracking-wider text-amber-700 mb-6 flex items-center gap-2">
                                     <AlertTriangle className="w-5 h-5" /> Where It May Cost You
@@ -648,7 +608,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                             </div>
                         </div>
 
-                        {/* Red Flags */}
                         {data.benefit_evaluation.structural_red_flags?.length > 0 && (
                             <div className="mt-6 border border-red-100 bg-red-50/30 p-6 rounded-lg">
                                 <div className="text-sm font-bold uppercase tracking-wider text-red-700 mb-4 flex items-center gap-2">
@@ -659,10 +618,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                         <li key={i} className="text-sm border-l-2 border-red-300 pl-3">
                                             <span className="font-medium block">{flag.flag}</span>
                                             <span className="text-[var(--color-text-secondary)]">{flag.why_it_is_dangerous}</span>
-                                            <span className={cn(
-                                                "text-xs font-bold uppercase mt-1 inline-block px-2 py-0.5 rounded",
-                                                getRiskColor(flag.severity)
-                                            )}>{flag.severity}</span>
+                                            <span className={cn("text-xs font-bold uppercase mt-1 inline-block px-2 py-0.5 rounded", getRiskColor(flag.severity))}>{flag.severity}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -671,7 +627,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                     </section>
                 )}
 
-                {/* â”€â”€ 4. CLAIM SIMULATIONS â”€â”€ */}
+                {/* 4. CLAIM SIMULATIONS */}
                 {simulations?.length > 0 && (
                     <section className="mb-16">
                         <div className="flex items-center gap-3 mb-6">
@@ -694,20 +650,20 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                     <div className="space-y-3">
                                         <div className="flex justify-between">
                                             <span className="text-sm">Total Bill</span>
-                                            <span className="font-mono font-bold text-slate-600">{'â‚¹' + sim.total_bill.toLocaleString('en-IN')}</span>
+                                            <span className="font-mono font-bold text-slate-600">{'₹' + (sim.total_bill || 0)?.toLocaleString('en-IN')}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm">Insurer Pays</span>
-                                            <span className="font-mono font-bold text-green-600">{'â‚¹' + sim.insurer_pays.toLocaleString('en-IN')}</span>
+                                            <span className="font-mono font-bold text-green-600">{'₹' + (sim.insurer_pays || 0)?.toLocaleString('en-IN')}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm">Your Contribution</span>
-                                            <span className="font-mono font-bold text-amber-600">{'â‚¹' + (sim.total_bill - sim.insurer_pays).toLocaleString('en-IN')}</span>
+                                            <span className="font-mono font-bold text-amber-600">{'₹' + ((sim.total_bill || 0) - (sim.insurer_pays || 0))?.toLocaleString('en-IN')}</span>
                                         </div>
                                         <div className="h-px bg-slate-200 my-2" />
                                         <div className="flex justify-between text-xs text-[var(--color-text-secondary)]">
                                             <span>OOP Ratio (Out-of-Pocket)</span>
-                                            <span className="font-mono">{(sim.oop_ratio * 100).toFixed(1)}%</span>
+                                            <span className="font-mono">{((sim.oop_ratio || 0) * 100).toFixed(1)}%</span>
                                         </div>
                                         {sim.explanation && (
                                             <p className="text-xs text-slate-500 mt-2 leading-relaxed border-t border-slate-100 pt-2">
@@ -721,7 +677,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                     </section>
                 )}
 
-                {/* â”€â”€ 5. KEY FAILURE POINTS â”€â”€ */}
+                {/* 5. KEY FAILURE POINTS */}
                 {data.final_verdict?.key_failure_points?.length > 0 && (
                     <section className={cn(
                         "border rounded-xl p-8 md:p-12 mb-16 shadow-lg relative overflow-hidden",
@@ -747,7 +703,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                     </section>
                 )}
 
-                {/* â”€â”€ 6. EXTRACTED POLICY DETAILS â”€â”€ */}
+                {/* 6. EXTRACTED POLICY DETAILS */}
                 <section className="mb-16">
                     <div className="flex items-center gap-3 mb-6">
                         <Activity className="w-6 h-6 text-[var(--color-teal-600)]" />
@@ -766,10 +722,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                 <div>
                                     <div className="flex justify-between mb-1">
                                         <span className="text-sm font-medium">Room Rent Limit</span>
-                                        <span className={cn(
-                                            "text-xs font-bold uppercase",
-                                            data.claim_risk_analysis?.room_rent?.risk_level === "low" ? "text-green-600" : "text-red-600"
-                                        )}>
+                                        <span className={cn("text-xs font-bold uppercase", data.claim_risk_analysis?.room_rent?.risk_level === "low" ? "text-green-600" : "text-red-600")}>
                                             {data.claim_risk_analysis?.room_rent?.limit_value || "No Limit"}
                                         </span>
                                     </div>
@@ -779,18 +732,13 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                             : `Limit type: ${data.claim_risk_analysis?.room_rent?.limit_type ?? "unknown"}`}
                                     </p>
                                     {data.claim_risk_analysis?.room_rent?.explanation && (
-                                        <p className="text-xs text-slate-400 mt-1 italic">
-                                            {data.claim_risk_analysis.room_rent.explanation}
-                                        </p>
+                                        <p className="text-xs text-slate-400 mt-1 italic">{data.claim_risk_analysis.room_rent.explanation}</p>
                                     )}
                                 </div>
                                 <div>
                                     <div className="flex justify-between mb-1">
                                         <span className="text-sm font-medium">Co-Payment</span>
-                                        <span className={cn(
-                                            "text-xs font-bold uppercase",
-                                            data.claim_risk_analysis?.co_payment?.risk_level === "low" ? "text-green-600" : "text-red-600"
-                                        )}>
+                                        <span className={cn("text-xs font-bold uppercase", data.claim_risk_analysis?.co_payment?.risk_level === "low" ? "text-green-600" : "text-red-600")}>
                                             {data.claim_risk_analysis?.co_payment?.exists
                                                 ? `${data.claim_risk_analysis.co_payment.percentage ?? 0}%`
                                                 : "0%"}
@@ -803,7 +751,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                     </p>
                                     {data.claim_risk_analysis?.co_payment?.oop_on_5L_claim != null && (
                                         <p className="text-xs text-red-500 font-mono mt-1">
-                                            OOP on â‚¹5L claim: {formatINR(data.claim_risk_analysis.co_payment.oop_on_5L_claim)}
+                                            OOP on ₹5L claim: {formatINR(data.claim_risk_analysis.co_payment.oop_on_5L_claim)}
                                         </p>
                                     )}
                                 </div>
@@ -844,7 +792,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                             <div className="p-6">
                                 <ul className="space-y-3">
 
-                                    {/* Initial waiting */}
                                     {(() => {
                                         const wp = data.waiting_period_analysis?.initial_waiting_period;
                                         if (!wp) return null;
@@ -858,17 +805,13 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_days} days</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn(
-                                                        "text-[10px] font-bold px-2 py-1 rounded",
-                                                        status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
-                                                    )}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete. You are fully covered for this condition." className="ml-1 text-slate-400 cursor-help">â“˜</span>}
+                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
                                         );
                                     })()}
 
-                                    {/* PED waiting */}
                                     {(() => {
                                         const wp = data.waiting_period_analysis?.pre_existing_disease;
                                         if (!wp) return null;
@@ -882,17 +825,13 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn(
-                                                        "text-[10px] font-bold px-2 py-1 rounded",
-                                                        status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
-                                                    )}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete. You are fully covered for this condition." className="ml-1 text-slate-400 cursor-help">â“˜</span>}
+                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
                                         );
                                     })()}
 
-                                    {/* Specific diseases */}
                                     {(() => {
                                         const wp = data.waiting_period_analysis?.specific_diseases;
                                         if (!wp) return null;
@@ -905,21 +844,17 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                                     <span className="block font-medium">Specific Diseases</span>
                                                     <span className="text-xs text-[var(--color-text-secondary)]">
                                                         {wp.duration_months} months
-                                                        {wp.diseases_covered?.length > 0 && ` â€” ${wp.diseases_covered.slice(0, 3).join(", ")}${wp.diseases_covered?.length > 3 ? "â€¦" : ""}`}
+                                                        {wp.diseases_covered?.length > 0 && ` — ${wp.diseases_covered.slice(0, 3).join(", ")}${wp.diseases_covered?.length > 3 ? "…" : ""}`}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn(
-                                                        "text-[10px] font-bold px-2 py-1 rounded",
-                                                        status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
-                                                    )}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete. You are fully covered for this condition." className="ml-1 text-slate-400 cursor-help">â“˜</span>}
+                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
                                         );
                                     })()}
 
-                                    {/* Personal waiting periods */}
                                     {data.waiting_period_analysis?.personal_waiting_periods?.map((wp, i) => {
                                         const computedEndDate = computeUnlockDate(data.policy_timeline?.policy_inception_date, wp.duration_months * 30);
                                         const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today;
@@ -931,17 +866,13 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn(
-                                                        "text-[10px] font-bold px-2 py-1 rounded",
-                                                        status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
-                                                    )}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete. You are fully covered for this condition." className="ml-1 text-slate-400 cursor-help">â“˜</span>}
+                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
                                         );
                                     })}
 
-                                    {/* Maternity (only if relevant) */}
                                     {data.waiting_period_analysis?.maternity?.relevant && (() => {
                                         const wp = data.waiting_period_analysis.maternity;
                                         const computedEndDate = computeUnlockDate(data.policy_timeline?.policy_inception_date, (wp.duration_months ?? 0) * 30);
@@ -954,11 +885,8 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn(
-                                                        "text-[10px] font-bold px-2 py-1 rounded",
-                                                        status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
-                                                    )}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete. You are fully covered for this condition." className="ml-1 text-slate-400 cursor-help">â“˜</span>}
+                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
                                         );
@@ -967,7 +895,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                             </div>
                         </div>
 
-                        {/* D. NETWORK â€” live data from filter_engine */}
+                        {/* D. NETWORK */}
                         <div className="bg-white border border-[var(--color-border-light)] rounded-lg overflow-hidden">
                             <div className="p-4 bg-[var(--color-cream-light)] border-b border-[var(--color-border-light)] flex justify-between items-center">
                                 <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">Network & Access</span>
@@ -975,39 +903,34 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                             </div>
                             <div className="p-6">
                                 <div className="grid md:grid-cols-2 gap-6 mb-4">
-                                    {/* Total hospitals in city */}
                                     <div>
                                         <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">
                                             Cashless Hospitals in {data.identity?.city || "Your City"}
                                         </div>
                                         <div className="text-2xl font-bold text-[var(--color-navy-900)]">
                                             {hospitalCount !== null
-                                                ? hospitalCount.toLocaleString("en-IN")
-                                                : (data.network_limitations?.hospital_count_in_zone ?? "â€”")}
+                                                ? hospitalCount?.toLocaleString("en-IN")
+                                                : (data.network_limitations?.hospital_count_in_zone ?? "—")}
                                         </div>
                                         <div className="text-xs text-slate-400 mt-0.5">unique empanelled hospitals</div>
                                     </div>
 
-                                    {/* Insurer-specific count â€” only shown if matched */}
                                     {insurerHospitalCount !== null && (
                                         <div>
                                             <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">
                                                 Your Insurer's Network
                                             </div>
                                             <div className="text-2xl font-bold text-[var(--color-green-primary)]">
-                                                {insurerHospitalCount.toLocaleString("en-IN")}
+                                                {insurerHospitalCount?.toLocaleString("en-IN")}
                                             </div>
                                             <div className="text-xs text-slate-400 mt-0.5">hospitals accepting your policy</div>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Major hospital chains */}
                                 {data.network_limitations?.major_hospitals_included?.length > 0 && (
                                     <div className="mb-4">
-                                        <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
-                                            Major Chains Included
-                                        </div>
+                                        <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">Major Chains Included</div>
                                         <div className="flex gap-2 flex-wrap">
                                             {data.network_limitations.major_hospitals_included.map((h, i) => (
                                                 <span key={i} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-100">{h}</span>
@@ -1016,7 +939,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                     </div>
                                 )}
 
-                                {/* Badges */}
                                 <div className="flex items-center gap-2 mt-2">
                                     <span className={cn(
                                         "text-xs font-bold px-2 py-1 rounded border",
@@ -1024,9 +946,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                             ? "bg-green-50 text-green-700 border-green-200"
                                             : "bg-slate-50 text-slate-500 border-slate-200"
                                     )}>
-                                        {data.network_limitations?.reimbursement_allowed
-                                            ? "âœ“ Reimbursement Available"
-                                            : "Cashless Only"}
+                                        {data.network_limitations?.reimbursement_allowed ? "✓ Reimbursement Available" : "Cashless Only"}
                                     </span>
                                     {data.network_limitations?.claim_settlement_ratio != null && (
                                         <span className="text-xs text-slate-500 font-mono">
@@ -1040,7 +960,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                     </div>
                 </section>
 
-                {/* â”€â”€ 7. RECOMMENDATIONS â”€â”€ */}
+                {/* 7. RECOMMENDATIONS */}
                 {data.recommendations && (
                     <section className="mb-16">
                         <div className="flex items-center gap-3 mb-6">
@@ -1048,7 +968,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                             <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">Recommendations</h3>
                         </div>
 
-                        {/* Critical Actions */}
                         {data.recommendations.critical_actions?.length > 0 && (
                             <div className="border border-red-100 bg-red-50/30 p-6 rounded-lg mb-6">
                                 <div className="text-sm font-bold uppercase tracking-wider text-red-700 mb-4 flex items-center gap-2">
@@ -1070,7 +989,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                             </div>
                         )}
 
-                        {/* Porting Recommendation */}
                         {portingRec && (
                             <div className={cn(
                                 "border p-6 rounded-lg mb-6",
@@ -1079,18 +997,16 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                         "bg-green-50 border-green-200"
                             )}>
                                 <div className="flex items-center gap-2 mb-3">
-                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-navy-900)]">
-                                        Port to Better Policy?
-                                    </div>
+                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-navy-900)]">Port to Better Policy?</div>
                                     <span className={cn(
                                         "text-xs font-bold px-2 py-0.5 rounded-full",
                                         portingRec.recommendation === "yes" ? "bg-red-100 text-red-700" :
                                             portingRec.recommendation === "consider" ? "bg-amber-100 text-amber-700" :
                                                 "bg-green-100 text-green-700"
                                     )}>
-                                        {portingRec.recommendation === "yes" ? "âš  ACTION REQUIRED" :
-                                            portingRec.recommendation === "consider" ? "â†’ CONSIDER" :
-                                                "âœ“ NO ACTION NEEDED"}
+                                        {portingRec.recommendation === "yes" ? "⚠ ACTION REQUIRED" :
+                                            portingRec.recommendation === "consider" ? "→ CONSIDER" :
+                                                "✓ NO ACTION NEEDED"}
                                     </span>
                                 </div>
                                 <p className="text-sm">{portingRec.reason}</p>
@@ -1107,30 +1023,22 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                 {portingRec.recommendation === "consider" && (
                                     <>
                                         <div className="h-px bg-amber-200/50 my-4" />
-                                        <Button
-                                            variant="outline"
-                                            className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
-                                            onClick={() => window.location.href = '/contact'}
-                                        >
-                                            Talk to an IndSure Advisor about this â†’
+                                        <Button variant="outline" className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 hover:text-amber-800" onClick={() => window.location.href = '/help'}>
+                                            Talk to an IndSure Advisor about this →
                                         </Button>
                                     </>
                                 )}
                                 {portingRec.recommendation === "yes" && (
                                     <>
                                         <div className="h-px bg-red-200/50 my-4" />
-                                        <Button
-                                            className="w-full bg-red-600 text-white hover:bg-red-700"
-                                            onClick={() => window.location.href = '/contact'}
-                                        >
-                                            Find a Better Policy Now â†’
+                                        <Button className="w-full bg-red-600 text-white hover:bg-red-700" onClick={() => window.location.href = '/help'}>
+                                            Find a Better Policy Now →
                                         </Button>
                                     </>
                                 )}
                             </div>
                         )}
 
-                        {/* Medium + Low Priority */}
                         {(data.recommendations.medium_priority?.length > 0 || data.recommendations.low_priority?.length > 0) && (
                             <div className="bg-white border border-[var(--color-border-light)] p-6 rounded-lg">
                                 <div className="text-sm font-bold uppercase tracking-wider text-slate-600 mb-4 flex items-center gap-2">
@@ -1149,13 +1057,10 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                     </section>
                 )}
 
-                {/* â”€â”€ 8. SCORE DEDUCTIONS (COLLAPSIBLE) â”€â”€ */}
+                {/* 8. SCORE DEDUCTIONS */}
                 {data.audit_score?.deductions?.length > 0 && (
                     <section className="mb-16">
-                        <button
-                            onClick={() => setShowDeductions(!showDeductions)}
-                            className="flex items-center gap-3 mb-4 w-full text-left group"
-                        >
+                        <button onClick={() => setShowDeductions(!showDeductions)} className="flex items-center gap-3 mb-4 w-full text-left group">
                             <FileText className="w-5 h-5 text-slate-400" />
                             <span className="font-serif text-lg text-slate-500 group-hover:text-[var(--color-navy-900)] transition-colors">
                                 Score Deductions ({data.audit_score.deductions?.length} rules triggered)
@@ -1164,38 +1069,38 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                         </button>
 
                         {showDeductions && (
-                                <div className="overflow-hidden">
-                                    <div className="bg-white border border-[var(--color-border-light)] rounded-lg overflow-hidden">
-                                        <table className="w-full text-sm">
-                                            <thead>
-                                                <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
-                                                    <th className="px-4 py-3">Category</th>
-                                                    <th className="px-4 py-3">Severity</th>
-                                                    <th className="px-4 py-3">Points</th>
-                                                    <th className="px-4 py-3">Reason</th>
+                            <div className="overflow-hidden">
+                                <div className="bg-white border border-[var(--color-border-light)] rounded-lg overflow-hidden">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+                                                <th className="px-4 py-3">Category</th>
+                                                <th className="px-4 py-3">Severity</th>
+                                                <th className="px-4 py-3">Points</th>
+                                                <th className="px-4 py-3">Reason</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.audit_score.deductions.map((entry, i) => (
+                                                <tr key={i} className="border-t border-slate-100 hover:bg-slate-50/50">
+                                                    <td className="px-4 py-3">
+                                                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{entry.category}</span>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={cn("text-xs font-bold uppercase px-2 py-0.5 rounded border", getRiskColor(entry.severity))}>
+                                                            {entry.severity}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 font-mono font-bold text-red-600">{entry.points}</td>
+                                                    <td className="px-4 py-3 text-slate-600 text-xs leading-relaxed">{entry.reason}</td>
                                                 </tr>
-                                            </thead>
-                                            <tbody>
-                                                {data.audit_score.deductions.map((entry, i) => (
-                                                    <tr key={i} className="border-t border-slate-100 hover:bg-slate-50/50">
-                                                        <td className="px-4 py-3">
-                                                            <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{entry.category}</span>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <span className={cn("text-xs font-bold uppercase px-2 py-0.5 rounded border", getRiskColor(entry.severity))}>
-                                                                {entry.severity}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-4 py-3 font-mono font-bold text-red-600">{entry.points}</td>
-                                                        <td className="px-4 py-3 text-slate-600 text-xs leading-relaxed">{entry.reason}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            )}
-                        </section>
+                            </div>
+                        )}
+                    </section>
                 )}
 
             </main>
@@ -1204,5 +1109,3 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
         </div>
     );
 }
-
-

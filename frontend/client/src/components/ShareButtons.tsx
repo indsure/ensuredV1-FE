@@ -46,7 +46,6 @@ export function ShareButtons({ url, title, description, compact = false }: Share
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy:", err);
     }
   };
 

@@ -69,7 +69,7 @@ export function LifeInsuranceCalculator({ variant = "life" }: { variant?: "life"
 
   // Load saved form data
   useEffect(() => {
-    const saved = localStorage.getItem(isTerm ? "ensured_term_calculator_form" : "ensured_life_calculator_form");
+    const saved = localStorage.getItem(isTerm ? "IndSure_term_calculator_form" : "IndSure_life_calculator_form");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -84,7 +84,7 @@ export function LifeInsuranceCalculator({ variant = "life" }: { variant?: "life"
   // Auto-save form data
   useEffect(() => {
     if (Object.keys(formData).length > 0) {
-      localStorage.setItem(isTerm ? "ensured_term_calculator_form" : "ensured_life_calculator_form", JSON.stringify(formData));
+      localStorage.setItem(isTerm ? "IndSure_term_calculator_form" : "IndSure_life_calculator_form", JSON.stringify(formData));
     }
   }, [formData, isTerm]);
 

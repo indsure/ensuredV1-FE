@@ -5,7 +5,6 @@ import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
-// --- Motion Variants ---
 const fadeInUp = {
   hidden: { opacity: 0, y: 16 },
   visible: {
@@ -24,8 +23,6 @@ const staggerContainer = {
     }
   }
 };
-
-// --- Components ---
 
 const InfiniteMarquee = () => {
   return (
@@ -53,8 +50,8 @@ const InfiniteMarquee = () => {
 };
 
 const CountUp = ({ target, suffix = "" }: { target: number, suffix?: string }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref as React.RefObject<Element>, { once: true });
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -75,8 +72,8 @@ const CountUp = ({ target, suffix = "" }: { target: number, suffix?: string }) =
     }
   }, [isInView, target]);
 
-  return <span ref={ref} className="font-mono font-bold text-[var(--color-teal-600)]">{count}{suffix}</span>;
-}
+  return <div ref={ref} className="font-mono font-bold text-[var(--color-teal-600)]">{count}{suffix}</div>;
+};
 
 export default function Home() {
   return (
@@ -86,7 +83,7 @@ export default function Home() {
 
       <main className="flex-grow pt-32">
 
-        {/* 1. HERO - DEEP NAVY THEME */}
+        {/* 1. HERO */}
         <section className="pb-24 bg-[var(--color-navy-900)]">
           <div className="container-editorial mb-16 px-6">
             <motion.h1
@@ -129,8 +126,8 @@ export default function Home() {
           <InfiniteMarquee />
         </section>
 
-        {/* 2. DASHBOARD PREVIEW ("Matrix" Reborn) - CREAM SECTION for Contrast */}
-        <section id="demo" className="py-24 bg-[var(--color-cream-main)] text-[var(--color-text-main)] border-y border-[var(--color-border-light)]">
+        {/* 2. DASHBOARD PREVIEW */}
+        <section id="demo" className="scroll-mt-28 py-24 bg-[var(--color-cream-main)] text-[var(--color-text-main)] border-y border-[var(--color-border-light)]">
           <div className="container-editorial">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
               <div>
@@ -142,7 +139,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* DASHBOARD CARD - Uses White on Cream */}
             <motion.div
               initial={{ opacity: 0, y: 40, scale: 0.98 }}
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
@@ -151,8 +147,6 @@ export default function Home() {
               className="bg-white rounded-2xl border border-[var(--color-border-light)] p-8 md:p-12 shadow-2xl shadow-[rgba(0,0,0,0.05)] border-t-4 border-t-[var(--color-teal-600)]"
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-
-                {/* Score Panel */}
                 <div className="col-span-1 border-r border-[var(--color-border-light)] pr-8">
                   <span className="text-sm font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Insurance Health Score</span>
                   <div className="text-8xl font-serif font-bold text-[var(--color-teal-600)] mt-4 mb-2">
@@ -172,7 +166,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Bars / Details */}
                 <div className="col-span-2 space-y-8">
                   <h3 className="text-2xl font-serif font-bold mb-6 text-[var(--color-navy-900)]">Coverage Breakdown</h3>
 
@@ -211,7 +204,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 3. PROBLEM CARDS - Navy Background again for rhythm */}
+        {/* 3. PROBLEM CARDS */}
         <section className="py-24 bg-[var(--color-navy-900)] text-white">
           <div className="container-editorial">
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-16 text-center text-white">Why traditional policies fail you</h2>
@@ -242,7 +235,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 4. PROCESS / TIMELINE - Cream Section */}
+        {/* 4. PROCESS */}
         <section className="py-32 bg-[var(--color-cream-main)] text-[var(--color-text-main)] border-t border-[var(--color-border-light)] overflow-hidden">
           <div className="container-editorial">
             <div className="flex flex-col md:flex-row justify-between items-end mb-20 scroll-mt-20">
@@ -253,7 +246,6 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
-              {/* Connecting Line */}
               <div className="hidden md:block absolute top-8 left-0 w-full h-[2px] bg-[var(--color-border-light)] -z-0">
                 <motion.div
                   className="h-full bg-[var(--color-teal-600)]"
@@ -289,7 +281,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 5. CTA - Navy */}
+        {/* 5. CTA */}
         <section className="py-32 bg-[var(--color-navy-900)] text-center text-white">
           <div className="container-editorial">
             <h2 className="text-5xl md:text-7xl font-serif font-bold mb-8 text-white">Know your coverage.<br />Once and for all.</h2>

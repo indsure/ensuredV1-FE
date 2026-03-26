@@ -44,8 +44,8 @@ su - deploy
 
 # Clone your repo (replace with your repo URL)
 cd ~
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git ensured-advisor
-cd ensured-advisor
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git IndSure-advisor
+cd IndSure-advisor
 
 # Install dependencies
 npm install
@@ -66,10 +66,10 @@ pm2 save
 pm2 startup  # Follow instructions
 
 # Setup Nginx
-sudo nano /etc/nginx/sites-available/ensured-advisor
+sudo nano /etc/nginx/sites-available/IndSure-advisor
 # Copy Nginx config from DEPLOYMENT_GUIDE.md
 
-sudo ln -s /etc/nginx/sites-available/ensured-advisor /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/IndSure-advisor /etc/nginx/sites-enabled/
 sudo rm /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl restart nginx
@@ -82,7 +82,7 @@ sudo ufw enable
 
 ### 4. Configure Nginx (2 min)
 ```bash
-sudo nano /etc/nginx/sites-available/ensured-advisor
+sudo nano /etc/nginx/sites-available/IndSure-advisor
 ```
 
 Paste this (replace paths if different):
@@ -95,7 +95,7 @@ server {
     listen 80;
     server_name _;
 
-    root /home/deploy/ensured-advisor/client/dist;
+    root /home/deploy/IndSure-advisor/client/dist;
     index index.html;
 
     location / {
@@ -133,8 +133,8 @@ sudo systemctl restart nginx
 
 **502 Bad Gateway?**
 ```bash
-pm2 logs ensured-advisor-api
-pm2 restart ensured-advisor-api
+pm2 logs IndSure-advisor-api
+pm2 restart IndSure-advisor-api
 ```
 
 **Can't access site?**

@@ -11,9 +11,10 @@ import { InsurerCard, InsurerCount } from "@/components/hospitals/InsurerCard";
 import { ComparisonTray } from "@/components/hospitals/ComparisonTray";
 import { HospitalSkeleton } from "@/components/hospitals/HospitalSkeleton";
 import { EmptyState } from "@/components/hospitals/EmptyState";
-import { getAllStates, getCitiesForState } from "@/lib/indian-cities-data";
+import { getAllStates, getCitiesForState } from "@/lib/data/indian-cities-data";
 import { toast } from "sonner";
 import { Info } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 // Local interfaces using the shared InsurerCount
 interface CityResult {
@@ -148,7 +149,7 @@ export default function HospitalFilter() {
             if (city) params.append("city", city);
             if (pincode) params.append("pincode", pincode);
 
-            const response = await fetch(`/api/hospitals/filter?${params.toString()}`);
+            const response = await apiFetch(`/api/hospitals/filter?${params.toString()}`);
             const data = await response.json();
 
             if (!response.ok) {

@@ -1,4 +1,4 @@
-import { getAllStates, getCitiesForState } from "./indian-cities-data";
+import { getAllStates, getCitiesForState } from "./data/indian-cities-data";
 
 // --- Reverse Lookup (City -> Pincode) ---
 export const CITY_TO_PINCODE: Record<string, string> = {
@@ -40,7 +40,7 @@ export const CITY_TO_PINCODE: Record<string, string> = {
   "Coimbatore": "641001",
   "Chandigarh": "160017",
   "Guwahati": "781001",
-  "Gurgaon": "122001", 
+  "Gurgaon": "122001",
   "Gurugram": "122001",
   "Noida": "201301"
 };
@@ -62,11 +62,10 @@ const PINCODE_CITY_EXACT: Record<string, string> = {
 };
 
 // 2. Prefix (3-digit) -> City (Medium Confidence)
-// Maps the first 3 digits of a pincode to a major city
 const PINCODE_CITY_PREFIX: Record<string, { city: string, state: string }> = {
   "110": { city: "Delhi", state: "Delhi" },
   "400": { city: "Mumbai", state: "Maharashtra" },
-  "401": { city: "Thane", state: "Maharashtra" }, // Approx
+  "401": { city: "Thane", state: "Maharashtra" },
   "560": { city: "Bangalore", state: "Karnataka" },
   "600": { city: "Chennai", state: "Tamil Nadu" },
   "700": { city: "Kolkata", state: "West Bengal" },
@@ -87,7 +86,7 @@ const PINCODE_CITY_PREFIX: Record<string, { city: string, state: string }> = {
 // 3. Prefix (2-digit) -> State (Low Confidence)
 const PINCODE_PREFIX_STATE: Record<string, string> = {
   "11": "Delhi",
-  "12": "Haryana", 
+  "12": "Haryana",
   "13": "Haryana",
   "14": "Punjab", "15": "Punjab",
   "16": "Chandigarh",
@@ -123,25 +122,24 @@ export function lookupPincode(pincode: string): LocationResult | null {
 
   // 1. Exact City Match
   if (PINCODE_CITY_EXACT[pincode]) {
-     const city = PINCODE_CITY_EXACT[pincode];
-     const prefix3 = pincode.substring(0, 3);
-     const prefix2 = pincode.substring(0, 2);
-     
-     // Resolve State
-     let state = "";
-     if (PINCODE_CITY_PREFIX[prefix3]) state = PINCODE_CITY_PREFIX[prefix3].state;
-     else if (PINCODE_PREFIX_STATE[prefix2]) state = PINCODE_PREFIX_STATE[prefix2];
-     
-     return { state, city, isExact: true };
+    const city = PINCODE_CITY_EXACT[pincode];
+    const prefix3 = pincode.substring(0, 3);
+    const prefix2 = pincode.substring(0, 2);
+
+    let state = "";
+    if (PINCODE_CITY_PREFIX[prefix3]) state = PINCODE_CITY_PREFIX[prefix3].state;
+    else if (PINCODE_PREFIX_STATE[prefix2]) state = PINCODE_PREFIX_STATE[prefix2];
+
+    return { state, city, isExact: true };
   }
 
   // 2. 3-Digit Prefix Match (City Level)
   if (pincode.length >= 3) {
-      const prefix3 = pincode.substring(0, 3);
-      const match = PINCODE_CITY_PREFIX[prefix3];
-      if (match) {
-          return { state: match.state, city: match.city, isExact: false }; 
-      }
+    const prefix3 = pincode.substring(0, 3);
+    const match = PINCODE_CITY_PREFIX[prefix3];
+    if (match) {
+      return { state: match.state, city: match.city, isExact: false };
+    }
   }
 
   // 3. 2-Digit Prefix Match (State Level)

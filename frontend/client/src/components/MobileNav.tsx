@@ -16,15 +16,16 @@ export function MobileNav() {
   const { currentJobId } = useAnalysis();
   const [hasActiveJob, setHasActiveJob] = useState(false);
 
+  useEffect(() => {
+    const jobId = currentJobId || sessionStorage.getItem("IndSure_current_job");
+    setHasActiveJob(!!jobId && !jobId.startsWith("legacy-"));
+  }, [currentJobId]);
+
   // Fix 2: Hide D2C chrome on agent/admin routes
+  // MUST BE AFTER ALL HOOKS
   if (window.location.pathname.startsWith('/agent') || window.location.pathname.startsWith('/admin')) {
     return null;
   }
-
-  useEffect(() => {
-    const jobId = currentJobId || sessionStorage.getItem("ensured_current_job");
-    setHasActiveJob(!!jobId && !jobId.startsWith("legacy-"));
-  }, [currentJobId]);
 
   const isActive = (href: string) => {
     if (href === "/") {

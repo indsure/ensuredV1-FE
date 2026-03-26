@@ -1,6 +1,5 @@
-import { lazy, Suspense } from "react";
-import { Switch, Route } from "wouter";
-import { BrowserRouter, Routes, Route as ReactRoute } from "react-router-dom";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { Switch, Route, Redirect } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -22,29 +21,31 @@ import SachAIChat from "@/components/SachAIChat";
 /* ========================================================= */
 
 // --- Agent Auth ---
-const AgentLogin = lazy(() => import("@/pages/agent/Login"));
-const AgentSignupStep1 = lazy(() => import("@/pages/agent/SignupStep1"));
-const AgentSignupStep2 = lazy(() => import("@/pages/agent/SignupStep2"));
+const AgentLoginNew = lazy(() => import("@/pages/agent/LoginNew"));
+const AgentSignupFlow = lazy(() => import("@/pages/agent/SignupFlow"));
 
 // --- Agent App ---
-const AgentDashboard = lazy(() => import("@/pages/agent/Dashboard"));
-const AgentPolicies = lazy(() => import("@/pages/agent/Clients"));
-const AgentClientDetail = lazy(() => import("@/pages/agent/ClientDetail"));
-const AgentUploads = lazy(() => import("@/pages/agent/Uploads"));
-const AgentReports = lazy(() => import("@/pages/agent/Reports"));
-const AgentSettings = lazy(() => import("@/pages/agent/Settings"));
-const AgentResetPassword = lazy(() => import("@/pages/agent/ResetPassword"));
+const DashboardNew = lazy(() => import("@/pages/agent/DashboardNew"));
+const Uploads = lazy(() => import("@/pages/agent/Uploads"));
+const PoliciesNew = lazy(() => import("@/pages/agent/PoliciesNew"));
+const PolicyDetail = lazy(() => import("@/pages/agent/PolicyDetail"));
+const MyQueue = lazy(() => import("@/pages/agent/MyQueue"));
+const ReportsNew = lazy(() => import("@/pages/agent/ReportsNew"));
+const SettingsNew = lazy(() => import("@/pages/agent/SettingsNew"));
+const DemoDashboard = lazy(() => import("@/pages/agent/DemoDashboard"));
 import AgentProtectedRoute from "@/components/agent/ProtectedRoute";
 
-// --- Public ---
+// --- Public Report ---
 const PublicReport = lazy(() => import("@/pages/report/PublicReport"));
 
 // --- Admin ---
 const AdminPanel = lazy(() => import("@/pages/admin/AdminPanel"));
 
-// --- Compare Fix ---
-const CompareMaintenance = lazy(() => import("@/pages/CompareMaintenance"));
+// --- Compare ---
 const CompareSample = lazy(() => import("@/pages/CompareSample"));
+const CompareUploadStep = lazy(() => import("@/pages/compare/upload-step"));
+const CompareProfileStep = lazy(() => import("@/pages/compare/profile-step"));
+const CompareResultsStep = lazy(() => import("@/pages/compare/results-step"));
 
 // --- Existing D2C Lazy Loads ---
 const Home = lazy(() => import("@/pages/home"));
@@ -68,6 +69,12 @@ const WhyIndSure = lazy(() => import("@/pages/why-indsure"));
 const Help = lazy(() => import("@/pages/help"));
 const Account = lazy(() => import("@/pages/account"));
 const Hospitals = lazy(() => import("@/pages/hospitals"));
+const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("@/pages/TermsOfService"));
+const CookiePolicy = lazy(() => import("@/pages/CookiePolicy"));
+const GrievanceOfficer = lazy(() => import("@/pages/GrievanceOfficer"));
+const LoginPublic = lazy(() => import("@/pages/login"));
+const SignupPublic = lazy(() => import("@/pages/signup"));
 
 // Loading fallback component
 function PageLoader() {
@@ -83,80 +90,38 @@ function PageLoader() {
 }
 
 // ------------------------------------------------------------
-// WOUTER APP (LEGACY D2C ROUTES)
-// ------------------------------------------------------------
-function WouterApp() {
-  // Execute page transition hook inside the wouter context
-  usePageTransition();
-
-  return (
-    <Suspense fallback={<PageLoader />}>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/processing" component={Processing} />
-
-        {/* Support BOTH report routes */}
-        <Route path="/report" component={Report} />
-        <Route path="/report/:id" component={Report} />
-
-        {/* PolicyChecker - Flagship tool */}
-        <Route path="/policychecker" component={PolicyChecker} />
-
-        {/* Analyze Page - Type Selector */}
-        <Route path="/analyze" component={AnalyzePage} />
-
-        {/* Life Insurance Analyzer */}
-        <Route path="/life" component={LifePage} />
-
-        {/* Term Life Insurance Analyzer */}
-        <Route path="/term" component={TermPage} />
-
-        {/* Vehicle Insurance Analyzer */}
-        <Route path="/vehicle" component={VehiclePage} />
-
-        {/* Optimal Insurance Calculator */}
-        <Route path="/calculator" component={CalculatorPage} />
-        <Route path="/calculator/report" component={CalculatorReportPage} />
-
-        {/* Policy Comparison - Single Page Redesign */}
-        {/* React Router DOM handles this path now */}
-        {/* <Route path="/compare" component={ComparePage} /> */}
-
-        {/* Company Pages */}
-        <Route path="/blog" component={Blog} />
-        <Route path="/blog/:id" component={BlogPost} />
-        <Route path="/mission" component={Mission} />
-        <Route path="/vision" component={Vision} />
-        <Route path="/team" component={Team} />
-        <Route path="/why-indsure" component={WhyIndSure} />
-
-        {/* Support & Account */}
-        <Route path="/help" component={Help} />
-        <Route path="/account" component={Account} />
-
-        {/* Hospital Network Finder */}
-        <Route path="/find-provider" component={Hospitals} />
-        <Route path="/hospitals" component={Hospitals} />
-
-        <Route component={NotFound} />
-      </Switch>
-    </Suspense>
-  );
-}
-
-// ------------------------------------------------------------
-// MAIN APP ROOT (CONDITIONAL ROUTER)
+// MAIN APP (WOUTER ONLY)
 // ------------------------------------------------------------
 function App() {
-  const currentPath = window.location.pathname;
+  usePageTransition();
 
-  // Isolate routing domains completely to prevent React Router DOM and Wouter
-  // from conflicting over the exact same React Hook context
-  const isReactRouter =
-    currentPath.startsWith('/agent') ||
-    currentPath.startsWith('/admin') ||
-    currentPath.startsWith('/compare') ||
-    currentPath.startsWith('/report/');
+  const FONT_CONSENT_KEY = "ea-google-fonts-consent";
+  type FontConsent = "accepted" | "declined";
+
+  const [fontConsent, setFontConsent] = useState<FontConsent | null>(() => {
+    try {
+      const v = window.localStorage.getItem(FONT_CONSENT_KEY);
+      if (v === "accepted" || v === "declined") return v;
+    } catch {
+      // ignore
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (fontConsent !== "accepted") return;
+
+    const existing = document.getElementById("ea-google-fonts-link");
+    if (existing) return;
+
+    // Only load Google Fonts after user consent (opt-in).
+    const link = document.createElement("link");
+    link.id = "ea-google-fonts-link";
+    link.rel = "stylesheet";
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap";
+    document.head.appendChild(link);
+  }, [fontConsent]);
 
   return (
     <ErrorBoundary>
@@ -168,47 +133,143 @@ function App() {
                 <TooltipProvider>
                   <Toaster />
 
-                  {isReactRouter ? (
-                    <BrowserRouter>
-                      <Routes>
-                        {/* --- Agent Auth --- */}
-                        <ReactRoute path="/agent/login" element={<Suspense fallback={<PageLoader />}><AgentLogin /></Suspense>} />
-                        <ReactRoute path="/agent/signup" element={<Suspense fallback={<PageLoader />}><AgentSignupStep1 /></Suspense>} />
-                        <ReactRoute path="/agent/signup/empanelment" element={<Suspense fallback={<PageLoader />}><AgentSignupStep2 /></Suspense>} />
-
-                        {/* --- Agent Protected App --- */}
-                        <ReactRoute element={<AgentProtectedRoute />}>
-                          <ReactRoute path="/agent/dashboard" element={<Suspense fallback={<PageLoader />}><AgentDashboard /></Suspense>} />
-                          <ReactRoute path="/agent/policies" element={<Suspense fallback={<PageLoader />}><AgentPolicies /></Suspense>} />
-                          <ReactRoute path="/agent/uploads" element={<Suspense fallback={<PageLoader />}><AgentUploads /></Suspense>} />
-                          <ReactRoute path="/agent/reports" element={<Suspense fallback={<PageLoader />}><AgentReports /></Suspense>} />
-                          <ReactRoute path="/agent/settings" element={<Suspense fallback={<PageLoader />}><AgentSettings /></Suspense>} />
-                          
-                          {/* Keep original routes to avoid breaking legacy links if any */}
-                          <ReactRoute path="/agent/clients" element={<Suspense fallback={<PageLoader />}><AgentPolicies /></Suspense>} />
-                          <ReactRoute path="/agent/clients/:id" element={<Suspense fallback={<PageLoader />}><AgentClientDetail /></Suspense>} />
-                        </ReactRoute>
-
-                        <ReactRoute path="/agent/reset-password" element={<Suspense fallback={<PageLoader />}><AgentResetPassword /></Suspense>} />
-
-
-                        {/* --- Public Shareable Report --- */}
-                        <ReactRoute path="/report/:uuid" element={<ReportDispatcher />} />
-
-                        {/* --- Admin --- */}
-                        <ReactRoute path="/admin" element={<Suspense fallback={<PageLoader />}><AdminPanel /></Suspense>} />
-
-                        {/* --- Compare Maintenance Fix --- */}
-                        <ReactRoute path="/compare" element={<Suspense fallback={<PageLoader />}><CompareMaintenance /></Suspense>} />
-                        <ReactRoute path="/compare/sample" element={<Suspense fallback={<PageLoader />}><CompareSample /></Suspense>} />
-
-                        {/* Catch-all for react-router mode just in case */}
-                        <ReactRoute path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
-                      </Routes>
-                    </BrowserRouter>
-                  ) : (
-                    <WouterApp />
+                  {fontConsent === null && (
+                    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-2rem)] max-w-xl pointer-events-auto">
+                      <div className="rounded-2xl border border-gray-200 bg-white shadow-lg px-4 py-3">
+                        <div className="text-sm text-gray-800 font-medium mb-1">Google Fonts consent</div>
+                        <div className="text-xs text-gray-600 leading-relaxed mb-3">
+                          Load optional fonts from <span className="font-mono">fonts.googleapis.com</span> to improve typography.
+                          This may involve your browser making a request to Google.
+                        </div>
+                        <div className="flex items-center gap-2 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              try {
+                                window.localStorage.setItem(FONT_CONSENT_KEY, "declined");
+                              } catch {}
+                              setFontConsent("declined");
+                            }}
+                            className="px-3 py-2 rounded-lg text-xs border border-gray-200 hover:bg-gray-50"
+                          >
+                            Skip
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              try {
+                                window.localStorage.setItem(FONT_CONSENT_KEY, "accepted");
+                              } catch {}
+                              setFontConsent("accepted");
+                            }}
+                            className="px-3 py-2 rounded-lg text-xs bg-gray-900 text-white hover:bg-gray-800"
+                          >
+                            Load fonts
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   )}
+
+                  <Suspense fallback={<PageLoader />}>
+                    <Switch>
+                      {/* --- Home --- */}
+                      <Route path="/" component={Home} />
+                      <Route path="/processing" component={Processing} />
+
+                      {/* --- Report routes --- */}
+                      <Route path="/report" component={Report} />
+                      <Route path="/report/:token" component={PublicReport} />
+
+                      {/* --- PolicyChecker --- */}
+                      <Route path="/policychecker" component={PolicyChecker} />
+
+                      {/* --- Analyze --- */}
+                      <Route path="/analyze" component={AnalyzePage} />
+
+                      {/* --- Insurance types --- */}
+                      <Route path="/life" component={LifePage} />
+                      <Route path="/term" component={TermPage} />
+                      <Route path="/vehicle" component={VehiclePage} />
+
+                      {/* --- Calculator --- */}
+                      <Route path="/calculator" component={CalculatorPage} />
+                      <Route path="/calculator/report" component={CalculatorReportPage} />
+                      <Route path="/calculator/report/:uuid" component={CalculatorReportPage} />
+
+                      {/* --- Compare --- */}
+                      <Route path="/compare" component={CompareUploadStep} />
+                      <Route path="/compare/sample" component={CompareSample} />
+                      <Route path="/compare/profile" component={CompareProfileStep} />
+                      <Route path="/compare/results" component={CompareResultsStep} />
+
+                      {/* --- Agent Auth --- */}
+                      <Route path="/agent/login" component={AgentLoginNew} />
+                      <Route path="/agent/signup/:rest*" component={AgentSignupFlow} />
+
+                      {/* --- Agent Protected App --- */}
+                      <Route path="/agent/dashboard">
+                        {() => <AgentProtectedRoute><DashboardNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/demo">
+                        {() => <AgentProtectedRoute><DemoDashboard /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/uploads">
+                        {() => <AgentProtectedRoute><Uploads /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/policies">
+                        {() => <AgentProtectedRoute><PoliciesNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/policies/:id">
+                        {() => <AgentProtectedRoute><PolicyDetail /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/my-queue">
+                        {() => <AgentProtectedRoute><MyQueue /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/reports">
+                        {() => <AgentProtectedRoute><ReportsNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/settings">
+                        {() => <AgentProtectedRoute><SettingsNew /></AgentProtectedRoute>}
+                      </Route>
+
+                      {/* --- Agent Catch-all --- */}
+                      <Route path="/agent/:rest*">
+                        {() => <Redirect to="/agent/dashboard" />}
+                      </Route>
+
+                      {/* --- Admin --- */}
+                      <Route path="/admin" component={AdminPanel} />
+
+                      {/* --- Company pages --- */}
+                      <Route path="/blog" component={Blog} />
+                      <Route path="/blog/:id" component={BlogPost} />
+                      <Route path="/mission" component={Mission} />
+                      <Route path="/vision" component={Vision} />
+                      <Route path="/team" component={Team} />
+                      <Route path="/why-indsure" component={WhyIndSure} />
+
+                      {/* --- Support & Account --- */}
+                      <Route path="/help" component={Help} />
+                      <Route path="/account" component={Account} />
+
+                      {/* --- Public auth stubs (no public user auth) --- */}
+                      <Route path="/login" component={LoginPublic} />
+                      <Route path="/signup" component={SignupPublic} />
+
+                      {/* --- Hospitals --- */}
+                      <Route path="/find-provider" component={Hospitals} />
+                      <Route path="/hospitals" component={Hospitals} />
+
+                      {/* --- Legal pages --- */}
+                      <Route path="/privacy-policy" component={PrivacyPolicy} />
+                      <Route path="/terms" component={TermsOfService} />
+                      <Route path="/cookie-policy" component={CookiePolicy} />
+                      <Route path="/grievance" component={GrievanceOfficer} />
+
+                      <Route component={NotFound} />
+                    </Switch>
+                  </Suspense>
 
                   <MobileNav />
                   <SachAIChat />
@@ -223,4 +284,3 @@ function App() {
 }
 
 export default App;
-

@@ -13,7 +13,7 @@ import {
   Bell,
   Search
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import AdminOverview from '../../components/admin/AdminOverview';
 import AdminAgents from '../../components/admin/AdminAgents';
 import AdminInviteCodes from '../../components/admin/AdminInviteCodes';

@@ -22,7 +22,6 @@ export function useNotifications() {
 
   const requestPermission = async (): Promise<boolean> => {
     if (!("Notification" in window)) {
-      console.log("This browser does not support notifications");
       return false;
     }
 
@@ -41,7 +40,6 @@ export function useNotifications() {
 
   const showNotification = (title: string, options?: NotificationOptions) => {
     if (!("Notification" in window)) {
-      console.warn("Browser does not support notifications");
       return;
     }
 
@@ -61,10 +59,8 @@ export function useNotifications() {
         
         return notification;
       } catch (err) {
-        console.error("Failed to create notification:", err);
       }
     } else {
-      console.warn("Notification permission not granted. Current permission:", Notification.permission);
     }
   };
 

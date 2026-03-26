@@ -11,7 +11,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 // @ts-ignore
 import InviteCodeModal from './InviteCodeModal';
 import { apiFetch } from '@/lib/api';
@@ -47,7 +47,6 @@ const AdminInviteCodes: React.FC = () => {
       const data = await response.json();
       setCodes(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Failed to fetch invite codes:', err);
     } finally {
       setLoading(false);
     }

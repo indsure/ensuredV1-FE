@@ -24,8 +24,8 @@ export default function ResultsStep() {
     return () => {
       const isStillInCompareFlow = window.location.pathname.startsWith("/compare");
       if (!isStillInCompareFlow) {
-        sessionStorage.removeItem("ensured_comparison_policies");
-        sessionStorage.removeItem("ensured_comparison_profile");
+        sessionStorage.removeItem("IndSure_comparison_policies");
+        sessionStorage.removeItem("IndSure_comparison_profile");
       }
     };
   }, []);
@@ -308,10 +308,10 @@ export default function ResultsStep() {
                     <Button
                       className="w-full mt-3 bg-orange-500 hover:bg-orange-600 text-white"
                       size="sm"
-                      disabled
-                      aria-label="Customize plan coming soon"
+                      onClick={() => setLocation("/policychecker")}
+                      aria-label="Analyze your own policy"
                     >
-                      Customize plan &gt;
+                      Analyze your policy →
                     </Button>
                   </div>
                 </CardContent>

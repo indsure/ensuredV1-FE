@@ -62,7 +62,7 @@ export function VehicleInsuranceComparer() {
   const recommended = getRecommendedVehiclePlan(idv, vehicleAge, "premium");
 
   useSEO({
-    title: "Compare Vehicle Insurance Plans | Car Insurance Comparison | Ensured",
+    title: "Compare Vehicle Insurance Plans | Car Insurance Comparison | IndSure",
     description: `Compare top vehicle insurance plans: HDFC Ergo, ICICI Lombard, Bajaj Allianz, New India Assurance. See premiums, add-ons, claim settlement ratios, deductibles for ₹${(idv / 100000).toFixed(1)}L IDV.`,
     keywords: "compare vehicle insurance, car insurance comparison, motor insurance comparison, vehicle insurance plans India, comprehensive vs third party, best car insurance",
     canonical: `/compare?type=vehicle&idv=${idv}&age=${vehicleAge}`,

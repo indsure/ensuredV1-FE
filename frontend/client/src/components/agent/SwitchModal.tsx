@@ -51,7 +51,6 @@ const SwitchModal: React.FC<SwitchModalProps> = ({ isOpen, onClose, client }) =>
       const data = await response.json();
       setRecommendation(data);
     } catch (err) {
-      console.error('Failed to fetch recommendation:', err);
     } finally {
       setLoading(false);
     }
@@ -71,12 +70,6 @@ const SwitchModal: React.FC<SwitchModalProps> = ({ isOpen, onClose, client }) =>
       });
       const { uuid } = await response.json();
       const shareUrl = `${window.location.origin}/report/${uuid}`;
-      
-      console.log("[SHARE] Switch report generated via API:", {
-          uuid: uuid,
-          url: shareUrl,
-          client: client.name
-      });
 
       await navigator.clipboard.writeText(shareUrl);
       
@@ -86,7 +79,6 @@ const SwitchModal: React.FC<SwitchModalProps> = ({ isOpen, onClose, client }) =>
       // In Dashboard.tsx we have useToast, so we can trigger it there if we pass a callback.
       alert('Link copied to clipboard!');
     } catch (err) {
-      console.error('Failed to share report:', err);
     } finally {
       setIsSharing(false);
     }

@@ -1,4 +1,4 @@
-import { filterHospitalNetwork } from './filter_engine.ts';
+import { filterHospitalNetwork } from './filter_engine';
 
 async function verify() {
     console.log('--- Verifying JSON structure for Mumbai ---');

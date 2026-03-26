@@ -4,13 +4,11 @@ import { useRef } from "react";
 import {
   ArrowLeft,
   Shield,
-  LogOut,
   FileText,
   ArrowRight,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-// ARCHIVED: import { useAuth } from "@/hooks/use-auth";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -22,16 +20,12 @@ const fadeInUp = {
 };
 
 export default function Account() {
-  const { user, isLoading, logout } = { user: null as any, isLoading: false, logout: async () => { } }; // ARCHIVED: const { user, isLoading, logout } = useAuth();
+  // Public user accounts are not enabled in this build.
+  const user = null as any;
+  const isLoading = false;
   const [, setLocation] = useLocation();
-  const sectionRef = useRef(null);
-  const isInView = useInView(sectionRef, { once: true });
-
-  // Redirect to login if not authenticated
-  if (!isLoading && !user) {
-    setLocation("/login");
-    return null;
-  }
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(sectionRef as React.RefObject<Element>, { once: true });
 
   if (isLoading) {
     return (
@@ -41,20 +35,12 @@ export default function Account() {
     );
   }
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
-  };
-
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    })
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
     : "—";
 
   return (
@@ -62,7 +48,6 @@ export default function Account() {
       <Header />
 
       <main className="flex-grow pt-32 pb-24">
-        {/* Hero */}
         <section className="pb-16">
           <div className="container-editorial px-6">
             <Link href="/">
@@ -89,15 +74,13 @@ export default function Account() {
           </div>
         </section>
 
-        {/* Content — Cream */}
-        <section
+        <div
           ref={sectionRef}
           className="bg-[var(--color-cream-main)] text-[var(--color-text-main)] py-16 border-t border-[var(--color-border-light)]"
         >
           <div className="container-editorial px-6">
             <div className="max-w-2xl mx-auto space-y-8">
 
-              {/* Account Details Card */}
               <motion.div
                 variants={fadeInUp}
                 initial="hidden"
@@ -131,7 +114,6 @@ export default function Account() {
                 </div>
               </motion.div>
 
-              {/* Analysis History Card */}
               <motion.div
                 variants={fadeInUp}
                 initial="hidden"
@@ -153,14 +135,30 @@ export default function Account() {
                   <div className="w-16 h-16 bg-[var(--color-cream-main)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--color-border-light)]">
                     <FileText className="w-7 h-7 text-[var(--color-text-muted)] opacity-50" />
                   </div>
-                  <p className="font-serif font-bold text-lg text-[var(--color-navy-900)]">Coming Soon</p>
+                  <p className="font-serif font-bold text-lg text-[var(--color-navy-900)]">Agent portal only</p>
                   <p className="text-sm text-[var(--color-text-muted)] mt-1 max-w-xs mx-auto">
-                    Your analysis history will appear here once connected.
+                    This public account page isn’t connected to analysis history in this build. For agent policy history, sign in to the agent portal.
                   </p>
+                  <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setLocation("/agent/login")}
+                      className="px-6 py-3 rounded-lg font-medium bg-[var(--color-teal-600)] text-white hover:bg-[var(--color-teal-400)] transition-colors"
+                    >
+                      Agent Login
+                    </button>
+                    <Link href="/policychecker">
+                      <button
+                        type="button"
+                        className="px-6 py-3 rounded-lg font-medium border border-[var(--color-border-light)] text-[var(--color-text-main)] hover:bg-[var(--color-cream-main)] transition-colors"
+                      >
+                        Analyze a Policy
+                      </button>
+                    </Link>
+                  </div>
                 </div>
               </motion.div>
 
-              {/* Actions */}
               <motion.div
                 variants={fadeInUp}
                 initial="hidden"
@@ -174,16 +172,18 @@ export default function Account() {
                   </button>
                 </Link>
                 <button
-                  onClick={handleLogout}
-                  className="px-8 py-4 rounded-lg font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                  type="button"
+                  onClick={() => setLocation("/agent/login")}
+                  className="px-8 py-4 rounded-lg font-medium border border-[var(--color-border-light)] text-white/90 hover:bg-white/10 transition-colors flex items-center gap-2"
                 >
-                  <LogOut className="w-4 h-4" />
-                  Log Out
+                  <Shield className="w-4 h-4" />
+                  Agent Portal
                 </button>
               </motion.div>
+
             </div>
           </div>
-        </section>
+        </div>
       </main>
 
       <Footer />

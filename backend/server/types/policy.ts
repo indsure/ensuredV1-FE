@@ -380,6 +380,7 @@ export interface Recommendations {
 
 export interface DataQuality {
   overall: Confidence;
+  wording_source: "repository_matched" | "schedule_only";
   missing_critical_fields: string[];
   ambiguous_clauses: string[];
   policy_document_quality: DocumentQuality;
@@ -443,11 +444,10 @@ export const validateForensicAuditReport = (data: any): data is ForensicAuditRep
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-export const calculateEffectiveCoverage = (report: ForensicAuditReport): number | null => {
+export const calculateEffectiveCoverage = (report: ForensicAuditReport): number => {
   const base = typeof report.coverage_structure.base_sum_insured === "number"
     ? report.coverage_structure.base_sum_insured
-    : null;
-  if (base === null) return null;
+    : 0;
 
   const topUp = report.coverage_structure.top_up?.exists
     ? (report.coverage_structure.top_up.sum_insured ?? 0)
@@ -457,8 +457,6 @@ export const calculateEffectiveCoverage = (report: ForensicAuditReport): number 
     ? (report.coverage_structure.super_top_up.sum_insured ?? 0)
     : 0;
 
-  // Trust prompt's total_effective_coverage if it computed one directly
-  // (accounts for porting continuity, NCB, riders that component math would miss)
   const promptTotal = typeof report.coverage_structure.total_effective_coverage === "number"
     ? report.coverage_structure.total_effective_coverage
     : null;
@@ -476,8 +474,8 @@ export const getVerdictColor = (verdict: Verdict): string => {
   return colors[verdict];
 };
 
-export const formatINR = (value: number | string | null): string => {
-  if (value === null) return "N/A";
+export const formatINR = (value: number | string | null | undefined): string => {
+  if (value === null || value === undefined) return "N/A";
   const numeric = typeof value === "string"
     ? parseFloat(value.replace(/[₹,]/g, ""))
     : value;
@@ -486,7 +484,7 @@ export const formatINR = (value: number | string | null): string => {
 
   if (numeric >= 100000) return `₹${(numeric / 100000).toFixed(1)}L`;
   if (numeric >= 1000) return `₹${Math.round(numeric / 1000)}K`;
-  return `₹${numeric.toLocaleString("en-IN")}`;
+  return `₹${numeric?.toLocaleString("en-IN")}`;
 };
 
 export const getNCARLabel = (ncar: number): string => {
@@ -521,4 +519,4 @@ export const getWaitingPeriodStatus = (
     return { status: "active", label: `⏳ Unlocks ${endDate}` };
   }
   return { status: "active", label: "⏳ Active" };
-};
+}

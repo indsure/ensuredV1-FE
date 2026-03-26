@@ -11,13 +11,14 @@ import {
   ChevronRight,
   UploadCloud
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { format, differenceInDays } from 'date-fns';
 import { PolicyAuditReport } from '../../components/PolicyAuditReport';
 import { useToast } from '../../hooks/use-toast';
-import { Link } from 'react-router-dom';
+import { Link } from 'wouter';
 import SwitchModal from '../../components/agent/SwitchModal';
 import UploadModal from '../../components/agent/UploadModal';
+import { apiFetch } from '@/lib/api';
 
 interface Client {
   id: string;
@@ -38,13 +39,13 @@ export default function AgentPolicies() {
   const [clients, setClients] = useState<Client[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
-  
+
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSwitchModalOpen, setIsSwitchModalOpen] = useState(false);
   const [clientForSwitch, setClientForSwitch] = useState<Client | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  
+
   const { toast } = useToast();
 
   const fetchClients = async (uid: string) => {
@@ -103,16 +104,10 @@ export default function AgentPolicies() {
         .single();
 
       if (error) throw error;
-      
+
       const link = `${window.location.origin}/report/${data.id}`;
       await navigator.clipboard.writeText(link);
-      
-      console.log("[SHARE] Public report generated:", {
-          id: data.id,
-          link: link,
-          client: client.policyholder_name
-      });
-      
+
       toast({
         title: "Link Copied!",
         description: "The public report link has been copied to your clipboard.",
@@ -129,20 +124,19 @@ export default function AgentPolicies() {
 
   const deleteClient = async (clientId: string) => {
     if (!confirm("Delete this policy? This cannot be undone.")) return;
-    await fetch(`/api/agent/delete-client/${clientId}`, { 
-      method: "DELETE" 
+    await apiFetch(`/api/agent/delete-client/${clientId}`, {
+      method: "DELETE"
     });
     setClients(prev => prev.filter(c => c.id !== clientId));
   };
 
-  // ─── Filter & Search Logic ────────────────────────────────────────────────
   const filteredClients = clients.filter(c => {
-    const matchesSearch = 
+    const matchesSearch =
       (c.policyholder_name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
       (c.insurer?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
-      
+
     if (!matchesSearch) return false;
-    
+
     switch (activeFilter) {
       case 'Done': return c.status === 'done';
       case 'Processing': return c.status === 'processing' || c.status === 'pending';
@@ -169,26 +163,25 @@ export default function AgentPolicies() {
 
   return (
     <div className="flex relative h-full">
-      {/* Main Content */}
       <div className={`flex-1 transition-all duration-300 ${isDrawerOpen ? 'mr-[500px]' : ''}`}>
         <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="font-['Playfair_Display'] text-3xl font-semibold text-[#0F172A]">Policies</h1>
             <p className="text-[#64748B] text-sm mt-1">Manage all your client health policies and insights.</p>
           </div>
-          
+
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input 
-                type="text" 
-                placeholder="Search name or insurer..." 
+              <input
+                type="text"
+                placeholder="Search name or insurer..."
                 className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488]"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
-            <button 
+            <button
               onClick={() => setIsUploadModalOpen(true)}
               className="md:hidden flex items-center justify-center w-10 h-10 bg-[#0D9488] text-white rounded-lg shrink-0"
             >
@@ -197,15 +190,14 @@ export default function AgentPolicies() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
           {['All', 'Done', 'Processing', 'Error', 'Switch Available'].map(filter => (
             <button
               key={filter}
               onClick={() => setActiveFilter(filter)}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                activeFilter === filter 
-                  ? 'bg-[#0B1120] text-white' 
+                activeFilter === filter
+                  ? 'bg-[#0B1120] text-white'
                   : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -214,7 +206,6 @@ export default function AgentPolicies() {
           ))}
         </div>
 
-        {/* Table */}
         <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden relative">
           <div className="w-full overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[800px]">
@@ -241,12 +232,12 @@ export default function AgentPolicies() {
                           No policies found
                         </h4>
                         <p className="text-[#64748B] text-sm mb-6">
-                          {clients.length === 0 
-                            ? "Upload your first batch to start analyzing policies." 
+                          {clients.length === 0
+                            ? "Upload your first batch to start analyzing policies."
                             : "No policies match your search or filter criteria."}
                         </p>
                         {clients.length === 0 && (
-                          <button 
+                          <button
                             onClick={() => setIsUploadModalOpen(true)}
                             className="px-6 py-2 bg-[#0D9488] hover:bg-[#0f766e] text-white text-sm font-semibold rounded-lg shadow-md transition-all"
                           >
@@ -258,8 +249,8 @@ export default function AgentPolicies() {
                   </tr>
                 ) : (
                   filteredClients.map(client => (
-                    <tr 
-                      key={client.id} 
+                    <tr
+                      key={client.id}
                       className={`border-b border-slate-50 hover:bg-[#F0F0ED] cursor-pointer transition-colors ${selectedClient?.id === client.id ? 'bg-slate-50' : ''}`}
                       onClick={() => {
                         if (client.status === 'done') {
@@ -275,7 +266,7 @@ export default function AgentPolicies() {
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600">{client.insurer || '--'}</td>
                       <td className="px-6 py-4 text-sm text-slate-600">
-                        {client.sum_insured ? `₹${(client.sum_insured/100000).toFixed(1)}L` : '--'}
+                        {client.sum_insured ? `₹${(client.sum_insured / 100000).toFixed(1)}L` : '--'}
                       </td>
                       <td className="px-6 py-4 text-sm">{getExpiryLabel(client.expiry_date)}</td>
                       <td className="px-6 py-4">{getScorePill(client.score, client.status)}</td>
@@ -284,7 +275,7 @@ export default function AgentPolicies() {
                         {client.status === 'error' && <span className="text-xs font-bold text-red-600 uppercase">Failed</span>}
                         {(client.status === 'processing' || client.status === 'pending') && (
                           <span className="text-xs font-bold text-blue-600 uppercase flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"/>
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
                             {client.status}
                           </span>
                         )}
@@ -292,7 +283,7 @@ export default function AgentPolicies() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end items-center gap-2" onClick={e => e.stopPropagation()}>
                           {hasSwitchOpportunity(client) && (
-                            <button 
+                            <button
                               onClick={() => { setClientForSwitch(client); setIsSwitchModalOpen(true); }}
                               className="px-2 py-1 text-xs font-bold text-[#B45309] bg-amber-100 hover:bg-amber-200 rounded"
                             >
@@ -300,7 +291,7 @@ export default function AgentPolicies() {
                             </button>
                           )}
                           {client.status === 'done' && (
-                            <button 
+                            <button
                               onClick={() => handleGenerateLink(client)}
                               className="p-1.5 text-slate-400 hover:text-[#0D9488] transition-colors"
                               title="Generate Shareable Link"
@@ -326,17 +317,14 @@ export default function AgentPolicies() {
         </div>
       </div>
 
-      {/* Right Drawer */}
       <AnimatePresence>
         {isDrawerOpen && selectedClient && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              // @ts-ignore
               onClick={() => setIsDrawerOpen(false)}
-              // @ts-ignore
               className="fixed inset-0 bg-black/20 z-40 lg:hidden"
             />
             <motion.div
@@ -344,7 +332,6 @@ export default function AgentPolicies() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              // @ts-ignore
               className="fixed right-0 top-0 bottom-0 w-full max-w-[500px] bg-white shadow-[-4px_0_24px_rgba(0,0,0,0.1)] z-50 flex flex-col border-l border-slate-200 overflow-hidden"
             >
               <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100 shrink-0 bg-[#0B1120]">
@@ -352,14 +339,14 @@ export default function AgentPolicies() {
                   {selectedClient.policyholder_name}'s Report
                 </h2>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button 
+                  <button
                     onClick={() => handleGenerateLink(selectedClient)}
                     className="p-1.5 text-slate-300 hover:text-white rounded-lg transition-colors"
                     title="Share Report"
                   >
                     <Share2 size={18} />
                   </button>
-                  <button 
+                  <button
                     onClick={() => setIsDrawerOpen(false)}
                     className="p-1.5 text-slate-300 hover:text-white rounded-lg transition-colors"
                   >
@@ -367,7 +354,7 @@ export default function AgentPolicies() {
                   </button>
                 </div>
               </div>
-              
+
               <div className="flex-1 overflow-y-auto no-scrollbar relative w-full h-full bg-[var(--color-cream-main)]">
                 {selectedClient.report_data ? (
                   <PolicyAuditReport data={selectedClient.report_data} hideNav={true} />
@@ -383,21 +370,21 @@ export default function AgentPolicies() {
         )}
       </AnimatePresence>
 
-      {/* Modals */}
       {clientForSwitch && (
         <SwitchModal
           isOpen={isSwitchModalOpen}
           onClose={() => setIsSwitchModalOpen(false)}
           client={{
-              ...clientForSwitch,
-              name: clientForSwitch.policyholder_name || 'Anonymous'
+            ...clientForSwitch,
+            name: clientForSwitch.policyholder_name || 'Anonymous',
+            insurer: clientForSwitch.insurer ?? '',
           }}
         />
       )}
-      <UploadModal 
-        isOpen={isUploadModalOpen} 
-        onClose={() => setIsUploadModalOpen(false)} 
-        agentId={userId || ''} 
+      <UploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        agentId={userId || ''}
       />
     </div>
   );

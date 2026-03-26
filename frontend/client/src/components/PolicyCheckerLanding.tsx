@@ -6,7 +6,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { loadSampleReport, mockReportHealth } from "@/lib/mock-data";
 
 interface PolicyCheckerLandingProps {
     getRootProps: any;
@@ -23,6 +24,7 @@ export function PolicyCheckerLanding({
     uploading,
     error
 }: PolicyCheckerLandingProps) {
+    const [, setLocation] = useLocation();
 
     const fadeIn = {
         hidden: { opacity: 0, y: 10 },
@@ -139,6 +141,14 @@ export function PolicyCheckerLanding({
                                     <span className="w-px h-3 bg-[var(--color-border-medium)]"></span>
                                     <span className="flex items-center gap-1.5"><FileText className="w-3 h-3 text-[var(--color-teal-600)]" /> PDF only</span>
                                 </div>
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); loadSampleReport(mockReportHealth); setLocation("/report?sample=health"); }}
+                                    className="mt-6 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-700)] hover:underline inline-flex items-center gap-2"
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    View sample analysis directly
+                                </button>
                             </div>
                         )}
 
@@ -226,17 +236,17 @@ export function PolicyCheckerLanding({
                     See what the analysis looks like
                 </p>
                 <div className="flex flex-wrap justify-center gap-4">
-                    <Link href="/report/sample-health">
+                    <Link href="/report?sample=health">
                         <Button variant="outline" className="cursor-pointer text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:border-[var(--color-navy-900)]">
                             Sample Health Policy
                         </Button>
                     </Link>
-                    <Link href="/report/sample-life">
+                    <Link href="/report?sample=life">
                         <Button variant="outline" className="cursor-pointer text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:border-[var(--color-navy-900)]">
                             Sample Term Life
                         </Button>
                     </Link>
-                    <Link href="/report/sample-vehicle">
+                    <Link href="/report?sample=vehicle">
                         <Button variant="outline" className="cursor-pointer text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:border-[var(--color-navy-900)]">
                             Sample Car Insurance
                         </Button>

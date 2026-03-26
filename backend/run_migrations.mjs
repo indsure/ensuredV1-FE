@@ -14,6 +14,23 @@ const pool = new Pool({
 const migrations = [
   // Task 1
   { name: 'firm_name column', sql: 'ALTER TABLE agents ADD COLUMN IF NOT EXISTS firm_name TEXT;' },
+  // DPDP consent timestamp for agent signup
+  { name: 'consent_given_at column', sql: 'ALTER TABLE agents ADD COLUMN IF NOT EXISTS consent_given_at TIMESTAMPTZ;' },
+  // DPDP grievance request store
+  {
+    name: 'grievance_requests table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS grievance_requests (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        phone TEXT,
+        request_type TEXT NOT NULL,
+        details TEXT NOT NULL,
+        submitted_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `,
+  },
   // Task 5 — Performance Indexes
   { name: 'idx_clients_agent_id',       sql: 'CREATE INDEX IF NOT EXISTS idx_clients_agent_id ON clients(agent_id);' },
   { name: 'idx_clients_status',         sql: 'CREATE INDEX IF NOT EXISTS idx_clients_status ON clients(status);' },

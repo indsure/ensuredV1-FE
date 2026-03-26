@@ -1,22 +1,11 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { apiFetch } from "@/lib/api";
 
 // #region agent log
 try {
-  const send = (payload: any) =>
-    apiFetch("/api/__agent-log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).catch(() => {});
-
-  send({
-    hypothesisId: "A",
-    message: "Global error hooks installed",
-    data: { href: typeof location !== "undefined" ? location.href : undefined },
-  });
+  // Keep hooks, but avoid noisy dev-proxy network calls.
+  const send = (_payload: any) => {};
 
   window.addEventListener("error", (e) => {
     send({

@@ -9,7 +9,7 @@ export class AIService {
     public static async generateContent(
         systemPrompt: string,
         userContent: string,
-        modelName: string = "gemini-3.1-pro-preview"
+        modelName: string = "gemini-1.5-pro"
     ): Promise<string> {
 
         // 1. Calculate Hash (for Replay/Mock identification)
@@ -18,7 +18,6 @@ export class AIService {
 
         // 2. REPLAY MODE SWITCH
         if (process.env.REPLAY_MODE === "true") {
-            console.log(`[AIService] REPLAY_MODE active. Looking for mock: ${inputHash}`);
             return this.loadRecordedOutput(inputHash);
         }
 
@@ -29,8 +28,6 @@ export class AIService {
         }
 
         // 4. Live Execution
-        console.log(`[AIService] Live Execution. Model: ${modelName}. Hash: ${inputHash}`);
-
         const MAX_RETRIES = 3;
         const RETRY_DELAY_MS = 2000;
 
@@ -75,7 +72,6 @@ export class AIService {
     private static loadRecordedOutput(hash: string): string {
         const mockPath = path.join(this.MOCK_DIR, `${hash}.json`);
         if (fs.existsSync(mockPath)) {
-            console.log(`[AIService] Mock found at ${mockPath}`);
             return fs.readFileSync(mockPath, 'utf-8');
         }
         // Fallback? Or strictly fail?
@@ -88,6 +84,5 @@ export class AIService {
         if (!fs.existsSync(this.MOCK_DIR)) fs.mkdirSync(this.MOCK_DIR, { recursive: true });
         const mockPath = path.join(this.MOCK_DIR, `${hash}.json`);
         fs.writeFileSync(mockPath, content);
-        console.log(`[AIService] Saved mock to ${mockPath}`);
     }
 }

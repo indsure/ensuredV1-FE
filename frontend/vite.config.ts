@@ -4,13 +4,15 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  define: {
-    "process.env": {},
-  },
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
+      "@shared": path.resolve(import.meta.dirname, "..", "shared"),
+      "@assets": path.resolve(import.meta.dirname, "..", "attached_assets"),
     },
   },
   css: {
@@ -23,32 +25,29 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          "react-vendor": ["react", "react-dom"],
-          "router-vendor": ["wouter"],
-          "ui-vendor": [
-            "@radix-ui/react-dialog",
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-select",
-            "@radix-ui/react-toast",
-          ],
+          'react-vendor': ['react', 'react-dom'],
+          'router-vendor': ['wouter'],
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-toast'],
         },
       },
     },
     chunkSizeWarningLimit: 1000,
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "wouter"],
+    include: ['react', 'react-dom', 'wouter'],
   },
-  envDir: path.resolve(import.meta.dirname),
   server: {
     host: "127.0.0.1",
     port: 5412,
     proxy: {
-      "/api": {
-        target: "http://127.0.0.1:5000",
+      '/api': {
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
       },
     },
-    fs: { strict: true, deny: ["**/.*"] },
+    fs: {
+      strict: true,
+      deny: ["**/.*"],
+    },
   },
 });
