@@ -137,10 +137,7 @@
    UTILITIES & CLASSES
    ========================================= */
 .container-editorial {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-right: var(--space-container);
-  padding-left: var(--space-container);
+  @apply mx-4 sm:mx-6 md:mx-12 lg:mx-20;
 }
 
 .card-white {
