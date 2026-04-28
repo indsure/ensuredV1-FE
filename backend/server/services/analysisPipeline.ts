@@ -9,6 +9,7 @@ import {
   fetchPolicyWordings,
   mergePolicyTexts
 } from "../utils/policyWordingsFetcher";
+import { applyScoreBucketing, getBucketingExplanation } from "../utils/scoreBucketing";
 
 export interface AnalysisResult {
   status: "completed" | "failed";
@@ -140,6 +141,21 @@ export async function runAnalysisPipeline(
     }
 
     performScoreArithmeticCheck(parsed);
+
+    // Apply score bucketing to reduce variance
+    if (parsed.audit_score) {
+      parsed.audit_score = applyScoreBucketing(parsed.audit_score);
+      
+      // Add bucketing explanation to confidence notes
+      const bucketingNote = getBucketingExplanation();
+      if (Array.isArray(parsed.confidence_notes)) {
+        parsed.confidence_notes.push(bucketingNote);
+      } else if (typeof parsed.confidence_notes === "string") {
+        parsed.confidence_notes += ` ${bucketingNote}`;
+      } else {
+        parsed.confidence_notes = [bucketingNote];
+      }
+    }
 
     return {
       status: "completed",

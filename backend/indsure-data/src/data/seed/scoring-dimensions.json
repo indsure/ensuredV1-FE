@@ -1,0 +1,123 @@
+[
+  {
+    "id": "coverage_adequacy",
+    "displayName": "Coverage Adequacy",
+    "description": "Evaluates if the sum insured is sufficient for typical Indian hospital costs, adjusted for city tier and family size",
+    "scoringCurve": {
+      "bands": [
+        {"max": 300000, "score": 15, "label": "Barely adequate even for minor procedures in metros"},
+        {"min": 300000, "max": 500000, "score": 35, "label": "May cover moderate hospitalisation; high risk of exhaustion in major events"},
+        {"min": 500000, "max": 1000000, "score": 65, "label": "Reasonable baseline for many middle-class families"},
+        {"min": 1000000, "max": 2500000, "score": 85, "label": "Good protection even for major surgeries in metros"},
+        {"min": 2500000, "score": 95, "label": "Very strong risk cover for most scenarios"}
+      ]
+    },
+    "sourceCitation": "Research §9.2.1"
+  },
+  {
+    "id": "cost",
+    "displayName": "Cost Efficiency",
+    "description": "Evaluates premium per lakh of cover, co-pays, deductibles, and room-rent caps that shift effective cost to the user",
+    "scoringCurve": {
+      "methodology": "Score based on premium / sum insured ratio benchmarked against median for similar products (age, city, features). Penalize for high co-pays or room-rent caps that shift effective cost back to the user.",
+      "implementation": "TODO - Requires market premium data collection"
+    },
+    "sourceCitation": "Research §9.2.2"
+  },
+  {
+    "id": "waiting_periods",
+    "displayName": "Waiting Periods",
+    "description": "Evaluates pre-existing disease waiting periods, initial waiting periods, and disease-specific waiting periods",
+    "scoringCurve": {
+      "ped_months": [
+        {"max": 12, "score": 90, "label": "Excellent"},
+        {"min": 12, "max": 24, "score": 65, "label": "Average"},
+        {"min": 24, "max": 36, "score": 40, "label": "Long wait"},
+        {"min": 36, "score": 20, "label": "Very long wait"}
+      ],
+      "initial_days": [
+        {"max": 30, "score": 90, "label": "Excellent"},
+        {"min": 30, "max": 60, "score": 70, "label": "Good"},
+        {"min": 60, "score": 50, "label": "Long"}
+      ]
+    },
+    "sourceCitation": "Research §9.2"
+  },
+  {
+    "id": "exclusions_sublimits",
+    "displayName": "Exclusions & Sub-limits",
+    "description": "Evaluates the extent and severity of policy exclusions, sub-limits on specific treatments, and room rent caps",
+    "scoringCurve": {
+      "methodology": "Analyze room rent limits, disease-specific sub-limits, treatment exclusions. Score based on risk level (none/low/medium/high/critical).",
+      "implementation": "TODO - Requires policy wording parsing"
+    },
+    "sourceCitation": "Research §9.2"
+  },
+  {
+    "id": "maternity_family_fit",
+    "displayName": "Maternity & Family Fit",
+    "description": "Evaluates maternity coverage, newborn coverage, and family-specific benefits",
+    "scoringCurve": {
+      "methodology": "Score based on maternity waiting period, coverage amount, newborn coverage days, and family floater benefits.",
+      "implementation": "TODO - Requires policy feature extraction"
+    },
+    "sourceCitation": "Research §9.2"
+  },
+  {
+    "id": "insurer_claim_performance",
+    "displayName": "Insurer Claim Performance",
+    "description": "Blended score from multi-year CSR by count, ICR relative to peer segment, and claim processing metrics",
+    "scoringCurve": {
+      "bands": [
+        {"label": "Excellent", "score": 92, "criteria": "High CSR (>97%), healthy ICR (70-95%), low complaints, low Ombudsman awards"},
+        {"label": "Good", "score": 75, "criteria": "Good CSR (92-97%), normal ICR, average complaints"},
+        {"label": "Average", "score": 52, "criteria": "OK CSR (85-92%), acceptable ICR, moderate complaints"},
+        {"label": "Poor", "score": 25, "criteria": "Poor CSR (<85%), extreme ICR (<60% or >105%), high complaints/awards"}
+      ]
+    },
+    "sourceCitation": "Research §9.2.3"
+  },
+  {
+    "id": "insurer_complaint_rate",
+    "displayName": "Insurer Complaint Rate",
+    "description": "Normalized complaint rates per 10K policies and per crore premium, plus Ombudsman award patterns",
+    "scoringCurve": {
+      "methodology": "Normalize complaints per 10K policies and per ₹1 crore premium. Compare against segment benchmarks. Factor in Ombudsman awards against insurer.",
+      "implementation": "TODO - Requires IRDAI complaint data ingestion"
+    },
+    "sourceCitation": "Research §8.3"
+  },
+  {
+    "id": "insurer_financial_health",
+    "displayName": "Insurer Financial Health",
+    "description": "Solvency ratio, underwriting stability, and 3-year profitability trend",
+    "scoringCurve": {
+      "solvency_bands": [
+        {"min": 2.0, "score": 95, "label": "Excellent"},
+        {"min": 1.5, "max": 2.0, "score": 75, "label": "Adequate"},
+        {"max": 1.5, "score": 40, "label": "Concerning"}
+      ]
+    },
+    "sourceCitation": "Research §8.4, §5.1"
+  },
+  {
+    "id": "network_strength",
+    "displayName": "Network Strength & Digital UX",
+    "description": "Network hospital count, geographic distribution, cashless approval rates, and app ratings",
+    "scoringCurve": {
+      "methodology": "Score based on network hospital count adjusted for geographic distribution, cashless approval ratio, app store ratings, and digital claim experience.",
+      "implementation": "TODO - Requires network data and UX metrics collection"
+    },
+    "sourceCitation": "Research §8.5, §6.1"
+  },
+  {
+    "id": "renewal_terms",
+    "displayName": "Renewal Terms",
+    "description": "Lifetime renewability, portability friendliness, and repricing behavior patterns",
+    "scoringCurve": {
+      "methodology": "Evaluate lifetime renewability guarantees, portability ease, historical repricing patterns, and no-claim bonus structure.",
+      "implementation": "TODO - Requires policy terms analysis and historical data"
+    },
+    "sourceCitation": "Research §9.1"
+  }
+]

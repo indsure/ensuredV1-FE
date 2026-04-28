@@ -75,7 +75,12 @@ export default function SettingsNew() {
     try {
       const { error: uErr } = await supabase
         .from("agents")
-        .update({ name: profileName, location: profileLocation })
+        .update({ 
+          name: profileName, 
+          full_name: profileName,
+          location: profileLocation,
+          city: profileLocation
+        })
         .eq("id", agentProfile.id)
 
       if (uErr) throw new Error(uErr.message)

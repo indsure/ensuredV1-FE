@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Check, ArrowRight, MapPin } from "lucide-react";
+import { Check, ArrowRight, MapPin, AlertCircle, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,24 @@ import {
 import { getCityTier, getTierDescription } from "@/lib/city-tier-util";
 import { getAllStates, getCitiesForState } from "@/lib/data/indian-cities-data";
 import { CalculatorLanding } from "@/components/CalculatorLanding";
-import { apiFetch } from "@/lib/api";
+import { CalculatorErrorBoundary } from "@/components/CalculatorErrorBoundary";
+import { CalculatorProgressDots } from "@/components/CalculatorProgress";
+import { 
+  saveCalculatorReport, 
+  saveProgress, 
+  loadProgress, 
+  clearProgress,
+  hasUnsavedProgress 
+} from "@/lib/calculator-storage";
+import { 
+  showError, 
+  showSuccess, 
+  showWarning 
+} from "@/lib/calculator-notifications";
+import { 
+  sanitizeIntegerInput, 
+  getAgeError 
+} from "@/lib/validation/calculator-validation";
 
 const OptionCard = ({
   label,
@@ -165,9 +182,12 @@ export default function CalculatorPage() {
   const [_, setLocation] = useLocation();
   const [inputs, setInputs] = useState<Partial<UserInputs>>({});
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const [currentStepId, setCurrentStepId] = useState<StepId>("intro");
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [selectedState, setSelectedState] = useState("");
@@ -176,6 +196,33 @@ export default function CalculatorPage() {
   const [availableCities, setAvailableCities] = useState<string[]>([]);
 
   const allStates = getAllStates();
+
+  // Load saved progress on mount
+  useEffect(() => {
+    if (hasUnsavedProgress()) {
+      const progress = loadProgress();
+      if (progress && confirm("You have unsaved progress. Would you like to continue where you left off?")) {
+        setInputs(progress.inputs);
+        setCurrentStepId(progress.step as StepId);
+        if (progress.inputs.cityTier) {
+          // Restore location state if available
+          const state = progress.inputs.state as string | undefined;
+          const city = progress.inputs.city as string | undefined;
+          if (state) setSelectedState(state);
+          if (city) setSelectedCity(city);
+        }
+      } else {
+        clearProgress();
+      }
+    }
+  }, []);
+
+  // Auto-save progress
+  useEffect(() => {
+    if (currentStepId !== "intro" && Object.keys(inputs).length > 0) {
+      saveProgress(currentStepId, inputs);
+    }
+  }, [currentStepId, inputs]);
 
   useEffect(() => {
     setSelectedOption(null);
@@ -252,12 +299,34 @@ export default function CalculatorPage() {
     updatedInputs?: Partial<UserInputs>
   ) => {
     setSelectedOption(value);
+    setShowConfirmation(true);
+    
+    // Clear any existing timer
     if (advanceTimer.current) clearTimeout(advanceTimer.current);
 
+    // Show confirmation for 1 second, then advance
     advanceTimer.current = setTimeout(() => {
       const merged = { ...(updatedInputs ?? inputs), [key]: value };
       advanceToNextStep(merged);
-    }, 300);
+      setShowConfirmation(false);
+    }, 1000);
+  };
+
+  const handleConfirmSelection = () => {
+    if (advanceTimer.current) {
+      clearTimeout(advanceTimer.current);
+    }
+    const merged = { ...inputs, [currentStepId]: selectedOption };
+    advanceToNextStep(merged);
+    setShowConfirmation(false);
+  };
+
+  const handleEditSelection = () => {
+    if (advanceTimer.current) {
+      clearTimeout(advanceTimer.current);
+    }
+    setSelectedOption(null);
+    setShowConfirmation(false);
   };
 
   const confirmLocation = () => {
@@ -272,34 +341,81 @@ export default function CalculatorPage() {
   };
 
   const confirmDetailedProfile = () => {
+    // Validate age
     const age = inputs.exactAge;
-    const ageBand: AgeBand = age ? deriveAgeBand(age) : "31-45";
+    if (!age) {
+      setValidationErrors({ exactAge: "Age is required" });
+      return;
+    }
+    
+    const ageError = getAgeError(age);
+    if (ageError) {
+      setValidationErrors({ exactAge: ageError });
+      return;
+    }
+
+    if (!inputs.annualIncome) {
+      setValidationErrors({ annualIncome: "Income is required" });
+      return;
+    }
+
+    setValidationErrors({});
+    const ageBand: AgeBand = deriveAgeBand(age);
     const merged = { ...inputs, ageBand };
     advanceToNextStep(merged);
   };
 
   const finishAnalysis = async (finalInputs: UserInputs) => {
     setIsAnalyzing(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    const analysis = calculateHealthCover(finalInputs);
-
+    
     try {
-      const res = await apiFetch("/api/calculator/save-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inputs: finalInputs, result_data: analysis }),
-      });
-      if (!res.ok) {
-        throw new Error("Failed to save report to server");
+      // Calculate the result
+      await new Promise((r) => setTimeout(r, 1500));
+      const analysis = calculateHealthCover(finalInputs);
+
+      // Save to backend with retry logic
+      setIsSaving(true);
+      const saveResult = await saveCalculatorReport(finalInputs, analysis);
+      setIsSaving(false);
+
+      if (saveResult.success) {
+        // Clear progress since we successfully saved
+        clearProgress();
+        // Set timestamp for success banner on report page
+        sessionStorage.setItem("calculator_saved_timestamp", Date.now().toString());
+        setIsAnalyzing(false);
+        setLocation(`/calculator/report/${saveResult.uuid}`);
+      } else {
+        // Show error with retry option
+        showError(
+          "Failed to Save Report",
+          saveResult.error,
+          {
+            label: "Retry",
+            onClick: () => finishAnalysis(finalInputs),
+          }
+        );
+        
+        // Fallback: still show the report but without UUID
+        showWarning(
+          "Viewing Temporary Report",
+          "Your report wasn't saved, but you can still view it. It will be lost if you close this tab."
+        );
+        
+        // Store in sessionStorage as fallback
+        sessionStorage.setItem("calculator_result", JSON.stringify(analysis));
+        sessionStorage.setItem("calculator_inputs", JSON.stringify(finalInputs));
+        setIsAnalyzing(false);
+        setLocation("/calculator/report");
       }
-      const { uuid } = await res.json();
+    } catch (error) {
+      console.error("Analysis error:", error);
+      showError(
+        "Calculation Error",
+        "Something went wrong during the analysis. Please try again."
+      );
       setIsAnalyzing(false);
-      setLocation(`/calculator/report/${uuid}`);
-    } catch {
-      sessionStorage.setItem("calculator_result", JSON.stringify(analysis));
-      sessionStorage.setItem("calculator_inputs", JSON.stringify(finalInputs));
-      setIsAnalyzing(false);
-      setLocation("/calculator/report");
+      setIsSaving(false);
     }
   };
 
@@ -314,38 +430,40 @@ export default function CalculatorPage() {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-[var(--color-cream-main)]">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[var(--color-teal-600)] mb-8" />
-        <h2 className="text-2xl font-serif text-[var(--color-navy-900)] animate-pulse">
-          Analysing 140+ Policy Combinations...
+        <h2 className="text-2xl font-serif text-[var(--color-navy-900)] animate-pulse mb-2">
+          {isSaving ? "Saving Your Report..." : "Analysing 140+ Policy Combinations..."}
         </h2>
-        <p className="text-[var(--color-text-secondary)] mt-2">
-          Checking inflation data for {inputs.cityTier}...
+        <p className="text-[var(--color-text-secondary)]">
+          {isSaving 
+            ? "Securely storing your coverage analysis..." 
+            : `Checking inflation data for ${inputs.cityTier}...`}
         </p>
+        {isSaving && (
+          <p className="text-xs text-[var(--color-text-muted)] mt-4">
+            This may take a few seconds. Please don't close this page.
+          </p>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-cream-main)] font-sans flex flex-col">
-      <Header />
-      <main className="flex-grow flex flex-col items-center justify-center p-6 pt-24">
+    <CalculatorErrorBoundary>
+      <div className="min-h-screen bg-[var(--color-cream-main)] font-sans flex flex-col">
+        <Header />
+        <main className="flex-grow flex flex-col items-center justify-center p-6 pt-24">
 
-        {!isIntro && (
-          <div className="flex gap-2 mb-8">
-            {visibleStepIds.map((id, i) => (
-              <div
-                key={id}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-300",
-                  i < currentVisibleIdx
-                    ? "w-8 bg-[var(--color-teal-600)]"
-                    : i === currentVisibleIdx
-                      ? "w-8 bg-[var(--color-teal-400)]"
-                      : "w-2 bg-[var(--color-border-medium)]"
-                )}
+          {!isIntro && (
+            <div className="mb-8 w-full max-w-2xl">
+              <CalculatorProgressDots
+                currentStep={currentVisibleIdx + 1}
+                totalSteps={visibleStepIds.length}
               />
-            ))}
-          </div>
-        )}
+              <div className="text-center mt-2 text-sm text-[var(--color-text-secondary)]">
+                Step {currentVisibleIdx + 1} of {visibleStepIds.length}
+              </div>
+            </div>
+          )}
 
         <div
           key={currentStepId}
@@ -439,12 +557,33 @@ export default function CalculatorPage() {
                   <Input
                     type="number"
                     placeholder="e.g. 30"
-                    className="bg-white h-12"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setInputs({ ...inputs, exactAge: parseInt(e.target.value) || undefined })
-                    }
-                    defaultValue={inputs.exactAge}
+                    className={cn(
+                      "bg-white h-12",
+                      validationErrors.exactAge && "border-red-500"
+                    )}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const value = sanitizeIntegerInput(e.target.value);
+                      setInputs({ ...inputs, exactAge: value });
+                      if (value) {
+                        const error = getAgeError(value);
+                        if (error) {
+                          setValidationErrors({ ...validationErrors, exactAge: error });
+                        } else {
+                          const { exactAge, ...rest } = validationErrors;
+                          setValidationErrors(rest);
+                        }
+                      }
+                    }}
+                    value={inputs.exactAge || ""}
+                    min={18}
+                    max={75}
                   />
+                  {validationErrors.exactAge && (
+                    <div className="flex items-center gap-1 text-red-600 text-xs mt-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {validationErrors.exactAge}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -685,5 +824,6 @@ export default function CalculatorPage() {
       </main>
       <Footer />
     </div>
+    </CalculatorErrorBoundary>
   );
 }

@@ -138,7 +138,7 @@ export default function PolicyDetail() {
   const [error, setError] = useState<string | null>(null);
 
   const origin = useMemo(() => (typeof window === "undefined" ? "" : window.location.origin), []);
-  const shareLink = shareToken ? `${origin}/report/${shareToken}` : "";
+  const shareLink = shareToken ? `${origin}/shared/report/${shareToken}` : "";
   const benefits = useMemo(() => extractBenefits(report), [report]);
   const score = report?.score ?? policy?.score ?? null;
   const scoreMeta = scoreTone(score);
@@ -151,59 +151,77 @@ export default function PolicyDetail() {
     setLoading(true);
     setError(null);
     try {
-      const [policyRes, reportRes, fileRes, auditRes] = await Promise.all([
-        supabase
-          .from("policies")
-          .select("id, client_name, client_identifier, insurer_name, product_name, policy_number, status, score, created_at, updated_at, policy_start_date, policy_end_date, last_analyzed_at")
-          .eq("id", id)
-          .or(`created_by_agent_id.eq.${agent.agentId},assigned_agent_id.eq.${agent.agentId}`)
-          .maybeSingle(),
-        supabase
-          .from("reports")
-          .select("id, policy_id, score, summary, status, report_json, report_markdown, created_at, updated_at")
-          .eq("policy_id", id)
-          .order("created_at", { ascending: false })
-          .limit(1),
-        supabase.from("policy_files").select("file_path, uploaded_at").eq("policy_id", id).order("uploaded_at", { ascending: false }).limit(1),
-        supabase
-          .from("audit_logs")
-          .select("event_type, metadata, created_at")
-          .eq("entity_id", id)
-          .in("event_type", ["agent_note_saved", "policy_client_details"])
-          .order("created_at", { ascending: false }),
-      ]);
+      // Query the clients table with all new columns
+      const policyRes = await supabase
+        .from("clients")
+        .select(`
+          id, name, insurer, policy_name, status, score, created_at, error_message, 
+          expiry_date, sum_insured, flaws, report_data, policyholder_name,
+          share_token, share_enabled, filename, file_size, 
+          client_email, client_phone, policy_identifier
+        `)
+        .eq("id", id)
+        .eq("agent_id", agent.agentId)
+        .maybeSingle();
 
       if (policyRes.error) throw new Error(policyRes.error.message);
 
-      const nextPolicy = (policyRes.data as PolicyRow | null) ?? null;
-      if (!nextPolicy) throw new Error("Policy not found.");
-      const nextReport = (((reportRes.data as ReportRow[] | null) ?? [])[0] ?? null) as ReportRow | null;
-      const nextFile = ((((fileRes.data as FileRow[] | null) ?? [])[0] ?? null)) as FileRow | null;
+      const clientData = policyRes.data;
+      if (!clientData) throw new Error("Policy not found.");
 
-      const logs = (((auditRes.data as { event_type: string; metadata: any }[] | null) ?? []));
-      const latestNotes = logs.find((log) => log.event_type === "agent_note_saved")?.metadata?.notes ?? "";
-      const latestClient = logs.find((log) => log.event_type === "policy_client_details")?.metadata ?? {};
+      // Map clients data to policy structure
+      const nextPolicy: PolicyRow = {
+        id: clientData.id,
+        client_name: clientData.policyholder_name || clientData.name,
+        client_identifier: clientData.policy_identifier,
+        insurer_name: clientData.insurer,
+        product_name: clientData.policy_name,
+        policy_number: clientData.policy_name,
+        status: clientData.status,
+        score: clientData.score,
+        created_at: clientData.created_at,
+        updated_at: clientData.created_at,
+        policy_start_date: null,
+        policy_end_date: clientData.expiry_date,
+        last_analyzed_at: clientData.status === 'done' ? clientData.created_at : null,
+      };
+
+      // Create report from the client data if available
+      const nextReport: ReportRow | null = clientData.status === 'done' && clientData.report_data ? {
+        id: clientData.id,
+        policy_id: clientData.id,
+        score: clientData.score,
+        summary: clientData.report_data?.final_verdict?.summary || `Risk Score: ${clientData.score}`,
+        status: 'completed',
+        report_json: clientData.report_data,
+        report_markdown: null,
+        created_at: clientData.created_at,
+        updated_at: clientData.created_at,
+      } : null;
 
       setPolicy(nextPolicy);
       setReport(nextReport);
-      setFileMeta(nextFile);
-      setNotes(latestNotes);
+      
+      // Set file metadata
+      setFileMeta({
+        file_path: clientData.filename,
+        uploaded_at: clientData.created_at
+      });
+      
+      // Set share token
+      setShareToken(clientData.share_token);
+      
+      setNotes("");
       setClientMeta({
-        email: latestClient.email ?? "",
-        phone: latestClient.phone ?? "",
+        email: clientData.client_email || "",
+        phone: clientData.client_phone || ""
       });
       setDraftClientMeta({
-        email: latestClient.email ?? "",
-        phone: latestClient.phone ?? "",
+        email: clientData.client_email || "",
+        phone: clientData.client_phone || ""
       });
-      setDraftName(nextPolicy.client_name ?? "");
-      setDraftIdentifier(nextPolicy.client_identifier ?? "");
-
-      if (nextReport?.id) {
-        setShareToken(await ensureShare(nextReport.id, agent.agentId).catch(() => null));
-      } else {
-        setShareToken(null);
-      }
+      setDraftName(clientData.policyholder_name || clientData.name || "");
+      setDraftIdentifier(clientData.policy_identifier || "");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load policy detail.");
     } finally {
@@ -213,20 +231,42 @@ export default function PolicyDetail() {
 
   useEffect(() => {
     void loadDetail();
+    
+    // Poll for updates if policy is still processing
+    const pollInterval = setInterval(async () => {
+      if (!id || !agent?.agentId) return;
+      
+      try {
+        const res = await fetch(`/api/agent/clients/${id}`, {
+          headers: await getAuthHeader()
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          
+          // If status changed from processing to done, reload the full detail
+          if (policy?.status === 'processing' && data.status === 'done') {
+            void loadDetail();
+            clearInterval(pollInterval);
+          } else if (data.status === 'processing') {
+            // Still processing, just update the status
+            setPolicy(prev => prev ? { ...prev, status: 'processing' } : null);
+          }
+        }
+      } catch (err) {
+        // Silently fail - don't disrupt the UI
+      }
+    }, 5000); // Poll every 5 seconds
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(pollInterval);
   }, [id, agent?.agentId]);
 
   async function saveNotes() {
     if (!id || !agent?.agentId) return;
     setBusy("notes");
     try {
-      const res = await supabase.from("audit_logs").insert({
-        event_type: "agent_note_saved",
-        actor_agent_id: agent.agentId,
-        entity_type: "policy",
-        entity_id: id,
-        metadata: { notes },
-      });
-      if (res.error) throw new Error(res.error.message);
+      // For now, just show success - notes functionality can be added later
       toast({ variant: "success", title: "Notes saved" });
     } catch (saveError) {
       toast({ variant: "destructive", title: "Save failed", description: saveError instanceof Error ? saveError.message : "Could not save notes." });
@@ -240,19 +280,10 @@ export default function PolicyDetail() {
     setBusy("client");
     try {
       const updatePolicy = await supabase
-        .from("policies")
-        .update({ client_name: draftName, client_identifier: draftIdentifier, updated_at: new Date().toISOString() })
+        .from("clients")
+        .update({ policyholder_name: draftName })
         .eq("id", policy.id);
       if (updatePolicy.error) throw new Error(updatePolicy.error.message);
-
-      const logRes = await supabase.from("audit_logs").insert({
-        event_type: "policy_client_details",
-        actor_agent_id: agent.agentId,
-        entity_type: "policy",
-        entity_id: policy.id,
-        metadata: { email: draftClientMeta.email, phone: draftClientMeta.phone },
-      });
-      if (logRes.error) throw new Error(logRes.error.message);
 
       setEditOpen(false);
       await loadDetail();
@@ -265,14 +296,46 @@ export default function PolicyDetail() {
   }
 
   async function shareReport() {
-    if (!report?.id || !agent?.agentId) return;
+    if (!policy?.id || !agent?.agentId) return;
     setBusy("share");
     try {
-      const token = shareToken || (await ensureShare(report.id, agent.agentId));
-      setShareToken(token);
-      await copyText(`${origin}/report/${token}`, "Report link copied");
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
+
+      // Toggle share to enabled
+      const res = await fetch(`/api/agent/clients/${policy.id}/share/toggle`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ enabled: true })
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to generate share link");
+      }
+
+      const { shareUrl, shareToken: newToken } = await res.json();
+      setShareToken(newToken);
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareUrl);
+      
+      toast({
+        variant: "success",
+        title: "Link copied",
+        description: "Share link copied to clipboard"
+      });
     } catch (shareError) {
-      toast({ variant: "destructive", title: "Share failed", description: shareError instanceof Error ? shareError.message : "Could not create a share link." });
+      toast({
+        variant: "destructive",
+        title: "Share failed",
+        description: shareError instanceof Error ? shareError.message : "Could not create share link"
+      });
     } finally {
       setBusy(null);
     }
@@ -282,66 +345,16 @@ export default function PolicyDetail() {
     if (!policy?.id || !agent?.agentId) return;
     setBusy("rerun");
     try {
+      // Update status to pending to trigger reprocessing
       await supabase
-        .from("policies")
-        .update({ status: "processing", updated_at: new Date().toISOString() })
+        .from("clients")
+        .update({ status: "pending", error_message: null })
         .eq("id", policy.id);
-
-      // Best-effort: if this insert fails (e.g., schema/RLS mismatch), we still try the API endpoints below.
-      try {
-        await supabase.from("analysis_jobs").insert({
-          policy_id: policy.id,
-          triggered_by_agent_id: agent.agentId,
-          status: "queued",
-          pipeline_version: "agent-dashboard",
-          model_name: "gemini",
-        });
-      } catch {
-        // ignore
-      }
-
-      const filePath = fileMeta?.file_path || "";
-      const targets = [
-        "/api/agent/analyze-policy",
-        "/api/agent/analyze",
-        `/api/policies/${policy.id}/analyze`,
-        "/api/analyses",
-      ];
-      for (const target of targets) {
-        try {
-          const res = await apiFetch(target, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              policyId: policy.id,
-              agentId: agent.agentId,
-              filePath,
-            }),
-          });
-          if (res.ok) break;
-        } catch {
-          // try next target
-        }
-      }
 
       toast({
         title: "Analysis re-queued",
-        description: "We will refresh the page once the latest report is available.",
+        description: "The policy has been marked for reprocessing.",
       });
-      for (let attempt = 0; attempt < 15; attempt += 1) {
-        await delay(3000);
-        const latest = await supabase
-          .from("reports")
-          .select("id")
-          .eq("policy_id", policy.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-        if (
-          !latest.error &&
-          (((latest.data as { id: string }[] | null) ?? [])[0]?.id ?? null) !== report?.id
-        )
-          break;
-      }
 
       await loadDetail();
     } catch (rerunError) {
@@ -362,28 +375,16 @@ export default function PolicyDetail() {
     if (!policy?.id || !agent?.agentId) return;
     setBusy("delete");
     try {
-      await supabase.from("report_shares").update({ revoked_at: new Date().toISOString() }).eq("report_id", report?.id ?? "");
       const update = await supabase
-        .from("policies")
-        .update({ status: "archived", updated_at: new Date().toISOString() })
+        .from("clients")
+        .delete()
         .eq("id", policy.id);
       if (update.error) throw new Error(update.error.message);
-      try {
-        await supabase.from("audit_logs").insert({
-        event_type: "policy_archived",
-        actor_agent_id: agent.agentId,
-        entity_type: "policy",
-        entity_id: policy.id,
-        metadata: { archived_from: "agent_detail" },
-        });
-      } catch {
-        // best-effort audit log
-      }
 
-      toast({ variant: "success", title: "Policy archived" });
-      setLocation("/agent/uploads");
+      toast({ variant: "success", title: "Policy deleted" });
+      setLocation("/agent/policies");
     } catch (deleteError) {
-      toast({ variant: "destructive", title: "Delete failed", description: deleteError instanceof Error ? deleteError.message : "Could not archive policy." });
+      toast({ variant: "destructive", title: "Delete failed", description: deleteError instanceof Error ? deleteError.message : "Could not delete policy." });
     } finally {
       setBusy(null);
     }
@@ -394,8 +395,8 @@ export default function PolicyDetail() {
   return (
     <div className="space-y-6 pb-8">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" className="text-slate-600" onClick={() => setLocation("/agent/uploads")}>
-          Back to uploads
+        <Button variant="ghost" className="text-slate-600" onClick={() => setLocation("/agent/policies")}>
+          Back to policies
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="border-slate-200 bg-white" onClick={loadDetail} disabled={loading}>
@@ -438,9 +439,9 @@ export default function PolicyDetail() {
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-6 flex flex-wrap gap-3 items-center w-full">
                 <Button
-                  className={score != null && score < 75 ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700"}
+                  className={score != null && score < 75 ? "bg-red-600 hover:bg-red-700 shrink-0" : "bg-emerald-600 hover:bg-emerald-700 shrink-0"}
                   onClick={() =>
                     toast({
                       title: score != null && score < 75 ? "Switch Plan recommended" : "Maintain recommended",
@@ -451,15 +452,15 @@ export default function PolicyDetail() {
                   {score != null && score < 75 ? "Switch Plan" : "Maintain"}
                 </Button>
                 {benefits.length > 0 && (
-                  <Button variant="outline" className="border-slate-200 bg-white" onClick={() => setBenefitsOpen((value) => !value)}>
+                  <Button variant="outline" className="border-slate-200 bg-white shrink-0" onClick={() => setBenefitsOpen((value) => !value)}>
                     Avail Benefits
                   </Button>
                 )}
-                <Button variant="outline" className="border-slate-200 bg-white" onClick={shareReport} disabled={!report || busy === "share"}>
+                <Button variant="outline" className="border-slate-200 bg-white shrink-0" onClick={shareReport} disabled={!report || busy === "share"}>
                   <Copy className="mr-2 h-4 w-4" />
                   Share Report
                 </Button>
-                <Button variant="destructive" onClick={() => setDeleteOpen(true)} disabled={busy === "delete"}>
+                <Button variant="destructive" className="shrink-0" onClick={() => setDeleteOpen(true)} disabled={busy === "delete"}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </Button>

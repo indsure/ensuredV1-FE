@@ -7,7 +7,7 @@
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 
-export type Zone = "A" | "B" | "C";
+export type Zone = "A" | "B" | "C" | "D";
 export type Confidence = "high" | "medium" | "low";
 export type RiskLevel = "low" | "medium" | "high";
 export type Severity = "high" | "medium" | "low";
@@ -331,6 +331,9 @@ export interface ScoreDeduction {
 
 export interface AuditScore {
   score: number;
+  raw_score?: number;           // Original score before bucketing
+  bucket_label?: string;         // Human-readable label (e.g., "Below Average")
+  bucketing_method?: string;     // Method used for bucketing (e.g., "nearest_12.5")
   ncar: number;
   nec: number;
   rct: number;
@@ -414,7 +417,7 @@ export const isValidVerdict = (v: string): v is Verdict =>
   ["SAFE", "BORDERLINE", "RISKY"].includes(v);
 
 export const isValidZone = (z: string): z is Zone =>
-  ["A", "B", "C"].includes(z);
+  ["A", "B", "C", "D"].includes(z);
 
 export const isValidConfidence = (c: string): c is Confidence =>
   ["high", "medium", "low"].includes(c);
@@ -434,8 +437,10 @@ export const validateForensicAuditReport = (data: any): data is ForensicAuditRep
     if (!isValidVerdict(data.final_verdict?.label)) return false;
     if (typeof data.audit_score?.score !== "number") return false;
     if (data.audit_score.score < 0 || data.audit_score.score > 100) return false;
-    if (!Array.isArray(data.claim_simulations) || data.claim_simulations.length === 0) return false;
-    if (!Array.isArray(data.recommendations?.critical_actions)) return false;
+    // Make claim_simulations optional - allow empty array
+    if (data.claim_simulations !== undefined && !Array.isArray(data.claim_simulations)) return false;
+    // Make critical_actions optional - allow empty array
+    if (data.recommendations?.critical_actions !== undefined && !Array.isArray(data.recommendations.critical_actions)) return false;
     return true;
   } catch {
     return false;

@@ -21,12 +21,15 @@ import SachAIChat from "@/components/SachAIChat";
 /* ========================================================= */
 
 // --- Agent Auth ---
+const AgentLanding = lazy(() => import("@/pages/agent/Landing"));
 const AgentLoginNew = lazy(() => import("@/pages/agent/LoginNew"));
 const AgentSignupFlow = lazy(() => import("@/pages/agent/SignupFlow"));
 
 // --- Agent App ---
 const DashboardNew = lazy(() => import("@/pages/agent/DashboardNew"));
 const Uploads = lazy(() => import("@/pages/agent/Uploads"));
+const UploadsDebug = lazy(() => import("@/pages/agent/UploadsDebug"));
+const AgentUploads = lazy(() => import("@/pages/agent/AgentUploads"));
 const PoliciesNew = lazy(() => import("@/pages/agent/PoliciesNew"));
 const PolicyDetail = lazy(() => import("@/pages/agent/PolicyDetail"));
 const MyQueue = lazy(() => import("@/pages/agent/MyQueue"));
@@ -37,6 +40,7 @@ import AgentProtectedRoute from "@/components/agent/ProtectedRoute";
 
 // --- Public Report ---
 const PublicReport = lazy(() => import("@/pages/report/PublicReport"));
+const SharedReport = lazy(() => import("@/pages/SharedReport"));
 
 // --- Admin ---
 const AdminPanel = lazy(() => import("@/pages/admin/AdminPanel"));
@@ -180,6 +184,12 @@ function App() {
                       {/* --- Report routes --- */}
                       <Route path="/report" component={Report} />
                       <Route path="/report/:token" component={PublicReport} />
+                      
+                      {/* PUBLIC ROUTE — do NOT add AgentProtectedRoute here.
+                          This is the client-facing shared report view. */}
+                      <Route path="/shared/report/:token">
+                        {(params) => <SharedReport token={params.token} />}
+                      </Route>
 
                       {/* --- PolicyChecker --- */}
                       <Route path="/policychecker" component={PolicyChecker} />
@@ -204,6 +214,7 @@ function App() {
                       <Route path="/compare/results" component={CompareResultsStep} />
 
                       {/* --- Agent Auth --- */}
+                      <Route path="/agent" component={AgentLanding} />
                       <Route path="/agent/login" component={AgentLoginNew} />
                       <Route path="/agent/signup/:rest*" component={AgentSignupFlow} />
 
@@ -215,7 +226,10 @@ function App() {
                         {() => <AgentProtectedRoute><DemoDashboard /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/uploads">
-                        {() => <AgentProtectedRoute><Uploads /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><AgentUploads /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/uploads-debug">
+                        {() => <AgentProtectedRoute><UploadsDebug /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/policies">
                         {() => <AgentProtectedRoute><PoliciesNew /></AgentProtectedRoute>}

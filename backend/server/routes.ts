@@ -2,6 +2,8 @@ import type { Express } from "express";
 import type { Server } from "http";
 import multer from "multer";
 import fs from "fs";
+import crypto from "crypto";
+import rateLimit from "express-rate-limit";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { MASTER_AUDIT_PROMPT, PROMPT_VERSION } from "./promptTemplate";
@@ -10,7 +12,7 @@ import { VEHICLE_INSURANCE_PROMPT } from "./vehicleInsurancePrompt";
 import { POLICY_EXTRACTION_PROMPT } from "./policyExtractionPrompt";
 import { AIService } from "./services/aiService";
 import { runAnalysisPipeline } from "./services/analysisPipeline";
-import { filterHospitalNetwork } from "./data/insurance_networks/filter_engine";
+import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
 import { createClient } from "@supabase/supabase-js";
 import pkg from "pg";
 import nodemailer from "nodemailer";
@@ -254,18 +256,34 @@ async function extractPolicyText(file: Express.Multer.File): Promise<string> {
 
 const verifyJwt = async (req: any, res: any): Promise<string | null> => {
   const authHeader = req.headers["authorization"] as string | undefined;
+  console.log('[verifyJwt] Auth header:', authHeader ? `Bearer ${authHeader.slice(7, 27)}...` : 'missing');
+  
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
+    console.log('[verifyJwt] Verifying token with Supabase admin client...');
+    
     const {
       data: { user },
       error,
     } = await supabaseAdmin.auth.getUser(token);
-    if (error || !user) {
+    
+    if (error) {
+      console.error('[verifyJwt] Supabase auth error:', error.message);
+      res.status(401).json({ error: "Invalid or expired token", details: error.message });
+      return null;
+    }
+    
+    if (!user) {
+      console.error('[verifyJwt] No user returned from Supabase');
       res.status(401).json({ error: "Invalid or expired token" });
       return null;
     }
+    
+    console.log('[verifyJwt] Token verified successfully for user:', user.id);
     return user.id;
   }
+  
+  console.error('[verifyJwt] Missing authorization header');
   res.status(401).json({ error: "Missing authorization" });
   return null;
 };
@@ -336,7 +354,7 @@ export async function registerRoutes(
 
         uploadedFile = req.file;
         insuranceType = req.body.type || "health";
-        jobId = `job-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        jobId = crypto.randomUUID();
 
         job = { id: jobId, status: "pending", createdAt: Date.now(), prompt_version: PROMPT_VERSION };
         analysisJobs.set(jobId, job);
@@ -467,6 +485,31 @@ export async function registerRoutes(
     }
   );
 
+  /* ── Public: Get Sample Hospital Names ──────────────────────────────── */
+
+  app.get("/api/hospitals/samples", async (req, res) => {
+    try {
+      const { city, pincode, limit = "10" } = req.query;
+
+      console.log(`[Hospital Samples] Request: city=${city}, pincode=${pincode}, limit=${limit}`);
+      
+      const samples = getHospitalSamples({
+        city: city as string | undefined,
+        pincode: pincode as string | undefined,
+        limit: parseInt(limit as string, 10),
+      });
+
+      console.log(`[Hospital Samples] Returning ${samples.length} samples`);
+      res.json(samples);
+    } catch (error: any) {
+      console.error("[Hospital Samples] Error:", error);
+      res.status(500).json({
+        error: "Failed to get hospital samples",
+        details: error.message,
+      });
+    }
+  });
+
   /* ── Public: Hospital Network Filter ────────────────────────────────── */
 
   app.get("/api/hospitals/filter", async (req, res) => {
@@ -594,10 +637,19 @@ export async function registerRoutes(
 
   app.post("/api/calculator/save-report", async (req, res) => {
     const { inputs, result_data } = req.body;
+    
+    // Basic validation
     if (!inputs || !result_data) {
       return res
         .status(400)
         .json({ error: "inputs and result_data are required" });
+    }
+
+    // Validate inputs structure (basic check)
+    if (typeof inputs !== "object" || typeof result_data !== "object") {
+      return res
+        .status(400)
+        .json({ error: "Invalid data format" });
     }
 
     try {
@@ -605,27 +657,51 @@ export async function registerRoutes(
         "INSERT INTO calculator_reports (inputs, result_data) VALUES ($1, $2) RETURNING id",
         [JSON.stringify(inputs), JSON.stringify(result_data)]
       );
-      return res.json({ uuid: insertRes.rows[0].id });
+      return res.json({ uuid: insertRes.rows[0].id, success: true });
     } catch (err: any) {
       console.error("ERROR saving calculator report:", err);
-      res.status(500).json({ error: "Internal Server Error" });
+      
+      // Check for specific database errors
+      if (err.code === "23505") {
+        return res.status(409).json({ error: "Report already exists" });
+      }
+      
+      res.status(500).json({ 
+        error: "Failed to save report. Please try again.",
+        retryable: true 
+      });
     }
   });
 
   app.get("/api/calculator/report/:uuid", async (req, res) => {
     const { uuid } = req.params;
+    
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(uuid)) {
+      return res.status(400).json({ error: "Invalid report ID format" });
+    }
+    
     try {
       const reportRes = await pool.query(
         "SELECT inputs, result_data, created_at FROM calculator_reports WHERE id = $1",
         [uuid]
       );
+      
       if (reportRes.rows.length === 0) {
-        return res.status(404).json({ error: "Report not found" });
+        return res.status(404).json({ 
+          error: "Report not found or has expired",
+          code: "REPORT_NOT_FOUND"
+        });
       }
+      
       return res.json(reportRes.rows[0]);
     } catch (err: any) {
       console.error("ERROR fetching calculator report:", err);
-      res.status(500).json({ error: "Internal Server Error" });
+      res.status(500).json({ 
+        error: "Failed to load report. Please try again.",
+        retryable: true
+      });
     }
   });
 
@@ -755,8 +831,8 @@ export async function registerRoutes(
       }
 
       await pool.query(
-        `INSERT INTO agents (id, email, full_name, phone, city, experience_years, invite_code, consent_given_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        `INSERT INTO agents (id, email, full_name, name, phone, city, location, experience_years, invite_code, consent_given_at)
+         VALUES ($1, $2, $3, $3, $4, $5, $5, $6, $7, NOW())
          ON CONFLICT (id) DO NOTHING`,
         [
           id,
@@ -1378,6 +1454,463 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       res
         .status(500)
         .json({ error: "Code already exists or server error" });
+    }
+  });
+
+  /* ══════════════════════════════════════════════════════════════════════
+     NEW AGENT UPLOAD & SHARING ROUTES
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* ── Agent: Upload & Analyze ─────────────────────────────────────────── */
+  
+  app.post(
+    "/api/agent/analyze",
+    (req, res, next) => {
+      upload.single("file")(req, res, (err: any) => {
+        if (err) {
+          console.error("MULTER ERROR:", err);
+          return res
+            .status(400)
+            .json({ error: "File upload failed: " + (err.message || "Unknown error") });
+        }
+        next();
+      });
+    },
+    async (req, res) => {
+      try {
+        // Verify agent auth
+        const agentId = await verifyJwt(req, res);
+        if (!agentId) return;
+
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const file = req.file;
+        const insuranceType = req.body.type || "health";
+        
+        // Parse optional client detail fields
+        const policyholder_name = req.body.policyholder_name || null;
+        const client_email = req.body.client_email || null;
+        const client_phone = req.body.client_phone || null;
+        const policy_identifier = req.body.policy_identifier || null;
+
+        // Create job
+        const jobId = crypto.randomUUID();
+        const job: AnalysisJob = {
+          id: jobId,
+          status: "pending",
+          createdAt: Date.now(),
+          prompt_version: PROMPT_VERSION
+        };
+        
+        analysisJobs.set(jobId, job);
+        await persistJob(job);
+
+        // Create client record immediately
+        const clientResult = await pool.query(
+          `INSERT INTO clients (
+            agent_id, status, filename, file_size, 
+            policyholder_name, client_email, client_phone, policy_identifier,
+            created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+          RETURNING id, share_token`,
+          [
+            agentId,
+            'pending',
+            file.originalname,
+            file.size,
+            policyholder_name,
+            client_email,
+            client_phone,
+            policy_identifier
+          ]
+        );
+
+        const clientId = clientResult.rows[0].id;
+
+        // Store mapping of jobId → clientId
+        await pool.query(
+          `UPDATE analysis_jobs SET policy_id = $1 WHERE id = $2`,
+          [clientId, jobId]
+        );
+
+        res.json({ clientId, jobId, status: "pending" });
+
+        // Start background processing
+        (async () => {
+          try {
+            job.status = "processing";
+            job.extractionStartedAt = Date.now();
+            await persistJob(job);
+
+            await pool.query(
+              "UPDATE clients SET status = 'processing' WHERE id = $1",
+              [clientId]
+            );
+
+            const uploadedPolicyText = await extractPolicyText(file);
+            job.extractionEndedAt = Date.now();
+            
+            // Delete temp file
+            if (fs.existsSync(file.path)) {
+              fs.unlinkSync(file.path);
+            }
+
+            const result = await runAnalysisPipeline(uploadedPolicyText, insuranceType);
+
+            if (result.status === "completed") {
+              job.status = "completed";
+              job.result = result.result;
+              
+              // Extract metadata from result
+              const reportData = result.result;
+              const score = reportData?.final_verdict?.audit_score?.score || null;
+              const insurer = reportData?.identity?.insurer_name || null;
+              const policyName = reportData?.coverage_structure?.policy_name || null;
+              const expiryDate = reportData?.policy_timeline?.policy_expiry_date || null;
+              const sumInsured = reportData?.coverage_structure?.base_sum_insured || null;
+              const flaws = reportData?.final_verdict?.key_failure_points || [];
+
+              // Update client record with results
+              await pool.query(
+                `UPDATE clients SET
+                  status = 'done',
+                  report_data = $1,
+                  score = $2,
+                  insurer = $3,
+                  policy_name = $4,
+                  expiry_date = $5,
+                  sum_insured = $6,
+                  flaws = $7
+                WHERE id = $8`,
+                [
+                  JSON.stringify(reportData),
+                  score,
+                  insurer,
+                  policyName,
+                  expiryDate,
+                  sumInsured,
+                  JSON.stringify(flaws),
+                  clientId
+                ]
+              );
+            } else {
+              job.status = "failed";
+              job.error = result.error;
+              
+              await pool.query(
+                "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
+                [result.error, clientId]
+              );
+            }
+
+            job.completedAt = Date.now();
+            await persistJob(job);
+          } catch (err: any) {
+            console.error(`[Job ${jobId}] Processing error:`, err);
+            job.status = "failed";
+            job.error = err.message || "Unknown error";
+            await persistJob(job);
+            
+            await pool.query(
+              "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
+              [err.message, clientId]
+            );
+          }
+        })();
+      } catch (err: any) {
+        console.error("Agent analyze error:", err);
+        res.status(500).json({ error: err.message || "Failed to create analysis job" });
+      }
+    }
+  );
+
+  /* ── Agent: Check Analysis Status ────────────────────────────────────── */
+  
+  app.get("/api/agent/analyze/status/:jobId", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
+      const { jobId } = req.params;
+
+      // Check in-memory cache first, fall back to DB
+      let job = analysisJobs.get(jobId);
+      if (!job) {
+        job = await loadJobFromDB(jobId) ?? undefined;
+        if (job) analysisJobs.set(jobId, job);
+      }
+
+      if (!job) {
+        return res.status(404).json({
+          status: "not_found",
+          error: "Job not found",
+        });
+      }
+
+      // Get clientId from analysis_jobs
+      const jobRecord = await pool.query(
+        "SELECT policy_id FROM analysis_jobs WHERE id = $1",
+        [jobId]
+      );
+      
+      const clientId = jobRecord.rows[0]?.policy_id;
+
+      if (job.status === "completed") {
+        return res.json({
+          status: "completed",
+          clientId,
+          result: job.result
+        });
+      } else if (job.status === "failed") {
+        return res.json({
+          status: "error",
+          error: job.error,
+          clientId
+        });
+      } else {
+        return res.json({
+          status: job.status,
+          clientId
+        });
+      }
+    } catch (err: any) {
+      console.error("Agent analyze status error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Agent: Toggle Share ─────────────────────────────────────────────── */
+  
+  app.post("/api/agent/clients/:id/share/toggle", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
+      const { id } = req.params;
+      const { enabled, regenerate } = req.body;
+
+      // Verify ownership
+      const ownerCheck = await pool.query(
+        "SELECT id, share_token FROM clients WHERE id = $1 AND agent_id = $2",
+        [id, agentId]
+      );
+
+      if (ownerCheck.rows.length === 0) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      let shareToken = ownerCheck.rows[0].share_token;
+
+      // Regenerate token if requested
+      if (regenerate) {
+        const result = await pool.query(
+          "UPDATE clients SET share_token = uuid_generate_v4() WHERE id = $1 RETURNING share_token",
+          [id]
+        );
+        shareToken = result.rows[0].share_token;
+      }
+
+      // Update share_enabled
+      await pool.query(
+        "UPDATE clients SET share_enabled = $1, last_shared_at = NOW() WHERE id = $2",
+        [enabled, id]
+      );
+
+      const origin = `${req.protocol}://${req.get("host")}`;
+      const shareUrl = `${origin}/shared/report/${shareToken}`;
+
+      res.json({
+        shareToken,
+        shareEnabled: enabled,
+        shareUrl
+      });
+    } catch (err: any) {
+      console.error("Toggle share error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Public: Get Shared Report ───────────────────────────────────────── */
+  
+  const publicShareLimit = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 20, // 20 requests per IP per minute
+    message: { error: 'rate_limited' }
+  });
+
+  app.get("/api/shared/report/:shareToken", publicShareLimit, async (req, res) => {
+    try {
+      const { shareToken } = req.params;
+
+      // Fetch client record
+      const clientRes = await pool.query(
+        `SELECT 
+          id, report_data, score, insurer, policy_name, policyholder_name, 
+          filename, created_at, status, share_enabled
+        FROM clients 
+        WHERE share_token = $1`,
+        [shareToken]
+      );
+
+      if (clientRes.rows.length === 0) {
+        return res.status(404).json({ error: "invalid_or_revoked" });
+      }
+
+      const client = clientRes.rows[0];
+
+      if (!client.share_enabled) {
+        return res.status(404).json({ error: "invalid_or_revoked" });
+      }
+
+      if (!client.report_data || client.status !== 'done') {
+        return res.status(404).json({ error: "report_not_ready" });
+      }
+
+      // IP-based view tracking with dedup
+      const ip = req.ip || req.connection.remoteAddress || 'unknown';
+      const SALT = process.env.IP_HASH_SALT || 'indsure-salt-2024';
+      const ipHash = crypto.createHash('sha256').update(ip + SALT).digest('hex');
+
+      // Check if this IP viewed in last 24 hours
+      const recentView = await pool.query(
+        `SELECT id FROM report_views 
+        WHERE client_id = $1 AND ip_hash = $2 AND viewed_at > NOW() - INTERVAL '24 hours'
+        LIMIT 1`,
+        [client.id, ipHash]
+      );
+
+      if (recentView.rows.length === 0) {
+        // New view - insert and increment
+        await pool.query(
+          "INSERT INTO report_views (client_id, ip_hash) VALUES ($1, $2)",
+          [client.id, ipHash]
+        );
+        await pool.query(
+          "UPDATE clients SET views = views + 1 WHERE id = $1",
+          [client.id]
+        );
+      }
+
+      // Return public-safe data
+      res.json({
+        report_data: client.report_data,
+        score: client.score,
+        insurer: client.insurer,
+        policy_name: client.policy_name,
+        policyholder_name: client.policyholder_name,
+        filename: client.filename,
+        created_at: client.created_at
+      });
+    } catch (err: any) {
+      console.error("Shared report error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Public: Lead Collection ─────────────────────────────────────────── */
+
+  app.post("/api/leads", async (req, res) => {
+    try {
+      const { name, email, phone, city, source } = req.body;
+
+      // Validate required fields
+      if (!name || !email || !phone) {
+        return res.status(400).json({ 
+          error: "Missing required fields: name, email, and phone are required" 
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Invalid email format" });
+      }
+
+      // Validate phone format (10 digits)
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({ error: "Invalid phone format. Must be 10 digits" });
+      }
+
+      // Insert lead into database
+      const result = await pool.query(
+        `INSERT INTO leads (name, email, phone, city, source, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, 'new', NOW(), NOW())
+         RETURNING id, created_at`,
+        [name, email, phone, city || null, source || 'policy_report']
+      );
+
+      const lead = result.rows[0];
+
+      console.log(`✅ New lead created: ${name} (${email}) - ID: ${lead.id}`);
+
+      // TODO: Send notification email to admin
+      // TODO: Add to CRM system
+
+      res.status(201).json({
+        success: true,
+        message: "Lead submitted successfully",
+        leadId: lead.id,
+        createdAt: lead.created_at
+      });
+    } catch (err: any) {
+      console.error("Lead submission error:", err);
+      
+      // Check for duplicate email
+      if (err.code === '23505') {
+        return res.status(409).json({ 
+          error: "A lead with this email already exists" 
+        });
+      }
+
+      res.status(500).json({ 
+        error: "Failed to submit lead. Please try again later." 
+      });
+    }
+  });
+
+  /* ── Admin: Get Leads ─────────────────────────────────────────── */
+
+  app.get("/api/leads", async (req, res) => {
+    try {
+      const { status, limit = 50, offset = 0 } = req.query;
+
+      let query = `
+        SELECT id, name, email, phone, city, source, status, notes, 
+               created_at, updated_at, contacted_at, contacted_by
+        FROM leads
+      `;
+      const params: any[] = [];
+
+      if (status) {
+        query += ` WHERE status = $1`;
+        params.push(status);
+      }
+
+      query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      params.push(limit, offset);
+
+      const result = await pool.query(query, params);
+
+      // Get total count
+      const countQuery = status 
+        ? `SELECT COUNT(*) FROM leads WHERE status = $1`
+        : `SELECT COUNT(*) FROM leads`;
+      const countParams = status ? [status] : [];
+      const countResult = await pool.query(countQuery, countParams);
+      const total = parseInt(countResult.rows[0].count);
+
+      res.json({
+        leads: result.rows,
+        total,
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string)
+      });
+    } catch (err: any) {
+      console.error("Get leads error:", err);
+      res.status(500).json({ error: "Failed to fetch leads" });
     }
   });
 

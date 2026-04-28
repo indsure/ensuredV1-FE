@@ -59,10 +59,18 @@ const ATTEMPTS = 20;
 const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 const slug = (value: string) => value.replace(/[^a-zA-Z0-9._-]+/g, "-");
 const baseName = (value: string) => value.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ").trim();
-const makeId = () =>
-  typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+const makeId = () => {
+  // Always use crypto.randomUUID() for proper UUID format
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  // Fallback: generate a valid UUID v4 format
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 const bytes = (value: number) => (value > 1024 * 1024 ? `${(value / 1024 / 1024).toFixed(1)} MB` : `${Math.ceil(value / 1024)} KB`);
 const shareUrl = (origin: string, token: string | null) => (token ? `${origin}/report/${token}` : "");
 
@@ -208,7 +216,8 @@ export default function AgentUploads() {
 
   async function triggerAnalysis(policyId: string, filePath: string, fileName: string) {
     const payload = { policyId, agentId: agent?.agentId, filePath, fileName };
-    const targets = ["/api/agent/analyze-policy", "/api/agent/analyze", `/api/policies/${policyId}/analyze`, "/api/analyses"];
+    // Note: /api/agent/analyze expects file upload, not JSON, so we skip it
+    const targets = ["/api/agent/analyze-policy", `/api/policies/${policyId}/analyze`, "/api/analyses"];
 
     for (const target of targets) {
       try {

@@ -6,7 +6,7 @@
  * If the schema changes, update both files (or move to shared/).
  */
 
-export type Zone = "A" | "B" | "C";
+export type Zone = "A" | "B" | "C" | "D";
 export type Confidence = "high" | "medium" | "low";
 export type RiskLevel = "low" | "medium" | "high";
 export type Severity = "high" | "medium" | "low";
@@ -386,13 +386,15 @@ export const validateForensicAuditReport = (data: any): data is ForensicAuditRep
   try {
     if (!data?.identity || !data?.policy_timeline || !data?.coverage_structure) return false;
     const zone = data.identity.assumed_zone;
-    if (!["A", "B", "C"].includes(zone)) return false;
+    if (!["A", "B", "C", "D"].includes(zone)) return false;
     const verdict = data.final_verdict?.label;
     if (!["SAFE", "BORDERLINE", "RISKY"].includes(verdict)) return false;
     if (typeof data.audit_score?.score !== "number") return false;
     if (data.audit_score.score < 0 || data.audit_score.score > 100) return false;
-    if (!Array.isArray(data.claim_simulations) || data.claim_simulations.length === 0) return false;
-    if (!Array.isArray(data.recommendations?.critical_actions)) return false;
+    // Make claim_simulations optional - allow empty array
+    if (data.claim_simulations !== undefined && !Array.isArray(data.claim_simulations)) return false;
+    // Make critical_actions optional - allow empty array
+    if (data.recommendations?.critical_actions !== undefined && !Array.isArray(data.recommendations.critical_actions)) return false;
     return true;
   } catch {
     return false;

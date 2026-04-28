@@ -96,7 +96,7 @@ export function Header() {
           </nav>
         </div>
 
-        {/* ─── RIGHT: CTA + Login Dropdown ─── */}
+        {/* ─── RIGHT: CTA + Advisor Login Button ─── */}
         <div className="hidden md:flex items-center gap-6">
           <Link href="/find-provider">
             <button className="px-5 py-2.5 text-sm font-semibold bg-[var(--color-green-primary)] text-white rounded-lg hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer shadow-md shadow-teal-900/10">
@@ -104,33 +104,18 @@ export function Header() {
             </button>
           </Link>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.15em] uppercase text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer outline-none">
-                Login
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              sideOffset={12}
-              className="min-w-[200px] bg-white border border-[var(--color-border-light)] rounded-lg shadow-xl p-1"
-            >
-              <DropdownMenuItem
-                className="p-0 outline-none cursor-pointer"
-                onSelect={(e) => {
-                  e.preventDefault();
-                  // Delay navigation slightly so Radix UI has time to clean up focus 
-                  // before the Header unmounts itself on the /agent route.
-                  setTimeout(() => setLocation("/agent/login"), 50);
-                }}
-              >
-                <div className="block w-full px-3 py-2.5 text-sm font-medium text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] cursor-pointer rounded-md">
-                  🏢 Advisor Login
-                </div>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <button 
+            onClick={() => setLocation("/agent")}
+            className="flex items-center gap-2 text-xs font-semibold tracking-[0.15em] uppercase text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer outline-none"
+          >
+            🏢 Advisor Login
+          </button>
+
+          <div className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
+            <button className="hover:text-[var(--color-green-primary)] transition-colors">EN</button>
+            <span>|</span>
+            <button className="hover:text-[var(--color-green-primary)] transition-colors">हिन्दी</button>
+          </div>
         </div>
 
         {/* ─── MOBILE TOGGLE ─── */}
@@ -190,17 +175,11 @@ export function Header() {
                 </div>
               </Link>
 
-              <div className="py-2 px-3">
-                <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--color-text-muted)]">
-                  Login
-                </span>
-              </div>
-
               <div
-                className="py-3 px-6 rounded-lg text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-cream-dark)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer"
+                className="py-3 px-3 text-center rounded-lg text-sm font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer flex items-center justify-center gap-2"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  setTimeout(() => setLocation("/agent/login"), 50);
+                  setTimeout(() => setLocation("/agent"), 50);
                 }}
               >
                 🏢 Advisor Login

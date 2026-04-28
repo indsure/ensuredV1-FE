@@ -1,0 +1,292 @@
+// IndSure Data Layer - Prisma Schema
+// Research document: "Insurer Performance Data Bank for Indian Health Insurance (FY 2022-23 to FY 2024-25 Snapshot)"
+// Data as of: 2026-04-27
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./indsure.db"
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INSURERS - Core insurer registry
+// ═══════════════════════════════════════════════════════════════
+
+model Insurer {
+  /// Slug identifier (e.g., "niva-bupa", "star-health")
+  id String @id
+
+  /// Official registered name with IRDAI (e.g., "Niva Bupa Health Insurance Company Ltd.")
+  registeredName String
+
+  /// Common brand/marketing name (e.g., "Niva Bupa")
+  brandName String
+
+  /// Former names for matching (e.g., ["Max Bupa"] for Niva Bupa)
+  /// Stored as JSON array
+  formerNames String @default("[]")
+
+  /// Category: SAHI (standalone health), PRIVATE_GENERAL, or PSU_GENERAL
+  category String
+
+  /// Year of founding/incorporation in India (nullable if unknown)
+  foundedYear Int?
+
+  /// Notes on rebrand history, mergers, acquisitions
+  notes String?
+
+  /// Citation to research document section (e.g., "Research §2.1")
+  sourceCitation String
+
+  /// Date when this record was last verified (ISO 8601)
+  dataAsOf String
+
+  /// Relations
+  metrics InsurerMetric[]
+  unresolvedLogs UnresolvedInsurer[]
+
+  @@index([brandName])
+  @@index([category])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INSURER METRICS - Time-series performance data
+// ═══════════════════════════════════════════════════════════════
+
+model InsurerMetric {
+  id Int @id @default(autoincrement())
+
+  /// Foreign key to Insurer
+  insurerId String
+
+  /// Fiscal year (e.g., "FY 2023-24")
+  fiscalYear String
+
+  /// Metric name (enum-like: CSR_BY_COUNT, ICR, SOLVENCY_RATIO, etc.)
+  metricName String
+
+  /// Numeric value (nullable for non-numeric metrics)
+  value Float?
+
+  /// Text value for non-numeric metrics (e.g., "Excellent", "Tier 1")
+  valueText String?
+
+  /// Data source type: OFFICIAL_IRDAI, JOURNALISTIC_DERIVED, INSURER_SELF_REPORTED, ESTIMATED
+  dataSourceType String
+
+  /// Citation/URL to source
+  sourceCitation String
+
+  /// Confidence level: HIGH, MEDIUM, LOW
+  confidence String
+
+  /// Additional notes or context
+  notes String?
+
+  /// Relations
+  insurer Insurer @relation(fields: [insurerId], references: [id], onDelete: Cascade)
+
+  @@index([insurerId, fiscalYear])
+  @@index([metricName])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTOR BENCHMARKS - Industry/segment aggregates
+// ═══════════════════════════════════════════════════════════════
+
+model SectorBenchmark {
+  id Int @id @default(autoincrement())
+
+  /// Fiscal year (e.g., "FY 2023-24")
+  fiscalYear String
+
+  /// Segment: OVERALL_NON_LIFE, PSU, PRIVATE_GENERAL, SAHI
+  segment String
+
+  /// Metric name (same enum as InsurerMetric)
+  metricName String
+
+  /// Numeric value
+  value Float
+
+  /// Citation to source
+  sourceCitation String
+
+  @@index([fiscalYear, segment])
+  @@index([metricName])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// METRIC THRESHOLDS - Interpretation bands
+// ═══════════════════════════════════════════════════════════════
+
+model MetricThreshold {
+  /// Metric name (primary key)
+  metricName String @id
+
+  /// Minimum value for "excellent" band (nullable)
+  excellentMin Float?
+
+  /// Minimum value for "good" band
+  goodMin Float?
+
+  /// Minimum value for "concerning" band
+  concerningMin Float?
+
+  /// Maximum value for "red flag" band
+  redFlagMax Float?
+
+  /// Direction: HIGHER_IS_BETTER, LOWER_IS_BETTER, BAND
+  direction String
+
+  /// Plain-English explanation of what this metric means
+  interpretationText String
+
+  /// Common misinterpretations to warn users about
+  misinterpretationWarning String
+
+  /// Citation to research document section
+  sourceCitation String
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCORING PROFILES - Weighting schemes
+// ═══════════════════════════════════════════════════════════════
+
+model ScoringProfile {
+  /// Profile ID (e.g., "balanced", "cost_focused")
+  id String @id
+
+  /// Display name (e.g., "Balanced Profile")
+  displayName String
+
+  /// Description of when to use this profile
+  description String
+
+  /// JSON object mapping dimension IDs to weights (must sum to 100)
+  /// Example: {"coverage_adequacy": 20, "cost": 15, ...}
+  weights String
+
+  /// Recommended use cases
+  recommendedFor String
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCORING DIMENSIONS - Individual scoring components
+// ═══════════════════════════════════════════════════════════════
+
+model ScoringDimension {
+  /// Dimension ID (e.g., "coverage_adequacy")
+  id String @id
+
+  /// Display name (e.g., "Coverage Adequacy")
+  displayName String
+
+  /// Description of what this dimension measures
+  description String
+
+  /// JSON object defining scoring curve (value → score mapping)
+  /// Example: {"<3": 15, "3-5": 35, "5-10": 65, "10-25": 85, ">25": 95}
+  scoringCurve String
+
+  /// Citation to research document section
+  sourceCitation String
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GLOSSARY TERMS - Insurance terminology
+// ═══════════════════════════════════════════════════════════════
+
+model GlossaryTerm {
+  /// Term ID (e.g., "co_pay", "icr")
+  term String
+
+  /// Language code (EN, HI)
+  language String
+
+  /// Display name (e.g., "Co-pay")
+  displayName String
+
+  /// Short definition for tooltips (1 sentence)
+  shortDefinition String
+
+  /// Long definition for glossary panel (full paragraph)
+  longDefinition String
+
+  /// Example usage (nullable)
+  example String?
+
+  /// Related terms (JSON array of term IDs)
+  relatedTerms String @default("[]")
+
+  @@id([term, language])
+  @@index([language])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EDUCATIONAL FACTS - Loading screen content
+// ═══════════════════════════════════════════════════════════════
+
+model EducationalFact {
+  id Int @id @default(autoincrement())
+
+  /// Fact text (used in loading screens, tooltips)
+  factText String
+
+  /// Category: regulatory, consumer_traps, industry_stats, tip
+  category String
+
+  /// Citation to source (nullable)
+  sourceCitation String?
+
+  /// Language code (EN, HI)
+  language String
+
+  @@index([category])
+  @@index([language])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UNRESOLVED INSURERS - PDF extraction failures
+// ═══════════════════════════════════════════════════════════════
+
+model UnresolvedInsurer {
+  id Int @id @default(autoincrement())
+
+  /// Extracted text from PDF that couldn't be matched
+  extractedText String
+
+  /// Timestamp of failed resolution
+  attemptedAt String
+
+  /// Matched insurer ID if later resolved (nullable)
+  resolvedInsurerId String?
+
+  /// Relations
+  resolvedInsurer Insurer? @relation(fields: [resolvedInsurerId], references: [id])
+
+  @@index([extractedText])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA FRESHNESS METADATA
+// ═══════════════════════════════════════════════════════════════
+
+model DataFreshness {
+  id Int @id @default(1)
+
+  /// Date when data was last refreshed (ISO 8601)
+  dataLastRefreshed String
+
+  /// Latest IRDAI annual report fiscal year (e.g., "FY 2023-24")
+  irdaiAnnualReportYear String
+
+  /// Research document version/date
+  researchDocVersion String
+
+  /// Next scheduled refresh date (ISO 8601)
+  nextScheduledRefresh String
+}

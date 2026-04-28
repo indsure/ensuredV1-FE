@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center gap-6 px-6 py-16">
@@ -10,6 +13,13 @@ export default function Home() {
       </div>
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-700">
         <p>Use the navigation routes in this app to inspect the review variant.</p>
+      </div>
+      <div className="flex gap-4">
+        <Link href="/agent">
+          <Button size="lg" className="px-8">
+            Advisor Login
+          </Button>
+        </Link>
       </div>
     </main>
   );

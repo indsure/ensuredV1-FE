@@ -314,6 +314,60 @@ function aggregateByPincode(hospitals: HospitalRecord[]): PincodeLevelResult[] {
     return results;
 }
 
+/**
+ * Get sample hospital names for a location
+ */
+export function getHospitalSamples(params: { city?: string; pincode?: string; limit?: number }): { hospital_name: string; address: string; insurer_slug: string }[] {
+    IndSureataLoaded();
+    
+    if (!cachedHospitals || !cachedIndexes) {
+        console.warn('[getHospitalSamples] Data not loaded');
+        return [];
+    }
+
+    const limit = params.limit || 10;
+    const uniqueHospitals = new Map<string, { hospital_name: string; address: string; insurer_slug: string }>();
+    
+    // Get indices based on the filter
+    let indices: number[] | null = null;
+    
+    if (params.pincode && cachedIndexes.byPincode[params.pincode]) {
+        indices = cachedIndexes.byPincode[params.pincode];
+        console.log(`[getHospitalSamples] Found ${indices.length} hospitals for pincode ${params.pincode}`);
+    } else if (params.city && cachedIndexes.byCity[params.city]) {
+        indices = cachedIndexes.byCity[params.city];
+        console.log(`[getHospitalSamples] Found ${indices.length} hospitals for city ${params.city}`);
+    }
+    
+    if (!indices || indices.length === 0) {
+        console.warn(`[getHospitalSamples] No indices found for city=${params.city}, pincode=${params.pincode}`);
+        return [];
+    }
+    
+    // Collect unique hospital names
+    for (const idx of indices) {
+        const hospital = cachedHospitals[idx];
+        if (!hospital) continue;
+        
+        // Apply additional filters if needed
+        if (params.pincode && hospital.pincode !== params.pincode) continue;
+        if (params.city && hospital.city !== params.city) continue;
+        
+        if (!uniqueHospitals.has(hospital.hospital_name)) {
+            uniqueHospitals.set(hospital.hospital_name, {
+                hospital_name: hospital.hospital_name,
+                address: hospital.address,
+                insurer_slug: hospital.insurer_slug,
+            });
+        }
+        
+        if (uniqueHospitals.size >= limit) break;
+    }
+    
+    console.log(`[getHospitalSamples] Returning ${uniqueHospitals.size} unique hospitals`);
+    return Array.from(uniqueHospitals.values());
+}
+
 // Demo/Test function
 function demo() {
     console.log('Hospital Network Filter Engine Demo\n');

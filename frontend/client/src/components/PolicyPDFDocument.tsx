@@ -459,6 +459,11 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
                     <View style={styles.scoreBox}>
                         <Text style={styles.scoreNumber}>{data.audit_score.score}</Text>
                         <Text style={styles.scoreLabel}>Audit Score</Text>
+                        {data.audit_score.bucket_label && (
+                            <Text style={{ fontSize: 8, marginTop: 2, color: '#64748B', fontWeight: 600 }}>
+                                {data.audit_score.bucket_label}
+                            </Text>
+                        )}
                         <Text style={{ fontSize: 7, marginTop: 4, color: '#94A3B8' }}>NCAR: {data.audit_score.ncar.toFixed(2)}x</Text>
                     </View>
                     <View style={styles.verdictSummaryBox}>

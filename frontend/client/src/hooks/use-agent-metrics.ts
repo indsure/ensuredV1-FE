@@ -53,30 +53,30 @@ export function useAgentMetrics(agentId: string | null | undefined) {
       const thirtyDaysAgo = subMonths(new Date(), 1).toISOString()
 
       const [qTotal, qCompleted, qHighRisk, qScores, qPerf] = await Promise.all([
-        supabase.from("policy_analyses").select("id", { count: "exact", head: true }).eq("agent_id", agentId),
+        supabase.from("clients").select("id", { count: "exact", head: true }).eq("agent_id", agentId),
         supabase
-          .from("policy_analyses")
+          .from("clients")
           .select("id", { count: "exact", head: true })
           .eq("agent_id", agentId)
-          .eq("status", "completed"),
+          .eq("status", "done"),
         supabase
-          .from("policy_analyses")
+          .from("clients")
           .select("id", { count: "exact", head: true })
           .eq("agent_id", agentId)
-          .eq("status", "completed")
-          .gte("risk_score", 70),
+          .eq("status", "done")
+          .gte("score", 70),
         supabase
-          .from("policy_analyses")
-          .select("risk_score")
+          .from("clients")
+          .select("score")
           .eq("agent_id", agentId)
-          .eq("status", "completed")
+          .eq("status", "done")
           .gte("created_at", thirtyDaysAgo),
         supabase
-          .from("policy_analyses")
+          .from("clients")
           .select("status, created_at")
           .eq("agent_id", agentId)
           .gte("created_at", sixMonthsAgo)
-          .in("status", ["completed", "failed"]),
+          .in("status", ["done", "error"]),
       ])
 
       if (qTotal.error) throw new Error(qTotal.error.message)
@@ -86,7 +86,7 @@ export function useAgentMetrics(agentId: string | null | undefined) {
       if (qPerf.error) throw new Error(qPerf.error.message)
 
       const scores = (qScores.data ?? [])
-        .map((r: any) => r.risk_score)
+        .map((r: any) => r.score)
         .filter((n: any) => typeof n === "number") as number[]
       const avgRiskScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null
 
@@ -103,8 +103,8 @@ export function useAgentMetrics(agentId: string | null | undefined) {
         const monthKey = format(createdAt, "yyyy-MM")
         const b = buckets.find((x) => format(x.monthStart, "yyyy-MM") === monthKey)
         if (!b) continue
-        if ((row as any).status === "completed") b.resolved++
-        if ((row as any).status === "failed") b.failed++
+        if ((row as any).status === "done") b.resolved++
+        if ((row as any).status === "error") b.failed++
       }
       setPerformance(buckets)
     } catch (e: unknown) {

@@ -1,0 +1,31 @@
+{
+  "name": "indsure-data-layer",
+  "version": "1.0.0",
+  "description": "IndSure data foundation - insurer performance data bank for Indian health insurance",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "seed": "tsx src/scripts/seed.ts",
+    "seed:refresh": "tsx src/scripts/seed.ts --refresh",
+    "validate": "tsx src/scripts/validate.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsc",
+    "prisma:generate": "prisma generate",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": ["insurance", "health", "india", "comparison", "data"],
+  "author": "IndSure",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@prisma/client": "^6.2.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "prisma": "^6.2.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

@@ -11,22 +11,21 @@ import { InlineErrorState } from '@/components/agent/InlineErrorState';
 
 type RecentPolicy = {
   id: string;
-  policy_number: string;
-  client_name: string;
-  insurer_name: string;
+  policy_name: string;
+  name: string;
+  insurer: string;
   status: string;
   score: number | null;
-  updated_at: string;
+  created_at: string;
 };
 
 type FailedJob = {
   id: string;
   status: string;
-  error_type: string | null;
   error_message: string | null;
-  queued_at: string | null;
-  policy_id: string | null;
-  policies: { policy_number: string | null; client_name: string | null } | null;
+  created_at: string | null;
+  policy_name: string | null;
+  name: string | null;
 };
 
 type ChartDataPoint = {
@@ -98,25 +97,25 @@ export default function DashboardNew() {
         // 10. Recent Failures
         qFailures
       ] = await Promise.all([
-        supabase.from('policies').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done'),
-        supabase.from('policies').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done').gte('created_at', sevenDaysAgo),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done'),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done').gte('created_at', sevenDaysAgo),
         
-        supabase.from('policies').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done').gte('score', 70),
-        supabase.from('policies').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done').gte('score', 70).gte('created_at', sevenDaysAgo),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done').gte('score', 70),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done').gte('score', 70).gte('created_at', sevenDaysAgo),
         
-        supabase.from('policies').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).in('status', ['queued', 'processing', 'failed', 'needs_review']),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).in('status', ['pending', 'processing', 'error']),
         
-        supabase.from('policies').select('score').eq('agent_id', agent.agentId).eq('status', 'done').gte('created_at', thirtyDaysAgo),
+        supabase.from('clients').select('score').eq('agent_id', agent.agentId).eq('status', 'done').gte('created_at', thirtyDaysAgo),
         
-        supabase.from('policies').select('id, policy_number, client_name, insurer_name, status, score, updated_at').eq('agent_id', agent.agentId).order('updated_at', { ascending: false }).limit(8),
+        supabase.from('clients').select('id, policy_name, name, insurer, status, score, created_at').eq('agent_id', agent.agentId).order('created_at', { ascending: false }).limit(8),
         
-        supabase.from('policies').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId),
-        supabase.from('policies').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).in('status', ['queued', 'processing']),
-        supabase.from('policies').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).in('status', ['failed', 'needs_review']),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).in('status', ['pending', 'processing']),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).in('status', ['error']),
 
-        supabase.from('policies').select('status, created_at').eq('agent_id', agent.agentId).gte('created_at', eightWeeksAgo).in('status', ['done', 'failed']),
+        supabase.from('clients').select('status, created_at').eq('agent_id', agent.agentId).gte('created_at', eightWeeksAgo).in('status', ['done', 'error']),
 
-        supabase.from('public_analysis_jobs').select('id, status, error_type, error_message, queued_at, policy_id, policies(policy_number, client_name)').eq('agent_id', agent.agentId).eq('status', 'failed').order('queued_at', { ascending: false })
+        supabase.from('clients').select('id, status, error_message, created_at, policy_name, name').eq('agent_id', agent.agentId).eq('status', 'error').order('created_at', { ascending: false }).limit(10)
       ]);
 
       // Calculate Average Risk Score
@@ -169,7 +168,7 @@ export default function DashboardNew() {
           // if it falls into one of our weeks
           if (weekBucket) {
              if (policy.status === 'done') weekBucket.completed++;
-             if (policy.status === 'failed') weekBucket.failed++;
+             if (policy.status === 'error') weekBucket.failed++;
           }
         });
       }
@@ -187,15 +186,13 @@ export default function DashboardNew() {
   }, [agent?.agentId]);
 
   async function retryJob(jobId: string) {
-    // Calling POST /api/analyses/:id/retry as requested (via Supabase function or local API)
-    // The prompt says: Each Retry button calls POST /api/analyses/:id/retry then refreshes the dashboard stats.
     try {
-      await fetch(`/api/analyses/${jobId}/retry`, { method: 'POST', headers: { 'x-user-id': agent?.agentId || '' } });
-      // In a real scenario this might hit the actual API route, let's gracefully fallback if it doesn't exist
-      await supabase.from('public_analysis_jobs').update({ status: 'queued' }).eq('id', jobId);
+      // Update the status back to pending to retry
+      await supabase.from('clients').update({ status: 'pending', error_message: null }).eq('id', jobId);
       fetchDashboard();
+      // Note: The actual retry logic would need to be triggered by the backend processing queue
     } catch {
-      await supabase.from('public_analysis_jobs').update({ status: 'queued' }).eq('id', jobId);
+      console.error('Failed to retry job');
       fetchDashboard();
     }
   }
@@ -225,9 +222,9 @@ export default function DashboardNew() {
   if (error) return <InlineErrorState onRetry={fetchDashboard} />;
 
   function StatusBadge({ status }: { status: string }) {
-    if (status === 'done' || status === 'completed') return <span className="text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-800 px-2 py-0.5 rounded-sm">Completed</span>;
-    if (status === 'failed') return <span className="text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800 px-2 py-0.5 rounded-sm">Failed</span>;
-    if (status === 'needs_review') return <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-sm">Needs Review</span>;
+    if (status === 'done') return <span className="text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-800 px-2 py-0.5 rounded-sm">Completed</span>;
+    if (status === 'error') return <span className="text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800 px-2 py-0.5 rounded-sm">Failed</span>;
+    if (status === 'pending') return <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-sm">Pending</span>;
     return <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-800 px-2 flex items-center gap-1 py-0.5 rounded-sm"><div className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin"/> Processing</span>;
   }
 
@@ -332,17 +329,17 @@ export default function DashboardNew() {
                  <tbody className="divide-y divide-slate-50">
                    {recentActivity.map(p => (
                      <tr key={p.id} className="hover:bg-slate-50/50 cursor-pointer transition-colors" onClick={() => setLocation(`/agent/policies/${p.id}`)}>
-                       <td className="px-6 py-4 font-bold text-[#0D9488]">{p.policy_number}</td>
+                       <td className="px-6 py-4 font-bold text-[#0D9488]">{p.policy_name || p.id}</td>
                        <td className="px-6 py-4">
-                         <div className="font-semibold text-slate-800">{p.client_name}</div>
-                         <div className="text-xs text-slate-500">{p.insurer_name}</div>
+                         <div className="font-semibold text-slate-800">{p.name}</div>
+                         <div className="text-xs text-slate-500">{p.insurer}</div>
                        </td>
                        <td className="px-6 py-4"><StatusBadge status={p.status} /></td>
                        <td className="px-6 py-4 text-right">
                          <span className={`font-bold ${p.score && p.score >= 70 ? 'text-[#F43F5E]' : 'text-slate-800'}`}>{p.score ?? '—'}</span>
                        </td>
                        <td className="px-6 py-4 text-right text-slate-400 text-xs">
-                         {format(new Date(p.updated_at), 'MMM d, h:mm a')}
+                         {format(new Date(p.created_at), 'MMM d, h:mm a')}
                        </td>
                      </tr>
                    ))}
@@ -442,10 +439,10 @@ export default function DashboardNew() {
               <tbody className="divide-y divide-slate-50">
                 {failedJobs.map((job) => (
                   <tr key={job.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-700">{job.policies?.policy_number ?? '—'}</td>
-                    <td className="px-6 py-4 text-slate-700">{job.policies?.client_name ?? '—'}</td>
-                    <td className="px-6 py-4 text-[#F43F5E] font-medium">{job.error_type ?? 'Analysis Failed'}</td>
-                    <td className="px-6 py-4 text-slate-400">{job.queued_at ? format(new Date(job.queued_at), 'MMM d, h:mm a') : '—'}</td>
+                    <td className="px-6 py-4 font-bold text-slate-700">{job.policy_name ?? job.id}</td>
+                    <td className="px-6 py-4 text-slate-700">{job.name ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#F43F5E] font-medium">{job.error_message ?? 'Analysis Failed'}</td>
+                    <td className="px-6 py-4 text-slate-400">{job.created_at ? format(new Date(job.created_at), 'MMM d, h:mm a') : '—'}</td>
                     <td className="px-6 py-4 text-right">
                       <Button size="sm" variant="outline" className="border-[#F43F5E] text-[#F43F5E] hover:bg-[#F43F5E] hover:text-white" onClick={() => retryJob(job.id)}>
                         Retry

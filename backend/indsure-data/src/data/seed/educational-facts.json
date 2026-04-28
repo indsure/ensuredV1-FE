@@ -1,0 +1,134 @@
+[
+  {
+    "factText": "IRDAI capped pre-existing disease waiting periods at 36 months as of 2024, protecting consumers from excessively long waits.",
+    "category": "regulatory",
+    "sourceCitation": "Research §10.5",
+    "language": "EN"
+  },
+  {
+    "factText": "Health insurers in India disallowed claims worth ₹15,100 crore in FY 2023-24 — about 12.9% of total claims by value.",
+    "category": "industry_stats",
+    "sourceCitation": "Research §3.4",
+    "language": "EN"
+  },
+  {
+    "factText": "Standalone health insurers' average incurred claim ratio was 63.63% in FY 2023-24, vs 97.23% for PSU general insurers.",
+    "category": "industry_stats",
+    "sourceCitation": "Research §3.1",
+    "language": "EN"
+  },
+  {
+    "factText": "Public sector insurers settle ~98% of health claims by count, but ICR over 95% can also signal financial stress.",
+    "category": "consumer_traps",
+    "sourceCitation": "Research §3.1, §8.2",
+    "language": "EN"
+  },
+  {
+    "factText": "Around 73,729 health insurance complaints were filed in FY 2024-25, a 14.5% rise — claim rejections were the leading reason.",
+    "category": "industry_stats",
+    "sourceCitation": "Research §4.2",
+    "language": "EN"
+  },
+  {
+    "factText": "After 8 years of continuous coverage, all pre-existing diseases are automatically covered under the moratorium period provision.",
+    "category": "regulatory",
+    "sourceCitation": "Research §10.5",
+    "language": "EN"
+  },
+  {
+    "factText": "The non-life insurance sector moved from a net loss of ₹2,566 crore in FY 2022-23 to a net profit of ₹10,119 crore in FY 2023-24.",
+    "category": "industry_stats",
+    "sourceCitation": "Research §5.3",
+    "language": "EN"
+  },
+  {
+    "factText": "IRDAI requires claim decisions within 30 days of receipt of all documents, with penal interest if delayed.",
+    "category": "regulatory",
+    "sourceCitation": "Research §3.5",
+    "language": "EN"
+  },
+  {
+    "factText": "High claim settlement ratio may hide low-ticket easy claims being paid while high-value claims face friction — always check ICR and complaint data too.",
+    "category": "consumer_traps",
+    "sourceCitation": "Research §8.1",
+    "language": "EN"
+  },
+  {
+    "factText": "Network hospital counts are self-reported by insurers and not audited by IRDAI — verify actual availability in your city.",
+    "category": "consumer_traps",
+    "sourceCitation": "Research §6.1",
+    "language": "EN"
+  },
+  {
+    "factText": "A single serious hospitalization in a metro private hospital can easily exceed ₹3-5 lakh, with complex surgeries going into ₹10 lakh+.",
+    "category": "tip",
+    "sourceCitation": "Research §9.2.1",
+    "language": "EN"
+  },
+  {
+    "factText": "Room rent sub-limits can significantly reduce effective coverage — a ₹10L policy with ₹5K/day room cap may leave you paying heavily out-of-pocket.",
+    "category": "consumer_traps",
+    "sourceCitation": "Research §8.5",
+    "language": "EN"
+  },
+  {
+    "factText": "The Insurance Ombudsman resolved about 87% of entertainable complaints within 90 days in FY 2023-24.",
+    "category": "regulatory",
+    "sourceCitation": "Research §4.3",
+    "language": "EN"
+  },
+  {
+    "factText": "Of 52,575 total insurance complaints received by Ombudsmen in FY 2023-24, health insurance accounted for 31,490 — the highest category.",
+    "category": "industry_stats",
+    "sourceCitation": "Research §4.3",
+    "language": "EN"
+  },
+  {
+    "factText": "IRDAI mandates a minimum solvency ratio of 1.50 for all insurers — ratios below this trigger supervisory intervention.",
+    "category": "regulatory",
+    "sourceCitation": "Research §5.1",
+    "language": "EN"
+  },
+  {
+    "factText": "About 69% of insurance sector grievances in FY 2024-25 were claim-related, underscoring that claim service is the main pain point.",
+    "category": "industry_stats",
+    "sourceCitation": "Research §4.2",
+    "language": "EN"
+  },
+  {
+    "factText": "Extremely low ICR (<60%) for multiple years may indicate aggressive pricing or high claim repudiation — not always consumer-friendly.",
+    "category": "consumer_traps",
+    "sourceCitation": "Research §8.2",
+    "language": "EN"
+  },
+  {
+    "factText": "You have a 15-30 day free look period to review your policy and cancel for a full refund if not satisfied.",
+    "category": "tip",
+    "sourceCitation": "Research §10.5",
+    "language": "EN"
+  },
+  {
+    "factText": "Portability allows you to switch insurers without losing waiting period credits and no-claim bonus — apply at least 45 days before policy expiry.",
+    "category": "tip",
+    "sourceCitation": "Research §10.5",
+    "language": "EN"
+  },
+  {
+    "factText": "IRDAI data is typically released 6-9 months after fiscal year end — current insurer performance scores reflect recent history, not today's exact operations.",
+    "category": "consumer_traps",
+    "sourceCitation": "Research §1.2, §11.1",
+    "language": "EN"
+  },
+  {
+    "factText": "All claim and complaint statistics are at insurer level, not per plan — two products from the same insurer share the same claim profile.",
+    "category": "consumer_traps",
+    "sourceCitation": "Research §1.2, §13",
+    "language": "EN"
+  },
+  {
+    "factText": "Bima Bharosa (bimabharosa.irdai.gov.in) is IRDAI's free online portal to register and track insurance complaints — use it before approaching the Ombudsman.",
+    "category": "tip",
+    "sourceCitation": "Research §4.1",
+    "language": "EN"
+  }
+]

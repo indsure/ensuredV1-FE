@@ -21,12 +21,10 @@ type QueuePolicy = {
 
 function statusColor(status: string): string {
   const map: Record<string, string> = {
-    queued: 'bg-blue-100 text-blue-800',
+    pending: 'bg-slate-200 text-slate-800',
     processing: 'bg-blue-100 text-blue-800 border-blue-200',
-    needs_review: 'bg-amber-100 text-amber-800 border-amber-200',
-    failed: 'bg-red-100 text-red-800 border-red-200',
+    error: 'bg-red-100 text-red-800 border-red-200',
     done: 'bg-green-100 text-green-800 border-green-200',
-    completed: 'bg-green-100 text-green-800 border-green-200',
   };
   return map[status] ?? 'bg-slate-100 text-slate-600';
 }
@@ -47,14 +45,25 @@ export default function MyQueue() {
 
     try {
       const { data, error: qErr } = await supabase
-        .from("policy_analyses")
-        .select("id, client_name, status, needs_review, created_at, updated_at")
+        .from("clients")
+        .select("id, name, status, created_at")
         .eq("agent_id", agent.agentId)
-        .or("status.eq.failed,status.eq.processing,needs_review.eq.true")
-        .order("updated_at", { ascending: false })
+        .in("status", ["error", "processing", "pending"])
+        .order("created_at", { ascending: false })
 
       if (qErr) throw new Error(qErr.message)
-      setMyPolicies(((data as any[]) ?? []) as QueuePolicy[])
+      
+      // Map the data to match expected structure
+      const mappedData = (data ?? []).map(item => ({
+        id: item.id,
+        client_name: item.name,
+        status: item.status,
+        created_at: item.created_at,
+        updated_at: item.created_at, // Use created_at as fallback
+        needs_review: item.status === 'error'
+      }))
+      
+      setMyPolicies(mappedData as QueuePolicy[])
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Unknown error")
     } finally {
@@ -66,16 +75,24 @@ export default function MyQueue() {
     if (agent?.agentId) fetchQueue(); 
   }, [agent?.agentId]);
 
-  const failedRows = useMemo(() => myPolicies.filter((p) => p.status === "failed"), [myPolicies])
+  const failedRows = useMemo(() => myPolicies.filter((p) => p.status === "error"), [myPolicies])
   const processingRows = useMemo(() => myPolicies.filter((p) => p.status === "processing"), [myPolicies])
   const reviewRows = useMemo(() => myPolicies.filter((p) => p.needs_review), [myPolicies])
 
   async function retry(id: string) {
+    if (!agent?.agentId) return
     try {
-      const res = await fetch(`/api/analyses/${id}/retry`, { method: "POST" })
-      if (!res.ok) throw new Error("Request failed")
+      // Update status to processing to retry the analysis
+      const { error: uErr } = await supabase
+        .from("clients")
+        .update({ status: "processing", error_message: null })
+        .eq("id", id)
+        .eq("agent_id", agent.agentId)
+      
+      if (uErr) throw new Error(uErr.message)
+      
       setMyPolicies((prev) => prev.map((p) => (p.id === id ? { ...p, status: "processing" } : p)))
-      toast({ variant: "success", title: "Requeued", description: "Requeued — check back in a moment" })
+      toast({ variant: "success", title: "Requeued", description: "Policy marked for reprocessing" })
     } catch (e: unknown) {
       toast({ variant: "destructive", title: "Retry failed", description: e instanceof Error ? e.message : "Could not retry." })
     }
@@ -85,12 +102,12 @@ export default function MyQueue() {
     if (!agent?.agentId) return
     try {
       const { error: uErr } = await supabase
-        .from("policy_analyses")
-        .update({ needs_review: false })
+        .from("clients")
+        .update({ status: "done" })
         .eq("id", id)
         .eq("agent_id", agent.agentId)
       if (uErr) throw new Error(uErr.message)
-      setMyPolicies((prev) => prev.map((p) => (p.id === id ? { ...p, needs_review: false } : p)))
+      setMyPolicies((prev) => prev.filter((p) => p.id !== id))
       toast({ variant: "success", title: "Updated", description: "Marked done" })
     } catch (e: unknown) {
       toast({ variant: "destructive", title: "Update failed", description: e instanceof Error ? e.message : "Could not update." })

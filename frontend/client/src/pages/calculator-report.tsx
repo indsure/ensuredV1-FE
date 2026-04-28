@@ -74,6 +74,7 @@ export default function CalculatorReportPage() {
     const [inputs, setInputs] = useState<UserInputs | null>(null);
     const [loading, setLoading] = useState(isUuidRoute);
     const [error, setError] = useState<string | null>(null);
+    const [showSavedBanner, setShowSavedBanner] = useState(false);
 
     useEffect(() => {
         const loadReport = async () => {
@@ -84,6 +85,18 @@ export default function CalculatorReportPage() {
                     const data = await res.json();
                     setInputs(typeof data.inputs === "string" ? JSON.parse(data.inputs) : data.inputs);
                     setResult(typeof data.result_data === "string" ? JSON.parse(data.result_data) : data.result_data);
+                    
+                    // Check if this is a fresh save (within last 5 seconds)
+                    const savedTimestamp = sessionStorage.getItem("calculator_saved_timestamp");
+                    if (savedTimestamp) {
+                        const timeDiff = Date.now() - parseInt(savedTimestamp);
+                        if (timeDiff < 5000) {
+                            setShowSavedBanner(true);
+                            // Auto-hide after 5 seconds
+                            setTimeout(() => setShowSavedBanner(false), 5000);
+                        }
+                        sessionStorage.removeItem("calculator_saved_timestamp");
+                    }
                 } catch (err: any) {
                     setError("This report link is invalid or has expired.");
                 } finally {
@@ -156,6 +169,32 @@ export default function CalculatorReportPage() {
             <Header />
             <main className="flex-grow pt-24 pb-20 px-6">
                 <div className="max-w-4xl mx-auto space-y-12">
+
+                    {/* ── Success Banner (only shows after fresh save) ─────────────── */}
+                    {showSavedBanner && (
+                        <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                            <div className="bg-[var(--color-teal-50)] border-2 border-[var(--color-teal-200)] rounded-xl p-4 flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-[var(--color-teal-600)] flex items-center justify-center shrink-0">
+                                    <Check className="w-5 h-5 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-bold text-[var(--color-teal-900)]">Report Saved Successfully</p>
+                                    <p className="text-sm text-[var(--color-teal-700)]">
+                                        Your coverage analysis has been saved. You can share this link anytime.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowSavedBanner(false)}
+                                    className="text-[var(--color-teal-600)] hover:text-[var(--color-teal-800)] transition-colors"
+                                    aria-label="Close"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ── Header ───────────────────────────────────────────────────── */}
                     <div className="text-center space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">

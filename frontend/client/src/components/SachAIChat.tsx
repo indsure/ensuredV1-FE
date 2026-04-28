@@ -219,6 +219,8 @@ export default function SachAIChat() {
     };
 
     try {
+      // Use non-streaming mode by default due to Node.js Web Streams API compatibility issues
+      // Streaming can be re-enabled once the backend SDK issue is resolved
       const res = await apiFetch("/api/sach-ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -227,7 +229,7 @@ export default function SachAIChat() {
           jobId: currentJobId,
           sessionId: sachSessionId,
           language,
-          stream: true,
+          stream: false, // Changed from true to false for stability
         }),
       });
 
@@ -237,52 +239,17 @@ export default function SachAIChat() {
         return;
       }
 
-      if (!res.body) throw new Error("STREAM_UNAVAILABLE");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let assistantText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (value) {
-          const chunk = decoder.decode(value, { stream: true });
-          assistantText += chunk;
-          setLastAssistantContent(assistantText);
-        }
-        if (done) break;
-      }
+      // Handle non-streaming response
+      const data = await res.json();
+      const content = typeof data?.content === "string" ? data.content : "";
+      setLastAssistantContent(content || "Sach AI is currently unavailable.");
 
       // success
     } catch (err: any) {
-      // Streaming fallback: full response until streaming is stable.
-      try {
-        const fallbackRes = await apiFetch("/api/sach-ai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: historyForRequest,
-            jobId: currentJobId,
-            sessionId: sachSessionId,
-            language,
-            stream: false,
-          }),
-        });
-
-        if (!fallbackRes.ok) {
-          const msg = await parseError(fallbackRes);
-          setLastAssistantContent(msg);
-          return;
-        }
-
-        const data = await fallbackRes.json();
-        const content = typeof data?.content === "string" ? data.content : "";
-        setLastAssistantContent(content || "Sach AI is currently unavailable.");
-      } catch (fallbackErr: any) {
-        setLastAssistantContent(
-          fallbackErr?.message ? `Sach AI error: ${fallbackErr.message}` : "Sach AI is currently unavailable."
-        );
-      }
+      // Error handling
+      setLastAssistantContent(
+        err?.message ? `Sach AI error: ${err.message}` : "Sach AI is currently unavailable."
+      );
     } finally {
       setLoading(false);
       setIsTyping(false);

@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { BarChart3, FileText, LayoutDashboard, Settings, ListChecks, LogOut, User, Sparkles } from "lucide-react"
+import { BarChart3, FileText, LayoutDashboard, Settings, ListChecks, LogOut, User, Sparkles, Menu, X } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -20,6 +20,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
   const { agent } = useAgent()
   const [location] = useLocation()
   const [profileOpen, setProfileOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [queueCount, setQueueCount] = useState<number>(0)
   const [queueCountError, setQueueCountError] = useState<string | null>(null)
 
@@ -42,10 +43,10 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
     if (!agent?.agentId) return
     setQueueCountError(null)
     const { count, error } = await supabase
-      .from("policy_analyses")
+      .from("clients")
       .select("id", { count: "exact", head: true })
       .eq("agent_id", agent.agentId)
-      .or("status.eq.failed,status.eq.processing,needs_review.eq.true")
+      .in("status", ["error", "processing", "pending"])
     if (error) {
       setQueueCountError(error.message)
       return
@@ -69,22 +70,47 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] flex text-slate-800 font-['Inter']">
-      <aside className="w-[260px] bg-[#0B1120] text-white flex flex-col border-r border-white/5">
-        <div className="px-6 py-5 border-b border-white/5">
-          <Link to="/agent/dashboard" className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-[#0D9488] flex items-center justify-center shadow-md shadow-[#0D9488]/20">
-              <span className="font-['Playfair_Display'] font-black text-lg">I</span>
-            </div>
-            <div>
-              <div className="font-['Playfair_Display'] text-xl font-bold leading-tight">IndSure</div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-white/60 font-black">Agent Portal</div>
-            </div>
+      <aside className={`${sidebarCollapsed ? 'w-[80px]' : 'w-[260px]'} bg-[#0B1120] text-white flex flex-col border-r border-white/5 transition-all duration-300 ease-in-out relative`}>
+        <div className={`${sidebarCollapsed ? 'px-3' : 'px-6'} py-4 border-b border-white/5 flex items-center justify-between transition-all duration-300`}>
+          <Link to="/agent/dashboard" className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} flex-1 min-w-0`}>
+            <img 
+              src="/logo.png" 
+              alt="IndSure" 
+              className={`${sidebarCollapsed ? 'h-10 w-10' : 'h-12 w-12'} object-contain flex-shrink-0`}
+            />
+            {!sidebarCollapsed && (
+              <div className="flex flex-col min-w-0">
+                <span className="text-lg font-bold text-white leading-tight">IndSure</span>
+                <span className="text-[10px] uppercase tracking-wider text-white/60 font-semibold">Agent Portal</span>
+              </div>
+            )}
           </Link>
+          {!sidebarCollapsed && (
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="h-8 w-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
+              aria-label="Collapse sidebar"
+            >
+              <Menu className="h-5 w-5 text-white" />
+            </button>
+          )}
         </div>
+        
+        {sidebarCollapsed && (
+          <div className="px-3 py-3 border-b border-white/5">
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="w-full h-10 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
+              aria-label="Expand sidebar"
+            >
+              <Menu className="h-5 w-5 text-white" />
+            </button>
+          </div>
+        )}
 
-        <div className="px-4 py-6 space-y-6 flex-1">
+        <div className={`${sidebarCollapsed ? 'px-2' : 'px-4'} py-6 space-y-6 flex-1 transition-all duration-300`}>
           <div>
-            <div className="px-2 text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">Main</div>
+            {!sidebarCollapsed && <div className="px-2 text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">Main</div>}
             <nav className="space-y-1">
               {nav.map((item) => {
                 const active = location === item.href
@@ -93,57 +119,68 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                     key={item.href}
                     to={item.href}
                     className={[
-                      "flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
+                      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors relative group",
                       active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
+                      sidebarCollapsed ? "justify-center" : "justify-between"
                     ].join(" ")}
+                    title={sidebarCollapsed ? item.label : undefined}
                   >
-                    <span className="flex items-center gap-3">
+                    <span className={`flex items-center ${sidebarCollapsed ? '' : 'gap-3'}`}>
                       {item.icon}
-                      {item.label}
+                      {!sidebarCollapsed && item.label}
                     </span>
-                    {item.href === "/agent/my-queue" && (
+                    {!sidebarCollapsed && item.href === "/agent/my-queue" && (
                       <span className="inline-flex items-center rounded-full bg-[#0D9488]/15 text-[#5eead4] border border-[#0D9488]/30 px-2 py-0.5 text-[10px] font-black tabular-nums">
+                        {queueCount}
+                      </span>
+                    )}
+                    {sidebarCollapsed && item.href === "/agent/my-queue" && queueCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0D9488] text-white text-[10px] font-black flex items-center justify-center">
                         {queueCount}
                       </span>
                     )}
                   </Link>
                 )
               })}
-              {queueCountError && <div className="text-xs text-white/50 px-2 mt-2">Queue badge unavailable</div>}
+              {queueCountError && !sidebarCollapsed && <div className="text-xs text-white/50 px-2 mt-2">Queue badge unavailable</div>}
             </nav>
           </div>
 
           <div>
-            <div className="px-2 text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">Account</div>
+            {!sidebarCollapsed && <div className="px-2 text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">Account</div>}
             <nav className="space-y-1">
               <Link
                 to="/agent/settings"
                 className={[
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
                   location === "/agent/settings" ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
+                  sidebarCollapsed ? "justify-center" : ""
                 ].join(" ")}
+                title={sidebarCollapsed ? "Settings" : undefined}
               >
                 <Settings className="h-4 w-4" />
-                Settings
+                {!sidebarCollapsed && "Settings"}
               </Link>
             </nav>
           </div>
         </div>
 
         {/* Bottom agent pill */}
-        <div className="p-4 border-t border-white/5">
+        <div className={`${sidebarCollapsed ? 'p-2' : 'p-4'} border-t border-white/5 transition-all duration-300`}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-full flex items-center gap-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors px-3 py-3">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-[#0D9488] to-[#14b8a6] flex items-center justify-center text-sm font-black uppercase">
+              <button className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} rounded-xl bg-white/5 hover:bg-white/10 transition-colors px-3 py-3`}>
+                <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-[#0D9488] to-[#14b8a6] flex items-center justify-center text-sm font-black uppercase flex-shrink-0">
                   {initials}
                 </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="text-sm font-semibold truncate">{agent?.name ?? "Agent"}</div>
-                  <div className="text-[10px] uppercase tracking-widest text-white/60 font-black truncate">
-                    {agent?.role ?? "agent"}
+                {!sidebarCollapsed && (
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="text-sm font-semibold truncate">{agent?.name ?? "Agent"}</div>
+                    <div className="text-[10px] uppercase tracking-widest text-white/60 font-black truncate">
+                      {agent?.role ?? "agent"}
+                    </div>
                   </div>
-                </div>
+                )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -174,7 +211,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           {metricsError ? (
             <InlineErrorState onRetry={refetchMetrics} />
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-6 mt-6">
               {/* Header */}
               <div className="flex items-start gap-4">
                 <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-[#0D9488] to-[#14b8a6] flex items-center justify-center text-2xl font-black uppercase text-white">
@@ -219,6 +256,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                   ["Joined date", "—"],
                   ["Role", agent?.role ?? "agent"],
                   ["Location", agent?.location ?? "—"],
+                  ["Companies partnered with", "—"],
                 ].map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between gap-4 text-sm">
                     <span className="text-slate-500 font-semibold">{k}</span>
@@ -248,14 +286,14 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
             </div>
           )}
 
-          <SheetFooter className="gap-2">
-            <Button variant="outline" onClick={() => (window.location.href = "/agent/settings")}>
+          <div className="mt-6 pt-6 border-t flex gap-3">
+            <Button variant="outline" className="flex-1" onClick={() => (window.location.href = "/agent/settings")}>
               Edit Profile
             </Button>
-            <Button variant="destructive" onClick={() => void signOut()}>
+            <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={() => void signOut()}>
               Sign Out
             </Button>
-          </SheetFooter>
+          </div>
         </SheetContent>
       </Sheet>
     </div>

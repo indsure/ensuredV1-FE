@@ -25,6 +25,7 @@ import { getZoneForCity } from "@/lib/data/zones";
 import { pdf } from '@react-pdf/renderer';
 import { PolicyPDFDocument } from './PolicyPDFDocument';
 import { apiFetch } from "@/lib/api";
+import { LeadCollectionCTA } from "./LeadCollectionCTA";
 
 interface PolicyAuditReportProps {
     data: ForensicAuditReport;
@@ -73,6 +74,8 @@ function getSimulationVerdictColor(verdict: "COVERED" | "PARTIAL" | "EXPOSED") {
 
 export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportProps) {
     const [showDeductions, setShowDeductions] = useState(false);
+    const [showLeadForm, setShowLeadForm] = useState(false);
+    const leadFormRef = useRef<HTMLDivElement>(null);
     const [hospitalCount, setHospitalCount] = useState<number | null>(null);
     const [insurerHospitalCount, setInsurerHospitalCount] = useState<number | null>(null);
     const [openBreakdown, setOpenBreakdown] = useState<Record<string, boolean>>({});
@@ -440,6 +443,11 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                         )}>
                             {score}
                         </div>
+                        {data.audit_score?.bucket_label && (
+                            <div className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+                                {data.audit_score.bucket_label}
+                            </div>
+                        )}
                         <div className="text-xs text-[var(--color-text-secondary)] mb-3">
                             NCAR: <span className="font-mono font-bold">{ncar.toFixed(2)}×</span>
                             {" — "}<span className="italic">{getNCARLabel(ncar)}</span>
@@ -451,6 +459,11 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                             <p>Computed from {data.audit_score?.deductions?.length ?? 0} deduction {(data.audit_score?.deductions?.length ?? 0) === 1 ? 'rule' : 'rules'}.</p>
                             <p>All scores are AI-computed from your policy text.</p>
                             <p>No manual overrides.</p>
+                            {data.audit_score?.raw_score && data.audit_score.raw_score !== score && (
+                                <p className="text-[10px] text-slate-400 mt-2">
+                                    Raw score: {data.audit_score.raw_score} (rounded to {score})
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -1023,7 +1036,19 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                 {portingRec.recommendation === "consider" && (
                                     <>
                                         <div className="h-px bg-amber-200/50 my-4" />
-                                        <Button variant="outline" className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 hover:text-amber-800" onClick={() => window.location.href = '/help'}>
+                                        <Button 
+                                            variant="outline" 
+                                            className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 hover:text-amber-800" 
+                                            onClick={() => {
+                                                setShowLeadForm(true);
+                                                setTimeout(() => {
+                                                    leadFormRef.current?.scrollIntoView({ 
+                                                        behavior: 'smooth', 
+                                                        block: 'start' 
+                                                    });
+                                                }, 100);
+                                            }}
+                                        >
                                             Talk to an IndSure Advisor about this →
                                         </Button>
                                     </>
@@ -1031,7 +1056,18 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                 {portingRec.recommendation === "yes" && (
                                     <>
                                         <div className="h-px bg-red-200/50 my-4" />
-                                        <Button className="w-full bg-red-600 text-white hover:bg-red-700" onClick={() => window.location.href = '/help'}>
+                                        <Button 
+                                            className="w-full bg-red-600 text-white hover:bg-red-700" 
+                                            onClick={() => {
+                                                setShowLeadForm(true);
+                                                setTimeout(() => {
+                                                    leadFormRef.current?.scrollIntoView({ 
+                                                        behavior: 'smooth', 
+                                                        block: 'start' 
+                                                    });
+                                                }, 100);
+                                            }}
+                                        >
                                             Find a Better Policy Now →
                                         </Button>
                                     </>
@@ -1054,6 +1090,21 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                 </ul>
                             </div>
                         )}
+                    </section>
+                )}
+
+                {/* 7.5 LEAD COLLECTION CTA */}
+                {showLeadForm && portingRec && (
+                    <section ref={leadFormRef} className="mb-16 scroll-mt-24">
+                        <LeadCollectionCTA 
+                            policyData={{
+                                insured_names: data.identity?.insured_names,
+                                city: data.identity?.city,
+                            }}
+                            isOpen={showLeadForm}
+                            onClose={() => setShowLeadForm(false)}
+                            variant={portingRec.recommendation === "yes" ? "yes" : "consider"}
+                        />
                     </section>
                 )}
 

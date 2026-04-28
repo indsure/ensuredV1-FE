@@ -190,8 +190,10 @@ function getSachAiSessionKey(req: Request, sessionId: unknown): string {
 
 app.post("/api/sach-ai", async (req: Request, res: Response) => {
   try {
-    const { messages = [], jobId: _jobId, sessionId, language, stream } = req.body || {};
-    const streamEnabled = stream !== false;
+    const { messages = [], jobId, sessionId, language, stream } = req.body || {};
+    // Disable streaming by default due to Node.js Web Streams API compatibility issues
+    // with @google/generative-ai SDK (pipeThrough not available in all environments)
+    const streamEnabled = stream === true;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ message: "Invalid request: messages must be a non-empty array" });
@@ -203,6 +205,61 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
         message: "Sach AI misconfigured",
         details: "GEMINI_API_KEY is not defined in environment variables",
       });
+    }
+
+    // Fetch policy context if jobId is provided
+    let policyContext = "";
+    if (jobId && typeof jobId === "string") {
+      try {
+        const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+        const jobRes = await pool.query(
+          "SELECT result FROM analysis_jobs WHERE id = $1",
+          [jobId]
+        );
+        await pool.end();
+
+        if (jobRes.rows.length > 0 && jobRes.rows[0].result) {
+          const analysisData = jobRes.rows[0].result;
+          
+          // Extract key policy information for context
+          const policyName = analysisData?.coverage_structure?.policy_name || "Unknown Policy";
+          const insurerName = analysisData?.identity?.insurer_name || "Unknown Insurer";
+          const sumInsured = analysisData?.coverage_structure?.base_sum_insured || "Not specified";
+          const coverageDetails = analysisData?.coverage_structure?.coverage_details || [];
+          const exclusions = analysisData?.coverage_structure?.exclusions || [];
+          const waitingPeriods = analysisData?.policy_timeline?.waiting_periods || [];
+          const copayDetails = analysisData?.cost_structure?.copay_details || [];
+          const roomRentCapping = analysisData?.cost_structure?.room_rent_capping || {};
+          
+          // Build context string with relevant policy details
+          policyContext = `\n\n=== USER'S POLICY CONTEXT ===
+Policy Name: ${policyName}
+Insurer: ${insurerName}
+Sum Insured: ${sumInsured}
+
+Coverage Details:
+${coverageDetails.map((c: any) => `- ${c.coverage_type || c.name}: ${c.description || c.details || 'Covered'}`).join('\n') || 'Not available'}
+
+Exclusions:
+${exclusions.map((e: any) => `- ${typeof e === 'string' ? e : e.exclusion || e.description}`).join('\n') || 'Not available'}
+
+Waiting Periods:
+${waitingPeriods.map((w: any) => `- ${w.condition || w.type}: ${w.period || w.duration}`).join('\n') || 'Not available'}
+
+Copay Details:
+${copayDetails.map((c: any) => `- ${c.condition || c.type}: ${c.percentage || c.amount}`).join('\n') || 'Not available'}
+
+Room Rent Capping:
+${roomRentCapping.limit ? `Limit: ${roomRentCapping.limit}` : 'No capping information available'}
+
+=== END POLICY CONTEXT ===
+
+IMPORTANT: The user has uploaded their policy document. Use the above policy context to answer their specific questions about THEIR policy. Be specific and reference their actual policy details when answering.`;
+        }
+      } catch (dbErr: any) {
+        console.error("Failed to fetch policy context:", dbErr);
+        // Continue without policy context rather than failing the request
+      }
     }
 
     const lastMessage = messages[messages.length - 1] as any;
@@ -263,7 +320,7 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
       history: [
         {
           role: "user",
-          parts: [{ text: SACH_AI_SYSTEM_PROMPT }]
+          parts: [{ text: SACH_AI_SYSTEM_PROMPT + policyContext }]
         },
         ...history
       ],

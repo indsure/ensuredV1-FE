@@ -6,7 +6,7 @@ export default async function PublicSharePage({ params }: { params: { token: str
   // NOTE: In production, the API domain should be an environment variable.
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
   
-  const res = await fetch(`${apiUrl}/share/${token}`, { cache: 'no-store' });
+  const res = await fetch(`${apiUrl}/shared/report/${token}`, { cache: 'no-store' });
   const json = await res.json();
   
   if (!res.ok) {

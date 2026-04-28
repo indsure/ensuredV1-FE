@@ -55,6 +55,18 @@ export function ComparisonView({ items, onClose }: ComparisonViewProps) {
                                         <div className="text-xs font-normal text-[var(--color-text-muted)] uppercase tracking-wide bg-white px-2 py-0.5 rounded-full inline-block mt-1 border border-[var(--color-border-light)]">
                                             {item.type}
                                         </div>
+                                        {/* Show top 3 insurers */}
+                                        <div className="mt-2 space-y-1">
+                                            {item.insurers
+                                                .sort((a, b) => b.hospital_count - a.hospital_count)
+                                                .slice(0, 3)
+                                                .map((insurer, idx) => (
+                                                    <div key={idx} className="text-[10px] text-[var(--color-text-secondary)] flex items-center justify-center gap-1">
+                                                        <span className="capitalize font-medium">{insurer.insurer_slug.replace(/_/g, " ")}</span>
+                                                        <span className="text-[var(--color-teal-600)] font-bold">({insurer.hospital_count})</span>
+                                                    </div>
+                                                ))}
+                                        </div>
                                     </th>
                                 ))}
                             </tr>

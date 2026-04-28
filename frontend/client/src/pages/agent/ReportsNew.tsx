@@ -46,17 +46,33 @@ export default function ReportsNew() {
     setError(null)
     try {
       const { data, error: qErr } = await supabase
-        .from("policy_analyses")
+        .from("clients")
         .select(
-          "id, client_name, insurer, status, risk_score, view_count, viewed_at, share_enabled, share_token, created_at, updated_at"
+          "id, name, insurer, status, score, created_at, policyholder_name, share_token, share_enabled, views, client_email, client_phone, policy_identifier"
         )
         .eq("agent_id", agent.agentId)
-        .eq("status", "completed")
-        .order("updated_at", { ascending: false })
-        .range(0, 99)
+        .eq("status", "done")
+        .order("created_at", { ascending: false })
+        .limit(100)
 
       if (qErr) throw new Error(qErr.message)
-      setRows(((data as any[]) ?? []) as AnalysisRow[])
+      
+      // Map the data to match the expected structure
+      const mappedData = (data ?? []).map(item => ({
+        id: item.id,
+        client_name: item.policyholder_name || item.name,
+        insurer: item.insurer,
+        status: 'completed',
+        risk_score: item.score,
+        view_count: item.views,
+        viewed_at: null,
+        share_enabled: item.share_enabled,
+        share_token: item.share_token,
+        created_at: item.created_at,
+        updated_at: item.created_at
+      }))
+      
+      setRows(mappedData as AnalysisRow[])
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Unknown error")
     } finally {
@@ -172,10 +188,16 @@ export default function ReportsNew() {
                             shareEnabled={r.share_enabled ?? true}
                             disabled={!shareUrl}
                             onDisable={async () => {
-                              const res = await fetch(`/api/analyses/${r.id}/share`, {
-                                method: "PATCH",
-                                headers: { "content-type": "application/json" },
-                                body: JSON.stringify({ shareEnabled: false }),
+                              const { data: { session } } = await supabase.auth.getSession();
+                              if (!session) return;
+                              
+                              const res = await fetch(`/api/agent/clients/${r.id}/share/toggle`, {
+                                method: "POST",
+                                headers: {
+                                  "Authorization": `Bearer ${session.access_token}`,
+                                  "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({ enabled: false }),
                               })
                               if (!res.ok) throw new Error("Request failed")
                               setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, share_enabled: false } : x)))
