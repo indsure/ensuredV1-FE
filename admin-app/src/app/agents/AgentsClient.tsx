@@ -1,0 +1,201 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button, Badge, Input, Modal, Card, CardContent } from "@/components/ui";
+import { RefreshCw } from "lucide-react";
+
+type Agent = {
+  id: string;
+  full_name: string | null;
+  email: string;
+  city: string | null;
+  created_at: string;
+  upload_limit: number | null;
+  invite_code: string | null;
+  policies_count: number;
+  analyses_count: number;
+  credits_remaining: number;
+};
+
+export default function AgentsClient({ agents }: { agents: Agent[] }) {
+  const router = useRouter();
+  const [selected, setSelected] = useState<Agent | null>(null);
+  const [modalType, setModalType] = useState<"credits" | "limit" | null>(null);
+  const [value, setValue] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filtered = agents.filter(
+    (a) =>
+      a.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+      a.email.toLowerCase().includes(search.toLowerCase()) ||
+      a.city?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  function openModal(agent: Agent, type: "credits" | "limit") {
+    setSelected(agent);
+    setModalType(type);
+    setValue(type === "credits" ? String(agent.credits_remaining) : String(agent.upload_limit ?? 10));
+  }
+
+  async function handleSave() {
+    if (!selected || !modalType) return;
+    setSaving(true);
+    try {
+      const body = modalType === "credits" ? { credits: Number(value) } : { upload_limit: Number(value) };
+      const res = await fetch(`/api/agents/${selected.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      setSelected(null);
+      setModalType(null);
+      router.refresh();
+    } catch (err) {
+      alert("Failed to save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Agents</h1>
+          <p className="text-sm text-slate-500 mt-1">{agents.length} total agents</p>
+        </div>
+        <button
+          onClick={() => router.refresh()}
+          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 transition-colors"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </button>
+      </div>
+
+      <Input
+        placeholder="Search by name, email or city…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-y">
+                <tr className="text-left">
+                  <th className="px-5 py-3 font-medium text-slate-500">Agent</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">City</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">Policies</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">Analyses</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">Credits</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">Upload Limit</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">Joined</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((agent) => (
+                  <tr key={agent.id} className="border-b last:border-0 hover:bg-slate-50">
+                    <td className="px-5 py-4">
+                      <div className="font-medium text-slate-900">{agent.full_name || "—"}</div>
+                      <div className="text-xs text-slate-400">{agent.email}</div>
+                    </td>
+                    <td className="px-5 py-4 text-slate-500">{agent.city || "—"}</td>
+                    <td className="px-5 py-4">
+                      <Badge variant="blue">{agent.policies_count}</Badge>
+                    </td>
+                    <td className="px-5 py-4">
+                      <Badge variant="blue">{agent.analyses_count}</Badge>
+                    </td>
+                    <td className="px-5 py-4">
+                      <Badge variant={agent.credits_remaining > 0 ? "green" : "red"}>
+                        {agent.credits_remaining}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-4 text-slate-600">{agent.upload_limit ?? 10}</td>
+                    <td className="px-5 py-4 text-slate-500">
+                      {new Date(agent.created_at).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="h-7 text-xs px-3"
+                          onClick={() => openModal(agent, "credits")}
+                        >
+                          Credits
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="h-7 text-xs px-3"
+                          onClick={() => openModal(agent, "limit")}
+                        >
+                          Limit
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-10 text-center text-slate-400">
+                      No agents found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Modal
+        open={!!selected && !!modalType}
+        onClose={() => { setSelected(null); setModalType(null); }}
+        title={
+          modalType === "credits"
+            ? `Set Credits — ${selected?.full_name || selected?.email}`
+            : `Set Upload Limit — ${selected?.full_name || selected?.email}`
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              {modalType === "credits" ? "Credits Remaining" : "Max Uploads Allowed"}
+            </label>
+            <Input
+              type="number"
+              min="0"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Enter number"
+            />
+            {modalType === "credits" && (
+              <p className="mt-1 text-xs text-slate-400">Current: {selected?.credits_remaining ?? 0} credits</p>
+            )}
+            {modalType === "limit" && (
+              <p className="mt-1 text-xs text-slate-400">Current limit: {selected?.upload_limit ?? 10}</p>
+            )}
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button variant="ghost" onClick={() => { setSelected(null); setModalType(null); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
