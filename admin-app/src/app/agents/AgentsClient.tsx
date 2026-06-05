@@ -10,8 +10,6 @@ type Agent = {
   email: string;
   city: string | null;
   created_at: string;
-  upload_limit: number | null;
-  invite_code: string | null;
   policies_count: number;
   analyses_count: number;
   credits_remaining: number;
@@ -20,7 +18,7 @@ type Agent = {
 export default function AgentsClient({ agents }: { agents: Agent[] }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Agent | null>(null);
-  const [modalType, setModalType] = useState<"credits" | "limit" | null>(null);
+  const [modalType, setModalType] = useState<"credits" | null>(null);
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
@@ -32,21 +30,20 @@ export default function AgentsClient({ agents }: { agents: Agent[] }) {
       a.city?.toLowerCase().includes(search.toLowerCase())
   );
 
-  function openModal(agent: Agent, type: "credits" | "limit") {
+  function openModal(agent: Agent) {
     setSelected(agent);
-    setModalType(type);
-    setValue(type === "credits" ? String(agent.credits_remaining) : String(agent.upload_limit ?? 10));
+    setModalType("credits");
+    setValue(String(agent.credits_remaining));
   }
 
   async function handleSave() {
-    if (!selected || !modalType) return;
+    if (!selected) return;
     setSaving(true);
     try {
-      const body = modalType === "credits" ? { credits: Number(value) } : { upload_limit: Number(value) };
       const res = await fetch(`/api/agents/${selected.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ credits: Number(value) }),
       });
       if (!res.ok) throw new Error("Failed to update");
       setSelected(null);
@@ -93,7 +90,6 @@ export default function AgentsClient({ agents }: { agents: Agent[] }) {
                   <th className="px-5 py-3 font-medium text-slate-500">Policies</th>
                   <th className="px-5 py-3 font-medium text-slate-500">Analyses</th>
                   <th className="px-5 py-3 font-medium text-slate-500">Credits</th>
-                  <th className="px-5 py-3 font-medium text-slate-500">Upload Limit</th>
                   <th className="px-5 py-3 font-medium text-slate-500">Joined</th>
                   <th className="px-5 py-3 font-medium text-slate-500">Actions</th>
                 </tr>
@@ -117,7 +113,6 @@ export default function AgentsClient({ agents }: { agents: Agent[] }) {
                         {agent.credits_remaining}
                       </Badge>
                     </td>
-                    <td className="px-5 py-4 text-slate-600">{agent.upload_limit ?? 10}</td>
                     <td className="px-5 py-4 text-slate-500">
                       {new Date(agent.created_at).toLocaleDateString("en-IN", {
                         day: "numeric",
@@ -126,28 +121,19 @@ export default function AgentsClient({ agents }: { agents: Agent[] }) {
                       })}
                     </td>
                     <td className="px-5 py-4">
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          className="h-7 text-xs px-3"
-                          onClick={() => openModal(agent, "credits")}
-                        >
-                          Credits
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="h-7 text-xs px-3"
-                          onClick={() => openModal(agent, "limit")}
-                        >
-                          Limit
-                        </Button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        className="h-7 text-xs px-3"
+                        onClick={() => openModal(agent)}
+                      >
+                        Credits
+                      </Button>
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-5 py-10 text-center text-slate-400">
+                    <td colSpan={7} className="px-5 py-10 text-center text-slate-400">
                       No agents found
                     </td>
                   </tr>
@@ -161,16 +147,12 @@ export default function AgentsClient({ agents }: { agents: Agent[] }) {
       <Modal
         open={!!selected && !!modalType}
         onClose={() => { setSelected(null); setModalType(null); }}
-        title={
-          modalType === "credits"
-            ? `Set Credits — ${selected?.full_name || selected?.email}`
-            : `Set Upload Limit — ${selected?.full_name || selected?.email}`
-        }
+        title={`Set Credits — ${selected?.full_name || selected?.email}`}
       >
         <div className="space-y-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              {modalType === "credits" ? "Credits Remaining" : "Max Uploads Allowed"}
+              Credits Balance
             </label>
             <Input
               type="number"
@@ -179,12 +161,7 @@ export default function AgentsClient({ agents }: { agents: Agent[] }) {
               onChange={(e) => setValue(e.target.value)}
               placeholder="Enter number"
             />
-            {modalType === "credits" && (
-              <p className="mt-1 text-xs text-slate-400">Current: {selected?.credits_remaining ?? 0} credits</p>
-            )}
-            {modalType === "limit" && (
-              <p className="mt-1 text-xs text-slate-400">Current limit: {selected?.upload_limit ?? 10}</p>
-            )}
+            <p className="mt-1 text-xs text-slate-400">Current: {selected?.credits_remaining ?? 0} credits</p>
           </div>
           <div className="flex gap-3 justify-end">
             <Button variant="ghost" onClick={() => { setSelected(null); setModalType(null); }}>

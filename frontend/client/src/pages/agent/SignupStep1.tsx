@@ -162,6 +162,7 @@ export default function AgentSignupStep1() {
         setLoading(true)
         setError('')
 
+        try {
         const { data: invite, error: inviteError } = await supabase
             .from('invite_codes')
             .select('*')
@@ -219,8 +220,12 @@ export default function AgentSignupStep1() {
         })
 
         if (!profileRes.ok) {
-            const profileErr = await profileRes.json();
-            setError(profileErr.error || 'Failed to create profile. Please try again.')
+            let errMsg = 'Failed to create profile. Please try again.'
+            try {
+                const profileErr = await profileRes.json()
+                errMsg = profileErr.error || errMsg
+            } catch {}
+            setError(errMsg)
             setLoading(false)
             return
         }
@@ -251,6 +256,11 @@ export default function AgentSignupStep1() {
         }
         
         setLocation('/agent/signup/empanelment')
+        } catch (err) {
+            console.error('Signup error:', err)
+            setError('Something went wrong. Please try again.')
+            setLoading(false)
+        }
     }
 
     const filteredCities = TOP_INDIAN_CITIES.filter(city => 

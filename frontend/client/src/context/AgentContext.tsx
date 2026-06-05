@@ -13,6 +13,7 @@ export type AgentProfile = {
 
 type AgentContextType = {
   agent: AgentProfile | null;
+  creditsRemaining: number;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -22,6 +23,7 @@ const AgentContext = createContext<AgentContextType | undefined>(undefined);
 
 export function AgentProvider({ children }: { children: React.ReactNode }) {
   const [agent, setAgent] = useState<AgentProfile | null>(null);
+  const [creditsRemaining, setCreditsRemaining] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,6 +72,14 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
         authLevel: profile.role || "agent",
         avatarInitials: initials,
       })
+
+      const { data: credits } = await supabase
+        .from("agent_credits")
+        .select("balance")
+        .eq("agent_id", user.id)
+        .single()
+      setCreditsRemaining(credits?.balance ?? 0)
+
       setError(null)
     } catch (err: any) {
       setError(err?.message || "Error loading agent profile")
@@ -83,7 +93,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <AgentContext.Provider value={{ agent, loading, error, refresh: loadAgent }}>
+    <AgentContext.Provider value={{ agent, creditsRemaining, loading, error, refresh: loadAgent }}>
       {children}
     </AgentContext.Provider>
   );

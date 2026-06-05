@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 type Agent = {
   id: string;
@@ -62,6 +63,7 @@ function roleBadge(role: string) {
 export default function AgentProfile() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
   const [agent, setAgent] = useState<Agent | null>(null);
   const [policies, setPolicies] = useState<AssignedPolicy[]>([]);
   const [summary, setSummary] = useState<AgentSummary>(null);
@@ -104,17 +106,17 @@ export default function AgentProfile() {
   if (loading) return (
     <div className="flex items-center gap-2 text-slate-500 py-10 justify-center">
       <div className="w-6 h-6 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin" />
-      Loading profile...
+      {t("profile.loading")}
     </div>
   );
   if (error) return <p className="text-red-500 bg-red-50 p-4 rounded-lg border border-red-100">{error}</p>;
-  if (!agent) return <p className="text-slate-500 py-10 text-center italic">Agent not found</p>;
+  if (!agent) return <p className="text-slate-500 py-10 text-center italic">{t("profile.not_found")}</p>;
 
   return (
     <div className="space-y-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-widest">
-        <Link to="/agent/dashboard" className="hover:text-[#0D9488] transition-colors">Agents</Link>
+        <Link to="/agent/dashboard" className="hover:text-[#0D9488] transition-colors">{t("profile.agents")}</Link>
         <span>/</span>
         <span className="text-slate-900">{agent.name ?? agent.email}</span>
       </nav>
@@ -144,53 +146,53 @@ export default function AgentProfile() {
              <Button
                variant="outline"
                className="flex-1 md:flex-none border-slate-200 text-slate-600 font-semibold"
-               onClick={() => toast({ title: 'Not available', description: 'Profile editing isn’t available yet.' })}
+               onClick={() => toast({ title: ‘Not available’, description: t("profile.edit_na") })}
              >
-               Edit Profile
+               {t("profile.edit_profile")}
              </Button>
-             <Button className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 text-white font-semibold">Message</Button>
+             <Button className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 text-white font-semibold">{t("profile.message")}</Button>
         </div>
       </div>
 
       {/* Performance Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-none shadow-sm bg-white p-6">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Portfolio</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("profile.active_portfolio")}</p>
           <p className="text-3xl font-bold text-slate-900 mt-1">{policies.length}</p>
-          <p className="text-[11px] text-slate-400 mt-2 font-medium">Currently assigned policies</p>
+          <p className="text-[11px] text-slate-400 mt-2 font-medium">{t("profile.assigned_policies")}</p>
         </Card>
         <Card className="border-none shadow-sm bg-white p-6">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Quality Rating</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("profile.quality_rating")}</p>
           <p className="text-3xl font-bold text-[#0D9488] mt-1">
             {summary?.avg_score != null ? Number(summary.avg_score).toFixed(1) : '84.2'}
           </p>
-          <p className="text-[11px] text-slate-400 mt-2 font-medium">Weighted average platform score</p>
+          <p className="text-[11px] text-slate-400 mt-2 font-medium">{t("profile.avg_score")}</p>
         </Card>
         <Card className="border-none shadow-sm bg-white p-6">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Market Tenure</p>
-          <p className="text-3xl font-bold text-slate-900 mt-1">{agent.experience_years ?? '5'}+ yrs</p>
-          <p className="text-[11px] text-slate-400 mt-2 font-medium">Verified industry experience</p>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("profile.market_tenure")}</p>
+          <p className="text-3xl font-bold text-slate-900 mt-1">{agent.experience_years ?? '5'}+ {t("profile.yrs")}</p>
+          <p className="text-[11px] text-slate-400 mt-2 font-medium">{t("profile.verified_exp")}</p>
         </Card>
       </div>
 
       {/* Assigned Policies Table */}
       <Card className="border-none shadow-sm bg-white overflow-hidden">
         <CardHeader className="border-b border-slate-50 bg-slate-50/30">
-            <CardTitle className="text-lg font-bold text-slate-800 font-['Playfair_Display']">Portfolio Details</CardTitle>
+            <CardTitle className="text-lg font-bold text-slate-800 font-['Playfair_Display']">{t("profile.portfolio_details")}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {policies.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 italic font-medium">No policies currently assigned to this advisor portfolio.</div>
+            <div className="p-12 text-center text-slate-400 italic font-medium">{t("profile.no_policies")}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50/50 text-left text-slate-400 font-bold uppercase text-[10px] tracking-widest">
                   <tr>
-                    <th className="p-5">Policy & Client</th>
-                    <th className="p-5">Insurer</th>
-                    <th className="p-5">Status</th>
-                    <th className="p-5">Score</th>
-                    <th className="p-5 text-right">Actions</th>
+                    <th className="p-5">{t("profile.col_policy_client")}</th>
+                    <th className="p-5">{t("profile.col_insurer")}</th>
+                    <th className="p-5">{t("profile.col_status")}</th>
+                    <th className="p-5">{t("profile.col_score")}</th>
+                    <th className="p-5 text-right">{t("profile.col_actions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -214,7 +216,7 @@ export default function AgentProfile() {
                           className="text-[#0D9488] font-bold hover:underline"
                           onClick={() => setLocation('/agent/policies/' + p.id)}
                         >
-                          Details
+                          {t("profile.details")}
                         </button>
                       </td>
                     </tr>

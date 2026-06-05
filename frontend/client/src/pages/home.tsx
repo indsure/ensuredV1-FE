@@ -236,7 +236,7 @@ export default function Home() {
         </section>
 
         {/* 4. PROCESS */}
-        <section className="py-32 bg-[var(--color-cream-main)] text-[var(--color-text-main)] border-t border-[var(--color-border-light)] overflow-hidden">
+        <section id="how-it-works" className="py-32 bg-[var(--color-cream-main)] text-[var(--color-text-main)] border-t border-[var(--color-border-light)] overflow-hidden scroll-mt-28">
           <div className="container-editorial">
             <div className="flex flex-col md:flex-row justify-between items-end mb-20 scroll-mt-20">
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-[var(--color-navy-900)]">From chaos to clarity<br />in 4 steps.</h2>

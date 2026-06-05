@@ -5,7 +5,7 @@ import AgentsClient from "./AgentsClient";
 async function getAgents() {
   const { data: agents } = await supabaseAdmin
     .from("agents")
-    .select("id, full_name, email, city, created_at, upload_limit, invite_code")
+    .select("id, full_name, email, city, created_at")
     .order("created_at", { ascending: false });
 
   if (!agents || agents.length === 0) return [];
@@ -23,7 +23,7 @@ async function getAgents() {
       .in("agent_id", agentIds),
     supabaseAdmin
       .from("agent_credits")
-      .select("agent_id, credits_remaining")
+      .select("agent_id, balance")
       .in("agent_id", agentIds),
   ]);
 
@@ -38,14 +38,14 @@ async function getAgents() {
     analysisCounts[a.agent_id] = (analysisCounts[a.agent_id] ?? 0) + 1;
   }
   for (const c of creditsRes.data ?? []) {
-    creditsMap[c.agent_id] = c.credits_remaining;
+    creditsMap[c.agent_id] = c.balance;
   }
 
   return agents.map((agent) => ({
     ...agent,
     policies_count: policyCounts[agent.id] ?? 0,
     analyses_count: analysisCounts[agent.id] ?? 0,
-    credits_remaining: creditsMap[agent.id] ?? 0,
+    credits_remaining: creditsMap[agent.id] ?? 0, // mapped from balance column
   }));
 }
 

@@ -39,6 +39,7 @@ export default defineConfig({
   server: {
     host: "127.0.0.1",
     port: 5412,
+    open: "http://127.0.0.1:5412/",
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:5000',

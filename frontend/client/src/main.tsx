@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import { LanguageProvider } from "./i18n/LanguageContext";
 
 // #region agent log
 try {
@@ -34,4 +35,8 @@ try {
 } catch {}
 // #endregion
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <LanguageProvider>
+    <App />
+  </LanguageProvider>
+);

@@ -111,11 +111,6 @@ export function Header() {
             🏢 Advisor Login
           </button>
 
-          <div className="flex items-center gap-1 text-xs text-[var(--color-text-muted)]">
-            <button className="hover:text-[var(--color-green-primary)] transition-colors">EN</button>
-            <span>|</span>
-            <button className="hover:text-[var(--color-green-primary)] transition-colors">हिन्दी</button>
-          </div>
         </div>
 
         {/* ─── MOBILE TOGGLE ─── */}

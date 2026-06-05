@@ -13,10 +13,11 @@ import { toast } from "@/hooks/use-toast"
 type QueuePolicy = {
   id: string;
   client_name: string;
+  filename: string | null;
+  error_message: string | null;
   status: string;
   created_at: string;
   updated_at: string;
-  needs_review: boolean | null;
 };
 
 function statusColor(status: string): string {
@@ -34,7 +35,7 @@ export default function MyQueue() {
   const [myPolicies, setMyPolicies] = useState<QueuePolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"failed" | "processing" | "needs_review">("failed")
+  const [tab, setTab] = useState<"failed" | "processing">("failed")
   const [polling, setPolling] = useState(false)
   const { agent } = useAgent();
 
@@ -46,21 +47,21 @@ export default function MyQueue() {
     try {
       const { data, error: qErr } = await supabase
         .from("clients")
-        .select("id, name, status, created_at")
+        .select("id, name, policyholder_name, filename, status, error_message, created_at")
         .eq("agent_id", agent.agentId)
         .in("status", ["error", "processing", "pending"])
         .order("created_at", { ascending: false })
 
       if (qErr) throw new Error(qErr.message)
-      
-      // Map the data to match expected structure
+
       const mappedData = (data ?? []).map(item => ({
         id: item.id,
-        client_name: item.name,
+        client_name: item.policyholder_name || item.name || item.filename || '—',
+        filename: item.filename,
+        error_message: item.error_message,
         status: item.status,
         created_at: item.created_at,
-        updated_at: item.created_at, // Use created_at as fallback
-        needs_review: item.status === 'error'
+        updated_at: item.created_at,
       }))
       
       setMyPolicies(mappedData as QueuePolicy[])
@@ -76,8 +77,7 @@ export default function MyQueue() {
   }, [agent?.agentId]);
 
   const failedRows = useMemo(() => myPolicies.filter((p) => p.status === "error"), [myPolicies])
-  const processingRows = useMemo(() => myPolicies.filter((p) => p.status === "processing"), [myPolicies])
-  const reviewRows = useMemo(() => myPolicies.filter((p) => p.needs_review), [myPolicies])
+  const processingRows = useMemo(() => myPolicies.filter((p) => p.status === "processing" || p.status === "pending"), [myPolicies])
 
   async function retry(id: string) {
     if (!agent?.agentId) return
@@ -148,19 +148,17 @@ export default function MyQueue() {
             <TabsTrigger value="processing" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#0D9488] data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 text-sm font-semibold">
               Processing ({processingRows.length})
             </TabsTrigger>
-            <TabsTrigger value="needs_review" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#0D9488] data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 text-sm font-semibold">
-              Needs Review ({reviewRows.length})
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="failed" className="mt-6">
             <QueueTable
               loading={loading}
-              emptyText="No failed analyses."
+              emptyText="No failed analyses. 🎉"
               rows={failedRows}
               actionLabel="Retry"
               onAction={retry}
               onRowClick={(rid) => setLocation(`/agent/policies/${rid}`)}
+              showError
             />
           </TabsContent>
 
@@ -177,16 +175,6 @@ export default function MyQueue() {
             />
           </TabsContent>
 
-          <TabsContent value="needs_review" className="mt-6">
-            <QueueTable
-              loading={loading}
-              emptyText="No items marked for review."
-              rows={reviewRows}
-              actionLabel="Mark Done"
-              onAction={markDone}
-              onRowClick={(rid) => setLocation(`/agent/policies/${rid}`)}
-            />
-          </TabsContent>
         </Tabs>
       )}
     </div>
@@ -201,6 +189,7 @@ function QueueTable({
   onAction,
   onRowClick,
   showSpinner,
+  showError,
 }: {
   loading: boolean
   rows: QueuePolicy[]
@@ -209,66 +198,70 @@ function QueueTable({
   onAction: (id: string) => void
   onRowClick: (id: string) => void
   showSpinner?: boolean
+  showError?: boolean
 }) {
   return (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-100">
-            <tr className="text-left text-slate-500 font-medium">
-              <th className="p-4">Policy ID</th>
-              <th className="p-4">Client</th>
-              <th className="p-4">Status</th>
-              <th className="p-4">Updated</th>
-              <th className="p-4 text-right">Action</th>
+            <tr className="text-left text-xs text-slate-400 uppercase tracking-wider font-semibold">
+              <th className="px-5 py-3.5">File</th>
+              <th className="px-5 py-3.5">Client</th>
+              {showError && <th className="px-5 py-3.5">Reason</th>}
+              <th className="px-5 py-3.5">Status</th>
+              <th className="px-5 py-3.5">Date</th>
+              <th className="px-5 py-3.5 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {loading && (
               <>
-                <TableRowSkeleton columns={5} />
-                <TableRowSkeleton columns={5} />
-                <TableRowSkeleton columns={5} />
+                <TableRowSkeleton columns={showError ? 6 : 5} />
+                <TableRowSkeleton columns={showError ? 6 : 5} />
+                <TableRowSkeleton columns={showError ? 6 : 5} />
               </>
             )}
             {!loading && rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-10 text-center text-slate-400 italic">
+                <td colSpan={showError ? 6 : 5} className="p-10 text-center text-slate-400 italic">
                   {emptyText}
                 </td>
               </tr>
             )}
-            {!loading &&
-              rows.map((p) => (
-                <tr
-                  key={p.id}
-                  className="group hover:bg-slate-50/50 transition-colors cursor-pointer"
-                  onClick={() => onRowClick(p.id)}
-                >
-                  <td className="p-4 font-bold text-[#0D9488]">{p.id}</td>
-                  <td className="p-4 text-slate-700 font-medium">{p.client_name}</td>
-                  <td className="p-4">
-                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest border ${statusColor(p.status)}`}>
-                      {showSpinner && p.status === "processing" ? (
-                        <span className="inline-flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin" />
-                          processing
-                        </span>
-                      ) : (
-                        p.status.replace(/_/g, " ")
-                      )}
-                    </span>
+            {!loading && rows.map((p) => (
+              <tr
+                key={p.id}
+                className="group hover:bg-slate-50/50 transition-colors cursor-pointer"
+                onClick={() => onRowClick(p.id)}
+              >
+                <td className="px-5 py-4 font-medium text-slate-600 text-xs">{p.filename || '—'}</td>
+                <td className="px-5 py-4 font-semibold text-slate-800">{p.client_name}</td>
+                {showError && (
+                  <td className="px-5 py-4 text-xs text-red-500 max-w-xs truncate">
+                    {p.error_message || 'Analysis failed'}
                   </td>
-                  <td className="p-4 text-slate-400 font-medium text-[11px] uppercase tracking-tighter">
-                    {new Date(p.updated_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                  </td>
-                  <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
-                    <Button size="sm" variant="outline" className="border-slate-200" onClick={() => onAction(p.id)}>
-                      {actionLabel}
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+                )}
+                <td className="px-5 py-4">
+                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest border ${statusColor(p.status)}`}>
+                    {showSpinner && (p.status === "processing" || p.status === "pending") ? (
+                      <span className="inline-flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin" />
+                        {p.status}
+                      </span>
+                    ) : p.status.replace(/_/g, " ")}
+                  </span>
+                </td>
+                <td className="px-5 py-4 text-slate-400 text-xs">
+                  {new Date(p.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                </td>
+                <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                  <Button size="sm" variant="outline" className="border-slate-200" onClick={() => onAction(p.id)}>
+                    {actionLabel}
+                  </Button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

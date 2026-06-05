@@ -1482,6 +1482,16 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         const agentId = await verifyJwt(req, res);
         if (!agentId) return;
 
+        // Credit check
+        const creditRes = await pool.query(
+          "SELECT balance FROM agent_credits WHERE agent_id = $1",
+          [agentId]
+        );
+        const credits = creditRes.rows[0]?.balance ?? 0;
+        if (credits <= 0) {
+          return res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
+        }
+
         if (!req.file) {
           return res.status(400).json({ error: "No file uploaded" });
         }
@@ -1562,6 +1572,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             if (result.status === "completed") {
               job.status = "completed";
               job.result = result.result;
+
+              // Decrement credits on success
+              await pool.query(
+                "UPDATE agent_credits SET balance = GREATEST(balance - 1, 0), total_used = total_used + 1 WHERE agent_id = $1",
+                [agentId]
+              );
               
               // Extract metadata from result
               const reportData = result.result;
@@ -1732,8 +1748,53 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   });
 
+  /* ── Agent: Download Original PDF ───────────────────────────────────── */
+
+  app.get("/api/agent/clients/:id/download-pdf", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
+      const { id } = req.params;
+
+      const clientRes = await pool.query(
+        "SELECT id, pdf_url, filename FROM clients WHERE id = $1 AND agent_id = $2",
+        [id, agentId]
+      );
+
+      if (clientRes.rows.length === 0) {
+        return res.status(404).json({ error: "Not found" });
+      }
+
+      const { pdf_url, filename } = clientRes.rows[0];
+
+      if (!pdf_url) {
+        return res.status(404).json({ error: "No PDF stored for this policy" });
+      }
+
+      // Re-sign if it's a Supabase storage signed URL
+      let downloadUrl = pdf_url;
+      const pathMatch = pdf_url.match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/);
+      if (pathMatch) {
+        const [bucket, ...rest] = pathMatch[1].split("/");
+        const storagePath = rest.join("/");
+        const { data: freshSign, error: signErr } = await supabaseAdmin.storage
+          .from(bucket)
+          .createSignedUrl(storagePath, 60 * 60);
+        if (!signErr && freshSign?.signedUrl) {
+          downloadUrl = freshSign.signedUrl;
+        }
+      }
+
+      res.json({ url: downloadUrl, filename: filename || "policy.pdf" });
+    } catch (err: any) {
+      console.error("Download PDF error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   /* ── Public: Get Shared Report ───────────────────────────────────────── */
-  
+
   const publicShareLimit = rateLimit({
     windowMs: 60 * 1000, // 1 minute
     max: 20, // 20 requests per IP per minute

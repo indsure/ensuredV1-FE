@@ -13,14 +13,18 @@ function generateCode() {
 export async function POST() {
   const code = generateCode();
 
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 30);
+
   const { data, error } = await supabaseAdmin
     .from("invite_codes")
-    .insert({ code, is_random: true })
+    .insert({ code, expires_at: expiresAt.toISOString() })
     .select()
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[invite-codes] Supabase error:", error);
+    return NextResponse.json({ error: error.message, details: error }, { status: 500 });
   }
 
   return NextResponse.json({ code: data });

@@ -27,13 +27,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (existing) {
         const { error } = await supabaseAdmin
           .from("agent_credits")
-          .update({ credits_remaining: credits })
+          .update({ balance: credits })
           .eq("agent_id", id);
         if (error) throw error;
       } else {
         const { error } = await supabaseAdmin
           .from("agent_credits")
-          .insert({ agent_id: id, credits_remaining: credits });
+          .insert({ agent_id: id, balance: credits });
         if (error) throw error;
       }
     }

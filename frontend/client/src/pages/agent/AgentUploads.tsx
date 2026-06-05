@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Upload, FileText, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, FileText, AlertCircle, CheckCircle2, Loader2, ShieldAlert } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
 import { getValidSession } from "@/lib/auth-helper";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 type UploadStatus = {
   filename: string;
@@ -21,14 +22,18 @@ type UploadStatus = {
 export default function AgentUploads() {
   const [, setLocation] = useLocation();
   const { agent } = useAgent();
+  const { t } = useLanguage();
   const [uploads, setUploads] = useState<UploadStatus[]>([]);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [policyIdentifier, setPolicyIdentifier] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
-  const onDrop = async (acceptedFiles: File[]) => {
+  const processFiles = async (acceptedFiles: File[]) => {
     if (!agent?.agentId) {
       toast({ variant: "destructive", title: "Error", description: "Agent not authenticated" });
       return;
@@ -192,6 +197,25 @@ export default function AgentUploads() {
     setIsProcessing(false);
   };
 
+  const onDrop = (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+    setPendingFiles(acceptedFiles);
+    setConsentChecked(false);
+    setShowConsentModal(true);
+  };
+
+  function handleConsentConfirm() {
+    setShowConsentModal(false);
+    void processFiles(pendingFiles);
+    setPendingFiles([]);
+  }
+
+  function handleConsentCancel() {
+    setShowConsentModal(false);
+    setPendingFiles([]);
+    setConsentChecked(false);
+  }
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { "application/pdf": [".pdf"] },
@@ -210,21 +234,64 @@ export default function AgentUploads() {
         setLocation(`/agent/policies/${completed.clientId}`);
       }
     } else {
-      setLocation("/agent/reports");
+      setLocation("/agent/policies");
     }
   };
 
   return (
+    <>
+      {showConsentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 flex flex-col gap-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 flex-shrink-0">
+                <ShieldAlert className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">{t("uploads.consent_title")}</h2>
+                <p className="mt-1 text-sm text-slate-600 leading-relaxed">{t("uploads.consent_body")}</p>
+                <p className="mt-3 text-sm text-slate-600 leading-relaxed">{t("uploads.consent_ilovepdf")}</p>
+                <a
+                  href="https://www.ilovepdf.com/unlock_pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0D9488] hover:underline"
+                >
+                  {t("uploads.consent_link")}
+                </a>
+                <p className="mt-3 text-sm text-slate-600">{t("uploads.consent_after")}</p>
+              </div>
+            </div>
+
+            <label className="flex items-start gap-3 cursor-pointer select-none rounded-xl border border-slate-200 p-3 hover:bg-slate-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={consentChecked}
+                onChange={(e) => setConsentChecked(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded accent-[#0D9488] cursor-pointer flex-shrink-0"
+              />
+              <span className="text-sm font-medium text-slate-700">{t("uploads.consent_checkbox")}</span>
+            </label>
+
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" className="border-slate-200" onClick={handleConsentCancel}>{t("uploads.consent_cancel")}</Button>
+              <Button className="bg-[#0D9488] hover:bg-[#0f766e]" disabled={!consentChecked} onClick={handleConsentConfirm}>
+                {t("uploads.consent_confirm")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">Upload Policies</h1>
+        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("uploads.title")}</h1>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
         {/* Upload Area */}
         <Card className="border-slate-100 shadow-sm">
           <CardHeader>
-            <CardTitle>Policy Documents</CardTitle>
+            <CardTitle>{t("uploads.policy_documents")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Dropzone */}
@@ -242,17 +309,15 @@ export default function AgentUploads() {
               <input {...getInputProps()} />
               <Upload className={`w-12 h-12 mx-auto mb-4 ${isDragActive ? "text-[#0D9488]" : "text-slate-400"}`} />
               <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                {isDragActive ? "Drop files here" : "Drop PDF files or click to browse"}
+                {isDragActive ? t("uploads.drop_active") : t("uploads.drop_prompt")}
               </h3>
-              <p className="text-sm text-slate-500">
-                Supports multiple files • Max 25MB per file
-              </p>
+              <p className="text-sm text-slate-500">{t("uploads.drop_hint")}</p>
             </div>
 
             {/* Upload Progress */}
             {uploads.length > 0 && (
               <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-slate-700">Upload Progress</h4>
+                <h4 className="text-sm font-semibold text-slate-700">{t("uploads.upload_progress")}</h4>
                 {uploads.map((upload, idx) => (
                   <div key={idx} className="border border-slate-100 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
@@ -278,10 +343,10 @@ export default function AgentUploads() {
                     )}
                     
                     <div className="text-xs text-slate-500">
-                      {upload.status === "pending" && "Waiting..."}
-                      {upload.status === "uploading" && "Uploading file..."}
-                      {upload.status === "analyzing" && "Analyzing policy..."}
-                      {upload.status === "completed" && "Analysis complete"}
+                      {upload.status === "pending" && t("uploads.status_waiting")}
+                      {upload.status === "uploading" && t("uploads.status_uploading")}
+                      {upload.status === "analyzing" && t("uploads.status_analyzing")}
+                      {upload.status === "completed" && t("uploads.status_done")}
                       {upload.status === "error" && (
                         <span className="text-red-600">Error: {upload.error}</span>
                       )}
@@ -292,13 +357,13 @@ export default function AgentUploads() {
                 {allDone && (
                   <div className="pt-4 flex items-center justify-between border-t border-slate-100">
                     <div className="text-sm text-slate-600">
-                      {completedCount} completed • {errorCount} failed
+                      {completedCount} {t("uploads.completed_count")} • {errorCount} {t("uploads.failed_count")}
                     </div>
                     <Button
                       onClick={handleViewResults}
                       className="bg-[#0D9488] hover:bg-[#0f766e]"
                     >
-                      View Results
+                      {t("uploads.view_results")}
                     </Button>
                   </div>
                 )}
@@ -310,67 +375,68 @@ export default function AgentUploads() {
         {/* Client Details (Optional) */}
         <Card className="border-slate-100 shadow-sm">
           <CardHeader>
-            <CardTitle>Client Details (Optional)</CardTitle>
+            <CardTitle>{t("uploads.client_details")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2 block">
-                Client Full Name
+                {t("uploads.client_name")}
               </label>
               <Input
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                placeholder="e.g., Rajesh Kumar"
+                placeholder={t("uploads.client_name_placeholder")}
                 disabled={isProcessing}
               />
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2 block">
-                Email
+                {t("uploads.email")}
               </label>
               <Input
                 type="email"
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
-                placeholder="client@example.com"
+                placeholder={t("uploads.email_placeholder")}
                 disabled={isProcessing}
               />
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2 block">
-                Phone
+                {t("uploads.phone")}
               </label>
               <Input
                 type="tel"
                 value={clientPhone}
                 onChange={(e) => setClientPhone(e.target.value)}
-                placeholder="+91 98765 43210"
+                placeholder={t("uploads.phone_placeholder")}
                 disabled={isProcessing}
               />
             </div>
 
             <div>
               <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2 block">
-                Policy Identifier
+                {t("uploads.policy_id")}
               </label>
               <Input
                 value={policyIdentifier}
                 onChange={(e) => setPolicyIdentifier(e.target.value)}
-                placeholder="Policy number or reference"
+                placeholder={t("uploads.policy_id_placeholder")}
                 disabled={isProcessing}
               />
             </div>
 
             <div className="pt-4 border-t border-slate-100">
               <p className="text-xs text-slate-500 leading-relaxed">
-                These details help you organize and identify policies later. All fields are optional.
+                {t("uploads.client_details_hint")}
               </p>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
+    </>
   );
 }

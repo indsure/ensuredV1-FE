@@ -6,6 +6,7 @@
   "scripts": {
     "dev:client": "npm run dev --prefix frontend",
     "dev": "tsx backend/server/index.ts",
+    "launch": "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"npm run dev\" \"npm run dev:client\"",
     "dev:all": "concurrently \"tsx backend/server/index.ts\" \"tsx backend/src/index.ts\" \"npm run dev --prefix frontend\" \"npm run dev --prefix next-dashboard -- -p 3000\" \"npm run dev --prefix admin-app -- -p 3002\" \"npm run dev --prefix next-api -- -p 3001\"",
     "build": "npm run build --prefix frontend && tsc --project backend/tsconfig.json",
     "start": "node backend/dist/index.js",
@@ -57,6 +58,7 @@
     "express-rate-limit": "^8.3.1",
     "framer-motion": "^10.18.0",
     "html2pdf.js": "^0.14.0",
+    "i18next": "^26.3.1",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.562.0",
     "multer": "^2.0.2",
@@ -70,6 +72,7 @@
     "react-dom": "^19.2.3",
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.71.1",
+    "react-i18next": "^17.0.8",
     "react-resizable-panels": "^2.0.9",
     "react-router-dom": "^7.13.1",
     "recharts": "^3.7.0",

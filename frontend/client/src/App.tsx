@@ -33,9 +33,8 @@ const AgentUploads = lazy(() => import("@/pages/agent/AgentUploads"));
 const PoliciesNew = lazy(() => import("@/pages/agent/PoliciesNew"));
 const PolicyDetail = lazy(() => import("@/pages/agent/PolicyDetail"));
 const MyQueue = lazy(() => import("@/pages/agent/MyQueue"));
-const ReportsNew = lazy(() => import("@/pages/agent/ReportsNew"));
 const SettingsNew = lazy(() => import("@/pages/agent/SettingsNew"));
-const DemoDashboard = lazy(() => import("@/pages/agent/DemoDashboard"));
+const MyProfile = lazy(() => import("@/pages/agent/MyProfile"));
 import AgentProtectedRoute from "@/components/agent/ProtectedRoute";
 
 // --- Public Report ---
@@ -222,9 +221,6 @@ function App() {
                       <Route path="/agent/dashboard">
                         {() => <AgentProtectedRoute><DashboardNew /></AgentProtectedRoute>}
                       </Route>
-                      <Route path="/agent/demo">
-                        {() => <AgentProtectedRoute><DemoDashboard /></AgentProtectedRoute>}
-                      </Route>
                       <Route path="/agent/uploads">
                         {() => <AgentProtectedRoute><AgentUploads /></AgentProtectedRoute>}
                       </Route>
@@ -240,11 +236,11 @@ function App() {
                       <Route path="/agent/my-queue">
                         {() => <AgentProtectedRoute><MyQueue /></AgentProtectedRoute>}
                       </Route>
-                      <Route path="/agent/reports">
-                        {() => <AgentProtectedRoute><ReportsNew /></AgentProtectedRoute>}
-                      </Route>
                       <Route path="/agent/settings">
                         {() => <AgentProtectedRoute><SettingsNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/profile">
+                        {() => <AgentProtectedRoute><MyProfile /></AgentProtectedRoute>}
                       </Route>
 
                       {/* --- Agent Catch-all --- */}

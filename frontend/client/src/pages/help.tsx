@@ -73,7 +73,7 @@ export default function Help() {
       title: "Documentation",
       description: "Learn how to use our tools",
       action: "Read Docs",
-      href: "#"
+      href: "/blog"
     }
   ];
 

@@ -1,6 +1,7 @@
 import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
-import { AlertTriangle, Copy, ExternalLink, FileText, Loader2, RefreshCw, UploadCloud } from "lucide-react";
+import { AlertTriangle, Copy, ExternalLink, FileText, Loader2, RefreshCw, ShieldAlert, UploadCloud } from "lucide-react";
+import { PDFDocument } from "pdf-lib";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { Button } from "@/components/ui/button";
@@ -125,7 +126,8 @@ async function getSnapshot(policyId: string, agentId: string) {
 }
 
 export default function AgentUploads() {
-  const { agent } = useAgent();
+  const { agent, creditsRemaining } = useAgent();
+  const hasCredits = creditsRemaining > 0;
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [sessions, setSessions] = useState<UploadSession[]>([]);
@@ -133,7 +135,24 @@ export default function AgentUploads() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const origin = useMemo(() => (typeof window === "undefined" ? "" : window.location.origin), []);
+
+  async function tryUnlockPdf(file: File): Promise<File> {
+    try {
+      const buffer = await file.arrayBuffer();
+      const pdf = await PDFDocument.load(buffer, { ignoreEncryption: true });
+      // If the doc is encrypted with a user password we can't proceed — pdf-lib throws above
+      // Strip owner-level permissions by saving a fresh copy
+      const cleanBuffer = await pdf.save();
+      return new File([cleanBuffer], file.name, { type: "application/pdf" });
+    } catch {
+      // Truly encrypted (user password) — return original and let the backend handle/fail gracefully
+      return file;
+    }
+  }
 
   function patchSession(id: string, updates: Partial<UploadSession>) {
     setSessions((current) => current.map((session) => (session.id === id ? { ...session, ...updates } : session)));
@@ -272,8 +291,9 @@ export default function AgentUploads() {
     void loadHistory();
   }
 
-  async function uploadFile(file: File) {
+  async function uploadFile(rawFile: File) {
     if (!agent?.agentId) return;
+    const file = await tryUnlockPdf(rawFile);
     const sessionId = makeId();
     const policyId = makeId();
     const filePath = `${agent.agentId}/${policyId}/${slug(file.name)}`;
@@ -332,7 +352,21 @@ export default function AgentUploads() {
       toast({ variant: "destructive", title: "PDF files only", description: "Please choose policy PDFs." });
       return;
     }
-    files.forEach((file) => void uploadFile(file));
+    setPendingFiles(files);
+    setConsentChecked(false);
+    setShowConsentModal(true);
+  }
+
+  function handleConsentConfirm() {
+    setShowConsentModal(false);
+    pendingFiles.forEach((file) => void uploadFile(file));
+    setPendingFiles([]);
+  }
+
+  function handleConsentCancel() {
+    setShowConsentModal(false);
+    setPendingFiles([]);
+    setConsentChecked(false);
   }
 
   function onInputChange(event: ChangeEvent<HTMLInputElement>) {
@@ -347,7 +381,48 @@ export default function AgentUploads() {
   }
 
   return (
-    <div className="space-y-8 pb-8">
+    <>
+      {/* Consent modal */}
+      {showConsentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 flex flex-col gap-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 flex-shrink-0">
+                <ShieldAlert className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">PDF Unlock Notice</h2>
+                <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                  Some policy PDFs have restrictions (print-lock, copy-lock) that block text extraction. IndSure will automatically attempt to strip these restrictions before analysis.
+                </p>
+                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                  <span className="font-semibold text-slate-800">This works for low-level permission locks.</span> If your PDF requires an open-to-view password, the unlock will fail and analysis may not complete.
+                </p>
+              </div>
+            </div>
+
+            <label className="flex items-start gap-3 cursor-pointer select-none rounded-xl border border-slate-200 p-3 hover:bg-slate-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={consentChecked}
+                onChange={(e) => setConsentChecked(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded accent-[#0D9488] cursor-pointer flex-shrink-0"
+              />
+              <span className="text-sm font-medium text-slate-700">
+                I understand and consent to IndSure attempting to unlock my PDF{pendingFiles.length > 1 ? "s" : ""} for analysis
+              </span>
+            </label>
+
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" className="border-slate-200" onClick={handleConsentCancel}>Cancel</Button>
+              <Button className="bg-[#0D9488] hover:bg-[#0f766e]" disabled={!consentChecked} onClick={handleConsentConfirm}>
+                Continue with upload
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="space-y-8 pb-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="font-['Playfair_Display'] text-3xl font-bold text-slate-900">Analyze Policies</h1>
@@ -355,31 +430,43 @@ export default function AgentUploads() {
             Upload one or more policy PDFs, track each file while analysis runs, and jump straight into the internal policy detail once the report is ready.
           </p>
         </div>
-        <Button variant="outline" className="border-slate-200 bg-white text-slate-600" onClick={() => inputRef.current?.click()}>
-          <UploadCloud className="mr-2 h-4 w-4" />
-          Select PDFs
-        </Button>
+        {hasCredits && (
+          <Button variant="outline" className="border-slate-200 bg-white text-slate-600" onClick={() => inputRef.current?.click()}>
+            <UploadCloud className="mr-2 h-4 w-4" />
+            Select PDFs
+          </Button>
+        )}
       </div>
 
       <Card className="border-slate-100 shadow-sm">
         <CardContent className="p-0">
-          <div
-            className={`rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${dragging ? "border-[#0D9488] bg-[#0D9488]/5" : "border-[#0D9488]/20 bg-[#0D9488]/[0.04]"}`}
-            onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
-            onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
-            onDragLeave={(event) => { event.preventDefault(); setDragging(false); }}
-            onDrop={onDrop}
-          >
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#0D9488]/10 text-[#0D9488]">
-              <UploadCloud className="h-8 w-8" />
+          {hasCredits ? (
+            <div
+              className={`rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${dragging ? "border-[#0D9488] bg-[#0D9488]/5" : "border-[#0D9488]/20 bg-[#0D9488]/[0.04]"}`}
+              onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
+              onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+              onDragLeave={(event) => { event.preventDefault(); setDragging(false); }}
+              onDrop={onDrop}
+            >
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#0D9488]/10 text-[#0D9488]">
+                <UploadCloud className="h-8 w-8" />
+              </div>
+              <h2 className="mt-5 text-xl font-semibold text-slate-900">Drop policy PDFs here</h2>
+              <p className="mt-2 text-sm text-slate-500">PDF only, multiple files supported, and each file gets its own live processing status.</p>
+              <div className="mt-6">
+                <Button className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={() => inputRef.current?.click()}>Choose Files</Button>
+              </div>
+              <input ref={inputRef} type="file" accept=".pdf,application/pdf" multiple className="hidden" onChange={onInputChange} />
             </div>
-            <h2 className="mt-5 text-xl font-semibold text-slate-900">Drop policy PDFs here</h2>
-            <p className="mt-2 text-sm text-slate-500">PDF only, multiple files supported, and each file gets its own live processing status.</p>
-            <div className="mt-6">
-              <Button className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={() => inputRef.current?.click()}>Choose Files</Button>
+          ) : (
+            <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-10 text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                <UploadCloud className="h-8 w-8" />
+              </div>
+              <h2 className="mt-5 text-xl font-semibold text-slate-700">Analysis unavailable</h2>
+              <p className="mt-2 text-sm text-slate-500">You have no credits remaining. Contact your admin to top up.</p>
             </div>
-            <input ref={inputRef} type="file" accept=".pdf,application/pdf" multiple className="hidden" onChange={onInputChange} />
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -491,6 +578,7 @@ export default function AgentUploads() {
           </Card>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
