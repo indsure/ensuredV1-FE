@@ -4,6 +4,7 @@ import { Info, RefreshCw, ExternalLink, Download, Loader2, Trash2 } from "lucide
 import React from "react"
 import { formatDistanceToNow } from "date-fns"
 import { supabase } from "@/lib/supabase"
+import { getApiBase } from "@/lib/queryClient"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import { ShareLinkPopover } from "@/components/agent/ShareLinkPopover"
@@ -187,7 +188,7 @@ export default function PoliciesNew() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
-      const res = await fetch(`/api/agent/clients/${row.id}/download-pdf`, {
+      const res = await fetch(`${getApiBase()}/api/agent/clients/${row.id}/download-pdf`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) {
@@ -439,7 +440,7 @@ export default function PoliciesNew() {
                             onDisable={async () => {
                               const { data: { session } } = await supabase.auth.getSession();
                               if (!session) return;
-                              const res = await fetch(`/api/agent/clients/${p.id}/share/toggle`, {
+                              const res = await fetch(`${getApiBase()}/api/agent/clients/${p.id}/share/toggle`, {
                                 method: "POST",
                                 headers: {
                                   Authorization: `Bearer ${session.access_token}`,
