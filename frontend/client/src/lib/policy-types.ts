@@ -266,7 +266,6 @@ export interface NetworkLimitations {
   hospital_count_in_zone: number | string | null;
   major_hospitals_included: string[];
   reimbursement_allowed: boolean;
-  claim_settlement_ratio: number | null;
   risk_level: RiskLevel;
   remarks: string | null;
 }

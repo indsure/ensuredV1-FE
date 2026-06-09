@@ -518,7 +518,6 @@ Output this exact structure:
     "hospital_count_in_zone": "number | string | null",
     "major_hospitals_included": ["string"],
     "reimbursement_allowed": "boolean",
-    "claim_settlement_ratio": "number | null",
     "risk_level": "low | medium | high",
     "remarks": "string"
   },

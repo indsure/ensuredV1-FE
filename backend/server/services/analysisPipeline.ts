@@ -10,6 +10,7 @@ import {
   mergePolicyTexts
 } from "../utils/policyWordingsFetcher";
 import { applyScoreBucketing, getBucketingExplanation } from "../utils/scoreBucketing";
+import { AI_CONFIG } from "../config/ai_config";
 
 export interface AnalysisResult {
   status: "completed" | "failed";
@@ -41,6 +42,72 @@ export function validateParsedReport(parsed: any): { valid: boolean; reason?: st
   }
 
   return { valid: true };
+}
+
+function pushConfidenceNote(parsed: any, note: string) {
+  if (Array.isArray(parsed.confidence_notes)) {
+    parsed.confidence_notes.push(note);
+  } else if (typeof parsed.confidence_notes === "string") {
+    parsed.confidence_notes += ` ${note}`;
+  } else {
+    parsed.confidence_notes = [note];
+  }
+}
+
+// Highest display bucket each verdict band is allowed to show, so the
+// bucketed score can never visually contradict the verdict label.
+const VERDICT_DISPLAY_MAX: Record<string, number> = {
+  SAFE: 100,
+  BORDERLINE: 62.5,
+  RISKY: 37.5,
+};
+
+/**
+ * Make final_verdict.label a deterministic function of the (raw) score and
+ * NCAR, applying the authoritative VERDICT RULES from the prompt. This removes
+ * drift between the AI's free-text label and the computed score, which the
+ * bucketing step would otherwise amplify into visible contradictions.
+ * Must run on the RAW score, BEFORE bucketing.
+ */
+export function reconcileVerdict(parsed: any) {
+  if (!parsed?.audit_score || !parsed?.final_verdict) return;
+  const score = parsed.audit_score.score;
+  if (typeof score !== "number") return;
+  const ncar = typeof parsed.audit_score.ncar === "number" ? parsed.audit_score.ncar : null;
+
+  let canonical: "SAFE" | "BORDERLINE" | "RISKY";
+  if (ncar !== null && ncar < 0.5) {
+    canonical = "RISKY"; // NCAR auto-failure takes precedence over score
+  } else if (score >= 70 && (ncar === null || ncar >= 0.75)) {
+    canonical = "SAFE";
+  } else if (score >= 50 || (ncar !== null && ncar >= 0.5)) {
+    canonical = "BORDERLINE";
+  } else {
+    canonical = "RISKY";
+  }
+
+  if (parsed.final_verdict.label !== canonical) {
+    pushConfidenceNote(
+      parsed,
+      `Verdict reconciled server-side from "${parsed.final_verdict.label}" to "${canonical}" to match score (${score}) and NCAR (${ncar ?? "n/a"}).`
+    );
+    parsed.final_verdict.label = canonical;
+  }
+}
+
+/**
+ * Ensure the (bucketed) display score does not sit in a higher band than the
+ * verdict label implies — e.g. a BORDERLINE policy must not display 75.
+ * Must run AFTER bucketing.
+ */
+export function clampDisplayScoreToVerdict(parsed: any) {
+  const label = parsed?.final_verdict?.label;
+  const max = VERDICT_DISPLAY_MAX[label];
+  if (parsed?.audit_score && typeof parsed.audit_score.score === "number" && typeof max === "number") {
+    if (parsed.audit_score.score > max) {
+      parsed.audit_score.score = max;
+    }
+  }
 }
 
 export function performScoreArithmeticCheck(parsed: any) {
@@ -120,7 +187,7 @@ export async function runAnalysisPipeline(
     const rawText = await AIService.generateContent(
       promptToUse,
       mergedPolicyText,
-      "gemini-3.5-flash"
+      AI_CONFIG.model
     );
     aiTime = Date.now() - aiStartTime;
 
@@ -142,19 +209,18 @@ export async function runAnalysisPipeline(
 
     performScoreArithmeticCheck(parsed);
 
+    // Lock the verdict label to the (raw) score + NCAR before bucketing
+    reconcileVerdict(parsed);
+
     // Apply score bucketing to reduce variance
     if (parsed.audit_score) {
       parsed.audit_score = applyScoreBucketing(parsed.audit_score);
-      
+
+      // Keep the bucketed display score inside the verdict's band
+      clampDisplayScoreToVerdict(parsed);
+
       // Add bucketing explanation to confidence notes
-      const bucketingNote = getBucketingExplanation();
-      if (Array.isArray(parsed.confidence_notes)) {
-        parsed.confidence_notes.push(bucketingNote);
-      } else if (typeof parsed.confidence_notes === "string") {
-        parsed.confidence_notes += ` ${bucketingNote}`;
-      } else {
-        parsed.confidence_notes = [bucketingNote];
-      }
+      pushConfidenceNote(parsed, getBucketingExplanation());
     }
 
     return {

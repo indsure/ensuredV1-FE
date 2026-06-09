@@ -961,11 +961,6 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                     )}>
                                         {data.network_limitations?.reimbursement_allowed ? "✓ Reimbursement Available" : "Cashless Only"}
                                     </span>
-                                    {data.network_limitations?.claim_settlement_ratio != null && (
-                                        <span className="text-xs text-slate-500 font-mono">
-                                            CSR: {data.network_limitations.claim_settlement_ratio}%
-                                        </span>
-                                    )}
                                 </div>
                             </div>
                         </div>

@@ -12,6 +12,18 @@ export interface AssembledContext {
 export class ContextAssembler {
     private static readonly PROMPT_PATH = path.join(process.cwd(), 'server', 'prompts', 'MASTER_AUDIT_PROMPT.txt');
 
+    // Top-level section headers used in MASTER_AUDIT_PROMPT.txt. Used to delimit
+    // one section from the next — bodies may themselves contain '[' characters
+    // (e.g. references to "[USER_EVIDENCE]"), so we must split on known headers,
+    // not on the next bracket.
+    private static readonly SECTION_HEADERS = [
+        '[SYSTEM_RULES]',
+        '[SCHEMA_DEFINITION]',
+        '[USER_EVIDENCE]',
+        '[OFFICIAL_POLICY_WORDINGS]',
+        '[AUDIT_TASK]',
+    ];
+
     public static async assemble(
         schemaJson: string,
         userEvidenceText: string,
@@ -75,22 +87,25 @@ ${taskInstructions}
     // --- Helpers ---
 
     private static extractSection(template: string, sectionHeader: string): string {
-        // Simple extraction for the predefined template structure
-        // Assumes sections are separated by double newlines or clear headers
-        // For specific implementation, we assume the template provided is the source of truth for Rules and Task.
-        // However, the provided template in Prompt 4 has [SYSTEM_RULES]... [AUDIT_TASK] blocks.
-        // We can regex for them.
-
-        // This is a simplified parser given the rigid structure of MASTER_AUDIT_PROMPT.txt
+        // Returns everything from `sectionHeader` (inclusive) up to the start of
+        // the next KNOWN section header, or end-of-template if none follows.
         const startIndex = template.indexOf(sectionHeader);
-        if (startIndex === -1) return ""; // Should throw error in strict mode
+        if (startIndex === -1) return ""; // Section not present in template
 
-        // Find next section `[` or end of string
-        const followingContent = template.substring(startIndex);
-        const nextSectionIndex = followingContent.indexOf('[', sectionHeader.length);
+        const bodyStart = startIndex + sectionHeader.length;
 
-        if (nextSectionIndex === -1) return followingContent.trim();
-        return followingContent.substring(0, nextSectionIndex).trim();
+        // Find the earliest known header that appears after this section's body
+        // begins. We ignore the section's own header and any '[' inside the body.
+        let nextHeaderIndex = template.length;
+        for (const header of this.SECTION_HEADERS) {
+            if (header === sectionHeader) continue;
+            const idx = template.indexOf(header, bodyStart);
+            if (idx !== -1 && idx < nextHeaderIndex) {
+                nextHeaderIndex = idx;
+            }
+        }
+
+        return template.substring(startIndex, nextHeaderIndex).trim();
     }
 
     private static enforceBudget(text: string, maxChars: number): string {

@@ -5,6 +5,7 @@ import { AIService } from "../services/aiService";
 import { fetchPolicyWordings } from "../utils/policyWordingsFetcher";
 import { validateParsedReport, performScoreArithmeticCheck } from "../services/analysisPipeline";
 import { extractTextFromPDF } from "../routes";
+import { AI_CONFIG } from "../config/ai_config";
 
 let totalChecks = 0;
 let passedChecks = 0;
@@ -81,7 +82,7 @@ async function runHealthCheck() {
     const rawResponse = await AIService.generateContent(
       "Respond with the word PONG and nothing else.",
       "",
-      "gemini-3.1-pro-preview"
+      AI_CONFIG.model
     );
     const latency = Date.now() - startTime;
     console.log(`[Info] Gemini API latency: ${latency}ms`);

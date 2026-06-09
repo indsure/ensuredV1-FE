@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { AI_CONFIG } from '../config/ai_config';
 
 export class AIService {
     private static readonly MOCK_DIR = path.join(process.cwd(), 'server', 'data', 'mocks');
@@ -9,7 +10,7 @@ export class AIService {
     public static async generateContent(
         systemPrompt: string,
         userContent: string,
-        modelName: string = "gemini-1.5-pro"
+        modelName: string = AI_CONFIG.model
     ): Promise<string> {
 
         // 1. Calculate Hash (for Replay/Mock identification)
