@@ -302,7 +302,7 @@ IMPORTANT: The user has uploaded their policy document. Use the above policy con
     sachAiRateMap.set(sessionKey, { count: nextCount + 1, resetAt });
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
 
     const history = messages.slice(0, -1).map((m: any) => ({
       role: m.role === "assistant" ? "model" : "user",
