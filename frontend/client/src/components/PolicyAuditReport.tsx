@@ -1114,7 +1114,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                         <LeadCollectionCTA 
                             policyData={{
                                 insured_names: data.identity?.insured_names,
-                                city: data.identity?.city,
+                                city: data.identity?.city ?? undefined,
                             }}
                             isOpen={showLeadForm}
                             onClose={() => setShowLeadForm(false)}

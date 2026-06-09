@@ -146,7 +146,7 @@ export default function AgentProfile() {
              <Button
                variant="outline"
                className="flex-1 md:flex-none border-slate-200 text-slate-600 font-semibold"
-               onClick={() => toast({ title: ‘Not available’, description: t("profile.edit_na") })}
+               onClick={() => toast({ title: 'Not available', description: t("profile.edit_na") })}
              >
                {t("profile.edit_profile")}
              </Button>

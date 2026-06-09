@@ -78,7 +78,7 @@ export default function AdminLeads() {
       case 'rejected':
         return <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Rejected</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="neutral">{status}</Badge>;
     }
   };
 
@@ -240,7 +240,7 @@ export default function AdminLeads() {
                         )}
                       </td>
                       <td className="py-3 px-4">
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="neutral" className="text-xs">
                           {lead.source}
                         </Badge>
                       </td>

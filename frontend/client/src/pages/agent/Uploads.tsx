@@ -147,7 +147,7 @@ export default function AgentUploads() {
       // If the doc is encrypted with a user password we can't proceed — pdf-lib throws above
       // Strip owner-level permissions by saving a fresh copy
       const cleanBuffer = await pdf.save();
-      return new File([cleanBuffer], file.name, { type: "application/pdf" });
+      return new File([cleanBuffer as BlobPart], file.name, { type: "application/pdf" });
     } catch {
       // Truly encrypted (user password) — return original and let the backend handle/fail gracefully
       return file;

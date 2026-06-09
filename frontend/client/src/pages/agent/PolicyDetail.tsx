@@ -413,7 +413,9 @@ export default function PolicyDetail() {
 
           {/* Full audit report — same component the client sees */}
           {reportData ? (
-            <PolicyAuditReport data={reportData} hideNav />
+            // reportData is validated at runtime; the frontend policy-types and backend
+            // ForensicAuditReport definitions diverge only on optional modifiers, so cast.
+            <PolicyAuditReport data={reportData as unknown as React.ComponentProps<typeof PolicyAuditReport>["data"]} hideNav />
           ) : (
             <Card className="border-slate-100 shadow-sm">
               <CardContent className="p-8 text-center text-slate-400 text-sm italic">
