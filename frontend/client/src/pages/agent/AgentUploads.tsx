@@ -9,6 +9,7 @@ import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
 import { getValidSession } from "@/lib/auth-helper";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { getApiBase } from "@/lib/queryClient";
 
 type UploadStatus = {
   filename: string;
@@ -100,7 +101,7 @@ export default function AgentUploads() {
         if (policyIdentifier) formData.append("policy_identifier", policyIdentifier);
 
         // Upload and start analysis
-        const uploadRes = await fetch("/api/agent/analyze", {
+        const uploadRes = await fetch(`${getApiBase()}/api/agent/analyze`, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${session.access_token}`
@@ -143,7 +144,7 @@ export default function AgentUploads() {
           attempts++;
           
           try {
-            const statusRes = await fetch(`/api/agent/analyze/status/${jobId}`, {
+            const statusRes = await fetch(`${getApiBase()}/api/agent/analyze/status/${jobId}`, {
               headers: {
                 "Authorization": `Bearer ${session.access_token}`
               }
