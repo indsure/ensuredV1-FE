@@ -120,7 +120,7 @@ export async function runAnalysisPipeline(
     const rawText = await AIService.generateContent(
       promptToUse,
       mergedPolicyText,
-      "gemini-3.1-pro-preview"
+      "gemini-3.5-flash"
     );
     aiTime = Date.now() - aiStartTime;
 

@@ -1,5 +1,5 @@
 export const AI_CONFIG = {
-    model: "gemini-3.1-pro-preview",
+    model: "gemini-3.5-flash",
     generation_config: {
         temperature: 0.0,      // Maximum determinism
         top_p: 1.0,           // No nucleus sampling randomness
