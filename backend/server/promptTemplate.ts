@@ -99,9 +99,16 @@ For each waiting period:
 
 **Standard defaults (use ONLY if not stated in document):**
 - Initial waiting period: 30 days
-- Pre-existing diseases: 24 months
 - Specific diseases: 24 months
 - Maternity: 24 months
+
+**PRE-EXISTING DISEASES (PED) — DO NOT INVENT A NUMBER:** PED waiting varies by product and is NOT safe to assume from general knowledge. Handle it strictly from what the document shows:
+
+1. If the document EXPLICITLY states a PED waiting duration → use it, set stated to true.
+2. If PED is NOT explicitly stated, but the document states a specific-illness / specific-disease / "specific exclusion" waiting period → ESTIMATE PED as equal to that specific-illness waiting period. Set duration_months to that value, set stated to false, compute end_date / is_active_today / months_remaining normally, and add to confidence_notes: "PED waiting not separately stated; estimated from the specific illness/treatment exclusion period — verify with insurer or full wording."
+3. If neither a PED nor a specific-illness waiting period is stated → set duration_months to null, stated to false, is_active_today and months_remaining to null, and note: "PED waiting period not stated in the uploaded schedule — verify with insurer."
+
+In ALL cases where stated is false, do NOT apply any PED coverage-gap penalty (it is an estimate/unknown, not a confirmed defect).
 
 **Portability rule:** If policy is ported, continuous coverage from ORIGINAL inception date applies for waiting period calculation. Use the original inception date if stated.
 
@@ -383,10 +390,11 @@ Output this exact structure:
       "risk_commentary": "string"
     },
     "pre_existing_disease": {
-      "duration_months": "number",
+      "duration_months": "number | null",
+      "stated": "boolean (true only if the document explicitly states the PED waiting period)",
       "start_date": "YYYY-MM-DD | null",
       "end_date": "YYYY-MM-DD | null",
-      "is_active_today": "boolean",
+      "is_active_today": "boolean | null",
       "months_remaining": "number | null",
       "risk_commentary": "string"
     },

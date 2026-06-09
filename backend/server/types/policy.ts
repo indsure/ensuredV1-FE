@@ -104,10 +104,12 @@ export interface InitialWaitingPeriod {
 }
 
 export interface PEDWaitingPeriod {
-  duration_months: number;
+  duration_months: number | null;
+  /** True only when the document explicitly states the PED waiting period. */
+  stated?: boolean;
   start_date: string | null;
   end_date: string | null;
-  is_active_today: boolean;
+  is_active_today: boolean | null;
   months_remaining: number | null;
   risk_commentary: string | null;
 }
@@ -510,14 +512,50 @@ export const computeUnlockDate = (
   return start.toISOString().split("T")[0];
 };
 
+/**
+ * Unlock date for a month-based waiting period, using true calendar months
+ * (not a 30-day approximation, which drifts ~10 days over 24 months).
+ */
+export const computeUnlockDateMonths = (
+  inceptionDate: string | null,
+  durationMonths: number | null
+): string | null => {
+  if (!inceptionDate || durationMonths == null) return null;
+  const start = new Date(inceptionDate);
+  if (isNaN(start.getTime())) return null;
+  const day = start.getUTCDate();
+  start.setUTCMonth(start.getUTCMonth() + durationMonths);
+  // Guard month overflow (e.g. 31 Jan + 1 month → 3 Mar): clamp back to month end
+  if (start.getUTCDate() < day) start.setUTCDate(0);
+  return start.toISOString().split("T")[0];
+};
+
+/** Whole calendar months from today until `endDate` (min 1 while active). */
+const monthsRemainingUntil = (endDate: string | null): number | null => {
+  if (!endDate) return null;
+  const end = new Date(endDate);
+  if (isNaN(end.getTime())) return null;
+  const now = new Date();
+  if (end <= now) return 0;
+  let months =
+    (end.getUTCFullYear() - now.getUTCFullYear()) * 12 +
+    (end.getUTCMonth() - now.getUTCMonth());
+  if (end.getUTCDate() < now.getUTCDate()) months -= 1;
+  return Math.max(1, months);
+};
+
 export const getWaitingPeriodStatus = (
   isActive: boolean,
   monthsRemaining: number | null,
   endDate: string | null
 ): { status: "active" | "served"; label: string } => {
   if (!isActive) return { status: "served", label: "✅ Served" };
-  if (monthsRemaining !== null) {
-    return { status: "active", label: `⏳ ${monthsRemaining} months remaining` };
+  // Always prefer remaining derived from the unlock date so the label reflects
+  // time left from today, not the policy's full original duration. Fall back to
+  // the supplied value only when there is no usable end date.
+  const remaining = monthsRemainingUntil(endDate) ?? monthsRemaining;
+  if (remaining !== null && remaining > 0) {
+    return { status: "active", label: `⏳ ${remaining} months remaining` };
   }
   if (endDate) {
     return { status: "active", label: `⏳ Unlocks ${endDate}` };

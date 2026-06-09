@@ -16,7 +16,8 @@ import {
     getNCARLabel,
     getWaitingPeriodStatus,
     RiskLevel,
-    computeUnlockDate
+    computeUnlockDate,
+    computeUnlockDateMonths
 } from "../../../../backend/server/types/policy";
 import { cn } from "@/lib/utils";
 import { CoverageDiagnostic } from "./CoverageDiagnostic";
@@ -828,18 +829,37 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                     {(() => {
                                         const wp = data.waiting_period_analysis?.pre_existing_disease;
                                         if (!wp) return null;
-                                        const computedEndDate = computeUnlockDate(data.policy_timeline?.policy_inception_date, wp.duration_months * 30);
-                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today;
+
+                                        // Case 1: no PED duration anywhere in the document — don't fabricate a date.
+                                        if (wp.duration_months == null) {
+                                            return (
+                                                <li className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
+                                                    <div>
+                                                        <span className="block font-medium">Pre-Existing Diseases</span>
+                                                        <span className="text-xs text-[var(--color-text-secondary)]">Not specified in schedule</span>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <span className="text-[10px] font-bold px-2 py-1 rounded bg-amber-100 text-amber-700">⚠ Not stated — verify with insurer</span>
+                                                        <span title="The uploaded document does not state a pre-existing disease waiting period. Confirm it with the insurer or full policy wording." className="ml-1 text-slate-400 cursor-help">ℹ</span>
+                                                    </div>
+                                                </li>
+                                            );
+                                        }
+
+                                        // Case 2: PED not explicitly stated but estimated from the specific-illness waiting period.
+                                        const estimated = wp.stated === false;
+                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
+                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today ?? false;
                                         const { status, label } = getWaitingPeriodStatus(isActiveToday, wp.months_remaining, computedEndDate);
                                         return (
                                             <li className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
                                                 <div>
                                                     <span className="block font-medium">Pre-Existing Diseases</span>
-                                                    <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
+                                                    <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months{estimated ? " (est. from specific-illness waiting)" : ""}</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
+                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", estimated ? "bg-amber-100 text-amber-700" : status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{estimated ? `≈ ${label}` : label}</span>
+                                                    <span title={estimated ? "Estimated: the schedule does not separately state a pre-existing disease waiting period. This is derived from the specific-illness exclusion period — verify with the insurer." : (status !== "active" ? "This waiting period is complete." : "")} className={cn("ml-1 text-slate-400", (estimated || status !== "active") ? "cursor-help" : "hidden")}>ℹ</span>
                                                 </div>
                                             </li>
                                         );
@@ -848,7 +868,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                     {(() => {
                                         const wp = data.waiting_period_analysis?.specific_diseases;
                                         if (!wp) return null;
-                                        const computedEndDate = computeUnlockDate(data.policy_timeline?.policy_inception_date, wp.duration_months * 30);
+                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
                                         const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today;
                                         const { status, label } = getWaitingPeriodStatus(isActiveToday, null, computedEndDate);
                                         return (
@@ -869,7 +889,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                     })()}
 
                                     {data.waiting_period_analysis?.personal_waiting_periods?.map((wp, i) => {
-                                        const computedEndDate = computeUnlockDate(data.policy_timeline?.policy_inception_date, wp.duration_months * 30);
+                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
                                         const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today;
                                         const { status, label } = getWaitingPeriodStatus(isActiveToday, wp.months_remaining, computedEndDate);
                                         return (
@@ -888,7 +908,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
 
                                     {data.waiting_period_analysis?.maternity?.relevant && (() => {
                                         const wp = data.waiting_period_analysis.maternity;
-                                        const computedEndDate = computeUnlockDate(data.policy_timeline?.policy_inception_date, (wp.duration_months ?? 0) * 30);
+                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
                                         const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : (wp.is_active_today ?? false);
                                         const { status, label } = getWaitingPeriodStatus(isActiveToday, wp.months_remaining, computedEndDate);
                                         return (
