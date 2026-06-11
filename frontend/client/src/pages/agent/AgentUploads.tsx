@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { getValidSession } from "@/lib/auth-helper";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { getApiBase } from "@/lib/queryClient";
+import { TYPE_META, type InsuranceType } from "@/lib/insuranceTypes";
 
 type UploadStatus = {
   filename: string;
@@ -25,6 +26,7 @@ export default function AgentUploads() {
   const { agent } = useAgent();
   const { t } = useLanguage();
   const [uploads, setUploads] = useState<UploadStatus[]>([]);
+  const [insuranceType, setInsuranceType] = useState<InsuranceType>("health");
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
@@ -94,7 +96,7 @@ export default function AgentUploads() {
         // Build FormData
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("type", "health");
+        formData.append("type", insuranceType);
         if (clientName) formData.append("policyholder_name", clientName);
         if (clientEmail) formData.append("client_email", clientEmail);
         if (clientPhone) formData.append("client_phone", clientPhone);
@@ -286,6 +288,39 @@ export default function AgentUploads() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("uploads.title")}</h1>
+      </div>
+
+      {/* Insurance-type selector */}
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          {(Object.keys(TYPE_META) as InsuranceType[]).map((tkey) => {
+            const meta = TYPE_META[tkey];
+            const active = insuranceType === tkey;
+            return (
+              <button
+                key={tkey}
+                type="button"
+                onClick={() => setInsuranceType(tkey)}
+                disabled={isProcessing}
+                className={[
+                  "inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all",
+                  active
+                    ? "border-[#0D9488] bg-[#0D9488]/5 text-[#0D9488] shadow-sm"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                  isProcessing ? "opacity-50 cursor-not-allowed" : "",
+                ].join(" ")}
+              >
+                <span>{meta.emoji}</span>
+                {meta.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-xs text-slate-500">
+          {insuranceType === "health"
+            ? "Full risk analysis — generates a score and audit report. Uses 1 credit per policy."
+            : `${TYPE_META[insuranceType].label} — reads the policy and fills in the details for you (data entry only). No risk score, no credit used.`}
+        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_400px]">

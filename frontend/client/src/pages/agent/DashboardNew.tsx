@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { InlineErrorState } from '@/components/agent/InlineErrorState';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { translateAll } from '@/i18n/translate';
+import { TYPE_META, typeLabel, getNextPremiumDate, type InsuranceType } from '@/lib/insuranceTypes';
 
 const INSURER_HI: Record<string, string> = {
   "Tata AIG General Insurance Company Limited": "टाटा AIG जनरल इन्श्योरेंस कंपनी लिमिटेड",
@@ -47,6 +48,8 @@ type RecentPolicy = {
   share_token: string | null;
   share_enabled: boolean | null;
   report_data: any | null;
+  insurance_type: string | null;
+  extracted_data: any | null;
 };
 
 type FailedJob = {
@@ -129,25 +132,25 @@ export default function DashboardNew() {
         // 10. Recent Failures
         qFailures
       ] = await Promise.all([
-        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done'),
-        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done').gte('created_at', sevenDaysAgo),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done'),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done').gte('created_at', sevenDaysAgo),
         
-        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done').gte('score', 70),
-        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('status', 'done').gte('score', 70).gte('created_at', sevenDaysAgo),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done').gte('score', 70),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done').gte('score', 70).gte('created_at', sevenDaysAgo),
         
-        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).in('status', ['pending', 'processing', 'error']),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').in('status', ['pending', 'processing', 'error']),
         
-        supabase.from('clients').select('score').eq('agent_id', agent.agentId).eq('status', 'done').gte('created_at', thirtyDaysAgo),
+        supabase.from('clients').select('score').eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done').gte('created_at', thirtyDaysAgo),
         
-        supabase.from('clients').select('id, policy_name, name, policyholder_name, insurer, status, score, created_at, expiry_date, share_token, share_enabled, report_data').eq('agent_id', agent.agentId).eq('status', 'done').order('created_at', { ascending: false }).limit(8),
+        supabase.from('clients').select('id, policy_name, name, policyholder_name, insurer, status, score, created_at, expiry_date, share_token, share_enabled, report_data, insurance_type, extracted_data').eq('agent_id', agent.agentId).eq('status', 'done').order('created_at', { ascending: false }).limit(8),
         
-        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId),
-        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).in('status', ['pending', 'processing']),
-        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).in('status', ['error']),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health'),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').in('status', ['pending', 'processing']),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').in('status', ['error']),
 
-        supabase.from('clients').select('status, created_at').eq('agent_id', agent.agentId).gte('created_at', eightWeeksAgo).in('status', ['done', 'error']),
+        supabase.from('clients').select('status, created_at').eq('agent_id', agent.agentId).eq('insurance_type', 'health').gte('created_at', eightWeeksAgo).in('status', ['done', 'error']),
 
-        supabase.from('clients').select('id, status, error_message, created_at, policy_name, name').eq('agent_id', agent.agentId).eq('status', 'error').order('created_at', { ascending: false }).limit(10)
+        supabase.from('clients').select('id, status, error_message, created_at, policy_name, name').eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'error').order('created_at', { ascending: false }).limit(10)
       ]);
 
       // Calculate Average Risk Score
@@ -530,7 +533,7 @@ export default function DashboardNew() {
                    <tr>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_customer")}</th>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_insured")}</th>
-                     <th className="px-6 py-4 text-left">{t("dashboard.col_expiry")}</th>
+                     <th className="px-6 py-4 text-left">Next Premium</th>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_score")}</th>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_switch")}</th>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_report")}</th>
@@ -538,23 +541,37 @@ export default function DashboardNew() {
                  </thead>
                  <tbody className="divide-y divide-slate-50">
                    {recentActivity.map(p => {
-                     const daysToExpiry = p.expiry_date
-                       ? Math.ceil((new Date(p.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-                       : null;
+                     const npDate = getNextPremiumDate(p.expiry_date, p.extracted_data);
+                     const npDateObj = npDate ? new Date(npDate) : null;
+                     const npValid = npDateObj !== null && !isNaN(npDateObj.getTime());
+                     const npDays = npValid ? Math.ceil((npDateObj!.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
                      const shouldSwitch = p.score !== null && p.score < 70;
+                     const isHealth = (p.insurance_type || 'health') === 'health';
                      return (
                        <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                         <td className="px-6 py-4 font-semibold text-slate-800">{getDisplayName(p)}</td>
+                         <td className="px-6 py-4 font-semibold text-slate-800">
+                           <div className="flex items-center gap-2">
+                             <span>{getDisplayName(p)}</span>
+                             <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+                               {TYPE_META[(p.insurance_type || 'health') as InsuranceType]?.emoji} {typeLabel(p.insurance_type)}
+                             </span>
+                           </div>
+                         </td>
                          <td className="px-6 py-4 text-slate-600">{getDisplayInsurer(p)}</td>
                          <td className="px-6 py-4">
-                           {daysToExpiry === null ? (
+                           {!npValid ? (
                              <span className="text-slate-400">—</span>
-                           ) : daysToExpiry <= 15 ? (
-                             <span className="font-bold text-red-500">{daysToExpiry} {t("dashboard.days")}</span>
-                           ) : daysToExpiry <= 30 ? (
-                             <span className="font-semibold text-amber-500">{daysToExpiry} {t("dashboard.days")}</span>
                            ) : (
-                             <span className="text-slate-600">{daysToExpiry} {t("dashboard.days")}</span>
+                             <div className="flex flex-col leading-tight">
+                               <span className={`text-sm font-semibold ${npDays !== null && (npDays < 0 || npDays <= 15) ? 'text-red-600' : npDays !== null && npDays <= 30 ? 'text-amber-600' : 'text-slate-700'}`}>
+                                 {format(npDateObj!, 'd MMM yyyy')}
+                               </span>
+                               {npDays !== null && npDays < 0 ? (
+                                 <span className="text-[11px] text-red-400">overdue</span>
+                               ) : npDays !== null && npDays <= 60 ? (
+                                 <span className="text-[11px] text-slate-400">in {npDays}d</span>
+                               ) : null}
+                             </div>
                            )}
                          </td>
                          <td className="px-6 py-4">
@@ -565,7 +582,7 @@ export default function DashboardNew() {
                            ) : <span className="text-slate-400">—</span>}
                          </td>
                          <td className="px-6 py-4">
-                           <PainpointCell shouldSwitch={shouldSwitch} reportData={p.report_data} />
+                           {isHealth ? <PainpointCell shouldSwitch={shouldSwitch} reportData={p.report_data} /> : <span className="text-slate-400">—</span>}
                          </td>
                          <td className="px-6 py-4">
                            {p.share_token && p.share_enabled !== false ? (

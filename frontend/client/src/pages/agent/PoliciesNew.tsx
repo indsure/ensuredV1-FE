@@ -1,14 +1,16 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react"
 import { useLocation } from "wouter"
-import { Info, RefreshCw, ExternalLink, Download, Loader2, Trash2 } from "lucide-react"
+import { Info, RefreshCw, ExternalLink, Download, Loader2, Trash2, FileSpreadsheet } from "lucide-react"
 import React from "react"
-import { formatDistanceToNow } from "date-fns"
+import { formatDistanceToNow, format } from "date-fns"
 import { supabase } from "@/lib/supabase"
 import { getApiBase } from "@/lib/queryClient"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import { ShareLinkPopover } from "@/components/agent/ShareLinkPopover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { TYPE_META, typeLabel, isDataEntryType, getNextPremiumDate, type InsuranceType } from "@/lib/insuranceTypes"
+import { exportPoliciesToExcel } from "@/lib/exportPolicies"
 
 type ClientRow = {
   id: string;
@@ -26,6 +28,8 @@ type ClientRow = {
   policy_name: string | null;
   filename: string | null;
   pdf_url: string | null;
+  insurance_type: string | null;
+  extracted_data: any | null;
 };
 
 function getDays(expiry_date: string | null): number | null {
@@ -33,12 +37,23 @@ function getDays(expiry_date: string | null): number | null {
   return Math.ceil((new Date(expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
-function ExpiryBadge({ days }: { days: number | null }) {
-  if (days === null) return <span className="text-slate-400 text-sm">—</span>;
-  if (days <= 0) return <span className="inline-flex items-center gap-1 text-xs font-bold text-white bg-red-500 px-2.5 py-1 rounded-full">Expired</span>;
-  if (days <= 15) return <span className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">⚠ {days}d left</span>;
-  if (days <= 30) return <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">⏰ {days}d left</span>;
-  return <span className="text-sm text-slate-500">{days} days</span>;
+function NextPremiumBadge({ dateStr }: { dateStr: string | null }) {
+  if (!dateStr) return <span className="text-slate-400 text-sm">—</span>;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return <span className="text-slate-400 text-sm">—</span>;
+  const days = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const dateLabel = format(d, "d MMM yyyy");
+  const sub =
+    days < 0 ? { text: "overdue", cls: "text-red-400" }
+    : days <= 60 ? { text: `in ${days}d`, cls: days <= 15 ? "text-red-400" : days <= 30 ? "text-amber-500" : "text-slate-400" }
+    : null;
+  const dateCls = days < 0 || days <= 15 ? "text-red-600" : days <= 30 ? "text-amber-600" : "text-slate-700";
+  return (
+    <div className="flex flex-col leading-tight">
+      <span className={`text-sm font-semibold ${dateCls}`}>{dateLabel}</span>
+      {sub && <span className={`text-[11px] ${sub.cls}`}>{sub.text}</span>}
+    </div>
+  );
 }
 
 function ScoreBadge({ score }: { score: number | null }) {
@@ -139,6 +154,7 @@ export default function PoliciesNew() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<FilterTab>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | InsuranceType>("all");
   const [sort, setSort] = useState<SortKey>("expiry");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -153,7 +169,7 @@ export default function PoliciesNew() {
     try {
       const { data, error: qErr } = await supabase
         .from("clients")
-        .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url")
+        .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url, insurance_type, extracted_data")
         .eq("agent_id", agent.agentId)
         .eq("status", "done")
         .order("created_at", { ascending: false });
@@ -224,6 +240,7 @@ export default function PoliciesNew() {
       (r.insurer || "").toLowerCase().includes(q) ||
       (r.policy_identifier || "").toLowerCase().includes(q)
     );
+    if (typeFilter !== "all") list = list.filter(r => (r.insurance_type || "health") === typeFilter);
     if (tab === "expiring") list = list.filter(r => { const d = getDays(r.expiry_date); return d !== null && d <= 30; });
     if (tab === "switch") list = list.filter(r => r.score !== null && r.score < 70);
     if (tab === "healthy") list = list.filter(r => r.score !== null && r.score >= 70);
@@ -237,7 +254,7 @@ export default function PoliciesNew() {
       if (sort === "score") return (a.score ?? 999) - (b.score ?? 999);
       return (a.policyholder_name || a.name || "").localeCompare(b.policyholder_name || b.name || "");
     });
-  }, [rows, search, tab, sort]);
+  }, [rows, search, tab, sort, typeFilter]);
 
   const tabs: { key: FilterTab; label: string; count: number }[] = [
     { key: "all", label: "All", count: rows.length },
@@ -252,9 +269,18 @@ export default function PoliciesNew() {
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">My Policies</h1>
-        <button onClick={fetchPolicies} disabled={loading} className="flex items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => exportPoliciesToExcel(filtered, typeFilter)}
+            disabled={loading || filtered.length === 0}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:border-[#0D9488] hover:text-[#0D9488] disabled:opacity-50"
+          >
+            <FileSpreadsheet size={14} /> Export to Excel
+          </button>
+          <button onClick={fetchPolicies} disabled={loading} className="flex items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* STAT STRIP */}
@@ -280,8 +306,29 @@ export default function PoliciesNew() {
       {!error && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
 
+          {/* TYPE FILTER */}
+          <div className="flex flex-wrap items-center gap-2 px-6 pt-5">
+            {(["all", ...(Object.keys(TYPE_META) as InsuranceType[])] as ("all" | InsuranceType)[]).map(tk => {
+              const active = typeFilter === tk;
+              const label = tk === "all" ? "All types" : `${TYPE_META[tk].emoji} ${TYPE_META[tk].label}`;
+              return (
+                <button
+                  key={tk}
+                  onClick={() => setTypeFilter(tk)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
+                    active
+                      ? "border-[#0D9488] bg-[#0D9488]/10 text-[#0D9488]"
+                      : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* TOOLBAR */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-slate-50">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-6 pt-4 pb-4 border-b border-slate-50">
             <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
               {tabs.map(t => (
                 <button
@@ -324,8 +371,9 @@ export default function PoliciesNew() {
               <thead className="bg-slate-50/60 text-xs text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-3.5 text-left">Customer</th>
+                  <th className="px-6 py-3.5 text-left">Type</th>
                   <th className="px-6 py-3.5 text-left">Insured With</th>
-                  <th className="px-6 py-3.5 text-left">Expiry</th>
+                  <th className="px-6 py-3.5 text-left">Next Premium</th>
                   <th className="px-6 py-3.5 text-left">Score</th>
                   <th className="px-6 py-3.5 text-left">Recommendation</th>
                   <th className="px-6 py-3.5 text-left">Views</th>
@@ -337,7 +385,7 @@ export default function PoliciesNew() {
                   <>
                     {[1,2,3,4,5].map(i => (
                       <tr key={i}>
-                        {[1,2,3,4,5,6,7].map(j => (
+                        {[1,2,3,4,5,6,7,8].map(j => (
                           <td key={j} className="px-6 py-4"><div className="h-5 bg-slate-100 animate-pulse rounded-md w-3/4" /></td>
                         ))}
                       </tr>
@@ -346,16 +394,17 @@ export default function PoliciesNew() {
                 )}
                 {!loading && filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-16 text-center text-slate-400 italic">
+                    <td colSpan={8} className="px-6 py-16 text-center text-slate-400 italic">
                       {search ? `No results for "${search}"` : "No policies in this category."}
                     </td>
                   </tr>
                 )}
                 {!loading && filtered.map(p => {
-                  const days = getDays(p.expiry_date);
+                  const npDate = getNextPremiumDate(p.expiry_date, p.extracted_data);
                   const shouldSwitch = p.score !== null && p.score < 70;
                   const shareUrl = p.share_token ? `${shareBaseUrl}/shared/report/${p.share_token}` : null;
                   const views = p.views ?? 0;
+                  const isHealth = (p.insurance_type || "health") === "health";
 
                   return (
                     <tr
@@ -371,11 +420,16 @@ export default function PoliciesNew() {
                           </div>
                         )}
                       </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                          {TYPE_META[(p.insurance_type || "health") as InsuranceType]?.emoji} {typeLabel(p.insurance_type)}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 text-slate-500">{p.insurer || "—"}</td>
-                      <td className="px-6 py-4"><ExpiryBadge days={days} /></td>
-                      <td className="px-6 py-4"><ScoreBadge score={p.score} /></td>
+                      <td className="px-6 py-4"><NextPremiumBadge dateStr={npDate} /></td>
+                      <td className="px-6 py-4">{isHealth ? <ScoreBadge score={p.score} /> : <span className="text-slate-300 text-sm">—</span>}</td>
                       <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
-                        <SwitchCell shouldSwitch={shouldSwitch} reportData={p.report_data} />
+                        {isHealth ? <SwitchCell shouldSwitch={shouldSwitch} reportData={p.report_data} /> : <span className="text-slate-300 text-sm">—</span>}
                       </td>
                       <td className="px-6 py-4">
                         {views === 0 ? (

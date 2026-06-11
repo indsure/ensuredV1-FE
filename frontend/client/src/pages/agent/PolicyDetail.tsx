@@ -3,7 +3,9 @@ import { useLocation, useParams } from "wouter";
 import { Copy, ExternalLink, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
+import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -88,6 +90,8 @@ export default function PolicyDetail() {
   const { agent } = useAgent();
   const [policy, setPolicy] = useState<PolicyRow | null>(null);
   const [reportData, setReportData] = useState<ForensicAuditReport | null>(null);
+  const [insuranceType, setInsuranceType] = useState<string>("health");
+  const [extractedData, setExtractedData] = useState<Record<string, any> | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [fileMeta, setFileMeta] = useState<FileRow | null>(null);
   const [notes, setNotes] = useState("");
@@ -106,6 +110,7 @@ export default function PolicyDetail() {
   const score = policy?.score ?? null;
   const scoreMeta = scoreTone(score);
   const expiry = expiryMeta(policy?.policy_end_date ?? null);
+  const isDataEntry = isDataEntryType(insuranceType);
 
   async function loadDetail() {
     if (!id || !agent?.agentId) return;
@@ -119,7 +124,8 @@ export default function PolicyDetail() {
           id, name, insurer, policy_name, status, score, created_at, error_message,
           expiry_date, sum_insured, flaws, report_data, policyholder_name,
           share_token, share_enabled, filename, file_size,
-          client_email, client_phone, policy_identifier, agent_notes
+          client_email, client_phone, policy_identifier, agent_notes,
+          insurance_type, extracted_data
         `)
         .eq("id", id)
         .eq("agent_id", agent.agentId)
@@ -148,6 +154,8 @@ export default function PolicyDetail() {
       };
 
       setPolicy(nextPolicy);
+      setInsuranceType((clientData as any).insurance_type || "health");
+      setExtractedData((clientData as any).extracted_data ?? null);
       setReportData(
         clientData.report_data && validateForensicAuditReport(clientData.report_data)
           ? clientData.report_data
@@ -352,9 +360,11 @@ export default function PolicyDetail() {
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={shareReport} disabled={!reportData || busy === "share"}>
-            Share Report
-          </Button>
+          {!isDataEntry && (
+            <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={shareReport} disabled={!reportData || busy === "share"}>
+              Share Report
+            </Button>
+          )}
         </div>
       </div>
 
@@ -371,6 +381,9 @@ export default function PolicyDetail() {
                     <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-600">
                       {policy.status?.replaceAll("_", " ") || "pending"}
                     </span>
+                    <span className="inline-flex rounded-full bg-[#0D9488]/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#0D9488]">
+                      {typeLabel(insuranceType)}
+                    </span>
                   </div>
                   <div>
                     <h1 className="font-['Playfair_Display'] text-4xl font-bold text-slate-900">{policy.client_name || "Pending policyholder"}</h1>
@@ -380,19 +393,23 @@ export default function PolicyDetail() {
                   </div>
                 </div>
 
-                <div className="min-w-[280px] rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                  <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Score</div>
-                  <div className={`mt-2 text-4xl font-black ${scoreMeta.color}`}>{score == null ? "-" : score}</div>
-                  <div className="text-sm font-medium text-slate-500">{scoreMeta.label}</div>
-                  <Progress value={scoreMeta.bar} className="mt-4 h-2 bg-white" />
-                </div>
+                {!isDataEntry && (
+                  <div className="min-w-[280px] rounded-3xl border border-slate-100 bg-slate-50 p-5">
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Score</div>
+                    <div className={`mt-2 text-4xl font-black ${scoreMeta.color}`}>{score == null ? "-" : score}</div>
+                    <div className="text-sm font-medium text-slate-500">{scoreMeta.label}</div>
+                    <Progress value={scoreMeta.bar} className="mt-4 h-2 bg-white" />
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3 items-center w-full">
-                <Button variant="outline" className="border-slate-200 bg-white shrink-0" onClick={shareReport} disabled={!reportData || busy === "share"}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Share Report
-                </Button>
+                {!isDataEntry && (
+                  <Button variant="outline" className="border-slate-200 bg-white shrink-0" onClick={shareReport} disabled={!reportData || busy === "share"}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Share Report
+                  </Button>
+                )}
                 <Button variant="destructive" className="shrink-0" onClick={() => setDeleteOpen(true)} disabled={busy === "delete"}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
@@ -411,8 +428,25 @@ export default function PolicyDetail() {
             </CardContent>
           </Card>
 
-          {/* Full audit report — same component the client sees */}
-          {reportData ? (
+          {/* Data-entry types show an editable details form; health shows the full audit report. */}
+          {isDataEntry ? (
+            policy.status === "done" ? (
+              <ExtractedDataForm
+                clientId={policy.id}
+                insuranceType={insuranceType}
+                initialData={extractedData}
+                onSaved={() => void loadDetail()}
+              />
+            ) : (
+              <Card className="border-slate-100 shadow-sm">
+                <CardContent className="p-8 text-center text-slate-400 text-sm italic">
+                  {policy.status === "error"
+                    ? "We couldn't read this document. Try deleting and re-uploading an unlocked PDF."
+                    : "Reading the document… this page will update automatically."}
+                </CardContent>
+              </Card>
+            )
+          ) : reportData ? (
             // reportData is validated at runtime; the frontend policy-types and backend
             // ForensicAuditReport definitions diverge only on optional modifiers, so cast.
             <PolicyAuditReport data={reportData as unknown as React.ComponentProps<typeof PolicyAuditReport>["data"]} hideNav />
@@ -480,15 +514,19 @@ export default function PolicyDetail() {
               <Card className="border-slate-100 shadow-sm">
                 <CardHeader><CardTitle>Action bar</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
-                  <Button className="w-full bg-[#0D9488] hover:bg-[#0f766e]" onClick={rerunAnalysis} disabled={busy === "rerun"}>
-                    <RefreshCw className={`mr-2 h-4 w-4 ${busy === "rerun" ? "animate-spin" : ""}`} />
-                    Re-run Analysis
-                  </Button>
+                  {!isDataEntry && (
+                    <Button className="w-full bg-[#0D9488] hover:bg-[#0f766e]" onClick={rerunAnalysis} disabled={busy === "rerun"}>
+                      <RefreshCw className={`mr-2 h-4 w-4 ${busy === "rerun" ? "animate-spin" : ""}`} />
+                      Re-run Analysis
+                    </Button>
+                  )}
                   <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={() => setEditOpen(true)}>Edit Client Details</Button>
-                  <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!reportData || busy === "share"}>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Share Link
-                  </Button>
+                  {!isDataEntry && (
+                    <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!reportData || busy === "share"}>
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Share Link
+                    </Button>
+                  )}
                   <Button variant="destructive" className="w-full" onClick={() => setDeleteOpen(true)} disabled={busy === "delete"}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete

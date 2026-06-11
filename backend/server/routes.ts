@@ -12,6 +12,8 @@ import { VEHICLE_INSURANCE_PROMPT } from "./vehicleInsurancePrompt";
 import { POLICY_EXTRACTION_PROMPT } from "./policyExtractionPrompt";
 import { AIService } from "./services/aiService";
 import { runAnalysisPipeline } from "./services/analysisPipeline";
+import { extractStructuredData } from "./services/dataExtraction";
+import { isDataEntryType, deriveSharedColumns } from "./services/extractionFields";
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
 import { createClient } from "@supabase/supabase-js";
 import pkg from "pg";
@@ -48,6 +50,10 @@ const upload = multer({
   dest: "uploads/",
   limits: { fileSize: 25 * 1024 * 1024 },
 });
+
+// Supabase Storage bucket where original uploaded policy PDFs are kept,
+// so they can be downloaded later (and re-analyzed without re-uploading).
+const PDF_BUCKET = "policy-pdfs";
 
 /* ---------- TYPES ---------- */
 
@@ -1482,14 +1488,20 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         const agentId = await verifyJwt(req, res);
         if (!agentId) return;
 
-        // Credit check
-        const creditRes = await pool.query(
-          "SELECT balance FROM agent_credits WHERE agent_id = $1",
-          [agentId]
-        );
-        const credits = creditRes.rows[0]?.balance ?? 0;
-        if (credits <= 0) {
-          return res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
+        const insuranceType = (req.body.type || "health").toLowerCase();
+        const isDataEntry = isDataEntryType(insuranceType);
+
+        // Credit check — only the health forensic analysis consumes credits.
+        // The OCR/data-entry lanes (motor/life/travel/property) are free.
+        if (!isDataEntry) {
+          const creditRes = await pool.query(
+            "SELECT balance FROM agent_credits WHERE agent_id = $1",
+            [agentId]
+          );
+          const credits = creditRes.rows[0]?.balance ?? 0;
+          if (credits <= 0) {
+            return res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
+          }
         }
 
         if (!req.file) {
@@ -1497,8 +1509,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         }
 
         const file = req.file;
-        const insuranceType = req.body.type || "health";
-        
+
         // Parse optional client detail fields
         const policyholder_name = req.body.policyholder_name || null;
         const client_email = req.body.client_email || null;
@@ -1520,10 +1531,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         // Create client record immediately
         const clientResult = await pool.query(
           `INSERT INTO clients (
-            agent_id, status, filename, file_size, 
+            agent_id, status, filename, file_size,
             policyholder_name, client_email, client_phone, policy_identifier,
-            created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+            insurance_type, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
           RETURNING id, share_token`,
           [
             agentId,
@@ -1533,7 +1544,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             policyholder_name,
             client_email,
             client_phone,
-            policy_identifier
+            policy_identifier,
+            insuranceType
           ]
         );
 
@@ -1562,9 +1574,80 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             const uploadedPolicyText = await extractPolicyText(file);
             job.extractionEndedAt = Date.now();
             
+            // Persist the original file to storage so it can be downloaded later
+            // and re-analyzed without re-uploading. Best-effort — never blocks analysis.
+            try {
+              const fileBuffer = fs.readFileSync(file.path);
+              const ext = file.originalname.includes(".") ? file.originalname.split(".").pop() : "pdf";
+              const storagePath = `${agentId}/${clientId}.${ext}`;
+              const { error: upErr } = await supabaseAdmin.storage
+                .from(PDF_BUCKET)
+                .upload(storagePath, fileBuffer, {
+                  contentType: file.mimetype || "application/pdf",
+                  upsert: true,
+                });
+              if (upErr) {
+                console.error(`[Job ${jobId}] PDF storage upload failed:`, upErr.message);
+              } else {
+                const { data: signed } = await supabaseAdmin.storage
+                  .from(PDF_BUCKET)
+                  .createSignedUrl(storagePath, 60 * 60);
+                if (signed?.signedUrl) {
+                  await pool.query("UPDATE clients SET pdf_url = $1 WHERE id = $2", [signed.signedUrl, clientId]);
+                }
+              }
+            } catch (storeErr: any) {
+              console.error(`[Job ${jobId}] PDF storage error:`, storeErr.message);
+            }
+
             // Delete temp file
             if (fs.existsSync(file.path)) {
               fs.unlinkSync(file.path);
+            }
+
+            // ── OCR / data-entry lane (no scoring, no credits) ──
+            if (isDataEntry) {
+              const extraction = await extractStructuredData(uploadedPolicyText, insuranceType);
+
+              if (extraction.status === "completed") {
+                job.status = "completed";
+                job.result = extraction.data;
+
+                const shared = deriveSharedColumns(insuranceType, extraction.data);
+                await pool.query(
+                  `UPDATE clients SET
+                    status = 'done',
+                    insurance_type = $1,
+                    extracted_data = $2,
+                    insurer = $3,
+                    policy_name = $4,
+                    expiry_date = $5,
+                    sum_insured = $6,
+                    policyholder_name = COALESCE(policyholder_name, $7)
+                  WHERE id = $8`,
+                  [
+                    insuranceType,
+                    JSON.stringify(extraction.data),
+                    shared.insurer ?? null,
+                    shared.policy_name ?? null,
+                    shared.expiry_date ?? null,
+                    shared.sum_insured ?? null,
+                    shared.policyholder_name ?? null,
+                    clientId,
+                  ]
+                );
+              } else {
+                job.status = "failed";
+                job.error = extraction.error;
+                await pool.query(
+                  "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
+                  [extraction.error, clientId]
+                );
+              }
+
+              job.completedAt = Date.now();
+              await persistJob(job);
+              return;
             }
 
             const result = await runAnalysisPipeline(uploadedPolicyText, insuranceType);
@@ -1744,6 +1827,60 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       });
     } catch (err: any) {
       console.error("Toggle share error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Agent: Save edited data-entry fields ───────────────────────────── */
+
+  app.patch("/api/agent/clients/:id/extracted-data", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
+      const { id } = req.params;
+      const extractedData = req.body?.extracted_data;
+
+      if (!extractedData || typeof extractedData !== "object") {
+        return res.status(400).json({ error: "extracted_data object required" });
+      }
+
+      // Verify ownership and fetch the insurance type for shared-column mapping.
+      const ownerCheck = await pool.query(
+        "SELECT insurance_type FROM clients WHERE id = $1 AND agent_id = $2",
+        [id, agentId]
+      );
+      if (ownerCheck.rows.length === 0) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      const insuranceType = ownerCheck.rows[0].insurance_type;
+      const shared = deriveSharedColumns(insuranceType, extractedData);
+
+      await pool.query(
+        `UPDATE clients SET
+          extracted_data = $1,
+          insurer = $2,
+          policy_name = $3,
+          expiry_date = $4,
+          sum_insured = $5,
+          policyholder_name = COALESCE($6, policyholder_name)
+        WHERE id = $7 AND agent_id = $8`,
+        [
+          JSON.stringify(extractedData),
+          shared.insurer ?? null,
+          shared.policy_name ?? null,
+          shared.expiry_date ?? null,
+          shared.sum_insured ?? null,
+          shared.policyholder_name ?? null,
+          id,
+          agentId,
+        ]
+      );
+
+      res.json({ ok: true });
+    } catch (err: any) {
+      console.error("Save extracted-data error:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   });
