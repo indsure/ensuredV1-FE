@@ -160,6 +160,30 @@ const globalApiLimiter = rateLimit({
 });
 app.use("/api", globalApiLimiter);
 
+/* ---------------- PRODUCTION ERROR SANITIZER ---------------- */
+// In production, never leak internal error text/stack to clients. Applies to
+// every route (and any future one): 5xx responses are genericized, and the
+// `details`/`stack` fields are always stripped. Validation (4xx) messages such
+// as "email is required" are preserved. Beta runs NODE_ENV=production with
+// APP_ENV=staging, so this is active on beta.
+if (process.env.NODE_ENV === "production") {
+  app.use((_req, res, next) => {
+    const originalJson = res.json.bind(res);
+    res.json = (body: any) => {
+      if (body && typeof body === "object") {
+        if (res.statusCode >= 500) {
+          body = { error: "Internal Server Error" };
+        } else {
+          if ("details" in body) delete (body as any).details;
+          if ("stack" in body) delete (body as any).stack;
+        }
+      }
+      return originalJson(body);
+    };
+    next();
+  });
+}
+
 /* ---------------- HEALTH CHECK ---------------- */
 
 app.get("/api/health", (_req, res) => {
@@ -168,6 +192,7 @@ app.get("/api/health", (_req, res) => {
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
     env: process.env.NODE_ENV || "development",
+    appEnv: process.env.APP_ENV || process.env.DEPLOY_ENV || "unknown",
   });
 });
 
@@ -434,8 +459,16 @@ async function start() {
     res.status(status).json({ message });
   });
 
-  if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
+  // Static serving is decoupled from NODE_ENV so this API-only host can run in
+  // production mode without a frontend build present. Enable only when explicitly
+  // requested (SERVE_STATIC=true) AND a build exists; never crash the API if not.
+  if (process.env.SERVE_STATIC === "true") {
+    try {
+      serveStatic(app);
+      console.log("[static] Serving frontend build.");
+    } catch (e: any) {
+      console.error("[static] Static serving disabled (no build found):", e?.message);
+    }
   }
 
   const port = Number(process.env.PORT) || 5000;
