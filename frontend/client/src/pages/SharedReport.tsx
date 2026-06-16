@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { validateForensicAuditReport } from "@/lib/policy-types";
+import { getApiBase } from "@/lib/queryClient";
 
 interface SharedReportProps {
   token: string;
@@ -18,7 +19,7 @@ export default function SharedReport({ token }: SharedReportProps) {
       setError(null);
 
       try {
-        const res = await fetch(`/api/shared/report/${token}`);
+        const res = await fetch(`${getApiBase()}/api/shared/report/${token}`);
         
         if (!res.ok) {
           const errorData = await res.json();

@@ -2,6 +2,16 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Semantic status colors — required for bg-error / text-success / border-warning
+   etc. used throughout components/ui. Values match indsure-ui/tailwind.config.ts
+   (danger/success/warning). */
+@theme {
+  --color-error: #DC2626;
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-info: #2563EB;
+}
+
 /* =========================================
    PALETTE: "The Financialist" / IndSure Rebrand
    Concept: Navy (Trust), Teal (Clarity), Gold (Value), Cream (Canvas)
