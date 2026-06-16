@@ -546,7 +546,7 @@ export async function registerRoutes(
     try {
       const reportRes = await pool.query(
         `SELECT
-          pr.recommendation_data,
+          pr.report_data AS recommendation_data,
           pr.is_active,
           c.policyholder_name  AS client_name,
           c.insurer            AS current_insurer,
@@ -949,7 +949,8 @@ export async function registerRoutes(
       if (!userId) return;
 
       const result = await pool.query(
-        `SELECT id, email, full_name, phone_number, city, firm_name, is_admin, upload_limit, created_at
+        `SELECT id, email, full_name, name, phone, phone AS phone_number, city, location,
+                role, status, is_admin, partnered_companies, created_at, NULL AS firm_name
          FROM agents WHERE id = $1`,
         [userId]
       );
@@ -971,15 +972,17 @@ export async function registerRoutes(
     const agentId = await verifyJwt(req, res);
     if (!agentId) return;
 
-    const { full_name, phone_number, city, firm_name } = req.body;
+    const { full_name, phone_number, city } = req.body;
 
     try {
       const result = await pool.query(
         `UPDATE agents
-         SET full_name = $1, phone_number = $2, city = $3, firm_name = $4
-         WHERE id = $5
+         SET full_name = COALESCE($1, full_name),
+             phone     = COALESCE($2, phone),
+             city      = COALESCE($3, city)
+         WHERE id = $4
          RETURNING *`,
-        [full_name, phone_number, city, firm_name, agentId]
+        [full_name ?? null, phone_number ?? null, city ?? null, agentId]
       );
 
       if (result.rowCount === 0) {
@@ -1306,7 +1309,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const agentId = clientRes.rows[0].agent_id;
 
       const insertRes = await pool.query(
-        "INSERT INTO public_reports (client_id, agent_id, recommendation_data) VALUES ($1, $2, $3) RETURNING id",
+        "INSERT INTO public_reports (client_id, agent_id, report_data, report_type, is_active) VALUES ($1, $2, $3, 'switch', true) RETURNING id",
         [client_id, agentId, JSON.stringify(recommendation_data)]
       );
 
@@ -1668,11 +1671,18 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
         const clientId = clientResult.rows[0].id;
 
-        // Store mapping of jobId → clientId
-        await pool.query(
-          `UPDATE analysis_jobs SET policy_id = $1 WHERE id = $2`,
-          [clientId, jobId]
-        );
+        // Store mapping of jobId → clientId. Best-effort: analysis_jobs.policy_id
+        // has a legacy FK to the `policies` table, so writing a `clients` id can
+        // violate it. Never let that abort the upload — clientId is returned in
+        // the response and used by the client to track the job.
+        try {
+          await pool.query(
+            `UPDATE analysis_jobs SET policy_id = $1 WHERE id = $2`,
+            [clientId, jobId]
+          );
+        } catch (mapErr: any) {
+          console.warn(`[Job ${jobId}] could not map policy_id → clientId:`, mapErr.message);
+        }
 
         res.json({ clientId, jobId, status: "pending" });
 
