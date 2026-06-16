@@ -2,6 +2,7 @@ import "./loadEnv";
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -102,21 +103,36 @@ const server = createServer(app);
 
 /* ---------------- CORS ---------------- */
 
+// Built-in production origins, always allowed, plus anything in CORS_ORIGIN.
+// Vercel preview deployments (*.vercel.app) and localhost (dev) are matched
+// by pattern below so previews and local dev never break.
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://indsure.in",
+  "https://www.indsure.in",
+  "https://beta.indsure.in",
+];
+
 app.use(
   cors({
-    // If no CORS env is provided, allow the request origin to avoid blocking the chat UI.
     origin: (origin, callback) => {
-      const corsOriginEnv = process.env.CORS_ORIGIN;
-      const allowedOrigins = corsOriginEnv
-        ? corsOriginEnv
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : null;
+      const envOrigins = (process.env.CORS_ORIGIN || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const allowedOrigins = new Set([...DEFAULT_ALLOWED_ORIGINS, ...envOrigins]);
 
+      // Non-browser clients (curl, server-to-server, health checks) send no Origin.
       if (!origin) return callback(null, true);
-      if (!allowedOrigins) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (allowedOrigins.has(origin)) return callback(null, true);
+
+      // Allow Vercel preview URLs and localhost during development.
+      let host = "";
+      try { host = new URL(origin).hostname; } catch { /* malformed origin */ }
+      const isVercelPreview = host.endsWith(".vercel.app");
+      const isLocalhost = host === "localhost" || host === "127.0.0.1";
+      if (isVercelPreview || isLocalhost) return callback(null, true);
+
+      console.warn(`[CORS] Rejected origin: ${origin}`);
       return callback(null, false);
     },
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
@@ -130,8 +146,20 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 
-/* ---------------- RATE LIMITING (DISABLED) ---------------- */
-// Rate limiting has been disabled as per user request.
+/* ---------------- RATE LIMITING ---------------- */
+// Global IP limiter to stop abuse loops (e.g. hammering the AI/analyze routes,
+// which cost Gemini credits). Generous enough for normal portal use. The
+// per-route share/Sach AI limiters remain in place on top of this.
+const globalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // ~20 req/min/IP sustained
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === "/api/health",
+  message: { error: "rate_limited", message: "Too many requests, please slow down." },
+});
+app.use("/api", globalApiLimiter);
+
 /* ---------------- HEALTH CHECK ---------------- */
 
 app.get("/api/health", (_req, res) => {

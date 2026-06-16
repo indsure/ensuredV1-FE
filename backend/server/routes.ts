@@ -591,6 +591,48 @@ export async function registerRoutes(
         url = `${protocol}://${host}${url}`;
       }
 
+      // SSRF guard: only render pages on our own / known hosts, and never reach
+      // internal addresses in production. The legitimate use is rendering our
+      // own report pages, which are always same-origin or a configured domain.
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(url);
+      } catch {
+        return res.status(400).json({ error: "Invalid URL" });
+      }
+      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+        return res.status(400).json({ error: "Invalid URL protocol" });
+      }
+
+      const allowedHosts = new Set<string>();
+      const ownHost = req.get("host");
+      if (ownHost) allowedHosts.add(ownHost);
+      [process.env.PUBLIC_URL, ...(process.env.CORS_ORIGIN || "").split(",")]
+        .filter(Boolean)
+        .forEach((u) => { try { allowedHosts.add(new URL(u!.trim()).host); } catch { /* ignore */ } });
+      ["indsure.in", "www.indsure.in", "beta.indsure.in"].forEach((h) => {
+        allowedHosts.add(h);
+        allowedHosts.add(`https://${h}`.replace("https://", ""));
+      });
+
+      const hostname = parsedUrl.hostname.toLowerCase();
+      // Cloud metadata, link-local, loopback and RFC1918 ranges are ALWAYS
+      // blocked — never depend on NODE_ENV here (this box runs as "development").
+      const isPrivate =
+        /^(127\.|10\.|192\.168\.|169\.254\.|0\.0\.0\.0)/.test(hostname) ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+        /^(::1|fc00:|fd00:|fe80:)/.test(hostname) ||
+        hostname === "localhost" ||
+        hostname === "metadata.google.internal";
+
+      if (isPrivate) {
+        return res.status(400).json({ error: "Target host not allowed" });
+      }
+      // Only render pages on our own / explicitly-allowed hosts.
+      if (!allowedHosts.has(parsedUrl.host)) {
+        return res.status(400).json({ error: "Target host not allowed" });
+      }
+
       const { chromium } = await import("playwright");
 
       let browser;
@@ -860,6 +902,23 @@ export async function registerRoutes(
           .json({ error: "Missing required fields: id, email, full_name" });
       }
 
+      // Anti-spoofing: a profile may only be created for a real Supabase auth
+      // user. If the signup flow already has a session, the bearer token MUST
+      // match the id; if there's no session yet (e.g. email-confirmation mode),
+      // verify the id corresponds to an existing auth user before inserting.
+      const authHeader = req.headers["authorization"] as string | undefined;
+      if (authHeader?.startsWith("Bearer ")) {
+        const { data: { user }, error } = await supabaseAdmin.auth.getUser(authHeader.slice(7));
+        if (error || !user || user.id !== id) {
+          return res.status(403).json({ error: "Token does not match the profile being created" });
+        }
+      } else {
+        const { data, error } = await supabaseAdmin.auth.admin.getUserById(id);
+        if (error || !data?.user) {
+          return res.status(403).json({ error: "Unknown user id" });
+        }
+      }
+
       await pool.query(
         `INSERT INTO agents (id, email, full_name, name, phone, city, location, experience_years, invite_code, consent_given_at)
          VALUES ($1, $2, $3, $3, $4, $5, $5, $6, $7, NOW())
@@ -938,18 +997,19 @@ export async function registerRoutes(
 
   app.post("/api/agent/create-batch", async (req, res) => {
     try {
-      const { agent_id, total_count } = req.body;
-      if (!agent_id || !total_count) {
-        return res
-          .status(400)
-          .json({ error: "Missing agent_id or total_count" });
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
+      const { total_count } = req.body;
+      if (!total_count) {
+        return res.status(400).json({ error: "Missing total_count" });
       }
 
       const result = await pool.query(
         `INSERT INTO batch_uploads (agent_id, total, processed_count, status)
          VALUES ($1, $2, 0, 'pending')
          RETURNING id, agent_id, total, processed_count, status, created_at`,
-        [agent_id, total_count]
+        [agentId, total_count]
       );
 
       return res.json(result.rows[0]);
@@ -963,16 +1023,28 @@ export async function registerRoutes(
 
   app.post("/api/agent/add-client", async (req, res) => {
     try {
-      const { agent_id, batch_id, policy_name, pdf_url } = req.body;
-      if (!agent_id || !batch_id || !pdf_url) {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
+      const { batch_id, policy_name, pdf_url } = req.body;
+      if (!batch_id || !pdf_url) {
         return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Ensure the batch belongs to the caller before attaching a client to it.
+      const batchCheck = await pool.query(
+        "SELECT id FROM batch_uploads WHERE id = $1 AND agent_id = $2",
+        [batch_id, agentId]
+      );
+      if (batchCheck.rows.length === 0) {
+        return res.status(404).json({ error: "Batch not found" });
       }
 
       const result = await pool.query(
         `INSERT INTO clients (agent_id, batch_id, policy_name, pdf_url, status)
          VALUES ($1, $2, $3, $4, 'pending')
          RETURNING id`,
-        [agent_id, batch_id, policy_name || "Unknown Policy", pdf_url]
+        [agentId, batch_id, policy_name || "Unknown Policy", pdf_url]
       );
 
       return res.json(result.rows[0]);
@@ -1131,14 +1203,17 @@ export async function registerRoutes(
   /* ── Agent: Switch Recommendation ───────────────────────────────────── */
 
   app.post("/api/agent/switch-recommendation", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
     const { client_id } = req.body;
     if (!client_id)
       return res.status(400).json({ error: "client_id is required" });
 
     try {
       const clientRes = await pool.query(
-        "SELECT agent_id, insurer, flaws, score FROM clients WHERE id = $1",
-        [client_id]
+        "SELECT agent_id, insurer, flaws, score FROM clients WHERE id = $1 AND agent_id = $2",
+        [client_id, agentId]
       );
 
       if (clientRes.rows.length === 0) {
@@ -1211,6 +1286,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   /* ── Agent: Create Public Report ─────────────────────────────────────── */
 
   app.post("/api/agent/public-report", async (req, res) => {
+    const callerId = await verifyJwt(req, res);
+    if (!callerId) return;
+
     const { client_id, recommendation_data } = req.body;
     if (!client_id || !recommendation_data) {
       return res
@@ -1220,8 +1298,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
     try {
       const clientRes = await pool.query(
-        "SELECT agent_id FROM clients WHERE id = $1",
-        [client_id]
+        "SELECT agent_id FROM clients WHERE id = $1 AND agent_id = $2",
+        [client_id, callerId]
       );
       if (clientRes.rows.length === 0)
         return res.status(404).json({ error: "Client not found" });
@@ -1243,8 +1321,17 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
   app.delete("/api/agent/delete-client/:id", async (req, res) => {
     try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
       const { id } = req.params;
-      await pool.query("DELETE FROM clients WHERE id = $1", [id]);
+      const result = await pool.query(
+        "DELETE FROM clients WHERE id = $1 AND agent_id = $2",
+        [id, agentId]
+      );
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Client not found" });
+      }
       return res.json({ success: true });
     } catch (err: any) {
       console.error("Delete client error:", err);
@@ -1278,7 +1365,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   /* ── Agent: Portfolio Summary ────────────────────────────────────────── */
 
   app.get("/api/agent/summary/:agentId", async (req, res) => {
+    const callerId = await verifyJwt(req, res);
+    if (!callerId) return;
+
     const { agentId } = req.params;
+    if (agentId !== callerId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
     try {
       const cached = await pool.query(
@@ -2289,7 +2382,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
   /* ── Admin: Get Leads ─────────────────────────────────────────── */
 
-  app.get("/api/leads", async (req, res) => {
+  app.get("/api/leads", isAdmin, async (req, res) => {
     try {
       const { status, limit = 50, offset = 0 } = req.query;
 

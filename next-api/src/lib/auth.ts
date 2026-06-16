@@ -28,7 +28,6 @@ async function getAgentAuthContext(userId: string): Promise<AuthContext | null> 
 export async function getAuthContext(req: NextRequest): Promise<AuthContext> {
   const authHeader = req.headers.get("authorization");
   const apiKey = req.headers.get("x-api-key");
-  const devUserId = req.headers.get("x-user-id");
 
   if (apiKey) {
     if (apiKey === process.env.ADMIN_API_KEY) {
@@ -36,12 +35,9 @@ export async function getAuthContext(req: NextRequest): Promise<AuthContext> {
     }
   }
 
-  if (devUserId && process.env.NEXT_API_ALLOW_DEV_AUTH === "true") {
-    const context = await getAgentAuthContext(devUserId);
-    if (context) {
-      return context;
-    }
-  }
+  // NOTE: The previous `x-user-id` "dev auth" path was removed. It allowed
+  // anyone to impersonate any agent by sending a header, with no token. Do not
+  // reintroduce it — authenticate via the Supabase bearer token only.
 
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.split(" ")[1];
