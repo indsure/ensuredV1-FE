@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { FileText, LayoutDashboard, Settings, ListChecks, LogOut, User, Menu } from "lucide-react"
+import { BookOpen, Calculator, FileText, LayoutDashboard, Settings, ListChecks, LogOut, Upload, User, Users, Menu } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -24,8 +24,11 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
   const nav = useMemo(
     () => [
       { label: t("layout.overview"), href: "/agent/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+      { label: t("layout.analyze") ?? "Analyze", href: "/agent/uploads", icon: <Upload className="h-4 w-4" /> },
       { label: t("layout.my_queue"), href: "/agent/my-queue", icon: <ListChecks className="h-4 w-4" /> },
       { label: t("layout.my_policies") ?? "My Policies", href: "/agent/policies", icon: <FileText className="h-4 w-4" /> },
+      { label: t("layout.customers") ?? "Customers", href: "/agent/customers", icon: <Users className="h-4 w-4" /> },
+      { label: t("layout.calculator") ?? "Calculator", href: "/agent/calculator", icon: <Calculator className="h-4 w-4" /> },
     ],
     [locale]
   )
@@ -175,6 +178,10 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => setLocation("/agent/riders")}>
+                <BookOpen />
+                {t("layout.rider_directory") ?? "Rider Directory"}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setLocation("/agent/profile")}>
                 <User />
                 {t("layout.my_profile")}

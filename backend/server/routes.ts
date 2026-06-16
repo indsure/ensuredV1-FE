@@ -642,8 +642,8 @@ export async function registerRoutes(
   /* ── Calculator: Save & Get Report ──────────────────────────────────── */
 
   app.post("/api/calculator/save-report", async (req, res) => {
-    const { inputs, result_data } = req.body;
-    
+    const { inputs, result_data, customer_id } = req.body;
+
     // Basic validation
     if (!inputs || !result_data) {
       return res
@@ -658,10 +658,34 @@ export async function registerRoutes(
         .json({ error: "Invalid data format" });
     }
 
+    // Optional agent stamping: the public consumer flow sends no auth header
+    // and saves anonymously, exactly as before. The agent portal sends its
+    // Supabase token so the report is linked to the agent (and optionally a
+    // customer, after an ownership check). Auth failures degrade to an
+    // anonymous save rather than rejecting the report.
+    let agentId: string | null = null;
+    let customerId: string | null = null;
+    const authHeader = req.headers["authorization"] as string | undefined;
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        const { data: { user }, error } = await supabaseAdmin.auth.getUser(authHeader.slice(7));
+        if (!error && user) agentId = user.id;
+      } catch {
+        // anonymous save
+      }
+    }
+    if (agentId && customer_id) {
+      const owned = await pool.query(
+        "SELECT id FROM customers WHERE id = $1 AND agent_id = $2",
+        [customer_id, agentId]
+      );
+      if (owned.rows.length > 0) customerId = customer_id;
+    }
+
     try {
       const insertRes = await pool.query(
-        "INSERT INTO calculator_reports (inputs, result_data) VALUES ($1, $2) RETURNING id",
-        [JSON.stringify(inputs), JSON.stringify(result_data)]
+        "INSERT INTO calculator_reports (inputs, result_data, agent_id, customer_id) VALUES ($1, $2, $3, $4) RETURNING id",
+        [JSON.stringify(inputs), JSON.stringify(result_data), agentId, customerId]
       );
       return res.json({ uuid: insertRes.rows[0].id, success: true });
     } catch (err: any) {
@@ -1662,14 +1686,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 [agentId]
               );
               
-              // Extract metadata from result
+              // Extract metadata from result. The score lives at the report's
+              // top-level audit_score; insurer/product come from the pipeline's
+              // metadata step (extractPolicyMetadata), not the report body.
               const reportData = result.result;
-              const score = reportData?.final_verdict?.audit_score?.score || null;
-              const insurer = reportData?.identity?.insurer_name || null;
-              const policyName = reportData?.coverage_structure?.policy_name || null;
+              const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
+              // clients.score is integer; the engine emits 12.5-step buckets (e.g. 87.5)
+              const score = rawScore == null ? null : Math.round(Number(rawScore));
+              const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
+              const policyName = result.metadata?.product || result.metadata?.plan || reportData?.coverage_structure?.policy_name || null;
               const expiryDate = reportData?.policy_timeline?.policy_expiry_date || null;
               const sumInsured = reportData?.coverage_structure?.base_sum_insured || null;
               const flaws = reportData?.final_verdict?.key_failure_points || [];
+              const insuredName = reportData?.identity?.insured_names?.[0] || null;
 
               // Update client record with results
               await pool.query(
@@ -1681,8 +1710,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   policy_name = $4,
                   expiry_date = $5,
                   sum_insured = $6,
-                  flaws = $7
-                WHERE id = $8`,
+                  flaws = $7,
+                  policyholder_name = COALESCE(policyholder_name, $8)
+                WHERE id = $9`,
                 [
                   JSON.stringify(reportData),
                   score,
@@ -1691,6 +1721,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   expiryDate,
                   sumInsured,
                   JSON.stringify(flaws),
+                  insuredName,
                   clientId
                 ]
               );
@@ -1881,6 +1912,193 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       res.json({ ok: true });
     } catch (err: any) {
       console.error("Save extracted-data error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Agent: Re-run analysis from the stored document ────────────────── */
+  // Re-processes an existing client row using the PDF persisted in storage at
+  // upload time. Health re-runs go through the full pipeline (credits checked
+  // up front, decremented on success — failed runs never consumed one);
+  // data-entry types re-run the free OCR extraction.
+
+  app.post("/api/agent/clients/:id/rerun", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
+      const { id } = req.params;
+
+      const clientRes = await pool.query(
+        "SELECT id, status, pdf_url, filename, insurance_type FROM clients WHERE id = $1 AND agent_id = $2",
+        [id, agentId]
+      );
+      if (clientRes.rows.length === 0) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      const client = clientRes.rows[0];
+
+      if (!client.pdf_url) {
+        return res.status(409).json({
+          error: "NO_PDF",
+          message:
+            "The original document isn't stored for this policy (it was uploaded before document storage existed). Delete it and re-upload the PDF.",
+        });
+      }
+
+      const insuranceType = (client.insurance_type || "health").toLowerCase();
+      const isDataEntry = isDataEntryType(insuranceType);
+
+      if (!isDataEntry) {
+        const creditRes = await pool.query(
+          "SELECT balance FROM agent_credits WHERE agent_id = $1",
+          [agentId]
+        );
+        const credits = creditRes.rows[0]?.balance ?? 0;
+        if (credits <= 0) {
+          return res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
+        }
+      }
+
+      // Resolve the storage object behind pdf_url (signed or public URL).
+      const pathMatch = client.pdf_url.match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/);
+      if (!pathMatch) {
+        return res.status(409).json({ error: "NO_PDF", message: "Stored document URL is not recognized. Delete and re-upload the PDF." });
+      }
+      const [bucket, ...restPath] = pathMatch[1].split("/");
+      const storagePath = restPath.join("/");
+
+      const { data: blob, error: dlErr } = await supabaseAdmin.storage
+        .from(bucket)
+        .download(storagePath);
+      if (dlErr || !blob) {
+        return res.status(409).json({ error: "NO_PDF", message: "Could not fetch the stored document. Delete and re-upload the PDF." });
+      }
+
+      await pool.query(
+        "UPDATE clients SET status = 'processing', error_message = NULL WHERE id = $1",
+        [id]
+      );
+      res.json({ ok: true, clientId: id, status: "processing" });
+
+      // Background processing — mirrors the analyze flow with the stored file.
+      (async () => {
+        const ext = (storagePath.split(".").pop() || "pdf").toLowerCase();
+        const mimetype =
+          ext === "png" ? "image/png"
+          : ext === "jpg" || ext === "jpeg" ? "image/jpeg"
+          : ext === "txt" ? "text/plain"
+          : "application/pdf";
+        const tempPath = `uploads/rerun-${id}-${Date.now()}.${ext}`;
+        try {
+          fs.writeFileSync(tempPath, Buffer.from(await blob.arrayBuffer()));
+
+          const fileLike = {
+            path: tempPath,
+            mimetype,
+            originalname: client.filename || `policy.${ext}`,
+          } as Express.Multer.File;
+          const policyText = await extractPolicyText(fileLike);
+
+          if (isDataEntry) {
+            const extraction = await extractStructuredData(policyText, insuranceType);
+            if (extraction.status === "completed") {
+              const shared = deriveSharedColumns(insuranceType, extraction.data);
+              await pool.query(
+                `UPDATE clients SET
+                  status = 'done',
+                  extracted_data = $1,
+                  insurer = $2,
+                  policy_name = $3,
+                  expiry_date = $4,
+                  sum_insured = $5,
+                  policyholder_name = COALESCE(policyholder_name, $6)
+                WHERE id = $7`,
+                [
+                  JSON.stringify(extraction.data),
+                  shared.insurer ?? null,
+                  shared.policy_name ?? null,
+                  shared.expiry_date ?? null,
+                  shared.sum_insured ?? null,
+                  shared.policyholder_name ?? null,
+                  id,
+                ]
+              );
+            } else {
+              await pool.query(
+                "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
+                [extraction.error, id]
+              );
+            }
+            return;
+          }
+
+          const result = await runAnalysisPipeline(policyText, insuranceType);
+
+          if (result.status === "completed") {
+            await pool.query(
+              "UPDATE agent_credits SET balance = GREATEST(balance - 1, 0), total_used = total_used + 1 WHERE agent_id = $1",
+              [agentId]
+            );
+
+            const reportData = result.result;
+            const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
+            // clients.score is integer; the engine emits 12.5-step buckets (e.g. 87.5)
+            const score = rawScore == null ? null : Math.round(Number(rawScore));
+            const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
+            const policyName = result.metadata?.product || result.metadata?.plan || reportData?.coverage_structure?.policy_name || null;
+            const expiryDate = reportData?.policy_timeline?.policy_expiry_date || null;
+            const sumInsured = reportData?.coverage_structure?.base_sum_insured || null;
+            const flaws = reportData?.final_verdict?.key_failure_points || [];
+            const insuredName = reportData?.identity?.insured_names?.[0] || null;
+
+            await pool.query(
+              `UPDATE clients SET
+                status = 'done',
+                report_data = $1,
+                score = $2,
+                insurer = $3,
+                policy_name = $4,
+                expiry_date = $5,
+                sum_insured = $6,
+                flaws = $7,
+                policyholder_name = COALESCE(policyholder_name, $8)
+              WHERE id = $9`,
+              [
+                JSON.stringify(reportData),
+                score,
+                insurer,
+                policyName,
+                expiryDate,
+                sumInsured,
+                JSON.stringify(flaws),
+                insuredName,
+                id,
+              ]
+            );
+          } else {
+            await pool.query(
+              "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
+              [result.error, id]
+            );
+          }
+        } catch (err: any) {
+          console.error(`[Rerun ${id}] error:`, err);
+          await pool
+            .query("UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2", [
+              err.message || "Re-run failed",
+              id,
+            ])
+            .catch(() => {});
+        } finally {
+          try {
+            if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+          } catch {}
+        }
+      })();
+    } catch (err: any) {
+      console.error("Rerun error:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   });

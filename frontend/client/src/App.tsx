@@ -27,11 +27,13 @@ const AgentSignupFlow = lazy(() => import("@/pages/agent/SignupFlow"));
 
 // --- Agent App ---
 const DashboardNew = lazy(() => import("@/pages/agent/DashboardNew"));
-const Uploads = lazy(() => import("@/pages/agent/Uploads"));
-const UploadsDebug = lazy(() => import("@/pages/agent/UploadsDebug"));
 const AgentUploads = lazy(() => import("@/pages/agent/AgentUploads"));
 const PoliciesNew = lazy(() => import("@/pages/agent/PoliciesNew"));
+const AgentCalculator = lazy(() => import("@/pages/agent/AgentCalculator"));
+const RiderDirectory = lazy(() => import("@/pages/agent/RiderDirectory"));
 const PolicyDetail = lazy(() => import("@/pages/agent/PolicyDetail"));
+const CustomersNew = lazy(() => import("@/pages/agent/CustomersNew"));
+const CustomerDetail = lazy(() => import("@/pages/agent/CustomerDetail"));
 const MyQueue = lazy(() => import("@/pages/agent/MyQueue"));
 const SettingsNew = lazy(() => import("@/pages/agent/SettingsNew"));
 const MyProfile = lazy(() => import("@/pages/agent/MyProfile"));
@@ -224,17 +226,26 @@ function App() {
                       <Route path="/agent/uploads">
                         {() => <AgentProtectedRoute><AgentUploads /></AgentProtectedRoute>}
                       </Route>
-                      <Route path="/agent/uploads-debug">
-                        {() => <AgentProtectedRoute><UploadsDebug /></AgentProtectedRoute>}
-                      </Route>
                       <Route path="/agent/policies">
                         {() => <AgentProtectedRoute><PoliciesNew /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/policies/:id">
                         {() => <AgentProtectedRoute><PolicyDetail /></AgentProtectedRoute>}
                       </Route>
+                      <Route path="/agent/customers">
+                        {() => <AgentProtectedRoute><CustomersNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/customers/:id">
+                        {() => <AgentProtectedRoute><CustomerDetail /></AgentProtectedRoute>}
+                      </Route>
                       <Route path="/agent/my-queue">
                         {() => <AgentProtectedRoute><MyQueue /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/calculator">
+                        {() => <AgentProtectedRoute><AgentCalculator /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/riders">
+                        {() => <AgentProtectedRoute><RiderDirectory /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/settings">
                         {() => <AgentProtectedRoute><SettingsNew /></AgentProtectedRoute>}

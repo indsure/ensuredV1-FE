@@ -59,6 +59,10 @@
     "my_profile": "My Profile",
     "sign_out": "Sign Out",
     "my_policies": "My Policies",
+    "customers": "Customers",
+    "analyze": "Analyze",
+    "calculator": "Calculator",
+    "rider_directory": "Rider Directory",
     "queue_badge_error": "Queue badge unavailable"
   },
   "dashboard": {

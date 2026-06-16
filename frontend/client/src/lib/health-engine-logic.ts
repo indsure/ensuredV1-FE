@@ -1,9 +1,15 @@
-import { getProvidersByType, RiderType } from "./data/rider-data";
+import { getProvidersByType, getRiderEntriesByTypeForCompanies, RiderType } from "./data/rider-data";
 
 const getProviders = (type: RiderType): string => {
     const companies = getProvidersByType(type).slice(0, 3);
     return companies.length ? ` (Available from: ${companies.join(", ")}...)` : "";
 };
+
+/** Options for the cover engine. `partnerCompanies` (canonical rider-DB names)
+ *  activates the agent-only rider bias; omitted ⇒ neutral consumer output. */
+export interface CoverCalcOptions {
+    partnerCompanies?: string[];
+}
 
 // ─── Calibration 10: Central config object ───────────────────────────────────
 // All magic numbers live here. Change a constant once — it propagates everywhere.
@@ -18,8 +24,10 @@ export const CALCULATOR_CONFIG = {
     multiIncidentBufferWithoutRestoration: 0.20, // 20% — no restoration cover
 
     // Calibration 8
-    baseSICap: 2000000,               // ₹20L max base policy
+    baseSICap: 2000000,               // ₹20L preferred base-policy cap (raised in ₹5L slabs only when the 3× top-up rule demands it)
     topUpMinimumThreshold: 1000000,   // ₹10L — don't recommend top-up for smaller gaps
+    siSlab: 500000,                   // ₹5L — policies are sold in ₹5L sum-insured steps
+    topUpMaxMultiple: 3,              // super top-up can't exceed 3× the base policy
 
     // Calibration 6
     riskPostureMultipliers: {
@@ -103,6 +111,11 @@ export interface UserInputs {
     okWithDeductibles?: boolean;
     preferTopUp?: boolean;
 
+    // Location detail (kept so the wizard can round-trip the chosen city/state
+    // — e.g. when re-opening at the review step to adjust an answer).
+    state?: string;
+    city?: string;
+
     // Level 4 (Granular)
     exactAge?: number;
     spouseAge?: number;
@@ -127,6 +140,17 @@ export interface RiderRecommendation {
     name: string;
     reason: string;
     priority: "High" | "Medium" | "Optional";
+
+    // Agent-only bias metadata (undefined in the neutral consumer flow):
+    riderType?: RiderType;
+    /** Partner insurer whose named rider this is (when isPartner). */
+    provider?: string;
+    /** A plan of the partner that carries this rider, e.g. "Care Supreme". */
+    planHint?: string;
+    /** True when this is a partnered insurer's actual rider. */
+    isPartner?: boolean;
+    /** True when the client needs this but no partner offers it (a coverage gap). */
+    isGap?: boolean;
 }
 
 export interface EngineResult {
@@ -260,15 +284,34 @@ function corporateSIFromEmployerCover(cover: EmployerCover): number {
 // ─── Calibration 8: Base + Top-Up structure ──────────────────────────────────
 
 function calculateStructure(finalOptimal: number): { baseSI: number; topUpSI: number } {
-    // Base: 50% of optimal, capped at ₹20L
-    const baseSI = Math.min(
-        CALCULATOR_CONFIG.baseSICap,
-        Math.round(finalOptimal * 0.50)
-    );
-    const rawTopUp = finalOptimal - baseSI;
+    const slab = CALCULATOR_CONFIG.siSlab;
+    const roundSlab = (n: number) => Math.round(n / slab) * slab;
+    const ceilSlab = (n: number) => Math.ceil(n / slab) * slab;
 
-    // Don't recommend top-up if gap is below minimum threshold — not worth the complexity
-    const topUpSI = rawTopUp >= CALCULATOR_CONFIG.topUpMinimumThreshold ? rawTopUp : 0;
+    // Base: 50% of optimal, capped at ₹20L, snapped to ₹5L slabs (min ₹5L) —
+    // real policies are only sold in ₹5L sum-insured steps.
+    let baseSI = Math.max(
+        slab,
+        roundSlab(Math.min(CALCULATOR_CONFIG.baseSICap, finalOptimal * 0.50))
+    );
+
+    // Insurers won't write a super top-up beyond ~3× the base policy. When the
+    // capped base would need a larger top-up, raise the base in ₹5L slabs to
+    // the smallest value that satisfies base + 3×base ≥ optimal.
+    const maxMult = CALCULATOR_CONFIG.topUpMaxMultiple;
+    const neededBase = ceilSlab(finalOptimal / (1 + maxMult));
+    if (neededBase > baseSI) baseSI = neededBase;
+
+    const rawTopUp = finalOptimal - baseSI;
+    let topUpSI = 0;
+    if (rawTopUp >= CALCULATOR_CONFIG.topUpMinimumThreshold) {
+        // Round UP so base + top-up never under-covers the calculated need,
+        // then enforce the 3× ratio as a hard ceiling.
+        topUpSI = Math.min(ceilSlab(rawTopUp), baseSI * maxMult);
+    } else if (rawTopUp > 0) {
+        // Gap too small for a separate top-up — absorb it into the base.
+        baseSI = ceilSlab(finalOptimal);
+    }
 
     return { baseSI, topUpSI };
 }
@@ -278,6 +321,7 @@ function calculateStructure(finalOptimal: number): { baseSI: number; topUpSI: nu
 function estimatePremium(
     age: number,
     baseSI: number,
+    topUpSI: number,
     inputs: UserInputs
 ): EngineResult["premiumEstimate"] {
     // Find the right age band
@@ -316,9 +360,11 @@ function estimatePremium(
         bMax = Math.round(bMax * load);
     }
 
-    // Top-up premium ≈ 55% of base equivalent (cheaper than base)
-    const tMin = Math.round(bMin * 0.55);
-    const tMax = Math.round(bMax * 0.55);
+    // Top-up premium ≈ 55% of the per-lakh base rate (cheaper than base),
+    // scaled by the actual top-up size. Zero when no top-up is recommended.
+    const topUpFactor = baseSI > 0 ? topUpSI / baseSI : 0;
+    const tMin = Math.round(bMin * 0.55 * topUpFactor);
+    const tMax = Math.round(bMax * 0.55 * topUpFactor);
 
     const annualMin = bMin + tMin;
     const annualMax = bMax + tMax;
@@ -347,14 +393,70 @@ function fiveYearProjection(
 
 // ─── Rider logic ──────────────────────────────────────────────────────────────
 
-function buildRiders(inputs: UserInputs, age: number): RiderRecommendation[] {
-    const riders: RiderRecommendation[] = [];
+/** Internal draft: a recommendation plus whether the neutral (consumer) flow
+ *  should append the "available from…" provider list (preserves prior output). */
+type RiderDraft = RiderRecommendation & { _showProvidersNeutral?: boolean };
+
+/** First concrete plan name from a comma list ("Care Advantage, Care Supreme"),
+ *  or "" for placeholders like "Multiple plans". */
+function firstPlan(plans?: string): string {
+    if (!plans || /multiple/i.test(plans)) return "";
+    return plans.split(",")[0].trim();
+}
+
+/**
+ * Resolve a recommendation's provider info.
+ *  - Neutral (no partners) → identical to the original consumer output.
+ *  - Partner mode → if a partnered insurer offers this rider type, swap in its
+ *    actual rider name + plan (a strong, sellable steer); otherwise flag a gap
+ *    so the advisor still sees needed cover they'd have to place elsewhere.
+ */
+function decorateRider(draft: RiderDraft, partnerCompanies?: string[]): RiderRecommendation {
+    const { _showProvidersNeutral, ...rider } = draft;
+    const type = rider.riderType;
+    if (!type) return rider;
+
+    if (!partnerCompanies || partnerCompanies.length === 0) {
+        return _showProvidersNeutral ? { ...rider, reason: rider.reason + getProviders(type) } : rider;
+    }
+
+    const entries = getRiderEntriesByTypeForCompanies(type, partnerCompanies);
+    if (entries.length > 0) {
+        const e = entries[0];
+        const plan = firstPlan(e.plans);
+        const alsoOffered = Array.from(new Set(entries.slice(1).map((x) => x.company)));
+        return {
+            ...rider,
+            name: e.riderName,
+            provider: e.company,
+            planHint: plan || undefined,
+            isPartner: true,
+            reason:
+                `${rider.reason} Offered by ${e.company}${plan ? ` via ${plan}` : ""}.` +
+                (alsoOffered.length ? ` Also in your lineup: ${alsoOffered.join(", ")}.` : ""),
+        };
+    }
+
+    const others = getProvidersByType(type).slice(0, 3);
+    return {
+        ...rider,
+        isGap: true,
+        reason:
+            `${rider.reason} Not in your partnered lineup` +
+            (others.length ? ` — available from ${others.join(", ")}.` : "."),
+    };
+}
+
+function buildRiders(inputs: UserInputs, age: number, partnerCompanies?: string[]): RiderRecommendation[] {
+    const drafts: RiderDraft[] = [];
 
     if (inputs.hospitalPreference === "Premium corporate hospitals" || inputs.cityTier === "Metro") {
-        riders.push({
+        drafts.push({
             name: "Room Rent Waiver / No Capping",
-            reason: `Premium hospitals in ${inputs.cityTier === "Metro" ? "metros" : "large cities"} charge ₹10k+/day. A room rent cap clause silently cuts your total claim payout by 40–50%.${getProviders("Room Rent Waiver")}`,
+            reason: `Premium hospitals in ${inputs.cityTier === "Metro" ? "metros" : "large cities"} charge ₹10k+/day. A room rent cap clause silently cuts your total claim payout by 40–50%.`,
             priority: "High",
+            riderType: "Room Rent Waiver",
+            _showProvidersNeutral: true,
         });
     }
 
@@ -364,10 +466,12 @@ function buildRiders(inputs: UserInputs, age: number): RiderRecommendation[] {
         inputs.familyStructure === "Parents included";
 
     if (isFamily) {
-        riders.push({
+        drafts.push({
             name: "Restoration Benefit (Unlimited)",
-            reason: `Critical for family floaters — one member's claim shouldn't leave the rest of your family unprotected for the year.${getProviders("Restoration")}`,
+            reason: `Critical for family floaters — one member's claim shouldn't leave the rest of your family unprotected for the year.`,
             priority: "High",
+            riderType: "Restoration",
+            _showProvidersNeutral: true,
         });
     }
 
@@ -375,57 +479,66 @@ function buildRiders(inputs: UserInputs, age: number): RiderRecommendation[] {
         inputs.recurringExpenses === "Chronic but stable" ||
         inputs.recurringExpenses === "Minor (tests/OPD/meds)"
     ) {
-        riders.push({
+        drafts.push({
             name: "OPD Care",
-            reason: `Your recurring ${inputs.recurringExpenses === "Chronic but stable" ? "chronic condition costs" : "OPD/test expenses"} aren't covered by standard hospitalisation policies. OPD cover stops these from draining your savings.${getProviders("OPD")}`,
+            reason: `Your recurring ${inputs.recurringExpenses === "Chronic but stable" ? "chronic condition costs" : "OPD/test expenses"} aren't covered by standard hospitalisation policies. OPD cover stops these from draining your savings.`,
             priority: inputs.recurringExpenses === "Chronic but stable" ? "High" : "Optional",
+            riderType: "OPD",
+            _showProvidersNeutral: true,
         });
     }
 
     if (inputs.riskPosture === "Zero financial shock" || inputs.ageBand === "18-30") {
-        riders.push({
+        drafts.push({
             name: "No-Claim Bonus (NCB) Super Booster",
             reason: `Medical inflation is running at ${(MEDICAL_INFLATION_RATE * 100).toFixed(0)}%/year. A standard NCB grows too slowly — your cover needs to compound faster to stay adequate.`,
             priority: "Medium",
+            riderType: "NCB Booster",
         });
     }
 
     if (inputs.ageBand !== "18-30" || inputs.riskPosture === "Zero financial shock") {
-        riders.push({
+        drafts.push({
             name: "Critical Illness Rider",
-            reason: `Hospitalisation cover pays bills. Critical Illness pays a lump sum for income replacement during recovery — the most underrated gap in Indian health policies.${getProviders("Critical Illness")}`,
+            reason: `Hospitalisation cover pays bills. Critical Illness pays a lump sum for income replacement during recovery — the most underrated gap in Indian health policies.`,
             priority: age >= 45 ? "High" : "Medium",
+            riderType: "Critical Illness",
+            _showProvidersNeutral: true,
         });
     }
 
-    // Obesity / kidney — new condition-specific rider
+    // Obesity / kidney — condition-specific rider
     const hasMetabolicRisk =
         inputs.preExistingConditions?.includes("obesity") ||
         inputs.preExistingConditions?.includes("kidney");
 
     if (hasMetabolicRisk) {
-        riders.push({
+        drafts.push({
             name: "Chronic Disease Management Add-on",
             reason: `Your profile includes metabolic or renal risk factors. A chronic disease management rider covers specialist consultations, diagnostics, and structured care programmes not covered under standard hospitalisation.`,
             priority: "High",
+            riderType: "PED Waiver",
         });
     }
 
-    riders.push({
+    drafts.push({
         name: "Consumables Cover",
-        reason: `Gloves, PPE kits, syringes — typically 10–15% of hospital bills. No standard policy covers them. This rider closes that silent gap.${getProviders("Consumables")}`,
+        reason: `Gloves, PPE kits, syringes — typically 10–15% of hospital bills. No standard policy covers them. This rider closes that silent gap.`,
         priority: "Medium",
+        riderType: "Consumables",
+        _showProvidersNeutral: true,
     });
 
     if (inputs.familyStructure === "Parents included") {
-        riders.push({
+        drafts.push({
             name: "Annual Health Check-up Add-on",
             reason: `Senior citizens need regular screening. Early detection is the real cost-saver — many policies reward a claim-free year with this benefit.`,
             priority: "Medium",
+            riderType: "Wellness",
         });
     }
 
-    return riders;
+    return drafts.map((d) => decorateRider(d, partnerCompanies));
 }
 
 // ─── Reasoning ────────────────────────────────────────────────────────────────
@@ -595,7 +708,7 @@ function buildSensitivity(inputs: UserInputs, age: number): string[] {
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export function calculateHealthCover(inputs: UserInputs): EngineResult {
+export function calculateHealthCover(inputs: UserInputs, opts?: CoverCalcOptions): EngineResult {
     const age = resolveAge(inputs);
 
     // Step 1: Worst-case scenario (Calibration 1)
@@ -623,35 +736,40 @@ export function calculateHealthCover(inputs: UserInputs): EngineResult {
     // Step 7: Income adjustment (Calibration 5)
     const finalOptimal = applyIncomeAdjustment(riskAdjusted, inputs.annualIncome);
 
-    // Step 8: Structure (Calibration 8)
+    // Step 8: Structure (Calibration 8) — ₹5L slabs, top-up ≤ 3× base.
+    // The recommended total is the structured base + top-up (≥ the actuarial
+    // optimal, since slabs round up), so every displayed number stays coherent.
     const { baseSI, topUpSI } = calculateStructure(finalOptimal);
+    const recommendedTotal = baseSI + topUpSI;
 
     // Step 9: Corporate gap
     const corporateSI = corporateSIFromEmployerCover(inputs.employerCover);
     const corporateGap =
         corporateSI > 0
-            ? { corporateSI, personalNeeded: Math.max(0, finalOptimal - corporateSI) }
+            ? { corporateSI, personalNeeded: Math.max(0, recommendedTotal - corporateSI) }
             : undefined;
 
     // Step 10: Premium estimate (Calibration 9)
-    const premiumEstimate = estimatePremium(age, baseSI, inputs);
+    const premiumEstimate = estimatePremium(age, baseSI, topUpSI, inputs);
 
     // Step 11: 5-year projection
     const projection = fiveYearProjection(premiumEstimate.annual.max);
 
-    // Step 12: Coverage breakdown
+    // Step 12: Coverage breakdown — finalOptimal carries the structured
+    // recommendation (what we actually tell the user to buy) so the report,
+    // portfolio cover-gap, and product matching all agree with the cards.
     const coverageBreakdown = {
         worstCase,
         inflationBuffer: Math.round(inflationBuffer),
         multiIncidentBuffer: Math.round(multiIncidentBuffer),
-        finalOptimal,
+        finalOptimal: recommendedTotal,
     };
 
     const structure = { baseSI, topUpSI };
 
     // Step 13: Narrative
     const reasoning = buildReasoning(inputs, age, coverageBreakdown, structure, corporateGap);
-    const riders = buildRiders(inputs, age);
+    const riders = buildRiders(inputs, age, opts?.partnerCompanies);
     const commonMistakes = buildCommonMistakes(inputs, age);
     const sensitivityAnalysis = buildSensitivity(inputs, age);
 
@@ -659,7 +777,7 @@ export function calculateHealthCover(inputs: UserInputs): EngineResult {
         // Backward-compatible string fields
         baseCover: formatLakhs(baseSI),
         superTopUp: topUpSI > 0 ? formatLakhs(topUpSI) : "None",
-        totalProtection: formatLakhs(finalOptimal),
+        totalProtection: formatLakhs(recommendedTotal),
 
         reasoning,
         riders,

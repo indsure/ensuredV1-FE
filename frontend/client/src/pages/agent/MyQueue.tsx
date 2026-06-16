@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { TableRowSkeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { rerunPolicy } from "@/lib/rerun"
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
@@ -37,6 +38,8 @@ export default function MyQueue() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"failed" | "processing">("failed")
   const [polling, setPolling] = useState(false)
+  const [confirmDismissId, setConfirmDismissId] = useState<string | null>(null)
+  const [dismissingId, setDismissingId] = useState<string | null>(null)
   const { agent } = useAgent();
 
   async function fetchQueue() {
@@ -82,35 +85,31 @@ export default function MyQueue() {
   async function retry(id: string) {
     if (!agent?.agentId) return
     try {
-      // Update status to processing to retry the analysis
-      const { error: uErr } = await supabase
-        .from("clients")
-        .update({ status: "processing", error_message: null })
-        .eq("id", id)
-        .eq("agent_id", agent.agentId)
-      
-      if (uErr) throw new Error(uErr.message)
-      
-      setMyPolicies((prev) => prev.map((p) => (p.id === id ? { ...p, status: "processing" } : p)))
-      toast({ variant: "success", title: "Requeued", description: "Policy marked for reprocessing" })
+      await rerunPolicy(id)
+      setMyPolicies((prev) => prev.map((p) => (p.id === id ? { ...p, status: "processing", error_message: null } : p)))
+      toast({ variant: "success", title: "Re-running analysis", description: "Watch the Processing tab — it will finish or report an error." })
     } catch (e: unknown) {
       toast({ variant: "destructive", title: "Retry failed", description: e instanceof Error ? e.message : "Could not retry." })
     }
   }
 
-  async function markDone(id: string) {
+  async function dismiss(id: string) {
     if (!agent?.agentId) return
+    setDismissingId(id)
     try {
-      const { error: uErr } = await supabase
+      const { error: dErr } = await supabase
         .from("clients")
-        .update({ status: "done" })
+        .delete()
         .eq("id", id)
         .eq("agent_id", agent.agentId)
-      if (uErr) throw new Error(uErr.message)
+      if (dErr) throw new Error(dErr.message)
       setMyPolicies((prev) => prev.filter((p) => p.id !== id))
-      toast({ variant: "success", title: "Updated", description: "Marked done" })
+      toast({ variant: "success", title: "Removed from queue" })
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Update failed", description: e instanceof Error ? e.message : "Could not update." })
+      toast({ variant: "destructive", title: "Could not remove", description: e instanceof Error ? e.message : undefined })
+    } finally {
+      setDismissingId(null)
+      setConfirmDismissId(null)
     }
   }
 
@@ -158,6 +157,10 @@ export default function MyQueue() {
               actionLabel="Retry"
               onAction={retry}
               onRowClick={(rid) => setLocation(`/agent/policies/${rid}`)}
+              onDismiss={dismiss}
+              confirmDismissId={confirmDismissId}
+              setConfirmDismissId={setConfirmDismissId}
+              dismissingId={dismissingId}
               showError
             />
           </TabsContent>
@@ -171,6 +174,10 @@ export default function MyQueue() {
               actionLabel="View"
               onAction={(rid) => setLocation(`/agent/policies/${rid}`)}
               onRowClick={(rid) => setLocation(`/agent/policies/${rid}`)}
+              onDismiss={dismiss}
+              confirmDismissId={confirmDismissId}
+              setConfirmDismissId={setConfirmDismissId}
+              dismissingId={dismissingId}
               showSpinner
             />
           </TabsContent>
@@ -188,6 +195,10 @@ function QueueTable({
   actionLabel,
   onAction,
   onRowClick,
+  onDismiss,
+  confirmDismissId,
+  setConfirmDismissId,
+  dismissingId,
   showSpinner,
   showError,
 }: {
@@ -197,6 +208,10 @@ function QueueTable({
   actionLabel: string
   onAction: (id: string) => void
   onRowClick: (id: string) => void
+  onDismiss: (id: string) => void
+  confirmDismissId: string | null
+  setConfirmDismissId: (id: string | null) => void
+  dismissingId: string | null
   showSpinner?: boolean
   showError?: boolean
 }) {
@@ -256,9 +271,37 @@ function QueueTable({
                   {new Date(p.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                 </td>
                 <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                  <Button size="sm" variant="outline" className="border-slate-200" onClick={() => onAction(p.id)}>
-                    {actionLabel}
-                  </Button>
+                  <div className="inline-flex items-center gap-2">
+                    <Button size="sm" variant="outline" className="border-slate-200" onClick={() => onAction(p.id)}>
+                      {actionLabel}
+                    </Button>
+                    {confirmDismissId === p.id ? (
+                      <span className="inline-flex items-center gap-1">
+                        <button
+                          onClick={() => onDismiss(p.id)}
+                          disabled={dismissingId === p.id}
+                          className="text-[10px] font-black uppercase tracking-wider text-white bg-red-500 hover:bg-red-600 px-2 py-1.5 rounded transition-colors disabled:opacity-50"
+                        >
+                          {dismissingId === p.id ? "…" : "Remove"}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDismissId(null)}
+                          className="text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-slate-600 px-1.5 py-1.5"
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200"
+                        onClick={() => setConfirmDismissId(p.id)}
+                      >
+                        Dismiss
+                      </Button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

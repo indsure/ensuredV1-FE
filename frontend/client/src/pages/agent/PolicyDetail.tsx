@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { Copy, ExternalLink, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import CustomerTagCard from "@/components/agent/CustomerTagCard";
 import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
@@ -14,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
+import { rerunPolicy } from "@/lib/rerun";
 import { supabase } from "@/lib/supabase";
 import { validateForensicAuditReport, type ForensicAuditReport } from "@/lib/policy-types";
 
@@ -92,6 +94,7 @@ export default function PolicyDetail() {
   const [reportData, setReportData] = useState<ForensicAuditReport | null>(null);
   const [insuranceType, setInsuranceType] = useState<string>("health");
   const [extractedData, setExtractedData] = useState<Record<string, any> | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [fileMeta, setFileMeta] = useState<FileRow | null>(null);
   const [notes, setNotes] = useState("");
@@ -125,7 +128,7 @@ export default function PolicyDetail() {
           expiry_date, sum_insured, flaws, report_data, policyholder_name,
           share_token, share_enabled, filename, file_size,
           client_email, client_phone, policy_identifier, agent_notes,
-          insurance_type, extracted_data
+          insurance_type, extracted_data, customer_id
         `)
         .eq("id", id)
         .eq("agent_id", agent.agentId)
@@ -156,6 +159,7 @@ export default function PolicyDetail() {
       setPolicy(nextPolicy);
       setInsuranceType((clientData as any).insurance_type || "health");
       setExtractedData((clientData as any).extracted_data ?? null);
+      setCustomerId((clientData as any).customer_id ?? null);
       setReportData(
         clientData.report_data && validateForensicAuditReport(clientData.report_data)
           ? clientData.report_data
@@ -189,10 +193,16 @@ export default function PolicyDetail() {
     }
   }
 
+  const statusRef = useRef<string | null>(null);
+  useEffect(() => {
+    statusRef.current = policy?.status ?? null;
+  }, [policy?.status]);
+
   useEffect(() => {
     void loadDetail();
-    
-    // Poll while processing — reload when status flips to done
+
+    // Poll for status transitions (processing → done/error, re-runs, etc.)
+    // and reload the page data whenever the status changes.
     const pollInterval = setInterval(async () => {
       if (!id || !agent?.agentId) return;
       try {
@@ -202,8 +212,7 @@ export default function PolicyDetail() {
           .eq("id", id)
           .eq("agent_id", agent.agentId)
           .maybeSingle();
-        if (data?.status === "done") {
-          clearInterval(pollInterval);
+        if (data?.status && statusRef.current && data.status !== statusRef.current) {
           void loadDetail();
         }
       } catch {
@@ -238,7 +247,12 @@ export default function PolicyDetail() {
     try {
       const updatePolicy = await supabase
         .from("clients")
-        .update({ policyholder_name: draftName })
+        .update({
+          policyholder_name: draftName,
+          policy_identifier: draftIdentifier || null,
+          client_email: draftClientMeta.email || null,
+          client_phone: draftClientMeta.phone || null,
+        })
         .eq("id", policy.id);
       if (updatePolicy.error) throw new Error(updatePolicy.error.message);
 
@@ -302,15 +316,11 @@ export default function PolicyDetail() {
     if (!policy?.id || !agent?.agentId) return;
     setBusy("rerun");
     try {
-      // Update status to pending to trigger reprocessing
-      await supabase
-        .from("clients")
-        .update({ status: "pending", error_message: null })
-        .eq("id", policy.id);
+      await rerunPolicy(policy.id);
 
       toast({
-        title: "Analysis re-queued",
-        description: "The policy has been marked for reprocessing.",
+        title: "Re-analyzing",
+        description: "Processing from the stored document — this page updates automatically.",
       });
 
       await loadDetail();
@@ -500,6 +510,13 @@ export default function PolicyDetail() {
             </div>
 
             <div className="space-y-6">
+              <CustomerTagCard
+                clientId={policy.id}
+                customerId={customerId}
+                hint={{ name: policy.client_name, phone: clientMeta.phone, email: clientMeta.email }}
+                onChanged={() => void loadDetail()}
+              />
+
               <Card className="border-slate-100 shadow-sm">
                 <CardHeader><CardTitle>Upload metadata</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
@@ -514,12 +531,10 @@ export default function PolicyDetail() {
               <Card className="border-slate-100 shadow-sm">
                 <CardHeader><CardTitle>Action bar</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
-                  {!isDataEntry && (
-                    <Button className="w-full bg-[#0D9488] hover:bg-[#0f766e]" onClick={rerunAnalysis} disabled={busy === "rerun"}>
-                      <RefreshCw className={`mr-2 h-4 w-4 ${busy === "rerun" ? "animate-spin" : ""}`} />
-                      Re-run Analysis
-                    </Button>
-                  )}
+                  <Button className="w-full bg-[#0D9488] hover:bg-[#0f766e]" onClick={rerunAnalysis} disabled={busy === "rerun" || policy.status === "processing"}>
+                    <RefreshCw className={`mr-2 h-4 w-4 ${busy === "rerun" || policy.status === "processing" ? "animate-spin" : ""}`} />
+                    {isDataEntry ? "Re-read Document" : "Re-run Analysis"}
+                  </Button>
                   <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={() => setEditOpen(true)}>Edit Client Details</Button>
                   {!isDataEntry && (
                     <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!reportData || busy === "share"}>

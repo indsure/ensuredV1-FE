@@ -8,6 +8,8 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { startOfWeek, subWeeks, subDays, format, isAfter } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { InlineErrorState } from '@/components/agent/InlineErrorState';
+import { toast } from '@/hooks/use-toast';
+import { rerunPolicy } from '@/lib/rerun';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { translateAll } from '@/i18n/translate';
 import { TYPE_META, typeLabel, getNextPremiumDate, type InsuranceType } from '@/lib/insuranceTypes';
@@ -91,10 +93,12 @@ export default function DashboardNew() {
     highRisk: 0,
     highRiskDelta: 0,
     myQueue: 0,
-    avgRiskScore: 0 as number | null
+    avgRiskScore: 0 as number | null,
+    avgScoreWindow: "30d" as "30d" | "all"
   });
 
   const [recentActivity, setRecentActivity] = useState<RecentPolicy[]>([]);
+  const [expiringSoon, setExpiringSoon] = useState<RecentPolicy[]>([]);
   const [funnel, setFunnel] = useState({ submitted: 0, inReview: 0, completed: 0, highRisk: 0, needsAction: 0 });
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [failedJobs, setFailedJobs] = useState<FailedJob[]>([]);
@@ -130,17 +134,19 @@ export default function DashboardNew() {
         // 9. Chart Data (fetch statuses and dates from last 8 weeks)
         qChart,
         // 10. Recent Failures
-        qFailures
+        qFailures,
+        // 11. Genuinely expiring soon (next 30 days, not already expired)
+        qExpiring
       ] = await Promise.all([
         supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done'),
         supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done').gte('created_at', sevenDaysAgo),
         
-        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done').gte('score', 70),
-        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done').gte('score', 70).gte('created_at', sevenDaysAgo),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done').lt('score', 70),
+        supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done').lt('score', 70).gte('created_at', sevenDaysAgo),
         
         supabase.from('clients').select('id', { count: 'exact', head: true }).eq('agent_id', agent.agentId).eq('insurance_type', 'health').in('status', ['pending', 'processing', 'error']),
         
-        supabase.from('clients').select('score').eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done').gte('created_at', thirtyDaysAgo),
+        supabase.from('clients').select('score, created_at').eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'done').not('score', 'is', null),
         
         supabase.from('clients').select('id, policy_name, name, policyholder_name, insurer, status, score, created_at, expiry_date, share_token, share_enabled, report_data, insurance_type, extracted_data').eq('agent_id', agent.agentId).eq('status', 'done').order('created_at', { ascending: false }).limit(8),
         
@@ -150,12 +156,17 @@ export default function DashboardNew() {
 
         supabase.from('clients').select('status, created_at').eq('agent_id', agent.agentId).eq('insurance_type', 'health').gte('created_at', eightWeeksAgo).in('status', ['done', 'error']),
 
-        supabase.from('clients').select('id, status, error_message, created_at, policy_name, name').eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'error').order('created_at', { ascending: false }).limit(10)
+        supabase.from('clients').select('id, status, error_message, created_at, policy_name, name').eq('agent_id', agent.agentId).eq('insurance_type', 'health').eq('status', 'error').order('created_at', { ascending: false }).limit(10),
+
+        supabase.from('clients').select('id, policy_name, name, policyholder_name, insurer, status, score, created_at, expiry_date, share_token, share_enabled, report_data, insurance_type, extracted_data').eq('agent_id', agent.agentId).eq('status', 'done').gte('expiry_date', new Date().toISOString().slice(0, 10)).lte('expiry_date', subDays(new Date(), -30).toISOString().slice(0, 10)).order('expiry_date', { ascending: true }).limit(8)
       ]);
 
-      // Calculate Average Risk Score
-      const scores = q4.data?.map(p => p.score).filter(s => s !== null) as number[] || [];
-      const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+      // Average risk score: prefer the last 30 days, fall back to all-time.
+      const scoreRows = (q4.data ?? []).filter(p => p.score !== null);
+      const recentScores = scoreRows.filter(p => p.created_at >= thirtyDaysAgo).map(p => p.score as number);
+      const allScores = scoreRows.map(p => p.score as number);
+      const usedScores = recentScores.length > 0 ? recentScores : allScores;
+      const avgScore = usedScores.length > 0 ? usedScores.reduce((a, b) => a + b, 0) / usedScores.length : null;
 
       setStats({
         myPolicies: q1.count || 0,
@@ -163,10 +174,12 @@ export default function DashboardNew() {
         highRisk: q2.count || 0,
         highRiskDelta: q2b.count || 0,
         myQueue: q3.count || 0,
-        avgRiskScore: avgScore
+        avgRiskScore: avgScore,
+        avgScoreWindow: recentScores.length > 0 ? "30d" : "all"
       });
 
       setRecentActivity(q5.data as any[] || []);
+      setExpiringSoon(qExpiring.data as any[] || []);
 
       setFunnel({
         submitted: qFunnelAll.count || 0,
@@ -256,10 +269,11 @@ export default function DashboardNew() {
 
   async function retryJob(jobId: string) {
     try {
-      await supabase.from('clients').update({ status: 'pending', error_message: null }).eq('id', jobId);
-      setLocation('/agent/uploads');
-    } catch {
+      await rerunPolicy(jobId);
+      toast({ variant: 'success', title: 'Re-running analysis', description: 'Track progress in My Queue — the result lands in My Policies.' });
       fetchDashboard();
+    } catch (e: unknown) {
+      toast({ variant: 'destructive', title: 'Retry failed', description: e instanceof Error ? e.message : undefined });
     }
   }
 
@@ -410,10 +424,9 @@ export default function DashboardNew() {
             <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`} /> {t("dashboard.refresh")}
           </Button>
           <Button
-            className="bg-[#0D9488] hover:bg-[#0f766e] text-white shadow-md font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[#0D9488] hover:bg-[#0f766e] text-white shadow-md font-semibold"
             onClick={() => setLocation('/agent/uploads')}
-            disabled={creditsRemaining <= 0}
-            title={creditsRemaining <= 0 ? 'No credits remaining — contact your admin' : undefined}
+            title={creditsRemaining <= 0 ? 'Health analysis needs credits — data-entry types (motor, life, term…) are free' : undefined}
           >
             <Play size={16} className="mr-2 fill-current" /> {t("dashboard.analyze_policies")}
             {creditsRemaining <= 0 && <span className="ml-2 text-xs opacity-80">{t("dashboard.no_credits")}</span>}
@@ -503,7 +516,7 @@ export default function DashboardNew() {
                 <span className="text-3xl font-extrabold text-slate-800">
                   {stats.avgRiskScore === null ? '—' : stats.avgRiskScore.toFixed(1)}
                 </span>
-                <span className="text-xs font-medium text-slate-400">{t("dashboard.last_30_days")}</span>
+                <span className="text-xs font-medium text-slate-400">{stats.avgScoreWindow === "30d" ? t("dashboard.last_30_days") : "all time"}</span>
               </div>
             )}
           </CardContent>
@@ -548,7 +561,7 @@ export default function DashboardNew() {
                      const shouldSwitch = p.score !== null && p.score < 70;
                      const isHealth = (p.insurance_type || 'health') === 'health';
                      return (
-                       <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                       <tr key={p.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => setLocation(`/agent/policies/${p.id}`)}>
                          <td className="px-6 py-4 font-semibold text-slate-800">
                            <div className="flex items-center gap-2">
                              <span>{getDisplayName(p)}</span>
@@ -584,17 +597,13 @@ export default function DashboardNew() {
                          <td className="px-6 py-4">
                            {isHealth ? <PainpointCell shouldSwitch={shouldSwitch} reportData={p.report_data} /> : <span className="text-slate-400">—</span>}
                          </td>
-                         <td className="px-6 py-4">
-                           {p.share_token && p.share_enabled !== false ? (
-                             <button
-                               onClick={() => setLocation(`/shared/report/${p.share_token}`)}
-                               className="text-xs font-semibold text-[#0D9488] hover:underline"
-                             >
-                               {t("dashboard.open")}
-                             </button>
-                           ) : (
-                             <span className="text-slate-300 text-xs">—</span>
-                           )}
+                         <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                           <button
+                             onClick={() => setLocation(`/agent/policies/${p.id}`)}
+                             className="text-xs font-semibold text-[#0D9488] hover:underline"
+                           >
+                             {t("dashboard.open")}
+                           </button>
                          </td>
                        </tr>
                      );
@@ -643,12 +652,8 @@ export default function DashboardNew() {
         </Card>
       </div>
 
-      {/* FULL WIDTH: 8-WEEK PERFORMANCE CHART */}
       {/* EXPIRING SOON */}
-      {!loading && recentActivity.filter(p => {
-        const d = p.expiry_date ? Math.ceil((new Date(p.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
-        return d !== null && d <= 30;
-      }).length > 0 && (
+      {!loading && expiringSoon.length > 0 && (
         <Card className="shadow-sm border-slate-100 border-l-4 border-l-amber-400">
           <CardHeader className="border-b border-slate-50 pb-4">
             <CardTitle className="text-lg font-bold text-slate-800 flex items-center justify-between">
@@ -668,18 +673,14 @@ export default function DashboardNew() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {recentActivity
+                {expiringSoon
                   .map(p => ({ ...p, days: p.expiry_date ? Math.ceil((new Date(p.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null }))
-                  .filter(p => p.days !== null && p.days <= 30)
-                  .sort((a, b) => (a.days ?? 0) - (b.days ?? 0))
                   .map(p => (
-                    <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={p.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => setLocation(`/agent/policies/${p.id}`)}>
                       <td className="px-6 py-4 font-semibold text-slate-800">{getDisplayName(p)}</td>
                       <td className="px-6 py-4 text-slate-600">{getDisplayInsurer(p)}</td>
                       <td className="px-6 py-4">
-                        {p.days !== null && p.days <= 0
-                          ? <span className="font-bold text-red-500">{p.days} days</span>
-                          : p.days !== null && p.days <= 15
+                        {p.days !== null && p.days <= 15
                           ? <span className="font-bold text-red-500">{p.days} days</span>
                           : <span className="font-semibold text-amber-500">{p.days} days</span>}
                       </td>
@@ -688,10 +689,8 @@ export default function DashboardNew() {
                           <span className={`inline-flex items-center justify-center w-10 h-7 rounded-md text-xs font-bold ${p.score >= 80 ? 'bg-green-100 text-green-700' : p.score >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{p.score}</span>
                         ) : <span className="text-slate-400">—</span>}
                       </td>
-                      <td className="px-6 py-4">
-                        {p.share_token && p.share_enabled !== false ? (
-                          <button onClick={() => setLocation(`/shared/report/${p.share_token}`)} className="text-xs font-semibold text-[#0D9488] hover:underline">Open →</button>
-                        ) : <span className="text-slate-300 text-xs">—</span>}
+                      <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setLocation(`/agent/policies/${p.id}`)} className="text-xs font-semibold text-[#0D9488] hover:underline">Open →</button>
                       </td>
                     </tr>
                   ))}

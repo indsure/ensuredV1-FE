@@ -11,6 +11,7 @@ import { ShareLinkPopover } from "@/components/agent/ShareLinkPopover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { TYPE_META, typeLabel, isDataEntryType, getNextPremiumDate, type InsuranceType } from "@/lib/insuranceTypes"
 import { exportPoliciesToExcel } from "@/lib/exportPolicies"
+import { fetchCustomers, type Customer } from "@/lib/customers"
 
 type ClientRow = {
   id: string;
@@ -30,6 +31,7 @@ type ClientRow = {
   pdf_url: string | null;
   insurance_type: string | null;
   extracted_data: any | null;
+  customer_id: string | null;
 };
 
 function getDays(expiry_date: string | null): number | null {
@@ -159,6 +161,7 @@ export default function PoliciesNew() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [customersById, setCustomersById] = useState<Map<string, Customer>>(new Map());
   const shareBaseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const { agent } = useAgent();
 
@@ -169,12 +172,17 @@ export default function PoliciesNew() {
     try {
       const { data, error: qErr } = await supabase
         .from("clients")
-        .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url, insurance_type, extracted_data")
+        .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url, insurance_type, extracted_data, customer_id")
         .eq("agent_id", agent.agentId)
         .eq("status", "done")
         .order("created_at", { ascending: false });
       if (qErr) throw new Error(qErr.message);
       setRows(data ?? []);
+      // Customer names for the tag chips — non-fatal if it fails.
+      try {
+        const customers = await fetchCustomers(agent.agentId);
+        setCustomersById(new Map(customers.map(c => [c.id, c])));
+      } catch { /* chips just won't render */ }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
@@ -187,8 +195,6 @@ export default function PoliciesNew() {
   async function handleDelete(id: string) {
     setDeletingId(id);
     try {
-      await supabase.from("reports").delete().eq("policy_id", id);
-      await supabase.from("policy_files").delete().eq("policy_id", id);
       await supabase.from("clients").delete().eq("id", id);
       setRows(prev => prev.filter(r => r.id !== id));
     } catch {
@@ -227,9 +233,10 @@ export default function PoliciesNew() {
 
   // Stats
   const stats = useMemo(() => {
-    const expiringSoon = rows.filter(r => { const d = getDays(r.expiry_date); return d !== null && d <= 30; }).length;
+    const expiringSoon = rows.filter(r => { const d = getDays(r.expiry_date); return d !== null && d >= 0 && d <= 30; }).length;
     const shouldSwitch = rows.filter(r => r.score !== null && r.score < 70).length;
-    return { total: rows.length, expiringSoon, shouldSwitch };
+    const healthy = rows.filter(r => r.score !== null && r.score >= 70).length;
+    return { total: rows.length, expiringSoon, shouldSwitch, healthy };
   }, [rows]);
 
   // Filtered + sorted
@@ -241,7 +248,7 @@ export default function PoliciesNew() {
       (r.policy_identifier || "").toLowerCase().includes(q)
     );
     if (typeFilter !== "all") list = list.filter(r => (r.insurance_type || "health") === typeFilter);
-    if (tab === "expiring") list = list.filter(r => { const d = getDays(r.expiry_date); return d !== null && d <= 30; });
+    if (tab === "expiring") list = list.filter(r => { const d = getDays(r.expiry_date); return d !== null && d >= 0 && d <= 30; });
     if (tab === "switch") list = list.filter(r => r.score !== null && r.score < 70);
     if (tab === "healthy") list = list.filter(r => r.score !== null && r.score >= 70);
 
@@ -260,7 +267,7 @@ export default function PoliciesNew() {
     { key: "all", label: "All", count: rows.length },
     { key: "expiring", label: "Expiring Soon", count: stats.expiringSoon },
     { key: "switch", label: "Should Switch", count: stats.shouldSwitch },
-    { key: "healthy", label: "Healthy", count: rows.length - stats.shouldSwitch },
+    { key: "healthy", label: "Healthy", count: stats.healthy },
   ];
 
   return (
@@ -418,6 +425,14 @@ export default function PoliciesNew() {
                           <div className="text-[11px] text-slate-400 font-medium mt-0.5">
                             {p.policy_identifier || p.policy_name}
                           </div>
+                        )}
+                        {p.customer_id && customersById.has(p.customer_id) && (
+                          <button
+                            onClick={e => { e.stopPropagation(); setLocation(`/agent/customers/${p.customer_id}`); }}
+                            className="mt-1 inline-flex items-center gap-1 rounded-full bg-teal-50 border border-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-700 hover:bg-teal-100 transition-colors"
+                          >
+                            👤 {customersById.get(p.customer_id)!.name}
+                          </button>
                         )}
                       </td>
                       <td className="px-6 py-4">

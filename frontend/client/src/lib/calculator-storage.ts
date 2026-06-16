@@ -21,13 +21,22 @@ interface SaveReportError {
 export async function saveCalculatorReport(
   inputs: UserInputs | any,
   resultData: EngineResult | any,
+  opts: { authToken?: string; customerId?: string } = {},
   retryCount = 0
 ): Promise<{ success: true; uuid: string } | { success: false; error: string }> {
   try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    // Agent flow: stamps the report with the agent (and optionally customer).
+    if (opts.authToken) headers.Authorization = `Bearer ${opts.authToken}`;
+
     const res = await apiFetch("/api/calculator/save-report", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ inputs, result_data: resultData }),
+      headers,
+      body: JSON.stringify({
+        inputs,
+        result_data: resultData,
+        ...(opts.customerId ? { customer_id: opts.customerId } : {}),
+      }),
     });
 
     if (!res.ok) {
@@ -38,7 +47,7 @@ export async function saveCalculatorReport(
       // Retry on server errors if retryable
       if (res.status >= 500 && errorData.retryable && retryCount < MAX_RETRIES) {
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
-        return saveCalculatorReport(inputs, resultData, retryCount + 1);
+        return saveCalculatorReport(inputs, resultData, opts, retryCount + 1);
       }
 
       return {
@@ -55,7 +64,7 @@ export async function saveCalculatorReport(
     // Retry on network errors
     if (retryCount < MAX_RETRIES) {
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
-      return saveCalculatorReport(inputs, resultData, retryCount + 1);
+      return saveCalculatorReport(inputs, resultData, opts, retryCount + 1);
     }
 
     return {
