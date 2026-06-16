@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Badge, Input, Modal, Card, CardContent } from "@/components/ui";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 
 type Agent = {
   id: string;
@@ -15,13 +15,27 @@ type Agent = {
   credits_remaining: number;
 };
 
-export default function AgentsClient({ agents }: { agents: Agent[] }) {
+type IncompleteUser = {
+  id: string;
+  email: string;
+  created_at: string;
+};
+
+export default function AgentsClient({
+  agents,
+  incompleteUsers,
+}: {
+  agents: Agent[];
+  incompleteUsers: IncompleteUser[];
+}) {
   const router = useRouter();
   const [selected, setSelected] = useState<Agent | null>(null);
   const [modalType, setModalType] = useState<"credits" | null>(null);
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const filtered = agents.filter(
     (a) =>
@@ -53,6 +67,21 @@ export default function AgentsClient({ agents }: { agents: Agent[] }) {
       alert("Failed to save. Please try again.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/agents/${deleteTarget.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      setDeleteTarget(null);
+      router.refresh();
+    } catch {
+      alert("Failed to delete user. Please try again.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -121,13 +150,22 @@ export default function AgentsClient({ agents }: { agents: Agent[] }) {
                       })}
                     </td>
                     <td className="px-5 py-4">
-                      <Button
-                        variant="outline"
-                        className="h-7 text-xs px-3"
-                        onClick={() => openModal(agent)}
-                      >
-                        Credits
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          className="h-7 text-xs px-3"
+                          onClick={() => openModal(agent)}
+                        >
+                          Credits
+                        </Button>
+                        <button
+                          onClick={() => setDeleteTarget(agent)}
+                          className="text-slate-300 hover:text-red-500 transition-colors"
+                          title="Delete user"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -143,6 +181,48 @@ export default function AgentsClient({ agents }: { agents: Agent[] }) {
           </div>
         </CardContent>
       </Card>
+
+      {incompleteUsers.length > 0 && (
+        <Card>
+          <CardContent className="p-0">
+            <div className="px-5 py-3 border-b bg-amber-50">
+              <h2 className="text-sm font-semibold text-amber-700">
+                Incomplete Signups ({incompleteUsers.length}) — in Supabase Auth but never finished registration
+              </h2>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="border-b">
+                <tr className="text-left">
+                  <th className="px-5 py-3 font-medium text-slate-500">Email</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">Created</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incompleteUsers.map((u) => (
+                  <tr key={u.id} className="border-b last:border-0 hover:bg-slate-50">
+                    <td className="px-5 py-4 text-slate-700">{u.email}</td>
+                    <td className="px-5 py-4 text-slate-500">
+                      {new Date(u.created_at).toLocaleDateString("en-IN", {
+                        day: "numeric", month: "short", year: "numeric",
+                      })}
+                    </td>
+                    <td className="px-5 py-4">
+                      <button
+                        onClick={() => setDeleteTarget({ id: u.id, email: u.email, full_name: null, city: null, created_at: u.created_at, policies_count: 0, analyses_count: 0, credits_remaining: 0 })}
+                        className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
 
       <Modal
         open={!!selected && !!modalType}
@@ -169,6 +249,32 @@ export default function AgentsClient({ agents }: { agents: Agent[] }) {
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Saving…" : "Save"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete User"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-slate-900">{deleteTarget?.full_name || deleteTarget?.email}</span>?
+            This will remove them from Supabase Auth and all their data. This cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-end">
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? "Deleting…" : "Delete User"}
             </Button>
           </div>
         </div>

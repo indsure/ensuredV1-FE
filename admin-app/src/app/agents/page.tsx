@@ -49,11 +49,21 @@ async function getAgents() {
   }));
 }
 
+async function getIncompleteUsers(agentIds: string[]) {
+  const { data } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
+  const allUsers = data?.users ?? [];
+  return allUsers
+    .filter((u) => !agentIds.includes(u.id))
+    .map((u) => ({ id: u.id, email: u.email ?? "", created_at: u.created_at }));
+}
+
 export default async function AgentsPage() {
   const agents = await getAgents();
+  const agentIds = agents.map((a) => a.id);
+  const incompleteUsers = await getIncompleteUsers(agentIds);
   return (
     <AppShell>
-      <AgentsClient agents={agents} />
+      <AgentsClient agents={agents} incompleteUsers={incompleteUsers} />
     </AppShell>
   );
 }
