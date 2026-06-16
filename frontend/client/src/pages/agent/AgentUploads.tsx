@@ -202,7 +202,19 @@ export default function AgentUploads() {
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
-    setPendingFiles(acceptedFiles);
+
+    let files = acceptedFiles;
+    // Health runs a full audit and uses a credit per policy, so it stays one-at-a-time.
+    // Every other (data-entry) type can be uploaded in a batch.
+    if (insuranceType === "health" && files.length > 1) {
+      files = [files[0]];
+      toast({
+        title: "One health policy at a time",
+        description: `Only "${files[0].name}" will be analysed — health policies run a full audit and use 1 credit each. Upload the rest individually.`,
+      });
+    }
+
+    setPendingFiles(files);
     setConsentChecked(false);
     setShowConsentModal(true);
   };
@@ -318,8 +330,8 @@ export default function AgentUploads() {
         </div>
         <p className="mt-2 text-xs text-slate-500">
           {insuranceType === "health"
-            ? "Full risk analysis — generates a score and audit report. Uses 1 credit per policy."
-            : `${TYPE_META[insuranceType].label} — reads the policy and fills in the details for you (data entry only). No risk score, no credit used.`}
+            ? "Full risk analysis — generates a score and audit report. Uploaded one at a time; uses 1 credit per policy."
+            : `${TYPE_META[insuranceType].label} — drop as many policies as you like and we'll read each one and fill in the details (data entry only). No risk score, no credit used.`}
         </p>
       </div>
 
@@ -348,6 +360,11 @@ export default function AgentUploads() {
                 {isDragActive ? t("uploads.drop_active") : t("uploads.drop_prompt")}
               </h3>
               <p className="text-sm text-slate-500">{t("uploads.drop_hint")}</p>
+              {insuranceType !== "health" && (
+                <p className="mt-1 text-xs font-medium text-[#0D9488]">
+                  Tip: select multiple files to upload a batch at once.
+                </p>
+              )}
             </div>
 
             {/* Upload Progress */}
