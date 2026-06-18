@@ -3,7 +3,6 @@ import { useLocation } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/hooks/use-toast';
 
 export default function LoginNew() {
   const [, setLocation] = useLocation();
@@ -25,19 +24,6 @@ export default function LoginNew() {
       setLoading(false);
     } else {
       setLocation('/agent/dashboard');
-    }
-  }
-
-  async function handleForgotPassword() {
-    if (!email) {
-      setError('Provide your registered email to initiate credential reset.');
-      return;
-    }
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    if (error) {
-      setError(error.message);
-    } else {
-      toast({ variant: 'success', title: 'Email sent', description: 'A secured link has been dispatched to your email address.' });
     }
   }
 
@@ -117,11 +103,11 @@ export default function LoginNew() {
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-center px-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vault Key</label>
-                        <button 
-                            onClick={handleForgotPassword}
+                        <button
+                            onClick={() => setLocation('/agent/forgot-password')}
                             className="text-[10px] font-black text-[#0D9488] uppercase tracking-widest hover:underline"
                         >
-                            Reset?
+                            Forgot?
                         </button>
                     </div>
                     <Input 

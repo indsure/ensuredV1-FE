@@ -23,6 +23,8 @@ import SachAIChat from "@/components/SachAIChat";
 // --- Agent Auth ---
 const AgentLanding = lazy(() => import("@/pages/agent/Landing"));
 const AgentLoginNew = lazy(() => import("@/pages/agent/LoginNew"));
+const AgentForgotPassword = lazy(() => import("@/pages/agent/ForgotPassword"));
+const AgentResetPassword = lazy(() => import("@/pages/agent/ResetPassword"));
 const AgentSignupFlow = lazy(() => import("@/pages/agent/SignupFlow"));
 
 // --- Agent App ---
@@ -217,6 +219,8 @@ function App() {
                       {/* --- Agent Auth --- */}
                       <Route path="/agent" component={AgentLanding} />
                       <Route path="/agent/login" component={AgentLoginNew} />
+                      <Route path="/agent/forgot-password" component={AgentForgotPassword} />
+                      <Route path="/agent/reset-password" component={AgentResetPassword} />
                       <Route path="/agent/signup/:rest*" component={AgentSignupFlow} />
 
                       {/* --- Agent Protected App --- */}
