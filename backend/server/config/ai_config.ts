@@ -1,5 +1,7 @@
 export const AI_CONFIG = {
-    model: "gemini-3.5-flash",
+    // Model is env-driven so it can be switched without a code change/redeploy.
+    // e.g. set GEMINI_MODEL=gemini-2.5-flash in .env to fall back off a busy model.
+    model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
     generation_config: {
         temperature: 0.0,      // Maximum determinism
         top_p: 1.0,           // No nucleus sampling randomness
