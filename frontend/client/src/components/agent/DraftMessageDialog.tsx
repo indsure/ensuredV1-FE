@@ -42,6 +42,7 @@ export function DraftMessageDialog({
   const [language, setLanguage] = useState<DraftLanguage>("english");
   const [text, setText] = useState("");
   const [edited, setEdited] = useState(false);
+  const [phone, setPhone] = useState("");
 
   const intents = useMemo(() => {
     const isClient = target?.type === "client";
@@ -56,6 +57,7 @@ export function DraftMessageDialog({
       setKind(target?.type === "client" ? "upgrade_weak" : "follow_up");
       setLanguage("english");
       setEdited(false);
+      setPhone(target?.phone ?? "");
     }
   }, [open, target?.id]);
 
@@ -68,7 +70,7 @@ export function DraftMessageDialog({
 
   if (!open || !target) return null;
 
-  const wa = waHref(target.phone, text);
+  const wa = waHref(phone, text);
 
   function handleSend() {
     if (!wa) {
@@ -167,10 +169,23 @@ export function DraftMessageDialog({
             />
           </div>
 
+          {/* WhatsApp number — prefilled when on file, pasteable when not */}
+          <div>
+            <p className="text-xs font-bold text-slate-500 mb-2">WhatsApp number</p>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              inputMode="numeric"
+              placeholder="Paste 10-digit mobile number"
+              className="w-full rounded-xl border border-slate-200 px-3.5 py-3 text-base focus:outline-none focus:ring-2"
+              style={{ ['--tw-ring-color' as any]: `${ACCENT}55` }}
+            />
+          </div>
+
           <div className="flex items-center gap-2">
             <button
               onClick={handleSend}
-              disabled={!text.trim()}
+              disabled={!text.trim() || !wa}
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold text-white disabled:opacity-50"
               style={{ backgroundColor: "#25D366" }}
             >
@@ -183,8 +198,11 @@ export function DraftMessageDialog({
               <Copy size={16} /> Copy
             </button>
           </div>
-          {!target.phone && (
-            <p className="text-[11px] text-amber-600 text-center">No mobile number on file. Add one to send, or use Copy.</p>
+          {phone.trim() && !wa && (
+            <p className="text-[11px] text-amber-600 text-center">That doesn't look like a valid mobile number yet.</p>
+          )}
+          {!phone.trim() && (
+            <p className="text-[11px] text-amber-600 text-center">Paste a WhatsApp number above to send, or use Copy.</p>
           )}
           <p className="text-[11px] text-slate-400 text-center">
             WhatsApp opens with this text ready. You tap send.
