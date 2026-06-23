@@ -21,15 +21,36 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
 
   const { t, locale } = useLanguage()
 
-  const nav = useMemo(
+  // Grouped by the agent's two real jobs (win business / service the book) so the
+  // sidebar reads as a few short clusters instead of one long flat list.
+  // Renewals lives as a tab inside Leads, not as its own nav item.
+  const navSections = useMemo(
     () => [
-      { label: t("layout.overview"), href: "/agent/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-      { label: t("layout.analyze") ?? "Analyze", href: "/agent/uploads", icon: <Upload className="h-4 w-4" /> },
-      { label: t("layout.my_queue"), href: "/agent/my-queue", icon: <ListChecks className="h-4 w-4" /> },
-      { label: t("layout.my_policies") ?? "My Policies", href: "/agent/policies", icon: <FileText className="h-4 w-4" /> },
-      { label: t("layout.leads") ?? "Leads", href: "/agent/leads", icon: <Target className="h-4 w-4" /> },
-      { label: t("layout.customers") ?? "Customers", href: "/agent/customers", icon: <Users className="h-4 w-4" /> },
-      { label: t("layout.calculator") ?? "Calculator", href: "/agent/calculator", icon: <Calculator className="h-4 w-4" /> },
+      {
+        key: "main",
+        label: t("layout.main"),
+        items: [
+          { label: t("layout.overview"), href: "/agent/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+          { label: t("layout.analyze") ?? "Analyze", href: "/agent/uploads", icon: <Upload className="h-4 w-4" /> },
+          { label: t("layout.my_queue"), href: "/agent/my-queue", icon: <ListChecks className="h-4 w-4" /> },
+        ],
+      },
+      {
+        key: "grow",
+        label: t("layout.grow") ?? "Grow",
+        items: [
+          { label: t("layout.leads") ?? "Leads", href: "/agent/leads", icon: <Target className="h-4 w-4" /> },
+          { label: t("layout.calculator") ?? "Calculator", href: "/agent/calculator", icon: <Calculator className="h-4 w-4" /> },
+        ],
+      },
+      {
+        key: "book",
+        label: t("layout.my_book") ?? "My Book",
+        items: [
+          { label: t("layout.my_policies") ?? "My Policies", href: "/agent/policies", icon: <FileText className="h-4 w-4" /> },
+          { label: t("layout.customers") ?? "Customers", href: "/agent/customers", icon: <Users className="h-4 w-4" /> },
+        ],
+      },
     ],
     [locale]
   )
@@ -104,42 +125,44 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         )}
 
         <div className={`${sidebarCollapsed ? 'px-2' : 'px-4'} py-6 space-y-6 flex-1 transition-all duration-300`}>
-          <div>
-            {!sidebarCollapsed && <div className="px-2 text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">{t("layout.main")}</div>}
-            <nav className="space-y-1">
-              {nav.map((item) => {
-                const active = location === item.href
-                return (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    className={[
-                      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors relative group",
-                      active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
-                      sidebarCollapsed ? "justify-center" : "justify-between"
-                    ].join(" ")}
-                    title={sidebarCollapsed ? item.label : undefined}
-                  >
-                    <span className={`flex items-center ${sidebarCollapsed ? '' : 'gap-3'}`}>
-                      {item.icon}
-                      {!sidebarCollapsed && item.label}
-                    </span>
-                    {!sidebarCollapsed && item.href === "/agent/my-queue" && (
-                      <span className="inline-flex items-center rounded-full bg-[#0D9488]/15 text-[#5eead4] border border-[#0D9488]/30 px-2 py-0.5 text-[10px] font-black tabular-nums">
-                        {queueCount}
+          {navSections.map((section) => (
+            <div key={section.key}>
+              {!sidebarCollapsed && <div className="px-2 text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">{section.label}</div>}
+              <nav className="space-y-1">
+                {section.items.map((item) => {
+                  const active = location === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      className={[
+                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors relative group",
+                        active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
+                        sidebarCollapsed ? "justify-center" : "justify-between"
+                      ].join(" ")}
+                      title={sidebarCollapsed ? item.label : undefined}
+                    >
+                      <span className={`flex items-center ${sidebarCollapsed ? '' : 'gap-3'}`}>
+                        {item.icon}
+                        {!sidebarCollapsed && item.label}
                       </span>
-                    )}
-                    {sidebarCollapsed && item.href === "/agent/my-queue" && queueCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0D9488] text-white text-[10px] font-black flex items-center justify-center">
-                        {queueCount}
-                      </span>
-                    )}
-                  </Link>
-                )
-              })}
-              {queueCountError && !sidebarCollapsed && <div className="text-xs text-white/50 px-2 mt-2">Queue badge unavailable</div>}
-            </nav>
-          </div>
+                      {!sidebarCollapsed && item.href === "/agent/my-queue" && (
+                        <span className="inline-flex items-center rounded-full bg-[#0D9488]/15 text-[#5eead4] border border-[#0D9488]/30 px-2 py-0.5 text-[10px] font-black tabular-nums">
+                          {queueCount}
+                        </span>
+                      )}
+                      {sidebarCollapsed && item.href === "/agent/my-queue" && queueCount > 0 && (
+                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0D9488] text-white text-[10px] font-black flex items-center justify-center">
+                          {queueCount}
+                        </span>
+                      )}
+                    </Link>
+                  )
+                })}
+                {section.key === "main" && queueCountError && !sidebarCollapsed && <div className="text-xs text-white/50 px-2 mt-2">Queue badge unavailable</div>}
+              </nav>
+            </div>
+          ))}
 
           <div>
             {!sidebarCollapsed && <div className="px-2 text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">{t("layout.account")}</div>}

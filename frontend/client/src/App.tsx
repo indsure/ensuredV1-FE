@@ -29,6 +29,7 @@ const AgentSignupFlow = lazy(() => import("@/pages/agent/SignupFlow"));
 
 // --- Agent App ---
 const DashboardNew = lazy(() => import("@/pages/agent/DashboardNew"));
+const LeadRenewals = lazy(() => import("@/pages/agent/LeadRenewals"));
 const AgentUploads = lazy(() => import("@/pages/agent/AgentUploads"));
 const PoliciesNew = lazy(() => import("@/pages/agent/PoliciesNew"));
 const AgentCalculator = lazy(() => import("@/pages/agent/AgentCalculator"));
@@ -249,6 +250,9 @@ function App() {
                       </Route>
                       <Route path="/agent/leads/:id">
                         {() => <AgentProtectedRoute><LeadDetail /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/renewals">
+                        {() => <AgentProtectedRoute><LeadRenewals /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/my-queue">
                         {() => <AgentProtectedRoute><MyQueue /></AgentProtectedRoute>}

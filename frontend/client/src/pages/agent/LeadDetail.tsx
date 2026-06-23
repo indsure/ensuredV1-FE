@@ -5,6 +5,7 @@ import { format } from "date-fns";
 
 import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { LeadPoliciesSection } from "@/components/agent/LeadPoliciesSection";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -272,6 +273,9 @@ export default function LeadDetail() {
               </p>
             </CardContent>
           </Card>
+
+          {/* THEIR POLICIES */}
+          <LeadPoliciesSection leadId={lead.id} agentId={agent!.agentId} />
         </>
       )}
 

@@ -6,6 +6,8 @@ import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog";
 import type { DraftTarget } from "@/lib/draftMessage";
+import LeadRenewals from "@/pages/agent/LeadRenewals";
+import { fetchDueLeadPolicies, daysUntilDue } from "@/lib/leadPolicies";
 import { toast } from "@/hooks/use-toast";
 import { formatAmount } from "@/lib/customers";
 import {
@@ -56,6 +58,8 @@ export default function LeadsNew() {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [draftTarget, setDraftTarget] = useState<DraftTarget | null>(null);
+  const [view, setView] = useState<"pipeline" | "renewals">("pipeline");
+  const [dueCount, setDueCount] = useState(0);
 
   const load = useCallback(async () => {
     if (!agent?.agentId) return;
@@ -71,6 +75,14 @@ export default function LeadsNew() {
   }, [agent?.agentId]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // Count of lead policies due within 30 days — for the Renewals tab badge.
+  useEffect(() => {
+    if (!agent?.agentId) return;
+    fetchDueLeadPolicies(agent.agentId)
+      .then((rows) => setDueCount(rows.filter((r) => { const d = daysUntilDue(r.due_date); return d !== null && d <= 30; }).length))
+      .catch(() => {});
+  }, [agent?.agentId]);
 
   const dueToday = useMemo(() => leads.filter(isFollowUpDue), [leads]);
   const openCount = useMemo(() => leads.filter(isOpen).length, [leads]);
@@ -141,7 +153,7 @@ export default function LeadsNew() {
         </div>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => setCreateOpen((v) => !v)}
+            onClick={() => { setView("pipeline"); setCreateOpen((v) => !v); }}
             className="flex items-center gap-2 rounded-xl bg-[#0D9488] px-5 py-3 text-base font-bold text-white hover:bg-[#0f766e] shadow-sm"
           >
             {createOpen ? <X size={18} /> : <Plus size={18} />} {createOpen ? "Cancel" : "Add Lead"}
@@ -152,6 +164,32 @@ export default function LeadsNew() {
         </div>
       </div>
 
+      {/* TABS: Pipeline vs Renewals */}
+      <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 w-fit">
+        {([["pipeline", "Pipeline"], ["renewals", "Renewals"]] as const).map(([key, label]) => {
+          const active = view === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setView(key)}
+              className={[
+                "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-colors",
+                active ? "bg-white text-[#0D9488] shadow-sm" : "text-slate-500 hover:text-slate-700",
+              ].join(" ")}
+            >
+              {label}
+              {key === "renewals" && dueCount > 0 && (
+                <span className="inline-flex items-center justify-center rounded-full bg-amber-500 text-white text-[11px] font-black px-1.5 min-w-[20px] h-5">{dueCount}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {view === "renewals" ? (
+        <LeadRenewals embedded />
+      ) : (
+      <>
       {/* CREATE FORM */}
       {createOpen && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
@@ -273,6 +311,8 @@ export default function LeadsNew() {
         open={!!draftTarget}
         onClose={() => setDraftTarget(null)}
       />
+      </>
+      )}
     </div>
   );
 }
