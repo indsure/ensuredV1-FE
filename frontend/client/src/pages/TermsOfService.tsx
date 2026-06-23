@@ -58,7 +58,7 @@ export default function TermsOfService() {
               assistant.
             </p>
             <p className="mt-3">
-              These Terms govern your access to and use of ensured.in and all related services. Our{" "}
+              These Terms govern your access to and use of indsure.in and all related services. Our{" "}
               <a href="/privacy-policy" className="text-blue-600 hover:underline">
                 Privacy Policy
               </a>{" "}

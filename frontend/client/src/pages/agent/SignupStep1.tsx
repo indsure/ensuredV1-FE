@@ -508,7 +508,7 @@ export default function AgentSignupStep1() {
                                     required
                                 />
                                 <span className="text-sm text-slate-600 group-hover:text-slate-900">
-                                    I agree to the <a href="/terms" className="text-[#0D9488] underline hover:text-[#0f766e]">Terms of Service</a> and <a href="/privacy" className="text-[#0D9488] underline hover:text-[#0f766e]">Privacy Policy</a> <span className="text-red-500">*</span>
+                                    I agree to the <a href="/terms" className="text-[#0D9488] underline hover:text-[#0f766e]">Terms of Service</a> and <a href="/privacy-policy" className="text-[#0D9488] underline hover:text-[#0f766e]">Privacy Policy</a> <span className="text-red-500">*</span>
                                 </span>
                             </label>
                             <label className="flex items-start gap-3 cursor-pointer group">

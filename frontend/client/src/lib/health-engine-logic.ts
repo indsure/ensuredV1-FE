@@ -63,7 +63,10 @@ export const CALCULATOR_CONFIG = {
         "20L+": "buffer_500000", // adds ₹5L flat buffer
     } as Record<string, number | string>,
 
-    // Calibration 9 — per ₹10L base SI, annual premium (₹)
+    // Calibration 9 — REFERENCE annual premium (₹) for a ₹10L INDIVIDUAL policy
+    // at this age (one life). Higher sums insured scale CONCAVELY from here
+    // (siScalingExponent), and a family is priced as the SUM of its lives — not
+    // one life with a flat discount.
     premiumBands: [
         { maxAge: 34, min: 8000, max: 11000 },
         { maxAge: 44, min: 10000, max: 14000 },
@@ -71,7 +74,15 @@ export const CALCULATOR_CONFIG = {
         { maxAge: 64, min: 24000, max: 32000 },
         { maxAge: Infinity, min: 35000, max: 50000 },
     ],
-    familyFloaterDiscount: 0.15,      // 15% discount on family floater
+    // Sub-linear SI scaling: lifePremium = band × (SI / ₹10L)^exponent.
+    // Real per-lakh cost falls steeply with cover — a ₹50L policy costs ~1.5–1.8×
+    // a ₹10L one, NOT 5×. Anchored to real quotes (54+50, ₹50L ≈ ₹35–65k).
+    siScalingExponent: 0.32,
+    // Super top-up premium = band × (topUpSI/₹10L)^exponent × this rate.
+    // A high-deductible super top-up is cheap (the old 0.55 over-priced it ~3×).
+    topUpPremiumRate: 0.20,
+    // A shared family floater is cheaper than N separate policies on the same lives.
+    floaterEfficiency: 0.85,
     pedPremiumLoading: 0.25,          // +25% for pre-existing conditions
     metroPremiumLoading: 0.10,        // +10% for Metro city
 };
@@ -318,29 +329,49 @@ function calculateStructure(finalOptimal: number): { baseSI: number; topUpSI: nu
 
 // ─── Calibration 9: Premium estimate ─────────────────────────────────────────
 
+function bandForAge(age: number) {
+    return CALCULATOR_CONFIG.premiumBands.find((b) => age <= b.maxAge)!;
+}
+
 function estimatePremium(
     age: number,
     baseSI: number,
     topUpSI: number,
     inputs: UserInputs
 ): EngineResult["premiumEstimate"] {
-    // Find the right age band
-    const band = CALCULATOR_CONFIG.premiumBands.find((b) => age <= b.maxAge)!;
-    const baseMultiplier = baseSI / 1000000; // per ₹10L
-
-    let bMin = Math.round(band.min * baseMultiplier);
-    let bMax = Math.round(band.max * baseMultiplier);
-
-    // Adjustments
-    const isFamily =
+    // Premium is the SUM of every life actually on the policy, each priced at
+    // its OWN age — not just the primary applicant's. The old model priced one
+    // life and then discounted, which badly under-counted senior floaters.
+    const lives: number[] = [age];
+    const isCouple =
         inputs.familyStructure === "Couple" ||
-        inputs.familyStructure === "Couple + kids" ||
-        inputs.familyStructure === "Parents included";
+        inputs.familyStructure === "Couple + kids";
+    if (inputs.spouseAge && inputs.spouseAge > 0) lives.push(inputs.spouseAge);
+    else if (isCouple) lives.push(age); // spouse age not entered — price a second adult life
+    if (inputs.fatherAge && inputs.fatherAge > 0) lives.push(inputs.fatherAge);
+    if (inputs.motherAge && inputs.motherAge > 0) lives.push(inputs.motherAge);
 
-    if (isFamily) {
-        const disc = 1 - CALCULATOR_CONFIG.familyFloaterDiscount;
-        bMin = Math.round(bMin * disc);
-        bMax = Math.round(bMax * disc);
+    // Concave SI scaling: a ₹10L policy = the band value (scale 1.0); higher
+    // cover grows sub-linearly. The deductible super top-up rides its own,
+    // cheaper curve.
+    const exp = CALCULATOR_CONFIG.siScalingExponent;
+    const baseScale = baseSI > 0 ? Math.pow(baseSI / 1000000, exp) : 0;
+    const topUpScale = topUpSI > 0 ? Math.pow(topUpSI / 1000000, exp) : 0;
+    const topUpRate = CALCULATOR_CONFIG.topUpPremiumRate;
+
+    let annualMin = 0;
+    let annualMax = 0;
+    for (const lifeAge of lives) {
+        const band = bandForAge(lifeAge);
+        annualMin += band.min * baseScale + band.min * topUpScale * topUpRate;
+        annualMax += band.max * baseScale + band.max * topUpScale * topUpRate;
+    }
+
+    // A shared family floater is cheaper than the same lives on separate policies.
+    if (lives.length > 1 && inputs.familyStructure !== "Individual") {
+        const eff = CALCULATOR_CONFIG.floaterEfficiency;
+        annualMin *= eff;
+        annualMax *= eff;
     }
 
     const hasPED =
@@ -350,24 +381,18 @@ function estimatePremium(
 
     if (hasPED || hasChronicExpenses) {
         const load = 1 + CALCULATOR_CONFIG.pedPremiumLoading;
-        bMin = Math.round(bMin * load);
-        bMax = Math.round(bMax * load);
+        annualMin *= load;
+        annualMax *= load;
     }
 
     if (inputs.cityTier === "Metro") {
         const load = 1 + CALCULATOR_CONFIG.metroPremiumLoading;
-        bMin = Math.round(bMin * load);
-        bMax = Math.round(bMax * load);
+        annualMin *= load;
+        annualMax *= load;
     }
 
-    // Top-up premium ≈ 55% of the per-lakh base rate (cheaper than base),
-    // scaled by the actual top-up size. Zero when no top-up is recommended.
-    const topUpFactor = baseSI > 0 ? topUpSI / baseSI : 0;
-    const tMin = Math.round(bMin * 0.55 * topUpFactor);
-    const tMax = Math.round(bMax * 0.55 * topUpFactor);
-
-    const annualMin = bMin + tMin;
-    const annualMax = bMax + tMax;
+    annualMin = Math.round(annualMin);
+    annualMax = Math.round(annualMax);
 
     return {
         annual: { min: annualMin, max: annualMax },

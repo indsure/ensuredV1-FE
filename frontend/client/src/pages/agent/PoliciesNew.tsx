@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react"
 import { useLocation } from "wouter"
-import { Info, RefreshCw, ExternalLink, Download, Loader2, Trash2, FileSpreadsheet } from "lucide-react"
+import { Info, RefreshCw, ExternalLink, Download, Loader2, Trash2, FileSpreadsheet, Sparkles } from "lucide-react"
 import React from "react"
 import { formatDistanceToNow, format } from "date-fns"
 import { supabase } from "@/lib/supabase"
@@ -12,6 +12,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { TYPE_META, typeLabel, isDataEntryType, getNextPremiumDate, type InsuranceType } from "@/lib/insuranceTypes"
 import { exportPoliciesToExcel } from "@/lib/exportPolicies"
 import { fetchCustomers, type Customer } from "@/lib/customers"
+import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog"
+import type { DraftTarget } from "@/lib/draftMessage"
 
 type ClientRow = {
   id: string;
@@ -32,6 +34,7 @@ type ClientRow = {
   insurance_type: string | null;
   extracted_data: any | null;
   customer_id: string | null;
+  client_phone: string | null;
 };
 
 function getDays(expiry_date: string | null): number | null {
@@ -161,6 +164,7 @@ export default function PoliciesNew() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [draftTarget, setDraftTarget] = useState<DraftTarget | null>(null);
   const [customersById, setCustomersById] = useState<Map<string, Customer>>(new Map());
   const shareBaseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const { agent } = useAgent();
@@ -172,7 +176,7 @@ export default function PoliciesNew() {
     try {
       const { data, error: qErr } = await supabase
         .from("clients")
-        .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url, insurance_type, extracted_data, customer_id")
+        .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url, insurance_type, extracted_data, customer_id, client_phone")
         .eq("agent_id", agent.agentId)
         .eq("status", "done")
         .order("created_at", { ascending: false });
@@ -467,6 +471,35 @@ export default function PoliciesNew() {
                       <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
 
+                          {/* Draft AI WhatsApp message */}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => {
+                                    const rd = typeof p.report_data === "string"
+                                      ? (() => { try { return JSON.parse(p.report_data); } catch { return null; } })()
+                                      : p.report_data;
+                                    const weak = rd?.final_verdict?.key_failure_points?.[0] ?? null;
+                                    setDraftTarget({
+                                      type: "client",
+                                      id: p.id,
+                                      name: p.policyholder_name || p.name,
+                                      phone: p.client_phone,
+                                      insurer: p.insurer,
+                                      renewalDate: npDate,
+                                      weakPoint: weak,
+                                    });
+                                  }}
+                                  className="p-1.5 rounded text-slate-400 hover:text-[#0D9488] hover:bg-teal-50 transition-colors"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>Draft WhatsApp message</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
                           {/* Open detail */}
                           <TooltipProvider>
                             <Tooltip>
@@ -563,6 +596,12 @@ export default function PoliciesNew() {
           )}
         </div>
       )}
+
+      <DraftMessageDialog
+        target={draftTarget}
+        open={!!draftTarget}
+        onClose={() => setDraftTarget(null)}
+      />
     </div>
   );
 }

@@ -36,6 +36,8 @@ const RiderDirectory = lazy(() => import("@/pages/agent/RiderDirectory"));
 const PolicyDetail = lazy(() => import("@/pages/agent/PolicyDetail"));
 const CustomersNew = lazy(() => import("@/pages/agent/CustomersNew"));
 const CustomerDetail = lazy(() => import("@/pages/agent/CustomerDetail"));
+const LeadsNew = lazy(() => import("@/pages/agent/LeadsNew"));
+const LeadDetail = lazy(() => import("@/pages/agent/LeadDetail"));
 const MyQueue = lazy(() => import("@/pages/agent/MyQueue"));
 const SettingsNew = lazy(() => import("@/pages/agent/SettingsNew"));
 const MyProfile = lazy(() => import("@/pages/agent/MyProfile"));
@@ -241,6 +243,12 @@ function App() {
                       </Route>
                       <Route path="/agent/customers/:id">
                         {() => <AgentProtectedRoute><CustomerDetail /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/leads">
+                        {() => <AgentProtectedRoute><LeadsNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/leads/:id">
+                        {() => <AgentProtectedRoute><LeadDetail /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/my-queue">
                         {() => <AgentProtectedRoute><MyQueue /></AgentProtectedRoute>}

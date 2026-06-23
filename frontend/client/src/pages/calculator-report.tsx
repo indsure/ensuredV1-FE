@@ -170,6 +170,11 @@ export default function CalculatorReportPage() {
             <main className="flex-grow pt-24 pb-20 px-6">
                 <div className="max-w-4xl mx-auto space-y-12">
 
+                    {/* ── Regulatory Disclaimer ─────────────────────────────────────── */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
+                        <strong>Not insurance or financial advice.</strong> This analysis is for informational purposes only and does not constitute a recommendation to purchase any insurance product. Premium estimates are indicative only and not based on insurer-specific data. Consult a licensed insurance advisor before making any decision.
+                    </div>
+
                     {/* ── Success Banner (only shows after fresh save) ─────────────── */}
                     {showSavedBanner && (
                         <div className="animate-in fade-in slide-in-from-top-4 duration-500">

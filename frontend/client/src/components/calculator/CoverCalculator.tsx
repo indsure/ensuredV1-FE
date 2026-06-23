@@ -921,7 +921,11 @@ export default function CoverCalculator({
                 ))}
               </div>
 
-              <div className="flex justify-center gap-4 mt-8">
+              <p className="mt-6 text-xs text-[var(--color-text-muted)] text-center leading-relaxed">
+                For informational purposes only — not insurance or financial advice. Premium estimates are indicative and not based on insurer-specific data. Consult a licensed insurance advisor before purchasing.
+              </p>
+
+              <div className="flex justify-center gap-4 mt-4">
                 <Button
                   variant="ghost"
                   onClick={goBack}

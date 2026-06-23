@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { BookOpen, Calculator, FileText, LayoutDashboard, Settings, ListChecks, LogOut, Upload, User, Users, Menu } from "lucide-react"
+import { BookOpen, Calculator, FileText, LayoutDashboard, Settings, ListChecks, LogOut, Target, Upload, User, Users, Menu } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -27,6 +27,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
       { label: t("layout.analyze") ?? "Analyze", href: "/agent/uploads", icon: <Upload className="h-4 w-4" /> },
       { label: t("layout.my_queue"), href: "/agent/my-queue", icon: <ListChecks className="h-4 w-4" /> },
       { label: t("layout.my_policies") ?? "My Policies", href: "/agent/policies", icon: <FileText className="h-4 w-4" /> },
+      { label: t("layout.leads") ?? "Leads", href: "/agent/leads", icon: <Target className="h-4 w-4" /> },
       { label: t("layout.customers") ?? "Customers", href: "/agent/customers", icon: <Users className="h-4 w-4" /> },
       { label: t("layout.calculator") ?? "Calculator", href: "/agent/calculator", icon: <Calculator className="h-4 w-4" /> },
     ],
