@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Pool } from "pg";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16).toString("hex");
+  const hash = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${salt}:${hash.toString("hex")}`;
+}
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -52,13 +62,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const passwordHash = await hashPassword(password);
+
     // Create signup request in database
     const result = await pool.query(
-      `INSERT INTO agent_signup_requests 
-       (name, email, password_hash, phone, city, years_experience, status, created_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, 'pending', NOW()) 
+      `INSERT INTO agent_signup_requests
+       (name, email, password_hash, phone, city, years_experience, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, 'pending', NOW())
        RETURNING id`,
-      [name, email, password, phone, city, yearsExperience || 0]
+      [name, email, passwordHash, phone, city, yearsExperience || 0]
     );
 
     const requestId = result.rows[0].id;

@@ -10,10 +10,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const auth = await getAuthContext(req);
     const { id } = await params;
-    const res = await pool.query("SELECT * FROM reports WHERE id = $1", [id]);
+    const isAdmin = auth.type === "api_key" || auth.agent?.role === "admin" || auth.agent?.role === "manager";
+    const res = isAdmin
+      ? await pool.query("SELECT * FROM reports WHERE id = $1", [id])
+      : await pool.query("SELECT * FROM reports WHERE id = $1 AND agent_id = $2", [id, auth.user.id]);
+    if (!res.rows[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ data: res.rows[0] });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message }, { status: err.message === "Unauthorized" ? 401 : 500 });
   }
 }
 

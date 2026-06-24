@@ -8,7 +8,8 @@ import {
   TrendingUp,
   CheckCircle2,
   Phone,
-  Calendar
+  Calendar,
+  Sparkles
 } from "lucide-react";
 import { useEffect } from "react";
 import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext";
@@ -105,8 +106,16 @@ export default function AgentLanding() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Language Toggle — top right */}
-      <div className="flex justify-end px-6 pt-4">
+      {/* Top right — Playground demo + Language Toggle */}
+      <div className="flex justify-end items-center gap-3 px-6 pt-4">
+        <Link
+          href="/agent/playground"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-[var(--color-green-primary)] border border-[var(--color-green-primary)]/40 rounded-lg hover:bg-[var(--color-green-primary)] hover:text-white transition-all"
+          title="डेमो आज़माएँ — कोई अकाउंट नहीं"
+        >
+          <Sparkles className="h-4 w-4" />
+          Playground
+        </Link>
         <LanguageToggle />
       </div>
 

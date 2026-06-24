@@ -1,9 +1,10 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { BookOpen, Calculator, FileText, LayoutDashboard, Settings, ListChecks, LogOut, Target, Upload, User, Users, Menu } from "lucide-react"
+import { BookOpen, Calculator, FileText, LayoutDashboard, Settings, ListChecks, LogOut, Scale, Target, Upload, User, Users, Menu } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
+import PlaygroundBanner from "@/components/agent/PlaygroundBanner"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext"
@@ -41,6 +42,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         items: [
           { label: t("layout.leads") ?? "Leads", href: "/agent/leads", icon: <Target className="h-4 w-4" /> },
           { label: t("layout.calculator") ?? "Calculator", href: "/agent/calculator", icon: <Calculator className="h-4 w-4" /> },
+          { label: t("layout.compare") ?? "Compare", href: "/agent/compare", icon: <Scale className="h-4 w-4" /> },
         ],
       },
       {
@@ -221,6 +223,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
       </aside>
 
       <main className="flex-1 overflow-x-hidden overflow-y-auto flex flex-col">
+        <PlaygroundBanner />
         <div className="flex justify-end px-4 md:px-6 lg:px-8 pt-3 pb-1">
           <LanguageToggle />
         </div>

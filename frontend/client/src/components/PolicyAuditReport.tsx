@@ -200,30 +200,65 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
             }
 
             if (waiting) {
-                if (waiting.pre_existing_disease?.is_active_today) {
-                    items.push({
-                        issue: "Pre-Existing Diseases Not Covered",
-                        real_world_claim_impact: `${waiting.pre_existing_disease.months_remaining || "Several"} months remaining before pre-existing conditions are covered.`,
-                        quantified_oop_risk: `Claims will be rejected until ${waiting.pre_existing_disease.end_date || "waiting period ends"}.`,
-                        severity: "high"
-                    });
+                // Stored is_active_today / months_remaining / end_date are snapshots
+                // frozen at analysis time and go stale once the unlock date passes.
+                // Re-derive everything from the policy inception date against today —
+                // the same logic the Waiting Periods table below uses.
+                const inception = auditResult.policy_timeline?.policy_inception_date;
+                const liveWaiting = (
+                    durationMonths: number | null | undefined,
+                    storedActive: boolean | null | undefined,
+                    storedEnd: string | null | undefined
+                ) => {
+                    const endDate = computeUnlockDateMonths(inception ?? null, durationMonths ?? null) || storedEnd || null;
+                    const active = endDate ? new Date() < new Date(endDate) : !!storedActive;
+                    let monthsLeft: number | null = null;
+                    if (active && endDate) {
+                        const end = new Date(endDate);
+                        const now = new Date();
+                        monthsLeft =
+                            (end.getUTCFullYear() - now.getUTCFullYear()) * 12 +
+                            (end.getUTCMonth() - now.getUTCMonth());
+                        if (end.getUTCDate() < now.getUTCDate()) monthsLeft -= 1;
+                        monthsLeft = Math.max(1, monthsLeft);
+                    }
+                    return { active, endDate, monthsLeft };
+                };
+
+                const ped = waiting.pre_existing_disease;
+                // Only assert a hard PED exclusion when a duration is actually stated;
+                // otherwise the table already surfaces "Not stated — verify with insurer".
+                if (ped && ped.duration_months != null) {
+                    const live = liveWaiting(ped.duration_months, ped.is_active_today, ped.end_date);
+                    if (live.active) {
+                        items.push({
+                            issue: "Pre-Existing Diseases Not Covered",
+                            real_world_claim_impact: `${live.monthsLeft ?? "Several"} months remaining before pre-existing conditions are covered.`,
+                            quantified_oop_risk: `Claims will be rejected until ${live.endDate || "waiting period ends"}.`,
+                            severity: "high"
+                        });
+                    }
                 }
-                if (waiting.specific_diseases?.is_active_today) {
-                    const dlist = waiting.specific_diseases.diseases_covered?.join(", ") || "specific surgeries";
-                    items.push({
-                        issue: "Specific Surgeries Locked",
-                        real_world_claim_impact: `Waiting period active for: ${dlist}.`,
-                        quantified_oop_risk: `Claims for these conditions before ${waiting.specific_diseases.end_date || "waiting period ends"} will be rejected.`,
-                        severity: "medium"
-                    });
+                if (waiting.specific_diseases) {
+                    const live = liveWaiting(waiting.specific_diseases.duration_months, waiting.specific_diseases.is_active_today, waiting.specific_diseases.end_date);
+                    if (live.active) {
+                        const dlist = waiting.specific_diseases.diseases_covered?.join(", ") || "specific surgeries";
+                        items.push({
+                            issue: "Specific Surgeries Locked",
+                            real_world_claim_impact: `Waiting period active for: ${dlist}.`,
+                            quantified_oop_risk: `Claims for these conditions before ${live.endDate || "waiting period ends"} will be rejected.`,
+                            severity: "medium"
+                        });
+                    }
                 }
                 if (waiting.personal_waiting_periods && waiting.personal_waiting_periods?.length > 0) {
                     waiting.personal_waiting_periods.forEach(pw => {
-                        if (pw.is_active_today) {
+                        const live = liveWaiting(pw.duration_months, pw.is_active_today, pw.end_date);
+                        if (live.active) {
                             items.push({
                                 issue: `Condition Exclusion: ${pw.condition}`,
-                                real_world_claim_impact: `${pw.months_remaining || "Several"} months remaining before this specific condition is covered.`,
-                                quantified_oop_risk: `Claims rejected until ${pw.end_date || "waiting period ends"}.`,
+                                real_world_claim_impact: `${live.monthsLeft ?? "Several"} months remaining before this specific condition is covered.`,
+                                quantified_oop_risk: `Claims rejected until ${live.endDate || "waiting period ends"}.`,
                                 severity: "high"
                             });
                         }
@@ -240,13 +275,18 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                         quantified_oop_risk: `Normal delivery costs ₹50,000–₹1,50,000; C-section ₹1,00,000–₹2,50,000 in ${zoneContext}.`,
                         severity: "medium"
                     });
-                } else if (waiting?.maternity?.is_active_today) {
-                    items.push({
-                        issue: "Maternity Waiting Period Active",
-                        real_world_claim_impact: `${waiting.maternity.months_remaining || "Several"} months remaining before maternity claims are payable.`,
-                        quantified_oop_risk: `Planned delivery before ${waiting.maternity.end_date || "waiting period ends"} will not be covered.`,
-                        severity: "medium"
-                    });
+                } else if (waiting?.maternity) {
+                    // Re-derive against today rather than trusting the stale stored flag.
+                    const matEnd = computeUnlockDateMonths(auditResult.policy_timeline?.policy_inception_date ?? null, waiting.maternity.duration_months ?? null) || waiting.maternity.end_date || null;
+                    const matActive = matEnd ? new Date() < new Date(matEnd) : !!waiting.maternity.is_active_today;
+                    if (matActive) {
+                        items.push({
+                            issue: "Maternity Waiting Period Active",
+                            real_world_claim_impact: `${waiting.maternity.months_remaining || "Several"} months remaining before maternity claims are payable.`,
+                            quantified_oop_risk: `Planned delivery before ${matEnd || "waiting period ends"} will not be covered.`,
+                            severity: "medium"
+                        });
+                    }
                 }
             }
 

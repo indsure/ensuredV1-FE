@@ -14,6 +14,8 @@ import { AIService } from "./services/aiService";
 import { runAnalysisPipeline } from "./services/analysisPipeline";
 import { extractStructuredData } from "./services/dataExtraction";
 import { isDataEntryType, deriveSharedColumns } from "./services/extractionFields";
+import { extractWordingProfile, hashText } from "./services/wordingCompare";
+import { buildComparison, type WordingProfile } from "./types/wordingProfile";
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
 import { createClient } from "@supabase/supabase-js";
 import pkg from "pg";
@@ -260,38 +262,46 @@ async function extractPolicyText(file: Express.Multer.File): Promise<string> {
 
 /* ---------- JWT VERIFICATION HELPER ---------- */
 
+// Cache verified tokens for 5 min to avoid a Supabase round-trip on every request.
+// Key = token string, Value = { userId, expiresAt }
+const tokenCache = new Map<string, { userId: string; expiresAt: number }>();
+const TOKEN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+// Prune expired entries every 10 minutes so the map doesn't grow unbounded.
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, entry] of tokenCache) {
+    if (entry.expiresAt <= now) tokenCache.delete(token);
+  }
+}, 10 * 60 * 1000);
+
 const verifyJwt = async (req: any, res: any): Promise<string | null> => {
   const authHeader = req.headers["authorization"] as string | undefined;
-  console.log('[verifyJwt] Auth header:', authHeader ? `Bearer ${authHeader.slice(7, 27)}...` : 'missing');
-  
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    console.log('[verifyJwt] Verifying token with Supabase admin client...');
-    
-    const {
-      data: { user },
-      error,
-    } = await supabaseAdmin.auth.getUser(token);
-    
-    if (error) {
-      console.error('[verifyJwt] Supabase auth error:', error.message);
-      res.status(401).json({ error: "Invalid or expired token", details: error.message });
-      return null;
-    }
-    
-    if (!user) {
-      console.error('[verifyJwt] No user returned from Supabase');
-      res.status(401).json({ error: "Invalid or expired token" });
-      return null;
-    }
-    
-    console.log('[verifyJwt] Token verified successfully for user:', user.id);
-    return user.id;
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Missing authorization" });
+    return null;
   }
-  
-  console.error('[verifyJwt] Missing authorization header');
-  res.status(401).json({ error: "Missing authorization" });
-  return null;
+
+  const token = authHeader.slice(7);
+  const now = Date.now();
+
+  // Return cached result if still valid
+  const cached = tokenCache.get(token);
+  if (cached && cached.expiresAt > now) {
+    return cached.userId;
+  }
+
+  // First time seeing this token — verify with Supabase
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+  if (error || !user) {
+    res.status(401).json({ error: "Invalid or expired token" });
+    return null;
+  }
+
+  tokenCache.set(token, { userId: user.id, expiresAt: now + TOKEN_CACHE_TTL_MS });
+  return user.id;
 };
 
 /* ---------- ADMIN MIDDLEWARE ---------- */
@@ -920,8 +930,8 @@ export async function registerRoutes(
       }
 
       await pool.query(
-        `INSERT INTO agents (id, email, full_name, name, phone, city, location, experience_years, invite_code, consent_given_at)
-         VALUES ($1, $2, $3, $3, $4, $5, $5, $6, $7, NOW())
+        `INSERT INTO agents (id, email, full_name, name, phone, city, location, experience_years, invite_code, consent_given_at, marketing_consent)
+         VALUES ($1, $2, $3, $3, $4, $5, $5, $6, $7, NOW(), $8)
          ON CONFLICT (id) DO NOTHING`,
         [
           id,
@@ -931,6 +941,7 @@ export async function registerRoutes(
           city || null,
           experience_years || 0,
           invite_code || null,
+          marketing_consent ?? false,
         ]
       );
 
@@ -1060,6 +1071,9 @@ export async function registerRoutes(
   /* ── Agent: Trigger Batch Processing ────────────────────────────────── */
 
   app.post("/api/agent/trigger-batch-process", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
     const { batchId } = req.body;
     if (!batchId) return res.status(400).json({ error: "batchId is required" });
 
@@ -1286,6 +1300,121 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   });
 
+  /* ── Agent: Upload a policy onto a LEAD (light, OCR-optional) ─────────────
+   * Stores a prospect's existing policy file against an agent_leads row and,
+   * if asked, runs the cheap OCR-only data-entry extraction (motor/life/
+   * travel/property) to prefill insurer / policy name / holder / premium /
+   * due date. No forensic analysis, no credits. Manual add + all edits go
+   * straight through supabase-js (RLS); this endpoint is only for the file +
+   * OCR step, which needs storage-admin and the extraction pipeline.
+   */
+  app.post(
+    "/api/agent/leads/:leadId/policy",
+    (req, res, next) => {
+      upload.single("file")(req, res, (err: any) => {
+        if (err) {
+          console.error("LEAD POLICY MULTER ERROR:", err);
+          return res.status(400).json({ error: "File upload failed: " + (err.message || "Unknown error") });
+        }
+        next();
+      });
+    },
+    async (req, res) => {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
+      const { leadId } = req.params;
+      try {
+        const leadRes = await pool.query(
+          "SELECT id FROM agent_leads WHERE id = $1 AND agent_id = $2",
+          [leadId, agentId]
+        );
+        if (leadRes.rows.length === 0) return res.status(404).json({ error: "Lead not found" });
+
+        const type = String(req.body.type || "motor").toLowerCase();
+        const wantOcr = String(req.body.ocr) === "true";
+
+        // Manual fields (overrides; win over OCR when provided).
+        const manual = {
+          insurer: req.body.insurer || null,
+          policy_name: req.body.policy_name || null,
+          policyholder_name: req.body.policyholder_name || null,
+          premium: req.body.premium ? Number(req.body.premium) : null,
+          due_date: req.body.due_date || null,
+        };
+
+        const policyId = crypto.randomUUID();
+        let fileUrl: string | null = null;
+        let fileName: string | null = null;
+        let extracted: any = null;
+        const ocr: Record<string, any> = {};
+
+        if (req.file) {
+          const file = req.file;
+          fileName = file.originalname;
+
+          if (wantOcr && isDataEntryType(type)) {
+            try {
+              const text = await extractPolicyText(file);
+              const extraction = await extractStructuredData(text, type);
+              if (extraction.status === "completed") {
+                extracted = extraction.data;
+                const shared = deriveSharedColumns(type, extraction.data);
+                ocr.insurer = shared.insurer ?? null;
+                ocr.policy_name = shared.policy_name ?? null;
+                ocr.policyholder_name = shared.policyholder_name ?? null;
+                ocr.premium = extraction.data?.premium != null ? Number(extraction.data.premium) : null;
+                ocr.due_date = shared.expiry_date ?? null;
+              }
+            } catch (ocrErr: any) {
+              console.warn(`[lead-policy ${policyId}] OCR failed:`, ocrErr?.message);
+            }
+          }
+
+          try {
+            const fileBuffer = fs.readFileSync(file.path);
+            const ext = file.originalname.includes(".") ? file.originalname.split(".").pop() : "pdf";
+            const storagePath = `${agentId}/lead-policies/${policyId}.${ext}`;
+            const { error: upErr } = await supabaseAdmin.storage
+              .from(PDF_BUCKET)
+              .upload(storagePath, fileBuffer, { contentType: file.mimetype || "application/pdf", upsert: true });
+            if (upErr) {
+              console.error(`[lead-policy ${policyId}] storage upload failed:`, upErr.message);
+            } else {
+              const { data: signed } = await supabaseAdmin.storage
+                .from(PDF_BUCKET)
+                .createSignedUrl(storagePath, 60 * 60 * 24 * 365);
+              fileUrl = signed?.signedUrl ?? null;
+            }
+          } catch (storeErr: any) {
+            console.error(`[lead-policy ${policyId}] storage error:`, storeErr?.message);
+          } finally {
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+          }
+        }
+
+        // OCR fills blanks; an explicitly typed manual value always wins.
+        const pick = (k: string) => (manual as any)[k] ?? ocr[k] ?? null;
+        const ins = await pool.query(
+          `INSERT INTO lead_policies (
+             id, lead_id, agent_id, insurance_type, insurer, policy_name,
+             policyholder_name, premium, due_date, file_url, file_name, extracted_data
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+          [
+            policyId, leadId, agentId, type,
+            pick("insurer"), pick("policy_name"), pick("policyholder_name"),
+            pick("premium"), pick("due_date"), fileUrl, fileName,
+            extracted ? JSON.stringify(extracted) : null,
+          ]
+        );
+        return res.json(ins.rows[0]);
+      } catch (err: any) {
+        console.error("create lead policy error:", err);
+        return res.status(500).json({ error: "Could not save the policy" });
+      }
+    }
+  );
+
   /* ── Agent: Create Public Report ─────────────────────────────────────── */
 
   app.post("/api/agent/public-report", async (req, res) => {
@@ -1346,10 +1475,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
   app.get("/api/client-report/:id", async (req, res) => {
     try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
       const clientId = req.params.id;
       const getClient = await pool.query(
-        "SELECT report_data FROM clients WHERE id = $1",
-        [clientId]
+        "SELECT report_data FROM clients WHERE id = $1 AND agent_id = $2",
+        [clientId, agentId]
       );
 
       if (getClient.rows.length === 0 || !getClient.rows[0].report_data) {
@@ -1587,8 +1719,161 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      NEW AGENT UPLOAD & SHARING ROUTES
      ══════════════════════════════════════════════════════════════════════ */
 
+  /* ── Agent: Compare two policy WORDINGS (wording vs wording) ──────────────
+     Upload two product policy-wording PDFs. Text is extracted deterministically
+     (free), each wording is normalized into a WordingProfile via one cached
+     Gemini call, then a deterministic engine builds the side-by-side + verdict.
+     This does NOT touch the per-customer forensic audit pipeline. */
+
+  app.post(
+    "/api/agent/compare",
+    (req, res, next) => {
+      upload.fields([
+        { name: "wording_a", maxCount: 1 },
+        { name: "wording_b", maxCount: 1 },
+      ])(req, res, (err: any) => {
+        if (err) {
+          console.error("COMPARE MULTER ERROR:", err);
+          return res
+            .status(400)
+            .json({ error: "File upload failed: " + (err.message || "Unknown error") });
+        }
+        next();
+      });
+    },
+    async (req, res) => {
+      const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+      const fileA = files?.wording_a?.[0];
+      const fileB = files?.wording_b?.[0];
+      const cleanup = () => {
+        for (const f of [fileA, fileB]) {
+          if (f?.path) { try { fs.unlinkSync(f.path); } catch { /* ignore */ } }
+        }
+      };
+
+      try {
+        const agentId = await verifyJwt(req, res);
+        if (!agentId) { cleanup(); return; }
+
+        if (!fileA || !fileB) {
+          cleanup();
+          return res.status(400).json({ error: "Two wording PDFs are required (wording_a and wording_b)." });
+        }
+
+        // 1. Extract raw text from both (deterministic, no AI cost).
+        let textA: string, textB: string;
+        try {
+          [textA, textB] = await Promise.all([
+            extractPolicyText(fileA),
+            extractPolicyText(fileB),
+          ]);
+        } catch (e: any) {
+          cleanup();
+          return res.status(422).json({ error: "Could not read PDF text: " + (e?.message || "unknown") });
+        }
+
+        // 2. Normalize each wording into a comparable profile (1 cached Gemini call each).
+        let profileA: WordingProfile, profileB: WordingProfile;
+        try {
+          [profileA, profileB] = await Promise.all([
+            extractWordingProfile(textA),
+            extractWordingProfile(textB),
+          ]);
+        } catch (e: any) {
+          cleanup();
+          console.error("COMPARE EXTRACTION ERROR:", e?.message);
+          return res.status(502).json({ error: "Policy analysis failed. Please try again." });
+        }
+
+        // 3. Deterministic side-by-side + verdict.
+        const result = buildComparison(profileA, profileB);
+        cleanup();
+
+        return res.json({
+          result,
+          profiles: { a: profileA, b: profileB },
+          hashes: { a: hashText(textA), b: hashText(textB) },
+        });
+      } catch (err: any) {
+        cleanup();
+        console.error("COMPARE ERROR:", err?.message, err?.stack);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+    }
+  );
+
+  /* ── Compare: Save & Get shared comparison report ─────────────────────────
+     Same share model as the calculator: the agent portal POSTs with its Supabase
+     token so the report is stamped to the agent (and optionally a customer after
+     an ownership check); the public GET-by-uuid renders the customer-facing share. */
+
+  app.post("/api/compare/save-report", async (req, res) => {
+    const { result, profiles, customer_id } = req.body ?? {};
+    if (!result || typeof result !== "object" || !result.verdict) {
+      return res.status(400).json({ error: "A valid comparison result is required" });
+    }
+
+    // Optional agent/customer stamping; auth failure degrades to anonymous save.
+    let agentId: string | null = null;
+    let customerId: string | null = null;
+    const authHeader = req.headers["authorization"] as string | undefined;
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        const { data: { user }, error } = await supabaseAdmin.auth.getUser(authHeader.slice(7));
+        if (!error && user) agentId = user.id;
+      } catch { /* anonymous save */ }
+    }
+    if (agentId && customer_id) {
+      const owned = await pool.query(
+        "SELECT id FROM customers WHERE id = $1 AND agent_id = $2",
+        [customer_id, agentId]
+      );
+      if (owned.rows.length > 0) customerId = customer_id;
+    }
+
+    const nameA = result?.a?.plan_name || result?.a?.insurer || null;
+    const nameB = result?.b?.plan_name || result?.b?.insurer || null;
+
+    try {
+      const insertRes = await pool.query(
+        `INSERT INTO comparison_reports (result, profiles, name_a, name_b, agent_id, customer_id)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+        [
+          JSON.stringify(result),
+          profiles ? JSON.stringify(profiles) : null,
+          nameA, nameB, agentId, customerId,
+        ]
+      );
+      return res.json({ uuid: insertRes.rows[0].id, success: true });
+    } catch (err: any) {
+      console.error("ERROR saving comparison report:", err);
+      return res.status(500).json({ error: "Failed to save comparison. Please try again.", retryable: true });
+    }
+  });
+
+  app.get("/api/compare/report/:uuid", async (req, res) => {
+    const { uuid } = req.params;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(uuid)) {
+      return res.status(400).json({ error: "Invalid report ID format" });
+    }
+    try {
+      const reportRes = await pool.query(
+        "SELECT result, created_at FROM comparison_reports WHERE id = $1",
+        [uuid]
+      );
+      if (reportRes.rows.length === 0) {
+        return res.status(404).json({ error: "Comparison not found", code: "REPORT_NOT_FOUND" });
+      }
+      return res.json(reportRes.rows[0]);
+    } catch (err: any) {
+      console.error("ERROR fetching comparison report:", err);
+      return res.status(500).json({ error: "Failed to load comparison.", retryable: true });
+    }
+  });
+
   /* ── Agent: Upload & Analyze ─────────────────────────────────────────── */
-  
+
   app.post(
     "/api/agent/analyze",
     (req, res, next) => {

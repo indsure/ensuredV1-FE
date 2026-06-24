@@ -22,6 +22,7 @@ import SachAIChat from "@/components/SachAIChat";
 
 // --- Agent Auth ---
 const AgentLanding = lazy(() => import("@/pages/agent/Landing"));
+const PlaygroundEntry = lazy(() => import("@/pages/agent/PlaygroundEntry"));
 const AgentLoginNew = lazy(() => import("@/pages/agent/LoginNew"));
 const AgentForgotPassword = lazy(() => import("@/pages/agent/ForgotPassword"));
 const AgentResetPassword = lazy(() => import("@/pages/agent/ResetPassword"));
@@ -33,6 +34,7 @@ const LeadRenewals = lazy(() => import("@/pages/agent/LeadRenewals"));
 const AgentUploads = lazy(() => import("@/pages/agent/AgentUploads"));
 const PoliciesNew = lazy(() => import("@/pages/agent/PoliciesNew"));
 const AgentCalculator = lazy(() => import("@/pages/agent/AgentCalculator"));
+const AgentCompare = lazy(() => import("@/pages/agent/Compare"));
 const RiderDirectory = lazy(() => import("@/pages/agent/RiderDirectory"));
 const PolicyDetail = lazy(() => import("@/pages/agent/PolicyDetail"));
 const CustomersNew = lazy(() => import("@/pages/agent/CustomersNew"));
@@ -56,6 +58,7 @@ const CompareSample = lazy(() => import("@/pages/CompareSample"));
 const CompareUploadStep = lazy(() => import("@/pages/compare/upload-step"));
 const CompareProfileStep = lazy(() => import("@/pages/compare/profile-step"));
 const CompareResultsStep = lazy(() => import("@/pages/compare/results-step"));
+const SharedComparison = lazy(() => import("@/pages/compare/SharedComparison"));
 
 // --- Existing D2C Lazy Loads ---
 const Home = lazy(() => import("@/pages/home"));
@@ -214,6 +217,9 @@ function App() {
                       <Route path="/calculator/report/:uuid" component={CalculatorReportPage} />
 
                       {/* --- Compare --- */}
+                      <Route path="/compare/report/:uuid">
+                        {(params) => <SharedComparison uuid={params.uuid} />}
+                      </Route>
                       <Route path="/compare" component={CompareUploadStep} />
                       <Route path="/compare/sample" component={CompareSample} />
                       <Route path="/compare/profile" component={CompareProfileStep} />
@@ -221,6 +227,7 @@ function App() {
 
                       {/* --- Agent Auth --- */}
                       <Route path="/agent" component={AgentLanding} />
+                      <Route path="/agent/playground" component={PlaygroundEntry} />
                       <Route path="/agent/login" component={AgentLoginNew} />
                       <Route path="/agent/forgot-password" component={AgentForgotPassword} />
                       <Route path="/agent/reset-password" component={AgentResetPassword} />
@@ -259,6 +266,9 @@ function App() {
                       </Route>
                       <Route path="/agent/calculator">
                         {() => <AgentProtectedRoute><AgentCalculator /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/compare">
+                        {() => <AgentProtectedRoute><AgentCompare /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/riders">
                         {() => <AgentProtectedRoute><RiderDirectory /></AgentProtectedRoute>}
