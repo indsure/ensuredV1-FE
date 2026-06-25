@@ -903,7 +903,7 @@ export async function registerRoutes(
 
   app.post("/api/agent/create-profile", async (req, res) => {
     try {
-      const { id, email, full_name, phone, city, experience_years, invite_code } =
+      const { id, email, full_name, phone, city, experience_years, invite_code, marketing_consent } =
         req.body;
 
       if (!id || !email || !full_name) {
