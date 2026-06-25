@@ -23,10 +23,10 @@ const TOP_INDIAN_CITIES = [
 export default function AgentSignupStep1() {
     const [, setLocation] = useLocation()
     
-    // Load saved form data from localStorage on mount
+    // Load saved form data from sessionStorage on mount
     const getSavedFormData = () => {
         try {
-            const saved = localStorage.getItem('indsure_signup_draft')
+            const saved = sessionStorage.getItem('indsure_signup_draft')
             if (saved) {
                 return JSON.parse(saved)
             }
@@ -53,7 +53,7 @@ export default function AgentSignupStep1() {
     // Load saved checkbox states
     const getSavedCheckboxes = () => {
         try {
-            const saved = localStorage.getItem('indsure_signup_checkboxes')
+            const saved = sessionStorage.getItem('indsure_signup_checkboxes')
             if (saved) {
                 return JSON.parse(saved)
             }
@@ -69,7 +69,7 @@ export default function AgentSignupStep1() {
     const [citySearch, setCitySearch] = useState('')
     const [showCityDropdown, setShowCityDropdown] = useState(false)
 
-    // Save form data to localStorage whenever it changes
+    // Save form data to sessionStorage whenever it changes
     const update = (field: string, value: string) => {
         if (field === 'inviteCode') {
             value = value.toUpperCase().trim()
@@ -80,20 +80,20 @@ export default function AgentSignupStep1() {
         const newForm = { ...form, [field]: value }
         setForm(newForm)
         
-        // Save to localStorage
+        // Save to sessionStorage
         try {
-            localStorage.setItem('indsure_signup_draft', JSON.stringify(newForm))
+            sessionStorage.setItem('indsure_signup_draft', JSON.stringify(newForm))
         } catch (e) {
             console.error('Failed to save form data:', e)
         }
     }
 
-    // Save checkbox states to localStorage
+    // Save checkbox states to sessionStorage
     const updateTermsAccepted = (checked: boolean) => {
         setTermsAccepted(checked)
         try {
             const checkboxes = { termsAccepted: checked, marketingConsent }
-            localStorage.setItem('indsure_signup_checkboxes', JSON.stringify(checkboxes))
+            sessionStorage.setItem('indsure_signup_checkboxes', JSON.stringify(checkboxes))
         } catch (e) {
             console.error('Failed to save checkbox state:', e)
         }
@@ -103,7 +103,7 @@ export default function AgentSignupStep1() {
         setMarketingConsent(checked)
         try {
             const checkboxes = { termsAccepted, marketingConsent: checked }
-            localStorage.setItem('indsure_signup_checkboxes', JSON.stringify(checkboxes))
+            sessionStorage.setItem('indsure_signup_checkboxes', JSON.stringify(checkboxes))
         } catch (e) {
             console.error('Failed to save checkbox state:', e)
         }
@@ -258,8 +258,8 @@ export default function AgentSignupStep1() {
         
         // Clear saved form data after successful signup
         try {
-            localStorage.removeItem('indsure_signup_draft')
-            localStorage.removeItem('indsure_signup_checkboxes')
+            sessionStorage.removeItem('indsure_signup_draft')
+            sessionStorage.removeItem('indsure_signup_checkboxes')
         } catch (e) {
             console.error('Failed to clear saved data:', e)
         }
