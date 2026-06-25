@@ -221,10 +221,19 @@ export default function AgentSignupStep1() {
 
         if (!profileRes.ok) {
             let errMsg = 'Failed to create profile. Please try again.'
-            try {
-                const profileErr = await profileRes.json()
-                errMsg = profileErr.error || errMsg
-            } catch {}
+            const contentType = profileRes.headers.get('content-type') || ''
+            if (contentType.includes('application/json')) {
+                try {
+                    const profileErr = await profileRes.json()
+                    errMsg = profileErr.error || errMsg
+                } catch {}
+            } else {
+                // Non-JSON response (e.g. the SPA host returned HTML/405 because
+                // the API base is misconfigured) — the request never reached the
+                // backend. Surface a clear message instead of a confusing generic one.
+                errMsg = 'We could not reach the server. Please try again or contact support on WhatsApp.'
+                console.error('create-profile got non-JSON response', profileRes.status, contentType)
+            }
             setError(errMsg)
             setLoading(false)
             return
