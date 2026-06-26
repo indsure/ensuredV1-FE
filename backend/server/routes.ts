@@ -61,6 +61,10 @@ const PDF_BUCKET = "policy-pdfs";
 
 interface AnalysisJob {
   id: string;
+  // Owning agent. null/undefined = anonymous public-analyzer job (no client
+  // ownership). Set for agent uploads so status/AI routes can enforce that one
+  // agent can never read another agent's (or a client's) analysis by jobId.
+  agentId?: string | null;
   status: "pending" | "processing" | "completed" | "failed";
   result?: any;
   error?: string;
@@ -88,8 +92,8 @@ async function persistJob(job: AnalysisJob): Promise<void> {
         created_at, completed_at,
         extraction_started_at, extraction_ended_at,
         fetch_started_at, fetch_ended_at,
-        ai_started_at, ai_ended_at, prompt_version
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+        ai_started_at, ai_ended_at, prompt_version, agent_id
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
       ON CONFLICT (id) DO UPDATE SET
         status = EXCLUDED.status,
         result = EXCLUDED.result,
@@ -115,7 +119,8 @@ async function persistJob(job: AnalysisJob): Promise<void> {
         job.fetchEndedAt || null,
         job.aiStartedAt || null,
         job.aiEndedAt || null,
-        job.prompt_version || null
+        job.prompt_version || null,
+        job.agentId ?? null
       ]
     );
   } catch (err: any) {
@@ -133,6 +138,7 @@ async function loadJobFromDB(jobId: string): Promise<AnalysisJob | null> {
     const r = res.rows[0];
     return {
       id: r.id,
+      agentId: r.agent_id ?? null,
       status: r.status,
       result: r.result,
       error: r.error,
@@ -275,6 +281,25 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
+// Resolve a bearer token to a verified user id (or null). Cached for 5 min.
+// Exported so non-route modules (e.g. index.ts / Sach AI) can enforce ownership
+// without duplicating Supabase verification.
+export async function getUserIdFromToken(token: string): Promise<string | null> {
+  if (!token) return null;
+  const now = Date.now();
+
+  const cached = tokenCache.get(token);
+  if (cached && cached.expiresAt > now) {
+    return cached.userId;
+  }
+
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) return null;
+
+  tokenCache.set(token, { userId: user.id, expiresAt: now + TOKEN_CACHE_TTL_MS });
+  return user.id;
+}
+
 const verifyJwt = async (req: any, res: any): Promise<string | null> => {
   const authHeader = req.headers["authorization"] as string | undefined;
 
@@ -283,26 +308,43 @@ const verifyJwt = async (req: any, res: any): Promise<string | null> => {
     return null;
   }
 
-  const token = authHeader.slice(7);
-  const now = Date.now();
-
-  // Return cached result if still valid
-  const cached = tokenCache.get(token);
-  if (cached && cached.expiresAt > now) {
-    return cached.userId;
-  }
-
-  // First time seeing this token — verify with Supabase
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-
-  if (error || !user) {
+  const userId = await getUserIdFromToken(authHeader.slice(7));
+  if (!userId) {
     res.status(401).json({ error: "Invalid or expired token" });
     return null;
   }
 
-  tokenCache.set(token, { userId: user.id, expiresAt: now + TOKEN_CACHE_TTL_MS });
-  return user.id;
+  return userId;
 };
+
+/* ---------- CLIENT-DATA ACCESS AUDIT LOG ---------- */
+// Append-only, best-effort record of who viewed/modified which client, when,
+// and from where. Fire-and-forget: never throws, never blocks the response.
+async function recordAccess(
+  req: any,
+  agentId: string | null,
+  clientId: string | null,
+  action: string
+): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO access_audit_log
+         (agent_id, client_id, action, route, method, ip, user_agent)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        agentId ?? null,
+        clientId ?? null,
+        action,
+        req.path,
+        req.method,
+        req.ip ?? null,
+        req.headers["user-agent"] ?? null,
+      ]
+    );
+  } catch (err: any) {
+    console.error("recordAccess audit insert failed:", err?.message ?? err);
+  }
+}
 
 /* ---------- ADMIN MIDDLEWARE ---------- */
 
@@ -432,6 +474,17 @@ export async function registerRoutes(
     }
 
     if (!job) {
+      return res.status(404).json({
+        status: "not_found",
+        error: "Job not found. It may have expired or never existed.",
+      });
+    }
+
+    // This is the PUBLIC (unauthenticated) status endpoint for the anonymous
+    // one-off analyzer. It must NEVER serve agent-owned jobs — those carry a
+    // client's policy analysis and are only reachable via the authenticated
+    // agent route. 404 (don't reveal existence) if the job belongs to an agent.
+    if (job.agentId) {
       return res.status(404).json({
         status: "not_found",
         error: "Job not found. It may have expired or never existed.",
@@ -1237,6 +1290,7 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Client not found" });
       }
 
+      recordAccess(req, agentId, client_id, "view_client");
       const client = clientRes.rows[0];
 
       const empanelRes = await pool.query(
@@ -1464,6 +1518,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (result.rowCount === 0) {
         return res.status(404).json({ error: "Client not found" });
       }
+      recordAccess(req, agentId, id, "delete_client");
       return res.json({ success: true });
     } catch (err: any) {
       console.error("Delete client error:", err);
@@ -1490,6 +1545,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           .json({ error: "Report not found or not finished processing" });
       }
 
+      recordAccess(req, agentId, clientId, "view_report");
       return res.json({ report_data: getClient.rows[0].report_data });
     } catch (err: any) {
       console.error("Fetch client report error:", err);
@@ -1925,6 +1981,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         const jobId = crypto.randomUUID();
         const job: AnalysisJob = {
           id: jobId,
+          agentId,
           status: "pending",
           createdAt: Date.now(),
           prompt_version: PROMPT_VERSION
@@ -2167,6 +2224,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         });
       }
 
+      // OWNERSHIP: this job must belong to the calling agent. Anonymous jobs
+      // (agentId null) are not reachable here; another agent's job 404s (we do
+      // not reveal existence). This closes the IDOR where any authenticated
+      // agent could read another agent's analysis result by jobId.
+      if (!job.agentId || job.agentId !== agentId) {
+        return res.status(404).json({ status: "not_found", error: "Job not found" });
+      }
+
       // Get clientId from analysis_jobs
       const jobRecord = await pool.query(
         "SELECT policy_id FROM analysis_jobs WHERE id = $1",
@@ -2273,6 +2338,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         return res.status(404).json({ error: "Client not found" });
       }
 
+      recordAccess(req, agentId, id, "update_client");
       const insuranceType = ownerCheck.rows[0].insurance_type;
       const shared = deriveSharedColumns(insuranceType, extractedData);
 
@@ -2325,6 +2391,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         return res.status(404).json({ error: "Client not found" });
       }
 
+      recordAccess(req, agentId, id, "rerun_client");
       const client = clientRes.rows[0];
 
       if (!client.pdf_url) {
@@ -2509,6 +2576,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         return res.status(404).json({ error: "Not found" });
       }
 
+      recordAccess(req, agentId, id, "download_pdf");
       const { pdf_url, filename } = clientRes.rows[0];
 
       if (!pdf_url) {

@@ -15,7 +15,7 @@ globalThis.Headers = NodeFetchHeaders as any;
 globalThis.Request = NodeFetchRequest as any;
 globalThis.Response = NodeFetchResponse as any;
 
-import { registerRoutes, analysisJobs } from "./routes";
+import { registerRoutes, analysisJobs, getUserIdFromToken } from "./routes";
 import { serveStatic } from "./static";
 import { SACH_AI_SYSTEM_PROMPT } from "./sachAI.prompt";
 
@@ -64,25 +64,57 @@ setInterval(cleanupUploadsDirectory, 60 * 60 * 1000);
 async function cleanupDpdpRetention() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   try {
-    const cutoffMs = Date.now() - 90 * 24 * 60 * 60 * 1000;
+    // RETENTION POLICY (DPDP storage-limitation, lifecycle-aware).
+    // Principle: we keep data as long as the *purpose* exists — i.e. as long as
+    // the client/customer record it belongs to still exists. We ONLY purge
+    // records that have been orphaned (their client/customer was deleted) and
+    // have then aged past the grace window. Data belonging to an existing
+    // (active) client is NEVER auto-deleted, no matter how old it is — that
+    // would destroy the agent's working history and, for cover calculations,
+    // their client's records. Configurable via RETENTION_GRACE_DAYS.
+    const graceDays = Number(process.env.RETENTION_GRACE_DAYS) || 90;
+    const cutoffMs = Date.now() - graceDays * 24 * 60 * 60 * 1000;
+    const interval = `${graceDays} days`;
 
-    // analysis_jobs: in this codebase, created_at may be either bigint(ms) or timestamptz.
+    // analysis_jobs: keyed to a client via policy_id. Purge only jobs that are
+    // orphaned (no policy_id, or the client no longer exists) AND older than the
+    // grace window. Jobs for existing clients are kept so the Sach AI chat keeps
+    // its policy context. created_at may be bigint(ms) OR timestamptz.
+    const orphanedJobWhere = `
+      (policy_id IS NULL OR NOT EXISTS (
+        SELECT 1 FROM clients c WHERE c.id = analysis_jobs.policy_id))`;
     try {
-      await pool.query("DELETE FROM analysis_jobs WHERE created_at < $1", [cutoffMs]);
+      await pool.query(
+        `DELETE FROM analysis_jobs WHERE ${orphanedJobWhere} AND created_at < $1`,
+        [cutoffMs]
+      );
     } catch (e) {
-      // ignore and try timestamptz-based deletion
-    }
-    try {
-      await pool.query("DELETE FROM analysis_jobs WHERE created_at < NOW() - interval '90 days'");
-    } catch (e) {
-      // ignore
+      // created_at stored as timestamptz — retry with interval arithmetic.
+      try {
+        await pool.query(
+          `DELETE FROM analysis_jobs WHERE ${orphanedJobWhere} AND created_at < NOW() - interval '${interval}'`
+        );
+      } catch (e2) {
+        // ignore
+      }
     }
 
-    // calculator_reports: created_at is created with DEFAULT NOW(), stored as timestamptz.
+    // calculator_reports: optionally linked to a customer via customer_id.
+    // Keep any report tied to a customer who still exists (active client work).
+    // Purge, once past the grace window, only: (a) untethered scratch reports
+    // with no customer attached, and (b) reports orphaned by a deleted customer.
     try {
-      await pool.query("DELETE FROM calculator_reports WHERE created_at < NOW() - interval '90 days'");
+      await pool.query(
+        `DELETE FROM calculator_reports
+         WHERE created_at < NOW() - interval '${interval}'
+           AND (
+             customer_id IS NULL
+             OR NOT EXISTS (
+                  SELECT 1 FROM customers cu WHERE cu.id = calculator_reports.customer_id)
+           )`
+      );
     } catch (e) {
-      // ignore
+      // ignore (column/table shape mismatch on older DBs)
     }
   } catch (err) {
     console.error("Failed to cleanup DPDP retention tables:", err);
@@ -260,15 +292,28 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
       });
     }
 
-    // Fetch policy context if jobId is provided
+    // Fetch policy context if jobId is provided.
+    // OWNERSHIP GUARD: a job's analysis contains a client's policy PII. Only the
+    // owning agent may ground the chat on it. We require a valid bearer token
+    // and match it against analysis_jobs.agent_id. If the caller is not the
+    // owner (or sends no token), we silently skip policy context rather than
+    // leaking it — the chat still answers, just without policy grounding.
+    // (Agent callers always send their token via apiFetch, so this is
+    // non-breaking for the legitimate flow.)
     let policyContext = "";
     if (jobId && typeof jobId === "string") {
       try {
+        const authHeader = req.headers["authorization"] as string | undefined;
+        const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
+        const requesterId = token ? await getUserIdFromToken(token) : null;
+
         const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-        const jobRes = await pool.query(
-          "SELECT result FROM analysis_jobs WHERE id = $1",
-          [jobId]
-        );
+        const jobRes = requesterId
+          ? await pool.query(
+              "SELECT result FROM analysis_jobs WHERE id = $1 AND agent_id = $2",
+              [jobId, requesterId]
+            )
+          : { rows: [] as any[] };
         await pool.end();
 
         if (jobRes.rows.length > 0 && jobRes.rows[0].result) {
