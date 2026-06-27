@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
 import {
   Scale, FileText, CheckCircle2, X, Loader2, AlertCircle, ArrowRight,
-  Share2, Copy, Check, MessageCircle,
+  Share2, Copy, Check, MessageCircle, Zap,
 } from "lucide-react";
+import { Link } from "wouter";
 import { apiFetch } from "@/lib/api";
 import { type CompareResponse, type ComparisonResult } from "@/lib/wordingProfile";
 import ComparisonView, { TEAL, AMBER } from "@/components/ComparisonView";
@@ -228,7 +229,29 @@ export default function Compare() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 mt-8">
+      {/* Catalog shortcut — instant, no upload, no AI cost */}
+      <Link
+        href="/agent/compare/catalog"
+        className="mt-6 flex items-center gap-3 rounded-2xl border-2 border-[#0D9488]/30 bg-[#0D9488]/5 hover:bg-[#0D9488]/10 p-4 transition-colors group"
+      >
+        <div className="h-11 w-11 rounded-xl bg-[#0D9488] text-white flex items-center justify-center flex-shrink-0">
+          <Zap className="h-6 w-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-slate-800">Compare from the catalog — instant, no upload</p>
+          <p className="text-sm text-slate-500">Pick any two pre-analysed plans. No PDF, no waiting.</p>
+        </div>
+        <ArrowRight className="h-5 w-5 text-[#0D9488] group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+      </Link>
+
+      <div className="relative my-6 text-center">
+        <div className="absolute inset-x-0 top-1/2 h-px bg-slate-200" />
+        <span className="relative bg-[#FAFAF8] px-3 text-xs font-bold uppercase tracking-widest text-slate-400">
+          or upload wordings
+        </span>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
         <UploadSlot side="a" label="Policy A" file={fileA} onPick={setFileA} onClear={() => setFileA(null)} disabled={loading} />
         <UploadSlot side="b" label="Policy B" file={fileB} onPick={setFileB} onClear={() => setFileB(null)} disabled={loading} />
       </div>

@@ -35,6 +35,7 @@ const AgentUploads = lazy(() => import("@/pages/agent/AgentUploads"));
 const PoliciesNew = lazy(() => import("@/pages/agent/PoliciesNew"));
 const AgentCalculator = lazy(() => import("@/pages/agent/AgentCalculator"));
 const AgentCompare = lazy(() => import("@/pages/agent/Compare"));
+const AgentCatalogCompare = lazy(() => import("@/pages/agent/CatalogCompare"));
 const RiderDirectory = lazy(() => import("@/pages/agent/RiderDirectory"));
 const PolicyDetail = lazy(() => import("@/pages/agent/PolicyDetail"));
 const CustomersNew = lazy(() => import("@/pages/agent/CustomersNew"));
@@ -216,7 +217,7 @@ function App() {
                       <Route path="/calculator/report" component={CalculatorReportPage} />
                       <Route path="/calculator/report/:uuid" component={CalculatorReportPage} />
 
-                      {/* --- Compare --- */}
+                      {/* --- Compare (public share result only; tools are agent-only) --- */}
                       <Route path="/compare/report/:uuid">
                         {(params) => <SharedComparison uuid={params.uuid} />}
                       </Route>
@@ -266,6 +267,9 @@ function App() {
                       </Route>
                       <Route path="/agent/calculator">
                         {() => <AgentProtectedRoute><AgentCalculator /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/compare/catalog">
+                        {() => <AgentProtectedRoute><AgentCatalogCompare /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/compare">
                         {() => <AgentProtectedRoute><AgentCompare /></AgentProtectedRoute>}
