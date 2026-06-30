@@ -36,10 +36,14 @@ export default function AgentLanding() {
 
   const openCalendly = (e: React.MouseEvent) => {
     e.preventDefault();
+    const url = "https://calendly.com/deep-indsure/30min";
     // @ts-ignore
     if (window.Calendly) {
       // @ts-ignore
-      window.Calendly.initPopupWidget({ url: "https://calendly.com/indsure/demo" });
+      window.Calendly.initPopupWidget({ url });
+    } else {
+      // Fallback if the Calendly widget script hasn't loaded — open in a new tab.
+      window.open(url, "_blank", "noopener,noreferrer");
     }
     return false;
   };
