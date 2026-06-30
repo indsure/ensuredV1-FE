@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/hooks/use-theme";
 import { ComparisonProvider } from "@/hooks/use-comparison";
 import { usePageTransition } from "@/hooks/use-page-transition";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Clarity } from "@/components/Clarity";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ReportDispatcher from "@/components/ReportDispatcher";
 
@@ -118,6 +119,7 @@ function App() {
               <ComparisonProvider>
                 <TooltipProvider>
                   <Toaster />
+                  <Clarity />
 
                   <Suspense fallback={<PageLoader />}>
                     <Switch>
