@@ -113,6 +113,10 @@ function App() {
   type FontConsent = "accepted" | "declined";
 
   const [fontConsent, setFontConsent] = useState<FontConsent | null>(() => {
+    // TEMP MOCK (font self-host review): force-accept so fonts load and the
+    // consent banner never shows. Revert this block after the decision.
+    return "accepted";
+    // eslint-disable-next-line no-unreachable
     try {
       const v = window.localStorage.getItem(FONT_CONSENT_KEY);
       if (v === "accepted" || v === "declined") return v;

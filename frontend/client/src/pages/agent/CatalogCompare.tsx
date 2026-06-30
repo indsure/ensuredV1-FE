@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
-import { Loader2, Scale, Zap, Upload } from "lucide-react";
+import { Loader2, Scale, Zap, Upload, Search, Plus, X } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import ComparisonView, { TEAL, AMBER } from "@/components/ComparisonView";
+import ComparisonView, { SIDE_PALETTE } from "@/components/ComparisonView";
 import { type ComparisonResult } from "@/lib/wordingProfile";
+
+const MAX_PLANS = 4;
 
 interface CatalogItem {
   uin: string;
@@ -15,51 +17,129 @@ interface CatalogItem {
   status: string | null;
 }
 
-// Native grouped <select> — fine for a catalog this size; swap to a searchable
-// combobox once it grows past a few dozen.
-function PlanPicker({
-  label, accent, grouped, value, onChange, exclude,
+// ─── Add-a-plan searchable picker ─────────────────────────────────────────────────
+function AddPlanPicker({
+  grouped, exclude, onAdd, disabled,
 }: {
-  label: string;
-  accent: string;
   grouped: Record<string, CatalogItem[]>;
-  value: string;
-  onChange: (uin: string) => void;
-  exclude?: string;
+  exclude: Set<string>;
+  onAdd: (uin: string) => void;
+  disabled?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setQuery(""); }
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const out: [string, CatalogItem[]][] = [];
+    for (const [insurer, items] of Object.entries(grouped)) {
+      const fi = items.filter(
+        (i) => !exclude.has(i.uin) && (!q || i.plan_name.toLowerCase().includes(q) || insurer.toLowerCase().includes(q))
+      );
+      if (fi.length) out.push([insurer, fi]);
+    }
+    return out;
+  }, [grouped, exclude, query]);
+
+  const add = (uin: string) => { onAdd(uin); setOpen(false); setQuery(""); };
+
   return (
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-[11px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: accent }}>
-          {label}
-        </span>
-      </div>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full h-12 px-3 rounded-xl border-2 bg-white text-slate-800 font-medium outline-none focus:ring-2"
-        style={{ borderColor: value ? accent : "#CBD5E1" }}
+    <div className="relative w-full sm:w-auto" ref={ref}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => { setOpen((o) => !o); setTimeout(() => inputRef.current?.focus(), 0); }}
+        className="h-12 w-full sm:w-auto px-5 rounded-xl border-2 border-dashed border-slate-300 text-slate-600 font-semibold flex items-center justify-center gap-2 hover:border-[#0D9488] hover:text-[#0D9488] hover:bg-[#0D9488]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        <option value="">Choose a plan…</option>
-        {Object.entries(grouped).map(([insurer, items]) => (
-          <optgroup key={insurer} label={insurer}>
-            {items.map((it) => (
-              <option key={it.uin} value={it.uin} disabled={it.uin === exclude}>
-                {it.plan_name}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
+        <Plus className="h-5 w-5" /> Add a plan
+      </button>
+
+      {open && (
+        <div className="absolute left-0 z-50 mt-2 w-[min(92vw,360px)] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+          <div className="p-2 border-b border-slate-100">
+            <div className="relative">
+              <Search className="h-4 w-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search insurer or plan…"
+                className="w-full h-10 pl-8 pr-3 text-sm rounded-lg border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:border-slate-300 placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+          <div className="max-h-80 overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-slate-400">No more plans found.</div>
+            ) : (
+              filtered.map(([insurer, items]) => (
+                <div key={insurer}>
+                  <div className="px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{insurer}</div>
+                  {items.map((it) => (
+                    <button
+                      key={it.uin}
+                      type="button"
+                      onClick={() => add(it.uin)}
+                      className="w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-slate-800 truncate">{it.plan_name}</span>
+                        {it.sum_insured_options && it.sum_insured_options !== "Not specified" && (
+                          <span className="block text-[11px] text-slate-400 truncate">{it.sum_insured_options}</span>
+                        )}
+                      </span>
+                      <Plus className="h-4 w-4 text-slate-300 flex-shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
+// ─── Selected plan card ────────────────────────────────────────────────────────────
+function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number; onRemove: () => void }) {
+  const pal = SIDE_PALETTE[index % SIDE_PALETTE.length];
+  return (
+    <div className="relative rounded-xl border-2 bg-white p-3.5 pr-9 w-full sm:w-56 flex-shrink-0" style={{ borderColor: pal.accent }}>
+      <span className="inline-block text-[10px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
+        {String.fromCharCode(65 + index)}
+      </span>
+      <p className="font-bold text-slate-800 leading-tight truncate">{item.plan_name}</p>
+      <p className="text-xs text-slate-400 truncate">{item.insurer}</p>
+      {item.sum_insured_options && item.sum_insured_options !== "Not specified" && (
+        <p className="text-[11px] text-slate-400 mt-0.5 truncate">{item.sum_insured_options}</p>
+      )}
+      <button
+        onClick={onRemove}
+        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-slate-100 hover:bg-red-50 hover:text-red-500 text-slate-400 flex items-center justify-center transition-colors"
+        aria-label="Remove plan"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────────
 export default function CatalogCompare() {
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
-  const [uinA, setUinA] = useState("");
-  const [uinB, setUinB] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [comparing, setComparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,8 +165,18 @@ export default function CatalogCompare() {
     return g;
   }, [catalog]);
 
+  const byUin = useMemo(() => {
+    const m: Record<string, CatalogItem> = {};
+    for (const it of catalog) m[it.uin] = it;
+    return m;
+  }, [catalog]);
+
+  const addPlan = (uin: string) => setSelected((s) => (s.includes(uin) || s.length >= MAX_PLANS ? s : [...s, uin]));
+  const removePlan = (uin: string) => setSelected((s) => s.filter((u) => u !== uin));
+
+  // Auto-compare whenever 2+ plans are selected.
   useEffect(() => {
-    if (!uinA || !uinB || uinA === uinB) { setResult(null); return; }
+    if (selected.length < 2) { setResult(null); return; }
     let alive = true;
     setComparing(true);
     setError(null);
@@ -95,7 +185,7 @@ export default function CatalogCompare() {
         const res = await apiFetch("/api/compare/from-catalog", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ uin_a: uinA, uin_b: uinB }),
+          body: JSON.stringify({ uins: selected }),
         });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Compare failed");
         const json = await res.json();
@@ -107,7 +197,9 @@ export default function CatalogCompare() {
       }
     })();
     return () => { alive = false; };
-  }, [uinA, uinB]);
+  }, [selected]);
+
+  const excludeSet = useMemo(() => new Set(selected), [selected]);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -120,14 +212,11 @@ export default function CatalogCompare() {
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-slate-900">Compare from Catalog</h1>
             <p className="text-slate-500 flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-[#0D9488]" /> Instant — pick any two pre-analysed plans.
+              <Zap className="h-3.5 w-3.5 text-[#0D9488]" /> Instant — add up to 4 pre-analysed plans.
             </p>
           </div>
         </div>
-        <Link
-          href="/agent/compare"
-          className="hidden sm:flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 whitespace-nowrap mt-1"
-        >
+        <Link href="/agent/compare" className="hidden sm:flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 whitespace-nowrap mt-1">
           <Upload className="h-4 w-4" /> Upload instead
         </Link>
       </div>
@@ -138,20 +227,23 @@ export default function CatalogCompare() {
         </div>
       ) : (
         <>
+          {/* Builder */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-2 shadow-sm">
-            <div className="flex flex-col sm:flex-row gap-4 items-end">
-              <PlanPicker label="Plan A" accent={TEAL} grouped={grouped} value={uinA} onChange={setUinA} exclude={uinB} />
-              <div className="hidden sm:flex h-12 items-center text-slate-300 font-black">VS</div>
-              <PlanPicker label="Plan B" accent={AMBER} grouped={grouped} value={uinB} onChange={setUinB} exclude={uinA} />
+            <div className="flex flex-wrap gap-3 items-stretch">
+              {selected.map((uin, i) =>
+                byUin[uin] ? <PlanCard key={uin} item={byUin[uin]} index={i} onRemove={() => removePlan(uin)} /> : null
+              )}
+              {selected.length < MAX_PLANS && (
+                <AddPlanPicker grouped={grouped} exclude={excludeSet} onAdd={addPlan} />
+              )}
             </div>
-            <p className="text-xs text-slate-400 mt-3 text-center">
-              {catalog.length} plans across {Object.keys(grouped).length} insurers in the catalog
+            <p className="text-xs text-slate-400 mt-3">
+              {selected.length}/{MAX_PLANS} selected · {catalog.length} plans across {Object.keys(grouped).length} insurers ·{" "}
+              {selected.length < 2 ? "add at least 2 to compare" : "comparing…"}
             </p>
           </div>
 
-          {error && (
-            <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">{error}</div>
-          )}
+          {error && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">{error}</div>}
 
           {comparing && (
             <div className="flex items-center justify-center gap-2 py-16 text-slate-400">
@@ -159,16 +251,12 @@ export default function CatalogCompare() {
             </div>
           )}
 
-          {!comparing && result && (
-            <div className="mt-6">
-              <ComparisonView data={result} />
-            </div>
-          )}
+          {!comparing && result && <div className="mt-6"><ComparisonView data={result} /></div>}
 
           {!comparing && !result && !error && (
             <div className="text-center py-20 text-slate-400">
               <Scale className="h-10 w-10 mx-auto mb-3 opacity-40" />
-              Choose a plan on each side to see the head-to-head.
+              Add two or more plans to see the head-to-head.
             </div>
           )}
         </>

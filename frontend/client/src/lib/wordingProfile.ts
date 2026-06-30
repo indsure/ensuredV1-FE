@@ -1,11 +1,8 @@
 /**
- * Compare feature — frontend render types.
+ * Compare feature — frontend render types (N-way: 2..4 plans).
  * Mirror of the result shape emitted by backend/server/types/wordingProfile.ts.
- * The backend does all extraction + ranking; the frontend only renders this.
- * If the backend shape changes, update here too.
+ * Backend does all extraction + ranking; the frontend only renders this.
  */
-
-export type Winner = "a" | "b" | "tie" | "na";
 
 export type AxisGroup =
   | "money_at_claim"
@@ -14,13 +11,18 @@ export type AxisGroup =
   | "coverages"
   | "fine_print";
 
+export interface Cell {
+  display: string;
+  note?: string | null;
+  optional?: boolean;
+  winner: boolean;
+}
+
 export interface ComparisonRow {
   key: string;
   label: string;
   group: AxisGroup;
-  a: { display: string; note?: string | null; optional?: boolean };
-  b: { display: string; note?: string | null; optional?: boolean };
-  winner: Winner;
+  cells: Cell[];
 }
 
 export interface ComparisonSide {
@@ -32,30 +34,26 @@ export interface ComparisonSide {
 }
 
 export interface ComparisonVerdict {
-  winner: Winner;
+  winner_index: number;
   winner_name: string | null;
-  score_a: number;
-  score_b: number;
-  wins_a: number;
-  wins_b: number;
-  ties: number;
+  scores: number[];
+  wins: number[];
   reasons: string[];
   counterpoint: string | null;
 }
 
 export interface ComparisonResult {
-  a: ComparisonSide;
-  b: ComparisonSide;
+  sides: ComparisonSide[];
   groups: { group: AxisGroup; label: string; rows: ComparisonRow[] }[];
   verdict: ComparisonVerdict;
 }
 
 export interface CompareResponse {
   result: ComparisonResult;
-  profiles?: { a: unknown; b: unknown };
-  hashes?: { a: string; b: string };
+  profiles?: unknown;
+  hashes?: unknown;
 }
 
-export function sideName(s: ComparisonSide, fallback: string): string {
+export function sideName(s: ComparisonSide, fallback = "Plan"): string {
   return s.plan_name || s.insurer || fallback;
 }
