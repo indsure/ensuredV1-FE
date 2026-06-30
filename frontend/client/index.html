@@ -33,20 +33,9 @@
 
   <link rel="icon" type="image/png" href="/favicon.png" />
 
-  <!-- Performance: Preconnect to external domains -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <!-- Performance: DNS prefetch -->
-  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-
-  <!-- Performance: Preload critical fonts (if self-hosted) -->
-  <!-- <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin="anonymous" /> -->
-
-  <!-- Fonts: Inter (Body), IBM Plex Sans (Headings), IBM Plex Mono (Numbers) -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
-    rel="stylesheet">
+  <!-- Fonts are self-hosted (Inter + Playfair Display via @fontsource, imported
+       in main.tsx). No external font requests, so no Google Fonts consent
+       banner is needed. -->
 
   <!-- Performance hints -->
   <meta http-equiv="x-dns-prefetch-control" content="on" />

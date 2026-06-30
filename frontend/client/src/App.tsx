@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense } from "react";
 import { Switch, Route, Redirect } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -109,38 +109,6 @@ function PageLoader() {
 function App() {
   usePageTransition();
 
-  const FONT_CONSENT_KEY = "ea-google-fonts-consent";
-  type FontConsent = "accepted" | "declined";
-
-  const [fontConsent, setFontConsent] = useState<FontConsent | null>(() => {
-    // TEMP MOCK (font self-host review): force-accept so fonts load and the
-    // consent banner never shows. Revert this block after the decision.
-    return "accepted";
-    // eslint-disable-next-line no-unreachable
-    try {
-      const v = window.localStorage.getItem(FONT_CONSENT_KEY);
-      if (v === "accepted" || v === "declined") return v;
-    } catch {
-      // ignore
-    }
-    return null;
-  });
-
-  useEffect(() => {
-    if (fontConsent !== "accepted") return;
-
-    const existing = document.getElementById("ea-google-fonts-link");
-    if (existing) return;
-
-    // Only load Google Fonts after user consent (opt-in).
-    const link = document.createElement("link");
-    link.id = "ea-google-fonts-link";
-    link.rel = "stylesheet";
-    link.href =
-      "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap";
-    document.head.appendChild(link);
-  }, [fontConsent]);
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -150,44 +118,6 @@ function App() {
               <ComparisonProvider>
                 <TooltipProvider>
                   <Toaster />
-
-                  {fontConsent === null && (
-                    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-2rem)] max-w-xl pointer-events-auto">
-                      <div className="rounded-2xl border border-gray-200 bg-white shadow-lg px-4 py-3">
-                        <div className="text-sm text-gray-800 font-medium mb-1">Google Fonts consent</div>
-                        <div className="text-xs text-gray-600 leading-relaxed mb-3">
-                          Load optional fonts from <span className="font-mono">fonts.googleapis.com</span> to improve typography.
-                          This may involve your browser making a request to Google.
-                        </div>
-                        <div className="flex items-center gap-2 justify-end">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              try {
-                                window.localStorage.setItem(FONT_CONSENT_KEY, "declined");
-                              } catch {}
-                              setFontConsent("declined");
-                            }}
-                            className="px-3 py-2 rounded-lg text-xs border border-gray-200 hover:bg-gray-50"
-                          >
-                            Skip
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              try {
-                                window.localStorage.setItem(FONT_CONSENT_KEY, "accepted");
-                              } catch {}
-                              setFontConsent("accepted");
-                            }}
-                            className="px-3 py-2 rounded-lg text-xs bg-gray-900 text-white hover:bg-gray-800"
-                          >
-                            Load fonts
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   <Suspense fallback={<PageLoader />}>
                     <Switch>
