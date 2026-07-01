@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, Building2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,6 +8,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
+
+const navLinks = [
+  { label: "How It Works", href: "/how-it-works" },
+  { label: "Why IndSure", href: "/why-indsure" },
+  { label: "Pricing", href: "/pricing" },
+];
 
 const toolsItems = [
   { label: "Calculator", href: "/calculator" },
@@ -52,23 +58,25 @@ export function Header() {
               <img
                 src="/logo.png"
                 alt="IndSure"
-                className="h-14 w-auto group-hover:opacity-80 transition-opacity"
+                className="h-10 w-auto group-hover:opacity-80 transition-opacity"
               />
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/#how-it-works">
-              <span
-                className={`text-xs font-semibold tracking-[0.15em] uppercase cursor-pointer hover:text-[var(--color-green-primary)] transition-colors ${
-                  location === "/#how-it-works"
-                    ? "text-[var(--color-green-primary)]"
-                    : "text-[var(--color-text-main)]"
-                }`}
-              >
-                How It Works
-              </span>
-            </Link>
+          <nav className="hidden lg:flex items-center gap-6">
+            {navLinks.map((item) => (
+              <Link key={item.href} href={item.href}>
+                <span
+                  className={`text-xs font-semibold tracking-[0.15em] uppercase cursor-pointer hover:text-[var(--color-green-primary)] transition-colors ${
+                    location === item.href
+                      ? "text-[var(--color-green-primary)]"
+                      : "text-[var(--color-text-main)]"
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </Link>
+            ))}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -96,26 +104,35 @@ export function Header() {
           </nav>
         </div>
 
-        {/* ─── RIGHT: CTA + Advisor Login Button ─── */}
-        <div className="hidden md:flex items-center gap-6">
-          <Link href="/find-provider">
+        {/* ─── RIGHT: CTAs + Advisor Login ─── */}
+        <div className="hidden lg:flex items-center gap-4">
+          <Link href="/policychecker">
             <button className="px-5 py-2.5 text-sm font-semibold bg-[var(--color-green-primary)] text-white rounded-lg hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer shadow-md shadow-teal-900/10">
+              Check My Coverage
+            </button>
+          </Link>
+
+          <Link href="/find-provider">
+            <button className="px-5 py-2.5 text-sm font-semibold border border-[var(--color-border-main)] text-[var(--color-text-main)] rounded-lg hover:border-[var(--color-green-primary)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer">
               Find My Provider
             </button>
           </Link>
 
-          <button 
+          <div className="h-6 w-px bg-[var(--color-border-main)]" />
+
+          <button
             onClick={() => setLocation("/agent")}
-            className="flex items-center gap-2 text-xs font-semibold tracking-[0.15em] uppercase text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer outline-none"
+            className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.12em] uppercase text-[var(--color-text-secondary)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer outline-none"
           >
-            🏢 Advisor Login
+            <Building2 className="w-4 h-4" />
+            Advisor Login
           </button>
 
         </div>
 
         {/* ─── MOBILE TOGGLE ─── */}
         <button
-          className="md:hidden text-[var(--color-text-main)] p-1"
+          className="lg:hidden text-[var(--color-text-main)] p-1"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
@@ -131,17 +148,19 @@ export function Header() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="md:hidden overflow-hidden bg-[var(--color-cream-main)] border-t border-[var(--color-border-light)] shadow-xl"
+            className="lg:hidden overflow-hidden bg-[var(--color-cream-main)] border-t border-[var(--color-border-light)] shadow-xl"
           >
             <div className="container-editorial py-6 space-y-1">
-              <Link href="/#how-it-works">
-                <div
-                  className="py-3 px-3 rounded-lg text-sm font-semibold tracking-wide uppercase text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  How It Works
-                </div>
-              </Link>
+              {navLinks.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <div
+                    className="py-3 px-3 rounded-lg text-sm font-semibold tracking-wide uppercase text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.label}
+                  </div>
+                </Link>
+              ))}
 
               <div className="py-2 px-3">
                 <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--color-text-muted)]">
@@ -161,9 +180,18 @@ export function Header() {
 
               <div className="border-t border-[var(--color-border-light)] my-3" />
 
-              <Link href="/find-provider">
+              <Link href="/policychecker">
                 <div
                   className="py-3 px-3 text-center rounded-lg text-sm font-semibold bg-[var(--color-green-primary)] text-white hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Check My Coverage
+                </div>
+              </Link>
+
+              <Link href="/find-provider">
+                <div
+                  className="py-3 px-3 text-center rounded-lg text-sm font-semibold border border-[var(--color-border-main)] text-[var(--color-text-main)] hover:border-[var(--color-green-primary)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Find My Provider
@@ -171,13 +199,14 @@ export function Header() {
               </Link>
 
               <div
-                className="py-3 px-3 text-center rounded-lg text-sm font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer flex items-center justify-center gap-2"
+                className="py-3 px-3 text-center rounded-lg text-sm font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer flex items-center justify-center gap-2"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   setTimeout(() => setLocation("/agent"), 50);
                 }}
               >
-                🏢 Advisor Login
+                <Building2 className="w-4 h-4" />
+                Advisor Login
               </div>
             </div>
           </motion.div>

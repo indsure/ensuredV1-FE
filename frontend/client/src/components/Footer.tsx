@@ -97,7 +97,21 @@ export function Footer() {
                 <li>
                   <Link href="/why-indsure">
                     <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
-                      Our Philosophy
+                      Why IndSure
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/team">
+                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
+                      Meet the Team
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/pricing">
+                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
+                      Pricing (Advisors)
                     </span>
                   </Link>
                 </li>

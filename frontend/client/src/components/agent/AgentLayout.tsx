@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { BookOpen, Calculator, FileText, LayoutDashboard, Settings, ListChecks, LogOut, Scale, Target, Upload, User, Users, Menu } from "lucide-react"
+import { BookOpen, Calculator, FileText, LayoutDashboard, Settings, ListChecks, LogOut, Scale, Target, Upload, User, Users, Menu, X } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -17,8 +17,14 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
   const { agent } = useAgent()
   const [location, setLocation] = useLocation()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [queueCount, setQueueCount] = useState<number>(0)
   const [queueCountError, setQueueCountError] = useState<string | null>(null)
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location])
 
   const { t, locale } = useLanguage()
 
@@ -88,13 +94,32 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] flex text-slate-800 font-['Inter']">
-      <aside className={`${sidebarCollapsed ? 'w-[80px]' : 'w-[260px]'} bg-[#0B1120] text-white flex flex-col border-r border-white/5 transition-all duration-300 ease-in-out relative`}>
-        <div className={`${sidebarCollapsed ? 'px-3' : 'px-6'} py-4 border-b border-white/5 flex items-center justify-between transition-all duration-300`}>
-          <Link to="/agent/dashboard" className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} flex-1 min-w-0`}>
-            <img 
-              src="/logo.png" 
-              alt="IndSure" 
-              className={`${sidebarCollapsed ? 'h-10 w-10' : 'h-12 w-12'} object-contain flex-shrink-0`}
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={[
+          "bg-[#0B1120] text-white flex flex-col border-r border-white/5",
+          // Mobile: off-canvas drawer that slides in over the content.
+          "fixed inset-y-0 left-0 z-50 w-[280px] max-w-[85vw] transform transition-transform duration-300 ease-in-out",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
+          // Desktop: static column that can collapse to an icon rail.
+          "lg:static lg:translate-x-0 lg:transition-all",
+          sidebarCollapsed ? "lg:w-[80px]" : "lg:w-[260px]",
+        ].join(" ")}
+      >
+        <div className={`${sidebarCollapsed ? 'lg:px-3' : 'lg:px-6'} px-6 py-4 border-b border-white/5 flex items-center justify-between transition-all duration-300`}>
+          <Link to="/agent/dashboard" className={`flex items-center ${sidebarCollapsed ? 'lg:justify-center' : 'gap-3'} flex-1 min-w-0`}>
+            <img
+              src="/logo-white.png"
+              alt="IndSure"
+              className={`${sidebarCollapsed ? 'lg:h-9 lg:w-9 h-10 w-10' : 'h-10 w-10'} object-contain flex-shrink-0`}
             />
             {!sidebarCollapsed && (
               <div className="flex flex-col min-w-0">
@@ -103,19 +128,28 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
               </div>
             )}
           </Link>
+          {/* Desktop collapse toggle */}
           {!sidebarCollapsed && (
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="h-8 w-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
+              className="hidden lg:flex h-8 w-8 rounded-lg hover:bg-white/10 items-center justify-center transition-colors flex-shrink-0"
               aria-label="Collapse sidebar"
             >
               <Menu className="h-5 w-5 text-white" />
             </button>
           )}
+          {/* Mobile close button */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden h-8 w-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
         </div>
         
         {sidebarCollapsed && (
-          <div className="px-3 py-3 border-b border-white/5">
+          <div className="hidden lg:block px-3 py-3 border-b border-white/5">
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="w-full h-10 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
@@ -222,12 +256,28 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-x-hidden overflow-y-auto flex flex-col">
+      <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto flex flex-col">
+        {/* Mobile top bar */}
+        <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between bg-[#0B1120] text-white px-4 h-14">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="h-9 w-9 -ml-1 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
+            aria-label="Open menu"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+          <Link to="/agent/dashboard" className="flex items-center gap-2">
+            <img src="/logo-white.png" alt="IndSure" className="h-8 w-8 object-contain" />
+            <span className="font-bold">IndSure</span>
+          </Link>
+          <LanguageToggle variant="dark" />
+        </div>
+
         <PlaygroundBanner />
-        <div className="flex justify-end px-4 md:px-6 lg:px-8 pt-3 pb-1">
+        <div className="hidden lg:flex justify-end px-4 md:px-6 lg:px-8 pt-3 pb-1">
           <LanguageToggle />
         </div>
-        <div className="flex-1 p-4 md:p-6 lg:p-8 pt-2">{children}</div>
+        <div className="flex-1 p-4 md:p-6 lg:p-8 lg:pt-2">{children}</div>
       </main>
 
     </div>

@@ -110,8 +110,13 @@ export default function AgentLanding() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Top right — Playground demo + Language Toggle */}
-      <div className="flex justify-end items-center gap-3 px-6 pt-4">
+      {/* Top bar — Logo (left) + Playground demo & Language Toggle (right) */}
+      <div className="flex justify-between items-center gap-3 px-6 pt-4">
+        <Link href="/agent" className="flex items-center gap-2 shrink-0">
+          <img src="/logo.png" alt="IndSure" className="h-9 w-auto object-contain" />
+          <span className="hidden sm:inline font-bold text-lg text-slate-900">IndSure</span>
+        </Link>
+        <div className="flex items-center gap-3">
         <Link
           href="/agent/playground"
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-[var(--color-green-primary)] border border-[var(--color-green-primary)]/40 rounded-lg hover:bg-[var(--color-green-primary)] hover:text-white transition-all"
@@ -121,6 +126,7 @@ export default function AgentLanding() {
           Playground
         </Link>
         <LanguageToggle />
+        </div>
       </div>
 
       {/* Hero Section */}

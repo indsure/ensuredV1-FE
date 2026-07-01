@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import { getApiBase } from "@/lib/queryClient";
 import { useAnalysis } from "@/hooks/use-analysis";
 import { Send, X, Trash2, Bot, Sparkles, Loader2 } from "lucide-react";
@@ -80,6 +81,7 @@ function containsPersonalData(text: string): boolean {
 }
 
 export default function SachAIChat() {
+  const [location] = useLocation();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -261,13 +263,19 @@ export default function SachAIChat() {
     setInput("");
   };
 
+  // Sach AI is a consumer assistant — hide it on the agent/admin surfaces,
+  // matching the Header/MobileNav chrome behaviour.
+  if (location.startsWith("/agent") || location.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <>
       {/* Floating Button */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 group flex items-center justify-center w-14 h-14 bg-[var(--color-green-primary)] text-white rounded-full shadow-xl border border-[var(--color-green-secondary)] hover:scale-105 transition-all duration-300 hover:shadow-2xl"
+          className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 group flex items-center justify-center w-14 h-14 bg-[var(--color-green-primary)] text-white rounded-full shadow-xl border border-[var(--color-green-secondary)] hover:scale-105 transition-all duration-300 hover:shadow-2xl"
           aria-label="Open Sach AI Chat"
         >
           <Bot className="w-6 h-6" />
@@ -276,7 +284,7 @@ export default function SachAIChat() {
 
       {/* Chat Window */}
       {open && (
-        <div className="fixed bottom-6 right-6 w-[95vw] md:w-[400px] h-[600px] max-h-[85vh] bg-white border border-[var(--color-border-main)] shadow-2xl z-50 rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 font-sans">
+        <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-[95vw] md:w-[400px] h-[600px] max-h-[80vh] md:max-h-[85vh] bg-white border border-[var(--color-border-main)] shadow-2xl z-50 rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 font-sans">
 
           {/* Header */}
           <div className="bg-[var(--color-green-primary)] p-4 flex items-center justify-between shrink-0">

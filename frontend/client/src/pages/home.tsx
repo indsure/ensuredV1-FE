@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { motion, useScroll, useTransform, useSpring, useInView } from "framer-motion";
-import { ArrowRight, Shield, CheckCircle, AlertTriangle, Lock, FileText, Server, Database, Menu, X, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, Shield, CheckCircle, AlertTriangle, Lock, FileText, Server, Database, Menu, X, ChevronDown, ChevronUp, Layers, EyeOff, Copy, Scale } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -84,8 +84,10 @@ export default function Home() {
       <main className="flex-grow pt-32">
 
         {/* 1. HERO */}
-        <section className="pb-24 bg-[var(--color-navy-900)]">
-          <div className="container-editorial mb-16 px-6">
+        <section className="relative pb-24 bg-[var(--color-navy-900)] overflow-hidden">
+          {/* Soft glow to ease the transition from the cream header into the navy hero */}
+          <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[var(--color-teal-600)] opacity-[0.07] blur-[120px] rounded-full" />
+          <div className="relative container-editorial mb-16 px-6">
             <motion.h1
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
@@ -108,18 +110,38 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="flex gap-4 mt-10"
+              className="flex flex-col sm:flex-row gap-4 mt-10"
             >
-              <Link href="/policychecker">
-                <button className="bg-[var(--color-teal-600)] text-white px-8 py-4 rounded-lg font-medium hover:bg-[var(--color-teal-400)] transition-colors flex items-center gap-2 shadow-lg shadow-teal-900/20">
+              <Link href="/policychecker" className="w-full sm:w-auto">
+                <button className="w-full sm:w-auto justify-center bg-[var(--color-teal-600)] text-white px-8 py-4 rounded-lg font-medium hover:bg-[var(--color-teal-400)] transition-colors flex items-center gap-2 shadow-lg shadow-teal-900/20">
                   Check My Coverage <ArrowRight className="w-4 h-4" />
                 </button>
               </Link>
-              <a href="#demo">
-                <button className="px-8 py-4 rounded-lg font-medium border border-[var(--color-border-subtle)] hover:bg-[var(--color-border-subtle)] transition-colors text-[var(--color-white-muted)] hover:text-white">
-                  See Example Report
+              <a href="#demo" className="w-full sm:w-auto">
+                <button className="w-full sm:w-auto px-8 py-4 rounded-lg font-medium border border-[var(--color-border-subtle)] hover:bg-[var(--color-border-subtle)] transition-colors text-[var(--color-white-muted)] hover:text-white">
+                  See a Sample Analysis
                 </button>
               </a>
+            </motion.div>
+
+            {/* Trust strip */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7, duration: 0.8 }}
+              className="mt-16 pt-10 border-t border-[var(--color-border-subtle)] grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl"
+            >
+              {[
+                { value: "63", label: "Plans indexed" },
+                { value: "10", label: "Insurers covered" },
+                { value: "50+", label: "Risk checks per audit" },
+                { value: "₹0", label: "Commissions earned, ever" },
+              ].map((s) => (
+                <div key={s.label}>
+                  <div className="text-3xl md:text-4xl font-serif font-bold text-[var(--color-teal-400)] mb-1">{s.value}</div>
+                  <div className="text-xs uppercase tracking-widest text-[var(--color-white-muted)] leading-snug">{s.label}</div>
+                </div>
+              ))}
             </motion.div>
           </div>
 
@@ -131,6 +153,9 @@ export default function Home() {
           <div className="container-editorial">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
               <div>
+                <span className="inline-block mb-4 py-1 px-3 rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-teal-600)] bg-[var(--color-teal-600)]/10">
+                  Illustrative example
+                </span>
                 <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4 text-[var(--color-navy-900)]">Forensic Analysis</h2>
                 <p className="text-[var(--color-text-secondary)] text-lg max-w-xl">
                   We decode the fine print. See exactly where you stand with a
@@ -211,11 +236,13 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { title: "Complex by Design", desc: "Policies are intentionally vague to limit claims." },
-                { title: "Silent Gaps", desc: "Critical exclusions often go unnoticed until admission." },
-                { title: "Costly Overlaps", desc: "You might be paying for duplicate coverage." },
-                { title: "Biased Advice", desc: "Agents are incentivized to sell, not to analyze." }
-              ].map((card, i) => (
+                { title: "Complex by Design", desc: "Policies are intentionally vague to limit claims.", icon: Layers },
+                { title: "Silent Gaps", desc: "Critical exclusions often go unnoticed until admission.", icon: EyeOff },
+                { title: "Costly Overlaps", desc: "You might be paying for duplicate coverage.", icon: Copy },
+                { title: "Biased Advice", desc: "Agents are incentivized to sell, not to analyze.", icon: Scale }
+              ].map((card, i) => {
+                const Icon = card.icon;
+                return (
                 <motion.div
                   key={i}
                   className="bg-[var(--color-blue-800)] border border-[var(--color-border-subtle)] p-8 rounded-xl group cursor-default hover:bg-[var(--color-teal-600)] transition-colors duration-300"
@@ -225,12 +252,13 @@ export default function Home() {
                   transition={{ delay: i * 0.1 }}
                 >
                   <div className="w-12 h-12 bg-[var(--color-navy-900)] rounded-md flex items-center justify-center mb-6 text-[var(--color-teal-400)] group-hover:bg-white group-hover:text-[var(--color-teal-600)] transition-colors duration-300">
-                    <AlertTriangle className="w-6 h-6" />
+                    <Icon className="w-6 h-6" />
                   </div>
                   <h3 className="text-xl font-bold mb-3 font-serif text-white">{card.title}</h3>
                   <p className="text-[var(--color-white-muted)] text-sm leading-relaxed group-hover:text-white/90">{card.desc}</p>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -240,8 +268,8 @@ export default function Home() {
           <div className="container-editorial">
             <div className="flex flex-col md:flex-row justify-between items-end mb-20 scroll-mt-20">
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-[var(--color-navy-900)]">From chaos to clarity<br />in 4 steps.</h2>
-              <Link href="/policychecker">
-                <span className="text-[var(--color-teal-600)] font-medium hover:underline cursor-pointer">Start your audit &rarr;</span>
+              <Link href="/how-it-works">
+                <span className="text-[var(--color-teal-600)] font-medium hover:underline cursor-pointer">See the full walkthrough &rarr;</span>
               </Link>
             </div>
 

@@ -533,7 +533,7 @@ export default function DashboardNew() {
               <Button variant="link" className="text-[#0D9488]" onClick={() => setLocation('/agent/policies')}>{t("dashboard.view_all")}</Button>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             {loading ? (
                <div className="p-6 space-y-4">
                  {[1,2,3,4,5].map(i => <div key={i} className="h-10 bg-slate-50 animate-pulse rounded-md w-full" />)}
@@ -541,7 +541,7 @@ export default function DashboardNew() {
             ) : recentActivity.length === 0 ? (
                <div className="p-12 text-center text-slate-400 italic">{t("dashboard.no_analyses")}</div>
             ) : (
-               <table className="w-full text-sm">
+               <table className="w-full text-sm min-w-[560px] lg:min-w-0">
                  <thead className="bg-slate-50 border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wider font-semibold">
                    <tr>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_customer")}</th>
@@ -661,8 +661,8 @@ export default function DashboardNew() {
               <Button variant="link" className="text-[#0D9488]" onClick={() => setLocation('/agent/policies')}>{t("dashboard.view_all")}</Button>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <table className="w-full text-sm">
+          <CardContent className="p-0 overflow-x-auto">
+            <table className="w-full text-sm min-w-[560px] lg:min-w-0">
               <thead className="bg-slate-50 border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wider font-semibold">
                 <tr>
                   <th className="px-6 py-4 text-left">{t("dashboard.col_customer")}</th>
@@ -737,8 +737,8 @@ export default function DashboardNew() {
               {t("dashboard.failures_title")}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <table className="w-full text-sm">
+          <CardContent className="p-0 overflow-x-auto">
+            <table className="w-full text-sm min-w-[560px] lg:min-w-0">
               <thead className="bg-slate-50 border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wider font-semibold">
                 <tr>
                   <th className="px-6 py-4 text-left">{t("dashboard.col_policy_id")}</th>
