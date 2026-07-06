@@ -1,4 +1,18 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { supabase } from "./supabase";
+
+// Attach the Supabase bearer token the same way apiFetch (lib/api.ts) does.
+// The backend authenticates via Authorization: Bearer <token>, not cookies.
+async function withAuthHeaders(init?: HeadersInit): Promise<Headers> {
+  const headers = new Headers(init);
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    headers.set("Authorization", `Bearer ${session.access_token}`);
+  }
+  return headers;
+}
 
 // Production backend origin. Used as a fallback so a missing VITE_API_URL on
 // the host can't silently route /api/* to the static SPA (which returns HTML/405
@@ -25,11 +39,14 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers = await withAuthHeaders(
+    data ? { "Content-Type": "application/json" } : undefined,
+  );
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
   });
 
   await throwIfResNotOk(res);
@@ -42,8 +59,9 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const headers = await withAuthHeaders();
     const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

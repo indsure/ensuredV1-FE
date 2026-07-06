@@ -1,0 +1,42 @@
+{
+  "uin": "PENDING-TATAAIG-MEDICARE-LITE",
+  "insurer": "Tata AIG General Insurance",
+  "plan_name": "Medicare Lite",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "tataaig/Medicare-LITE-Policy-Wordings-4fdf058f02.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": null,
+
+  "room_rent": { "display": "Single Private Room", "ordinal": 4, "optional": false, "note": "Up to Single Private Room category; proportionate deduction if higher room chosen" },
+  "icu": { "display": "Covered (no proportionate deduction)", "ordinal": 5, "optional": false },
+  "copayment": { "display": "30% out-of-network; +20% if age 61+", "number": 30, "optional": false, "note": "Network-restricted plan: 30% co-pay if treated outside 'Valued Provider - Pan India' network (0% in-network). Additional 20% co-pay if entry age 61+. In-network base = 0%" },
+  "sub_limits": { "display": "Not specified", "ordinal": 3, "optional": false, "note": "Sub-limits per Schedule; VERIFY" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY (standard Excl 03)" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity is a standard exclusion (Excl 18); no maternity benefit in wording" },
+
+  "cumulative_bonus": { "display": "Up to 100% (50%/yr)", "number": 100, "optional": false, "note": "50%/yr up to 100%; reduced by 50% on a claim" },
+  "restoration": { "display": "100%, once/yr (related & unrelated)", "ordinal": 4, "optional": false, "note": "Restore Benefit: 100% base SI once/year for related or unrelated claims; not for first claim" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (AYUSH Benefit)", "exists": true, "optional": false, "note": "Up to Single Private Room category" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Covered (per Schedule)", "number": null, "optional": false, "note": "Road ambulance, limit per Schedule. VERIFY amount" },
+  "modern_treatments": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY modern treatment cover" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY consumables cover" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY overseas cover" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "Five-year moratorium" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Network-restricted (Valued Provider Pan India); 30% out-of-network co-pay; 20% age-61+ co-pay; maternity excluded" },
+  "optional_riders": { "display": "Accidental Death Benefit; Pan India Co-Payment option" }
+}

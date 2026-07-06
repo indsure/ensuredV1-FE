@@ -1,0 +1,42 @@
+{
+  "uin": "CHIHLIP26052V032526",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Care Freedom",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care/care-freedom-t-c-effective-from-3-september-2025.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "₹3L+ (variant dependent)",
+
+  "room_rent": { "display": "Single Private Room (A.C.)", "ordinal": 4, "optional": false, "note": "Room Category 2 = Single Private Room with A.C. per schedule" },
+  "icu": { "display": "Up to 2% of SI/day (or no limit option)", "ordinal": 3, "optional": false, "note": "ICU Option 1 = 2% of SI/day; Option 2 = no limit, per schedule" },
+  "copayment": { "display": "20% / 30% (mandatory)", "number": 20, "optional": false, "note": "Mandatory co-pay applies on all benefits except a few; 20% or 30% per zone/plan per schedule" },
+  "sub_limits": { "display": "Few/minor sub-limits", "ordinal": 3, "optional": false, "note": "VERIFY; budget plan, capping per schedule" },
+  "deductible": { "display": "Optional deductible per schedule", "number": 0, "optional": false, "note": "Deductible applicable on most benefits if opted; base value per schedule" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl01 PED waiting 24 months" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity is a permanent exclusion (Excl18)" },
+
+  "cumulative_bonus": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY; NCB clause not clearly stated in source text" },
+  "restoration": { "display": "Recharge of Sum Insured (Benefit 7)", "ordinal": 3, "optional": false, "note": "Recharge inbuilt, once/year; VERIFY trigger scope (same vs different illness)" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY exact days; standard Care Freedom" },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false, "note": "VERIFY exact days; standard Care Freedom" },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "organ_donor": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "ambulance": { "display": "Covered", "number": 999999, "optional": false, "note": "Benefit 5 Ambulance Cover; limit per schedule" },
+  "modern_treatments": { "display": "Covered (advanced technology methods)", "exists": true, "optional": false, "note": "Robotic, stem cell, oral chemo, immunotherapy etc. listed" },
+  "consumables": { "display": "Consumable Allowance (Benefit 2)", "exists": true, "optional": false, "note": "Inbuilt consumable allowance, after first 3 days" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); mandatory co-pay; standard IRDAI exclusions" },
+  "optional_riders": { "display": "Health Check+ (Diabetes/Cardiac), deductible options, co-pay variants" }
+}

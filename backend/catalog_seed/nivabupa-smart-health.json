@@ -1,0 +1,42 @@
+{
+  "uin": "MAXHLGP21223V012021",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Smart Health",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/SmartHealth-FINALpolicyWording.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": null,
+
+  "room_rent": { "display": "Per entitled room category", "ordinal": 4, "optional": false, "note": "GROUP product — room eligibility per Policy Schedule/Certificate; pro-rata if higher. VERIFY" },
+  "icu": { "display": "Covered (ICU charges)", "ordinal": 5, "optional": false, "note": "ICU charges payable under inpatient; cap per schedule. VERIFY" },
+  "copayment": { "display": "Per schedule (variable)", "number": null, "optional": false, "note": "Co-payment % as specified in Policy Schedule/Certificate (group-configurable). VERIFY base %" },
+  "sub_limits": { "display": "Per schedule sub-limits", "ordinal": 3, "optional": false, "note": "Sub-limits per Policy Schedule; robotic surgery typically capped. VERIFY" },
+  "deductible": { "display": "None (base)", "number": 0, "optional": false, "note": "Optional Annual Aggregate Deductible (Section 3.1.1.16)" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY — standard 30-day initial waiting assumed" },
+  "ped_waiting": { "display": "Per schedule", "number": null, "optional": false, "note": "PED waiting = number of months as mentioned in Policy Schedule/Certificate (group-configurable). VERIFY" },
+  "specific_disease_waiting": { "display": "Per schedule", "number": null, "optional": false, "note": "Specific waiting = months per Policy Schedule (up to 36mo). VERIFY" },
+  "maternity": { "display": "Covered (per schedule)", "exists": true, "optional": false, "note": "Maternity Expenses benefit (Section 3.1.1.8); waiting & sub-limit per schedule. Individual cover if female insured. VERIFY" },
+
+  "cumulative_bonus": { "display": "Per schedule (up to 200%)", "number": 200, "optional": false, "note": "NCB % opted per Policy Schedule; max accumulation 200% of base SI. VERIFY actual %/yr" },
+  "restoration": { "display": "ReAssure (re-fill)", "ordinal": 3, "optional": false, "note": "ReAssure re-fill on exhaustion (Section 3.1.1.14); trigger/extent per schedule. VERIFY" },
+
+  "pre_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "Pre-hosp days as specified in Policy Schedule. VERIFY" },
+  "post_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "Post-hosp days as specified in Policy Schedule. VERIFY" },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (Alternative treatment)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Road + Air (per schedule)", "number": null, "optional": false, "note": "Emergency ground ambulance + Air ambulance cover; limits per Policy Schedule. VERIFY ₹" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "Modern treatments (Section 3.1.1.17)" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY — no explicit consumables benefit confirmed" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "VERIFY — air ambulance/evacuation within India only" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY — standard grace assumed (15 days monthly)" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Group product — most limits/waiting/co-pay configured per Policy Schedule; standard Excl01–18" },
+  "optional_riders": { "display": "Annual Aggregate Deductible, Critical Illness Multiplier Indemnity, Empathy Benefit, Personal Accident; many benefits schedule-toggled" }
+}

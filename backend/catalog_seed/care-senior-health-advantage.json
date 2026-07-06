@@ -1,0 +1,42 @@
+{
+  "uin": "CHIHLIP22223V012122",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Senior Health Advantage",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care/senior-health-advantage-policy-terms-and-condition.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "Single Private AC Room or 1% of SI/day", "ordinal": 4, "optional": false, "note": "Per policy schedule: Single Private AC Room OR up to 1% of SI/day; Room Rent & ICU modification available as optional benefit" },
+  "icu": { "display": "2% of SI/day or No sub-limit", "ordinal": 3, "optional": false, "note": "Per schedule: up to 2% of SI/day or 'No Sub-limit'" },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No mandatory base co-pay; 20% co-pay applies only for non-Annexure-III hospitals under optional 'Smart Select'" },
+  "sub_limits": { "display": "Few/minor sub-limits", "ordinal": 3, "optional": false, "note": "Senior plan; some procedure sub-limits per schedule. VERIFY specific cappings" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Deductible only if optionally opted" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY - standard initial waiting" },
+  "ped_waiting": { "display": "12 months", "number": 12, "optional": false, "note": "Excl01: PED excluded until 12 months continuous coverage; optional benefit can INCREASE PED waiting" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl02: listed conditions excluded until 24 months" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity is a standard exclusion (Excl18) on this senior plan" },
+
+  "cumulative_bonus": { "display": "Up to 100% (25%/yr)", "number": 100, "optional": false, "note": "NCB: SI increased 25% flat per claim-free year, max 100%; reduced at same rate on a claim. Optional NCB Super available" },
+  "restoration": { "display": "Once/yr, base SI", "ordinal": 3, "optional": false, "note": "Automatic Recharge: re-instatement of up to base SI once per policy year after exhaustion; covers same & different illnesses. Unlimited Automatic Recharge available as optional" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false, "note": "Benefit: Day Care Treatment" },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Covered (per schedule limit)", "number": 999999, "optional": false, "note": "Road Ambulance Cover up to specified limit; Air Ambulance optional. VERIFY ₹ limit" },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false, "note": "Advance Technology Methods incl. robotic surgery covered up to SI" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY - consumables/non-medical cover not clearly stated" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "VERIFY - no overseas cover found" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "5 continuous years moratorium per IRDAI" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly installment mode; 30 days otherwise" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded; senior-citizen plan with optional 20% co-pay (Smart Select) and optional increased PED waiting" },
+  "optional_riders": { "display": "Air Ambulance, NCB Super, Additional SI for Accidental Hosp & Critical Illness, OPD Care, Room/ICU Modification, Disease Management, Smart Select" }
+}

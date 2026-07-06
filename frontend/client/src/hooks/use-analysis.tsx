@@ -145,8 +145,29 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
 
     const jobStartTime = Date.now();
 
+    // Hard cap on total polling time. A job stuck in pending/processing would
+    // otherwise poll forever, leaving the UI in perpetual loading.
+    const MAX_POLL_ELAPSED = 300_000; // 5 minutes
+
     const poll = async () => {
       if (cancelled) return;
+
+      // Timeout guard: stop polling once we've exceeded the max elapsed time.
+      if (Date.now() - jobStartTime > MAX_POLL_ELAPSED) {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        if (!cancelled) {
+          const timeoutMessage = "Analysis timed out. Please try again.";
+          setError(timeoutMessage);
+          setState((prev: AnalysisState) => ({ ...prev, error: timeoutMessage }));
+          setStatus("error");
+          setCurrentJobId(null);
+          sessionStorage.removeItem("IndSure_current_job");
+        }
+        return;
+      }
 
       const status = await checkJobStatus(jobId);
       if (cancelled) return;

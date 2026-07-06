@@ -1,0 +1,42 @@
+{
+  "uin": "ADIHLIP27047V012627",
+  "insurer": "Aditya Birla Health Insurance",
+  "plan_name": "Activ Yuva",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "adityabirla/20260508T222950402.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "At actuals (any room)", "ordinal": 5, "optional": false, "note": "Base: Actuals up to SI, any room. Optional Room Rent Type Option can restrict to Single Private A/C or Shared (premium-saver)" },
+  "icu": { "display": "At actuals (up to SI)", "ordinal": 5, "optional": false, "note": "ICU covered at actuals up to Sum Insured" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory co-pay on base hospitalisation; 20% co-pay only on OPD reimbursement; non-network delay/biopsy co-pay 10-20%" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false, "note": "Modern treatments, AYUSH, organ donor, mental illness, obesity all at actuals up to SI" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "Excluding accidental hospitalisation" },
+  "ped_waiting": { "display": "2 years (24 months)", "number": 24, "optional": false, "note": "PED waiting 2 years per Product Benefit Table; reducible to 1 year via optional cover" },
+  "specific_disease_waiting": { "display": "2 years (24 months)", "number": 24, "optional": false, "note": "Reducible to 1 year via optional cover" },
+  "maternity": { "display": "Optional (Worldwide Yuva Maternity)", "exists": true, "optional": true, "note": "Worldwide Yuva Maternity Cover optional; waiting 3/2/1 yr options; covers IVF/IUI/ICSI, egg freezing, global delivery, adoption support" },
+
+  "cumulative_bonus": { "display": "Up to 1000% (100%/yr)", "number": 1000, "optional": false, "note": "Yuva Credit: +100% of Base SI per renewal year up to 1000% (10X in 10 years); not applicable with Unlimited SI option" },
+  "restoration": { "display": "Unlimited refills (2X day 1)", "ordinal": 5, "optional": false, "note": "Yuva Reload: 2X cover from day 1 on first claim, unlimited refill up to Base SI for subsequent claims; min 24h hospitalisation" },
+
+  "pre_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered (at actuals)", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (at actuals)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered (at actuals)", "exists": true, "optional": false },
+  "ambulance": { "display": "Road + Air (at actuals)", "number": 999999, "optional": false, "note": "Domestic Road & Air Ambulance, actuals up to Sum Insured" },
+  "modern_treatments": { "display": "Covered (at actuals)", "exists": true, "optional": false, "note": "Modern procedures/treatments at actuals up to SI for listed procedures" },
+  "consumables": { "display": "Covered (Claim Protect)", "exists": true, "optional": false, "note": "Claim Protect: non-medical/non-payable items covered (all 4 lists of Annexure I)" },
+  "global_cover": { "display": "Optional (maternity worldwide)", "exists": true, "optional": true, "note": "Worldwide maternity via optional Yuva Maternity Cover; base hospitalisation domestic" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: grace period as per IRDAI / Policy Schedule" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Standard IRDAI exclusions (Excl01-18); maternity & global only via optional cover; Yuva Credit/Reload void if Unlimited SI opted" },
+  "optional_riders": { "display": "Worldwide Yuva Maternity, Newborn Cover, OPD Cover, PED/Specific waiting reduction, Room Rent Type, Durable Equipment, Income Protect, FitForward Premium" }
+}

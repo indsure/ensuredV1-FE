@@ -7,6 +7,7 @@
 
 import { AIService } from "./aiService";
 import { AI_CONFIG } from "../config/ai_config";
+import type { GeminiCallMeta } from "./geminiUsage";
 import {
   EXTRACTION_FIELDS,
   buildExtractionPrompt,
@@ -35,7 +36,8 @@ function coerce(value: any, type: FieldType): any {
 
 export async function extractStructuredData(
   policyText: string,
-  type: string
+  type: string,
+  usageMeta?: Partial<GeminiCallMeta>
 ): Promise<ExtractionResult> {
   if (!policyText.trim()) {
     return { status: "failed", error: "No text extracted from file" };
@@ -49,7 +51,10 @@ export async function extractStructuredData(
 
   let rawText: string;
   try {
-    rawText = await AIService.generateContent(prompt, policyText, AI_CONFIG.model);
+    rawText = await AIService.generateContent(prompt, policyText, AI_CONFIG.model, {
+      feature: "data_entry",
+      ...usageMeta,
+    });
   } catch (err: any) {
     return { status: "failed", error: err?.message || "AI extraction failed" };
   }

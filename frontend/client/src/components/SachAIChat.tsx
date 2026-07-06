@@ -75,7 +75,7 @@ function containsPersonalData(text: string): boolean {
   const phone = /\b(?:\+?91[\s-]?)?\d{10}\b/;
   const aadhaar = /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/; // xxxx-xxxx-xxxx
   const aadhaarPlain = /\b\d{12}\b/;
-  const policyLike = /\b(?:POLICY|POL|POL-\s*)?[A-Z0-9]{0,10}?\d{3,}\b/i;
+  const policyLike = /\b(?:policy|pol)\.?\s*(?:no\.?|number|#)?\s*[:\-]?\s*[A-Za-z0-9\/]{5,}\b/i;
 
   return email.test(text) || phone.test(text) || aadhaar.test(text) || aadhaarPlain.test(text) || policyLike.test(text);
 }
@@ -263,9 +263,9 @@ export default function SachAIChat() {
     setInput("");
   };
 
-  // Sach AI is a consumer assistant — hide it on the agent/admin surfaces,
-  // matching the Header/MobileNav chrome behaviour.
-  if (location.startsWith("/agent") || location.startsWith("/admin")) {
+  // Sach AI is an Agent Portal–only assistant. Render it nowhere else
+  // (no consumer pages, no public analyzer, no admin surface).
+  if (!location.startsWith("/agent")) {
     return null;
   }
 

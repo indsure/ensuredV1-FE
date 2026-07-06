@@ -1,0 +1,42 @@
+{
+  "uin": "ADIHLIP26043V062526",
+  "insurer": "Aditya Birla Health Insurance",
+  "plan_name": "Activ Assure",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "adityabirla/20260427T052835.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "Up to limit in Policy Schedule", "ordinal": null, "optional": false, "note": "VERIFY: source text heavily OCR-garbled; room rent up to limits in Policy Schedule" },
+  "icu": { "display": "Not specified", "ordinal": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+  "copayment": { "display": "Co-pay per Policy Schedule", "number": 0, "optional": false, "note": "VERIFY: age/zone-based co-payment per claim if specified in Policy Schedule; OCR-garbled source" },
+  "sub_limits": { "display": "Not specified", "ordinal": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+  "deductible": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+
+  "initial_waiting": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: OCR-garbled source (typically 30 days)" },
+  "ped_waiting": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: OCR-garbled source; PED waiting per Policy Schedule" },
+  "specific_disease_waiting": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+  "maternity": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+
+  "cumulative_bonus": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+  "restoration": { "display": "Not specified", "ordinal": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+
+  "pre_hosp": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+  "post_hosp": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+  "day_care": { "display": "Covered", "exists": true, "optional": false, "note": "Day Care Treatment defined in wording" },
+  "domiciliary": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false, "note": "AYUSH Treatment defined in wording" },
+  "organ_donor": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+  "ambulance": { "display": "Covered", "number": null, "optional": false, "note": "VERIFY: ambulance cover limit per Policy Schedule" },
+  "modern_treatments": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: OCR-garbled source" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "Sixty continuous months moratorium" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly premium, 30 days otherwise" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY: thirty days free-look (standard)" },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Standard IRDAI exclusions (Excl01-18); source OCR-garbled, VERIFY specifics" },
+  "optional_riders": { "display": "VERIFY: optional covers not legible in OCR source" }
+}

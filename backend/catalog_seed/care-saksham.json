@@ -1,0 +1,42 @@
+{
+  "uin": "CHIHLIP23186V012223",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Care Saksham",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care/care-saksham-t-c-effective-from-12-september-2024.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹4L – ₹5L (individual only; plan for persons with disability)",
+
+  "room_rent": { "display": "Up to 1% of SI/day", "ordinal": 3, "optional": false, "note": "Room/boarding/nursing all-inclusive max 1% of SI/day" },
+  "icu": { "display": "Up to 2% of SI/day", "ordinal": 3, "optional": false, "note": "ICU/ICCU max 2% of SI/day" },
+  "copayment": { "display": "20% (mandatory)", "number": 20, "optional": false, "note": "20% on all claims; waivable via optional Co-pay Waiver benefit" },
+  "sub_limits": { "display": "Significant sub-limits", "ordinal": 1, "optional": false, "note": "Cataract ₹40k/eye, AYUSH ₹2000, modern treatment 50% of SI, room 1%/ICU 2%" },
+  "deductible": { "display": "Optional (₹25K–₹2L)", "number": 0, "optional": false, "note": "Base = none; optional deductible of ₹25K/50K/1L/2L" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months (24mo for disability)", "number": 36, "optional": false, "note": "36mo for PEDs other than pre-existing Disability/HIV-AIDS; 24mo for pre-existing Disability" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity permanent exclusion (Excl18)" },
+
+  "cumulative_bonus": { "display": "Not offered", "number": 0, "optional": false, "note": "No NCB/cumulative bonus in benefits table" },
+  "restoration": { "display": "Not offered", "ordinal": 0, "optional": false, "note": "No restoration/recharge in benefits table" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false, "note": "24hr limit not applicable to day care" },
+  "domiciliary": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "ayush": { "display": "Covered (up to SI; capped ₹2000 in summary)", "exists": true, "optional": false, "note": "Inpatient AYUSH up to 100% of SI per schedule; summary notes ₹2000/hosp — VERIFY" },
+  "organ_donor": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "ambulance": { "display": "Covered (ground)", "number": 999999, "optional": false, "note": "Emergency ground ambulance; limit per schedule" },
+  "modern_treatments": { "display": "Covered (up to 50% of SI)", "exists": true, "optional": false, "note": "Listed modern procedures capped at 50% of SI" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); mandatory 20% co-pay; sub-limits (cataract ₹40k, modern 50% SI); individual-only; PEDs only if declared" },
+  "optional_riders": { "display": "Co-pay Waiver, Deductible options (₹25K–₹2L)" }
+}

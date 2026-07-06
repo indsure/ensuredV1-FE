@@ -333,10 +333,10 @@ export function getHospitalSamples(params: { city?: string; pincode?: string; li
     
     if (params.pincode && cachedIndexes.byPincode[params.pincode]) {
         indices = cachedIndexes.byPincode[params.pincode];
-        console.log(`[getHospitalSamples] Found ${indices.length} hospitals for pincode ${params.pincode}`);
+        console.log(`[getHospitalSamples] Found ${indices?.length ?? 0} hospitals for pincode ${params.pincode}`);
     } else if (params.city && cachedIndexes.byCity[params.city]) {
         indices = cachedIndexes.byCity[params.city];
-        console.log(`[getHospitalSamples] Found ${indices.length} hospitals for city ${params.city}`);
+        console.log(`[getHospitalSamples] Found ${indices?.length ?? 0} hospitals for city ${params.city}`);
     }
     
     if (!indices || indices.length === 0) {

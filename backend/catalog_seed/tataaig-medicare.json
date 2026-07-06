@@ -1,0 +1,42 @@
+{
+  "uin": "TATHLIP26053V042526",
+  "insurer": "Tata AIG General Insurance",
+  "plan_name": "Medicare",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "tataaig/tata-aig-medicare-policy-wordings-a9aaf64d8b.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": null,
+
+  "room_rent": { "display": "No cap (at actuals)", "ordinal": 5, "optional": false, "note": "No room-rent limit specified in base wording; single private room standard" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false, "note": "No ICU cap specified" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory co-payment in base plan" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity excluded (Excl 18)" },
+
+  "cumulative_bonus": { "display": "Up to 100% (50%/yr)", "number": 100, "optional": false, "note": "50% per claim-free year, max 100%; reduces 50% on claim" },
+  "restoration": { "display": "Once/yr, 100% (unrelated)", "ordinal": 3, "optional": false, "note": "Automatic restore of base SI once per year; related illness after 45 days" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "Listed day-care", "exists": true, "optional": false, "note": "Listed day-care procedures per website" },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (up to SI)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "₹3,000/hospitalisation", "number": 3000, "optional": false },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false },
+  "consumables": { "display": "Covered (inbuilt)", "exists": true, "optional": false, "note": "Consumables Benefit B12 inbuilt" },
+  "global_cover": { "display": "Covered (inbuilt)", "exists": true, "optional": false, "note": "Global Cover B13; diagnosis in India, up to SI" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl 18); standard IRDAI exclusions (Excl01-18)" },
+  "optional_riders": { "display": "Accidental Death Benefit (optional cover)" }
+}

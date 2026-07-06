@@ -218,32 +218,39 @@ export const AXIS_GROUP_LABELS: Record<AxisGroup, string> = {
   fine_print: "Fine Print",
 };
 
-// ─── Comparison result (what the API returns / frontend renders) ─────────────────
-export type Winner = "a" | "b" | "tie" | "na";
+// ─── Comparison result (N-way: 2..4 plans; API returns / frontend renders) ───────
+export interface Cell {
+  display: string;
+  note?: string | null;
+  optional?: boolean;
+  winner: boolean;        // true if this side is a (decisive) best on this row
+}
 
 export interface ComparisonRow {
   key: string;
   label: string;
   group: AxisGroup;
-  a: { display: string; note?: string | null; optional?: boolean };
-  b: { display: string; note?: string | null; optional?: boolean };
-  winner: Winner;
+  cells: Cell[];          // one per side, in side order
+}
+
+export interface Side {
+  insurer: string | null;
+  plan_name: string | null;
+  uin: string | null;
+  sum_insured_options: string | null;
+  confidence: string;
 }
 
 export interface ComparisonResult {
-  a: { insurer: string | null; plan_name: string | null; uin: string | null; sum_insured_options: string | null; confidence: string };
-  b: { insurer: string | null; plan_name: string | null; uin: string | null; sum_insured_options: string | null; confidence: string };
+  sides: Side[];          // 2..4 plans, in display order
   groups: { group: AxisGroup; label: string; rows: ComparisonRow[] }[];
   verdict: {
-    winner: Winner;                 // "a" | "b" | "tie"
-    winner_name: string | null;     // plan/insurer name of the winner
-    score_a: number;                // weighted win score (0-100ish, relative)
-    score_b: number;
-    wins_a: number;                 // count of decisive rows won
-    wins_b: number;
-    ties: number;
-    reasons: string[];              // top weighted reasons the winner is ahead (customer-facing)
-    counterpoint: string | null;    // strongest reason the OTHER plan might still be picked
+    winner_index: number;        // index into sides; -1 if tie
+    winner_name: string | null;
+    scores: number[];            // relative 0-100 per side
+    wins: number[];              // decisive rows won per side
+    reasons: string[];           // top reasons the winner leads
+    counterpoint: string | null; // strongest axis another plan beat the winner on
   };
 }
 
@@ -253,153 +260,161 @@ function asDatum(v: AxisDatum | string | null | undefined): AxisDatum {
   return { display: "—", note: null };
 }
 
-const num = (d: AxisDatum): number | null =>
+const numV = (d: AxisDatum): number | null =>
   typeof d.number === "number" && !Number.isNaN(d.number) ? d.number : null;
-const ord = (d: AxisDatum): number | null =>
+const ordV = (d: AxisDatum): number | null =>
   typeof d.ordinal === "number" && !Number.isNaN(d.ordinal) ? d.ordinal : null;
 
-const isOptional = (d: AxisDatum): boolean => d.optional === true;
-
-/**
- * Fairness guard: if the winning side's advantage is ONLY available as a paid
- * optional add-on while the other side already has the (lesser) benefit inbuilt,
- * we do NOT award a decisive "Better" — it would mislead a customer comparing
- * base plans. Downgrade such a win to a tie (the `optional` tag still shows).
- */
-function applyOptionalGuard(winner: Winner, da: AxisDatum, db: AxisDatum): Winner {
-  if (winner !== "a" && winner !== "b") return winner;
-  const winDatum = winner === "a" ? da : db;
-  const loseDatum = winner === "a" ? db : da;
-  if (isOptional(winDatum) && !isOptional(loseDatum)) return "tie";
-  return winner;
-}
-
-/** Deterministic per-axis winner. Returns the winner plus whether it was decisive. */
-function rankAxis(def: AxisDef, da: AxisDatum, db: AxisDatum): Winner {
+// Normalize an axis datum to a single comparable number where HIGHER = better,
+// plus whether that value is only via a paid add-on. null = not comparable.
+function comparable(def: AxisDef, d: AxisDatum): { val: number | null; optional: boolean } {
   switch (def.direction) {
     case "info":
-      return "na";
+      return { val: null, optional: false };
     case "exists": {
-      const a = da.exists, b = db.exists;
-      if (a == null || b == null) return "na";
-      if (a === b) {
-        // Both cover (or both don't). An INBUILT cover beats an optional-only one.
-        if (a === true && isOptional(da) !== isOptional(db)) return isOptional(da) ? "b" : "a";
-        return "tie";
-      }
-      return a ? "a" : "b";
+      if (d.exists == null) return { val: null, optional: false };
+      // inbuilt-covered (2) > optional-covered (1) > not covered (0)
+      return { val: d.exists ? (d.optional ? 1 : 2) : 0, optional: false };
     }
     case "lower": {
-      const a = num(da), b = num(db);
-      if (a == null || b == null) return "na";
-      if (a === b) return "tie";
-      return applyOptionalGuard(a < b ? "a" : "b", da, db);
+      const n = numV(d);
+      return { val: n == null ? null : -n, optional: d.optional === true };
     }
     case "higher": {
-      const a = num(da), b = num(db);
-      if (a == null || b == null) return "na";
-      if (a === b) return "tie";
-      return applyOptionalGuard(a > b ? "a" : "b", da, db);
+      const n = numV(d);
+      return { val: n == null ? null : n, optional: d.optional === true };
     }
     case "higher_ordinal": {
-      const a = ord(da), b = ord(db);
-      if (a == null || b == null) return "na";
-      if (a === b) return "tie";
-      return applyOptionalGuard(a > b ? "a" : "b", da, db);
+      const o = ordV(d);
+      return { val: o == null ? null : o, optional: d.optional === true };
     }
     default:
-      return "na";
+      return { val: null, optional: false };
   }
+}
+
+/**
+ * Per-axis winners across N sides → boolean[] (one per side). A win is awarded only
+ * when DECISIVE (some eligible side is strictly worse), and paid-add-on-only
+ * advantages over an inbuilt baseline are suppressed (baseline-first policy).
+ */
+function winnersFor(def: AxisDef, data: AxisDatum[]): boolean[] {
+  const out: boolean[] = new Array(data.length).fill(false);
+  if (def.direction === "info") return out;
+  const elig = data
+    .map((d, i) => ({ i, ...comparable(def, d) }))
+    .filter((x) => x.val != null) as { i: number; val: number; optional: boolean }[];
+  if (elig.length < 2) return out; // need ≥2 comparable sides to declare a winner
+  const best = Math.max(...elig.map((x) => x.val));
+  const worst = Math.min(...elig.map((x) => x.val));
+  if (best <= worst) return out; // all equal → tie row
+  let winners = elig.filter((x) => x.val === best);
+  // baseline-first guard: don't reward an add-on-only best over an inbuilt baseline.
+  if (winners.every((w) => w.optional) && elig.some((x) => !x.optional && x.val < best)) return out;
+  // if inbuilt and optional tie for best, only inbuilt cells win.
+  if (winners.some((w) => !w.optional)) winners = winners.filter((w) => !w.optional);
+  for (const w of winners) out[w.i] = true;
+  return out;
 }
 
 const nameOf = (p: WordingProfile): string | null =>
   p.plan_name || p.insurer || null;
 
+const sideOf = (p: WordingProfile): Side => ({
+  insurer: p.insurer,
+  plan_name: p.plan_name,
+  uin: p.uin,
+  sum_insured_options: p.sum_insured_options,
+  confidence: p.confidence,
+});
+
 /**
- * Build the full side-by-side comparison from two extracted profiles.
+ * Build an N-way (2..4) side-by-side comparison from extracted profiles.
  * Pure & deterministic — the verdict is explainable, not AI-generated.
  */
-export function buildComparison(a: WordingProfile, b: WordingProfile): ComparisonResult {
+export function compareMany(profiles: WordingProfile[]): ComparisonResult {
+  const n = profiles.length;
   const rows: ComparisonRow[] = [];
-  let scoreA = 0, scoreB = 0, winsA = 0, winsB = 0, ties = 0;
-  const reasonCandidates: { weight: number; text: string; winner: Winner }[] = [];
+  const scores: number[] = new Array(n).fill(0);
+  const wins: number[] = new Array(n).fill(0);
+  const reasonCandidates: { weight: number; sideIndex: number; text: string }[] = [];
 
   for (const def of AXES) {
-    const da = asDatum(a[def.key]);
-    const db = asDatum(b[def.key]);
-    const winner = rankAxis(def, da, db);
+    const data = profiles.map((p) => asDatum(p[def.key]));
+    const w = winnersFor(def, data);
 
     rows.push({
       key: def.key,
       label: def.label,
       group: def.group,
-      a: { display: da.display ?? "—", note: da.note ?? null, optional: da.optional === true },
-      b: { display: db.display ?? "—", note: db.note ?? null, optional: db.optional === true },
-      winner,
+      cells: data.map((d, i) => ({
+        display: d.display ?? "—",
+        note: d.note ?? null,
+        optional: d.optional === true,
+        winner: w[i],
+      })),
     });
 
-    if (def.weight > 0 && (winner === "a" || winner === "b")) {
-      if (winner === "a") { scoreA += def.weight; winsA++; }
-      else { scoreB += def.weight; winsB++; }
-      const better = winner === "a" ? da.display : db.display;
-      const worse = winner === "a" ? db.display : da.display;
-      reasonCandidates.push({
-        weight: def.weight,
-        winner,
-        text: `${def.label}: ${better} vs ${worse}`,
-      });
-    } else if (def.weight > 0 && winner === "tie") {
-      ties++;
+    if (def.weight > 0) {
+      for (let i = 0; i < n; i++) {
+        if (w[i]) {
+          scores[i] += def.weight;
+          wins[i]++;
+          reasonCandidates.push({ weight: def.weight, sideIndex: i, text: `${def.label}: ${data[i].display}` });
+        }
+      }
     }
   }
 
-  // Group the rows in declared group order.
   const groups = (Object.keys(AXIS_GROUP_LABELS) as AxisGroup[]).map((g) => ({
     group: g,
     label: AXIS_GROUP_LABELS[g],
     rows: rows.filter((r) => r.group === g),
   }));
 
-  // Overall winner from weighted score.
-  let winner: Winner = "tie";
-  if (scoreA > scoreB) winner = "a";
-  else if (scoreB > scoreA) winner = "b";
+  // Overall winner = highest weighted score; tie if the top score isn't unique.
+  const maxScore = Math.max(...scores);
+  const topCount = scores.filter((s) => s === maxScore).length;
+  const winnerIndex = maxScore > 0 && topCount === 1 ? scores.indexOf(maxScore) : -1;
 
-  const winnerProfile = winner === "a" ? a : winner === "b" ? b : null;
-  const total = scoreA + scoreB || 1;
+  const total = scores.reduce((a, b) => a + b, 0) || 1;
+  const normScores = scores.map((s) => Math.round((s / total) * 100));
 
-  // Top reasons = highest-weight axes the winner actually won.
-  const reasons = reasonCandidates
-    .filter((r) => r.winner === winner)
-    .sort((x, y) => y.weight - x.weight)
-    .slice(0, 4)
-    .map((r) => r.text);
+  const reasons =
+    winnerIndex < 0
+      ? []
+      : reasonCandidates
+          .filter((r) => r.sideIndex === winnerIndex)
+          .sort((a, b) => b.weight - a.weight)
+          .slice(0, 4)
+          .map((r) => r.text);
 
-  // Counterpoint = highest-weight axis the LOSER won (honest selling).
+  // Counterpoint: highest-weight axis another plan beat the winner on (honest selling).
   const counterpoint =
-    winner === "tie"
+    winnerIndex < 0
       ? null
       : reasonCandidates
-          .filter((r) => r.winner !== winner)
-          .sort((x, y) => y.weight - x.weight)
-          .map((r) => r.text)[0] ?? null;
+          .filter((r) => r.sideIndex !== winnerIndex)
+          .sort((a, b) => b.weight - a.weight)
+          .map((r) => `${r.text} (${nameOf(profiles[r.sideIndex]) ?? "another plan"})`)[0] ?? null;
 
   return {
-    a: { insurer: a.insurer, plan_name: a.plan_name, uin: a.uin, sum_insured_options: a.sum_insured_options, confidence: a.confidence },
-    b: { insurer: b.insurer, plan_name: b.plan_name, uin: b.uin, sum_insured_options: b.sum_insured_options, confidence: b.confidence },
+    sides: profiles.map(sideOf),
     groups,
     verdict: {
-      winner,
-      winner_name: winnerProfile ? nameOf(winnerProfile) : null,
-      score_a: Math.round((scoreA / total) * 100),
-      score_b: Math.round((scoreB / total) * 100),
-      wins_a: winsA,
-      wins_b: winsB,
-      ties,
+      winner_index: winnerIndex,
+      winner_name: winnerIndex >= 0 ? nameOf(profiles[winnerIndex]) : null,
+      scores: normScores,
+      wins,
       reasons,
       counterpoint,
     },
   };
+}
+
+/** 2-way convenience wrapper (PDF upload flow). */
+export function buildComparison(a: WordingProfile, b: WordingProfile): ComparisonResult {
+  return compareMany([a, b]);
 }
 
 /** Build the Gemini extraction prompt from the axis registry (kept in sync). */

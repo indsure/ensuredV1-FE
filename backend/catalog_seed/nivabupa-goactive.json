@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP26046V032526",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "GoActive",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/goactive-policy-document.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": null,
+
+  "room_rent": { "display": "Per entitled room category", "ordinal": 4, "optional": false, "note": "Room eligibility per Policy Schedule; pro-rata if higher room opted. VERIFY exact eligibility" },
+  "icu": { "display": "Covered (ICU/CCU)", "ordinal": 5, "optional": false, "note": "Intensive/critical care unit charges payable under inpatient; no explicit cap. VERIFY" },
+  "copayment": { "display": "Per schedule (variable)", "number": null, "optional": false, "note": "Co-payment as specified in Policy Schedule (if applicable); not applied to ambulance/health-check. VERIFY base %" },
+  "sub_limits": { "display": "Few sub-limits", "ordinal": 3, "optional": false, "note": "Benefit sub-limits apply; robotic surgery typically capped. VERIFY" },
+  "deductible": { "display": "None (base)", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY — standard 30-day initial waiting assumed" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity excluded (Excl18)" },
+
+  "cumulative_bonus": { "display": "Optional (I-Protect +10%/yr)", "number": 0, "optional": false, "note": "No inbuilt NCB. I-Protect optional paid add-on increases SI +10%/yr; opt-in at inception only. Base plan has no bonus" },
+  "restoration": { "display": "Re-fill 100% base SI, once/yr", "ordinal": 3, "optional": false, "note": "Re-fill up to 100% base SI for a different illness; not for same illness already claimed" },
+
+  "pre_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (Alternative treatment)", "exists": true, "optional": false, "note": "Ayurveda/Unani/Siddha/Homeopathy inpatient; Yoga excluded" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Up to schedule limit", "number": null, "optional": false, "note": "Emergency ambulance per Policy Schedule limit. VERIFY ₹ limit" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "Modern treatments (Section 3.16); may carry sub-limits" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY — no explicit consumables/non-medical benefit found" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); no inbuilt no-claim bonus (SI growth via paid I-Protect); standard Excl01–18" },
+  "optional_riders": { "display": "I-Protect (SI enhancer +10%/yr), Health Coach (wellness), Personal Accident Cover" }
+}

@@ -1,0 +1,42 @@
+{
+  "uin": "MAXHLIP21176V022021",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Health Premia",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/Health-Premia-Policy-Wording.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹5L – ₹3Cr",
+
+  "room_rent": { "display": "Up to SI (no room cap)", "ordinal": 5, "optional": false, "note": "Room rent covered up to Sum Insured, except Suite or above category; pro-rata if higher than entitled" },
+  "icu": { "display": "Covered up to SI", "ordinal": 5, "optional": false },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No mandatory base co-pay; optional Zone 2 selection triggers 20% co-pay in metro cities" },
+  "sub_limits": { "display": "Few sub-limits", "ordinal": 3, "optional": false, "note": "Robotic surgery ₹1L sub-limit; maternity, mental disorder, LASER sub-limits apply" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "specific_disease_waiting": { "display": "12 months", "number": 12, "optional": false },
+  "maternity": { "display": "Covered (24mo wait, floater only)", "exists": true, "optional": false, "number": 24, "note": "Maternity sub-limit ₹40k–₹2L by SI tier; floater/family-first only, not individual; up to 2 pregnancies" },
+
+  "cumulative_bonus": { "display": "Up to 100% (10%/yr)", "number": 100, "optional": false, "note": "Loyalty Additions +10% base SI/yr up to 100%; up to 200% with optional Enhanced Loyalty Additions" },
+  "restoration": { "display": "100% base SI, same & different illness", "ordinal": 4, "optional": false, "note": "Re-fill reinstates up to 100% base SI; applies for same and different illness" },
+
+  "pre_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "Covered up to SI", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered up to SI", "exists": true, "optional": false },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false, "note": "Alternative treatment covered up to SI" },
+  "organ_donor": { "display": "Covered up to SI", "exists": true, "optional": false },
+  "ambulance": { "display": "Up to SI (network); ₹2,000 non-network", "number": 2000, "optional": false, "note": "Network hospital up to SI; non-network capped ₹2,000/event. Air ambulance via emergency assistance" },
+  "modern_treatments": { "display": "Covered up to SI", "exists": true, "optional": false, "note": "Robotic surgery sub-limited to ₹1L on few procedures" },
+  "consumables": { "display": "Allowable consumables only", "exists": true, "optional": false, "note": "Allowable consumables in inpatient; full non-medical not confirmed. VERIFY" },
+  "global_cover": { "display": "Covered (Gold/Platinum)", "exists": true, "optional": false, "note": "International coverage inbuilt on Gold/Platinum (worldwide excl USA/Canada); not on Silver. Extension optional add-on" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity individual-policy excluded; International cover Silver-tier not available; standard Excl01–18" },
+  "optional_riders": { "display": "Enhanced Loyalty Additions, Personal Accident, Critical Illness, Hospital Cash, International coverage extension, Enhanced Geographical Scope" }
+}

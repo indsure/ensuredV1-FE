@@ -11,6 +11,7 @@ import {
 } from "../utils/policyWordingsFetcher";
 import { applyScoreBucketing, getBucketingExplanation } from "../utils/scoreBucketing";
 import { AI_CONFIG } from "../config/ai_config";
+import type { GeminiCallMeta } from "./geminiUsage";
 
 export interface AnalysisResult {
   status: "completed" | "failed";
@@ -138,7 +139,8 @@ export function performScoreArithmeticCheck(parsed: any) {
 
 export async function runAnalysisPipeline(
   policyText: string,
-  insuranceType: string = "health"
+  insuranceType: string = "health",
+  usageMeta?: Partial<GeminiCallMeta>
 ): Promise<AnalysisResult> {
   const startTime = Date.now();
   let extractionTime = 0;
@@ -187,7 +189,8 @@ export async function runAnalysisPipeline(
     const rawText = await AIService.generateContent(
       promptToUse,
       mergedPolicyText,
-      AI_CONFIG.model
+      AI_CONFIG.model,
+      { feature: "policy_audit", ...usageMeta }
     );
     aiTime = Date.now() - aiStartTime;
 

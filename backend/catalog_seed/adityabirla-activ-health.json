@@ -1,0 +1,42 @@
+{
+  "uin": "ADIHLIP26042V062526",
+  "insurer": "Aditya Birla Health Insurance",
+  "plan_name": "Activ Health",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "adityabirla/20260427T053449.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "Up to limit in Policy Schedule", "ordinal": 4, "optional": false, "note": "VERIFY: room rent up to limits specified in Policy Schedule; proportionate deductions apply if higher room opted" },
+  "icu": { "display": "ICU charges covered", "ordinal": 5, "optional": false, "note": "Proportionate deductions not applicable for ICU charges" },
+  "copayment": { "display": "None (mandatory co-pay optional)", "number": 0, "optional": false, "note": "Mandatory co-payment applies only if opted on Policy Schedule; zone-based co-pay for treatment in higher zone; Waiver of Mandatory Co-payment available" },
+  "sub_limits": { "display": "No sub-limits (base variants)", "ordinal": 3, "optional": false, "note": "VERIFY: Platinum-Essential variant applies treatment-wise sub-limits (e.g. cataract Rs 40k); mainstream variant has none" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "VERIFY: aggregate deductible not found in base wording" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "As specified (up to 36 months)", "number": 36, "optional": false, "note": "VERIFY: PED waiting months stated in Policy Schedule; IRDAI max 36 months; reducible to extent of prior coverage on portability" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Optional cover", "exists": true, "optional": true, "note": "Maternity Expenses optional; 48-month waiting; surrogacy complications cover within 36 months" },
+
+  "cumulative_bonus": { "display": "Up to 100%", "number": 100, "optional": false, "note": "VERIFY: Cumulative Bonus capped at 100% of SI; per-year accrual rate per Policy Schedule; reduced on claim" },
+  "restoration": { "display": "Reload once/yr (unrelated)", "ordinal": 3, "optional": false, "note": "Reload of SI once/yr, not for same illness; Super Reload (unlimited times, incl. same illness) available per Policy Schedule" },
+
+  "pre_hosp": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: pre-hospitalisation days as per Policy Schedule" },
+  "post_hosp": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: post-hospitalisation days as per Policy Schedule" },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Min 3 consecutive days" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Road ambulance covered", "number": null, "optional": false, "note": "VERIFY: road ambulance cover limit per Policy Schedule" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "Modern Treatment Methods and Advancement in Technologies covered" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: consumables/non-medical items cover not confirmed in base wording" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: grace period as per IRDAI / Policy Schedule" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Standard IRDAI exclusions (Excl01-18); zone-based co-pay for higher-zone treatment" },
+  "optional_riders": { "display": "Maternity Expenses, Waiver of Mandatory Co-payment, Personal Accident, Critical Illness, PPN discount" }
+}

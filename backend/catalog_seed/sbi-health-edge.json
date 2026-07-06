@@ -1,0 +1,42 @@
+{
+  "uin": "SBIHLIP23173V012223",
+  "insurer": "SBI General Insurance",
+  "plan_name": "Health Edge Insurance",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "sbi/Health-Edge-Insurance-Policy-wording-75e1ad1343.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "Not specified", "ordinal": null, "optional": false, "note": "VERIFY: wording sets room rent 'up to the Room Rent limit as specified in Policy Schedule'; base limit not stated in wording text" },
+  "icu": { "display": "Not specified", "ordinal": null, "optional": false, "note": "VERIFY: ICU/ICCU per Policy Schedule; not stated in wording" },
+  "copayment": { "display": "None (optional 10%/20%)", "number": 0, "optional": false, "note": "No mandatory co-pay on base; optional voluntary 10%/20% co-pay (Section D.15)" },
+  "sub_limits": { "display": "Few sub-limits", "ordinal": 3, "optional": false, "note": "Length-of-stay options (5/10/unlimited days) can cap IPD; bariatric capped" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "No standard aggregate deductible" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "PED waiting 24 months continuous coverage" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Optional add-on (48mo wait)", "exists": true, "optional": true, "note": "Women Care Benefit (D.12) maternity is an optional cover; 48-month waiting; not inbuilt in base" },
+
+  "cumulative_bonus": { "display": "None inbuilt (optional Booster up to 200%)", "number": 0, "optional": false, "note": "No inbuilt cumulative bonus; optional Booster Benefit (D.10) adds 50%/yr up to 200% of base SI" },
+  "restoration": { "display": "None inbuilt (optional Unlimited Refill)", "ordinal": 0, "optional": false, "note": "No inbuilt restoration; optional Unlimited Refill (D.5) 100% base SI, related+unrelated, from first claim" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false, "note": "Covered if admitted >2 hrs; incl. angiography/dialysis/radio/chemo" },
+  "domiciliary": { "display": "Not covered", "exists": false, "optional": false, "note": "Domiciliary hospitalization expenses excluded (Exclusion VIII)" },
+  "ayush": { "display": "Covered (C.8)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: no dedicated organ donor cover found in wording" },
+  "ambulance": { "display": "Per schedule limit", "number": null, "optional": false, "note": "VERIFY: Emergency Road Ambulance up to limit specified in Policy Schedule; amount not stated in wording" },
+  "modern_treatments": { "display": "Covered (C.7)", "exists": true, "optional": false },
+  "consumables": { "display": "Optional (D.8)", "exists": true, "optional": true, "note": "Non-payable/List-I items waived only if optional Benefit D.8 opted; not inbuilt" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "No overseas treatment cover found in wording" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "30 days (non-monthly modes); 15 days for monthly premium" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Domiciliary excluded; cumulative bonus, restoration, maternity, consumables all OPTIONAL add-ons; standard IRDAI exclusions" },
+  "optional_riders": { "display": "Booster Benefit (bonus), Unlimited Refill, Women Care/Maternity, Assisted Reproduction, Non-payable items (D.8), Voluntary co-pay, Domestic Help indemnity" }
+}

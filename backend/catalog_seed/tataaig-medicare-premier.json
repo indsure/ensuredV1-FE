@@ -1,0 +1,42 @@
+{
+  "uin": "TATHLIP26052V052526",
+  "insurer": "Tata AIG General Insurance",
+  "plan_name": "MediCare Premier",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "tataaig/tata-aig-medicare-premier-policy-wordings-781aa2fd.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹5L – ₹3Cr",
+
+  "room_rent": { "display": "No cap (at actuals)", "ordinal": 5, "optional": false, "note": "No room-rent limit specified in base wording" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory co-payment in base plan" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Covered (3yr wait)", "exists": true, "optional": false, "note": "B21 inbuilt; ₹50k (₹60k girl child) up to 50L SI; Excl 18 deleted" },
+
+  "cumulative_bonus": { "display": "Up to 100% (50%/yr)", "number": 100, "optional": false, "note": "50% per claim-free year, max 100%; reduces 50% on claim" },
+  "restoration": { "display": "Once/yr, 100% (unrelated)", "ordinal": 3, "optional": false, "note": "Auto restore base SI once/yr; not on first claim; related illness after 45 days" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false, "note": "200 days for SI ₹75L–₹3Cr" },
+  "day_care": { "display": "All day-care", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (up to SI)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "₹5,000/hospitalisation", "number": 5000, "optional": false, "note": "Higher (₹7.5k–₹30k) for ₹75L+ SI bands" },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false },
+  "consumables": { "display": "Covered (inbuilt B12)", "exists": true, "optional": false },
+  "global_cover": { "display": "Covered (inbuilt, opt-out)", "exists": true, "optional": false, "note": "B13 Global Cover for Planned Hospitalization; default included, opt-out for discount" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Standard IRDAI exclusions (Excl01-18 less Excl18 via maternity); voluntary termination not covered" },
+  "optional_riders": { "display": "Accidental Death Benefit; Global Cover opt-out discount" }
+}

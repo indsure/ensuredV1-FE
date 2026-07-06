@@ -1,0 +1,42 @@
+{
+  "uin": "ADIHLIP24097V012324",
+  "insurer": "Aditya Birla Health Insurance",
+  "plan_name": "Activ One",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "adityabirla/policy-document.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹2L – ₹6Cr",
+
+  "room_rent": { "display": "At actuals (any room)", "ordinal": 5, "optional": false, "note": "Base: Room Rent actuals up to SI. Optional Room Rent Type Option restricts to Single Private / Shared (premium-saver)" },
+  "icu": { "display": "At actuals (up to SI)", "ordinal": 5, "optional": false },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory co-pay; 10% co-pay only if optional PPN-discount cover chosen and treatment taken outside network" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false, "note": "Modern procedures, AYUSH, organ donor, mental illness, obesity, HIV/STD all at actuals up to SI" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Per Claim Deductible available as optional premium-saver cover" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "2 years (24 months)", "number": 24, "optional": false, "note": "VERIFY exact base: PED waiting per Policy Schedule; reducible 2 years to 1 year via optional cover" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Reducible to 1 year via optional cover" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity under standard exclusion Excl18 (excluded)" },
+
+  "cumulative_bonus": { "display": "Via optional Super Credit", "number": 0, "optional": false, "note": "No inbuilt cumulative bonus; optional Super Credit grows SI by fixed % each renewal. VERIFY base bonus" },
+  "restoration": { "display": "Super Reload: 2X day 1, unlimited", "ordinal": 5, "optional": false, "note": "Super Reload inbuilt: 2X cover from day 1 on first claim, unlimited refill (up to Base SI) for subsequent claims" },
+
+  "pre_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered (at actuals)", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (at actuals)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered (at actuals)", "exists": true, "optional": false },
+  "ambulance": { "display": "Road ambulance (at actuals)", "number": 999999, "optional": false, "note": "Road ambulance domestic, actuals up to SI per hospitalisation" },
+  "modern_treatments": { "display": "Covered (at actuals)", "exists": true, "optional": false },
+  "consumables": { "display": "Optional (Claim Protect)", "exists": true, "optional": true, "note": "Claim Protect optional cover waives non-medical/non-payable items (all 4 lists of Annexure I)" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly premium, 30 days for other modes" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); cumulative bonus & consumables only via optional covers; standard IRDAI exclusions" },
+  "optional_riders": { "display": "Super Credit, Cancer Booster, Chronic Care (Day-1), Claim Protect, PED/Specific waiting reduction, Critical Illness, Personal Accident, Room Rent Type, Per-Claim Deductible, PPN Discount" }
+}

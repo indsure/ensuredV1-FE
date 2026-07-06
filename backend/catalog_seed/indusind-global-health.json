@@ -1,0 +1,42 @@
+{
+  "uin": "IRDAN103RP0001V01202324",
+  "insurer": "IndusInd General Insurance",
+  "plan_name": "IndusInd Health Global",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "indusind/indusind-global-health-pw.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "At actuals (no cap)", "ordinal": 5, "optional": false, "note": "Global Cover (inbuilt) pays room rent at actuals worldwide; India Cover (optional 3.2) room rent per schedule" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false, "note": "ICU under base In-Patient Treatment; no cap stated" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory base co-pay; Voluntary Co-payment (3.3.2) optional for premium discount; 20% co-pay on Dental cover only" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false, "note": "No disease-wise capping in base; Modern Treatment limited per schedule" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: no separate 30-day initial waiting (Excl03) found - exclusions jump Excl02 to Excl04" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Excl01; reducible to 24 or 12 months via optional (3.3.3)" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl02: 24 months (some conditions 36mo)" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity is a standard exclusion (Excl18); no maternity benefit found" },
+
+  "cumulative_bonus": { "display": "Up to 100% (25%/yr)", "number": 100, "optional": false, "note": "No Claim Bonus 25% of India Base SI/claim-free yr up to 100% (Benefit 3.2.15, India Cover)" },
+  "restoration": { "display": "Unlimited (optional)", "ordinal": 5, "optional": true, "note": "Unlimited Reinstatement of India Base SI (3.2.17) 'if applicable' - optional; no inbuilt restore on base" },
+
+  "pre_hosp": { "display": "90 days", "number": 90, "optional": false, "note": "India Cover (3.2.6); Global Cover pre-hosp per schedule" },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false, "note": "India Cover (3.2.7)" },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (India)", "exists": true, "optional": false, "note": "AYUSH applicable to India Cover" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "Global (3.1) & India (3.2.8)" },
+  "ambulance": { "display": "Covered (road + air)", "number": 999999, "optional": false, "note": "Global air/road ambulance inbuilt; India road (3.2.2) + air (3.2.3) per schedule" },
+  "modern_treatments": { "display": "Covered (per schedule)", "exists": true, "optional": false, "note": "Modern Treatment (3.2.5) limited per schedule" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: consumables not clearly addressed as separate cover" },
+  "global_cover": { "display": "Covered (inbuilt)", "exists": true, "optional": false, "note": "Global Cover (3.1) is the flagship inbuilt cover - worldwide treatment; India Cover is the optional add-on (3.2)" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: grace period not clearly captured (renewal during grace protects credits)" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); global-first structure (Global Cover inbuilt, India Cover optional); Modern Treatment & India money limits per schedule; Dental cover has 20% co-pay" },
+  "optional_riders": { "display": "India Cover, Unlimited Reinstatement, Voluntary Co-pay, PED waiting reduction, Inflation Protection, Air Ambulance, Companion/Travel covers" }
+}

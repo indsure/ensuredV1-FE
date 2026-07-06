@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, Ticket, LogOut, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, Ticket, LogOut, TrendingUp, Activity } from "lucide-react";
 import { cn } from "@/components/ui";
 
 const navItems = [
@@ -9,6 +9,7 @@ const navItems = [
   { href: "/agents", label: "Agents", icon: Users },
   { href: "/invite-codes", label: "Invite Codes", icon: Ticket },
   { href: "/revenue", label: "Revenue Projector", icon: TrendingUp },
+  { href: "/usage", label: "Gemini Usage", icon: Activity },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

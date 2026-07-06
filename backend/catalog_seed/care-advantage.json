@@ -1,0 +1,42 @@
+{
+  "uin": "CHIHLIP27062V052627",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Care Advantage",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care/care-advantage-policy-terms-condition-effective-fr.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹2Cr – ₹6Cr",
+
+  "room_rent": { "display": "No sub-limit (any room)", "ordinal": 5, "optional": false, "note": "No room-rent restriction on base plan; optional Room Rent Modification limits to Single Private Room for lower premium" },
+  "icu": { "display": "No sub-limit", "ordinal": 5, "optional": false },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory base co-pay; optional Co-payment available for premium discount" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Reducible to 24 months via optional PED Wait Modification" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity excluded (Excl18)" },
+
+  "cumulative_bonus": { "display": "Up to 50% (10%/yr)", "number": 50, "optional": false, "note": "10% flat SI/yr, capped at 50%; only if claim-free; No Claims Bonus Super optional" },
+  "restoration": { "display": "Automatic Recharge (100%, once/yr)", "ordinal": 4, "optional": false, "note": "Re-instates base SI once/year, usable for same or different illness" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "All day-care", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Covered (per schedule limit)", "number": 999999, "optional": false, "note": "VERIFY ₹ cap — road ambulance up to amount specified in Policy Schedule; Air Ambulance optional" },
+  "modern_treatments": { "display": "Covered (advance tech methods)", "exists": true, "optional": false },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY — non-medical consumables cover not explicitly found" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "VERIFY — no overseas treatment cover found" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "5 continuous years" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); standard IRDAI Excl01–18" },
+  "optional_riders": { "display": "No Claims Bonus Super, Air Ambulance, Room Rent Modification, PED Wait Modification, Co-payment, Daily Allowance, Additional SI for Accidental Hospitalization" }
+}

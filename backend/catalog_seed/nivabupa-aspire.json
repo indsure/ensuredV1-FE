@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP26049V022526",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Aspire",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/Aspire-Policy-Wordings.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹5L – ₹1Cr+ base (up to 11x via Booster+/ReAssure)",
+
+  "room_rent": { "display": "Standard Single Room", "ordinal": 4, "optional": false, "note": "Standard Single Room base; modifiable; copay if higher room category chosen" },
+  "icu": { "display": "Up to SI", "ordinal": 5, "optional": false, "note": "ICU admission always paid up to Sum Insured" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory base co-pay; optional co-pay available; copay applies if higher room category opted" },
+  "sub_limits": { "display": "No major sub-limits", "ordinal": 4, "optional": false, "note": "Cataract etc. only in specific-disease waiting list, no rupee cap noted" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Annual Aggregate Deductible optional (cannot combine with co-payment)" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "12 months (best variant)", "number": 12, "optional": false, "note": "12 / 24 / 36 months as per variant selected; modifiable at purchase" },
+  "specific_disease_waiting": { "display": "12 months (best variant)", "number": 12, "optional": false, "note": "24 / 12 months as per variant; cancer 30-day wait, accident day 1" },
+  "maternity": { "display": "Covered (M-iracle)", "exists": true, "optional": false, "note": "Inbuilt M-iracle maternity SI (variant-based waiting), new born day 1, ectopic under hospitalization; India only" },
+
+  "cumulative_bonus": { "display": "Booster+ carry-forward (up to 10x SI)", "number": 100, "optional": false, "note": "Unutilized Base SI carries forward up to 10x (entry-age/variant); not a flat NCB %" },
+  "restoration": { "display": "Unlimited (ReAssure Forever)", "ordinal": 5, "optional": false, "note": "First paid claim triggers ReAssure+/ReAssureX Forever — unlimited reinstatement of Base SI for life" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered (Home Care)", "exists": true, "optional": false },
+  "ayush": { "display": "Covered", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Road & Air up to Base SI", "number": 999999, "optional": false, "note": "Road and air ambulance both up to Base Sum Insured" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false },
+  "consumables": { "display": "Safeguard optional", "exists": true, "optional": true, "note": "Non-medical consumables via optional Safeguard cover" },
+  "global_cover": { "display": "Worldwide (inbuilt)", "exists": true, "optional": false, "note": "Covers allopathic treatment anywhere in the world inbuilt; Borderless benefit also available" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity (M-iracle) & some benefits India only; standard Excl01–18" },
+  "optional_riders": { "display": "Borderless (global), Cash-Bag, WellConsult OPD, Personal Accident, Hospital Daily Cash, PED/room modification, Co-payment, Deductible" }
+}

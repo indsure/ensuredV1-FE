@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP26044V042526",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Health Pulse",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/health-pulse-t-and-c.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": null,
+
+  "room_rent": { "display": "Per entitled room category", "ordinal": 4, "optional": false, "note": "Room eligibility per Policy Schedule; pro-rata if higher room opted. Varies by plan variant. VERIFY exact eligibility" },
+  "icu": { "display": "Covered (at actuals)", "ordinal": 5, "optional": false, "note": "ICU charges payable under inpatient; no explicit cap in wording. VERIFY" },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No base co-pay; 20% co-pay applies under Classic plan for Delhi-NCR/Mumbai/Kolkata/Gujarat (zonal)" },
+  "sub_limits": { "display": "Few sub-limits", "ordinal": 3, "optional": false, "note": "Mental disorder sub-limit 10% base SI or ₹50k; other benefit sub-limits apply. VERIFY" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity excluded (Excl18)" },
+
+  "cumulative_bonus": { "display": "Up to 100% (10%/yr)", "number": 100, "optional": false, "note": "NCB +10% base SI/yr up to 100%; up to 200% with optional Enhanced No Claim Bonus" },
+  "restoration": { "display": "Re-fill 100% base SI, once/yr", "ordinal": 3, "optional": false, "note": "Re-fill up to 100% base SI for a different illness; not for same illness already claimed" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (AYUSH hospital)", "exists": true, "optional": false, "note": "Alternative treatment covered; Yoga exclusion noted" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Up to schedule limit", "number": null, "optional": false, "note": "Emergency ambulance; limit per Policy Schedule. VERIFY ₹ limit" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "Modern treatments (Section 3.15); may carry sub-limits. VERIFY" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY — no explicit consumables/non-medical benefit found" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); standard IRDAI exclusions Excl01–18; Classic-plan zonal co-pay" },
+  "optional_riders": { "display": "Enhanced No Claim Bonus, Personal Accident, Critical Illness, e-Consultation, Hospital Cash" }
+}

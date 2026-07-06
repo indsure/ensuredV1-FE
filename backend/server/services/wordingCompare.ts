@@ -8,6 +8,7 @@
 import crypto from "crypto";
 import { AIService } from "./aiService";
 import { AI_CONFIG } from "../config/ai_config";
+import type { GeminiCallMeta } from "./geminiUsage";
 import {
   buildExtractionPrompt,
   type WordingProfile,
@@ -34,7 +35,10 @@ function coerceProfile(parsed: any): WordingProfile {
   return parsed as WordingProfile;
 }
 
-export async function extractWordingProfile(policyText: string): Promise<WordingProfile> {
+export async function extractWordingProfile(
+  policyText: string,
+  usageMeta?: Partial<GeminiCallMeta>
+): Promise<WordingProfile> {
   // PDF text extractors (pdfjs) insert a space between every text fragment, which
   // can balloon a 30-page wording past 700k chars. Collapse runs of whitespace so
   // the WHOLE document fits under the model cap — otherwise the tail sections
@@ -55,7 +59,10 @@ export async function extractWordingProfile(policyText: string): Promise<Wording
   const MAX_CHARS = 500_000;
   const userContent = text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text;
 
-  const raw = await AIService.generateContent(buildExtractionPrompt(), userContent, AI_CONFIG.model);
+  const raw = await AIService.generateContent(buildExtractionPrompt(), userContent, AI_CONFIG.model, {
+    feature: "wording_extract",
+    ...usageMeta,
+  });
   const cleaned = raw.replace(/```json|```/g, "").trim();
 
   let parsed: any;

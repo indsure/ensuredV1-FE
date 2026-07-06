@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UploadCloud, FileText, Trash2, Mail, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, UploadCloud, FileText, Trash2, Mail, AlertTriangle, Loader2, Coins } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { apiFetch } from '@/lib/api';
@@ -16,6 +16,35 @@ export default function UploadModal({ isOpen, onClose, agentId }: UploadModalPro
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Names of policies this agent has already uploaded, so we can warn that a
+  // re-upload will spend another credit (each analysis costs 1 credit).
+  const [existingNames, setExistingNames] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!isOpen || !agentId) return;
+    let active = true;
+    (async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('policy_name, filename')
+        .eq('agent_id', agentId);
+      if (!active) return;
+      const names = new Set<string>();
+      for (const row of data ?? []) {
+        if (row.policy_name) names.add(String(row.policy_name).trim().toLowerCase());
+        if (row.filename) names.add(String(row.filename).trim().toLowerCase());
+      }
+      setExistingNames(names);
+    })();
+    return () => { active = false; };
+  }, [isOpen, agentId]);
+
+  // Selected files whose name matches a policy already in this agent's account.
+  const duplicateFiles = useMemo(
+    () => files.filter((f) => existingNames.has(f.name.trim().toLowerCase())),
+    [files, existingNames]
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -177,6 +206,37 @@ export default function UploadModal({ isOpen, onClose, agentId }: UploadModalPro
                   <p className="mt-1">
                     Large volume batches are available for premium accounts.{' '}
                     <a href="mailto:support@indsure.com" className="underline font-semibold">Reach out to us</a>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Credit-cost note — advisors must know each analysis burns a credit */}
+            <div className="bg-[#0D9488]/5 border border-[#0D9488]/20 rounded-xl p-4 flex gap-3 text-slate-700">
+              <Coins className="shrink-0 text-[#0D9488]" size={20} />
+              <div className="text-sm">
+                <p className="font-bold text-[#0F172A]">Each policy analyzed uses 1 credit.</p>
+                <p className="mt-1 text-slate-600">
+                  Re-uploading a policy you've already analyzed will run a fresh analysis and
+                  <span className="font-semibold"> spend another credit</span>. To view an earlier result,
+                  open it from <span className="font-semibold">My Policies</span> instead.
+                </p>
+              </div>
+            </div>
+
+            {/* Re-upload warning — one or more selected files match existing policies */}
+            {duplicateFiles.length > 0 && (
+              <div className="bg-[#B45309]/5 border border-[#B45309]/30 rounded-xl p-4 flex gap-3 text-[#B45309]">
+                <AlertTriangle className="shrink-0" size={20} />
+                <div className="text-sm">
+                  <p className="font-bold">
+                    {duplicateFiles.length === 1 ? 'This looks like a re-upload' : `${duplicateFiles.length} files look like re-uploads`}
+                  </p>
+                  <p className="mt-1">
+                    You've already analyzed{' '}
+                    {duplicateFiles.map((f) => `"${f.name}"`).join(', ')}. Analyzing again will use
+                    {duplicateFiles.length === 1 ? ' another credit' : ` ${duplicateFiles.length} more credits`}.
+                    Remove {duplicateFiles.length === 1 ? 'it' : 'them'} above if you didn't mean to re-run.
                   </p>
                 </div>
               </div>

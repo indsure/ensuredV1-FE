@@ -1,0 +1,42 @@
+{
+  "uin": "ADIHLIP21062V022021",
+  "insurer": "Aditya Birla Health Insurance",
+  "plan_name": "Activ Care",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "adityabirla/20250407T104705.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "Up to limit in Policy Schedule", "ordinal": 4, "optional": false, "note": "VERIFY: room rent up to limits in Policy Schedule; proportionate deductions if higher room opted. Senior-citizen plan." },
+  "icu": { "display": "ICU charges covered", "ordinal": 4, "optional": false, "note": "VERIFY: ICU charges up to limits in Policy Schedule" },
+  "copayment": { "display": "Mandatory co-pay (age 61+ entry)", "number": 20, "optional": false, "note": "VERIFY %: mandatory per-claim co-payment for age 61+ at entry per Policy Schedule (senior plan, typically 10-20%); plus 15% co-pay for non-PPN hospitals" },
+  "sub_limits": { "display": "Sub-limits per Policy Schedule", "ordinal": 3, "optional": false, "note": "VERIFY: sub-limits/co-pay per benefit as specified in Policy Schedule" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "VERIFY: aggregate deductible not found in base wording" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "PED waiting 24 months continuous coverage" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity under standard exclusion Excl18 (excluded). Senior-citizen plan." },
+
+  "cumulative_bonus": { "display": "Up to 50% (No Claim Bonus)", "number": 50, "optional": false, "note": "NCB caps at 50% of SI; reduced by 10% of SI on a claim" },
+  "restoration": { "display": "Reload once/yr (unrelated)", "ordinal": 3, "optional": false, "note": "Reload of SI once/yr, not for same illness; only after SI exhausted; not on first claim" },
+
+  "pre_hosp": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: pre-hospitalisation days as per Policy Schedule" },
+  "post_hosp": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: post-hospitalisation days as per Policy Schedule" },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Min 3 consecutive days" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Road ambulance covered", "number": null, "optional": false, "note": "VERIFY: road ambulance limit per Policy Schedule; air ambulance via Domestic/International Emergency Assistance" },
+  "modern_treatments": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: modern treatments cover not confirmed in extracted ranges" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "global_cover": { "display": "International Emergency Assistance", "exists": true, "optional": false, "note": "International Emergency Assistance Services (incl. air ambulance); VERIFY scope" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly premium, 30 days otherwise" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); age-61+ mandatory co-pay; 15% non-PPN co-pay; standard IRDAI exclusions" },
+  "optional_riders": { "display": "HealthReturns wellness, No Claim Discount, Domestic & International Emergency Assistance (air ambulance)" }
+}

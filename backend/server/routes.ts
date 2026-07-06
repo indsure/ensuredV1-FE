@@ -3,6 +3,7 @@ import type { Server } from "http";
 import multer from "multer";
 import fs from "fs";
 import crypto from "crypto";
+import dns from "dns";
 import rateLimit from "express-rate-limit";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -15,12 +16,12 @@ import { runAnalysisPipeline } from "./services/analysisPipeline";
 import { extractStructuredData } from "./services/dataExtraction";
 import { isDataEntryType, deriveSharedColumns } from "./services/extractionFields";
 import { extractWordingProfile, hashText } from "./services/wordingCompare";
-import { buildComparison, type WordingProfile } from "./types/wordingProfile";
+import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage";
+import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
 import { createClient } from "@supabase/supabase-js";
-import pkg from "pg";
 import nodemailer from "nodemailer";
-const { Pool } = pkg;
+import { pool } from "./lib/db";
 
 /* ---------- SUPABASE ADMIN CLIENT ---------- */
 
@@ -36,11 +37,7 @@ const supabaseAdmin = createClient(
   SUPABASE_SERVICE_KEY
 );
 
-/* ---------- DB POOL ---------- */
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+/* ---------- DB POOL (shared, see ./lib/db) ---------- */
 
 pool.query("SELECT 1")
   .then(() => console.log("✅ DB connected successfully"))
@@ -56,6 +53,47 @@ const upload = multer({
 // Supabase Storage bucket where original uploaded policy PDFs are kept,
 // so they can be downloaded later (and re-analyzed without re-uploading).
 const PDF_BUCKET = "policy-pdfs";
+
+/* ---------- PDF RENDER CONCURRENCY CAP ---------- */
+
+// Headless Chromium is heavy. This unauthenticated endpoint must never be able
+// to launch an unbounded number of browsers (memory/CPU DoS). We allow at most
+// MAX_CONCURRENT_PDF_RENDERS in flight at once; anything beyond that is rejected
+// with 429 BEFORE a browser is launched. The counter is decremented in a
+// `finally` on the render path so a thrown/hung render can't leak a slot.
+const MAX_CONCURRENT_PDF_RENDERS = 2;
+let activePdfRenders = 0;
+
+/* ---------- PER-ROUTE RATE LIMITERS ---------- */
+
+// Strict limiter for the unauthenticated headless-browser PDF endpoint: at most
+// 10 renders / 10 minutes / IP, on top of the global limiter.
+const pdfRateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many PDF requests. Please wait a few minutes and try again." },
+});
+
+// Strict limiter for the anonymous Gemini-backed analyzer: 10 analyses / hour /
+// IP. Prevents an anonymous caller from running up unbounded AI cost.
+const analyzeRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many analysis requests. Please try again in an hour." },
+});
+
+// Strict limiter for public lead capture to stop lead-spam: 5 leads / hour / IP.
+const leadsRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many submissions. Please try again later." },
+});
 
 /* ---------- TYPES ---------- */
 
@@ -225,42 +263,61 @@ async function extractTextFromPlain(filePath: string): Promise<string> {
 
 async function extractTextFromImage(
   file: Express.Multer.File,
-  apiKey: string
+  apiKey: string,
+  usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta>
 ): Promise<string> {
   const buffer = fs.readFileSync(file.path);
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-3.5-flash" });
+  const modelName = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  const model = genAI.getGenerativeModel({ model: modelName });
+  const startedAt = Date.now();
 
-  const result = await model.generateContent({
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            text:
-              "Transcribe all readable text from this insurance policy image. " +
-              "Return plain text only. No formatting. No summaries.",
-          },
-          {
-            inlineData: {
-              data: buffer.toString("base64"),
-              mimeType: file.mimetype || "image/png",
+  try {
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text:
+                "Transcribe all readable text from this insurance policy image. " +
+                "Return plain text only. No formatting. No summaries.",
             },
-          },
-        ],
-      },
-    ],
-  });
+            {
+              inlineData: {
+                data: buffer.toString("base64"),
+                mimeType: file.mimetype || "image/png",
+              },
+            },
+          ],
+        },
+      ],
+    });
 
-  return result.response.text();
+    const response = result.response;
+    void logGeminiUsage(
+      { feature: "image_ocr", ...usageMeta },
+      { model: modelName, tokens: extractUsage(response), status: "ok", latencyMs: Date.now() - startedAt }
+    );
+    return response.text();
+  } catch (err: any) {
+    void logGeminiUsage(
+      { feature: "image_ocr", ...usageMeta },
+      { model: modelName, status: "error", latencyMs: Date.now() - startedAt, errorMessage: err?.message ?? String(err) }
+    );
+    throw err;
+  }
 }
 
-async function extractPolicyText(file: Express.Multer.File): Promise<string> {
+async function extractPolicyText(
+  file: Express.Multer.File,
+  usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta>
+): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
   if (file.mimetype.includes("pdf")) return extractTextFromPDF(file.path);
-  if (file.mimetype.startsWith("image/")) return extractTextFromImage(file, apiKey);
+  if (file.mimetype.startsWith("image/")) return extractTextFromImage(file, apiKey, usageMeta);
   if (file.mimetype === "text/plain") return extractTextFromPlain(file.path);
 
   throw new Error(`Unsupported file type: ${file.mimetype}`);
@@ -268,10 +325,12 @@ async function extractPolicyText(file: Express.Multer.File): Promise<string> {
 
 /* ---------- JWT VERIFICATION HELPER ---------- */
 
-// Cache verified tokens for 5 min to avoid a Supabase round-trip on every request.
+// Cache verified tokens for a short window to avoid a Supabase round-trip on
+// every request. Kept short (60s) so revoked/expired tokens stop working almost
+// immediately rather than lingering for minutes.
 // Key = token string, Value = { userId, expiresAt }
 const tokenCache = new Map<string, { userId: string; expiresAt: number }>();
-const TOKEN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const TOKEN_CACHE_TTL_MS = 60_000; // 60 seconds
 
 // Prune expired entries every 10 minutes so the map doesn't grow unbounded.
 setInterval(() => {
@@ -281,9 +340,9 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
-// Resolve a bearer token to a verified user id (or null). Cached for 5 min.
-// Exported so non-route modules (e.g. index.ts / Sach AI) can enforce ownership
-// without duplicating Supabase verification.
+// Resolve a bearer token to a verified user id (or null). Cached briefly
+// (TOKEN_CACHE_TTL_MS). Exported so non-route modules (e.g. index.ts / Sach AI)
+// can enforce ownership without duplicating Supabase verification.
 export async function getUserIdFromToken(token: string): Promise<string | null> {
   if (!token) return null;
   const now = Date.now();
@@ -377,14 +436,11 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
-  app.use((req, res, next) => {
-    next();
-  });
-
   /* ── Public: Policy Analysis ─────────────────────────────────────────── */
 
   app.post(
     "/api/analyze",
+    analyzeRateLimiter,
     (req, res, next) => {
       upload.single("file")(req, res, (err: any) => {
         if (err) {
@@ -435,11 +491,21 @@ export async function registerRoutes(
           job!.extractionStartedAt = Date.now();
           await persistJob(job!);
 
-          const uploadedPolicyText = await extractPolicyText(uploadedFile!);
+          const uploadedPolicyText = await extractPolicyText(uploadedFile!, {
+            feature: "image_ocr",
+            route: "/api/analyze",
+            sourceType: "anonymous",
+            actorId: hashActor(req.ip),
+            jobId: jobId!,
+          });
           job!.extractionEndedAt = Date.now();
-          fs.unlinkSync(uploadedFile!.path);
 
-          const result = await runAnalysisPipeline(uploadedPolicyText, insuranceType);
+          const result = await runAnalysisPipeline(uploadedPolicyText, insuranceType, {
+            route: "/api/analyze",
+            sourceType: "anonymous",
+            actorId: hashActor(req.ip),
+            jobId: jobId!,
+          });
 
           if (result.status === "completed") {
             job!.status = "completed";
@@ -456,6 +522,15 @@ export async function registerRoutes(
           job!.status = "failed";
           job!.error = err.message || "Unknown error";
           await persistJob(job!);
+        } finally {
+          // Always remove the temp upload, even if extraction/analysis threw.
+          try {
+            if (uploadedFile!.path && fs.existsSync(uploadedFile!.path)) {
+              fs.unlinkSync(uploadedFile!.path);
+            }
+          } catch (cleanupErr: any) {
+            console.warn(`[Job ${jobId}] temp file cleanup failed:`, cleanupErr?.message);
+          }
         }
       })();
     }
@@ -536,21 +611,18 @@ export async function registerRoutes(
       });
     },
     async (req, res) => {
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-
+      // This extraction pipeline is archived. It previously ran a full (billed)
+      // OCR pass before returning an error — pure wasted spend. Return 410 Gone
+      // immediately without running any extraction. The multer middleware above
+      // still consumes the upload; clean up any temp file it wrote.
       try {
-        await extractPolicyText(req.file);
-      } catch (extractError: any) {
-        fs.unlinkSync(req.file.path);
-        return res
-          .status(500)
-          .json({ error: "Failed to extract text from PDF: " + extractError.message });
+        if (req.file?.path && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+      } catch (cleanupErr: any) {
+        console.warn("[extract-policy] temp file cleanup failed:", cleanupErr?.message);
       }
-
-      fs.unlinkSync(req.file.path);
-      return res.status(501).json({ error: "Extraction pipeline archived." });
+      return res.status(410).json({ error: "gone" });
     }
   );
 
@@ -640,7 +712,15 @@ export async function registerRoutes(
     res.json({ status: "PDF endpoint is registered and working" });
   });
 
-  app.post("/api/generate-pdf", async (req, res) => {
+  app.post("/api/generate-pdf", pdfRateLimiter, async (req, res) => {
+    // Bound total concurrent headless-browser renders. Reject early (before we
+    // ever launch Chromium) so a burst of requests can't exhaust memory/CPU.
+    if (activePdfRenders >= MAX_CONCURRENT_PDF_RENDERS) {
+      return res.status(429).json({
+        error: "PDF service is busy. Please try again in a moment.",
+      });
+    }
+
     try {
       let { url } = req.body;
 
@@ -649,6 +729,10 @@ export async function registerRoutes(
       }
 
       if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        // Relative URL: expand against the request host purely to form an
+        // absolute URL. The Host header is attacker-controlled, so this does NOT
+        // grant trust — the resulting host must still pass the static allowlist
+        // below, which is built only from env/hardcoded values.
         const protocol = req.protocol;
         const host = req.get("host");
         url = `${protocol}://${host}${url}`;
@@ -667,9 +751,10 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Invalid URL protocol" });
       }
 
+      // Allowlist is built ONLY from static/env sources. The client-supplied
+      // Host header is deliberately NOT trusted here: trusting it would let any
+      // caller set Host to an arbitrary value and defeat the allowlist entirely.
       const allowedHosts = new Set<string>();
-      const ownHost = req.get("host");
-      if (ownHost) allowedHosts.add(ownHost);
       [process.env.PUBLIC_URL, ...(process.env.CORS_ORIGIN || "").split(",")]
         .filter(Boolean)
         .forEach((u) => { try { allowedHosts.add(new URL(u!.trim()).host); } catch { /* ignore */ } });
@@ -678,17 +763,24 @@ export async function registerRoutes(
         allowedHosts.add(`https://${h}`.replace("https://", ""));
       });
 
-      const hostname = parsedUrl.hostname.toLowerCase();
+      // Reusable private-range test, applied to both the literal hostname and
+      // (below) the DNS-resolved IP to defeat DNS rebinding.
       // Cloud metadata, link-local, loopback and RFC1918 ranges are ALWAYS
       // blocked — never depend on NODE_ENV here (this box runs as "development").
-      const isPrivate =
-        /^(127\.|10\.|192\.168\.|169\.254\.|0\.0\.0\.0)/.test(hostname) ||
-        /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
-        /^(::1|fc00:|fd00:|fe80:)/.test(hostname) ||
-        hostname === "localhost" ||
-        hostname === "metadata.google.internal";
+      const isPrivateHost = (h: string): boolean => {
+        const host = h.toLowerCase();
+        return (
+          /^(127\.|10\.|192\.168\.|169\.254\.|0\.0\.0\.0)/.test(host) ||
+          /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+          /^(::1|fc00:|fd00:|fe80:)/.test(host) ||
+          host === "localhost" ||
+          host === "metadata.google.internal"
+        );
+      };
 
-      if (isPrivate) {
+      const hostname = parsedUrl.hostname.toLowerCase();
+
+      if (isPrivateHost(hostname)) {
         return res.status(400).json({ error: "Target host not allowed" });
       }
       // Only render pages on our own / explicitly-allowed hosts.
@@ -696,9 +788,23 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Target host not allowed" });
       }
 
+      // Anti-rebinding: resolve the hostname and re-check the actual IP against
+      // the private ranges. An allowlisted name that resolves to an internal IP
+      // is rejected. Best-effort — DNS failures fall through to the launch (the
+      // navigation itself will then simply fail), so the happy path is intact.
+      try {
+        const resolved = await dns.promises.lookup(hostname, { all: true });
+        if (resolved.some((r) => isPrivateHost(r.address))) {
+          return res.status(400).json({ error: "Target host not allowed" });
+        }
+      } catch {
+        /* DNS lookup failed — do not block the happy path on resolver hiccups */
+      }
+
       const { chromium } = await import("playwright");
 
-      let browser;
+      activePdfRenders++;
+      let browser: import("playwright").Browser | null = null;
       try {
         browser = await chromium.launch({
           headless: true,
@@ -707,10 +813,11 @@ export async function registerRoutes(
 
         const page = await browser.newPage();
         await page.setViewportSize({ width: 1200, height: 1600 });
-        await page.goto(url, { waitUntil: "networkidle", timeout: 0 });
+        // Hard navigation timeout: never wait indefinitely on a hung/slow page.
+        await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20000 });
         await page.evaluate(() => document.fonts.ready);
         await page.waitForLoadState("domcontentloaded");
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(1000);
 
         const pdfBuffer = await page.pdf({
           format: "A4",
@@ -721,18 +828,17 @@ export async function registerRoutes(
           displayHeaderFooter: false,
         });
 
-        await browser.close();
-        browser = null;
-
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader(
           "Content-Disposition",
           `attachment; filename="IndSure-report.pdf"`
         );
         res.send(pdfBuffer);
-      } catch (browserError: any) {
+      } finally {
+        // Bulletproof cleanup: the browser is ALWAYS closed and the concurrency
+        // slot ALWAYS released, even if navigation hung/threw above.
         if (browser) await browser.close().catch(() => { });
-        throw browserError;
+        activePdfRenders--;
       }
     } catch (error: any) {
       console.error("[PDF] PDF generation error:", error);
@@ -1135,19 +1241,22 @@ export async function registerRoutes(
     (async () => {
       try {
 
+        // ATOMIC CLAIM: flip pending -> processing in a single statement and take
+        // only the rows THIS call actually claimed. If trigger-batch-process is
+        // fired twice for the same batch (double-submit, client retry on the
+        // fire-and-forget request, remount), the second run's UPDATE matches no
+        // 'pending' rows and returns [], so nothing is audited twice. Scoped to
+        // the caller's agent_id so a batch id can't be processed cross-agent.
         const clientsRes = await pool.query(
-          "SELECT * FROM clients WHERE batch_id = $1 AND status = 'pending'",
-          [batchId]
+          `UPDATE clients SET status = 'processing'
+             WHERE batch_id = $1 AND agent_id = $2 AND status = 'pending'
+           RETURNING *`,
+          [batchId, agentId]
         );
         const clients = clientsRes.rows;
 
         for (const client of clients) {
           try {
-            await pool.query(
-              "UPDATE clients SET status = 'processing' WHERE id = $1",
-              [client.id]
-            );
-
             let downloadUrl = client.pdf_url;
 
             if (
@@ -1193,7 +1302,12 @@ export async function registerRoutes(
             } as any);
             fs.unlinkSync(tempFilePath);
 
-            const analysisResult = await runAnalysisPipeline(policyText);
+            const analysisResult = await runAnalysisPipeline(policyText, "health", {
+              route: "/api/agent/trigger-batch-process",
+              sourceType: "agent",
+              actorId: agentId,
+              clientId: client.id,
+            });
 
             if (analysisResult.status === "completed") {
               const r = analysisResult.result;
@@ -1323,7 +1437,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       const aiResponse = await AIService.generateContent(
         systemPrompt,
-        userContent
+        userContent,
+        undefined,
+        { feature: "switch_reco", route: "/api/agent/switch-recommendation", sourceType: "agent", actorId: agentId }
       );
 
       let recommendation: any;
@@ -1409,8 +1525,17 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
           if (wantOcr && isDataEntryType(type)) {
             try {
-              const text = await extractPolicyText(file);
-              const extraction = await extractStructuredData(text, type);
+              const text = await extractPolicyText(file, {
+                feature: "image_ocr",
+                route: "/api/agent/data-entry",
+                sourceType: "agent",
+                actorId: agentId,
+              });
+              const extraction = await extractStructuredData(text, type, {
+                route: "/api/agent/data-entry",
+                sourceType: "agent",
+                actorId: agentId,
+              });
               if (extraction.status === "completed") {
                 extracted = extraction.data;
                 const shared = deriveSharedColumns(type, extraction.data);
@@ -1613,7 +1738,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       const aiResponse = await AIService.generateContent(
         systemPrompt,
-        userContent
+        userContent,
+        undefined,
+        { feature: "portfolio_insights", route: "/api/agent/portfolio-insights", sourceType: "agent", actorId: agentId }
       );
 
       let insights: string[] = [];
@@ -1673,6 +1800,105 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       });
     } catch (err) {
       console.error("Admin stats error:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  /* ── Admin: Gemini usage / cost ledger ──────────────────────────────────
+     Aggregated spend so you can account for every Gemini call. Token counts
+     are exact (from Gemini usageMetadata); est_cost_usd is exact once the
+     GEMINI_PRICE_*_PER_M env rates are set. Duplicates surface calls billed
+     more than once for identical input (e.g. a double-processed batch). */
+  app.get("/api/admin/gemini-usage", isAdmin, async (req, res) => {
+    try {
+      const days = Math.min(Math.max(parseInt(String(req.query.days ?? "7"), 10) || 7, 1), 90);
+      const since = `NOW() - interval '${days} days'`;
+
+      const [totals, byFeature, byDay, topActors, duplicates] = await Promise.all([
+        pool.query(
+          `SELECT COUNT(*)::int AS calls,
+                  COUNT(*) FILTER (WHERE status='error')::int AS errors,
+                  COALESCE(SUM(prompt_tokens),0)::bigint AS prompt_tokens,
+                  COALESCE(SUM(output_tokens),0)::bigint AS output_tokens,
+                  COALESCE(SUM(total_tokens),0)::bigint AS total_tokens,
+                  COALESCE(SUM(est_cost_usd),0)::numeric AS est_cost_usd
+             FROM gemini_usage_log WHERE created_at >= ${since}`
+        ),
+        pool.query(
+          `SELECT feature,
+                  COUNT(*)::int AS calls,
+                  COALESCE(SUM(total_tokens),0)::bigint AS total_tokens,
+                  COALESCE(SUM(est_cost_usd),0)::numeric AS est_cost_usd
+             FROM gemini_usage_log WHERE created_at >= ${since}
+            GROUP BY feature ORDER BY est_cost_usd DESC, calls DESC`
+        ),
+        pool.query(
+          `SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+                  COUNT(*)::int AS calls,
+                  COALESCE(SUM(total_tokens),0)::bigint AS total_tokens,
+                  COALESCE(SUM(est_cost_usd),0)::numeric AS est_cost_usd
+             FROM gemini_usage_log WHERE created_at >= ${since}
+            GROUP BY 1 ORDER BY 1 DESC`
+        ),
+        pool.query(
+          `SELECT COALESCE(source_type,'unknown') AS source_type,
+                  COALESCE(actor_id,'(none)') AS actor_id,
+                  COUNT(*)::int AS calls,
+                  COALESCE(SUM(est_cost_usd),0)::numeric AS est_cost_usd
+             FROM gemini_usage_log WHERE created_at >= ${since}
+            GROUP BY 1,2 ORDER BY calls DESC LIMIT 20`
+        ),
+        pool.query(
+          `SELECT input_hash, feature,
+                  COUNT(*)::int AS times,
+                  COALESCE(SUM(est_cost_usd),0)::numeric AS wasted_cost_usd
+             FROM gemini_usage_log
+            WHERE created_at >= ${since} AND input_hash IS NOT NULL AND status='ok'
+            GROUP BY input_hash, feature
+           HAVING COUNT(*) > 1
+            ORDER BY times DESC LIMIT 50`
+        ),
+      ]);
+
+      res.json({
+        rangeDays: days,
+        pricingConfigured: !!(process.env.GEMINI_PRICE_INPUT_PER_M || process.env.GEMINI_PRICE_OUTPUT_PER_M),
+        totals: totals.rows[0],
+        byFeature: byFeature.rows,
+        byDay: byDay.rows,
+        topActors: topActors.rows,
+        duplicates: duplicates.rows,
+      });
+    } catch (err: any) {
+      console.error("Gemini usage summary error:", err?.message);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
+  app.get("/api/admin/gemini-usage/rows", isAdmin, async (req, res) => {
+    try {
+      const limit = Math.min(Math.max(parseInt(String(req.query.limit ?? "100"), 10) || 100, 1), 500);
+      const offset = Math.max(parseInt(String(req.query.offset ?? "0"), 10) || 0, 0);
+      const conditions: string[] = [];
+      const params: any[] = [];
+      if (req.query.feature) { params.push(req.query.feature); conditions.push(`feature = $${params.length}`); }
+      if (req.query.status) { params.push(req.query.status); conditions.push(`status = $${params.length}`); }
+      const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+      params.push(limit); const limIdx = params.length;
+      params.push(offset); const offIdx = params.length;
+
+      const rows = await pool.query(
+        `SELECT id, created_at, feature, route, model, source_type, actor_id,
+                job_id, client_id, input_hash, prompt_tokens, output_tokens,
+                total_tokens, est_cost_usd, status, attempt, latency_ms, error_message
+           FROM gemini_usage_log ${where}
+          ORDER BY created_at DESC
+          LIMIT $${limIdx} OFFSET $${offIdx}`,
+        params
+      );
+      res.json({ rows: rows.rows, limit, offset });
+    } catch (err: any) {
+      console.error("Gemini usage rows error:", err?.message);
       res.status(500).json({ error: "Internal Server Error" });
     }
   });
@@ -1831,9 +2057,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         // 2. Normalize each wording into a comparable profile (1 cached Gemini call each).
         let profileA: WordingProfile, profileB: WordingProfile;
         try {
+          const compareMeta = {
+            route: "/api/agent/compare",
+            sourceType: "agent" as const,
+            actorId: agentId,
+          };
           [profileA, profileB] = await Promise.all([
-            extractWordingProfile(textA),
-            extractWordingProfile(textB),
+            extractWordingProfile(textA, compareMeta),
+            extractWordingProfile(textB, compareMeta),
           ]);
         } catch (e: any) {
           cleanup();
@@ -1887,8 +2118,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (owned.rows.length > 0) customerId = customer_id;
     }
 
-    const nameA = result?.a?.plan_name || result?.a?.insurer || null;
-    const nameB = result?.b?.plan_name || result?.b?.insurer || null;
+    const sides = Array.isArray(result?.sides) ? result.sides : [];
+    const nameA = sides[0]?.plan_name || sides[0]?.insurer || null;
+    const nameB = sides[1]?.plan_name || sides[1]?.insurer || null;
 
     try {
       const insertRes = await pool.query(
@@ -1925,6 +2157,59 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     } catch (err: any) {
       console.error("ERROR fetching comparison report:", err);
       return res.status(500).json({ error: "Failed to load comparison.", retryable: true });
+    }
+  });
+
+  /* ── Compare: Catalog (pre-extracted wordings, zero-AI compare) ───────────
+     The catalog is the scale answer: each wording is extracted ONCE into a
+     stored profile, so comparing any two is pure deterministic math (no AI,
+     no per-compare cost). Public read — product data, not user data. */
+
+  app.get("/api/compare/catalog", async (req, res) => {
+    // PUBLIC: product data only (no user data), deterministic, ZERO AI cost.
+    // Powers the public /compare catalog experience (lead-gen funnel). The
+    // global IP rate limiter still applies.
+    try {
+      const { rows } = await pool.query(
+        `SELECT uin, insurer, plan_name, product_type, sum_insured_options, confidence, status
+           FROM policy_catalog
+          WHERE is_active = true
+            AND product_type = 'comprehensive_health_indemnity'
+          ORDER BY insurer, plan_name`
+      );
+      return res.json({ policies: rows });
+    } catch (err: any) {
+      console.error("ERROR listing catalog:", err);
+      return res.status(500).json({ error: "Failed to load catalog." });
+    }
+  });
+
+  app.post("/api/compare/from-catalog", async (req, res) => {
+    // PUBLIC: deterministic compare of pre-extracted catalog profiles. No AI
+    // call, no user data. Bounded to 2..4 plans; global rate limiter applies.
+    const body = req.body ?? {};
+    // Accept { uins: [...] } (2..4) or legacy { uin_a, uin_b }.
+    const raw: any[] = Array.isArray(body.uins) ? body.uins : [body.uin_a, body.uin_b];
+    const uins = [...new Set(raw.filter((u: any) => typeof u === "string" && u.length > 0))];
+    if (uins.length < 2) return res.status(400).json({ error: "Pick at least two different policies" });
+    if (uins.length > 4) return res.status(400).json({ error: "Compare up to 4 policies at a time" });
+    try {
+      const { rows } = await pool.query(
+        `SELECT uin, profile FROM policy_catalog WHERE uin = ANY($1::text[]) AND is_active = true`,
+        [uins]
+      );
+      const byUin: Record<string, WordingProfile> = {};
+      for (const r of rows) byUin[r.uin] = r.profile as WordingProfile;
+      const profiles: WordingProfile[] = [];
+      for (const u of uins) {
+        if (!byUin[u]) return res.status(404).json({ error: "A selected policy was not found in the catalog" });
+        profiles.push(byUin[u]);
+      }
+      const result = compareMany(profiles);
+      return res.json({ result });
+    } catch (err: any) {
+      console.error("ERROR comparing from catalog:", err);
+      return res.status(500).json({ error: "Failed to compare." });
     }
   });
 
@@ -2040,7 +2325,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               [clientId]
             );
 
-            const uploadedPolicyText = await extractPolicyText(file);
+            const uploadedPolicyText = await extractPolicyText(file, {
+              feature: "image_ocr",
+              route: "/api/agent/analyze",
+              sourceType: "agent",
+              actorId: agentId,
+              jobId,
+              clientId,
+            });
             job.extractionEndedAt = Date.now();
             
             // Persist the original file to storage so it can be downloaded later
@@ -2076,7 +2368,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
             // ── OCR / data-entry lane (no scoring, no credits) ──
             if (isDataEntry) {
-              const extraction = await extractStructuredData(uploadedPolicyText, insuranceType);
+              const extraction = await extractStructuredData(uploadedPolicyText, insuranceType, {
+                route: "/api/agent/analyze",
+                sourceType: "agent",
+                actorId: agentId,
+                jobId,
+                clientId,
+              });
 
               if (extraction.status === "completed") {
                 job.status = "completed";
@@ -2119,7 +2417,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               return;
             }
 
-            const result = await runAnalysisPipeline(uploadedPolicyText, insuranceType);
+            const result = await runAnalysisPipeline(uploadedPolicyText, insuranceType, {
+              route: "/api/agent/analyze",
+              sourceType: "agent",
+              actorId: agentId,
+              jobId,
+              clientId,
+            });
 
             if (result.status === "completed") {
               job.status = "completed";
@@ -2187,11 +2491,22 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             job.status = "failed";
             job.error = err.message || "Unknown error";
             await persistJob(job);
-            
+
             await pool.query(
               "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
               [err.message, clientId]
             );
+          } finally {
+            // Guarantee the temp upload is removed even if extraction/storage
+            // threw before the success-path unlink above. Guarded by existsSync
+            // so the normal-path unlink isn't double-freed.
+            try {
+              if (file.path && fs.existsSync(file.path)) {
+                fs.unlinkSync(file.path);
+              }
+            } catch (cleanupErr: any) {
+              console.warn(`[Job ${jobId}] temp file cleanup failed:`, cleanupErr?.message);
+            }
           }
         })();
       } catch (err: any) {
@@ -2454,10 +2769,21 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             mimetype,
             originalname: client.filename || `policy.${ext}`,
           } as Express.Multer.File;
-          const policyText = await extractPolicyText(fileLike);
+          const policyText = await extractPolicyText(fileLike, {
+            feature: "image_ocr",
+            route: "/api/agent/clients/:id/rerun",
+            sourceType: "agent",
+            actorId: agentId,
+            clientId: id,
+          });
 
           if (isDataEntry) {
-            const extraction = await extractStructuredData(policyText, insuranceType);
+            const extraction = await extractStructuredData(policyText, insuranceType, {
+              route: "/api/agent/clients/:id/rerun",
+              sourceType: "agent",
+              actorId: agentId,
+              clientId: id,
+            });
             if (extraction.status === "completed") {
               const shared = deriveSharedColumns(insuranceType, extraction.data);
               await pool.query(
@@ -2489,7 +2815,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             return;
           }
 
-          const result = await runAnalysisPipeline(policyText, insuranceType);
+          const result = await runAnalysisPipeline(policyText, insuranceType, {
+            route: "/api/agent/clients/:id/rerun",
+            sourceType: "agent",
+            actorId: agentId,
+            clientId: id,
+          });
 
           if (result.status === "completed") {
             await pool.query(
@@ -2683,7 +3014,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
   /* ── Public: Lead Collection ─────────────────────────────────────────── */
 
-  app.post("/api/leads", async (req, res) => {
+  app.post("/api/leads", leadsRateLimiter, async (req, res) => {
     try {
       const { name, email, phone, city, source } = req.body;
 

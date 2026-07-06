@@ -1,0 +1,42 @@
+{
+  "uin": "RHIHLIP21374V022021",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Super Mediclaim",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care/super-mediclaim-policy-terms-and-conditions-effect.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "Single Private Room or 1% of SI/day", "ordinal": 4, "optional": false, "note": "Per schedule: Single Private Room OR up to 1% of SI/day; Room Rent Modification available as optional. Multi-variant product (Hospitalization / Operation Mediclaim / etc.) - baselined to the comprehensive hospitalization variant" },
+  "icu": { "display": "2% of SI/day or No sub-limit", "ordinal": 3, "optional": false, "note": "Per schedule: up to 2% of SI/day or 'no sub-limit'" },
+  "copayment": { "display": "None (20% for age 61+ entrants)", "number": 0, "optional": false, "note": "Mandatory 20% co-pay per claim ONLY if entry age 61+ at first policy; no co-pay for younger entrants" },
+  "sub_limits": { "display": "Few/minor sub-limits", "ordinal": 3, "optional": false, "note": "VERIFY - some procedure sub-limits per schedule" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Deductible only if optionally opted" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "Excl03 initial waiting period" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Excl01: PED excluded until 36 months; reducible to 24 months via Optional Benefit 8 (Reduction of PED Wait period)" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl02: 24 months; specific waiting applicable only for Operation Mediclaim variant" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity is a standard exclusion (Excl18)" },
+
+  "cumulative_bonus": { "display": "Up to 100%", "number": 100, "optional": false, "note": "NCB: +50% SI after 1st claim-free year, +25% 2nd, +25% 3rd, cumulative max 100%" },
+  "restoration": { "display": "Optional (Unlimited Automatic Recharge)", "ordinal": 0, "optional": true, "note": "No inbuilt restoration in base; Unlimited Automatic Recharge available only as Optional Benefit 3 (requires SI >= Rs 5L)" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false, "note": "Modification available as optional benefit" },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY - domiciliary cover not clearly confirmed" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false, "note": "AYUSH Treatments listed among covered benefits" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "Organ Donor Cover" },
+  "ambulance": { "display": "Covered (per schedule)", "number": 999999, "optional": false, "note": "Road Ambulance Cover; Air Ambulance optional. VERIFY ₹ limit" },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false, "note": "Advance technology methods incl. robotic surgery" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "global_cover": { "display": "Covered if SI >= Rs 100L", "exists": true, "optional": false, "note": "Benefit 12 Global Coverage is inbuilt but only available if chosen SI is Rs 100L or more" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "5 continuous years per IRDAI" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY - standard 30-day free look assumed (Care standard)" },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded; mandatory 20% co-pay for 61+ entrants; restoration only as paid optional; global cover needs SI >= Rs 100L" },
+  "optional_riders": { "display": "Unlimited Automatic Recharge, Air Ambulance, Reduction of PED Wait, Room Rent Modification, Additional SI (Accidental Hosp), OPD Expenses, Recovery Counseling" }
+}

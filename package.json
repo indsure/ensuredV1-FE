@@ -8,8 +8,8 @@
     "dev": "tsx backend/server/index.ts",
     "launch": "concurrently --names \"backend,frontend\" --prefix-colors \"cyan,magenta\" \"npm run dev\" \"npm run dev:client\"",
     "dev:all": "concurrently \"tsx backend/server/index.ts\" \"tsx backend/src/index.ts\" \"npm run dev --prefix frontend\" \"npm run dev --prefix next-dashboard -- -p 3000\" \"npm run dev --prefix admin-app -- -p 3002\" \"npm run dev --prefix next-api -- -p 3001\"",
-    "build": "npm run build --prefix frontend && tsc --project backend/tsconfig.json",
-    "start": "node backend/dist/index.js",
+    "build": "npm run build --prefix frontend && tsc --noEmit --project backend/tsconfig.json",
+    "start": "tsx backend/server/index.ts",
     "check": "tsc --noEmit --project backend/tsconfig.json",
     "db:push": "drizzle-kit push",
     "health-check": "ts-node backend/server/tests/engineHealthCheck.ts"

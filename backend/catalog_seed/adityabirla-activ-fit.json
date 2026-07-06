@@ -1,0 +1,42 @@
+{
+  "uin": "ADIHLIP22008V012223",
+  "insurer": "Aditya Birla Health Insurance",
+  "plan_name": "Activ Fit",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "adityabirla/20250821T102947.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "Up to limit in Policy Schedule", "ordinal": 4, "optional": false, "note": "VERIFY: room rent up to limits in Policy Schedule; proportionate deductions if higher room opted. Young-adult product." },
+  "icu": { "display": "ICU charges covered", "ordinal": 4, "optional": false, "note": "VERIFY: ICU charges up to limits in Policy Schedule" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "VERIFY: no mandatory co-payment found (young-adult plan)" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 4, "optional": false, "note": "VERIFY: sub-limits per Policy Schedule; none found in extracted ranges" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "VERIFY: aggregate deductible not found in base wording" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "As specified (up to 36 months)", "number": 36, "optional": false, "note": "VERIFY: PED waiting months stated in Policy Schedule; IRDAI max 36 months" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Covered (36mo wait)", "exists": true, "optional": false, "note": "Inbuilt Maternity Expenses cover; 36-month waiting; up to limit in Policy Schedule (young-adult plan)" },
+
+  "cumulative_bonus": { "display": "Up to 100% (10%/yr)", "number": 100, "optional": false, "note": "No Claim Bonus 10%/yr up to 100%; plus Super No Claim Bonus up to 100% additional if opted" },
+  "restoration": { "display": "Unlimited refills, 100%", "ordinal": 5, "optional": false, "note": "Refill of SI unlimited times/year, covers same illness too, applies even to first claim" },
+
+  "pre_hosp": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: pre-hospitalisation days as per Policy Schedule" },
+  "post_hosp": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: post-hospitalisation days as per Policy Schedule" },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Min 3 consecutive days; also Home Treatment" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Road ambulance covered", "number": null, "optional": false, "note": "VERIFY: road ambulance limit per Policy Schedule" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "Modern Treatment coverage inbuilt under in-patient/day-care" },
+  "consumables": { "display": "Covered (Non-Medical Items)", "exists": true, "optional": false, "note": "VERIFY: Non-Medical Items benefit for same illness/injury admitted" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: grace period as per IRDAI / Policy Schedule" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Standard IRDAI exclusions (Excl01-18); Binge Refill not stacked with certain benefits" },
+  "optional_riders": { "display": "Super No Claim Bonus, New Born/Vaccination/Stem Cell add-on (with maternity), comprehensive health check-up" }
+}

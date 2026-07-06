@@ -56,7 +56,7 @@ export const lifeCalculatorInputSchema = z.object({
 
 export const calculatorReportSchema = z.object({
   inputs: z.union([healthCalculatorInputSchema, lifeCalculatorInputSchema]),
-  result_data: z.record(z.any()), // Allow any result structure
+  result_data: z.record(z.string(), z.any()), // Allow any result structure
 });
 
 export type HealthCalculatorInput = z.infer<typeof healthCalculatorInputSchema>;

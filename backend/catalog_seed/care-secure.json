@@ -1,0 +1,44 @@
+{
+  "uin": "CHIPAIP25046V042425",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Secure (Care Secure)",
+  "product_type": "fixed_benefit",
+  "source_file": "care/secure-policy-terms-and-conditions-effective-from-.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Per schedule (capital sum insured)",
+
+  "_reclassification_note": "RECLASSIFIED: This is a PERSONAL ACCIDENT plan (UIN code 'PAIP' = Personal Accident Insurance Product), NOT a comprehensive hospitalization indemnity. Benefit 1: Accidental Death; Benefit 2: Permanent Total Disablement; plus TTD and other PA benefits (14 benefits, 11 optional covers). Hospitalization is only an OPTIONAL Accidental Hospitalization cover. Standard health-indemnity axes do not apply. VERIFY — belongs in a PA category, not the health-indemnity Compare set.",
+
+  "room_rent": { "display": "Not applicable (Personal Accident plan)", "ordinal": null, "optional": false },
+  "icu": { "display": "Not applicable", "ordinal": null, "optional": false },
+  "copayment": { "display": "Not specified", "number": null, "optional": false },
+  "sub_limits": { "display": "Not applicable", "ordinal": null, "optional": false },
+  "deductible": { "display": "Not specified", "number": null, "optional": false },
+
+  "initial_waiting": { "display": "Not applicable (accident cover)", "number": null, "optional": false },
+  "ped_waiting": { "display": "Not applicable", "number": null, "optional": false, "note": "PA plan covers accidents; no PED waiting concept" },
+  "specific_disease_waiting": { "display": "Not applicable", "number": null, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false },
+
+  "cumulative_bonus": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY" },
+  "restoration": { "display": "Not applicable", "ordinal": null, "optional": false },
+
+  "pre_hosp": { "display": "Not applicable (only via optional Accidental Hospitalization)", "number": null, "optional": false },
+  "post_hosp": { "display": "Not applicable (only via optional Accidental Hospitalization)", "number": null, "optional": false },
+  "day_care": { "display": "Not applicable", "exists": null, "optional": false },
+  "domiciliary": { "display": "Not applicable", "exists": null, "optional": false },
+  "ayush": { "display": "Not applicable", "exists": null, "optional": false },
+  "organ_donor": { "display": "Not applicable", "exists": null, "optional": false },
+  "ambulance": { "display": "Not specified", "number": null, "optional": false },
+  "modern_treatments": { "display": "Not applicable", "exists": null, "optional": false },
+  "consumables": { "display": "Not applicable", "exists": null, "optional": false },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false },
+
+  "moratorium": { "display": "Not applicable", "number": null, "optional": false },
+  "grace_period": { "display": "Covered (grace period applies)", "number": null, "optional": false, "note": "VERIFY exact days" },
+  "free_look": { "display": "Covered (free-look applies)", "number": null, "optional": false, "note": "VERIFY exact days" },
+  "portability": { "display": "Not applicable (PA product)", "exists": null, "optional": false },
+  "notable_exclusions": { "display": "Personal Accident plan: covers Accidental Death, PTD, TTD; hospitalization only as optional accidental cover" },
+  "optional_riders": { "display": "Accidental Hospitalization, PTD Improvement, TTD, Children Education, Accidental Hospitalization Daily Allowance" }
+}
