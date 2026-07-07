@@ -150,7 +150,7 @@ export function CalculatorLanding({ onStart }: LandingProps) {
 
             {/* 5. COMMON MISTAKES */}
             <div className="bg-[var(--color-navy-900)] text-white rounded-3xl p-8 md:p-12">
-                <h3 className="font-serif text-2xl mb-8 flex items-center gap-3">
+                <h3 className="font-serif text-2xl mb-8 flex items-center gap-3 text-white">
                     <AlertTriangle className="text-[var(--color-teal-400)]" /> Common Mistakes
                 </h3>
                 <div className="grid md:grid-cols-3 gap-8">
