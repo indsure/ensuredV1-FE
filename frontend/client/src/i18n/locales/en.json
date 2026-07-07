@@ -188,7 +188,10 @@
     "consent_after": "Once unlocked, come back and upload the new file.",
     "consent_checkbox": "My PDF is not password-protected — continue with upload",
     "consent_cancel": "Cancel",
-    "consent_confirm": "Upload now"
+    "consent_confirm": "Upload now",
+    "reupload_title": "Looks like you've uploaded this policy before",
+    "reupload_body_credit": "Analyzing it again will spend 1 more credit. To see the earlier report, open it from My Policies instead.",
+    "reupload_body_free": "It will be added again as a new entry in your book."
   },
   "profile": {
     "loading": "Loading profile...",

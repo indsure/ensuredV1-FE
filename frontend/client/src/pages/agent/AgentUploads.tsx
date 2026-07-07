@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { Upload, FileText, AlertCircle, CheckCircle2, Loader2, ShieldAlert } from "lucide-react";
+import { Upload, FileText, AlertCircle, AlertTriangle, CheckCircle2, Loader2, ShieldAlert } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { getValidSession } from "@/lib/auth-helper";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { getApiBase } from "@/lib/queryClient";
 import { TYPE_META, type InsuranceType } from "@/lib/insuranceTypes";
+import { supabase } from "@/lib/supabase";
 
 type UploadStatus = {
   filename: string;
@@ -35,6 +36,39 @@ export default function AgentUploads() {
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
+  // Names of policies this agent has already uploaded, so we can warn that a
+  // re-upload will run a fresh analysis (and spend another credit on health).
+  const [existingNames, setExistingNames] = useState<Set<string>>(new Set());
+
+  // ".pdf" is stripped so an uploaded "Optima Secure.pdf" still matches a
+  // stored policy_name of "Optima Secure".
+  const normalizeName = (s: string) => s.trim().toLowerCase().replace(/\.pdf$/, "");
+
+  useEffect(() => {
+    if (!agent?.agentId) return;
+    let active = true;
+    (async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("policy_name, filename")
+        .eq("agent_id", agent.agentId);
+      if (!active) return;
+      const names = new Set<string>();
+      for (const row of data ?? []) {
+        if (row.policy_name) names.add(normalizeName(String(row.policy_name)));
+        if (row.filename) names.add(normalizeName(String(row.filename)));
+      }
+      setExistingNames(names);
+    })();
+    return () => { active = false; };
+  }, [agent?.agentId]);
+
+  // Pending files whose name matches a policy already in this agent's account.
+  const duplicateNames = useMemo(
+    () => pendingFiles.filter((f) => existingNames.has(normalizeName(f.name))).map((f) => f.name),
+    [pendingFiles, existingNames]
+  );
 
   const processFiles = async (acceptedFiles: File[]) => {
     if (!agent?.agentId) {
@@ -277,6 +311,21 @@ export default function AgentUploads() {
                 <p className="mt-3 text-sm text-slate-600">{t("uploads.consent_after")}</p>
               </div>
             </div>
+
+            {duplicateNames.length > 0 && (
+              <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 flex gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-bold">{t("uploads.reupload_title")}</p>
+                  <p className="mt-1 font-medium break-words">{duplicateNames.map((n) => `"${n}"`).join(", ")}</p>
+                  <p className="mt-1">
+                    {insuranceType === "health"
+                      ? t("uploads.reupload_body_credit")
+                      : t("uploads.reupload_body_free")}
+                  </p>
+                </div>
+              </div>
+            )}
 
             <label className="flex items-start gap-3 cursor-pointer select-none rounded-xl border border-slate-200 p-3 hover:bg-slate-50 transition-colors">
               <input
