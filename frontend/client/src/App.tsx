@@ -7,7 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MobileNav } from "@/components/MobileNav";
 import { AnalysisProvider } from "@/hooks/use-analysis";
 import { ThemeProvider } from "@/hooks/use-theme";
-import { ComparisonProvider } from "@/hooks/use-comparison";
 import { usePageTransition } from "@/hooks/use-page-transition";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Clarity } from "@/components/Clarity";
@@ -57,9 +56,7 @@ const AdminPanel = lazy(() => import("@/pages/admin/AdminPanel"));
 
 // --- Compare ---
 const CompareSample = lazy(() => import("@/pages/CompareSample"));
-const CompareUploadStep = lazy(() => import("@/pages/compare/upload-step"));
-const CompareProfileStep = lazy(() => import("@/pages/compare/profile-step"));
-const CompareResultsStep = lazy(() => import("@/pages/compare/results-step"));
+const PublicCatalogCompare = lazy(() => import("@/pages/compare/catalog-compare"));
 const SharedComparison = lazy(() => import("@/pages/compare/SharedComparison"));
 
 // --- Existing D2C Lazy Loads ---
@@ -76,7 +73,6 @@ const TermPage = lazy(() => import("@/pages/term"));
 const VehiclePage = lazy(() => import("@/pages/vehicle"));
 const CalculatorPage = lazy(() => import("@/pages/calculator"));
 const CalculatorReportPage = lazy(() => import("@/pages/calculator-report"));
-const ComparePage = lazy(() => import("@/pages/compare"));
 const Blog = lazy(() => import("@/pages/blog"));
 const BlogPost = lazy(() => import("@/pages/blog/[id]"));
 const Mission = lazy(() => import("@/pages/mission"));
@@ -123,7 +119,6 @@ function App() {
         <ThemeProvider>
           <AuthProvider>
             <AnalysisProvider>
-              <ComparisonProvider>
                 <TooltipProvider>
                   <Toaster />
                   <Clarity />
@@ -162,14 +157,12 @@ function App() {
                       <Route path="/calculator/report" component={CalculatorReportPage} />
                       <Route path="/calculator/report/:uuid" component={CalculatorReportPage} />
 
-                      {/* --- Compare (public share result only; tools are agent-only) --- */}
+                      {/* --- Compare (public catalog compare + shared agent reports) --- */}
                       <Route path="/compare/report/:uuid">
                         {(params) => <SharedComparison uuid={params.uuid} />}
                       </Route>
-                      <Route path="/compare" component={CompareUploadStep} />
+                      <Route path="/compare" component={PublicCatalogCompare} />
                       <Route path="/compare/sample" component={CompareSample} />
-                      <Route path="/compare/profile" component={CompareProfileStep} />
-                      <Route path="/compare/results" component={CompareResultsStep} />
 
                       {/* --- Agent Auth --- */}
                       <Route path="/agent" component={AgentLanding} />
@@ -276,7 +269,6 @@ function App() {
                   <MobileNav />
                   <SachAIChat />
                 </TooltipProvider>
-              </ComparisonProvider>
             </AnalysisProvider>
           </AuthProvider>
         </ThemeProvider>
