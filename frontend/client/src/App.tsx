@@ -93,6 +93,11 @@ const GrievanceOfficer = lazy(() => import("@/pages/GrievanceOfficer"));
 const LoginPublic = lazy(() => import("@/pages/login"));
 const SignupPublic = lazy(() => import("@/pages/signup"));
 
+// --- Consumer (D2C individual) portfolio app ---
+const PortfolioPage = lazy(() => import("@/pages/app/portfolio"));
+const ConsumerPolicyDetail = lazy(() => import("@/pages/app/policy-detail"));
+import UserProtectedRoute from "@/components/UserProtectedRoute";
+
 // Loading fallback component
 function PageLoader() {
   return (
@@ -244,9 +249,15 @@ function App() {
                       <Route path="/help" component={Help} />
                       <Route path="/account" component={Account} />
 
-                      {/* --- Public auth stubs (no public user auth) --- */}
+                      {/* --- Consumer (D2C individual) auth + portfolio --- */}
                       <Route path="/login" component={LoginPublic} />
                       <Route path="/signup" component={SignupPublic} />
+                      <Route path="/app">
+                        {() => <UserProtectedRoute><PortfolioPage /></UserProtectedRoute>}
+                      </Route>
+                      <Route path="/app/policy/:id">
+                        {(params) => <UserProtectedRoute><ConsumerPolicyDetail id={params.id} /></UserProtectedRoute>}
+                      </Route>
 
                       {/* --- Hospitals --- */}
                       <Route path="/find-provider" component={Hospitals} />

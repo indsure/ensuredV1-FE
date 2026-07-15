@@ -31,6 +31,9 @@ import { LeadCollectionCTA } from "./LeadCollectionCTA";
 interface PolicyAuditReportProps {
     data: ForensicAuditReport;
     hideNav?: boolean;
+    /** Suppress the "Talk to an advisor" lead-capture CTA + its triggers.
+     *  Set for signed-in consumers — we promised them zero lead selling/contact. */
+    hideLeadCTA?: boolean;
 }
 
 function getRiskColor(level: "low" | "medium" | "high") {
@@ -73,7 +76,7 @@ function getSimulationVerdictColor(verdict: "COVERED" | "PARTIAL" | "EXPOSED") {
     }
 }
 
-export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportProps) {
+export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }: PolicyAuditReportProps) {
     const [showDeductions, setShowDeductions] = useState(false);
     const [showLeadForm, setShowLeadForm] = useState(false);
     const leadFormRef = useRef<HTMLDivElement>(null);
@@ -1088,7 +1091,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                         ))}
                                     </ul>
                                 )}
-                                {portingRec.recommendation === "consider" && (
+                                {portingRec.recommendation === "consider" && !hideLeadCTA && (
                                     <>
                                         <div className="h-px bg-amber-200/50 my-4" />
                                         <Button 
@@ -1108,7 +1111,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                                         </Button>
                                     </>
                                 )}
-                                {portingRec.recommendation === "yes" && (
+                                {portingRec.recommendation === "yes" && !hideLeadCTA && (
                                     <>
                                         <div className="h-px bg-red-200/50 my-4" />
                                         <Button 
@@ -1149,7 +1152,7 @@ export function PolicyAuditReport({ data, hideNav = false }: PolicyAuditReportPr
                 )}
 
                 {/* 7.5 LEAD COLLECTION CTA */}
-                {showLeadForm && portingRec && (
+                {!hideLeadCTA && showLeadForm && portingRec && (
                     <section ref={leadFormRef} className="mb-16 scroll-mt-24">
                         <LeadCollectionCTA 
                             policyData={{
