@@ -14,7 +14,25 @@ import { log } from "./logger";
 
 const { Pool } = pkg;
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+/**
+ * Shared connection config for every runtime PG pool.
+ *
+ * Supabase's pooler (aws-*.pooler.supabase.com) presents a self-signed cert
+ * chain, and newer `pg`/`pg-connection-string` now treat the URL's
+ * `sslmode=require` as `verify-full` — which rejects that chain with
+ * "self-signed certificate in certificate chain" and the pool never connects.
+ * We strip the URL's sslmode and hand pg an explicit relaxed ssl config: TLS is
+ * still negotiated, but the (unverifiable-by-us) Supabase chain is accepted.
+ * This is the standard Supabase + node-postgres setup.
+ */
+export function pgPoolConfig() {
+  const url = (process.env.DATABASE_URL || "")
+    .replace(/([?&])sslmode=[^&]*/gi, "$1")
+    .replace(/[?&]+$/, "");
+  return { connectionString: url, ssl: { rejectUnauthorized: false } };
+}
+
+export const pool = new Pool(pgPoolConfig());
 
 pool.on("error", (e: unknown) => {
   log.error("db_idle_client_error", { message: (e as any)?.message ?? String(e) });

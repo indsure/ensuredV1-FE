@@ -10,13 +10,15 @@
  */
 import crypto from "crypto";
 import pkg from "pg";
+import { pgPoolConfig } from "../lib/db";
 
 const { Pool } = pkg;
 
 // Dedicated pool; logging must never contend with or break the request path.
 // Kept separate from the shared app pool (see lib/db) so a burst of
 // fire-and-forget usage inserts can't starve the request path of connections.
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Shares only the SSL-safe connection config (see pgPoolConfig), not the pool.
+const pool = new Pool(pgPoolConfig());
 pool.on("error", (e: any) => console.error("[geminiUsage] idle client error:", e?.message ?? e));
 
 export type GeminiFeature =
@@ -32,7 +34,7 @@ export type GeminiFeature =
 export type GeminiCallMeta = {
   feature: GeminiFeature | string;
   route?: string;
-  sourceType?: "anonymous" | "agent" | "system";
+  sourceType?: "anonymous" | "agent" | "individual" | "system";
   actorId?: string | null;
   jobId?: string | null;
   clientId?: string | null;

@@ -22,6 +22,7 @@ import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_netw
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { pool } from "./lib/db";
+import { isPersonalEmail } from "./lib/personalEmail";
 
 /* ---------- SUPABASE ADMIN CLIENT ---------- */
 
@@ -85,6 +86,13 @@ const analyzeRateLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many analysis requests. Please try again in an hour." },
 });
+
+// ── D2C consumer ("individual") metering knobs ───────────────────────────
+// Free plan holds one policy per line of business; the trial is a 30-day
+// full-access window from signup. Both are enforced at ONE server-side choke
+// point (checkIndividualQuota) — never duplicated per lane.
+const TRIAL_DAYS = 30;
+const FREE_SLOTS_PER_TYPE = 1;
 
 // Strict limiter for public lead capture to stop lead-spam: 5 leads / hour / IP.
 const leadsRateLimiter = rateLimit({
@@ -376,6 +384,66 @@ const verifyJwt = async (req: any, res: any): Promise<string | null> => {
   return userId;
 };
 
+/* ---------- D2C CONSUMER ("INDIVIDUAL") AUTH + QUOTA ---------- */
+
+// Resolve the caller as an INDIVIDUAL (D2C consumer) account. Verifies the
+// Supabase JWT, rejects agent accounts, and requires an individual_profiles
+// row. Symmetric to verifyJwt: keeps the consumer (/api/me/*) and agent
+// (/api/agent/*) surfaces from bleeding into each other.
+const requireIndividual = async (req: any, res: any): Promise<string | null> => {
+  const authHeader = req.headers["authorization"] as string | undefined;
+  if (!authHeader?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Missing authorization" });
+    return null;
+  }
+  const userId = await getUserIdFromToken(authHeader.slice(7));
+  if (!userId) {
+    res.status(401).json({ error: "Invalid or expired token" });
+    return null;
+  }
+  const agentRow = await pool.query("SELECT 1 FROM agents WHERE id = $1", [userId]);
+  if (agentRow.rows.length > 0) {
+    res.status(403).json({ error: "WRONG_ACCOUNT_TYPE", message: "This is an agent account. Use the agent portal." });
+    return null;
+  }
+  const profRow = await pool.query("SELECT 1 FROM individual_profiles WHERE id = $1", [userId]);
+  if (profRow.rows.length === 0) {
+    res.status(403).json({ error: "NO_PROFILE", message: "Account not initialised. Call /api/me/bootstrap." });
+    return null;
+  }
+  return userId;
+};
+
+// THE single quota choke point. Runs BEFORE any Gemini spend on /api/me/analyze.
+// Allow if: paid; OR (within 30-day trial AND under the per-type free slot cap).
+// Returns a machine reason so the paywall UX can distinguish slot-full from
+// trial-expired.
+async function checkIndividualQuota(
+  userId: string,
+  insuranceType: string
+): Promise<{ allowed: boolean; reason?: string }> {
+  const prof = await pool.query(
+    "SELECT plan, trial_started_at FROM individual_profiles WHERE id = $1",
+    [userId]
+  );
+  const row = prof.rows[0];
+  if (!row) return { allowed: false, reason: "no_profile" };
+  if (row.plan === "paid") return { allowed: true };
+
+  const withinTrial =
+    Date.now() - new Date(row.trial_started_at).getTime() < TRIAL_DAYS * 86400_000;
+  if (!withinTrial) return { allowed: false, reason: "trial_expired" };
+
+  const cnt = await pool.query(
+    "SELECT count(*)::int AS c FROM individual_policies WHERE user_id = $1 AND insurance_type = $2 AND status <> 'error'",
+    [userId, insuranceType]
+  );
+  if ((cnt.rows[0]?.c ?? 0) >= FREE_SLOTS_PER_TYPE) {
+    return { allowed: false, reason: "slot_full" };
+  }
+  return { allowed: true };
+}
+
 /* ---------- CLIENT-DATA ACCESS AUDIT LOG ---------- */
 // Append-only, best-effort record of who viewed/modified which client, when,
 // and from where. Fire-and-forget: never throws, never blocks the response.
@@ -436,105 +504,18 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
-  /* ── Public: Policy Analysis ─────────────────────────────────────────── */
-
-  app.post(
-    "/api/analyze",
-    analyzeRateLimiter,
-    (req, res, next) => {
-      upload.single("file")(req, res, (err: any) => {
-        if (err) {
-          console.error("MULTER ERROR:", err);
-          return res
-            .status(400)
-            .json({ error: "File upload failed: " + (err.message || "Unknown error") });
-        }
-        const files = (req as any).files || [];
-        const fileField = files.find((f: any) => f.fieldname === "file");
-        if (fileField) req.file = fileField;
-        next();
-      });
-    },
-    async (req, res) => {
-      let job: AnalysisJob | undefined;
-      let jobId: string | undefined;
-      let insuranceType: string | undefined;
-      let uploadedFile: Express.Multer.File | undefined;
-
-      try {
-        if (!req.file) {
-          return res.status(400).json({ error: "No file uploaded" });
-        }
-
-        uploadedFile = req.file;
-        insuranceType = req.body.type || "health";
-        jobId = crypto.randomUUID();
-
-        job = { id: jobId, status: "pending", createdAt: Date.now(), prompt_version: PROMPT_VERSION };
-        analysisJobs.set(jobId, job);
-        await persistJob(job);
-
-        res.json({ jobId, status: "pending" });
-      } catch (err: any) {
-        console.error("Job creation error:", err);
-        return res.status(500).json({ error: "Failed to create analysis job" });
-      }
-
-      if (!job || !jobId || !uploadedFile) {
-        console.error("Job creation failed - missing required data");
-        return;
-      }
-
-      (async () => {
-        try {
-          job!.status = "processing";
-          job!.extractionStartedAt = Date.now();
-          await persistJob(job!);
-
-          const uploadedPolicyText = await extractPolicyText(uploadedFile!, {
-            feature: "image_ocr",
-            route: "/api/analyze",
-            sourceType: "anonymous",
-            actorId: hashActor(req.ip),
-            jobId: jobId!,
-          });
-          job!.extractionEndedAt = Date.now();
-
-          const result = await runAnalysisPipeline(uploadedPolicyText, insuranceType, {
-            route: "/api/analyze",
-            sourceType: "anonymous",
-            actorId: hashActor(req.ip),
-            jobId: jobId!,
-          });
-
-          if (result.status === "completed") {
-            job!.status = "completed";
-            job!.result = result.result;
-          } else {
-            job!.status = "failed";
-            job!.error = result.error;
-          }
-
-          job!.completedAt = Date.now();
-          await persistJob(job!);
-        } catch (err: any) {
-          console.error(`[Job ${jobId}] Processing error:`, err);
-          job!.status = "failed";
-          job!.error = err.message || "Unknown error";
-          await persistJob(job!);
-        } finally {
-          // Always remove the temp upload, even if extraction/analysis threw.
-          try {
-            if (uploadedFile!.path && fs.existsSync(uploadedFile!.path)) {
-              fs.unlinkSync(uploadedFile!.path);
-            }
-          } catch (cleanupErr: any) {
-            console.warn(`[Job ${jobId}] temp file cleanup failed:`, cleanupErr?.message);
-          }
-        }
-      })();
-    }
-  );
+  /* ── Public analyze: RETIRED — HARD WALL ─────────────────────────────────
+     The anonymous analyzer was a Gemini cost leak: any stranger could upload a
+     PDF, burn two AI calls (OCR + pipeline), see a verdict, and leave — we paid,
+     captured nothing. D2C analysis now REQUIRES an account and goes through the
+     metered /api/me/analyze. This route is kept only to hand old clients an
+     explicit signal instead of silently 404-ing. */
+  app.post("/api/analyze", (_req, res) => {
+    return res.status(401).json({
+      error: "AUTH_REQUIRED",
+      message: "Please sign in to analyze a policy.",
+    });
+  });
 
   /* ── Public: Analysis Status ─────────────────────────────────────────── */
 
@@ -2234,6 +2215,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         const agentId = await verifyJwt(req, res);
         if (!agentId) return;
 
+        // Must be a real agent account. Without this, a D2C consumer (who has a
+        // valid Supabase token) could reach the free OCR/data-entry lane below
+        // and burn Gemini outside their own metered /api/me/analyze quota.
+        const agentRow = await pool.query("SELECT 1 FROM agents WHERE id = $1", [agentId]);
+        if (agentRow.rows.length === 0) {
+          return res.status(403).json({ error: "WRONG_ACCOUNT_TYPE", message: "This endpoint is for agent accounts." });
+        }
+
         const insuranceType = (req.body.type || "health").toLowerCase();
         const isDataEntry = isDataEntryType(insuranceType);
 
@@ -2579,8 +2568,384 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   });
 
+  /* ══════════════════════════════════════════════════════════════════════
+     D2C CONSUMER PORTFOLIO  (/api/me/*)
+     Individuals (not agents) sign up, analyze their own policies, and keep a
+     personal portfolio. Auth via requireIndividual; spend gated by
+     checkIndividualQuota. Data lives in individual_profiles / individual_policies.
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* ── Consumer: bootstrap profile (idempotent, called after signup/login) ── */
+  app.post("/api/me/bootstrap", async (req, res) => {
+    try {
+      const authHeader = req.headers["authorization"] as string | undefined;
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Missing authorization" });
+      }
+      const userId = await getUserIdFromToken(authHeader.slice(7));
+      if (!userId) return res.status(401).json({ error: "Invalid or expired token" });
+
+      // Agent accounts must not become consumer accounts.
+      const agentRow = await pool.query("SELECT 1 FROM agents WHERE id = $1", [userId]);
+      if (agentRow.rows.length > 0) {
+        return res.status(403).json({ error: "WRONG_ACCOUNT_TYPE", message: "This is an agent account." });
+      }
+
+      let email: string | null = null;
+      let fullName: string | null = null;
+      try {
+        const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
+        email = data?.user?.email ?? null;
+        fullName = (data?.user?.user_metadata?.full_name as string) ?? null;
+      } catch { /* best-effort; profile row still created */ }
+
+      // Personal providers only — reject business/Workspace/custom domains.
+      // The signup form blocks this pre-signup; this is the server-side backstop
+      // for any client bypass. (Fail-open only if we couldn't read the email.)
+      if (email && !isPersonalEmail(email)) {
+        return res.status(403).json({
+          error: "NON_PERSONAL_EMAIL",
+          message: "Please use a personal email. Business/work accounts belong on the agent portal.",
+        });
+      }
+
+      const marketing = req.body?.marketing_consent === true;
+
+      await pool.query(
+        `INSERT INTO individual_profiles (id, email, full_name, marketing_consent)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (id) DO UPDATE SET
+           email = COALESCE(individual_profiles.email, EXCLUDED.email),
+           full_name = COALESCE(individual_profiles.full_name, EXCLUDED.full_name),
+           updated_at = now()`,
+        [userId, email, fullName, marketing]
+      );
+
+      const prof = await pool.query(
+        "SELECT plan, trial_started_at FROM individual_profiles WHERE id = $1",
+        [userId]
+      );
+      const p = prof.rows[0];
+      const trialEndsAt = new Date(new Date(p.trial_started_at).getTime() + TRIAL_DAYS * 86400_000).toISOString();
+      return res.json({ plan: p.plan, trialStartedAt: p.trial_started_at, trialEndsAt });
+    } catch (err: any) {
+      console.error("Consumer bootstrap error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Consumer: portfolio list + quota state ──────────────────────────── */
+  app.get("/api/me/portfolio", async (req, res) => {
+    try {
+      const userId = await requireIndividual(req, res);
+      if (!userId) return;
+
+      const prof = await pool.query(
+        "SELECT plan, trial_started_at, full_name FROM individual_profiles WHERE id = $1",
+        [userId]
+      );
+      const p = prof.rows[0];
+      const policies = await pool.query(
+        `SELECT id, insurance_type, status, filename, insurer, policy_name, nickname, score,
+                expiry_date, sum_insured, created_at
+           FROM individual_policies
+          WHERE user_id = $1
+          ORDER BY created_at DESC`,
+        [userId]
+      );
+
+      const slotsUsedByType: Record<string, number> = {};
+      for (const row of policies.rows) {
+        if (row.status !== "error") {
+          slotsUsedByType[row.insurance_type] = (slotsUsedByType[row.insurance_type] ?? 0) + 1;
+        }
+      }
+      const trialEndsAt = new Date(new Date(p.trial_started_at).getTime() + TRIAL_DAYS * 86400_000).toISOString();
+
+      return res.json({
+        plan: p.plan,
+        trialEndsAt,
+        fullName: p.full_name ?? null,
+        freeSlotsPerType: FREE_SLOTS_PER_TYPE,
+        slotsUsedByType,
+        policies: policies.rows,
+      });
+    } catch (err: any) {
+      console.error("Consumer portfolio error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Consumer: update profile (display name) ─────────────────────────── */
+  app.patch("/api/me/profile", async (req, res) => {
+    try {
+      const userId = await requireIndividual(req, res);
+      if (!userId) return;
+      // Trim, strip control chars, cap length. Empty clears the name.
+      const raw = typeof req.body?.full_name === "string" ? req.body.full_name : "";
+      const fullName = raw.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 80) || null;
+      await pool.query(
+        "UPDATE individual_profiles SET full_name = $1, updated_at = now() WHERE id = $2",
+        [fullName, userId]
+      );
+      return res.json({ fullName });
+    } catch (err: any) {
+      console.error("Consumer profile update error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Consumer: nickname a policy ("Papa's health plan") ──────────────── */
+  app.patch("/api/me/policy/:id", async (req, res) => {
+    try {
+      const userId = await requireIndividual(req, res);
+      if (!userId) return;
+      const raw = typeof req.body?.nickname === "string" ? req.body.nickname : "";
+      const nickname = raw.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 60) || null;
+      const r = await pool.query(
+        "UPDATE individual_policies SET nickname = $1, updated_at = now() WHERE id = $2 AND user_id = $3 RETURNING id",
+        [nickname, req.params.id, userId]
+      );
+      if (!r.rows[0]) return res.status(404).json({ error: "Not found" });
+      return res.json({ id: r.rows[0].id, nickname });
+    } catch (err: any) {
+      console.error("Consumer policy rename error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Consumer: single policy (ownership-scoped) ──────────────────────── */
+  app.get("/api/me/policy/:id", async (req, res) => {
+    try {
+      const userId = await requireIndividual(req, res);
+      if (!userId) return;
+      const r = await pool.query(
+        "SELECT * FROM individual_policies WHERE id = $1 AND user_id = $2",
+        [req.params.id, userId]
+      );
+      if (!r.rows[0]) return res.status(404).json({ error: "Not found" });
+      return res.json(r.rows[0]);
+    } catch (err: any) {
+      console.error("Consumer policy detail error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Consumer: analysis status (reads individual_policies, not job map) ── */
+  app.get("/api/me/analyze/status/:jobId", async (req, res) => {
+    try {
+      const userId = await requireIndividual(req, res);
+      if (!userId) return;
+      const r = await pool.query(
+        `SELECT id, status, report_data, extracted_data, error_message
+           FROM individual_policies WHERE job_id = $1 AND user_id = $2`,
+        [req.params.jobId, userId]
+      );
+      const row = r.rows[0];
+      if (!row) return res.status(404).json({ status: "not_found", error: "Job not found" });
+      if (row.status === "done") {
+        return res.json({ status: "completed", policyId: row.id, result: row.report_data ?? row.extracted_data });
+      }
+      if (row.status === "error") {
+        return res.json({ status: "error", policyId: row.id, error: row.error_message });
+      }
+      return res.json({ status: row.status, policyId: row.id });
+    } catch (err: any) {
+      console.error("Consumer analyze status error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Consumer: upload & analyze OWN policy (clone of /api/agent/analyze) ── */
+  app.post(
+    "/api/me/analyze",
+    analyzeRateLimiter,
+    (req, res, next) => {
+      upload.single("file")(req, res, (err: any) => {
+        if (err) {
+          console.error("MULTER ERROR:", err);
+          return res.status(400).json({ error: "File upload failed: " + (err.message || "Unknown error") });
+        }
+        next();
+      });
+    },
+    async (req, res) => {
+      try {
+        const userId = await requireIndividual(req, res);
+        if (!userId) return;
+
+        const insuranceType = (req.body.type || "health").toLowerCase();
+
+        // ── THE quota choke point — before any Gemini spend ──
+        const quota = await checkIndividualQuota(userId, insuranceType);
+        if (!quota.allowed) {
+          return res.status(403).json({ error: "NEEDS_UPGRADE", reason: quota.reason });
+        }
+
+        if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+        const file = req.file;
+        const isDataEntry = isDataEntryType(insuranceType);
+
+        const jobId = crypto.randomUUID();
+        const job: AnalysisJob = {
+          id: jobId,
+          agentId: userId, // owner uid (shared uuid namespace); status uses individual_policies
+          status: "pending",
+          createdAt: Date.now(),
+          prompt_version: PROMPT_VERSION,
+        };
+        analysisJobs.set(jobId, job);
+        await persistJob(job);
+
+        const policyResult = await pool.query(
+          `INSERT INTO individual_policies (user_id, job_id, status, filename, file_size, insurance_type)
+           VALUES ($1, $2, 'pending', $3, $4, $5) RETURNING id`,
+          [userId, jobId, file.originalname, file.size, insuranceType]
+        );
+        const policyId = policyResult.rows[0].id;
+
+        res.json({ policyId, jobId, status: "pending" });
+
+        // ── background processing ──
+        (async () => {
+          try {
+            job.status = "processing";
+            job.extractionStartedAt = Date.now();
+            await persistJob(job);
+            await pool.query("UPDATE individual_policies SET status = 'processing', updated_at = now() WHERE id = $1", [policyId]);
+
+            const uploadedPolicyText = await extractPolicyText(file, {
+              feature: "image_ocr",
+              route: "/api/me/analyze",
+              sourceType: "individual",
+              actorId: userId,
+              jobId,
+              clientId: policyId,
+            });
+            job.extractionEndedAt = Date.now();
+
+            // Persist original PDF to storage (best-effort; never blocks analysis).
+            try {
+              const fileBuffer = fs.readFileSync(file.path);
+              const ext = file.originalname.includes(".") ? file.originalname.split(".").pop() : "pdf";
+              const storagePath = `${userId}/${policyId}.${ext}`;
+              const { error: upErr } = await supabaseAdmin.storage
+                .from(PDF_BUCKET)
+                .upload(storagePath, fileBuffer, { contentType: file.mimetype || "application/pdf", upsert: true });
+              if (upErr) {
+                console.error(`[Job ${jobId}] PDF storage upload failed:`, upErr.message);
+              } else {
+                const { data: signed } = await supabaseAdmin.storage.from(PDF_BUCKET).createSignedUrl(storagePath, 60 * 60);
+                if (signed?.signedUrl) {
+                  await pool.query("UPDATE individual_policies SET pdf_url = $1 WHERE id = $2", [signed.signedUrl, policyId]);
+                }
+              }
+            } catch (storeErr: any) {
+              console.error(`[Job ${jobId}] PDF storage error:`, storeErr.message);
+            }
+
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+
+            // ── OCR / data-entry lane (motor/life/travel/property): no scoring ──
+            if (isDataEntry) {
+              const extraction = await extractStructuredData(uploadedPolicyText, insuranceType, {
+                route: "/api/me/analyze",
+                sourceType: "individual",
+                actorId: userId,
+                jobId,
+                clientId: policyId,
+              });
+              if (extraction.status === "completed") {
+                job.status = "completed";
+                job.result = extraction.data;
+                const shared = deriveSharedColumns(insuranceType, extraction.data);
+                await pool.query(
+                  `UPDATE individual_policies SET
+                     status = 'done', insurance_type = $1, extracted_data = $2,
+                     insurer = $3, policy_name = $4, expiry_date = $5, sum_insured = $6,
+                     policyholder_name = COALESCE(policyholder_name, $7), updated_at = now()
+                   WHERE id = $8`,
+                  [
+                    insuranceType,
+                    JSON.stringify(extraction.data),
+                    shared.insurer ?? null,
+                    shared.policy_name ?? null,
+                    shared.expiry_date ?? null,
+                    shared.sum_insured ?? null,
+                    shared.policyholder_name ?? null,
+                    policyId,
+                  ]
+                );
+              } else {
+                job.status = "failed";
+                job.error = extraction.error;
+                await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [extraction.error, policyId]);
+              }
+              job.completedAt = Date.now();
+              await persistJob(job);
+              return;
+            }
+
+            // ── Health forensic-scoring lane ──
+            const result = await runAnalysisPipeline(uploadedPolicyText, insuranceType, {
+              route: "/api/me/analyze",
+              sourceType: "individual",
+              actorId: userId,
+              jobId,
+              clientId: policyId,
+            });
+
+            if (result.status === "completed") {
+              job.status = "completed";
+              job.result = result.result;
+              const reportData = result.result;
+              const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
+              const score = rawScore == null ? null : Math.round(Number(rawScore));
+              const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
+              const policyName = result.metadata?.product || result.metadata?.plan || reportData?.coverage_structure?.policy_name || null;
+              const expiryDate = reportData?.policy_timeline?.policy_expiry_date || null;
+              const sumInsured = reportData?.coverage_structure?.base_sum_insured || null;
+              const flaws = reportData?.final_verdict?.key_failure_points || [];
+              const insuredName = reportData?.identity?.insured_names?.[0] || null;
+
+              await pool.query(
+                `UPDATE individual_policies SET
+                   status = 'done', report_data = $1, score = $2, insurer = $3,
+                   policy_name = $4, expiry_date = $5, sum_insured = $6, flaws = $7,
+                   policyholder_name = COALESCE(policyholder_name, $8), updated_at = now()
+                 WHERE id = $9`,
+                [JSON.stringify(reportData), score, insurer, policyName, expiryDate, sumInsured, JSON.stringify(flaws), insuredName, policyId]
+              );
+            } else {
+              job.status = "failed";
+              job.error = result.error;
+              await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [result.error, policyId]);
+            }
+            job.completedAt = Date.now();
+            await persistJob(job);
+          } catch (err: any) {
+            console.error(`[Job ${jobId}] Processing error:`, err);
+            job.status = "failed";
+            job.error = err.message || "Unknown error";
+            await persistJob(job);
+            await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [err.message, policyId]);
+          } finally {
+            try {
+              if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+            } catch (cleanupErr: any) {
+              console.warn(`[Job ${jobId}] temp file cleanup failed:`, cleanupErr?.message);
+            }
+          }
+        })();
+      } catch (err: any) {
+        console.error("Consumer analyze error:", err);
+        res.status(500).json({ error: err.message || "Failed to create analysis job" });
+      }
+    }
+  );
+
   /* ── Agent: Toggle Share ─────────────────────────────────────────────── */
-  
+
   app.post("/api/agent/clients/:id/share/toggle", async (req, res) => {
     try {
       const agentId = await verifyJwt(req, res);
