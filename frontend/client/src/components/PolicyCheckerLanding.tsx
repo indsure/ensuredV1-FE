@@ -1,29 +1,14 @@
 
 import { motion } from "framer-motion";
 import {
-    Shield, Lock, Clock, FileText, AlertCircle,
-    CheckCircle2, Search, Zap, AlertTriangle, FileUp
+    Shield, Lock, Clock, FileText,
+    Search, Zap, FolderKanban, ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
 import { loadSampleReport, mockReportHealth } from "@/lib/mock-data";
 
-interface PolicyCheckerLandingProps {
-    getRootProps: any;
-    getInputProps: any;
-    isDragActive: boolean;
-    uploading: boolean;
-    error: string | null;
-}
-
-export function PolicyCheckerLanding({
-    getRootProps,
-    getInputProps,
-    isDragActive,
-    uploading,
-    error
-}: PolicyCheckerLandingProps) {
+export function PolicyCheckerLanding() {
     const [, setLocation] = useLocation();
 
     const fadeIn = {
@@ -38,7 +23,7 @@ export function PolicyCheckerLanding({
     return (
         <div className="w-full max-w-7xl mx-auto space-y-24">
 
-            {/* 1. HERO & UPLOAD SECTION */}
+            {/* 1. HERO & SIGN-UP SECTION */}
             <div className="grid lg:grid-cols-2 gap-16 items-start">
 
                 {/* Left: Intelligence Copy */}
@@ -59,108 +44,78 @@ export function PolicyCheckerLanding({
 
                     <motion.div custom={2} variants={fadeIn} className="space-y-6">
                         <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-lg">
-                            Upload your health insurance policy. Our engine audits every clause, exclusion, and rider to tell you whether you are correctly insured — or exposed.
+                            Create a free account, upload your health insurance policy, and our engine audits every clause, exclusion, and rider to tell you whether you are correctly insured — or exposed. Every policy you check is saved to your personal portfolio.
                         </p>
                         <p className="text-sm text-[var(--color-text-muted)] opacity-70 font-mono">
                             Built for modern Indian policyholders. <br /> Independent. Product-agnostic.
                         </p>
                     </motion.div>
 
-                    {/* 3. TRUST / PRIVACY GUARDRAILS (Mobile only here, desktop below upload) */}
+                    {/* Trust guardrail (mobile) */}
                     <motion.div custom={3} variants={fadeIn} className="lg:hidden pt-4 border-t border-[var(--color-border-medium)]">
                         <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
                             <Shield className="w-4 h-4 text-[var(--color-teal-600)]" />
-                            We don’t store, sell, or reuse your policy.
+                            Your policies stay private to your account.
                         </div>
                     </motion.div>
                 </motion.div>
 
 
-                {/* Right: Upload Zone */}
+                {/* Right: Sign-up CTA card */}
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.8, delay: 0.2 }}
                     className="relative"
                 >
-                    {error && (
-                        <div className="mb-4 bg-red-50 border border-red-200 p-4 rounded flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                            <div>
-                                <p className="text-sm font-bold text-red-700">Upload Error</p>
-                                <p className="text-sm text-red-600">{error}</p>
-                            </div>
+                    <div className="bg-white border border-[var(--color-border-light)] rounded-xl p-10 min-h-[400px] flex flex-col justify-center shadow-sm">
+                        <div className="w-16 h-16 mb-6 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center border border-[var(--color-border-light)]">
+                            <FolderKanban className="w-6 h-6 text-[var(--color-teal-600)]" />
                         </div>
-                    )}
 
-                    <div
-                        {...getRootProps()}
-                        className={cn(
-                            "group relative bg-white border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer min-h-[400px] flex flex-col items-center justify-center overflow-hidden shadow-sm",
-                            isDragActive
-                                ? "border-[var(--color-teal-600)] bg-[var(--color-teal-50)] shadow-md"
-                                : "border-[var(--color-border-medium)] hover:border-[var(--color-teal-300)] hover:bg-gray-50"
-                        )}
-                    >
-                        <input {...getInputProps()} />
+                        <h3 className="font-serif text-2xl mb-2 text-[var(--color-navy-900)]">
+                            See your policy's verdict
+                        </h3>
+                        <p className="text-[var(--color-text-secondary)] mb-8 text-sm leading-relaxed max-w-sm">
+                            Create a free account to analyze your policy and keep it in your portfolio. One free policy each for Health, Term, Life &amp; Vehicle.
+                        </p>
 
-                        {uploading ? (
-                            <div className="flex flex-col items-center z-10">
-                                {/* Calm Progress Indicator (No Spinner) */}
-                                <motion.div
-                                    animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="w-20 h-20 rounded-full bg-[var(--color-teal-50)] flex items-center justify-center mb-6 border border-[var(--color-teal-200)]"
-                                >
-                                    <FileText className="w-8 h-8 text-[var(--color-teal-600)]" />
-                                </motion.div>
-                                <span className="font-serif text-xl text-[var(--color-navy-900)] mb-2">Auditing 50+ Clauses...</span>
-                                <div className="w-48 h-1 bg-[var(--color-border-light)] rounded-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: "100%" }}
-                                        transition={{ duration: 3, ease: "linear" }}
-                                        className="h-full bg-[var(--color-teal-600)]"
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="z-10 flex flex-col items-center">
-                                <div className="w-16 h-16 mb-6 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center border border-[var(--color-border-light)] group-hover:scale-110 group-hover:border-[var(--color-teal-200)] transition-all duration-300">
-                                    <FileUp className="w-6 h-6 text-[var(--color-teal-600)]" />
-                                </div>
-                                <h3 className="font-serif text-2xl mb-2 text-[var(--color-navy-900)]">Drop policy PDF here</h3>
-                                <p className="text-[var(--color-text-muted)] mb-8 font-mono text-xs uppercase tracking-widest">
-                                    or click to browse
-                                </p>
+                        <div className="flex items-center gap-6 text-xs font-medium text-[var(--color-text-muted)] bg-[var(--color-cream-main)] px-4 py-2 rounded-full border border-[var(--color-border-light)] w-fit mb-8">
+                            <span className="flex items-center gap-1.5"><Lock className="w-3 h-3 text-[var(--color-teal-600)]" /> Private</span>
+                            <span className="w-px h-3 bg-[var(--color-border-medium)]"></span>
+                            <span className="flex items-center gap-1.5"><Clock className="w-3 h-3 text-[var(--color-teal-600)]" /> ~60 seconds</span>
+                            <span className="w-px h-3 bg-[var(--color-border-medium)]"></span>
+                            <span className="flex items-center gap-1.5"><FileText className="w-3 h-3 text-[var(--color-teal-600)]" /> PDF only</span>
+                        </div>
 
-                                <div className="flex items-center gap-6 text-xs font-medium text-[var(--color-text-muted)] bg-[var(--color-cream-main)] px-4 py-2 rounded-full border border-[var(--color-border-light)]">
-                                    <span className="flex items-center gap-1.5"><Lock className="w-3 h-3 text-[var(--color-teal-600)]" /> Private</span>
-                                    <span className="w-px h-3 bg-[var(--color-border-medium)]"></span>
-                                    <span className="flex items-center gap-1.5"><Clock className="w-3 h-3 text-[var(--color-teal-600)]" /> ~60 seconds</span>
-                                    <span className="w-px h-3 bg-[var(--color-border-medium)]"></span>
-                                    <span className="flex items-center gap-1.5"><FileText className="w-3 h-3 text-[var(--color-teal-600)]" /> PDF only</span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); loadSampleReport(mockReportHealth); setLocation("/report?sample=health"); }}
-                                    className="mt-6 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-700)] hover:underline inline-flex items-center gap-2"
-                                >
-                                    <FileText className="w-4 h-4" />
-                                    View sample analysis directly
-                                </button>
-                            </div>
-                        )}
+                        <Link href="/signup">
+                            <Button className="w-full h-12 bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-700)] text-white rounded-lg text-base font-bold inline-flex items-center justify-center gap-2 cursor-pointer">
+                                Create a free account <ArrowRight className="w-4 h-4" />
+                            </Button>
+                        </Link>
 
-                        {/* Subtle Grid Background (Light) */}
-                        <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
+                        <p className="text-center text-sm text-[var(--color-text-secondary)] mt-4">
+                            Already have an account?{" "}
+                            <Link href="/login">
+                                <span className="font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">Log in</span>
+                            </Link>
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={() => { loadSampleReport(mockReportHealth); setLocation("/report?sample=health"); }}
+                            className="mt-6 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-700)] hover:underline inline-flex items-center justify-center gap-2 mx-auto"
+                        >
+                            <FileText className="w-4 h-4" />
+                            View a sample analysis first
+                        </button>
                     </div>
 
                     {/* Desktop Trust Bar */}
                     <div className="hidden lg:flex mt-6 justify-center">
                         <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] opacity-70">
                             <Shield className="w-3 h-3" />
-                            We don’t store, sell, or reuse your policy. Analysis is ephemeral.
+                            Your policies stay private to your account.
                         </div>
                     </div>
                 </motion.div>
@@ -257,4 +212,3 @@ export function PolicyCheckerLanding({
         </div>
     );
 }
-

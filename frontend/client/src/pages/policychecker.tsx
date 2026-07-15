@@ -1,65 +1,16 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import {
-  Upload,
-  FileText,
-  Shield,
-  Lock,
-  Clock,
-  AlertCircle
-} from "lucide-react";
-import { useDropzone } from "react-dropzone";
-import { useAnalysis } from "@/hooks/use-analysis";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
-import { loadSampleReport, mockReportHealth, mockReportLife, mockReportVehicle } from "@/lib/mock-data";
 import { PolicyCheckerLanding } from "@/components/PolicyCheckerLanding";
 
+// Marketing / value page for the consumer policy analyzer. Analysis itself now
+// lives behind a free account (see /signup → /app). This page explains the
+// value and funnels visitors into signup; sample reports remain viewable
+// without an account (mock data, no analysis is run).
 export default function PolicyChecker() {
-  const { analyze, error: analysisError, setPolicyText, clearAuditState } = useAnalysis();
-  const [, setLocation] = useLocation();
-
   useSEO({
     title: "Decode Your Health Policy | IndSure",
-    description: "Upload your health insurance policy PDF. Get a clear verdict.",
-  });
-
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const onDrop = async (acceptedFiles: File[]) => {
-    if (!acceptedFiles.length) return;
-    const file = acceptedFiles[0];
-
-    // Validate
-    const maxSize = 25 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setError(`File is too large. Max 25MB.`);
-      return;
-    }
-
-    setError(null);
-    setUploading(true);
-    setLocation("/processing");
-
-    try {
-      clearAuditState();
-      setPolicyText(`Policy: ${file.name}`);
-      await analyze(file);
-    } catch (err: any) {
-      setError(err?.message || "Analysis failed");
-      setLocation("/policychecker");
-      setUploading(false);
-    }
-  };
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { "application/pdf": [".pdf"] },
-    multiple: false,
-    disabled: uploading,
+    description: "Create a free account to analyze your health insurance policy and keep it in your portfolio. Get a clear verdict.",
   });
 
   return (
@@ -67,13 +18,7 @@ export default function PolicyChecker() {
       <Header />
 
       <main className="flex-grow pt-24 pb-20 px-6 max-w-7xl mx-auto w-full">
-        <PolicyCheckerLanding
-          getRootProps={getRootProps}
-          getInputProps={getInputProps}
-          isDragActive={isDragActive}
-          uploading={uploading}
-          error={error}
-        />
+        <PolicyCheckerLanding />
       </main>
 
       <Footer />

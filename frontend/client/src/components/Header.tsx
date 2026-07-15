@@ -16,9 +16,10 @@ const navLinks = [
 ];
 
 const toolsItems = [
+  { label: "What We Check", href: "/policychecker" },
   { label: "Calculator", href: "/calculator" },
-  { label: "Check My Coverage", href: "/policychecker" },
   { label: "Compare", href: "/compare" },
+  { label: "Find My Provider", href: "/find-provider" },
 ];
 
 export function Header() {
@@ -104,17 +105,17 @@ export function Header() {
           </nav>
         </div>
 
-        {/* ─── RIGHT: CTAs + Advisor Login ─── */}
+        {/* ─── RIGHT: CTAs + Log in + Advisor Login ─── */}
         <div className="hidden lg:flex items-center gap-4">
-          <Link href="/policychecker">
-            <button className="px-5 py-2.5 text-sm font-semibold bg-[var(--color-green-primary)] text-white rounded-lg hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer shadow-md shadow-teal-900/10">
-              Check My Coverage
-            </button>
+          <Link href="/login">
+            <span className="text-xs font-semibold tracking-[0.12em] uppercase text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer">
+              Log In
+            </span>
           </Link>
 
-          <Link href="/find-provider">
-            <button className="px-5 py-2.5 text-sm font-semibold border border-[var(--color-border-main)] text-[var(--color-text-main)] rounded-lg hover:border-[var(--color-green-primary)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer">
-              Find My Provider
+          <Link href="/signup">
+            <button className="px-5 py-2.5 text-sm font-semibold bg-[var(--color-green-primary)] text-white rounded-lg hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer shadow-md shadow-teal-900/10">
+              Analyze My Policy — Free
             </button>
           </Link>
 
@@ -180,21 +181,21 @@ export function Header() {
 
               <div className="border-t border-[var(--color-border-light)] my-3" />
 
-              <Link href="/policychecker">
-                <div
-                  className="py-3 px-3 text-center rounded-lg text-sm font-semibold bg-[var(--color-green-primary)] text-white hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Check My Coverage
-                </div>
-              </Link>
-
-              <Link href="/find-provider">
+              <Link href="/login">
                 <div
                   className="py-3 px-3 text-center rounded-lg text-sm font-semibold border border-[var(--color-border-main)] text-[var(--color-text-main)] hover:border-[var(--color-green-primary)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Find My Provider
+                  Log In
+                </div>
+              </Link>
+
+              <Link href="/signup">
+                <div
+                  className="py-3 px-3 text-center rounded-lg text-sm font-semibold bg-[var(--color-green-primary)] text-white hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Analyze My Policy — Free
                 </div>
               </Link>
 

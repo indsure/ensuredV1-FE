@@ -103,7 +103,7 @@ export default function Home() {
               transition={{ delay: 0.3, duration: 0.8 }}
               className="text-xl md:text-2xl text-[var(--color-white-muted)] max-w-2xl font-light"
             >
-              IndSure analyzes your entire insurance portfolio — unbiased, calculated, and transparent.
+              Sign up free, upload your policies, and see your whole insurance cover audited in one private dashboard — unbiased, calculated, and transparent.
             </motion.p>
 
             <motion.div
@@ -112,9 +112,9 @@ export default function Home() {
               transition={{ delay: 0.5 }}
               className="flex flex-col sm:flex-row gap-4 mt-10"
             >
-              <Link href="/policychecker" className="w-full sm:w-auto">
+              <Link href="/signup" className="w-full sm:w-auto">
                 <button className="w-full sm:w-auto justify-center bg-[var(--color-teal-600)] text-white px-8 py-4 rounded-lg font-medium hover:bg-[var(--color-teal-400)] transition-colors flex items-center gap-2 shadow-lg shadow-teal-900/20">
-                  Check My Coverage <ArrowRight className="w-4 h-4" />
+                  Analyze My Policy — Free <ArrowRight className="w-4 h-4" />
                 </button>
               </Link>
               <a href="#demo" className="w-full sm:w-auto">
@@ -122,6 +122,17 @@ export default function Home() {
                   See a Sample Analysis
                 </button>
               </a>
+            </motion.div>
+
+            {/* Trust promise — the anti-lead-farm pledge, our biggest differentiator */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.65, duration: 0.8 }}
+              className="mt-6 flex items-center gap-2.5 text-sm text-[var(--color-white-muted)]"
+            >
+              <Lock className="w-4 h-4 text-[var(--color-teal-400)] shrink-0" />
+              <span>No calls. No spam. No agent will ever contact you — we sell zero leads.</span>
             </motion.div>
 
             {/* Trust strip */}
@@ -132,10 +143,10 @@ export default function Home() {
               className="mt-16 pt-10 border-t border-[var(--color-border-subtle)] grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl"
             >
               {[
-                { value: "63", label: "Plans indexed" },
-                { value: "10", label: "Insurers covered" },
-                { value: "50+", label: "Risk checks per audit" },
                 { value: "₹0", label: "Commissions earned, ever" },
+                { value: "50+", label: "Risk checks per audit" },
+                { value: "10", label: "Insurers covered" },
+                { value: "63", label: "Plans indexed" },
               ].map((s) => (
                 <div key={s.label}>
                   <div className="text-3xl md:text-4xl font-serif font-bold text-[var(--color-teal-400)] mb-1">{s.value}</div>
@@ -161,6 +172,11 @@ export default function Home() {
                   We decode the fine print. See exactly where you stand with a
                   bank-grade audit of your coverage.
                 </p>
+                <Link href="/policychecker">
+                  <span className="inline-flex items-center gap-1 mt-4 text-[var(--color-teal-600)] font-medium hover:underline cursor-pointer">
+                    See everything our audit checks <ArrowRight className="w-4 h-4" />
+                  </span>
+                </Link>
               </div>
             </div>
 
@@ -309,16 +325,23 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 5. CTA */}
+        {/* 5. CLOSING CTA — second conversion point */}
         <section className="py-32 bg-[var(--color-navy-900)] text-center text-white">
           <div className="container-editorial">
             <h2 className="text-5xl md:text-7xl font-serif font-bold mb-8 text-white">Know your coverage.<br />Once and for all.</h2>
-            <p className="text-xl text-white/80 mb-12">No calls. No spam. Just data.</p>
-            <Link href="/policychecker">
-              <button className="bg-[var(--color-teal-600)] text-white px-12 py-5 rounded-lg font-bold text-xl hover:scale-105 transition-transform shadow-xl shadow-teal-900/20">
-                Check My Coverage
-              </button>
-            </Link>
+            <p className="text-xl text-white/80 mb-12">Free to start. Your policies stay private — no calls, no spam, ever.</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/signup">
+                <button className="w-full sm:w-auto justify-center bg-[var(--color-teal-600)] text-white px-12 py-5 rounded-lg font-bold text-xl hover:scale-105 transition-transform shadow-xl shadow-teal-900/20 flex items-center gap-2">
+                  Analyze My Policy — Free <ArrowRight className="w-5 h-5" />
+                </button>
+              </Link>
+              <a href="#demo">
+                <button className="w-full sm:w-auto px-12 py-5 rounded-lg font-bold text-xl border border-white/25 text-white/90 hover:bg-white/10 hover:text-white transition-colors">
+                  See a Sample Analysis
+                </button>
+              </a>
+            </div>
           </div>
         </section>
 

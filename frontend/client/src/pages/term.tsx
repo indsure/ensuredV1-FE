@@ -19,7 +19,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-import { useAnalysis } from "@/hooks/use-analysis";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
@@ -27,53 +26,17 @@ import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
 import { loadSampleReport, mockReportLife } from "@/lib/mock-data";
 
 // TermAnalyzer Component
-function TermAnalyzer({ onFileUpload }: { onFileUpload: (file: File) => void }) {
+function TermAnalyzer() {
   const [, setLocation] = useLocation();
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading] = useState(false);
+  const [error] = useState<string | null>(null);
+  const [selectedFile] = useState<File | null>(null);
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
-  };
-
-  const onDrop = async (acceptedFiles: File[]) => {
+  // Analysis now requires a free account (D2C hard wall). Dropping a file
+  // funnels to signup rather than the retired anonymous analyze path.
+  const onDrop = (acceptedFiles: File[]) => {
     if (!acceptedFiles.length) return;
-
-    const file = acceptedFiles[0];
-
-    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'text/plain'];
-    const isValidType = validTypes.includes(file.type) ||
-      file.name.toLowerCase().endsWith('.pdf') ||
-      file.name.toLowerCase().endsWith('.png') ||
-      file.name.toLowerCase().endsWith('.jpg') ||
-      file.name.toLowerCase().endsWith('.jpeg');
-
-    if (!isValidType) {
-      setError(`Unsupported file type. Please upload a PDF, PNG, JPG, or text file.`);
-      return;
-    }
-
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      setError(`File is too large (${formatFileSize(file.size)}). Maximum size is 10 MB.`);
-      return;
-    }
-
-    setSelectedFile(file);
-    setError(null);
-    setUploading(true);
-
-    try {
-      await onFileUpload(file);
-    } catch (err: any) {
-      setError(err.message || "Upload failed. Try again.");
-      setUploading(false);
-    }
+    setLocation("/signup");
   };
 
   const dropzoneOptions = {
@@ -165,7 +128,6 @@ function TermAnalyzer({ onFileUpload }: { onFileUpload: (file: File) => void }) 
 
 export default function TermPage() {
   const [, setLocation] = useLocation();
-  const { analyze, clearAuditState } = useAnalysis();
 
   // SEO
   useSEO({
@@ -225,19 +187,6 @@ export default function TermPage() {
 
   const faqData = createFAQSchema(faqList);
 
-  const handleFileUpload = async (file: File) => {
-    sessionStorage.removeItem("IndSure_report");
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    try {
-      clearAuditState();
-      await analyze(file);
-      setLocation("/processing");
-    } catch (err: any) {
-      throw err;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#F0FFFE] dark:bg-[#0F1419] flex flex-col">
       <SchemaMarkup type="FAQPage" data={faqData} />
@@ -280,7 +229,7 @@ export default function TermPage() {
 
       {/* Analyzer Tool Section */}
       <section className="bg-white dark:bg-[#0F1419] py-16 md:py-20 px-6 md:px-14">
-        <TermAnalyzer onFileUpload={handleFileUpload} />
+        <TermAnalyzer />
       </section>
 
       {/* "What You'll Discover" Band */}

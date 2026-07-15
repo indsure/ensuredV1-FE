@@ -24,7 +24,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-import { useAnalysis } from "@/hooks/use-analysis";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
@@ -33,7 +32,6 @@ import { loadSampleReport, mockReportVehicle } from "@/lib/mock-data";
 
 export default function VehiclePage() {
   const [, setLocation] = useLocation();
-  const { analyze, error: analysisError, clearAuditState } = useAnalysis();
 
   // SEO
   useSEO({
@@ -68,131 +66,13 @@ export default function VehiclePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileSize, setFileSize] = useState<string | null>(null);
 
-  // Helper function to store file in sessionStorage
-  const storeFileInSession = async (file: File): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      try {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          try {
-            const base64String = reader.result as string;
-            sessionStorage.setItem("IndSure_pending_file", JSON.stringify({
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              data: base64String,
-            }));
-            resolve();
-          } catch (err) {
-            reject(err);
-          }
-        };
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  };
-
-  // Helper function to restore file from sessionStorage
-  const restoreFileFromSession = (): File | null => {
-    try {
-      const stored = sessionStorage.getItem("IndSure_pending_file");
-      if (stored) {
-        const fileData = JSON.parse(stored);
-        // Convert base64 back to blob, then to File
-        const byteCharacters = atob(fileData.data.split(',')[1]);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: fileData.type });
-        const file = new File([blob], fileData.name, { type: fileData.type });
-        sessionStorage.removeItem("IndSure_pending_file");
-        return file;
-      }
-    } catch (err) {
-    }
-    return null;
-  };
-
-
-  // Format file size
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
-  };
-
-  const onDrop = async (acceptedFiles: File[]) => {
+  // Analysis now requires a free account (D2C hard wall). Dropping a file
+  // funnels the visitor to signup rather than running the retired anonymous
+  // analyze path. The upload card below is kept as-is pending the LoB-page
+  // redesign; it simply routes here.
+  const onDrop = (acceptedFiles: File[]) => {
     if (!acceptedFiles.length) return;
-
-    const file = acceptedFiles[0];
-
-    // Validate file type
-    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'text/plain'];
-    const isValidType = validTypes.includes(file.type) ||
-      file.name.toLowerCase().endsWith('.pdf') ||
-      file.name.toLowerCase().endsWith('.png') ||
-      file.name.toLowerCase().endsWith('.jpg') ||
-      file.name.toLowerCase().endsWith('.jpeg');
-
-    if (!isValidType) {
-      setError(`Unsupported file type. Please upload a PDF, PNG, JPG, or text file.`);
-      return;
-    }
-
-    // Validate file size (max 25MB)
-    const maxSize = 25 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setError(`File is too large (${formatFileSize(file.size)}). Maximum size is 25 MB.`);
-      return;
-    }
-
-    setSelectedFile(file);
-    setFileSize(formatFileSize(file.size));
-    setError(null);
-
-    // Store file in sessionStorage
-    await storeFileInSession(file);
-
-    sessionStorage.removeItem("IndSure_report");
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    setUploading(true);
-    setLocation("/processing");
-
-    try {
-      clearAuditState();
-      await analyze(file, "vehicle");
-      // DPDP: remove sensitive pending upload data as soon as the analysis request is sent/accepted.
-      sessionStorage.removeItem("IndSure_pending_file");
-      // If successful, job is created and processing page will poll for status
-    } catch (err: any) {
-      sessionStorage.removeItem("IndSure_pending_file");
-
-
-      let errorMessage = "Analysis failed";
-      if (err?.message) {
-        if (err.message.includes("timeout") || err.message.includes("took too long")) {
-          errorMessage = "Analysis timed out. This can happen with very large documents. Please try again.";
-        } else if (err.message.includes("encrypted") || err.message.includes("password")) {
-          errorMessage = "PDF is encrypted. Please unlock your PDF and try again.";
-        } else if (err.message.includes("quota") || err.message.includes("429")) {
-          errorMessage = "API is busy. This usually clears in a few seconds. Please try again.";
-        } else {
-          errorMessage = err.message;
-        }
-      }
-
-      setError(errorMessage);
-      setLocation("/vehicle");
-      setUploading(false);
-    }
+    setLocation("/signup");
   };
 
   const dropzoneOptions = {
