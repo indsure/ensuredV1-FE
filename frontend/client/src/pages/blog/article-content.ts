@@ -3,101 +3,80 @@
  * Full HTML content for all 20 pillar articles
  */
 
-// Helper function to format money examples
-const formatMoney = (amount: string) => `<strong class="text-[#0F1419] dark:text-[#FAFBFC] bg-[#FFFBEB] px-2 py-1 rounded">${amount}</strong>`;
-
 // Article 9: What Is Health Insurance?
 export const article9Content = `
 <div class="blog-article-content">
   <h2 id="what-is-health-insurance">What Is Health Insurance?</h2>
-  <p>A cardiac bypass surgery in Mumbai costs ${formatMoney("₹8L–₹12L")}. A routine appendicitis operation: ${formatMoney("₹80k–₹1.5L")}. ICU care for a week: ${formatMoney("₹2L–₹5L")}.</p>
-  
-  <p>Healthcare costs in India's metros are rising faster than your salary. ${formatMoney("₹5L+ annual healthcare spending")} per family isn't unusual. One major surgery can wipe out years of savings.</p>
-  
-  <p><strong>Health insurance is an agreement between you and an insurance company.</strong> You pay a premium (monthly or annually). If you get hospitalized, the insurer pays the hospital bills—up to a limit.</p>
-  
-  <p>Here's how it works in real numbers: You pay ${formatMoney("₹5,000/month")} premium. Your policy covers ${formatMoney("₹5L–₹10L")} per year. If you need surgery costing ${formatMoney("₹3L")}, the insurer pays it (minus any co-pay or deductibles). You pay ${formatMoney("₹0–₹30k")} instead of ${formatMoney("₹3L")}.</p>
-  
+  <p>A cardiac bypass in Mumbai costs <strong>₹8L–₹12L</strong>. An appendicitis operation: <strong>₹80k–₹1.5L</strong>. A week in ICU: <strong>₹2L–₹5L</strong>. Healthcare costs in India's metros are rising faster than salaries. One major surgery can wipe out years of savings.</p>
+
+  <p><strong>Health insurance is an agreement between you and an insurance company.</strong> You pay a premium. If you get hospitalized, the insurer pays the hospital bills—up to a limit.</p>
+
+  <p>In real numbers: your policy covers <strong>₹5L–₹10L</strong> per year. If you need surgery costing <strong>₹3L</strong>, the insurer pays it, minus any co-pay or deductible. You pay <strong>₹0–₹30k</strong> instead of <strong>₹3L</strong>.</p>
+
   <h3 id="how-health-insurance-works">How Health Insurance Works</h3>
   <ol>
-    <li><strong>Take a policy:</strong> Choose a sum insured (coverage amount), pay premium.</li>
-    <li><strong>Get hospitalized:</strong> For illness, injury, or planned surgery.</li>
-    <li><strong>File a claim:</strong> Cashless (if hospital is empaneled) or reimbursement (pay first, claim later).</li>
-    <li><strong>Insurer pays:</strong> Hospital bills covered up to your sum insured, minus room limits, co-pay, deductibles.</li>
+    <li><strong>Take a policy:</strong> choose a sum insured, pay the premium.</li>
+    <li><strong>Get hospitalized:</strong> illness, injury, or planned surgery.</li>
+    <li><strong>File a claim:</strong> cashless at an empaneled hospital, or reimbursement—pay first, claim later.</li>
+    <li><strong>Insurer pays:</strong> up to your sum insured, minus room limits, co-pay, deductibles.</li>
   </ol>
-  
-  <p><strong>Real scenario:</strong> Priya, 32, Mumbai. Needs appendicitis surgery. Total bill: ${formatMoney("₹1.2L")}. Her policy: ${formatMoney("₹5L sum insured")}, ${formatMoney("₹3k/day room limit")}, ${formatMoney("10% co-pay")}.</p>
-  
-  <p>Room cost: ${formatMoney("₹5k/day × 3 days = ₹15k")} (exceeds ₹3k/day limit by ${formatMoney("₹2k/day = ₹6k total")}). Co-pay: ${formatMoney("10% of ₹1.2L = ₹12k")}. Her out-of-pocket: ${formatMoney("₹6k + ₹12k = ₹18k")}. Insurer pays: ${formatMoney("₹1.02L")}.</p>
-  
+
+  <p><strong>Real scenario:</strong> Priya, 32, Mumbai, needs appendicitis surgery. Bill: <strong>₹1.2L</strong>. Her policy: <strong>₹5L sum insured</strong>, <strong>₹3k/day room limit</strong>, <strong>10% co-pay</strong>. Her room costs ₹5k/day for 3 days—<strong>₹2k/day = ₹6k total</strong> over the limit. Co-pay: <strong>10% of ₹1.2L = ₹12k</strong>. Her out-of-pocket: <strong>₹6k + ₹12k = ₹18k</strong>. The insurer pays <strong>₹1.02L</strong>.</p>
+
   <h3 id="key-components">Key Components Explained</h3>
-  
-  <p><strong>Sum Assured (Coverage Limit):</strong> Maximum amount insurer pays per year. ${formatMoney("₹5L–₹10L")} common for individuals, ${formatMoney("₹10L–₹25L")} for families. If your bill exceeds this, you pay the excess.</p>
-  
-  <p><strong>Premium:</strong> What you pay monthly or annually. Depends on age, city, sum insured, medical history. A 30-year-old in Delhi pays ${formatMoney("₹5k–₹8k/year")} for ${formatMoney("₹5L")} coverage. Same person at 50: ${formatMoney("₹12k–₹18k/year")}.</p>
-  
-  <p><strong>Room Rent Limit:</strong> Maximum per day the insurer covers for your hospital room. ${formatMoney("₹2k–₹5k/day")} typical. If you choose a ${formatMoney("₹8k/day")} room, you pay ${formatMoney("₹3k/day")} extra—and that triggers a proportional deduction on ALL charges (surgery, medicines, ICU).</p>
-  
-  <p><strong>Co-pay Percentage:</strong> You pay X%, insurer pays the rest. ${formatMoney("10–20%")} common. Applied to every claim. Not optional.</p>
-  
-  <p><strong>Deductible/Excess:</strong> Fixed amount you pay first before insurer pays anything. ${formatMoney("₹5k–₹25k")} typical. Example: ${formatMoney("₹10k deductible")}, ${formatMoney("₹1L bill")} → You pay ${formatMoney("₹10k")}, insurer pays ${formatMoney("₹90k")}.</p>
-  
-  <p><strong>Waiting Periods:</strong> Time before certain conditions are covered. Pre-existing diseases: ${formatMoney("24–48 months")}. Specific ailments (cataract, hernia): ${formatMoney("12–24 months")}.</p>
-  
-  <p><strong>Exclusions:</strong> What's NOT covered. Cosmetic surgery, dental (except accidental), consumables (gloves, syringes), alternative medicine (AYUSH) usually excluded.</p>
-  
+
+  <p><strong>Sum Insured:</strong> the maximum the insurer pays per year. <strong>₹5L–₹10L</strong> is common for individuals, <strong>₹10L–₹25L</strong> for families. If your bill exceeds it, you pay the excess.</p>
+
+  <p><strong>Premium:</strong> what you pay, monthly or annually. Depends on age, city, sum insured, medical history. A 30-year-old in Delhi pays <strong>₹5k–₹8k/year</strong> for <strong>₹5L</strong> coverage. The same person at 50: <strong>₹12k–₹18k/year</strong>.</p>
+
+  <p><strong>Room Rent Limit:</strong> the daily cap on your hospital room. <strong>₹2k–₹5k/day</strong> is typical. Choose an <strong>₹8k/day</strong> room and you pay the extra—and that triggers a proportional deduction on ALL charges: surgery, medicines, ICU.</p>
+
+  <p><strong>Co-pay:</strong> you pay X% of every claim, the insurer pays the rest. <strong>10–20%</strong> is common. Not optional.</p>
+
+  <p><strong>Deductible:</strong> a fixed amount you pay first. <strong>₹5k–₹25k</strong> is typical. A <strong>₹10k deductible</strong> on a <strong>₹1L bill</strong>: you pay <strong>₹10k</strong>, the insurer pays <strong>₹90k</strong>.</p>
+
+  <p><strong>Waiting Periods:</strong> pre-existing diseases wait <strong>24–48 months</strong>. Specific ailments like cataract or hernia: <strong>12–24 months</strong>.</p>
+
+  <p><strong>Exclusions:</strong> what's NOT covered—cosmetic surgery, dental (except accidental), consumables like gloves and syringes, and usually AYUSH treatments.</p>
+
   <h3 id="plan-types">Main Plan Types in India</h3>
-  
-  <p><strong>Individual Health Insurance:</strong> Covers one person. Premium: ${formatMoney("₹5k–₹10k/year")} for ${formatMoney("₹5L")} coverage. Best for: Singles, young professionals without dependents.</p>
-  
-  <p><strong>Family Floater Policies:</strong> Covers entire family under one sum insured. Premium: ${formatMoney("₹15k–₹25k/year")} for ${formatMoney("₹10L–₹20L")} shared coverage. Best for: Families of 2–4 members. Risk: One major claim exhausts the limit for all.</p>
-  
-  <p><strong>Group Health Insurance:</strong> Provided by employer. Premium: Employer pays, or shared. Coverage: Usually ${formatMoney("₹3L–₹5L")} per employee. Best for: Employees (it's free or subsidized). Limitation: Coverage ends when you leave the job.</p>
-  
-  <p><strong>Critical Illness Covers:</strong> Lump sum payout on diagnosis of specified diseases (cancer, heart attack, stroke). ${formatMoney("₹5L–₹50L")} payout. Separate from health insurance. Premium: ${formatMoney("₹10k–₹30k/year")} for ${formatMoney("₹10L")} cover.</p>
-  
-  <p><strong>Mediclaim vs Health Insurance:</strong> Mediclaim is the old term (pre-2013). Modern "health insurance" includes pre/post hospitalization, OPD, wellness benefits. Same thing, different name.</p>
-  
+
+  <p><strong>Individual:</strong> covers one person. <strong>₹5k–₹10k/year</strong> for <strong>₹5L</strong> coverage. Best for singles and young professionals.</p>
+
+  <p><strong>Family Floater:</strong> the whole family shares one sum insured. <strong>₹15k–₹25k/year</strong> for <strong>₹10L–₹20L</strong>. The risk: one major claim exhausts the limit for everyone.</p>
+
+  <p><strong>Group (Employer):</strong> usually <strong>₹3L–₹5L</strong> per employee, free or subsidized. The catch: coverage ends when you leave the job.</p>
+
+  <p><strong>Critical Illness:</strong> a lump sum on diagnosis of specified diseases—cancer, heart attack, stroke. <strong>₹5L–₹50L</strong> payout; <strong>₹10k–₹30k/year</strong> premium for <strong>₹10L</strong> cover. Separate from health insurance.</p>
+
+  <p><strong>Mediclaim vs health insurance:</strong> mediclaim is the old, pre-2013 term. Modern health insurance adds pre/post hospitalization, OPD and wellness benefits. Same idea, broader cover.</p>
+
   <h3 id="benefits">Key Benefits of Health Insurance</h3>
-  
-  <p><strong>Peace of mind:</strong> You don't worry about medical bills wiping out savings.</p>
-  
-  <p><strong>Covers major medical expenses:</strong> Hospitalization, surgery, ICU, emergency care—all covered.</p>
-  
-  <p><strong>Preventive care (some plans):</strong> Health check-ups, vaccinations covered up to a limit.</p>
-  
-  <p><strong>Tax benefits (Section 80D):</strong> Premium payments are tax-deductible. Up to ${formatMoney("₹25k/year")} for self/spouse/children, ${formatMoney("₹50k/year")} if parents included.</p>
-  
-  <p><strong>Add-on riders:</strong> Maternity, personal accident, critical illness can be added for extra premium.</p>
-  
-  <h3 id="misconceptions">Common Misconceptions</h3>
-  
-  <p><strong>"Health insurance covers everything":</strong> NO. Room limits, co-pay, deductibles, exclusions mean you still pay out-of-pocket. Expect ${formatMoney("₹20k–₹50k")} per hospitalization even with insurance.</p>
-  
-  <p><strong>"I'm young, don't need it":</strong> Risk exists at any age. Accidents, appendicitis, infections don't care about your age. Plus, premiums are cheaper when you're young (${formatMoney("₹5k/year")} at 30 vs ${formatMoney("₹18k/year")} at 50).</p>
-  
-  <p><strong>"Government insurance is enough":</strong> Government schemes (Ayushman Bharat) cover ${formatMoney("₹5L")} but only for below-poverty-line families. Private employees need private insurance.</p>
-  
-  <h3 id="real-world-scenario">Real-World Scenario</h3>
-  
-  <p><strong>Case:</strong> Rohan, 35, Mumbai. ${formatMoney("₹5L health insurance")} policy. Gets appendicitis surgery.</p>
-  
-  <p><strong>Hospital bill:</strong> ${formatMoney("₹50k")} total.</p>
-  
-  <p><strong>Policy details:</strong> Room limit ${formatMoney("₹3k/day")} (actual room: ${formatMoney("₹4k/day")}). Co-pay: ${formatMoney("10%")}. No deductible.</p>
-  
-  <p><strong>What policy covers:</strong> Room excess: ${formatMoney("₹1k/day × 2 days = ₹2k")} (proportional deduction applies, but simplified here). Co-pay: ${formatMoney("10% of ₹50k = ₹5k")}. Total out-of-pocket: ${formatMoney("₹7k")}. Insurer pays: ${formatMoney("₹43k")}.</p>
-  
-  <p><strong>Without insurance:</strong> Rohan would pay ${formatMoney("₹50k")} himself. With insurance: ${formatMoney("₹7k")}. Savings: ${formatMoney("₹43k")}.</p>
-  
-  <h3 id="next-steps">Next Steps</h3>
-  
-  <p>Understanding health insurance is the first step. Next:</p>
   <ul>
-    <li><a href="/policychecker" class="text-[#00B4D8] hover:underline">Analyze your existing policy</a> to see what you're actually covered for</li>
-    <li><a href="/calculator" class="text-[#00B4D8] hover:underline">Calculate your real costs</a> based on your policy terms</li>
-    <li><a href="/compare" class="text-[#00B4D8] hover:underline">Compare policies</a> to find better coverage</li>
+    <li><strong>Peace of mind:</strong> a hospital bill doesn't wipe out your savings.</li>
+    <li><strong>Major expenses covered:</strong> hospitalization, surgery, ICU, emergency care.</li>
+    <li><strong>Preventive care:</strong> some plans cover check-ups and vaccinations up to a limit.</li>
+    <li><strong>Tax benefits (Section 80D):</strong> up to <strong>₹25k/year</strong> deductible for self/spouse/children, <strong>₹50k/year</strong> if parents are included.</li>
+    <li><strong>Riders:</strong> maternity, personal accident, critical illness can be added for extra premium.</li>
   </ul>
+
+  <h3 id="misconceptions">Common Misconceptions</h3>
+
+  <p><strong>"Health insurance covers everything."</strong> No. Room limits, co-pay, deductibles and exclusions mean you still pay. Expect <strong>₹20k–₹50k</strong> out-of-pocket per hospitalization even with insurance.</p>
+
+  <p><strong>"I'm young, I don't need it."</strong> Accidents, appendicitis and infections don't check your age. And premiums are cheapest when you're young: <strong>₹5k/year</strong> at 30 vs <strong>₹18k/year</strong> at 50.</p>
+
+  <p><strong>"Government insurance is enough."</strong> Ayushman Bharat covers <strong>₹5L</strong>, but only for below-poverty-line families. Private employees need private insurance.</p>
+
+  <h3 id="real-world-scenario">Real-World Scenario</h3>
+
+  <p>Rohan, 35, Mumbai. <strong>₹5L health insurance</strong>. Appendicitis surgery, bill <strong>₹50k</strong>. Room limit <strong>₹3k/day</strong>, actual room <strong>₹4k/day</strong>, <strong>10%</strong> co-pay, no deductible.</p>
+
+  <p>Room excess: <strong>₹1k/day × 2 days = ₹2k</strong>. Co-pay: <strong>10% of ₹50k = ₹5k</strong>. Rohan pays <strong>₹7k</strong>; the insurer pays <strong>₹43k</strong>. Without insurance, he'd pay the full <strong>₹50k</strong> himself.</p>
+
+  <h3 id="next-steps">Next Steps</h3>
+
+  <p>How health insurance works is the easy part. The room limit, co-pay and waiting periods that decide YOUR bill are written in your policy document, not in any guide. Generic advice ends here—check what your policy actually says.</p>
 </div>
 `;
 
@@ -149,117 +128,92 @@ export const article10Content = `
 <div class="blog-article-content">
   <h2 id="what-is-life-insurance">What Is Life Insurance?</h2>
   <p>If you die today, is your family financially secure?</p>
-  
-  <p>The average Indian earner makes ${formatMoney("₹8–12L/year")}. If you die suddenly, that income stops. Your family still has: home loan EMI (${formatMoney("₹30k–₹50k/month")}), kids' education (${formatMoney("₹5L–₹10L/year")} per child), daily expenses (${formatMoney("₹40k–₹60k/month")}).</p>
-  
-  <p><strong>Life insurance is an agreement:</strong> You pay a premium. If you die during the policy term, the insurer pays your family a lump sum (sum assured). That money replaces your income, repays loans, funds education, covers expenses.</p>
-  
-  <p><strong>Real example:</strong> Ravi, 35, earns ${formatMoney("₹30L/year")}. Buys ${formatMoney("₹1cr")} term life policy. Premium: ${formatMoney("₹500/month")}. If Ravi dies, his family gets ${formatMoney("₹1cr")} tax-free. That's ${formatMoney("3+ years")} of his income, enough to pay off home loan (${formatMoney("₹50L")}), fund kids' education (${formatMoney("₹30L")}), and living expenses (${formatMoney("₹20L")}).</p>
-  
+
+  <p>The average Indian earner makes <strong>₹8–12L/year</strong>. If that income stops suddenly, the bills don't: home loan EMI (<strong>₹30k–₹50k/month</strong>), kids' education (<strong>₹5L–₹10L/year</strong> per child), daily expenses (<strong>₹40k–₹60k/month</strong>).</p>
+
+  <p><strong>Life insurance is an agreement:</strong> you pay a premium. If you die during the policy term, the insurer pays your family a lump sum—the sum assured. That money replaces your income, repays loans, funds education.</p>
+
+  <p><strong>Real example:</strong> Ravi, 35, earns <strong>₹30L/year</strong>. He buys a <strong>₹1cr</strong> term policy for <strong>₹500/month</strong>. If he dies, his family gets <strong>₹1cr</strong> tax-free—enough to clear the home loan (<strong>₹50L</strong>), fund the kids' education (<strong>₹30L</strong>), and cover living expenses (<strong>₹20L</strong>).</p>
+
   <h3 id="how-life-insurance-works">How Life Insurance Works</h3>
-  
-  <p><strong>Step 1:</strong> You pay monthly/annual premium to the insurer.</p>
-  <p><strong>Step 2:</strong> Insurer invests your premium money (that's how they make profit).</p>
-  <p><strong>Step 3:</strong> If you die during the policy term, insurer pays sum assured to your nominee (beneficiary).</p>
-  <p><strong>Step 4:</strong> If you survive the term (term insurance), you get nothing. If you have whole life/endowment, you get maturity benefit.</p>
-  
-  <p><strong>Real scenario:</strong> Priya, 35, software engineer. ${formatMoney("₹1cr term life")} policy, ${formatMoney("₹500/month")} premium, 30-year term. If she dies in year 5, her family gets ${formatMoney("₹1cr")}. If she survives all 30 years, she gets nothing (premium is the cost of protection).</p>
-  
+  <ol>
+    <li>You pay a monthly or annual premium.</li>
+    <li>The insurer invests that money—that's how they profit.</li>
+    <li>If you die during the term, the insurer pays the sum assured to your nominee.</li>
+    <li>If you survive the term: term insurance pays nothing; whole life and endowment pay a maturity benefit.</li>
+  </ol>
+
+  <p><strong>Real scenario:</strong> Priya, 35, takes <strong>₹1cr term life</strong> at <strong>₹500/month</strong> for a 30-year term. If she dies in year 5, her family gets <strong>₹1cr</strong>. If she survives all 30 years, she gets nothing back—the premium was the cost of protection.</p>
+
   <h3 id="types-of-life-insurance">Types of Life Insurance</h3>
-  
-  <h4 id="term-life">Term Life Insurance</h4>
-  <p><strong>What:</strong> Pure protection. Pay premium. If you die → family gets sum assured. If you survive → nothing. Cheapest option.</p>
-  <p><strong>Who:</strong> Anyone protecting dependents. Young professionals, parents, breadwinners.</p>
-  <p><strong>Cost:</strong> ${formatMoney("₹300–₹500/month")} for ${formatMoney("₹1cr")} coverage (age 30). ${formatMoney("₹800–₹1,200/month")} for same coverage at age 45.</p>
-  <p><strong>Example:</strong> ${formatMoney("₹1cr")} term life, 30-year term, age 35: ${formatMoney("₹400/month")} premium. If death: ${formatMoney("₹1cr")} to family. If survival: ${formatMoney("₹0")} (protection cost).</p>
-  
-  <h4 id="whole-life">Whole Life Insurance</h4>
-  <p><strong>What:</strong> Lifelong protection + investment component. Covers you until death (age 99–100). Premiums higher, includes cash value buildup.</p>
-  <p><strong>Who:</strong> High-income earners, estate planning, wealth transfer.</p>
-  <p><strong>Cost:</strong> ${formatMoney("₹3,000–₹5,000+/month")} for ${formatMoney("₹1cr")} coverage. Expensive, but builds cash value you can borrow against.</p>
-  
-  <h4 id="endowment">Endowment Plans</h4>
-  <p><strong>What:</strong> Mixed: protection + savings + maturity benefit. If you die → family gets sum assured. If you survive → you get sum assured (or higher) as maturity benefit.</p>
-  <p><strong>Who:</strong> Risk-averse investors who want guaranteed returns + protection.</p>
-  <p><strong>Cost:</strong> ${formatMoney("₹2,000–₹4,000/month")} for ${formatMoney("₹1cr")} coverage. Premiums 4–6× higher than term life, but you get money back if you survive.</p>
-  <p><strong>Returns:</strong> Typically ${formatMoney("5–6%")} annual returns (guaranteed), lower than mutual funds but safer.</p>
-  
+
+  <h3 id="term-life">Term Life Insurance</h3>
+  <p>Pure protection. Die during the term → family gets the sum assured. Survive → nothing. Cheapest option: <strong>₹300–₹500/month</strong> buys <strong>₹1cr</strong> at age 30; <strong>₹800–₹1,200/month</strong> at 45. For anyone with dependents.</p>
+
+  <h3 id="whole-life">Whole Life Insurance</h3>
+  <p>Lifelong cover (to age 99–100) plus a cash-value component you can borrow against. <strong>₹3,000–₹5,000+/month</strong> for <strong>₹1cr</strong>. For high earners, estate planning, wealth transfer.</p>
+
+  <h3 id="endowment">Endowment Plans</h3>
+  <p>Protection plus savings. Die → family gets the sum assured. Survive → YOU get a maturity benefit. <strong>₹2,000–₹4,000/month</strong> for <strong>₹1cr</strong>—4–6× the cost of term—with guaranteed returns around <strong>5–6%</strong>. For risk-averse savers.</p>
+
   <h3 id="key-terms">Key Terms Explained</h3>
-  
-  <p><strong>Sum Assured:</strong> Amount your family gets if you die. ${formatMoney("₹50L–₹2cr")} typical range. Should be 10–15× your annual income.</p>
-  
-  <p><strong>Premium:</strong> What you pay monthly/annually. Depends on age, sum assured, policy type, health, occupation. Term life: ${formatMoney("₹300–₹500/month")} for ${formatMoney("₹1cr")}. Endowment: ${formatMoney("₹2k–₹4k/month")} for same.</p>
-  
-  <p><strong>Maturity Benefit:</strong> Money you get if you survive the policy term (endowment/whole life only). Term life has NO maturity benefit.</p>
-  
-  <p><strong>Riders:</strong> Additional covers for extra premium. Accident death (2× sum assured), critical illness (lump sum on diagnosis), disability income (monthly payout if disabled).</p>
-  
-  <p><strong>Claim Settlement Period:</strong> Time insurer takes to pay claim after your death. Typically ${formatMoney("30–90 days")} if documents are complete. IRDAI mandates quick settlement (most insurers settle within 7–15 days for standard cases).</p>
-  
-  <p><strong>Waiting Period:</strong> Suicide claims: ${formatMoney("12 months")} (standard exclusion). Pre-existing diseases (critical illness rider): ${formatMoney("90 days–1 year")}.</p>
-  
-  <p><strong>Policy Tenure:</strong> How long the policy runs. Term life: ${formatMoney("10–40 years")} (you choose). Whole life: Until age 99–100. Endowment: ${formatMoney("15–30 years")} typical.</p>
-  
+
+  <p><strong>Sum Assured:</strong> what your family gets if you die. <strong>₹50L–₹2cr</strong> is typical. Aim for 10–15× your annual income.</p>
+
+  <p><strong>Premium:</strong> depends on age, sum assured, policy type, health, occupation. Term: <strong>₹300–₹500/month</strong> for <strong>₹1cr</strong>. Endowment: <strong>₹2k–₹4k/month</strong> for the same cover.</p>
+
+  <p><strong>Maturity Benefit:</strong> paid only if you survive the term—endowment and whole life only. Term life has none.</p>
+
+  <p><strong>Riders:</strong> add-ons for extra premium—accidental death (2× sum assured), critical illness lump sum, disability income.</p>
+
+  <p><strong>Claim Settlement:</strong> typically <strong>30–90 days</strong> with complete documents; most insurers settle standard cases in 7–15 days.</p>
+
+  <p><strong>Waiting Periods:</strong> suicide is excluded for the first <strong>12 months</strong>. Critical illness riders: <strong>90 days–1 year</strong>.</p>
+
+  <p><strong>Tenure:</strong> term life runs <strong>10–40 years</strong> (you choose). Whole life: to age 99–100. Endowment: <strong>15–30 years</strong> typical.</p>
+
   <h3 id="who-needs">Who Needs Life Insurance?</h3>
-  
-  <p><strong>Breadwinners with dependents:</strong> If your family relies on your income, you need life insurance. Coverage: 10–15× annual income minimum.</p>
-  
-  <p><strong>Young professionals with loans:</strong> Home loan (${formatMoney("₹50L+")}), car loan (${formatMoney("₹10L+")}). If you die, family inherits the debt. Life insurance pays off loans.</p>
-  
-  <p><strong>Parents wanting to secure child's future:</strong> Education costs ${formatMoney("₹20L–₹50L")} per child (engineering/medical). Life insurance ensures education funding even if you die.</p>
-  
-  <p><strong>Business owners:</strong> Key person insurance protects business if founder dies. Business loan coverage ensures company survives.</p>
-  
-  <p><strong>Stay-at-home parents:</strong> Even without income, they provide childcare (worth ${formatMoney("₹30k–₹50k/month")} if hired). Life insurance covers cost of replacement care.</p>
-  
+  <ul>
+    <li><strong>Breadwinners:</strong> if your family relies on your income, cover 10–15× annual income minimum.</li>
+    <li><strong>Anyone with loans:</strong> home loan (<strong>₹50L+</strong>), car loan (<strong>₹10L+</strong>). Without insurance, your family inherits the debt.</li>
+    <li><strong>Parents:</strong> education costs <strong>₹20L–₹50L</strong> per child for engineering or medicine.</li>
+    <li><strong>Business owners:</strong> key-person cover keeps the business alive if the founder dies.</li>
+    <li><strong>Stay-at-home parents:</strong> the childcare they provide would cost <strong>₹30k–₹50k/month</strong> to hire.</li>
+  </ul>
+
   <h3 id="benefits">Life Insurance Benefits</h3>
-  
-  <p><strong>Family financial security:</strong> Replaces your income if you die. ${formatMoney("₹1cr")} coverage = ${formatMoney("8–10 years")} of ₹10L/year income.</p>
-  
-  <p><strong>Debt repayment:</strong> Home loan (${formatMoney("₹50L")}), personal loans cleared. Family isn't burdened.</p>
-  
-  <p><strong>Education funding:</strong> Kids' education (${formatMoney("₹30L+")} per child) secured even if you die.</p>
-  
-  <p><strong>Tax benefits:</strong> Premium payments deductible under Section 80C (up to ${formatMoney("₹1.5L/year")}). Death benefit is tax-free (Section 10(10D)).</p>
-  
-  <p><strong>Wealth creation:</strong> Endowment/whole life build cash value. Maturity benefit can be ${formatMoney("₹1cr+")} for retirement corpus.</p>
-  
+  <ul>
+    <li><strong>Income replacement:</strong> <strong>₹1cr</strong> cover = <strong>8–10 years</strong> of a ₹10L/year income.</li>
+    <li><strong>Debt cleared:</strong> home loan (<strong>₹50L</strong>) and personal loans repaid, not inherited.</li>
+    <li><strong>Education secured:</strong> <strong>₹30L+</strong> per child, whatever happens to you.</li>
+    <li><strong>Tax benefits:</strong> premiums deductible under Section 80C (up to <strong>₹1.5L/year</strong>); the death benefit is tax-free under Section 10(10D).</li>
+    <li><strong>Wealth building:</strong> endowment and whole life build cash value; maturity can fund a retirement corpus.</li>
+  </ul>
+
   <h3 id="real-scenario">Real-World Scenario</h3>
-  
-  <p><strong>Case:</strong> Vikram, 32, Mumbai. ${formatMoney("₹12L annual income")}. Two kids (ages 5 and 7). Home loan: ${formatMoney("₹50L")} remaining. Buys ${formatMoney("₹1cr term life")} policy, ${formatMoney("₹400/month")} premium, 30-year term.</p>
-  
-  <p><strong>If Vikram dies:</strong> Family gets ${formatMoney("₹1cr")} tax-free.</p>
-  
-  <p><strong>Breakdown:</strong></p>
+
+  <p>Vikram, 32, Mumbai. <strong>₹12L annual income</strong>, two kids (5 and 7), <strong>₹50L</strong> home loan remaining. He buys <strong>₹1cr term life</strong> at <strong>₹400/month</strong>, 30-year term.</p>
+
+  <p>If Vikram dies, his family gets <strong>₹1cr</strong> tax-free:</p>
   <ul>
-    <li>Home loan repayment: ${formatMoney("₹50L")}</li>
-    <li>Kids' education (₹15L × 2): ${formatMoney("₹30L")}</li>
-    <li>Living expenses buffer (2 years @ ₹10L/year): ${formatMoney("₹20L")}</li>
+    <li>Home loan repayment: <strong>₹50L</strong></li>
+    <li>Kids' education (₹15L × 2): <strong>₹30L</strong></li>
+    <li>Living expenses buffer (2 years @ ₹10L/year): <strong>₹20L</strong></li>
   </ul>
-  
-  <p><strong>Total: ₹1cr</strong> - exactly covered.</p>
-  
-  <p><strong>Without insurance:</strong> Family inherits ₹50L debt, no income, kids' education uncertain. With insurance: Financial security maintained.</p>
-  
+
+  <p><strong>Total: ₹1cr</strong>—exactly covered. Without insurance, the family inherits ₹50L of debt with no income and an uncertain future for the kids.</p>
+
   <h3 id="misconceptions">Common Misconceptions</h3>
-  
-  <p><strong>"Only breadwinners need life insurance":</strong> Wrong. Stay-at-home parents provide childcare worth ₹30k–₹50k/month. If they die, family needs to hire help. Life insurance covers that cost.</p>
-  
-  <p><strong>"Life insurance is investment":</strong> Term life is NOT investment (you get nothing if you survive). Endowment/whole life ARE investments (you get maturity benefit), but returns are lower (5–6%) than mutual funds (10–12%).</p>
-  
-  <p><strong>"Young people don't need it":</strong> Wrong. Premiums are cheapest when you're young (₹400/month at 30 vs ₹1,200/month at 45 for same ₹1cr coverage). Buy early, lock in low rates.</p>
-  
-  <p><strong>"I'll get it later":</strong> Premiums increase with age. Health issues (diabetes, hypertension) can make you uninsurable or expensive to insure. Buy when you're young and healthy.</p>
-  
+
+  <p><strong>"Only breadwinners need it."</strong> A stay-at-home parent's childcare would cost ₹30k–₹50k/month to replace. Life insurance covers that cost.</p>
+
+  <p><strong>"Life insurance is an investment."</strong> Term life is not—you get nothing if you survive. Endowment and whole life do return money, but at 5–6% vs 10–12% from mutual funds.</p>
+
+  <p><strong>"I'll buy it later."</strong> Premiums rise with age—₹400/month at 30 becomes ₹1,200/month at 45 for the same ₹1cr. And diabetes or hypertension later can make you expensive to insure, or uninsurable. Buy young and healthy.</p>
+
   <h3 id="next-steps">Next Steps</h3>
-  
-  <p>Calculate how much coverage you need: 10–15× your annual income minimum. Include debts, education costs, living expenses.</p>
-  
-  <ul>
-    <li><a href="/policychecker" class="text-[#00B4D8] hover:underline">Analyze your existing term policy</a> to understand what your family actually gets</li>
-    <li><a href="/calculator" class="text-[#00B4D8] hover:underline">Calculate benefit scenarios</a> based on your income and expenses</li>
-    <li><a href="/compare" class="text-[#00B4D8] hover:underline">Compare term life policies</a> to find the best coverage</li>
-  </ul>
+
+  <p>Work out your number: 10–15× annual income, plus debts, plus education costs. Then read the fine print—the sum assured, exclusions and riders on paper are what your family will actually get. Generic advice ends here; check what YOUR policy actually says.</p>
 </div>
 `;
 
@@ -310,103 +264,86 @@ export const article10FAQs = [
 export const article11Content = `
 <div class="blog-article-content">
   <h2 id="car-insurance-explained">Car Insurance Explained</h2>
-  <p>India sees ${formatMoney("1.5 lakh+ road deaths")} annually. ${formatMoney("5 lakh+ accidents")} every year. Your car is involved in an accident. Damage to your car: ${formatMoney("₹2L")}. Damage to third party's car: ${formatMoney("₹50k")}. Hospital bills for injured third party: ${formatMoney("₹3L")}.</p>
-  
-  <p>Without vehicle insurance, you pay ${formatMoney("₹5.5L")} yourself. With insurance, you pay ${formatMoney("₹0–₹5k")} (deductible). The rest is covered.</p>
-  
-  <p><strong>Vehicle insurance protects:</strong> Your car + third party (other person's car/property/injuries). You pay premium. Insurer pays repair costs or liability claims.</p>
-  
+  <p>India sees 1.5 lakh+ road deaths and 5 lakh+ accidents every year. Say your car is in one. Damage to your car: <strong>₹2L</strong>. Damage to the other car: <strong>₹50k</strong>. Hospital bills for the injured third party: <strong>₹3L</strong>.</p>
+
+  <p>Without insurance, that's <strong>₹5.5L</strong> from your pocket. With insurance: <strong>₹0–₹5k</strong> (the deductible). The rest is covered.</p>
+
+  <p><strong>Vehicle insurance protects two things:</strong> your car, and the third party—the other person's car, property, and injuries.</p>
+
   <h3 id="two-types">Two Types of Vehicle Insurance</h3>
-  
-  <h4 id="third-party">Third-Party Liability Insurance (Mandatory)</h4>
-  <p><strong>What:</strong> You damage someone else's car/property/health. Insurer pays third party's costs. You pay nothing (if liability proven).</p>
-  <p><strong>Cost:</strong> ${formatMoney("₹2,000–₹4,000/year")} for cars. Mandatory by law (Motor Vehicles Act).</p>
-  <p><strong>Limitation:</strong> Your car damage NOT covered. Only third-party liability.</p>
-  <p><strong>Real scenario:</strong> You hit another car. Their car damage: ${formatMoney("₹3L")}. Their hospital bills: ${formatMoney("₹50k")}. Third-party insurance covers ${formatMoney("₹3.5L")} to them. Your car repair (${formatMoney("₹2L")}) is NOT covered—you pay yourself.</p>
-  
-  <h4 id="comprehensive">Comprehensive Insurance (Optional but Smart)</h4>
-  <p><strong>What:</strong> Third-party + your own car damage. Covers: Accidents, theft, natural calamity (flood, hail), vandalism.</p>
-  <p><strong>Cost:</strong> ${formatMoney("₹8,000–₹15,000/year")} for ₹10L car (depends on car value, age, location).</p>
-  <p><strong>Deductible:</strong> You pay first ${formatMoney("₹1,000–₹5,000")} per claim, insurer covers rest.</p>
-  <p><strong>Real scenario:</strong> Your car ₹2L damaged in accident. Deductible: ${formatMoney("₹1,000")}. Insurer pays: ${formatMoney("₹1.99L")}. Your out-of-pocket: ${formatMoney("₹1,000")} (not ₹2L).</p>
-  
+
+  <h3 id="third-party">Third-Party Liability (Mandatory)</h3>
+  <p>Covers damage YOU cause to others—their car, property, health. Mandatory under the Motor Vehicles Act. Costs <strong>₹2,000–₹4,000/year</strong> for cars.</p>
+  <p><strong>The catch:</strong> your own car is NOT covered. You hit another car: their <strong>₹3L</strong> damage and <strong>₹50k</strong> hospital bills are paid (<strong>₹3.5L</strong> total)—but your own <strong>₹2L</strong> repair is yours to pay.</p>
+
+  <h3 id="comprehensive">Comprehensive (Optional but Smart)</h3>
+  <p>Third-party cover plus your own car: accidents, theft, flood, hail, vandalism. Costs <strong>₹8,000–₹15,000/year</strong> for a ₹10L car. You pay a deductible of <strong>₹1,000–₹5,000</strong> per claim; the insurer pays the rest.</p>
+  <p><strong>Example:</strong> <strong>₹2L</strong> accident damage, <strong>₹1,000</strong> deductible. The insurer pays <strong>₹1.99L</strong>; you pay <strong>₹1,000</strong>—not ₹2L.</p>
+
   <h3 id="key-components">Key Components</h3>
-  
-  <p><strong>Premium:</strong> Annual cost. ${formatMoney("₹8k–₹15k/year")} for comprehensive, ${formatMoney("₹2k–₹4k/year")} for third-party only.</p>
-  
-  <p><strong>Sum Insured:</strong> Car's current value (IDV - Insured Declared Value). For ₹10L new car, IDV after 3 years: ${formatMoney("₹6L–₹7L")} (depreciation).</p>
-  
-  <p><strong>Deductible:</strong> Your contribution per claim. ${formatMoney("₹1k–₹5k")} standard. Higher deductible = lower premium.</p>
-  
-  <p><strong>No-Claim Bonus (NCB):</strong> Discount for claim-free years. Year 1: ${formatMoney("0%")}. Year 2: ${formatMoney("20%")}. Year 5: ${formatMoney("50%")}. ${formatMoney("₹10k premium")}, 5-year NCB = ${formatMoney("₹5k premium")} (50% off).</p>
-  
-  <p><strong>IDV (Insured Declared Value):</strong> Your car's current market value. Determines premium. Lower IDV = lower premium, but also lower claim payout.</p>
-  
+
+  <p><strong>Premium:</strong> <strong>₹8k–₹15k/year</strong> comprehensive, <strong>₹2k–₹4k/year</strong> third-party only.</p>
+
+  <p><strong>IDV (Insured Declared Value):</strong> your car's current market value. It sets both the premium and the maximum claim payout. A ₹10L car has an IDV of <strong>₹6L–₹7L</strong> after 3 years of depreciation. Lower IDV = lower premium, but also lower payout.</p>
+
+  <p><strong>Deductible:</strong> your share per claim, <strong>₹1k–₹5k</strong> standard. Higher deductible, lower premium.</p>
+
+  <p><strong>No-Claim Bonus (NCB):</strong> a renewal discount for claim-free years—up to <strong>50%</strong> after 5 years.</p>
+
   <h3 id="add-ons">Add-ons / Riders</h3>
-  
-  <p><strong>Zero Depreciation:</strong> Remove depreciation from claim. Cost: ${formatMoney("₹2k–₹4k extra")}. Worth it if car is new (< 5 years).</p>
-  
-  <p><strong>Engine Protection:</strong> Covers engine damage from flood/water. Cost: ${formatMoney("₹1k–₹2k extra")}. Essential if you live in flood-prone areas.</p>
-  
-  <p><strong>Breakdown Assistance:</strong> 24/7 roadside help, towing. Cost: ${formatMoney("₹500–₹1k extra")}. Useful for long drives.</p>
-  
-  <p><strong>Personal Accident Cover:</strong> Death/disability of driver. Cost: ${formatMoney("₹200–₹500 extra")}. Covers up to ${formatMoney("₹15L")} death benefit.</p>
-  
-  <h3 id="no-claim-bonus">No-Claim Bonus Explained</h3>
-  
-  <p>Every claim-free year, you get a discount on renewal premium:</p>
   <ul>
-    <li>0 years claim-free: ${formatMoney("0% discount")}</li>
-    <li>1 year: ${formatMoney("20% discount")}</li>
-    <li>2 years: ${formatMoney("25% discount")}</li>
-    <li>3 years: ${formatMoney("35% discount")}</li>
-    <li>4 years: ${formatMoney("45% discount")}</li>
-    <li>5+ years: ${formatMoney("50% discount")}</li>
+    <li><strong>Zero Depreciation</strong> (<strong>₹2k–₹4k extra</strong>): claims paid without depreciation cuts. Worth it for cars under 5 years old.</li>
+    <li><strong>Engine Protection</strong> (<strong>₹1k–₹2k extra</strong>): flood and water damage to the engine. Essential in flood-prone areas.</li>
+    <li><strong>Breakdown Assistance</strong> (<strong>₹500–₹1k extra</strong>): 24/7 roadside help and towing.</li>
+    <li><strong>Personal Accident Cover</strong> (<strong>₹200–₹500 extra</strong>): up to <strong>₹15L</strong> for death or disability of the driver.</li>
   </ul>
-  
-  <p><strong>Example:</strong> Base premium: ${formatMoney("₹10k/year")}. After 5 claim-free years: ${formatMoney("₹5k/year")} (50% off).</p>
-  
-  <p><strong>Important:</strong> Small claims (₹10k–₹20k) may not be worth it if you lose NCB. Calculate: Claim amount vs NCB value lost.</p>
-  
+
+  <h3 id="no-claim-bonus">No-Claim Bonus Explained</h3>
+  <p>Every claim-free year earns a discount on the renewal premium:</p>
+  <ul>
+    <li>1 year: <strong>20% discount</strong></li>
+    <li>2 years: <strong>25% discount</strong></li>
+    <li>3 years: <strong>35% discount</strong></li>
+    <li>4 years: <strong>45% discount</strong></li>
+    <li>5+ years: <strong>50% discount</strong></li>
+  </ul>
+
+  <p><strong>Example:</strong> a <strong>₹10k/year</strong> base premium drops to <strong>₹5k/year</strong> after 5 claim-free years.</p>
+
+  <p><strong>Important:</strong> a small claim (₹10k–₹20k) can cost more than it pays if it resets your NCB. Compare the claim amount against the NCB value you'd lose.</p>
+
   <h3 id="claim-process">Claim Process</h3>
   <ol>
-    <li>Report accident within 24–48 hours to insurer</li>
-    <li>File police complaint (for major accidents, mandatory by law)</li>
-    <li>Take photos of damage</li>
-    <li>Insurer sends surveyor to assess damage</li>
-    <li>Approval: Insurer approves claim amount</li>
-    <li>Repair: Cashless at network garage OR reimbursement after repair</li>
-    <li>Timeline: ${formatMoney("15–30 days")} typical</li>
+    <li>Report the accident to your insurer within 24–48 hours.</li>
+    <li>File a police complaint—mandatory for major accidents.</li>
+    <li>Photograph the damage.</li>
+    <li>The insurer's surveyor assesses it and approves an amount.</li>
+    <li>Repair: cashless at a network garage, or pay and get reimbursed.</li>
   </ol>
-  
+  <p>Typical timeline: <strong>15–30 days</strong>.</p>
+
   <h3 id="scenarios">Real-World Scenarios</h3>
-  
-  <p><strong>Scenario 1: Minor fender-bender</strong></p>
-  <p>Damage: ${formatMoney("₹15k")}. Your deductible: ${formatMoney("₹1k")}. Insurer covers: ${formatMoney("₹14k")}. Your NCB: 20% (worth ${formatMoney("₹2k/year")}). Should you claim? ${formatMoney("₹14k claim")} vs losing ${formatMoney("₹2k/year")} NCB = Claim is worth it if you don't plan to keep car 5+ years.</p>
-  
-  <p><strong>Scenario 2: Major accident</strong></p>
-  <p>Damage: ${formatMoney("₹1.5L")}. Your deductible: ${formatMoney("₹1k")}. Insurer covers: ${formatMoney("₹1.49L")}. Your out-of-pocket: ${formatMoney("₹1k")} (not ₹1.5L). Definitely claim.</p>
-  
-  <p><strong>Scenario 3: Hit-and-run</strong></p>
-  <p>Your car damage: ${formatMoney("₹80k")}. With comprehensive: Insurer covers ${formatMoney("₹79k")} (minus deductible). Without comprehensive: YOU pay ${formatMoney("₹80k")}.</p>
-  
+
+  <p><strong>Minor fender-bender:</strong> <strong>₹15k</strong> damage, <strong>₹1k</strong> deductible—the insurer covers <strong>₹14k</strong>. But claiming resets your NCB, worth <strong>₹2k/year</strong>. Do the math before you claim.</p>
+
+  <p><strong>Major accident:</strong> <strong>₹1.5L</strong> damage. The insurer pays <strong>₹1.49L</strong>; you pay <strong>₹1k</strong>—not ₹1.5L. Definitely claim.</p>
+
+  <p><strong>Hit-and-run:</strong> <strong>₹80k</strong> damage to your car. With comprehensive: the insurer pays <strong>₹79k</strong>. Without it: YOU pay <strong>₹80k</strong>.</p>
+
   <h3 id="claim-denials">Common Claim Denials</h3>
   <ul>
-    <li>Expired policy (most common reason)</li>
-    <li>Driving without valid license</li>
-    <li>DUI/drunk driving (100% denial)</li>
-    <li>Rash driving / reckless driving</li>
-    <li>Not reporting accident in time (24–48 hours)</li>
-    <li>Misstatement on claim form</li>
-    <li>Normal wear and tear (not covered)</li>
+    <li>Expired policy (the most common reason)</li>
+    <li>Driving without a valid license</li>
+    <li>Drunk driving—100% denial</li>
+    <li>Rash or reckless driving</li>
+    <li>Late reporting (beyond 24–48 hours)</li>
+    <li>Misstatements on the claim form</li>
+    <li>Normal wear and tear (never covered)</li>
   </ul>
-  
+
   <h3 id="next-steps">Next Steps</h3>
-  <ul>
-    <li><a href="/policychecker" class="text-[#00B4D8] hover:underline">Decode your vehicle insurance policy</a> to understand your coverage</li>
-    <li><a href="/calculator" class="text-[#00B4D8] hover:underline">Calculate accident cost scenarios</a> based on your deductible and NCB</li>
-    <li><a href="/compare" class="text-[#00B4D8] hover:underline">Compare vehicle insurance policies</a> to find better rates</li>
-  </ul>
+
+  <p>Your deductible, IDV, NCB slab and add-ons decide what an accident actually costs you—and every one of them is written in your policy schedule. Generic advice ends here; check what YOUR policy actually says.</p>
 </div>
 `;
 
@@ -457,57 +394,46 @@ export const article11FAQs = [
 export const article12Content = `
 <div class="blog-article-content">
   <h2 id="what-is-home-insurance">What Is Home Insurance?</h2>
-  <p>Fire, theft, floods, earthquakes damage ${formatMoney("₹crores")} worth of property in India every year. Your ${formatMoney("₹50L–₹1cr")} home is likely your biggest asset. One fire, one flood, one earthquake—and it's gone.</p>
-  
-  <p><strong>Home insurance protects your house and belongings.</strong> You pay annual premium. If fire, theft, natural disaster damages your home, insurer covers repair/replacement costs.</p>
-  
-  <p><strong>Real example:</strong> ${formatMoney("₹50L home")}, ${formatMoney("₹50k annual premium")}. Fire damage: ${formatMoney("₹2L")} (walls, roof, fixtures). Insurer pays: ${formatMoney("₹2L")}. Your cost: ${formatMoney("₹0")} (minus deductible maybe ${formatMoney("₹5k")}).</p>
-  
+  <p>Fire, theft, floods and earthquakes destroy crores worth of property in India every year. Your <strong>₹50L–₹1cr</strong> home is probably your biggest asset. One fire, one flood, one earthquake—and it's gone.</p>
+
+  <p><strong>Home insurance protects the house and what's inside it.</strong> You pay an annual premium. If disaster damages your home, the insurer pays for repair or replacement.</p>
+
+  <p><strong>Real example:</strong> <strong>₹50L home</strong>, <strong>₹50k annual premium</strong>. A fire causes <strong>₹2L</strong> of damage to walls, roof and fixtures. The insurer pays <strong>₹2L</strong>; you pay at most a small deductible, maybe <strong>₹5k</strong>.</p>
+
   <h3 id="three-types">Three Types of Home Insurance</h3>
-  
-  <h4 id="building">Building Insurance (Structure Only)</h4>
-  <p><strong>What:</strong> House walls, foundation, roof, fixtures. Covers: Fire, flood, earthquake, theft, vandalism.</p>
-  <p><strong>Excludes:</strong> Furniture, electronics, appliances.</p>
-  <p><strong>Cost:</strong> ${formatMoney("₹500–₹1,500/year per ₹1L")} home value. ${formatMoney("₹50L home = ₹25k–₹75k/year")}.</p>
-  <p><strong>Example:</strong> ${formatMoney("₹40L home")} building cover, ${formatMoney("₹2L fire damage")} → Insurer pays ${formatMoney("₹2L")}.</p>
-  
-  <h4 id="contents">Contents Insurance (Belongings Only)</h4>
-  <p><strong>What:</strong> Furniture, electronics, appliances, clothes. Covers: Theft, fire, damage to contents.</p>
-  <p><strong>Excludes:</strong> House structure itself.</p>
-  <p><strong>Cost:</strong> ${formatMoney("₹200–₹500/year per ₹1L")} contents value.</p>
-  <p><strong>Example:</strong> ${formatMoney("₹15L contents")} (furniture, TV, fridge), theft → Insurer covers replacement cost.</p>
-  
-  <h4 id="landlord">Landlord Insurance (For Rented Homes)</h4>
-  <p><strong>What:</strong> Building structure + loss of rent (if tenant doesn't pay).</p>
-  <p><strong>Cost:</strong> ${formatMoney("₹20k–₹50k/year")} (higher than owner-occupied).</p>
-  <p><strong>Example:</strong> Tenant defaults on ${formatMoney("₹20k/month rent")}; insurance covers 6 months (${formatMoney("₹1.2L")}).</p>
-  
+
+  <h3 id="building">Building Insurance (Structure Only)</h3>
+  <p>Covers walls, foundation, roof and fixtures against fire, flood, earthquake, theft, vandalism. Excludes furniture, electronics, appliances. Costs <strong>₹500–₹1,500/year per ₹1L</strong> of home value—so <strong>₹50L home = ₹25k–₹75k/year</strong>.</p>
+
+  <h3 id="contents">Contents Insurance (Belongings Only)</h3>
+  <p>Covers furniture, electronics, appliances and clothes against theft, fire and damage—not the structure itself. Costs <strong>₹200–₹500/year per ₹1L</strong> of contents value. Example: <strong>₹15L contents</strong> (furniture, TV, fridge) stolen → replacement cost covered.</p>
+
+  <h3 id="landlord">Landlord Insurance (For Rented-Out Homes)</h3>
+  <p>Building cover plus loss of rent if the tenant defaults. Costs <strong>₹20k–₹50k/year</strong>—more than owner-occupied. Example: tenant stops paying <strong>₹20k/month rent</strong>; the policy covers 6 months (<strong>₹1.2L</strong>).</p>
+
   <h3 id="coverage-areas">Key Coverage Areas</h3>
   <ul>
-    <li><strong>Fire:</strong> Most common peril. Covers repair costs.</li>
-    <li><strong>Burglary/theft:</strong> Stolen items replaced (up to sum insured).</li>
-    <li><strong>Vandalism:</strong> Malicious damage covered.</li>
-    <li><strong>Natural calamities:</strong> Flood, earthquake, storm (check what's covered).</li>
-    <li><strong>Third-party liability:</strong> Visitor injured in your home → medical costs covered.</li>
+    <li><strong>Fire:</strong> the most common peril. Repair costs covered.</li>
+    <li><strong>Burglary/theft:</strong> stolen items replaced, up to the sum insured.</li>
+    <li><strong>Vandalism:</strong> malicious damage covered.</li>
+    <li><strong>Natural calamities:</strong> flood, earthquake, storm—check which your policy includes.</li>
+    <li><strong>Third-party liability:</strong> a visitor injured in your home → medical costs covered.</li>
   </ul>
-  
+
   <h3 id="exclusions">What Home Insurance DOESN'T Cover</h3>
   <ul>
-    <li>Wear and tear (old paint, old roof)</li>
-    <li>Poor maintenance leading to damage</li>
-    <li>Mechanical/electrical failure</li>
+    <li>Wear and tear (old paint, an aging roof)</li>
+    <li>Damage caused by poor maintenance</li>
+    <li>Mechanical or electrical failure</li>
     <li>Substandard construction</li>
-    <li>War/riots (sometimes; varies by policy)</li>
+    <li>War and riots (varies by policy)</li>
   </ul>
-  
-  <p><strong>CRITICAL:</strong> Flood and earthquake often need separate add-ons. Check your policy.</p>
-  
+
+  <p><strong>Critical:</strong> flood and earthquake often need separate add-ons. Many owners discover this only after the disaster.</p>
+
   <h3 id="next-steps">Next Steps</h3>
-  <ul>
-    <li><a href="/policychecker" class="text-[#00B4D8] hover:underline">Analyze your home insurance policy</a></li>
-    <li><a href="/calculator" class="text-[#00B4D8] hover:underline">Calculate coverage you need</a></li>
-    <li><a href="/compare" class="text-[#00B4D8] hover:underline">Compare home insurance policies</a></li>
-  </ul>
+
+  <p>Whether your earthquake add-on exists, what your jewelry sub-limit is, how depreciation hits your contents—none of that is generic. It's written in your policy document. Generic advice ends here; check what YOUR policy actually says.</p>
 </div>
 `;
 
@@ -558,68 +484,57 @@ export const article12FAQs = [
 export const article13Content = `
 <div class="blog-article-content">
   <h2 id="travel-insurance-explained">Travel Insurance Explained</h2>
-  <p>Flight cancelled? Lose ${formatMoney("₹50k")} in non-refundable bookings. Medical emergency in Thailand? Hospital bill: ${formatMoney("₹2.5L")}. Baggage lost? No spare clothes for 5-day trip—spend ${formatMoney("₹20k")} on emergency purchases.</p>
-  
-  <p><strong>Travel insurance = peace of mind.</strong> You pay ${formatMoney("₹500–₹3,000")} per trip. If medical emergency, trip cancellation, lost baggage happens, insurer covers costs.</p>
-  
+  <p>Flight cancelled? That's <strong>₹50k</strong> of non-refundable bookings gone. Medical emergency in Thailand? Hospital bill: <strong>₹2.5L</strong>. Baggage lost? <strong>₹20k</strong> on emergency purchases for a 5-day trip.</p>
+
+  <p><strong>Travel insurance covers exactly these.</strong> You pay <strong>₹500–₹3,000</strong> per trip. If a medical emergency, trip cancellation or lost baggage happens, the insurer pays.</p>
+
   <h3 id="types-travel">Types of Travel Insurance</h3>
-  
-  <h4 id="individual-trip">Individual Trip Insurance</h4>
-  <p><strong>What:</strong> Single trip only. Domestic (India) or international.</p>
-  <p><strong>Cost:</strong> ${formatMoney("₹300–₹800")} per trip (domestic), ${formatMoney("₹800–₹3,000")} (international).</p>
-  <p><strong>Duration:</strong> 1–30 days (domestic), 1–90 days (international).</p>
-  
-  <h4 id="international">International Travel Insurance</h4>
-  <p><strong>What:</strong> Single/multiple international trips. Covers: Medical, evacuation, lost docs.</p>
-  <p><strong>Cost:</strong> ${formatMoney("₹800–₹3,000")} per trip (varies by destination, duration).</p>
-  <p><strong>Destinations:</strong> SE Asia (cheaper: ₹800–₹1,200). Europe/USA (expensive: ₹2k–₹3k).</p>
-  
-  <h4 id="annual">Annual Travel Insurance</h4>
-  <p><strong>What:</strong> Multiple trips per year (domestic or international).</p>
-  <p><strong>Cost:</strong> ${formatMoney("₹2,000–₹5,000/year")} (better value if traveling 3+ times/year).</p>
-  <p><strong>Use:</strong> Frequent travelers, business travelers.</p>
-  
+
+  <h3 id="individual-trip">Single-Trip Insurance</h3>
+  <p>One trip, domestic or international. <strong>₹300–₹800</strong> per domestic trip (1–30 days); <strong>₹800–₹3,000</strong> international (1–90 days).</p>
+
+  <h3 id="international">International Travel Insurance</h3>
+  <p>Covers medical treatment, evacuation and lost documents abroad. Price depends on destination: SE Asia is cheaper (₹800–₹1,200), Europe and the USA cost more (₹2k–₹3k).</p>
+
+  <h3 id="annual">Annual Multi-Trip Insurance</h3>
+  <p>All your trips for a year at <strong>₹2,000–₹5,000/year</strong>. Better value if you travel 3+ times a year—frequent flyers, business travelers.</p>
+
   <h3 id="what-covers">What Travel Insurance Covers</h3>
-  
-  <p><strong>Medical Coverage:</strong> Hospital bills abroad (${formatMoney("₹50k–₹2L")}), emergency dental, evacuation to home country. Critical for international travel—medical costs in USA/Europe can be ${formatMoney("₹10L+")}.</p>
-  
-  <p><strong>Trip Cancellation:</strong> Flight cancels → get refund. You fall sick before trip → trip refund covered. Family death → trip refund covered. Coverage: ${formatMoney("₹30k–₹5L")} (trip amount).</p>
-  
-  <p><strong>Lost/Delayed Baggage:</strong> Baggage lost → ${formatMoney("₹1L compensation")}. Baggage delayed 12+ hours → reimburse clothes/essentials (${formatMoney("₹50k–₹2L")} per bag).</p>
-  
-  <p><strong>Travel Delay:</strong> Flight delayed 12+ hours → ${formatMoney("₹500–₹2,000")} compensation. Extended stay covered (hotel, food).</p>
-  
-  <p><strong>Lost Documents:</strong> Passport lost abroad → emergency replacement covered. Emergency visa costs covered.</p>
-  
+
+  <p><strong>Medical emergencies:</strong> hospital bills abroad, emergency dental, evacuation to your home country. Critical for international trips—treatment in the USA or Europe can run <strong>₹10L+</strong>.</p>
+
+  <p><strong>Trip cancellation:</strong> flight cancelled, you fall sick before departure, a death in the family—non-refundable costs reimbursed, typically <strong>₹30k–₹5L</strong> (the trip amount).</p>
+
+  <p><strong>Lost/delayed baggage:</strong> lost bags compensated, up to <strong>₹1L compensation</strong>. Delayed 12+ hours → clothes and essentials reimbursed.</p>
+
+  <p><strong>Travel delay:</strong> flights delayed 12+ hours pay <strong>₹500–₹2,000</strong>, plus hotel and food for the extended stay.</p>
+
+  <p><strong>Lost documents:</strong> emergency passport replacement and visa costs covered.</p>
+
   <h3 id="what-not-covers">What Travel Insurance DOESN'T Cover</h3>
   <ul>
-    <li>Pre-existing medical conditions (unless declared and covered)</li>
-    <li>High-risk activities (skydiving, scuba without add-on)</li>
-    <li>Travel during known unrest (wars, pandemics)</li>
-    <li>Claims due to alcohol/drug use</li>
+    <li>Pre-existing medical conditions (unless declared and accepted)</li>
+    <li>High-risk activities—skydiving, scuba—without an adventure add-on</li>
+    <li>Travel during known unrest, wars, or pandemics</li>
+    <li>Claims involving alcohol or drug use</li>
     <li>Travel against medical advice</li>
   </ul>
-  
+
   <h3 id="domestic-vs-international">Domestic vs International</h3>
-  
-  <p><strong>Domestic (India):</strong> Cost ${formatMoney("₹300–₹800")} per trip. Medical coverage: ${formatMoney("₹10L–₹50L")}. Use: Flights, trains within India. Evacuation usually not needed (hospitals nearby).</p>
-  
-  <p><strong>International:</strong> Cost ${formatMoney("₹800–₹3,000")} per trip. Medical coverage: ${formatMoney("₹50L–₹2L")} (depends on destination). Evacuation: Critical (back to India can cost ${formatMoney("₹10L+")}). Destination matters: Europe = more expensive than SE Asia.</p>
-  
+
+  <p><strong>Domestic:</strong> <strong>₹300–₹800</strong> per trip, for flights and trains within India. Evacuation rarely matters—hospitals are nearby.</p>
+
+  <p><strong>International:</strong> <strong>₹800–₹3,000</strong> per trip. Evacuation cover is the critical piece: getting flown back to India can cost <strong>₹10L+</strong>. Destination drives price—Europe costs more than SE Asia.</p>
+
   <h3 id="real-scenarios">Real-World Scenarios</h3>
-  
-  <p><strong>Scenario 1: Domestic flight cancellation</strong></p>
-  <p>Trip cost: ${formatMoney("₹30k")} (flight + hotel). Flight cancels. Without insurance: Your loss ${formatMoney("₹30k")}. With insurance: ${formatMoney("₹30k refunded")}. Cost of insurance: ${formatMoney("₹500")} (breakeven!).</p>
-  
-  <p><strong>Scenario 2: Medical emergency abroad</strong></p>
-  <p>Dengue fever hospitalization in Thailand. Hospital bill: ${formatMoney("₹2.5L")}. Without insurance: Your cost ${formatMoney("₹2.5L")} (+ evacuation ${formatMoney("₹5L")}?). With international insurance: Covered (up to limit). Cost of insurance: ${formatMoney("₹2,000")} (massive savings).</p>
-  
+
+  <p><strong>Domestic flight cancellation:</strong> trip cost <strong>₹30k</strong> (flight + hotel). The flight cancels. Without insurance, you lose <strong>₹30k</strong>. With a <strong>₹500</strong> policy: <strong>₹30k refunded</strong>.</p>
+
+  <p><strong>Medical emergency abroad:</strong> dengue hospitalization in Thailand, bill <strong>₹2.5L</strong>. A <strong>₹2,000</strong> international policy covers it. Without one, you pay it all—plus evacuation if it comes to that.</p>
+
   <h3 id="next-steps">Next Steps</h3>
-  <ul>
-    <li><a href="/policychecker" class="text-[#00B4D8] hover:underline">Analyze your travel insurance policy</a></li>
-    <li><a href="/calculator" class="text-[#00B4D8] hover:underline">Calculate trip costs and coverage needed</a></li>
-    <li><a href="/compare" class="text-[#00B4D8] hover:underline">Compare travel insurance policies</a></li>
-  </ul>
+
+  <p>Whether YOUR policy covers adventure sports, pre-existing conditions or your specific destination is written in its fine print, not in any guide. Generic advice ends here—check what your policy actually says before you fly.</p>
 </div>
 `;
 
@@ -670,27 +585,29 @@ export const article13FAQs = [
 export const article14Content = `
 <div class="blog-article-content">
   <h2 id="what-is-general-insurance">What Is General Insurance?</h2>
-  <p>General insurance covers everything except life: health, vehicle, home, travel, business, marine, liability, and more.</p>
-  
-  <p><strong>Simple definition:</strong> General insurance = all insurance that isn't life insurance. You pay premium. If covered event happens (accident, fire, theft, illness), insurer pays claim. No maturity benefit (unlike life insurance).</p>
-  
+  <p>General insurance covers everything except life: health, vehicle, home, travel, business, marine, liability.</p>
+
+  <p><strong>Simple definition:</strong> you pay a premium. If the covered event happens—accident, fire, theft, illness—the insurer pays the claim. No maturity benefit, unlike life insurance.</p>
+
   <h3 id="types-general">Types of General Insurance in India</h3>
   <ul>
-    <li><strong>Health Insurance:</strong> Medical expenses, hospitalization (${formatMoney("₹5k–₹15k/year")} premium)</li>
-    <li><strong>Vehicle Insurance:</strong> Car/bike damage, third-party liability (${formatMoney("₹2k–₹15k/year")})</li>
-    <li><strong>Home Insurance:</strong> Building + contents protection (${formatMoney("₹20k–₹75k/year")})</li>
-    <li><strong>Travel Insurance:</strong> Trip cancellation, medical abroad (${formatMoney("₹500–₹3k/trip")})</li>
-    <li><strong>Business Insurance:</strong> Fire, liability, key person (varies)</li>
-    <li><strong>Marine Insurance:</strong> Cargo in transit (${formatMoney("₹10k+")})</li>
-    <li><strong>Liability Insurance:</strong> Professional indemnity, public liability</li>
+    <li><strong>Health:</strong> medical expenses, hospitalization (<strong>₹5k–₹15k/year</strong> premium)</li>
+    <li><strong>Vehicle:</strong> car/bike damage, third-party liability (<strong>₹2k–₹15k/year</strong>)</li>
+    <li><strong>Home:</strong> building + contents protection (<strong>₹20k–₹75k/year</strong>)</li>
+    <li><strong>Travel:</strong> trip cancellation, medical abroad (<strong>₹500–₹3k/trip</strong>)</li>
+    <li><strong>Business:</strong> fire, liability, key person (varies)</li>
+    <li><strong>Marine:</strong> cargo in transit (<strong>₹10k+</strong>)</li>
+    <li><strong>Liability:</strong> professional indemnity, public liability</li>
   </ul>
-  
+
   <h3 id="vs-life">General Insurance vs Life Insurance</h3>
-  <p><strong>General Insurance:</strong> Annual premium, covers specific risks, no maturity benefit, claims-based (pay if event happens).</p>
-  <p><strong>Life Insurance:</strong> Long-term premium, covers death risk, maturity benefit (endowment/whole life), death-based payout.</p>
-  
+  <p><strong>General insurance:</strong> annual premium, covers specific risks, pays only if the event happens, no maturity benefit.</p>
+  <p><strong>Life insurance:</strong> long-term premium, covers death risk, may pay a maturity benefit (endowment/whole life).</p>
+
   <h3 id="regulation">Regulation</h3>
-  <p>All general insurance in India is regulated by IRDAI (Insurance Regulatory and Development Authority). All insurers must follow IRDAI guidelines for claims, pricing, coverage.</p>
+  <p>All general insurance in India is regulated by IRDAI (Insurance Regulatory and Development Authority). Every insurer must follow IRDAI guidelines on claims, pricing and coverage.</p>
+
+  <p>But IRDAI only sets the floor. Your exclusions, sub-limits and deductibles come from your specific policy. Generic advice ends here—check what YOUR policy actually says.</p>
 </div>
 `;
 
@@ -721,53 +638,48 @@ export const article14FAQs = [
 export const article15Content = `
 <div class="blog-article-content">
   <h2 id="health-vs-mediclaim">Health Insurance vs Mediclaim: What's the Difference?</h2>
-  <p>Mediclaim vs health insurance—same thing? Not exactly. The term "mediclaim" is outdated (pre-2013). Modern "health insurance" is more comprehensive.</p>
-  
+  <p>Mediclaim vs health insurance—same thing? Not exactly. "Mediclaim" is the outdated, pre-2013 term. Modern health insurance covers more.</p>
+
   <h3 id="evolution">Evolution in India</h3>
-  <p><strong>Mediclaim (Pre-2013):</strong> Basic hospitalization coverage. Only in-patient treatment. No pre/post hospitalization. Limited features.</p>
-  <p><strong>Health Insurance (Post-2013):</strong> Comprehensive coverage. Pre/post hospitalization (30–60 days), OPD benefits, wellness benefits, restoration, room upgrade options.</p>
-  
+  <p><strong>Mediclaim (pre-2013):</strong> basic hospitalization cover. In-patient treatment only. No pre/post hospitalization. Limited features.</p>
+  <p><strong>Health insurance (post-2013):</strong> comprehensive cover. Pre/post hospitalization (30–60 days), OPD benefits, wellness benefits, restoration, room upgrade options.</p>
+
   <h3 id="key-differences">Key Differences</h3>
-  <table class="w-full border-collapse my-6">
+  <table>
     <thead>
-      <tr class="bg-[#F3F4F6] dark:bg-[#1F2937]">
-        <th class="border border-gray-200 dark:border-gray-700 px-4 py-2 text-left">Feature</th>
-        <th class="border border-gray-200 dark:border-gray-700 px-4 py-2 text-left">Mediclaim (Old)</th>
-        <th class="border border-gray-200 dark:border-gray-700 px-4 py-2 text-left">Health Insurance (New)</th>
+      <tr>
+        <th>Feature</th>
+        <th>Mediclaim (Old)</th>
+        <th>Health Insurance (New)</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">Pre-hospitalization</td>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">Not covered</td>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">30–60 days covered</td>
+        <td>Pre-hospitalization</td>
+        <td>Not covered</td>
+        <td>30–60 days covered</td>
       </tr>
       <tr>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">Post-hospitalization</td>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">Not covered</td>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">60–90 days covered</td>
+        <td>Post-hospitalization</td>
+        <td>Not covered</td>
+        <td>60–90 days covered</td>
       </tr>
       <tr>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">OPD</td>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">Not covered</td>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">Some plans include</td>
+        <td>OPD</td>
+        <td>Not covered</td>
+        <td>Some plans include</td>
       </tr>
       <tr>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">Restoration Benefit</td>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">Not available</td>
-        <td class="border border-gray-200 dark:border-gray-700 px-4 py-2">Available in many plans</td>
+        <td>Restoration benefit</td>
+        <td>Not available</td>
+        <td>Available in many plans</td>
       </tr>
     </tbody>
   </table>
-  
+
   <h3 id="which-to-choose">Which One to Choose?</h3>
-  <p><strong>Choose modern health insurance:</strong> Better coverage, pre/post hospitalization, more features. "Mediclaim" policies still exist but are basic/cheap options. For comprehensive protection, go for health insurance.</p>
-  
-  <h3 id="next-steps">Next Steps</h3>
-  <ul>
-    <li><a href="/policychecker" class="text-[#00B4D8] hover:underline">Check if your policy is mediclaim or health insurance</a></li>
-    <li><a href="/compare" class="text-[#00B4D8] hover:underline">Compare modern health insurance plans</a></li>
-  </ul>
+  <p>Choose modern health insurance: better coverage, pre/post hospitalization covered, more features. Old-style mediclaim policies still exist as basic, cheap options. For comprehensive protection, go for health insurance.</p>
+  <p>The label on your document matters less than the wording inside it. Generic advice ends here—check what YOUR policy actually says.</p>
 </div>
 `;
 
@@ -798,36 +710,31 @@ export const article15FAQs = [
 export const article16Content = `
 <div class="blog-article-content">
   <h2 id="term-life-basics">Term Life Insurance Basics</h2>
-  <p>Term life is the cheapest, purest form of life insurance. ${formatMoney("₹500/month")} for ${formatMoney("₹1cr")} coverage. No investment component. No maturity benefit. Pure protection.</p>
-  
+  <p>Term life is the cheapest, purest form of life insurance. Around <strong>₹500/month</strong> buys <strong>₹1cr</strong> of cover. No investment component. No maturity benefit. Pure protection.</p>
+
   <h3 id="what-term-life">What Is Term Life?</h3>
-  <p>You pay premium. If you die during policy term → family gets sum assured. If you survive → you get nothing. Premium is the cost of protection.</p>
-  
-  <p><strong>Example:</strong> ${formatMoney("₹1cr")} term life, 30-year term, age 35. Premium: ${formatMoney("₹400/month")}. If death in year 10: Family gets ${formatMoney("₹1cr")}. If survival: ${formatMoney("₹0")} (₹1.44L total premiums paid = cost of protection).</p>
-  
+  <p>You pay premium. If you die during the policy term, your family gets the sum assured. If you survive, you get nothing. The premium is the cost of protection.</p>
+  <p><strong>Example:</strong> <strong>₹1cr</strong> term life, 30-year term, age 35. Premium: <strong>₹400/month</strong>. Death in year 10: family gets <strong>₹1cr</strong>. Survival: <strong>₹0</strong> back—the ₹1.44L in total premiums was the cost of protection.</p>
+
   <h3 id="why-term-life">Why Term Life?</h3>
   <ul>
-    <li><strong>Cheapest:</strong> ${formatMoney("₹400/month")} vs ${formatMoney("₹2k/month")} for endowment (same ₹1cr coverage)</li>
-    <li><strong>Pure protection:</strong> No investment confusion. You're buying protection, not savings.</li>
-    <li><strong>High coverage:</strong> Can afford ₹1cr+ coverage on modest income</li>
-    <li><strong>Flexible:</strong> Choose term (10–40 years), sum assured (₹50L–₹5cr)</li>
+    <li><strong>Cheapest:</strong> <strong>₹400/month</strong> vs <strong>₹2k/month</strong> for endowment at the same ₹1cr cover</li>
+    <li><strong>Pure protection:</strong> no investment confusion. You're buying protection, not savings.</li>
+    <li><strong>High coverage:</strong> ₹1cr+ cover is affordable on a modest income</li>
+    <li><strong>Flexible:</strong> choose term (10–40 years) and sum assured (₹50L–₹5cr)</li>
   </ul>
-  
+
   <h3 id="who-needs-term">Who Needs Term Life?</h3>
-  <p><strong>Young professionals (25–40):</strong> Premiums are lowest. Lock in low rates early.</p>
-  <p><strong>Parents with dependents:</strong> Kids' education, living expenses secured if you die.</p>
-  <p><strong>Breadwinners with loans:</strong> Home loan, car loan cleared if you die.</p>
-  <p><strong>Business owners:</strong> Key person insurance protects business continuity.</p>
-  
+  <p><strong>Young professionals (25–40):</strong> premiums are lowest. Lock in low rates early.</p>
+  <p><strong>Parents with dependents:</strong> kids' education and living expenses stay secured if you die.</p>
+  <p><strong>Breadwinners with loans:</strong> home loan and car loan get cleared instead of passing to family.</p>
+  <p><strong>Business owners:</strong> key person insurance protects business continuity.</p>
+
   <h3 id="term-life-myths">Common Myths</h3>
-  <p><strong>"Term life is waste—you get nothing if you survive":</strong> Wrong. Premium is protection cost, like car insurance. You hope you never claim, but you're protected.</p>
-  <p><strong>"Endowment is better—you get money back":</strong> Endowment costs 4–5× more. That extra premium invested in mutual funds would give 10–12% returns vs 5–6% from endowment.</p>
-  
-  <h3 id="next-steps">Next Steps</h3>
-  <ul>
-    <li><a href="/calculator" class="text-[#00B4D8] hover:underline">Calculate how much term life you need</a></li>
-    <li><a href="/compare" class="text-[#00B4D8] hover:underline">Compare term life policies</a></li>
-  </ul>
+  <p><strong>"Term life is waste—you get nothing if you survive."</strong> Wrong. The premium is the cost of protection, like car insurance. You hope you never claim, but you're protected.</p>
+  <p><strong>"Endowment is better—you get money back."</strong> Endowment costs 4–5× more. That extra premium invested in mutual funds would give 10–12% returns vs 5–6% from endowment.</p>
+
+  <p>That's the generic case for term life. What your own policy pays, excludes, and charges is in its wording—check what YOUR policy actually says.</p>
 </div>
 `;
 
@@ -855,7 +762,21 @@ export const article16FAQs = [
 ];
 
 // Article 17: Property Insurance
-export const article17Content = `<div class="blog-article-content"><h2 id="property-insurance">Property Insurance Explained</h2><p>Protect your property investments—commercial or residential. Property insurance covers fire, theft, natural disasters, liability, and rent loss.</p><h3 id="commercial-vs-residential">Commercial vs Residential</h3><p><strong>Residential Property:</strong> Your home, apartment. Building + contents coverage. Premium: ${formatMoney("₹20k–₹75k/year")} for ₹50L property.</p><p><strong>Commercial Property:</strong> Office, shop, warehouse. Higher premiums (₹50k–₹2L/year). Covers: Fire, theft, business interruption, liability.</p><h3 id="coverage-details">Coverage Details</h3><p>Covers: Fire, theft, flood, earthquake, vandalism, third-party liability, loss of rent. Excludes: Wear and tear, poor maintenance, mechanical failure.</p><h3 id="next-steps">Next Steps</h3><ul><li><a href="/policychecker" class="text-[#00B4D8] hover:underline">Analyze your property insurance</a></li><li><a href="/compare" class="text-[#00B4D8] hover:underline">Compare property insurance policies</a></li></ul></div>`;
+export const article17Content = `
+<div class="blog-article-content">
+  <h2 id="property-insurance">Property Insurance Explained</h2>
+  <p>Protect your property investments—commercial or residential. Property insurance covers fire, theft, natural disasters, liability, and rent loss.</p>
+
+  <h3 id="commercial-vs-residential">Commercial vs Residential</h3>
+  <p><strong>Residential property:</strong> your home or apartment. Building plus contents cover. Premium: <strong>₹20k–₹75k/year</strong> for a ₹50L property.</p>
+  <p><strong>Commercial property:</strong> office, shop, warehouse. Higher premiums (₹50k–₹2L/year). Covers fire, theft, business interruption, and liability.</p>
+
+  <h3 id="coverage-details">Coverage Details</h3>
+  <p>Covered: fire, theft, flood, earthquake, vandalism, third-party liability, loss of rent. Excluded: wear and tear, poor maintenance, mechanical failure.</p>
+
+  <p>That's the standard shape of property cover. The exact perils, limits, and exclusions vary policy to policy—check what YOUR policy actually says.</p>
+</div>
+`;
 export const article17FAQs = [
   { question: "What's the difference between property and home insurance?", answer: "Property insurance is broader—covers commercial + residential. Home insurance is residential-focused. Property insurance often includes business interruption, loss of rent, higher liability limits." },
   { question: "Do I need property insurance for commercial space?", answer: "Yes. Commercial property insurance covers fire, theft, liability (if customers injured), business interruption (loss of income). Essential for any commercial property." },
@@ -863,7 +784,26 @@ export const article17FAQs = [
 ];
 
 // Article 18: Personal Accident Insurance
-export const article18Content = `<div class="blog-article-content"><h2 id="personal-accident">Personal Accident Insurance</h2><p>Accidents happen. Personal accident insurance covers death, disability, and medical expenses from accidents—separate from health insurance.</p><p><strong>Coverage:</strong> Death (lump sum), permanent disability (lump sum), temporary disability (income replacement), medical expenses (₹50k–₹2L). Premium: ${formatMoney("₹500–₹2,000/year")} for ₹5L–₹50L coverage.</p><h3 id="why-separate">Why Separate from Health Insurance?</h3><p>Health insurance covers illness + accidents in hospital. Personal accident covers accident-related death/disability outside hospital (road accidents, falls). Both complement each other.</p><h3 id="coverage-types">Coverage Types</h3><ul><li><strong>Death:</strong> Lump sum to nominee (₹5L–₹50L)</li><li><strong>Permanent Disability:</strong> 100% disability = full sum assured, partial = percentage</li><li><strong>Temporary Disability:</strong> Monthly income replacement (1–2 years)</li><li><strong>Medical Expenses:</strong> Treatment costs from accident</li></ul></div>`;
+export const article18Content = `
+<div class="blog-article-content">
+  <h2 id="personal-accident">Personal Accident Insurance</h2>
+  <p>Accidents happen. Personal accident insurance covers death, disability, and medical expenses from accidents—separate from health insurance.</p>
+  <p><strong>Coverage:</strong> death (lump sum), permanent disability (lump sum), temporary disability (income replacement), medical expenses (₹50k–₹2L). Premium: <strong>₹500–₹2,000/year</strong> for ₹5L–₹50L cover.</p>
+
+  <h3 id="why-separate">Why Separate from Health Insurance?</h3>
+  <p>Health insurance covers illness and accidents in hospital. Personal accident covers accident-related death and disability outside hospital too—road accidents, falls. The two complement each other.</p>
+
+  <h3 id="coverage-types">Coverage Types</h3>
+  <ul>
+    <li><strong>Death:</strong> lump sum to nominee (₹5L–₹50L)</li>
+    <li><strong>Permanent disability:</strong> 100% disability pays the full sum assured; partial pays a percentage</li>
+    <li><strong>Temporary disability:</strong> monthly income replacement (1–2 years)</li>
+    <li><strong>Medical expenses:</strong> treatment costs from the accident</li>
+  </ul>
+
+  <p>Those are the standard heads of cover. Disability percentages and exclusions differ sharply between insurers—check what YOUR policy actually says.</p>
+</div>
+`;
 export const article18FAQs = [
   { question: "Do I need personal accident if I have health insurance?", answer: "Yes. Health insurance covers hospitalization. Personal accident covers death/disability from accidents (even outside hospital). Both are complementary—get both." },
   { question: "What's covered in personal accident?", answer: "Accidents: Road accidents, falls, workplace accidents, drowning, fire. Excludes: Suicide, war, risky sports (unless add-on), natural death, illness." },
@@ -871,7 +811,29 @@ export const article18FAQs = [
 ];
 
 // Article 19: Business Insurance
-export const article19Content = `<div class="blog-article-content"><h2 id="business-insurance">Business Insurance 101</h2><p>Your business needs protection. From fire to liability, business insurance covers risks that could shut down your company.</p><h3 id="types-business">Types of Business Insurance</h3><ul><li><strong>Fire Insurance:</strong> Building, equipment, inventory (₹50k–₹5L/year)</li><li><strong>Public Liability:</strong> Customer injuries, property damage (₹10k–₹50k/year)</li><li><strong>Professional Indemnity:</strong> Errors, negligence (₹20k–₹2L/year)</li><li><strong>Key Person Insurance:</strong> Founder/CEO death (₹1L–₹10L/year)</li><li><strong>Business Interruption:</strong> Loss of income (varies)</li></ul><h3 id="who-needs">Who Needs Business Insurance?</h3><p><strong>All businesses:</strong> From startups to enterprises. Fire can destroy ₹crores in inventory. Customer injury lawsuits can cost ₹10L+. Cyber attacks can breach customer data.</p><h3 id="cost">Cost</h3><p>Premium depends on: Business type, revenue, employee count, location, risk level. Small business: ${formatMoney("₹50k–₹2L/year")}. Enterprise: ${formatMoney("₹5L–₹50L+/year")}.</p></div>`;
+export const article19Content = `
+<div class="blog-article-content">
+  <h2 id="business-insurance">Business Insurance 101</h2>
+  <p>Your business needs protection. From fire to liability, business insurance covers risks that could shut down your company.</p>
+
+  <h3 id="types-business">Types of Business Insurance</h3>
+  <ul>
+    <li><strong>Fire insurance:</strong> building, equipment, inventory (₹50k–₹5L/year)</li>
+    <li><strong>Public liability:</strong> customer injuries, property damage (₹10k–₹50k/year)</li>
+    <li><strong>Professional indemnity:</strong> errors, negligence (₹20k–₹2L/year)</li>
+    <li><strong>Key person insurance:</strong> founder/CEO death (₹1L–₹10L/year)</li>
+    <li><strong>Business interruption:</strong> loss of income (varies)</li>
+  </ul>
+
+  <h3 id="who-needs">Who Needs Business Insurance?</h3>
+  <p>All businesses, from startups to enterprises. Fire can destroy crores in inventory. A customer-injury lawsuit can cost ₹10L+. A cyber attack can breach customer data.</p>
+
+  <h3 id="cost">Cost</h3>
+  <p>Premium depends on business type, revenue, employee count, location, and risk level. Small business: <strong>₹50k–₹2L/year</strong>. Enterprise: <strong>₹5L–₹50L+/year</strong>.</p>
+
+  <p>That's the menu. Which of these covers your business actually holds—and what each one excludes—is in the policy wording. Check what YOUR policy actually says.</p>
+</div>
+`;
 export const article19FAQs = [
   { question: "Is business insurance mandatory?", answer: "Some types are mandatory: Workers compensation (if employees), public liability (if customers visit premises). Fire insurance often required by landlords/banks. Others are optional but recommended." },
   { question: "What does professional indemnity cover?", answer: "Errors, negligence, omissions in professional services. If client sues for losses due to your mistake, insurance covers legal costs + damages. Essential for consultants, lawyers, doctors." },
@@ -879,7 +841,22 @@ export const article19FAQs = [
 ];
 
 // Article 20: Liability Insurance
-export const article20Content = `<div class="blog-article-content"><h2 id="liability-insurance">Liability Insurance Explained</h2><p>When you're liable for damages—professional errors, public injuries, product defects—liability insurance protects you.</p><h3 id="types-liability">Types of Liability Insurance</h3><p><strong>Professional Indemnity:</strong> Errors in professional services. Lawyers, doctors, consultants. Premium: ${formatMoney("₹20k–₹2L/year")} for ₹1cr coverage.</p><p><strong>Public Liability:</strong> Customer/visitor injuries at your premises. Shops, restaurants, offices. Premium: ${formatMoney("₹10k–₹50k/year")} for ₹1cr coverage.</p><p><strong>Product Liability:</strong> Defective products causing injury/damage. Manufacturers, retailers. Premium: ${formatMoney("₹50k–₹5L/year")}.</p><h3 id="why-needed">Why You Need It</h3><p>One lawsuit can cost ₹10L–₹1cr+. Legal fees alone: ₹2L–₹10L. Liability insurance covers: Legal defense costs + damages awarded. Without it, business can go bankrupt.</p></div>`;
+export const article20Content = `
+<div class="blog-article-content">
+  <h2 id="liability-insurance">Liability Insurance Explained</h2>
+  <p>When you're liable for damages—professional errors, public injuries, product defects—liability insurance protects you.</p>
+
+  <h3 id="types-liability">Types of Liability Insurance</h3>
+  <p><strong>Professional indemnity:</strong> errors in professional services. Lawyers, doctors, consultants. Premium: <strong>₹20k–₹2L/year</strong> for ₹1cr cover.</p>
+  <p><strong>Public liability:</strong> customer or visitor injuries at your premises. Shops, restaurants, offices. Premium: <strong>₹10k–₹50k/year</strong> for ₹1cr cover.</p>
+  <p><strong>Product liability:</strong> defective products causing injury or damage. Manufacturers, retailers. Premium: <strong>₹50k–₹5L/year</strong>.</p>
+
+  <h3 id="why-needed">Why You Need It</h3>
+  <p>One lawsuit can cost ₹10L–₹1cr+. Legal fees alone: ₹2L–₹10L. Liability insurance covers legal defense costs plus damages awarded. Without it, a business can go bankrupt.</p>
+
+  <p>That's the generic picture. Whether your policy pays defense costs, which claims it excludes, and up to what limit—check what YOUR policy actually says.</p>
+</div>
+`;
 export const article20FAQs = [
   { question: "What's the difference between professional and public liability?", answer: "Professional indemnity = errors in your professional work (wrong advice, negligence). Public liability = injuries to customers/visitors at your premises (slip and fall, property damage)." },
   { question: "How much coverage do I need?", answer: "Minimum ₹1cr. High-risk businesses (healthcare, construction) need ₹5cr–₹10cr. Coverage amount = maximum lawsuit you could face. Higher coverage = higher premium." },
@@ -887,7 +864,19 @@ export const article20FAQs = [
 ];
 
 // Article 21: Workers Compensation
-export const article21Content = `<div class="blog-article-content"><h2 id="workers-compensation">Workers Compensation Insurance</h2><p>Employers are legally required to cover employees for workplace injuries. Workers compensation protects both you and your team.</p><p><strong>What it covers:</strong> Medical expenses, disability benefits, death benefits, rehabilitation costs for workplace injuries/illnesses.</p><p><strong>Premium:</strong> Based on employee count, salary, risk level. ${formatMoney("₹500–₹2,000/employee/year")} typical. Construction/high-risk: ${formatMoney("₹2k–₹5k/employee/year")}.</p><h3 id="legal-requirement">Legal Requirement</h3><p>Employees' State Insurance (ESIC) mandatory if: 10+ employees (manufacturing), 20+ employees (services). Private workers compensation can supplement or replace ESIC for better coverage.</p></div>`;
+export const article21Content = `
+<div class="blog-article-content">
+  <h2 id="workers-compensation">Workers Compensation Insurance</h2>
+  <p>Employers are legally required to cover employees for workplace injuries. Workers compensation protects both you and your team.</p>
+  <p><strong>What it covers:</strong> medical expenses, disability benefits, death benefits, and rehabilitation costs for workplace injuries and illnesses.</p>
+  <p><strong>Premium:</strong> based on employee count, salary, and risk level. <strong>₹500–₹2,000/employee/year</strong> is typical. Construction and other high-risk work: <strong>₹2k–₹5k/employee/year</strong>.</p>
+
+  <h3 id="legal-requirement">Legal Requirement</h3>
+  <p>Employees' State Insurance (ESIC) is mandatory with 10+ employees in manufacturing or 20+ in services. Private workers compensation can supplement or replace ESIC for better coverage.</p>
+
+  <p>That's the legal baseline. What your own policy pays per injury—and who it actually covers—is in the wording. Check what YOUR policy actually says.</p>
+</div>
+`;
 export const article21FAQs = [
   { question: "Is workers compensation mandatory?", answer: "Yes, via ESIC for eligible businesses (10+ employees manufacturing, 20+ services). Private workers compensation can supplement ESIC or cover ineligible employees." },
   { question: "What's covered in workers compensation?", answer: "Workplace injuries, occupational diseases, death from work accident, disability benefits, medical expenses, rehabilitation. Excludes: Injuries outside work, self-inflicted, intoxication." },
@@ -895,7 +884,22 @@ export const article21FAQs = [
 ];
 
 // Article 22: Marine & Cargo Insurance
-export const article22Content = `<div class="blog-article-content"><h2 id="marine-insurance">Marine & Cargo Insurance</h2><p>Importing or exporting goods? Marine insurance covers cargo in transit—by sea, air, or land.</p><p><strong>Coverage:</strong> Loss, damage, theft during transport. Premium: ${formatMoney("0.1–0.5%")} of cargo value. ${formatMoney("₹50k premium")} protects ${formatMoney("₹50L shipment")}.</p><h3 id="types-marine">Types</h3><ul><li><strong>Ocean Cargo:</strong> Ship transport (₹10k–₹1L premium)</li><li><strong>Air Cargo:</strong> Air transport (₹5k–₹50k premium)</li><li><strong>Inland Transit:</strong> Road/rail transport within India</li></ul></div>`;
+export const article22Content = `
+<div class="blog-article-content">
+  <h2 id="marine-insurance">Marine & Cargo Insurance</h2>
+  <p>Importing or exporting goods? Marine insurance covers cargo in transit—by sea, air, or land.</p>
+  <p><strong>What it covers:</strong> loss, damage and theft during transport. Premium: <strong>0.1–0.5%</strong> of cargo value. Shipping companies carry only limited liability; your marine policy covers the rest.</p>
+
+  <h3 id="types-marine">Types</h3>
+  <ul>
+    <li><strong>Ocean cargo:</strong> ship transport (<strong>₹10k–₹1L</strong> premium)</li>
+    <li><strong>Air cargo:</strong> air transport (<strong>₹5k–₹50k</strong> premium)</li>
+    <li><strong>Inland transit:</strong> road and rail within India</li>
+  </ul>
+
+  <p>That's the standard shape. Which routes, perils and packing conditions YOUR cargo policy accepts is written in its clauses. Generic advice ends here—check what YOUR policy actually says.</p>
+</div>
+`;
 export const article22FAQs = [
   { question: "Do I need marine insurance for imports?", answer: "Yes, if cargo value is significant. Shipping companies have limited liability. Marine insurance protects your investment. Premium: 0.1–0.5% of cargo value—worth it for ₹10L+ shipments." },
   { question: "What's covered in marine insurance?", answer: "Loss, damage, theft during transport (port-to-port, door-to-door). Excludes: Normal wear, improper packing, delay, war, inherent defects. Check policy for specific exclusions." },
@@ -903,7 +907,18 @@ export const article22FAQs = [
 ];
 
 // Article 23: Cyber Insurance
-export const article23Content = `<div class="blog-article-content"><h2 id="cyber-insurance">Cyber Insurance</h2><p>Data breaches cost companies ${formatMoney("₹crores")}. Cyber insurance covers hacking, ransomware, data loss, and liability from cyberattacks.</p><p><strong>Coverage:</strong> Data breach costs (₹10L–₹10cr), ransomware payments (₹5L–₹5cr), business interruption (₹5L–₹50L), cyber liability (₹1cr–₹50cr). Premium: ${formatMoney("₹50k–₹10L/year")} for ₹5cr coverage.</p><h3 id="who-needs-cyber">Who Needs It?</h3><p><strong>All businesses with digital data:</strong> Customer data, financial records, intellectual property. One breach can cost ₹1cr+ in fines, lawsuits, business loss.</p></div>`;
+export const article23Content = `
+<div class="blog-article-content">
+  <h2 id="cyber-insurance">Cyber Insurance</h2>
+  <p>Data breaches cost companies <strong>₹crores</strong>. Cyber insurance covers hacking, ransomware, data loss, and liability from cyberattacks.</p>
+  <p><strong>What it covers:</strong> data breach costs (<strong>₹10L–₹10cr</strong>), ransomware payments (<strong>₹5L–₹5cr</strong>), business interruption (<strong>₹5L–₹50L</strong>), cyber liability (<strong>₹1cr–₹50cr</strong>). Premium: <strong>₹50k–₹10L/year</strong>, depending on business size, data sensitivity and security measures.</p>
+
+  <h3 id="who-needs-cyber">Who Needs It?</h3>
+  <p>Any business holding digital data—customer records, financial data, intellectual property. One breach can cost <strong>₹1cr+</strong> in fines, lawsuits and lost business. Small businesses are targeted more, not less.</p>
+
+  <p>Whether YOUR cover pays the ransom, the forensics, or the lawsuit—and up to what limit—is in the policy wording. Generic advice ends here; check what YOUR policy actually says.</p>
+</div>
+`;
 export const article23FAQs = [
   { question: "Do small businesses need cyber insurance?", answer: "Yes, if you handle customer data (names, emails, payments). Small businesses are targeted more (weak security). Premium: ₹50k–₹2L/year for ₹1cr–₹5cr coverage—worth it." },
   { question: "What does cyber insurance cover?", answer: "Data breach costs (notification, credit monitoring), ransomware payments, business interruption (lost revenue), cyber liability (lawsuits), forensic investigation, public relations." },
@@ -911,14 +926,42 @@ export const article23FAQs = [
 ];
 
 // Article 24: Reinsurance
-export const article24Content = `<div class="blog-article-content"><h2 id="reinsurance">What Is Reinsurance?</h2><p>Insurance companies need insurance too. Reinsurance spreads risk across multiple insurers.</p><p><strong>How it works:</strong> Your insurer sells policies. They buy reinsurance to cover large claims. If one insurer has ₹100cr in policies, they reinsure ₹80cr with other insurers. If ₹50cr claim happens, reinsurers pay part of it.</p><p><strong>Why it matters:</strong> Ensures your insurer can pay claims even for massive disasters. Protects policyholders from insurer bankruptcy.</p></div>`;
+export const article24Content = `
+<div class="blog-article-content">
+  <h2 id="reinsurance">What Is Reinsurance?</h2>
+  <p>Insurance companies need insurance too. Reinsurance spreads their risk across multiple insurers.</p>
+
+  <h3 id="how-it-works">How It Works</h3>
+  <p>Your insurer sells policies, then buys reinsurance against large claims. An insurer holding <strong>₹100cr</strong> in policies might reinsure <strong>₹80cr</strong> with other companies. When a <strong>₹50cr</strong> claim hits, the reinsurers pay their share.</p>
+
+  <h3 id="why-it-matters">Why It Matters to You</h3>
+  <p>Reinsurance is how your insurer pays claims even after a massive disaster. You never deal with a reinsurer directly—but it protects you from insurer bankruptcy.</p>
+
+  <p>Reinsurance protects the system; it doesn't change your cover. Your protection is your own policy's wording—generic advice ends here, check what YOUR policy actually says.</p>
+</div>
+`;
 export const article24FAQs = [
   { question: "Do I interact with reinsurance as a customer?", answer: "No. Reinsurance is between insurance companies. As a policyholder, you deal only with your insurer. Reinsurance happens behind the scenes—but it protects you indirectly." },
   { question: "Why do insurers need reinsurance?", answer: "To spread risk. One ₹100cr claim could bankrupt a small insurer. Reinsurance spreads that risk across multiple companies, ensuring all claims get paid." }
 ];
 
 // Article 25: Pension Plans
-export const article25Content = `<div class="blog-article-content"><h2 id="pension-plans">Retirement & Pension Plans</h2><p>Retirement planning isn't just savings—it's insurance-backed pension plans that guarantee income after retirement.</p><h3 id="types-pension">Types of Pension Plans</h3><p><strong>Annuity Plans:</strong> Pay premium during working years. After retirement (age 60), get monthly pension (₹10k–₹1L/month). Premium: ${formatMoney("₹2L–₹10L/year")} for 15–20 years.</p><p><strong>NPS (National Pension System):</strong> Government-backed pension scheme. Invest during working years, get pension after 60. Tax benefits under Section 80C.</p><p><strong>Pension Plans from Insurers:</strong> LIC, private insurers offer pension plans. Guaranteed returns (5–6%), pension after maturity.</p><h3 id="how-much">How Much Do You Need?</h3><p>For ₹50k/month pension (₹6L/year), you need corpus of ${formatMoney("₹1.5cr–₹2cr")} (assuming 5–6% returns). Start early—₹5L/year investment for 20 years = ₹1.5cr corpus.</p></div>`;
+export const article25Content = `
+<div class="blog-article-content">
+  <h2 id="pension-plans">Retirement & Pension Plans</h2>
+  <p>Retirement planning isn't just savings. Insurance-backed pension plans guarantee income after you stop earning.</p>
+
+  <h3 id="types-pension">Types of Pension Plans</h3>
+  <p><strong>Annuity plans:</strong> pay premium during your working years—<strong>₹2L–₹10L/year</strong> for 15–20 years. After 60, receive a monthly pension of <strong>₹10k–₹1L</strong>.</p>
+  <p><strong>NPS (National Pension System):</strong> the government-backed scheme. Invest while working, draw a pension after 60. Tax benefits under Section 80C.</p>
+  <p><strong>Insurer pension plans:</strong> LIC and private insurers offer plans with guaranteed returns around <strong>5–6%</strong> and a pension after maturity.</p>
+
+  <h3 id="how-much">How Much Do You Need?</h3>
+  <p>For a <strong>₹50k/month</strong> pension (<strong>₹6L/year</strong>), you need a corpus of <strong>₹1.5cr–₹2cr</strong>. Start early: <strong>₹5L/year</strong> invested for 20 years builds roughly <strong>₹1.5cr</strong>.</p>
+
+  <p>Whether YOUR plan guarantees the annuity rate, locks your money, or penalizes early exit is written in its terms. Generic advice ends here—check what YOUR policy actually says.</p>
+</div>
+`;
 export const article25FAQs = [
   { question: "What's the difference between pension plan and mutual fund?", answer: "Pension plans: Guaranteed returns (5–6%), insurance-backed, pension after retirement. Mutual funds: Market-linked (10–12% returns), no guarantee, you manage withdrawals. Pension plans safer, mutual funds higher returns." },
   { question: "Can I withdraw from pension plan before retirement?", answer: "Usually no. Pension plans lock money until retirement age (60). Early withdrawal allowed only in emergencies (medical, death), with penalty (10–20% deduction)." },
@@ -926,7 +969,20 @@ export const article25FAQs = [
 ];
 
 // Article 26: Agricultural Insurance
-export const article26Content = `<div class="blog-article-content"><h2 id="agricultural-insurance">Agricultural Insurance</h2><p>Farmers face weather risks, pests, and crop failures. Agricultural insurance protects against losses.</p><p><strong>PMFBY (Pradhan Mantri Fasal Bima Yojana):</strong> Government crop insurance. Premium: ${formatMoney("1.5–5%")} of sum insured (farmer pays, rest subsidized by government). Coverage: Crop damage from drought, flood, pests, diseases.</p><p><strong>Coverage:</strong> ${formatMoney("₹10k–₹50L")} per hectare. Premium: ${formatMoney("₹200–₹1,000/hectare")} (farmer's share, government pays rest).</p><h3 id="why-needed-agri">Why Farmers Need It</h3><p>One bad monsoon can destroy entire crop. Agricultural insurance provides financial safety net. Claims: Paid based on crop damage assessment by government agencies.</p></div>`;
+export const article26Content = `
+<div class="blog-article-content">
+  <h2 id="agricultural-insurance">Agricultural Insurance</h2>
+  <p>Farmers face weather risk, pests and crop failure. Agricultural insurance protects against the losses.</p>
+
+  <h3 id="pmfby">PMFBY (Pradhan Mantri Fasal Bima Yojana)</h3>
+  <p>The government crop insurance scheme. The farmer pays <strong>1.5–5%</strong> of the sum insured; the government subsidizes the rest. Coverage: <strong>₹10k–₹50L</strong> per hectare against drought, flood, pests and disease, from sowing to harvest.</p>
+
+  <h3 id="why-needed-agri">Why Farmers Need It</h3>
+  <p>One bad monsoon can destroy an entire crop. Insurance is the financial safety net. Claims are paid on crop-damage assessment by government agencies.</p>
+
+  <p>Which crops, which perils and which assessment rules apply to YOUR land is in the scheme documents and policy wording. Generic advice ends here—check what YOUR policy actually says.</p>
+</div>
+`;
 export const article26FAQs = [
   { question: "What is PMFBY?", answer: "Pradhan Mantri Fasal Bima Yojana—government crop insurance scheme. Premium shared: Farmer pays 1.5–5%, government pays rest. Covers crop damage from natural calamities, pests, diseases." },
   { question: "How much does agricultural insurance cost?", answer: "Farmer pays 1.5–5% of sum insured. For ₹1L/hectare coverage, farmer pays ₹1,500–₹5,000/hectare. Government subsidizes 90–95% of premium—very affordable." },
@@ -934,7 +990,22 @@ export const article26FAQs = [
 ];
 
 // Article 27: Micro-Insurance
-export const article27Content = `<div class="blog-article-content"><h2 id="micro-insurance">Micro-Insurance</h2><p>Low-income households need insurance too. Micro-insurance offers affordable, simplified coverage.</p><p><strong>Coverage:</strong> Health (${formatMoney("₹1L–₹5L")}), Life (${formatMoney("₹50k–₹5L")}), Accident (${formatMoney("₹1L–₹10L")}). Premium: ${formatMoney("₹100–₹500/month")}.</p><p><strong>Who it's for:</strong> Low-income families, rural households, informal sector workers. Simplified documentation, easy claims process.</p><h3 id="types-micro">Types</h3><ul><li><strong>Health Micro-Insurance:</strong> ₹1L–₹5L coverage, ₹100–₹300/month premium</li><li><strong>Life Micro-Insurance:</strong> ₹50k–₹5L coverage, ₹50–₹200/month premium</li><li><strong>Accident Micro-Insurance:</strong> ₹1L–₹10L coverage, ₹50–₹150/month premium</li></ul></div>`;
+export const article27Content = `
+<div class="blog-article-content">
+  <h2 id="micro-insurance">Micro-Insurance</h2>
+  <p>Low-income households need insurance too. Micro-insurance offers affordable, simplified cover with minimal paperwork.</p>
+  <p><strong>Who it's for:</strong> low-income families, rural households, informal-sector workers. Simplified documentation, easy claims.</p>
+
+  <h3 id="types-micro">Types</h3>
+  <ul>
+    <li><strong>Health:</strong> <strong>₹1L–₹5L</strong> cover, <strong>₹100–₹300/month</strong> premium</li>
+    <li><strong>Life:</strong> <strong>₹50k–₹5L</strong> cover, <strong>₹50–₹200/month</strong> premium</li>
+    <li><strong>Accident:</strong> <strong>₹1L–₹10L</strong> cover, <strong>₹50–₹150/month</strong> premium</li>
+  </ul>
+
+  <p>Small policies still have waiting periods, exclusions and sub-limits. Generic advice ends here—check what YOUR policy actually says.</p>
+</div>
+`;
 export const article27FAQs = [
   { question: "Who is eligible for micro-insurance?", answer: "Low-income households (annual income < ₹1L–₹2L), rural families, informal sector workers. Simplified enrollment, minimal documentation, affordable premiums." },
   { question: "How much does micro-insurance cost?", answer: "₹100–₹500/month. Health: ₹100–₹300/month for ₹1L–₹5L coverage. Life: ₹50–₹200/month for ₹50k–₹5L coverage. Very affordable for low-income families." },
@@ -942,7 +1013,45 @@ export const article27FAQs = [
 ];
 
 // Article 28: Top Types of Insurance (Hub Article)
-export const article28Content = `<div class="blog-article-content"><h2 id="types-insurance-overview">Top Types of Insurance: Complete Overview</h2><p>A comprehensive guide to all insurance types in India. Understand what each covers and when you need it.</p><h3 id="individual-insurance">Individual Insurance</h3><ul><li><strong>Health Insurance:</strong> Medical expenses, hospitalization. Essential for everyone. Premium: ${formatMoney("₹5k–₹15k/year")}.</li><li><strong>Life Insurance:</strong> Family protection after death. Essential if you have dependents. Premium: ${formatMoney("₹5k–₹50k/year")}.</li><li><strong>Vehicle Insurance:</strong> Car/bike damage, third-party liability. Mandatory by law. Premium: ${formatMoney("₹2k–₹15k/year")}.</li><li><strong>Home Insurance:</strong> Property + contents protection. Essential for homeowners. Premium: ${formatMoney("₹20k–₹75k/year")}.</li><li><strong>Travel Insurance:</strong> Trip cancellation, medical abroad. Essential for international travel. Premium: ${formatMoney("₹500–₹3k/trip")}.</li></ul><h3 id="business-insurance">Business Insurance</h3><ul><li><strong>Fire Insurance:</strong> Building, inventory protection</li><li><strong>Liability Insurance:</strong> Professional, public, product liability</li><li><strong>Workers Compensation:</strong> Employee injury coverage</li><li><strong>Cyber Insurance:</strong> Data breach, cyber attack protection</li><li><strong>Marine Insurance:</strong> Cargo in transit</li></ul><h3 id="priority">Priority Order</h3><ol><li><strong>Health Insurance:</strong> Get first—medical costs are unpredictable</li><li><strong>Life Insurance:</strong> If you have dependents</li><li><strong>Vehicle Insurance:</strong> Mandatory if you own vehicle</li><li><strong>Home Insurance:</strong> If you own property</li><li><strong>Travel Insurance:</strong> When traveling</li><li><strong>Business Insurance:</strong> If you own business</li></ol><h3 id="cost-estimate">Estimated Annual Cost</h3><p>For typical urban professional: Health (₹10k) + Life (₹6k) + Vehicle (₹10k) + Home (₹30k) = ${formatMoney("₹56k/year")} total. That's ${formatMoney("₹4.6k/month")} for comprehensive protection.</p></div>`;
+export const article28Content = `
+<div class="blog-article-content">
+  <h2 id="types-insurance-overview">Top Types of Insurance: Complete Overview</h2>
+  <p>Every major insurance type in India—what it covers, what it costs, when you need it.</p>
+
+  <h3 id="individual-insurance">Individual Insurance</h3>
+  <ul>
+    <li><strong>Health:</strong> medical expenses, hospitalization. Essential for everyone. Premium: <strong>₹5k–₹15k/year</strong>.</li>
+    <li><strong>Life:</strong> family protection after death. Essential if you have dependents. Premium: <strong>₹5k–₹50k/year</strong>.</li>
+    <li><strong>Vehicle:</strong> car/bike damage plus third-party liability. Mandatory by law. Premium: <strong>₹2k–₹15k/year</strong>.</li>
+    <li><strong>Home:</strong> property and contents. Essential for homeowners. Premium: <strong>₹20k–₹75k/year</strong>.</li>
+    <li><strong>Travel:</strong> trip cancellation, medical emergencies abroad. Essential for international trips. Premium: <strong>₹500–₹3k/trip</strong>.</li>
+  </ul>
+
+  <h3 id="business-insurance">Business Insurance</h3>
+  <ul>
+    <li><strong>Fire:</strong> building and inventory</li>
+    <li><strong>Liability:</strong> professional, public, product</li>
+    <li><strong>Workers compensation:</strong> employee injuries</li>
+    <li><strong>Cyber:</strong> data breaches and attacks</li>
+    <li><strong>Marine:</strong> cargo in transit</li>
+  </ul>
+
+  <h3 id="priority">Priority Order</h3>
+  <ol>
+    <li><strong>Health:</strong> get it first—medical costs are unpredictable</li>
+    <li><strong>Life:</strong> if you have dependents</li>
+    <li><strong>Vehicle:</strong> mandatory if you own one</li>
+    <li><strong>Home:</strong> if you own property</li>
+    <li><strong>Travel:</strong> when you travel</li>
+    <li><strong>Business:</strong> if you run one</li>
+  </ol>
+
+  <h3 id="cost-estimate">Estimated Annual Cost</h3>
+  <p>A typical urban professional: health (<strong>₹10k</strong>) + life (<strong>₹6k</strong>) + vehicle (<strong>₹10k</strong>) + home (<strong>₹30k</strong>) = <strong>₹56k/year</strong>—about <strong>₹4.6k/month</strong> for comprehensive protection.</p>
+
+  <p>That's the map. The limits, co-pays and exclusions that decide what each cover actually pays are in the policy wording. Generic advice ends here—check what YOUR policy actually says.</p>
+</div>
+`;
 export const article28FAQs = [
   {
     question: "Which insurance should I get first?",
