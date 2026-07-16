@@ -965,16 +965,3 @@ export const article28FAQs = [
     answer: "Assess your risks: Age, health, dependents, assets, business. Match insurance to risks. Don't over-insure (waste money) or under-insure (exposed to risk). Get advice if needed."
   }
 ];
-
-// Helper function to generate stats
-export function generateArticleStats(id: number): { readCount: number; helpfulPercentage: number; sharesCount: number } {
-  // Generate realistic stats based on article ID (older articles have more reads)
-  const baseReads = 1200 + (28 - id) * 150; // More reads for newer/featured articles
-  const variance = Math.floor(Math.random() * 500) - 250;
-  const readCount = Math.max(500, baseReads + variance);
-  
-  const helpfulPercentage = 85 + Math.floor(Math.random() * 10); // 85-95%
-  const sharesCount = Math.floor(readCount * 0.15) + Math.floor(Math.random() * 200);
-  
-  return { readCount, helpfulPercentage, sharesCount };
-}

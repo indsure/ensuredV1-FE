@@ -102,6 +102,13 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/blog">
+                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
+                      Blog
+                    </span>
+                  </Link>
+                </li>
+                <li>
                   <Link href="/team">
                     <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
                       Meet the Team

@@ -57,8 +57,7 @@ import {
   article27Content,
   article27FAQs,
   article28Content,
-  article28FAQs,
-  generateArticleStats,
+  article28FAQs ,
 } from "./article-content";
 
 export interface BlogPost {
@@ -75,10 +74,7 @@ export interface BlogPost {
   tags?: string[]; // Optional tags
   insuranceType?: "Health" | "Life" | "Vehicle" | "Home" | "Travel" | "Business" | "General";
   featuredImage?: string; // Featured image URL
-  faqs?: Array<{ question: string; answer: string }>; // FAQ items
-  readCount?: number; // Number of reads
-  helpfulPercentage?: number; // Percentage who found it helpful
-  sharesCount?: number; // Number of shares
+  faqs?: Array<{ question: string; answer: string }>; // FAQ items // Number of reads // Percentage who found it helpful // Number of shares
 }
 
 // Article 1: Understanding Health Insurance Sufficiency
@@ -826,7 +822,6 @@ export const blogPosts: BlogPost[] = [
     content: article9Content,
     faqs: article9FAQs,
     featuredImage: "/images/blog/health-insurance-guide.jpg",
-    ...generateArticleStats(9),
   },
   {
     id: 10,
@@ -843,7 +838,6 @@ export const blogPosts: BlogPost[] = [
     content: article10Content,
     faqs: article10FAQs,
     featuredImage: "/images/blog/life-insurance-guide.jpg",
-    ...generateArticleStats(10),
   },
   {
     id: 11,
@@ -860,7 +854,6 @@ export const blogPosts: BlogPost[] = [
     content: article11Content,
     faqs: article11FAQs,
     featuredImage: "/images/blog/car-insurance-explained.jpg",
-    ...generateArticleStats(11),
   },
   {
     id: 12,
@@ -877,7 +870,6 @@ export const blogPosts: BlogPost[] = [
     content: article12Content,
     faqs: article12FAQs,
     featuredImage: "/images/blog/home-insurance-explained.jpg",
-    ...generateArticleStats(12),
   },
   {
     id: 13,
@@ -894,7 +886,6 @@ export const blogPosts: BlogPost[] = [
     content: article13Content,
     faqs: article13FAQs,
     featuredImage: "/images/blog/travel-insurance-explained.jpg",
-    ...generateArticleStats(13),
   },
   {
     id: 14,
@@ -911,7 +902,6 @@ export const blogPosts: BlogPost[] = [
     content: article14Content,
     faqs: article14FAQs,
     featuredImage: "/images/blog/general-insurance-types.jpg",
-    ...generateArticleStats(14),
   },
   {
     id: 15,
@@ -928,7 +918,6 @@ export const blogPosts: BlogPost[] = [
     content: article15Content,
     faqs: article15FAQs,
     featuredImage: "/images/blog/health-vs-mediclaim.jpg",
-    ...generateArticleStats(15),
   },
   {
     id: 16,
@@ -945,7 +934,6 @@ export const blogPosts: BlogPost[] = [
     content: article16Content,
     faqs: article16FAQs,
     featuredImage: "/images/blog/term-life-basics.jpg",
-    ...generateArticleStats(16),
   },
   {
     id: 17,
@@ -962,7 +950,6 @@ export const blogPosts: BlogPost[] = [
     content: article17Content,
     faqs: article17FAQs,
     featuredImage: "/images/blog/property-insurance.jpg",
-    ...generateArticleStats(17),
   },
   {
     id: 18,
@@ -979,7 +966,6 @@ export const blogPosts: BlogPost[] = [
     content: article18Content,
     faqs: article18FAQs,
     featuredImage: "/images/blog/personal-accident.jpg",
-    ...generateArticleStats(18),
   },
   {
     id: 19,
@@ -996,7 +982,6 @@ export const blogPosts: BlogPost[] = [
     content: article19Content,
     faqs: article19FAQs,
     featuredImage: "/images/blog/business-insurance.jpg",
-    ...generateArticleStats(19),
   },
   {
     id: 20,
@@ -1013,7 +998,6 @@ export const blogPosts: BlogPost[] = [
     content: article20Content,
     faqs: article20FAQs,
     featuredImage: "/images/blog/liability-insurance.jpg",
-    ...generateArticleStats(20),
   },
   {
     id: 21,
@@ -1030,7 +1014,6 @@ export const blogPosts: BlogPost[] = [
     content: article21Content,
     faqs: article21FAQs,
     featuredImage: "/images/blog/workers-compensation.jpg",
-    ...generateArticleStats(21),
   },
   {
     id: 22,
@@ -1047,7 +1030,6 @@ export const blogPosts: BlogPost[] = [
     content: article22Content,
     faqs: article22FAQs,
     featuredImage: "/images/blog/marine-cargo-insurance.jpg",
-    ...generateArticleStats(22),
   },
   {
     id: 23,
@@ -1064,7 +1046,6 @@ export const blogPosts: BlogPost[] = [
     content: article23Content,
     faqs: article23FAQs,
     featuredImage: "/images/blog/cyber-insurance.jpg",
-    ...generateArticleStats(23),
   },
   {
     id: 24,
@@ -1081,7 +1062,6 @@ export const blogPosts: BlogPost[] = [
     content: article24Content,
     faqs: article24FAQs,
     featuredImage: "/images/blog/reinsurance-explained.jpg",
-    ...generateArticleStats(24),
   },
   {
     id: 25,
@@ -1098,7 +1078,6 @@ export const blogPosts: BlogPost[] = [
     content: article25Content,
     faqs: article25FAQs,
     featuredImage: "/images/blog/pension-retirement-plans.jpg",
-    ...generateArticleStats(25),
   },
   {
     id: 26,
@@ -1115,7 +1094,6 @@ export const blogPosts: BlogPost[] = [
     content: article26Content,
     faqs: article26FAQs,
     featuredImage: "/images/blog/agricultural-insurance.jpg",
-    ...generateArticleStats(26),
   },
   {
     id: 27,
@@ -1132,7 +1110,6 @@ export const blogPosts: BlogPost[] = [
     content: article27Content,
     faqs: article27FAQs,
     featuredImage: "/images/blog/micro-insurance.jpg",
-    ...generateArticleStats(27),
   },
   {
     id: 28,
@@ -1149,6 +1126,5 @@ export const blogPosts: BlogPost[] = [
     content: article28Content,
     faqs: article28FAQs,
     featuredImage: "/images/blog/insurance-types-overview.jpg",
-    ...generateArticleStats(28),
   },
 ];

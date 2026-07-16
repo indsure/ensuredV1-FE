@@ -13,6 +13,7 @@ const navLinks = [
   { label: "How It Works", href: "/how-it-works" },
   { label: "Why IndSure", href: "/why-indsure" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Blog", href: "/blog" },
 ];
 
 const toolsItems = [

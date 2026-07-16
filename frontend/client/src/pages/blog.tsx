@@ -23,9 +23,10 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { blogPosts } from "./blog/blog-data";
+import { blogPath } from "./blog/slugs";
 import { useSEO } from "@/hooks/use-seo";
-import { NewsletterSignup } from "@/components/NewsletterSignup";
-import { BlogFeaturedImage } from "@/components/BlogFeaturedImage";
+import { BlogListingCTA } from "@/components/BlogCTA";
+import { BlogCover } from "@/components/BlogCover";
 import { ArrowRight } from "lucide-react";
 
 
@@ -52,9 +53,12 @@ const insuranceCategories = [
   { id: "General", label: "General", icon: BookOpen, color: "bg-gray-50 text-gray-700", count: blogPosts.filter(p => p.insuranceType === "General" || p.category === "General").length },
 ];
 
+const PAGE_SIZE = 12;
+
 export default function Blog() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // SEO
   useSEO({
@@ -80,7 +84,10 @@ export default function Blog() {
   const handleCategoryFilter = (categoryId: string) => {
     setSelectedCategory(categoryId);
     setSearchQuery(""); // Clear search when filtering by category
+    setVisibleCount(PAGE_SIZE);
   };
+
+  const visiblePosts = regularPosts.slice(0, visibleCount);
 
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
@@ -98,11 +105,11 @@ export default function Blog() {
       <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-8 md:pb-12 w-full">
         {/* Hero Section */}
         <div className="text-center mb-16 pt-8 md:pt-12">
-          <h1 className="text-4xl md:text-5xl lg:text-[48px] font-bold font-serif text-[var(--color-text-main)] mb-4 leading-[1.1]">
-            Insurance Knowledge Base
+          <h1 className="text-4xl md:text-5xl lg:text-[52px] font-bold font-serif text-[var(--color-text-main)] mb-4 leading-[1.1]">
+            The fine print, <span className="italic text-[var(--color-teal-600)]">explained.</span>
           </h1>
           <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto mb-10 leading-relaxed font-light">
-            Clear, honest answers to every insurance question you have
+            Clear, honest answers to every insurance question — no jargon, no sales pitch.
           </p>
 
           {/* Search Bar */}
@@ -157,24 +164,17 @@ export default function Blog() {
         {/* Featured Article */}
         {selectedCategory === "All" && searchQuery === "" && topFeaturedPost && (
           <div className="mb-16 max-w-4xl mx-auto">
-            <Link href={`/blog/${topFeaturedPost.id}`}>
+            <Link href={blogPath(topFeaturedPost.id)}>
               <Card className="bg-white border border-[var(--color-border-light)] rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-200 cursor-pointer shadow-sm">
                 <div className="grid md:grid-cols-[45%_55%] gap-0">
-                  {/* Left: Featured Image */}
-                  <div className="relative h-full min-h-[280px] md:min-h-[320px] bg-gradient-to-br from-[var(--color-green-primary)]/10 to-[var(--color-green-secondary)]/10 overflow-hidden">
+                  {/* Left: typographic cover */}
+                  <div className="relative h-full min-h-[280px] md:min-h-[320px] overflow-hidden">
                     <div className="absolute top-4 left-4 z-10">
-                      <span className="inline-block px-3 py-1 bg-[var(--color-green-primary)] text-white text-xs font-semibold rounded-full uppercase tracking-wider">
+                      <span className="inline-block px-3 py-1 bg-[var(--color-teal-600)] text-white text-xs font-semibold rounded-full uppercase tracking-wider">
                         FEATURED
                       </span>
                     </div>
-                    <div className="absolute inset-0 flex items-center justify-center p-4">
-                      <BlogFeaturedImage
-                        articleId={topFeaturedPost.id}
-                        category={topFeaturedPost.category}
-                        title={topFeaturedPost.title}
-                        className="w-full h-full max-h-full"
-                      />
-                    </div>
+                    <BlogCover title={topFeaturedPost.title} category={topFeaturedPost.category} />
                   </div>
 
                   {/* Right: Content */}
@@ -193,9 +193,7 @@ export default function Blog() {
                     <div className="flex items-center gap-4 text-xs text-[var(--color-text-muted)] mb-6 uppercase tracking-widest font-medium">
                       <span>{topFeaturedPost.readTime}</span>
                       <span>•</span>
-                      <span>Written by {topFeaturedPost.author}</span>
-                      <span>•</span>
-                      <span>Updated {new Date(topFeaturedPost.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      <span>{new Date(topFeaturedPost.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
                     <Button variant="outline" className="w-fit border-[var(--color-green-primary)] text-[var(--color-green-primary)] hover:bg-[var(--color-green-primary)] hover:text-white transition-all">
                       Read Full Article
@@ -255,21 +253,13 @@ export default function Blog() {
           {regularPosts.length > 0 ? (
             <>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {regularPosts.map((post) => {
-                  const Icon = post.icon;
+                {visiblePosts.map((post) => {
                   return (
-                    <Link key={post.id} href={`/blog/${post.id}`}>
+                    <Link key={post.id} href={blogPath(post.id)}>
                       <Card className="bg-white border border-[var(--color-border-light)] hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer h-full flex flex-col overflow-hidden shadow-sm">
-                        {/* Featured Image */}
-                        <div className="relative h-[200px] bg-gradient-to-br from-[var(--color-cream-dark)] to-[var(--color-border-light)] overflow-hidden">
-                          <div className="absolute inset-0 p-2">
-                            <BlogFeaturedImage
-                              articleId={post.id}
-                              category={post.category}
-                              title={post.title}
-                              className="w-full h-full"
-                            />
-                          </div>
+                        {/* Typographic cover */}
+                        <div className="relative h-[180px] overflow-hidden border-b border-[var(--color-border-light)]">
+                          <BlogCover title={post.title} category={post.category} />
                         </div>
 
                         <CardHeader className="p-5">
@@ -293,11 +283,15 @@ export default function Blog() {
                 })}
               </div>
 
-              {/* Load More Button */}
-              {regularPosts.length >= 12 && (
+              {/* Load More (real pagination) */}
+              {regularPosts.length > visibleCount && (
                 <div className="text-center mt-12">
-                  <Button variant="outline" className="h-12 px-8 border-[var(--color-border-medium)] text-[var(--color-text-secondary)] hover:bg-[var(--color-cream-dark)] hover:text-[var(--color-text-main)]">
-                    Load More Articles
+                  <Button
+                    variant="outline"
+                    onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                    className="h-12 px-8 border-[var(--color-border-medium)] text-[var(--color-text-secondary)] hover:bg-[var(--color-cream-dark)] hover:text-[var(--color-text-main)]"
+                  >
+                    Load More Articles ({regularPosts.length - visibleCount} more)
                   </Button>
                 </div>
               )}
@@ -314,10 +308,10 @@ export default function Blog() {
           )}
         </div>
 
-        {/* Newsletter Signup */}
+        {/* Funnel close */}
         {selectedCategory === "All" && searchQuery === "" && (
           <div className="mb-16">
-            <NewsletterSignup />
+            <BlogListingCTA />
           </div>
         )}
       </main>

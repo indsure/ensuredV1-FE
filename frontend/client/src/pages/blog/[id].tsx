@@ -3,32 +3,32 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, Clock, User, Share2, ArrowRight, ChevronDown, CheckCircle2, Users } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { ArrowLeft, ArrowRight, Calendar, Clock, User, ChevronDown } from "lucide-react";
+import { Link } from "wouter";
 import { blogPosts } from "../blog/blog-data";
+import { postFromParam, blogPath } from "../blog/slugs";
 import { useSEO } from "@/hooks/use-seo";
-import { SchemaMarkup } from "@/components/SEO";
+import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
 import { TableOfContents } from "@/components/TableOfContents";
 import { ReadingProgress } from "@/components/ReadingProgress";
 import { ShareButtons } from "@/components/ShareButtons";
-import { NewsletterSignup } from "@/components/NewsletterSignup";
-import { BlogFeaturedImage } from "@/components/BlogFeaturedImage";
+import { BlogCover } from "@/components/BlogCover";
+import { BlogInlineCTA, BlogClosingCTA, BlogSidebarCTA } from "@/components/BlogCTA";
 import { useRef, useState } from "react";
 
 export default function BlogPost() {
   const [, params] = useRoute("/blog/:id");
-  const [, setLocation] = useLocation();
-  const postId = params?.id ? parseInt(params.id) : null;
-  const post = postId ? blogPosts.find((p) => p.id === postId) : null;
+  // :id accepts the SEO slug (canonical) or the legacy numeric id.
+  const post = postFromParam(params?.id);
   const contentRef = useRef<HTMLElement>(null!);
   const [activeFAQ, setActiveFAQ] = useState<number | null>(null);
 
-  // SEO
+  // SEO — canonical always points at the slug URL, even on legacy /blog/4 hits.
   useSEO({
     title: post ? `${post.title} | IndSure Blog` : "Blog Article | IndSure",
     description: post ? post.excerpt : "Insurance insights and guides",
     keywords: post ? `${post.category.toLowerCase()}, insurance, ${post.title.toLowerCase()}` : "insurance blog",
-    canonical: post ? `/blog/${post.id}` : "/blog",
+    canonical: post ? blogPath(post.id) : "/blog",
   });
 
   if (!post) {
@@ -65,7 +65,7 @@ export default function BlogPost() {
       name: "IndSure",
       logo: {
         "@type": "ImageObject",
-        url: "https://IndSure.com/favicon.png",
+        url: "https://indsure.in/favicon.png",
       },
     },
   } : null;
@@ -115,36 +115,17 @@ export default function BlogPost() {
               </Button>
             </Link>
 
-            {/* Article Header with Featured Image */}
+            {/* Article Header — typographic banner + real H1 */}
             <div className="mb-12">
-              {/* Featured Image */}
-              <div className="relative h-[250px] md:h-[400px] rounded-t-2xl overflow-hidden bg-gradient-to-br from-[var(--color-cream-dark)] to-[var(--color-border-light)] mb-0">
-                {/* Generate styled preview card matching Analysis Report design */}
-                <div className="absolute inset-0 flex items-center justify-center p-8">
-                  <div className="w-full max-w-4xl">
-                    <BlogFeaturedImage
-                      articleId={post.id}
-                      category={post.category}
-                      title={post.title}
-                      className="w-full h-full"
-                    />
-                  </div>
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
-                <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12">
-                  <div className="max-w-3xl">
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase mb-4 bg-white/90 text-[var(--color-green-primary)] shadow-sm`}>
-                      {post.category}
-                    </span>
-                    <h1 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold font-serif text-white mb-0 leading-tight drop-shadow-md">
-                      {post.title}
-                    </h1>
-                  </div>
-                </div>
+              <div className="relative h-[200px] md:h-[280px] rounded-t-2xl overflow-hidden border border-b-0 border-[var(--color-border-light)]">
+                <BlogCover title={post.title} category={post.category} hero />
               </div>
 
-              {/* Subheading and Metadata */}
+              {/* Title, subheading and metadata */}
               <div className="bg-white rounded-b-2xl border-x border-b border-[var(--color-border-light)] p-8 md:p-12 shadow-sm">
+                <h1 className="text-3xl md:text-4xl lg:text-[42px] font-bold font-serif text-[var(--color-navy-900)] mb-4 leading-tight">
+                  {post.title}
+                </h1>
                 <p className="text-lg md:text-xl text-[var(--color-text-secondary)] leading-relaxed mb-6 max-w-3xl font-light">
                   {post.excerpt}
                 </p>
@@ -187,29 +168,15 @@ export default function BlogPost() {
                 )}
               </div>
 
-              {/* CTA Section */}
+              {/* Topic-aware funnel CTA */}
               <div className="mt-12 pt-8 border-t border-[var(--color-border-light)]">
-                <div className="bg-[var(--color-cream-dark)] rounded-xl p-6 border-l-4 border-[var(--color-green-primary)]">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold font-serif text-[var(--color-text-main)] mb-2">Want to understand your specific policy?</h3>
-                      <p className="text-sm text-[var(--color-text-secondary)]">
-                        Upload your policy PDF and see exactly what your room limit is and how it affects claims.
-                      </p>
-                    </div>
-                    <Button
-                      onClick={() => setLocation("/policychecker")}
-                      className="bg-[var(--color-green-primary)] hover:bg-[var(--color-green-secondary)] text-white font-semibold h-10 px-6 whitespace-nowrap"
-                    >
-                      Analyze Your Policy
-                    </Button>
-                  </div>
-                </div>
+                <BlogInlineCTA post={post} />
               </div>
 
               {/* FAQ Section */}
               {post.faqs && post.faqs.length > 0 && (
                 <div className="mt-12 pt-8 border-t border-[var(--color-border-light)]">
+                  <SchemaMarkup type="FAQPage" data={createFAQSchema(post.faqs)} />
                   <h2 className="text-2xl md:text-3xl font-bold text-center font-serif text-[var(--color-text-main)] mb-8">
                     Frequently Asked Questions
                   </h2>
@@ -238,13 +205,13 @@ export default function BlogPost() {
               <div className="mt-12 pt-8 border-t border-[var(--color-border-light)]">
                 <div className="bg-[var(--color-cream-dark)] rounded-xl p-6">
                   <div className="flex gap-4">
-                    <div className="w-20 h-20 rounded-full bg-white border border-[var(--color-border-light)] flex items-center justify-center flex-shrink-0 text-[var(--color-green-primary)] font-serif text-2xl font-bold">
-                      E
+                    <div className="w-16 h-16 rounded-full bg-white border border-[var(--color-border-light)] flex items-center justify-center flex-shrink-0 text-[var(--color-teal-600)] font-serif text-2xl font-bold">
+                      {(post.author || "IndSure").charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-[var(--color-text-main)] mb-1">IndSure Team</h3>
+                      <h3 className="text-sm font-semibold text-[var(--color-text-main)] mb-1">{post.author}</h3>
                       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                        We decode insurance so you don't have to. Health, life, vehicle—everything explained clearly.
+                        We decode insurance so you don't have to — health, life, vehicle, everything explained clearly.
                       </p>
                     </div>
                   </div>
@@ -256,38 +223,14 @@ export default function BlogPost() {
           {/* Right Sidebar */}
           <div className="hidden lg:block">
             <div className="sticky top-24 space-y-6">
-              {/* Newsletter Signup */}
-              <NewsletterSignup compact />
+              {/* Funnel card (replaces the fake newsletter form) */}
+              <BlogSidebarCTA />
 
               {/* Share Buttons */}
               <div className="bg-white border border-[var(--color-border-light)] rounded-xl p-5 shadow-sm">
                 <h3 className="text-sm font-semibold text-[var(--color-text-main)] mb-3">Share</h3>
                 <ShareButtons url={typeof window !== "undefined" ? window.location.href : ""} title={post.title} description={post.excerpt} compact />
               </div>
-
-              {/* Article Stats */}
-              {post.readCount && (
-                <div className="bg-white border border-[var(--color-border-light)] rounded-xl p-5 shadow-sm">
-                  <div className="space-y-3 text-xs text-[var(--color-text-muted)]">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      <span>{(post.readCount / 1000).toFixed(1)}K people read this</span>
-                    </div>
-                    {post.helpfulPercentage && (
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>{post.helpfulPercentage}% found it helpful</span>
-                      </div>
-                    )}
-                    {post.sharesCount && (
-                      <div className="flex items-center gap-2">
-                        <Share2 className="w-4 h-4" />
-                        <span>{post.sharesCount} shares</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Related Articles (Mini) */}
               {relatedArticles.length > 0 && (
@@ -297,7 +240,7 @@ export default function BlogPost() {
                     {relatedArticles.map((relatedPost) => {
                       const Icon = relatedPost.icon;
                       return (
-                        <Link key={relatedPost.id} href={`/blog/${relatedPost.id}`}>
+                        <Link key={relatedPost.id} href={blogPath(relatedPost.id)}>
                           <div className="flex gap-3 p-2 rounded-lg hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer group">
                             <div className="w-12 h-12 rounded-lg bg-[var(--color-white)] border border-[var(--color-border-light)] flex items-center justify-center flex-shrink-0 group-hover:border-[var(--color-green-primary)] transition-colors">
                               <Icon className="w-6 h-6 text-[var(--color-text-secondary)] group-hover:text-[var(--color-green-primary)]" />
@@ -331,20 +274,8 @@ export default function BlogPost() {
             </div>
           </div>
 
-          {/* Final CTA */}
-          <div className="bg-[var(--color-petrol-900)] rounded-xl p-8 text-center text-white shadow-lg">
-            <h3 className="text-xl font-bold mb-3 font-serif">Ready to Analyze Your Policy?</h3>
-            <Button
-              onClick={() => setLocation("/policychecker")}
-              className="bg-white hover:bg-[var(--color-cream-main)] text-[var(--color-petrol-900)] font-semibold h-12 px-8"
-            >
-              Start Analysis
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-            <Link href="/" className="block mt-4 text-sm text-white/70 hover:text-white">
-              Explore all tools →
-            </Link>
-          </div>
+          {/* Final CTA — topic-aware */}
+          <BlogClosingCTA post={post} />
         </div>
 
         {/* Related Articles - Full Section */}
@@ -355,7 +286,7 @@ export default function BlogPost() {
               {relatedArticles.map((relatedPost) => {
                 const Icon = relatedPost.icon;
                 return (
-                  <Link key={relatedPost.id} href={`/blog/${relatedPost.id}`}>
+                  <Link key={relatedPost.id} href={blogPath(relatedPost.id)}>
                     <div className="bg-white rounded-xl overflow-hidden border border-[var(--color-border-light)] hover:shadow-lg transition-all duration-200 cursor-pointer h-full flex flex-col hover:border-[var(--color-green-secondary)]">
                       <div className="h-[150px] bg-gradient-to-br from-[var(--color-cream-dark)] to-[var(--color-border-light)] flex items-center justify-center">
                         <Icon className="w-12 h-12 text-[var(--color-text-muted)] opacity-50" />
