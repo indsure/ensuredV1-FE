@@ -25,16 +25,16 @@ type Tier = {
 const tiers: Tier[] = [
   {
     name: "Free",
-    tagline: "Your full client book, organised. Free forever.",
+    tagline: "Everything for your daily work. Free forever.",
     price: "₹0",
     priceAnnual: "₹0",
     period: "forever",
     periodAnnual: "forever",
     features: [
-      { label: "Full CRM — leads, renewals, portfolio" },
-      { label: "Cover Calculator + shareable reports" },
-      { label: "3 AI audit credits to try it out" },
-      { label: "WhatsApp drafts in EN / Hinglish / Hindi" },
+      { label: "Leads, renewals and client portfolio" },
+      { label: "Cover Calculator with shareable reports" },
+      { label: "3 policy checks to try" },
+      { label: "WhatsApp drafts in English, Hindi and Hinglish" },
       { label: "No card needed" },
     ],
     cta: "Start free",
@@ -42,20 +42,20 @@ const tiers: Tier[] = [
   },
   {
     name: "Agent",
-    tagline: "For advisors ready to run their book like a business.",
+    tagline: "For the full-time advisor.",
     price: "₹999",
     priceAnnual: "₹9,999",
     period: "/ month",
     periodAnnual: "/ year",
-    subline: "12 audit credits every month",
-    sublineAnnual: "≈ ₹833 / month · 2 months free",
+    subline: "12 policy checks every month",
+    sublineAnnual: "12 policy checks every month · 2 months free",
     features: [
-      { label: "12 AI audit credits every month" },
-      { label: "Annual credits roll over till year-end" },
-      { label: "Policy compare + Sach AI assistant" },
-      { label: "Live quote feed — all insurance types", soon: true },
+      { label: "12 policy checks every month — audit or compare" },
+      { label: "On annual plan, unused checks roll over till year-end" },
+      { label: "Sach assistant for policy questions" },
+      { label: "Live premium quotes across insurers", soon: true },
       { label: "Priority support" },
-      { label: "Top-up packs from ₹449" },
+      { label: "Need more? Packs from ₹449" },
     ],
     highlighted: true,
     cta: "Start free",
@@ -63,7 +63,7 @@ const tiers: Tier[] = [
   },
   {
     name: "Agency",
-    tagline: "For teams and agencies managing multiple advisors.",
+    tagline: "For agencies with a team of advisors.",
     price: "₹799",
     priceAnnual: "₹799",
     period: "/ seat / month",
@@ -71,10 +71,10 @@ const tiers: Tier[] = [
     subline: "Minimum 5 seats",
     sublineAnnual: "Minimum 5 seats",
     features: [
-      { label: "Everything in Agent, per seat" },
-      { label: "Credits pooled across the team (10 / seat)" },
-      { label: "Live quote feed, pooled allowance", soon: true },
-      { label: "Multi-advisor team management" },
+      { label: "Everything in Agent, for every seat" },
+      { label: "Policy checks shared across the team (10 per seat)" },
+      { label: "Live quotes with a shared allowance", soon: true },
+      { label: "Manage all your advisors in one place" },
       { label: "Dedicated onboarding" },
     ],
     cta: "Talk to us",
@@ -90,12 +90,12 @@ const featureRows: { label: string; free: string | boolean; agent: string | bool
   { label: "WhatsApp message drafts (EN / Hinglish / Hindi)", free: true, agent: true, agency: true },
   { label: "Rider directory", free: true, agent: true, agency: true },
   { label: "Policy data entry + Excel export (motor / life / travel / property)", free: "Up to 50 / month", agent: "Up to 50 / month", agency: "Up to 50 / month" },
-  { label: "AI policy audit credits", free: "3 one-time", agent: "12 / month", agency: "10 / seat / month, pooled" },
-  { label: "Policy compare (catalog or PDF wording)", free: "1 credit each", agent: "1 credit each", agency: "1 credit each" },
-  { label: "Live quote feed — fetch & compare prices across insurers (coming soon)", free: false, agent: "Monthly allowance", agency: "Pooled allowance" },
-  { label: "Extra credit top-ups (₹449 / 5 · ₹1,199 / 15)", free: false, agent: true, agency: true },
-  { label: "Sach AI assistant", free: false, agent: "Fair use", agency: "Fair use" },
-  { label: "Multi-advisor team management", free: false, agent: false, agency: true },
+  { label: "Policy checks — full audit of any policy", free: "3 one-time", agent: "12 / month", agency: "10 / seat / month, shared" },
+  { label: "Policy compare, side by side (uses 1 check)", free: true, agent: true, agency: true },
+  { label: "Live quotes — fetch & compare prices across insurers (coming soon)", free: false, agent: "Monthly allowance", agency: "Shared allowance" },
+  { label: "Extra check packs (5 for ₹449 · 15 for ₹1,199)", free: false, agent: true, agency: true },
+  { label: "Sach assistant — ask any policy question", free: false, agent: "Fair use", agency: "Fair use" },
+  { label: "Manage multiple advisors as a team", free: false, agent: false, agency: true },
   { label: "Priority support", free: false, agent: true, agency: true },
   { label: "Dedicated onboarding", free: false, agent: false, agency: true },
 ];
@@ -107,42 +107,42 @@ function FeatureCell({ value }: { value: string | boolean }) {
 }
 
 const topUpPacks = [
-  { credits: 5, price: "₹449", perCredit: "₹90 / credit" },
-  { credits: 15, price: "₹1,199", perCredit: "₹80 / credit" },
+  { credits: 5, price: "₹449" },
+  { credits: 15, price: "₹1,199" },
 ];
 
 const faqs = [
   {
-    q: "What exactly is a credit?",
-    a: "1 credit = 1 full AI policy audit or 1 policy comparison. Everything else — leads, renewals, calculator, WhatsApp drafts, data entry — never uses credits.",
+    q: "What is a policy check?",
+    a: "One check is one full policy audit, or one side-by-side comparison of two policies. Everything else — leads, renewals, calculator, WhatsApp drafts, data entry — never uses your checks.",
   },
   {
     q: "Is there a free trial?",
-    a: "The Free plan is free forever, not a trial. Your leads, renewals, calculator and WhatsApp drafts stay free for life, and you get 3 audit credits to try the AI analysis. No card needed.",
+    a: "The Free plan is free forever, not a trial. Your leads, renewals, calculator and WhatsApp drafts stay free for life, and you get 3 policy checks to see the reports for yourself. No card needed.",
   },
   {
-    q: "What happens when I run out of credits?",
-    a: "Buy a top-up pack anytime — ₹449 for 5 credits or ₹1,199 for 15. Top-up credits never expire while your plan is active.",
+    q: "What happens when I run out of checks?",
+    a: "Buy a pack anytime — ₹449 for 5 checks or ₹1,199 for 15. Purchased checks never expire while your plan is active.",
   },
   {
-    q: "What is the live quote feed?",
-    a: "An upcoming feature for Agent and Agency plans: fetch live premium quotes across insurers for every type of insurance, then compare price and wording side by side — so you can show a customer both the cheapest option and the best-value one. It won't use your audit credits; it comes with its own monthly quote allowance (limits announced at launch).",
+    q: "What are live quotes?",
+    a: "An upcoming feature for Agent and Agency plans: fetch live premium quotes across insurers for every type of insurance, then compare price and wording side by side — so you can show a customer both the cheapest option and the best-value one. Live quotes won't use your policy checks; they come with their own monthly allowance (limits announced at launch).",
   },
   {
     q: "Will prices increase later?",
-    a: "Yes. Today's pricing is pre-quote-feed. When the live quote feed launches, prices for new signups will go up — Founding 50 members keep their locked rate forever.",
+    a: "Yes. When live quotes launch, prices for new signups will go up. Founding 50 members keep their locked rate forever.",
   },
   {
     q: "Do you offer a discount for annual billing?",
-    a: "Yes — annual is 2 months free (₹9,999 instead of ₹11,988). Annual credits also roll over until year-end, while monthly-plan credits expire each month.",
+    a: "Yes — annual is 2 months free (₹9,999 instead of ₹11,988). Unused checks on the annual plan also roll over until year-end, while monthly-plan checks expire each month.",
   },
   {
     q: "Can I switch plans later?",
-    a: "Yes. Upgrades apply immediately and your remaining credits carry over. Downgrades take effect from your next billing date.",
+    a: "Yes. Upgrades apply immediately and your remaining checks carry over. Downgrades take effect from your next billing date.",
   },
   {
-    q: "What happens to my leads/customers if I cancel?",
-    a: "They stay yours. You can export your full book to Excel anytime, and your data is retained or deleted as per our Privacy Policy and India's DPDP Act — just ask.",
+    q: "What happens to my leads and customers if I cancel?",
+    a: "They stay yours. You can export everything to Excel anytime, and your data is retained or deleted as per our Privacy Policy and India's DPDP Act — just ask.",
   },
   {
     q: "Do you take a commission on policies I sell?",
@@ -151,7 +151,7 @@ const faqs = [
 ];
 
 export default function Pricing() {
-  const [annual, setAnnual] = useState(true);
+  const [annual, setAnnual] = useState(false);
 
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
@@ -165,11 +165,11 @@ export default function Pricing() {
             For Advisors
           </div>
           <h1 className="text-4xl md:text-5xl font-serif mb-4 tracking-tight text-[var(--color-text-main)] leading-tight">
-            Simple pricing. <span className="italic text-[var(--color-green-primary)]">Serious tools.</span>
+            Simple pricing. <span className="italic text-[var(--color-green-primary)]">One policy covers it.</span>
           </h1>
           <p className="text-lg md:text-xl text-[var(--color-text-secondary)] font-light leading-relaxed max-w-2xl mx-auto">
-            One closed policy pays for months of IndSure.
-            No commissions taken, no fine print here either.
+            Your daily tools are free forever. The full plan costs ₹999 a month —
+            close one policy and it has paid for itself. We take no commission, ever.
           </p>
         </section>
 
@@ -179,12 +179,12 @@ export default function Pricing() {
             <Sparkles className="w-5 h-5 text-[var(--color-green-primary)] shrink-0" />
             <div>
               <p className="text-sm md:text-base text-[var(--color-text-main)]">
-                <span className="font-semibold">Founding 50:</span> the first 50 agents get their first year at{" "}
+                <span className="font-semibold">Founding 50:</span> the first 50 advisors get a full year at{" "}
                 <span className="font-semibold">₹4,999</span>{" "}
-                <span className="line-through text-[var(--color-text-muted)]">₹9,999</span> — locked in when you join.
+                <span className="line-through text-[var(--color-text-muted)]">₹9,999</span> — half price, locked in forever.
               </p>
               <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-                Prices rise when the live quote feed launches. Founding 50 keep their rate forever.
+                Prices rise when live quotes launch. Founding members keep their rate.
               </p>
             </div>
           </div>
@@ -265,24 +265,23 @@ export default function Pricing() {
         {/* CREDIT EXPLAINER + TOP-UPS */}
         <section className="max-w-4xl mx-auto mb-24">
           <div className="card-white p-8 md:p-10 text-center">
-            <h2 className="text-2xl font-serif mb-3">How credits work</h2>
+            <h2 className="text-2xl font-serif mb-3">How policy checks work</h2>
             <p className="text-[var(--color-text-secondary)] leading-relaxed max-w-2xl mx-auto mb-8">
-              <span className="font-semibold text-[var(--color-text-main)]">1 credit = 1 full AI policy audit or 1 policy comparison.</span>{" "}
-              Less than ₹100 to walk into a client meeting with a complete audit in hand —
-              and one closed policy pays for months of them.
+              <span className="font-semibold text-[var(--color-text-main)]">One check is one full policy audit, or one side-by-side comparison.</span>{" "}
+              That's less than ₹100 to walk into a client meeting with a complete audit in hand.
+              The commission on a single closed policy covers your month many times over.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               {topUpPacks.map((pack) => (
                 <div key={pack.credits} className="border border-[var(--color-border-main)] rounded-lg px-8 py-5 bg-[var(--color-cream-main)]">
                   <div className="text-2xl font-serif">{pack.price}</div>
-                  <div className="text-sm text-[var(--color-text-main)] font-medium">{pack.credits} credits</div>
-                  <div className="text-xs text-[var(--color-text-muted)]">{pack.perCredit}</div>
+                  <div className="text-sm text-[var(--color-text-main)] font-medium">{pack.credits} policy checks</div>
                 </div>
               ))}
             </div>
             <p className="text-xs text-[var(--color-text-muted)] mt-4">
-              Top-up credits never expire while your plan is active.
-              Live quotes (coming soon) won't use credits — they'll have their own monthly allowance.
+              Purchased checks never expire while your plan is active.
+              Live quotes (coming soon) won't use your checks — they'll have their own monthly allowance.
             </p>
           </div>
         </section>

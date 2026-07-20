@@ -426,7 +426,7 @@ export default function DashboardNew() {
           <Button
             className="bg-[#0D9488] hover:bg-[#0f766e] text-white shadow-md font-semibold"
             onClick={() => setLocation('/agent/uploads')}
-            title={creditsRemaining <= 0 ? 'Health analysis needs credits — data-entry types (motor, life, term…) are free' : undefined}
+            title={creditsRemaining <= 0 ? 'Health analysis needs policy checks — data-entry types (motor, life, term…) are free' : undefined}
           >
             <Play size={16} className="mr-2 fill-current" /> {t("dashboard.analyze_policies")}
             {creditsRemaining <= 0 && <span className="ml-2 text-xs opacity-80">{t("dashboard.no_credits")}</span>}
@@ -443,7 +443,7 @@ export default function DashboardNew() {
             <p className="text-sm text-red-600 mt-0.5">{t("dashboard.credits_zero_desc")}</p>
           </div>
           <a
-            href="https://wa.me/919987148125?text=Hi%2C%20I%27ve%20run%20out%20of%20credits%20on%20IndSure.%20Can%20you%20help%20me%20top%20up%20my%20account%3F"
+            href="https://wa.me/919987148125?text=Hi%2C%20I%27ve%20run%20out%20of%20policy%20checks%20on%20IndSure.%20Can%20you%20help%20me%20top%20up%20my%20account%3F"
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
@@ -460,7 +460,7 @@ export default function DashboardNew() {
             <p className="text-sm text-amber-600 mt-0.5">{t("dashboard.credits_low_desc")}</p>
           </div>
           <a
-            href="https://wa.me/919987148125?text=Hi%2C%20I%27m%20running%20low%20on%20credits%20on%20IndSure.%20Can%20you%20help%20me%20top%20up%20my%20account%3F"
+            href="https://wa.me/919987148125?text=Hi%2C%20I%27m%20running%20low%20on%20policy%20checks%20on%20IndSure.%20Can%20you%20help%20me%20top%20up%20my%20account%3F"
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"

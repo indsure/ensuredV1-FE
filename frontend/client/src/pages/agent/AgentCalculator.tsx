@@ -169,7 +169,7 @@ export default function AgentCalculator() {
         <div>
           <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">Cover Calculator</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Calculate how much health cover a client actually needs — free, no credits used.
+            Calculate how much health cover a client actually needs — free, no checks used.
           </p>
         </div>
         {done && (

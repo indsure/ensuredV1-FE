@@ -244,7 +244,7 @@ export default function AgentUploads() {
       files = [files[0]];
       toast({
         title: "One health policy at a time",
-        description: `Only "${files[0].name}" will be analysed — health policies run a full audit and use 1 credit each. Upload the rest individually.`,
+        description: `Only "${files[0].name}" will be analysed — health policies run a full audit and use 1 policy check each. Upload the rest individually.`,
       });
     }
 
@@ -379,8 +379,8 @@ export default function AgentUploads() {
         </div>
         <p className="mt-2 text-xs text-slate-500">
           {insuranceType === "health"
-            ? "Full risk analysis — generates a score and audit report. Uploaded one at a time; uses 1 credit per policy."
-            : `${TYPE_META[insuranceType].label} — drop as many policies as you like and we'll read each one and fill in the details (data entry only). No risk score, no credit used.`}
+            ? "Full risk analysis — generates a score and audit report. Uploaded one at a time; each one uses 1 policy check."
+            : `${TYPE_META[insuranceType].label} — drop as many policies as you like and we'll read each one and fill in the details (data entry only). No risk score, no check used.`}
         </p>
       </div>
 
