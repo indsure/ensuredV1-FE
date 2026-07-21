@@ -24,7 +24,7 @@ type UploadStatus = {
 
 export default function AgentUploads() {
   const [, setLocation] = useLocation();
-  const { agent } = useAgent();
+  const { agent, ocrRemaining } = useAgent();
   const { t } = useLanguage();
   const [uploads, setUploads] = useState<UploadStatus[]>([]);
   const [insuranceType, setInsuranceType] = useState<InsuranceType>("health");
@@ -161,7 +161,17 @@ export default function AgentUploads() {
             setLocation("/agent/login");
             return;
           }
-          
+
+          // Plan limits: out of policy checks (health) or data-entry allowance.
+          if (uploadRes.status === 403 && (errorData.error === "NO_OCR_CREDITS" || errorData.error === "NO_CREDITS")) {
+            toast({
+              variant: "destructive",
+              title: errorData.error === "NO_OCR_CREDITS" ? "Data-entry limit reached" : "No policy checks left",
+              description: errorData.message,
+            });
+            throw new Error(errorData.message || errorData.error);
+          }
+
           throw new Error(errorData.error || "Upload failed");
         }
 
@@ -380,8 +390,15 @@ export default function AgentUploads() {
         <p className="mt-2 text-xs text-slate-500">
           {insuranceType === "health"
             ? "Full risk analysis — generates a score and audit report. Uploaded one at a time; each one uses 1 policy check."
-            : `${TYPE_META[insuranceType].label} — drop as many policies as you like and we'll read each one and fill in the details (data entry only). No risk score, no check used.`}
+            : `${TYPE_META[insuranceType].label} — we read each policy and fill in the details (data entry only). No risk score. Each reading uses 1 data-entry entry from your plan.`}
         </p>
+        {insuranceType !== "health" && (
+          <p className={`mt-1 text-xs font-medium ${ocrRemaining <= 0 ? "text-red-600" : ocrRemaining <= 5 ? "text-amber-600" : "text-slate-500"}`}>
+            {ocrRemaining <= 0
+              ? "No data-entry entries left in your plan for this period."
+              : `${ocrRemaining} data-entry ${ocrRemaining === 1 ? "entry" : "entries"} left this period.`}
+          </p>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_400px]">

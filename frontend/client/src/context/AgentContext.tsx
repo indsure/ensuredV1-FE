@@ -14,6 +14,7 @@ export type AgentProfile = {
 type AgentContextType = {
   agent: AgentProfile | null;
   creditsRemaining: number;
+  ocrRemaining: number;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -24,6 +25,7 @@ const AgentContext = createContext<AgentContextType | undefined>(undefined);
 export function AgentProvider({ children }: { children: React.ReactNode }) {
   const [agent, setAgent] = useState<AgentProfile | null>(null);
   const [creditsRemaining, setCreditsRemaining] = useState(0);
+  const [ocrRemaining, setOcrRemaining] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +82,18 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
         .single()
       setCreditsRemaining(credits?.balance ?? 0)
 
+      // OCR / data-entry allowance. The balance row is seeded lazily server-side
+      // on the agent's first data-entry upload, so it may not exist yet — a
+      // missing row means "full allowance, nothing drawn" for the current plan.
+      const { data: ocr } = await supabase
+        .from("agent_ocr_credits")
+        .select("balance")
+        .eq("agent_id", user.id)
+        .single()
+      const ocrAllowanceByPlan: Record<string, number> = { free: 20, agent: 50, agency: 50 }
+      const planAllowance = ocrAllowanceByPlan[(profile.plan || "free").toLowerCase()] ?? 20
+      setOcrRemaining(ocr?.balance ?? planAllowance)
+
       setError(null)
     } catch (err: any) {
       setError(err?.message || "Error loading agent profile")
@@ -93,7 +107,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <AgentContext.Provider value={{ agent, creditsRemaining, loading, error, refresh: loadAgent }}>
+    <AgentContext.Provider value={{ agent, creditsRemaining, ocrRemaining, loading, error, refresh: loadAgent }}>
       {children}
     </AgentContext.Provider>
   );

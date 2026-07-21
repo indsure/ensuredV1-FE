@@ -94,6 +94,57 @@ const analyzeRateLimiter = rateLimit({
 const TRIAL_DAYS = 30;
 const FREE_SLOTS_PER_TYPE = 1;
 
+// ── Agent OCR (data-entry) metering ──────────────────────────────────────
+// Non-health lanes (motor/life/term/travel/property) run a paid Gemini OCR
+// call, so they are metered like credits: a per-agent balance you draw down.
+// The balance is refilled monthly by plan + billing cycle in refillOcrAllowance
+// (index.ts); here we only lazily seed it on first use and consume on success.
+const OCR_MONTHLY_ALLOWANCE: Record<string, number> = { free: 20, agent: 50, agency: 50 };
+const OCR_BANK_CAP = 600; // annual-billing carryover ceiling (used by the refill job)
+
+function ocrAllowanceFor(plan: string | null | undefined): number {
+  return OCR_MONTHLY_ALLOWANCE[(plan || "free").toLowerCase()] ?? OCR_MONTHLY_ALLOWANCE.free;
+}
+
+// Ensure an OCR balance row exists, seeding it from the agent's plan allowance
+// on first use, and return the current balance. Free rows are seeded once and
+// never refilled ("20 in perpetuity"); paid rows are topped up by the monthly
+// job. Lazy seeding avoids backfilling every existing agent.
+async function ensureOcrBalance(agentId: string): Promise<number> {
+  const existing = await pool.query(
+    "SELECT balance FROM agent_ocr_credits WHERE agent_id = $1",
+    [agentId]
+  );
+  if (existing.rows.length > 0) return existing.rows[0].balance ?? 0;
+
+  const planRes = await pool.query("SELECT plan FROM agents WHERE id = $1", [agentId]);
+  const seed = ocrAllowanceFor(planRes.rows[0]?.plan);
+  const period = new Date().toISOString().slice(0, 7); // 'YYYY-MM'
+  await pool.query(
+    `INSERT INTO agent_ocr_credits (agent_id, balance, total_used, period)
+     VALUES ($1, $2, 0, $3)
+     ON CONFLICT (agent_id) DO NOTHING`,
+    [agentId, seed, period]
+  );
+  const again = await pool.query(
+    "SELECT balance FROM agent_ocr_credits WHERE agent_id = $1",
+    [agentId]
+  );
+  return again.rows[0]?.balance ?? 0;
+}
+
+// Draw down one OCR entry on a successful data-entry extraction. GREATEST
+// guards against ever going negative on a race.
+async function consumeOcr(agentId: string): Promise<void> {
+  await pool.query(
+    "UPDATE agent_ocr_credits SET balance = GREATEST(balance - 1, 0), total_used = total_used + 1, updated_at = NOW() WHERE agent_id = $1",
+    [agentId]
+  );
+}
+
+const NO_OCR_CREDITS_MSG =
+  "You've used all the data-entry policies included in your plan for this period. Upgrade or wait for your monthly refill.";
+
 // Strict limiter for public lead capture to stop lead-spam: 5 leads / hour / IP.
 const leadsRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -1498,6 +1549,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         let fileUrl: string | null = null;
         let fileName: string | null = null;
         let extracted: any = null;
+        let ocrSkipped = false; // OCR asked for but no allowance left
         const ocr: Record<string, any> = {};
 
         if (req.file) {
@@ -1505,29 +1557,38 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           fileName = file.originalname;
 
           if (wantOcr && isDataEntryType(type)) {
-            try {
-              const text = await extractPolicyText(file, {
-                feature: "image_ocr",
-                route: "/api/agent/data-entry",
-                sourceType: "agent",
-                actorId: agentId,
-              });
-              const extraction = await extractStructuredData(text, type, {
-                route: "/api/agent/data-entry",
-                sourceType: "agent",
-                actorId: agentId,
-              });
-              if (extraction.status === "completed") {
-                extracted = extraction.data;
-                const shared = deriveSharedColumns(type, extraction.data);
-                ocr.insurer = shared.insurer ?? null;
-                ocr.policy_name = shared.policy_name ?? null;
-                ocr.policyholder_name = shared.policyholder_name ?? null;
-                ocr.premium = extraction.data?.premium != null ? Number(extraction.data.premium) : null;
-                ocr.due_date = shared.expiry_date ?? null;
+            // OCR here is the same paid Gemini call as the upload lane, so it
+            // draws from the agent's OCR allowance. If the balance is spent we
+            // skip OCR (rather than 403) so the file + manual fields still save.
+            const ocrBalance = await ensureOcrBalance(agentId);
+            if (ocrBalance <= 0) {
+              ocrSkipped = true;
+            } else {
+              try {
+                const text = await extractPolicyText(file, {
+                  feature: "image_ocr",
+                  route: "/api/agent/data-entry",
+                  sourceType: "agent",
+                  actorId: agentId,
+                });
+                const extraction = await extractStructuredData(text, type, {
+                  route: "/api/agent/data-entry",
+                  sourceType: "agent",
+                  actorId: agentId,
+                });
+                if (extraction.status === "completed") {
+                  await consumeOcr(agentId);
+                  extracted = extraction.data;
+                  const shared = deriveSharedColumns(type, extraction.data);
+                  ocr.insurer = shared.insurer ?? null;
+                  ocr.policy_name = shared.policy_name ?? null;
+                  ocr.policyholder_name = shared.policyholder_name ?? null;
+                  ocr.premium = extraction.data?.premium != null ? Number(extraction.data.premium) : null;
+                  ocr.due_date = shared.expiry_date ?? null;
+                }
+              } catch (ocrErr: any) {
+                console.warn(`[lead-policy ${policyId}] OCR failed:`, ocrErr?.message);
               }
-            } catch (ocrErr: any) {
-              console.warn(`[lead-policy ${policyId}] OCR failed:`, ocrErr?.message);
             }
           }
 
@@ -1567,7 +1628,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             extracted ? JSON.stringify(extracted) : null,
           ]
         );
-        return res.json(ins.rows[0]);
+        return res.json({ ...ins.rows[0], ocr_skipped: ocrSkipped });
       } catch (err: any) {
         console.error("create lead policy error:", err);
         return res.status(500).json({ error: "Could not save the policy" });
@@ -2226,8 +2287,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         const insuranceType = (req.body.type || "health").toLowerCase();
         const isDataEntry = isDataEntryType(insuranceType);
 
-        // Credit check — only the health forensic analysis consumes credits.
-        // The OCR/data-entry lanes (motor/life/travel/property) are free.
+        // Metering. Health forensic analysis draws from credits; the OCR /
+        // data-entry lanes (motor/life/term/travel/property) draw from the
+        // separate per-plan OCR allowance. Both are checked up front and
+        // decremented only on success.
         if (!isDataEntry) {
           const creditRes = await pool.query(
             "SELECT balance FROM agent_credits WHERE agent_id = $1",
@@ -2236,6 +2299,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           const credits = creditRes.rows[0]?.balance ?? 0;
           if (credits <= 0) {
             return res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
+          }
+        } else {
+          const ocrBalance = await ensureOcrBalance(agentId);
+          if (ocrBalance <= 0) {
+            return res.status(403).json({ error: "NO_OCR_CREDITS", message: NO_OCR_CREDITS_MSG });
           }
         }
 
@@ -2368,6 +2436,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               if (extraction.status === "completed") {
                 job.status = "completed";
                 job.result = extraction.data;
+
+                // Draw down one OCR entry — only on a successful extraction.
+                await consumeOcr(agentId);
 
                 const shared = deriveSharedColumns(insuranceType, extraction.data);
                 await pool.query(
@@ -3094,6 +3165,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         if (credits <= 0) {
           return res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
         }
+      } else {
+        // A re-run re-does the paid OCR call, so it draws an OCR entry too.
+        const ocrBalance = await ensureOcrBalance(agentId);
+        if (ocrBalance <= 0) {
+          return res.status(403).json({ error: "NO_OCR_CREDITS", message: NO_OCR_CREDITS_MSG });
+        }
       }
 
       // Resolve the storage object behind pdf_url (signed or public URL).
@@ -3150,6 +3227,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               clientId: id,
             });
             if (extraction.status === "completed") {
+              // Draw down one OCR entry — only on a successful re-extraction.
+              await consumeOcr(agentId);
+
               const shared = deriveSharedColumns(insuranceType, extraction.data);
               await pool.query(
                 `UPDATE clients SET

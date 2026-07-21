@@ -129,6 +129,67 @@ async function cleanupDpdpRetention() {
 // Nightly-ish run (every 24h). Replace with real cron in infra if needed.
 setInterval(cleanupDpdpRetention, 24 * 60 * 60 * 1000);
 
+/* ---------------- AGENT OCR ALLOWANCE REFILL ---------------- */
+
+// Monthly top-up of the agent OCR / data-entry allowance, by plan + billing
+// cycle. Mirrors the balance model in routes.ts (ensureOcrBalance/consumeOcr):
+//   free            → never refilled (flat 20, lifetime — excluded below)
+//   agent / monthly → reset to 50 each month (no carryover)
+//   agent / annual  → +50 each month, capped at 600 (carryover); the bank is
+//                     wiped back to 50 in the agent's signup-anniversary month
+//   agency          → treated like agent / annual, per seat
+// Idempotent via the `period` marker ('YYYY-MM'): a row is only touched when
+// its stored period differs from the current calendar month, so it is safe to
+// run on a coarse interval (and to re-run on every boot / restart).
+const OCR_MONTHLY = 50;
+const OCR_BANK_CAP = 600;
+
+async function refillOcrAllowance() {
+  try {
+    const now = new Date();
+    const period = now.toISOString().slice(0, 7); // 'YYYY-MM'
+    const month = now.getUTCMonth() + 1; // 1-12
+
+    // Paid rows whose balance still belongs to an earlier month are due a refill.
+    const due = await pool.query(
+      `SELECT c.agent_id, c.balance, a.plan, a.billing_cycle,
+              EXTRACT(MONTH FROM a.created_at)::int AS anniv_month
+         FROM agent_ocr_credits c
+         JOIN agents a ON a.id = c.agent_id
+        WHERE c.period IS DISTINCT FROM $1
+          AND lower(a.plan) <> 'free'`,
+      [period]
+    );
+
+    for (const r of due.rows) {
+      const carryover = String(r.plan).toLowerCase() === "agency" ||
+                        String(r.billing_cycle).toLowerCase() === "annual";
+      let newBal: number;
+      if (!carryover) {
+        newBal = OCR_MONTHLY;                              // monthly: reset, drop unused
+      } else if (r.anniv_month === month) {
+        newBal = OCR_MONTHLY;                              // annual renewal month: wipe the bank
+      } else {
+        newBal = Math.min((r.balance ?? 0) + OCR_MONTHLY, OCR_BANK_CAP); // accrue up to the cap
+      }
+      await pool.query(
+        "UPDATE agent_ocr_credits SET balance = $1, period = $2, updated_at = NOW() WHERE agent_id = $3",
+        [newBal, period, r.agent_id]
+      );
+    }
+
+    if (due.rows.length > 0) {
+      log.info(`[ocr] refilled ${due.rows.length} agent allowance(s) for ${period}`);
+    }
+  } catch (err) {
+    console.error("Failed to refill OCR allowances:", err);
+  }
+}
+
+// Run on boot + every 6h. The period guard makes both safe/idempotent.
+refillOcrAllowance();
+setInterval(refillOcrAllowance, 6 * 60 * 60 * 1000);
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 /* ---------------- SERVER SETUP ---------------- */

@@ -34,6 +34,7 @@ const tiers: Tier[] = [
       { label: "Leads, renewals and client portfolio" },
       { label: "Cover Calculator with shareable reports" },
       { label: "3 policy checks to try" },
+      { label: "20 data-entry policies (motor / life / term / travel)" },
       { label: "WhatsApp drafts in English, Hindi and Hinglish" },
       { label: "No card needed" },
     ],
@@ -51,6 +52,7 @@ const tiers: Tier[] = [
     sublineAnnual: "12 policy checks every month · 2 months free",
     features: [
       { label: "12 policy checks every month — audit or compare" },
+      { label: "50 data-entry policies every month (annual plan carries unused ones over)" },
       { label: "On annual plan, unused checks roll over till year-end" },
       { label: "Sach assistant for policy questions" },
       { label: "Live premium quotes across insurers", soon: true },
@@ -89,7 +91,7 @@ const featureRows: { label: string; free: string | boolean; agent: string | bool
   { label: "Cover Calculator + shareable reports", free: true, agent: true, agency: true },
   { label: "WhatsApp message drafts (EN / Hinglish / Hindi)", free: true, agent: true, agency: true },
   { label: "Rider directory", free: true, agent: true, agency: true },
-  { label: "Policy data entry + Excel export (motor / life / travel / property)", free: "Up to 50 / month", agent: "Up to 50 / month", agency: "Up to 50 / month" },
+  { label: "Policy data entry + Excel export (motor / life / travel / property)", free: "20 total", agent: "50 / month", agency: "50 / seat / month" },
   { label: "Policy checks — full audit of any policy", free: "3 one-time", agent: "12 / month", agency: "10 / seat / month, shared" },
   { label: "Policy compare, side by side (uses 1 check)", free: true, agent: true, agency: true },
   { label: "Live quotes — fetch & compare prices across insurers (coming soon)", free: false, agent: "Monthly allowance", agency: "Shared allowance" },
@@ -114,7 +116,7 @@ const topUpPacks = [
 const faqs = [
   {
     q: "What is a policy check?",
-    a: "One check is one full policy audit, or one side-by-side comparison of two policies. Everything else — leads, renewals, calculator, WhatsApp drafts, data entry — never uses your checks.",
+    a: "One check is one full policy audit, or one side-by-side comparison of two policies. Leads, renewals, calculator and WhatsApp drafts never use your checks. Data entry (motor / life / term / travel) has its own separate allowance — 20 in total on Free, 50 a month on paid plans — so it never touches your policy checks either.",
   },
   {
     q: "Is there a free trial?",

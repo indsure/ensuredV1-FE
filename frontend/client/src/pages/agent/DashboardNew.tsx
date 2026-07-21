@@ -426,7 +426,7 @@ export default function DashboardNew() {
           <Button
             className="bg-[#0D9488] hover:bg-[#0f766e] text-white shadow-md font-semibold"
             onClick={() => setLocation('/agent/uploads')}
-            title={creditsRemaining <= 0 ? 'Health analysis needs policy checks — data-entry types (motor, life, term…) are free' : undefined}
+            title={creditsRemaining <= 0 ? 'Health analysis needs policy checks. Data-entry types (motor, life, term…) use your separate monthly data-entry allowance.' : undefined}
           >
             <Play size={16} className="mr-2 fill-current" /> {t("dashboard.analyze_policies")}
             {creditsRemaining <= 0 && <span className="ml-2 text-xs opacity-80">{t("dashboard.no_credits")}</span>}
