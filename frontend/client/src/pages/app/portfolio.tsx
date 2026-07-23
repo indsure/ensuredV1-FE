@@ -3,15 +3,19 @@ import { useLocation } from "wouter";
 import { useDropzone } from "react-dropzone";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
+import { getApiBase } from "@/lib/queryClient";
+import { Switch } from "@/components/ui/switch";
+import { ConnectAgentDialog } from "@/components/app/ConnectAgentDialog";
 import {
   Upload, FileText, ShieldCheck, LogOut, AlertCircle, Loader2, Lock, Pencil,
+  Download, Bell, CalendarClock, PhoneCall, Sparkles, Check, Plus, ArrowRight,
 } from "lucide-react";
 
 // The four consumer lines of business. `type` is the value the backend meters
 // and analyzes by ("Vehicle" is stored as motor to match the OCR lane).
 const LOBS = [
-  { type: "health", label: "Health", scoring: true },
-  { type: "term", label: "Term" },
+  { type: "health", label: "Health", nudge: "Your family's biggest financial risk — everyone needs it." },
+  { type: "term", label: "Term", nudge: "No term cover yet — the cheapest way to protect your family's income." },
   { type: "life", label: "Life" },
   { type: "motor", label: "Vehicle" },
 ] as const;
@@ -26,7 +30,10 @@ type Policy = {
   nickname: string | null;
   score: number | null;
   expiry_date: string | null;
+  renewal_date: string | null;
   sum_insured: string | null;
+  flaws: string[] | null;
+  has_pdf: boolean;
   created_at: string;
 };
 
@@ -34,6 +41,9 @@ type Portfolio = {
   plan: string;
   trialEndsAt: string;
   fullName: string | null;
+  phone: string | null;
+  renewalRemindersEnabled: boolean;
+  hasOpenAgentRequest: boolean;
   freeSlotsPerType: number;
   slotsUsedByType: Record<string, number>;
   policies: Policy[];
@@ -50,6 +60,19 @@ const scoreClasses = (s: number) =>
       : { text: "text-red-600", tile: "bg-red-50 border-red-200" };
 const scoreVerdict = (s: number) => (s >= 75 ? "Strong cover" : s >= 50 ? "Decent, has gaps" : "Needs attention");
 
+// Days until a YYYY-MM-DD date (negative = past). null when unset/unparseable.
+const daysUntil = (d: string | null): number | null => {
+  if (!d) return null;
+  const t = new Date(d + "T00:00:00").getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.ceil((t - Date.now()) / 86400_000);
+};
+const fmtDate = (d: string | null) => {
+  if (!d) return "";
+  const dt = new Date(d + "T00:00:00");
+  return Number.isNaN(dt.getTime()) ? d : dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
+
 export default function PortfolioPage() {
   const [, setLocation] = useLocation();
   const [data, setData] = useState<Portfolio | null>(null);
@@ -65,6 +88,13 @@ export default function PortfolioPage() {
   const [nameDraft, setNameDraft] = useState("");
   const [editingNickId, setEditingNickId] = useState<string | null>(null);
   const [nickDraft, setNickDraft] = useState("");
+
+  // Renewal date editing + advisor dialog.
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
+  const [dateDraft, setDateDraft] = useState("");
+  const [connectOpen, setConnectOpen] = useState(false);
+  const [connectTopic, setConnectTopic] = useState<string>("review");
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -114,6 +144,66 @@ export default function PortfolioPage() {
         body: JSON.stringify({ nickname }),
       });
     } catch { load(); }
+  }
+
+  async function saveRenewalDate(id: string) {
+    const date = dateDraft; // "" clears it
+    setEditingDateId(null);
+    setData((d) =>
+      d ? { ...d, policies: d.policies.map((p) => (p.id === id ? { ...p, renewal_date: date || null } : p)) } : d
+    ); // optimistic
+    try {
+      await apiFetch(`/api/me/policy/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ renewal_date: date }),
+      });
+    } catch { load(); }
+  }
+
+  async function toggleReminders(next: boolean) {
+    setData((d) => (d ? { ...d, renewalRemindersEnabled: next } : d)); // optimistic
+    try {
+      await apiFetch("/api/me/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ renewal_reminders_enabled: next }),
+      });
+    } catch { load(); }
+  }
+
+  // Download the original stored file. The endpoint is auth-gated, so we fetch
+  // the blob with the bearer token and trigger a client-side save.
+  async function downloadPolicy(p: Policy) {
+    setDownloadingId(p.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${getApiBase()}/api/me/policy/${p.id}/download`, {
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || "Could not download this file.");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = p.filename || "policy.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setUploadMsg(e.message || "Could not download this file.");
+    } finally {
+      setDownloadingId(null);
+    }
+  }
+
+  function openConnect(topic: string) {
+    setConnectTopic(topic);
+    setConnectOpen(true);
   }
 
   const pollStatus = useCallback((jobId: string) => {
@@ -198,11 +288,27 @@ export default function PortfolioPage() {
   const avgScore = scored.length
     ? Math.round(scored.reduce((a, p) => a + (p.score as number), 0) / scored.length)
     : null;
-  const nextExpiry = data?.policies
-    .filter((p) => p.expiry_date)
-    .map((p) => p.expiry_date as string)
-    .sort()[0] ?? null;
   const firstName = data?.fullName?.trim().split(/\s+/)[0] ?? null;
+
+  // Policies renewing within 30 days (needs a confirmed renewal_date).
+  const expiringSoon = (data?.policies ?? [])
+    .map((p) => ({ p, d: daysUntil(p.renewal_date) }))
+    .filter((x) => x.d != null && (x.d as number) >= 0 && (x.d as number) <= 30)
+    .sort((a, b) => (a.d as number) - (b.d as number));
+
+  // Recommendations: which of the 4 lines are missing (nudge to add them).
+  const presentTypes = new Set((data?.policies ?? []).filter((p) => p.status !== "error").map((p) => p.insurance_type));
+  const missingLobs = LOBS.filter((l) => !presentTypes.has(l.type));
+  // Top fixes: flaws aggregated across scored policies (health lane).
+  const topFixes: { policy: string; flaw: string }[] = [];
+  for (const p of data?.policies ?? []) {
+    const label = p.nickname || p.insurer || labelFor(p.insurance_type);
+    for (const f of (Array.isArray(p.flaws) ? p.flaws : [])) {
+      if (typeof f === "string" && f.trim()) topFixes.push({ policy: label, flaw: f.trim() });
+    }
+  }
+  const weakPolicies = (data?.policies ?? []).filter((p) => p.score != null && (p.score as number) < 50);
+  const hasRecommendations = !isEmpty && (missingLobs.length > 0 || topFixes.length > 0 || weakPolicies.length > 0);
 
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] text-[var(--color-text-main)] overflow-x-clip">
@@ -214,12 +320,20 @@ export default function PortfolioPage() {
             <span className="hidden sm:inline text-[var(--color-border-medium)]">/</span>
             <span className="hidden sm:inline text-sm font-semibold text-[var(--color-text-secondary)]">Portfolio</span>
           </div>
-          <button
-            onClick={signOut}
-            className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
-          >
-            <LogOut className="w-4 h-4" /> Sign out
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => openConnect("review")}
+              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-400)] transition-colors"
+            >
+              <PhoneCall className="w-4 h-4" /> Talk to an advisor
+            </button>
+            <button
+              onClick={signOut}
+              className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
+            >
+              <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Sign out</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -267,6 +381,37 @@ export default function PortfolioPage() {
           )}
         </div>
 
+        {/* Expiring-soon banner */}
+        {expiringSoon.length > 0 && (
+          <section className="bg-amber-50 rounded-2xl border border-amber-200 p-5 sm:p-6">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                <CalendarClock className="w-5 h-5 text-amber-700" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-serif text-lg font-bold text-amber-900">
+                  {expiringSoon.length === 1 ? "1 policy renews soon" : `${expiringSoon.length} policies renew soon`}
+                </h2>
+                <ul className="mt-2 space-y-1.5">
+                  {expiringSoon.map(({ p, d }) => (
+                    <li key={p.id} className="text-sm text-amber-800 flex flex-wrap items-center gap-x-2">
+                      <span className="font-semibold">{p.nickname || p.insurer || labelFor(p.insurance_type)}</span>
+                      <span>·</span>
+                      <span>{(d as number) === 0 ? "renews today" : `renews in ${d} day${(d as number) === 1 ? "" : "s"}`} ({fmtDate(p.renewal_date)})</span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => openConnect("renew")}
+                  className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-bold hover:bg-amber-700 transition-colors"
+                >
+                  <PhoneCall className="w-4 h-4" /> Get help renewing
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Portfolio health hero */}
         {!isEmpty && avgScore != null && (
           <section className="bg-white rounded-2xl border border-[var(--color-border-light)] border-t-4 border-t-[var(--color-teal-600)] shadow-sm p-6 sm:p-8">
@@ -281,11 +426,105 @@ export default function PortfolioPage() {
                   <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Policies</span>
                   <p className="text-3xl font-serif font-bold text-[var(--color-navy-900)] mt-1">{data!.policies.length}</p>
                 </div>
-                {nextExpiry && (
+                {expiringSoon[0] && (
                   <div>
                     <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Next renewal</span>
-                    <p className="text-lg font-semibold text-[var(--color-navy-900)] mt-2">{nextExpiry}</p>
+                    <p className="text-lg font-semibold text-[var(--color-navy-900)] mt-2">{fmtDate(expiringSoon[0].p.renewal_date)}</p>
                   </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Renewal reminders toggle */}
+        {data && !isEmpty && (
+          <section className="bg-white rounded-2xl border border-[var(--color-border-light)] shadow-sm p-5 sm:p-6 flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="shrink-0 w-10 h-10 rounded-xl bg-[var(--color-teal-600)]/10 flex items-center justify-center">
+                <Bell className="w-5 h-5 text-[var(--color-teal-600)]" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-[var(--color-navy-900)]">Renewal reminders</p>
+                <p className="text-sm text-[var(--color-text-muted)]">
+                  We'll email you 30 days before a policy renews, so your cover never lapses.
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={data.renewalRemindersEnabled}
+              onCheckedChange={toggleReminders}
+              aria-label="Toggle renewal reminders"
+            />
+          </section>
+        )}
+
+        {/* Recommendations — "Your next steps" */}
+        {hasRecommendations && (
+          <section className="space-y-4">
+            <h2 className="font-serif text-xl font-bold text-[var(--color-navy-900)] flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[var(--color-teal-600)]" /> Your next steps
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Coverage checklist */}
+              <div className="bg-white rounded-2xl border border-[var(--color-border-light)] shadow-sm p-5 sm:p-6">
+                <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Coverage check</p>
+                <div className="mt-3 space-y-2.5">
+                  {LOBS.map((l) => {
+                    const have = presentTypes.has(l.type);
+                    return (
+                      <div key={l.type} className="flex items-start gap-2.5">
+                        <span className={`shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center ${have ? "bg-[var(--color-teal-600)]/15 text-[var(--color-teal-600)]" : "bg-[var(--color-cream-dark)] text-[var(--color-text-muted)] border border-[var(--color-border-light)]"}`}>
+                          {have ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                        </span>
+                        <div className="min-w-0">
+                          <span className={`text-sm font-semibold ${have ? "text-[var(--color-navy-900)]" : "text-[var(--color-text-secondary)]"}`}>
+                            {l.label} cover {have && <span className="text-[var(--color-teal-600)] font-normal">· added</span>}
+                          </span>
+                          {!have && "nudge" in l && (l as any).nudge && (
+                            <p className="text-xs text-[var(--color-text-muted)] leading-snug">
+                              {(l as any).nudge}{" "}
+                              <button
+                                onClick={() => { setSelectedType(l.type); document.getElementById("add-policy")?.scrollIntoView({ behavior: "smooth" }); }}
+                                className="font-semibold text-[var(--color-teal-600)] hover:underline"
+                              >
+                                Add it
+                              </button>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Top fixes + weak-cover nudge */}
+              <div className="bg-white rounded-2xl border border-[var(--color-border-light)] shadow-sm p-5 sm:p-6">
+                <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Worth fixing</p>
+                {topFixes.length > 0 ? (
+                  <ul className="mt-3 space-y-2.5">
+                    {topFixes.slice(0, 4).map((f, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-sm">
+                        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-[var(--color-gold-500)]" />
+                        <span className="text-[var(--color-text-secondary)] leading-snug">
+                          <span className="font-semibold text-[var(--color-navy-900)]">{f.policy}:</span> {f.flaw}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm text-[var(--color-text-muted)]">
+                    Nothing major flagged yet. Add more policies to get a fuller picture of your cover.
+                  </p>
+                )}
+                {(weakPolicies.length > 0 || topFixes.length > 0) && (
+                  <button
+                    onClick={() => openConnect("review")}
+                    className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--color-teal-600)] hover:underline"
+                  >
+                    Get a second opinion from an advisor <ArrowRight className="w-4 h-4" />
+                  </button>
                 )}
               </div>
             </div>
@@ -309,9 +548,14 @@ export default function PortfolioPage() {
           </section>
         )}
 
-        {/* Add a policy */}
-        <section className="space-y-4">
-          <h2 className="font-serif text-xl font-bold text-[var(--color-navy-900)]">{isEmpty ? "Add your first policy" : "Add a policy"}</h2>
+        {/* Upload your policies */}
+        <section id="add-policy" className="space-y-4 scroll-mt-24">
+          <div>
+            <h2 className="font-serif text-xl font-bold text-[var(--color-navy-900)]">Upload your policies here</h2>
+            <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
+              Pick the type, then drop the policy PDF — we'll read it and audit it for you.
+            </p>
+          </div>
 
           <div className="flex flex-wrap gap-2">
             {LOBS.map((l) => {
@@ -380,7 +624,8 @@ export default function PortfolioPage() {
             {data.policies.map((p) => {
               const done = p.status === "done";
               const clickable = done && p.insurance_type === "health"; // report view is the health audit
-              const editing = editingNickId === p.id;
+              const editingNick = editingNickId === p.id;
+              const editingDate = editingDateId === p.id;
               const title = p.nickname || p.insurer || p.policy_name || p.filename || "Policy";
               const subtitle = p.nickname
                 ? [p.insurer, p.policy_name].filter(Boolean).join(" · ")
@@ -388,9 +633,8 @@ export default function PortfolioPage() {
               return (
                 <div
                   key={p.id}
-                  onClick={() => clickable && !editing && setLocation(`/app/policy/${p.id}`)}
                   className={`group bg-white rounded-2xl border border-[var(--color-border-light)] p-5 flex gap-4 shadow-sm transition-all ${
-                    clickable && !editing ? "cursor-pointer hover:border-[var(--color-teal-600)]/50 hover:shadow-md" : ""
+                    clickable && !editingNick && !editingDate ? "hover:border-[var(--color-teal-600)]/50 hover:shadow-md" : ""
                   }`}
                 >
                   {/* Score tile */}
@@ -413,12 +657,11 @@ export default function PortfolioPage() {
                       <StatusPill status={p.status} />
                     </div>
 
-                    {editing ? (
+                    {editingNick ? (
                       <input
                         autoFocus
                         value={nickDraft}
                         onChange={(e) => setNickDraft(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") saveNick(p.id);
                           if (e.key === "Escape") setEditingNickId(null);
@@ -430,7 +673,13 @@ export default function PortfolioPage() {
                       />
                     ) : (
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <p className="font-semibold text-[var(--color-navy-900)] truncate">{title}</p>
+                        <button
+                          onClick={() => clickable && setLocation(`/app/policy/${p.id}`)}
+                          className={`font-semibold text-[var(--color-navy-900)] truncate text-left ${clickable ? "hover:text-[var(--color-teal-600)] cursor-pointer" : "cursor-default"}`}
+                          disabled={!clickable}
+                        >
+                          {title}
+                        </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setNickDraft(p.nickname ?? ""); setEditingNickId(p.id); }}
                           className="shrink-0 p-0.5 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-[var(--color-teal-600)] transition-opacity"
@@ -442,15 +691,54 @@ export default function PortfolioPage() {
                       </div>
                     )}
 
-                    {!editing && subtitle && (
+                    {!editingNick && subtitle && (
                       <p className="text-xs text-[var(--color-text-muted)] truncate">{subtitle}</p>
                     )}
-                    <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)] pt-0.5">
-                      {p.expiry_date && <span>Expires {p.expiry_date}</span>}
-                      {clickable && !editing && (
-                        <span className="ml-auto font-semibold text-[var(--color-teal-600)] group-hover:underline whitespace-nowrap">View report →</span>
+
+                    {/* Renewal date row (editable) */}
+                    <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] pt-0.5">
+                      <CalendarClock className="w-3.5 h-3.5 shrink-0" />
+                      {editingDate ? (
+                        <input
+                          autoFocus
+                          type="date"
+                          value={dateDraft}
+                          onChange={(e) => setDateDraft(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveRenewalDate(p.id); if (e.key === "Escape") setEditingDateId(null); }}
+                          onBlur={() => saveRenewalDate(p.id)}
+                          className="h-7 px-2 rounded-lg border border-[var(--color-border-medium)] bg-white text-xs font-medium focus:border-[var(--color-teal-600)] outline-none"
+                        />
+                      ) : (
+                        <button
+                          onClick={() => { setDateDraft(p.renewal_date ?? ""); setEditingDateId(p.id); }}
+                          className="hover:text-[var(--color-teal-600)] hover:underline"
+                        >
+                          {p.renewal_date ? `Renews ${fmtDate(p.renewal_date)}` : "Set renewal date"}
+                        </button>
                       )}
-                      {p.status === "error" && <span className="ml-auto text-red-500">Couldn't read this PDF</span>}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-3 pt-1.5">
+                      {p.has_pdf && (
+                        <button
+                          onClick={() => downloadPolicy(p)}
+                          disabled={downloadingId === p.id}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-teal-600)] transition-colors disabled:opacity-50"
+                        >
+                          {downloadingId === p.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                          Download
+                        </button>
+                      )}
+                      {clickable && (
+                        <button
+                          onClick={() => setLocation(`/app/policy/${p.id}`)}
+                          className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-teal-600)] hover:underline"
+                        >
+                          View report <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {p.status === "error" && <span className="ml-auto text-xs text-red-500">Couldn't read this PDF</span>}
                     </div>
                   </div>
                 </div>
@@ -460,10 +748,41 @@ export default function PortfolioPage() {
           </section>
         )}
 
-        <div className="flex items-center justify-center gap-2 text-[var(--color-text-muted)] text-xs font-semibold pt-6">
-          <ShieldCheck className="w-4 h-4 text-[var(--color-teal-600)]" /> Private to your account. No calls, no spam, ever.
+        {/* Talk-to-advisor footer CTA */}
+        {data && (
+          <section className="bg-[var(--color-navy-900)] rounded-2xl p-6 sm:p-8 text-center">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-white">
+              {data.hasOpenAgentRequest ? "An advisor will reach out to you soon" : "Want a real person to help?"}
+            </h2>
+            <p className="mt-2 text-sm text-[var(--color-white-muted)] max-w-md mx-auto leading-relaxed">
+              {data.hasOpenAgentRequest
+                ? "We've got your request. A licensed advisor will call you on the number you shared — no obligation."
+                : "Talk to a licensed advisor about renewing, buying, or fixing your cover. No pressure, no spam."}
+            </p>
+            {!data.hasOpenAgentRequest && (
+              <button
+                onClick={() => openConnect("review")}
+                className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] transition-colors"
+              >
+                <PhoneCall className="w-4 h-4" /> Connect me to an advisor
+              </button>
+            )}
+          </section>
+        )}
+
+        <div className="flex items-center justify-center gap-2 text-[var(--color-text-muted)] text-xs font-semibold pt-2">
+          <ShieldCheck className="w-4 h-4 text-[var(--color-teal-600)]" /> Private to your account. We only contact you if you ask us to.
         </div>
       </main>
+
+      <ConnectAgentDialog
+        open={connectOpen}
+        onOpenChange={setConnectOpen}
+        defaultName={data?.fullName ?? null}
+        defaultPhone={data?.phone ?? null}
+        defaultTopic={connectTopic}
+        onSubmitted={load}
+      />
     </div>
   );
 }

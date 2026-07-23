@@ -23,6 +23,7 @@ import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { pool } from "./lib/db";
 import { isPersonalEmail } from "./lib/personalEmail";
+import { sendMail } from "./lib/mailer";
 
 /* ---------- SUPABASE ADMIN CLIENT ---------- */
 
@@ -493,6 +494,52 @@ async function checkIndividualQuota(
     return { allowed: false, reason: "slot_full" };
   }
   return { allowed: true };
+}
+
+// Best-effort parse of the free-form OCR expiry text into a real YYYY-MM-DD.
+// Handles the common Indian-policy formats: ISO (2026-08-15), DD/MM/YYYY,
+// DD-MM-YYYY, and "15 Aug 2026". Returns null when it can't be sure — the user
+// then confirms/sets the renewal date themselves in the portfolio.
+function parseExpiryToDate(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const s = raw.trim();
+  if (!s) return null;
+
+  const MONTHS: Record<string, number> = {
+    jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+    jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+  };
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const valid = (y: number, m: number, d: number) =>
+    y >= 2000 && y <= 2100 && m >= 1 && m <= 12 && d >= 1 && d <= 31;
+
+  // ISO: 2026-08-15 (optionally with time)
+  let m = s.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
+  if (m) {
+    const [y, mo, d] = [+m[1], +m[2], +m[3]];
+    if (valid(y, mo, d)) return `${y}-${pad(mo)}-${pad(d)}`;
+  }
+  // DD/MM/YYYY or DD-MM-YYYY (Indian day-first convention)
+  m = s.match(/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/);
+  if (m) {
+    let [d, mo, y] = [+m[1], +m[2], +m[3]];
+    if (y < 100) y += 2000;
+    if (valid(y, mo, d)) return `${y}-${pad(mo)}-${pad(d)}`;
+  }
+  // "15 Aug 2026" / "15 August 2026" / "Aug 15, 2026"
+  m = s.match(/\b(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})\b/);
+  if (m) {
+    const mo = MONTHS[m[2].slice(0, 3).toLowerCase()];
+    const [d, y] = [+m[1], +m[3]];
+    if (mo && valid(y, mo, d)) return `${y}-${pad(mo)}-${pad(d)}`;
+  }
+  m = s.match(/\b([A-Za-z]{3,})\s+(\d{1,2}),?\s+(\d{4})\b/);
+  if (m) {
+    const mo = MONTHS[m[1].slice(0, 3).toLowerCase()];
+    const [d, y] = [+m[2], +m[3]];
+    if (mo && valid(y, mo, d)) return `${y}-${pad(mo)}-${pad(d)}`;
+  }
+  return null;
 }
 
 /* ---------- CLIENT-DATA ACCESS AUDIT LOG ---------- */
@@ -2712,16 +2759,24 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (!userId) return;
 
       const prof = await pool.query(
-        "SELECT plan, trial_started_at, full_name FROM individual_profiles WHERE id = $1",
+        "SELECT plan, trial_started_at, full_name, phone, renewal_reminders_enabled FROM individual_profiles WHERE id = $1",
         [userId]
       );
       const p = prof.rows[0];
       const policies = await pool.query(
         `SELECT id, insurance_type, status, filename, insurer, policy_name, nickname, score,
-                expiry_date, sum_insured, created_at
+                expiry_date, renewal_date, sum_insured, flaws, created_at,
+                (pdf_url IS NOT NULL) AS has_pdf
            FROM individual_policies
           WHERE user_id = $1
           ORDER BY created_at DESC`,
+        [userId]
+      );
+
+      // Does the consumer have an advisor request still being worked? Drives the
+      // "an agent will reach out to you soon" state in the UI.
+      const openReq = await pool.query(
+        "SELECT 1 FROM agent_connect_requests WHERE user_id = $1 AND status <> 'closed' LIMIT 1",
         [userId]
       );
 
@@ -2737,6 +2792,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         plan: p.plan,
         trialEndsAt,
         fullName: p.full_name ?? null,
+        phone: p.phone ?? null,
+        renewalRemindersEnabled: p.renewal_reminders_enabled ?? true,
+        hasOpenAgentRequest: openReq.rows.length > 0,
         freeSlotsPerType: FREE_SLOTS_PER_TYPE,
         slotsUsedByType,
         policies: policies.rows,
@@ -2755,11 +2813,38 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       // Trim, strip control chars, cap length. Empty clears the name.
       const raw = typeof req.body?.full_name === "string" ? req.body.full_name : "";
       const fullName = raw.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 80) || null;
+      // Partial update: only the fields the client actually sent, so PATCHing
+      // just the reminder toggle never clobbers the name or phone. `fullName` is
+      // computed above and only used when full_name was actually in the body.
+      const sets: string[] = [];
+      const vals: any[] = [];
+      const out: Record<string, any> = {};
+
+      if (typeof req.body?.full_name === "string") {
+        sets.push(`full_name = $${sets.length + 1}`);
+        vals.push(fullName);
+        out.fullName = fullName;
+      }
+      if (typeof req.body?.phone === "string") {
+        const phone = req.body.phone.replace(/[^\d+\-() ]/g, "").trim().slice(0, 20) || null;
+        sets.push(`phone = $${sets.length + 1}`);
+        vals.push(phone);
+        out.phone = phone;
+      }
+      if (typeof req.body?.renewal_reminders_enabled === "boolean") {
+        sets.push(`renewal_reminders_enabled = $${sets.length + 1}`);
+        vals.push(req.body.renewal_reminders_enabled);
+        out.renewalRemindersEnabled = req.body.renewal_reminders_enabled;
+      }
+
+      if (sets.length === 0) return res.status(400).json({ error: "No updatable fields provided" });
+
+      vals.push(userId);
       await pool.query(
-        "UPDATE individual_profiles SET full_name = $1, updated_at = now() WHERE id = $2",
-        [fullName, userId]
+        `UPDATE individual_profiles SET ${sets.join(", ")}, updated_at = now() WHERE id = $${vals.length}`,
+        vals
       );
-      return res.json({ fullName });
+      return res.json(out);
     } catch (err: any) {
       console.error("Consumer profile update error:", err);
       return res.status(500).json({ error: "Internal server error" });
@@ -2773,12 +2858,43 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (!userId) return;
       const raw = typeof req.body?.nickname === "string" ? req.body.nickname : "";
       const nickname = raw.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 60) || null;
+      // Partial update: nickname (only when sent) and/or a user-confirmed
+      // renewal date. renewal_date accepts "YYYY-MM-DD" or "" / null to clear.
+      const sets: string[] = [];
+      const vals: any[] = [];
+      const out: Record<string, any> = {};
+
+      if (typeof req.body?.nickname === "string") {
+        sets.push(`nickname = $${sets.length + 1}`);
+        vals.push(nickname);
+        out.nickname = nickname;
+      }
+      if ("renewal_date" in (req.body ?? {})) {
+        const rd = req.body.renewal_date;
+        let renewalDate: string | null = null;
+        if (typeof rd === "string" && rd.trim()) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(rd.trim())) {
+            return res.status(400).json({ error: "renewal_date must be YYYY-MM-DD" });
+          }
+          renewalDate = rd.trim();
+        }
+        sets.push(`renewal_date = $${sets.length + 1}`);
+        vals.push(renewalDate);
+        out.renewalDate = renewalDate;
+        // Let a re-set of the date re-arm the reminder for this cycle.
+        sets.push(`reminder_sent_at = NULL`);
+      }
+
+      if (sets.length === 0) return res.status(400).json({ error: "No updatable fields provided" });
+
+      vals.push(req.params.id, userId);
       const r = await pool.query(
-        "UPDATE individual_policies SET nickname = $1, updated_at = now() WHERE id = $2 AND user_id = $3 RETURNING id",
-        [nickname, req.params.id, userId]
+        `UPDATE individual_policies SET ${sets.join(", ")}, updated_at = now()
+          WHERE id = $${vals.length - 1} AND user_id = $${vals.length} RETURNING id`,
+        vals
       );
       if (!r.rows[0]) return res.status(404).json({ error: "Not found" });
-      return res.json({ id: r.rows[0].id, nickname });
+      return res.json({ id: r.rows[0].id, ...out });
     } catch (err: any) {
       console.error("Consumer policy rename error:", err);
       return res.status(500).json({ error: "Internal server error" });
@@ -2798,6 +2914,121 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       return res.json(r.rows[0]);
     } catch (err: any) {
       console.error("Consumer policy detail error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Consumer: download the original stored policy file ──────────────────
+     Ownership-scoped. Resolves the storage object behind pdf_url and streams
+     it back as an attachment. Mirrors the agent rerun storage-resolution. */
+  app.get("/api/me/policy/:id/download", async (req, res) => {
+    try {
+      const userId = await requireIndividual(req, res);
+      if (!userId) return;
+      const r = await pool.query(
+        "SELECT pdf_url, filename FROM individual_policies WHERE id = $1 AND user_id = $2",
+        [req.params.id, userId]
+      );
+      const row = r.rows[0];
+      if (!row) return res.status(404).json({ error: "Not found" });
+      if (!row.pdf_url) {
+        return res.status(409).json({
+          error: "NO_PDF",
+          message: "The original document isn't stored for this policy.",
+        });
+      }
+
+      const pathMatch = row.pdf_url.match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/);
+      if (!pathMatch) {
+        return res.status(409).json({ error: "NO_PDF", message: "Stored document URL is not recognized." });
+      }
+      const [bucket, ...restPath] = pathMatch[1].split("/");
+      const storagePath = restPath.join("/");
+
+      const { data: blob, error: dlErr } = await supabaseAdmin.storage.from(bucket).download(storagePath);
+      if (dlErr || !blob) {
+        return res.status(409).json({ error: "NO_PDF", message: "Could not fetch the stored document." });
+      }
+
+      const ext = (storagePath.split(".").pop() || "pdf").toLowerCase();
+      const contentType =
+        ext === "png" ? "image/png"
+        : ext === "jpg" || ext === "jpeg" ? "image/jpeg"
+        : ext === "txt" ? "text/plain"
+        : "application/pdf";
+      // Sanitize the download name; fall back to a stable default.
+      const safeName = (row.filename || `policy.${ext}`).replace(/[^\w.\-() ]/g, "_").slice(0, 120);
+
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}"`);
+      const buf = Buffer.from(await blob.arrayBuffer());
+      return res.send(buf);
+    } catch (err: any) {
+      console.error("Consumer policy download error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Consumer: connect me to an agent (consented lead) ───────────────────
+     The ONLY place a signed-in consumer is lead-captured, and only with an
+     explicit consent checkbox they tick. Stores the request, then best-effort
+     notifies the team; the request survives even if email isn't configured. */
+  app.post("/api/me/connect-agent", async (req, res) => {
+    try {
+      const userId = await requireIndividual(req, res);
+      if (!userId) return;
+
+      const clean = (v: unknown, max: number) =>
+        (typeof v === "string" ? v.replace(/[\p{Cc}]/gu, "").trim().slice(0, max) : "");
+
+      const name = clean(req.body?.name, 80);
+      const phone = clean(req.body?.phone, 20);
+      const topic = clean(req.body?.topic, 40) || null;
+      const message = clean(req.body?.message, 1000) || null;
+      const consent = req.body?.consent === true;
+
+      if (!name) return res.status(400).json({ error: "Please share your name." });
+      if (!/\d{7,}/.test(phone.replace(/\D/g, ""))) {
+        return res.status(400).json({ error: "Please share a valid phone number." });
+      }
+      if (!consent) return res.status(400).json({ error: "Please tick the consent box to be contacted." });
+
+      // Account email for the record (best-effort).
+      const prof = await pool.query("SELECT email FROM individual_profiles WHERE id = $1", [userId]);
+      const email = prof.rows[0]?.email ?? null;
+
+      const ins = await pool.query(
+        `INSERT INTO agent_connect_requests (user_id, name, phone, email, topic, message, consent)
+         VALUES ($1, $2, $3, $4, $5, $6, true) RETURNING id`,
+        [userId, name, phone, email, topic, message]
+      );
+      const id = ins.rows[0].id;
+
+      // Best-effort team notification — never blocks the response.
+      const notifyTo = process.env.AGENT_CONNECT_NOTIFY_EMAIL;
+      if (notifyTo) {
+        void sendMail({
+          to: notifyTo,
+          subject: `New advisor request: ${name}${topic ? ` (${topic})` : ""}`,
+          replyTo: email ?? undefined,
+          text: [
+            "A consumer asked to be connected with an advisor.",
+            "",
+            `Request ID: ${id}`,
+            `Name: ${name}`,
+            `Phone: ${phone}`,
+            `Email: ${email ?? "-"}`,
+            `Topic: ${topic ?? "-"}`,
+            "",
+            "Message:",
+            message ?? "-",
+          ].join("\n"),
+        });
+      }
+
+      return res.json({ ok: true, id });
+    } catch (err: any) {
+      console.error("Consumer connect-agent error:", err);
       return res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -2934,8 +3165,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   `UPDATE individual_policies SET
                      status = 'done', insurance_type = $1, extracted_data = $2,
                      insurer = $3, policy_name = $4, expiry_date = $5, sum_insured = $6,
-                     policyholder_name = COALESCE(policyholder_name, $7), updated_at = now()
-                   WHERE id = $8`,
+                     policyholder_name = COALESCE(policyholder_name, $7),
+                     renewal_date = COALESCE(renewal_date, $8::date), updated_at = now()
+                   WHERE id = $9`,
                   [
                     insuranceType,
                     JSON.stringify(extraction.data),
@@ -2944,6 +3176,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                     shared.expiry_date ?? null,
                     shared.sum_insured ?? null,
                     shared.policyholder_name ?? null,
+                    parseExpiryToDate(shared.expiry_date),
                     policyId,
                   ]
                 );
@@ -2983,9 +3216,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 `UPDATE individual_policies SET
                    status = 'done', report_data = $1, score = $2, insurer = $3,
                    policy_name = $4, expiry_date = $5, sum_insured = $6, flaws = $7,
-                   policyholder_name = COALESCE(policyholder_name, $8), updated_at = now()
-                 WHERE id = $9`,
-                [JSON.stringify(reportData), score, insurer, policyName, expiryDate, sumInsured, JSON.stringify(flaws), insuredName, policyId]
+                   policyholder_name = COALESCE(policyholder_name, $8),
+                   renewal_date = COALESCE(renewal_date, $9::date), updated_at = now()
+                 WHERE id = $10`,
+                [JSON.stringify(reportData), score, insurer, policyName, expiryDate, sumInsured, JSON.stringify(flaws), insuredName, parseExpiryToDate(expiryDate), policyId]
               );
             } else {
               job.status = "failed";

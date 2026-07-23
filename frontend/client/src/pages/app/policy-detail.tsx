@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { apiFetch } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+import { getApiBase } from "@/lib/queryClient";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
+import { ConnectAgentDialog } from "@/components/app/ConnectAgentDialog";
 import { validateForensicAuditReport } from "@/lib/policy-types";
-import { ArrowLeft, AlertCircle, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, AlertCircle, Loader2, ShieldCheck, Download, PhoneCall } from "lucide-react";
 
 type PolicyRow = {
   id: string;
@@ -12,6 +15,8 @@ type PolicyRow = {
   insurer: string | null;
   policy_name: string | null;
   nickname: string | null;
+  filename: string | null;
+  pdf_url: string | null;
   report_data: any | null;
   error_message: string | null;
 };
@@ -22,6 +27,31 @@ type PolicyRow = {
 export default function PolicyDetail({ id }: { id: string }) {
   const [row, setRow] = useState<PolicyRow | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error" | "notfound">("loading");
+  const [downloading, setDownloading] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
+
+  async function downloadFile() {
+    if (!row) return;
+    setDownloading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${getApiBase()}/api/me/policy/${row.id}/download`, {
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
+      if (!res.ok) throw new Error("download failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = row.filename || "policy.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch { /* best-effort */ } finally {
+      setDownloading(false);
+    }
+  }
 
   useEffect(() => {
     document.title = "Policy report — IndSure";
@@ -52,11 +82,31 @@ export default function PolicyDetail({ id }: { id: string }) {
               <ArrowLeft className="w-4 h-4" /> Back to portfolio
             </span>
           </Link>
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-muted)]">
-            <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-teal-600)]" /> Private to your account
-          </span>
+          <div className="flex items-center gap-4">
+            {row?.pdf_url && (
+              <button
+                onClick={downloadFile}
+                disabled={downloading}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-teal-600)] transition-colors disabled:opacity-50"
+              >
+                {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                <span className="hidden sm:inline">Download</span>
+              </button>
+            )}
+            <button
+              onClick={() => setConnectOpen(true)}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-400)] transition-colors"
+            >
+              <PhoneCall className="w-4 h-4" /> <span className="hidden sm:inline">Talk to an advisor</span>
+            </button>
+            <span className="hidden md:inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-muted)]">
+              <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-teal-600)]" /> Private to your account
+            </span>
+          </div>
         </div>
       </header>
+
+      <ConnectAgentDialog open={connectOpen} onOpenChange={setConnectOpen} defaultTopic="review" />
 
       {state === "loading" && (
         <div className="max-w-5xl mx-auto px-6 py-24 flex flex-col items-center text-center">

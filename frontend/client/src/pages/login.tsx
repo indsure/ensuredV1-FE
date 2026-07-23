@@ -77,7 +77,12 @@ export default function LoginPublic() {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="login-password" className="text-sm font-semibold text-[var(--color-navy-900)]">Password</label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="login-password" className="text-sm font-semibold text-[var(--color-navy-900)]">Password</label>
+              <Link href="/forgot-password">
+                <span className="text-xs font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">Forgot password?</span>
+              </Link>
+            </div>
             <div className="relative">
               <Input
                 id="login-password"

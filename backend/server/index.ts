@@ -21,6 +21,7 @@ import { logGeminiUsage, extractUsage, hashActor, hashInput } from "./services/g
 import { pool } from "./lib/db";
 import { log } from "./lib/logger";
 import { containsPersonalData } from "./lib/pii";
+import { sendMail } from "./lib/mailer";
 
 /* ---------------- UPLOAD DIRECTORY CLEANUP ---------------- */
 
@@ -128,6 +129,80 @@ async function cleanupDpdpRetention() {
 
 // Nightly-ish run (every 24h). Replace with real cron in infra if needed.
 setInterval(cleanupDpdpRetention, 24 * 60 * 60 * 1000);
+
+/* ---------------- CONSUMER RENEWAL REMINDERS ---------------- */
+// Emails consumers ~30 days before a policy renews, so a 40+ user never lets a
+// health/motor cover lapse by accident. Opt-in per account
+// (individual_profiles.renewal_reminders_enabled, default on); keyed off the
+// user-confirmed individual_policies.renewal_date. reminder_sent_at stops a
+// second email for the same upcoming renewal. Mirrors the DPDP job pattern:
+// shared pool, never throws, daily interval + a run shortly after boot.
+async function sendRenewalReminders() {
+  try {
+    // Policies renewing within the next 30 days that we haven't reminded on yet,
+    // whose owner still has reminders on and a deliverable email.
+    const due = await pool.query(
+      `SELECT p.id, p.insurance_type, p.insurer, p.policy_name, p.nickname,
+              p.renewal_date, pr.email, pr.full_name
+         FROM individual_policies p
+         JOIN individual_profiles pr ON pr.id = p.user_id
+        WHERE p.renewal_date IS NOT NULL
+          AND p.renewal_date >= CURRENT_DATE
+          AND p.renewal_date <= CURRENT_DATE + INTERVAL '30 days'
+          AND p.reminder_sent_at IS NULL
+          AND pr.renewal_reminders_enabled = true
+          AND pr.email IS NOT NULL
+          AND p.status = 'done'`
+    );
+
+    if (due.rows.length === 0) return;
+    console.log(`[reminders] ${due.rows.length} renewal reminder(s) due.`);
+
+    for (const row of due.rows) {
+      const label = row.nickname || row.policy_name || row.insurer || `your ${row.insurance_type} policy`;
+      const firstName = (row.full_name || "").trim().split(/\s+/)[0] || "there";
+      const dateStr = new Date(row.renewal_date).toLocaleDateString("en-IN", {
+        day: "numeric", month: "long", year: "numeric",
+      });
+
+      const sent = await sendMail({
+        to: row.email,
+        subject: `Reminder: ${label} renews on ${dateStr}`,
+        text: [
+          `Hi ${firstName},`,
+          "",
+          `A quick heads-up from IndSure — ${label} is due to renew on ${dateStr}.`,
+          "",
+          "Renewing on time keeps your cover continuous (and protects benefits like",
+          "no-claim bonus and waiting periods already served).",
+          "",
+          "Open your portfolio to review it, or reply to this email and an advisor",
+          "can help you renew:",
+          "https://beta.indsure.in/app",
+          "",
+          "— Team IndSure",
+          "",
+          "You're getting this because renewal reminders are on for your account.",
+          "You can turn them off any time from your portfolio.",
+        ].join("\n"),
+      });
+
+      // Only mark as reminded once it actually went out — so reminders start
+      // flowing the moment SMTP creds are added, rather than being silently lost.
+      if (sent) {
+        await pool.query(
+          "UPDATE individual_policies SET reminder_sent_at = now() WHERE id = $1",
+          [row.id]
+        );
+      }
+    }
+  } catch (err) {
+    console.error("Failed to send renewal reminders:", err);
+  }
+}
+
+// Daily run + a run shortly after boot (the interval alone waits 24h).
+setInterval(sendRenewalReminders, 24 * 60 * 60 * 1000);
 
 /* ---------------- AGENT OCR ALLOWANCE REFILL ---------------- */
 
@@ -623,6 +698,9 @@ async function start() {
     setTimeout(() => {
       void cleanupDpdpRetention().catch((e) =>
         console.error("[dpdp] initial cleanup failed:", e?.message ?? e)
+      );
+      void sendRenewalReminders().catch((e) =>
+        console.error("[reminders] initial run failed:", e?.message ?? e)
       );
     }, 30 * 1000);
   });

@@ -88,6 +88,8 @@ const CookiePolicy = lazy(() => import("@/pages/CookiePolicy"));
 const GrievanceOfficer = lazy(() => import("@/pages/GrievanceOfficer"));
 const LoginPublic = lazy(() => import("@/pages/login"));
 const SignupPublic = lazy(() => import("@/pages/signup"));
+const ForgotPasswordPublic = lazy(() => import("@/pages/forgot-password"));
+const ResetPasswordPublic = lazy(() => import("@/pages/reset-password"));
 
 // --- Consumer (D2C individual) portfolio app ---
 const PortfolioPage = lazy(() => import("@/pages/app/portfolio"));
@@ -245,6 +247,8 @@ function App() {
                       {/* --- Consumer (D2C individual) auth + portfolio --- */}
                       <Route path="/login" component={LoginPublic} />
                       <Route path="/signup" component={SignupPublic} />
+                      <Route path="/forgot-password" component={ForgotPasswordPublic} />
+                      <Route path="/reset-password" component={ResetPasswordPublic} />
                       <Route path="/app">
                         {() => <UserProtectedRoute><PortfolioPage /></UserProtectedRoute>}
                       </Route>
