@@ -4,7 +4,6 @@ import { useDropzone } from "react-dropzone";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
 import { getApiBase } from "@/lib/queryClient";
-import { Switch } from "@/components/ui/switch";
 import { ConnectAgentDialog } from "@/components/app/ConnectAgentDialog";
 import {
   Upload, FileText, ShieldCheck, LogOut, AlertCircle, Loader2, Lock, Pencil,
@@ -451,11 +450,23 @@ export default function PortfolioPage() {
                 </p>
               </div>
             </div>
-            <Switch
-              checked={data.renewalRemindersEnabled}
-              onCheckedChange={toggleReminders}
+            {/* On  = teal body, white border. Off = white body, teal border. */}
+            <button
+              onClick={() => toggleReminders(!data.renewalRemindersEnabled)}
+              aria-pressed={data.renewalRemindersEnabled}
               aria-label="Toggle renewal reminders"
-            />
+              className={`shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border-2 transition-all active:scale-[0.98] ${
+                data.renewalRemindersEnabled
+                  ? "bg-[var(--color-teal-600)] border-white text-white shadow-sm hover:bg-[var(--color-teal-400)]"
+                  : "bg-white border-[var(--color-teal-600)] text-[var(--color-teal-600)] hover:bg-[var(--color-teal-600)]/5"
+              }`}
+            >
+              {data.renewalRemindersEnabled ? (
+                <><Check className="w-4 h-4" /> On</>
+              ) : (
+                "Off"
+              )}
+            </button>
           </section>
         )}
 
