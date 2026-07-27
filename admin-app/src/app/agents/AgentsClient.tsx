@@ -13,6 +13,10 @@ type Agent = {
   policies_count: number;
   analyses_count: number;
   credits_remaining: number;
+  plan: string;
+  billing_cycle: string;
+  ocr_remaining: number;
+  ocr_seeded: boolean;
 };
 
 type IncompleteUser = {
@@ -30,8 +34,11 @@ export default function AgentsClient({
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Agent | null>(null);
-  const [modalType, setModalType] = useState<"credits" | null>(null);
-  const [value, setValue] = useState("");
+  const [modalType, setModalType] = useState<"edit" | null>(null);
+  const [value, setValue] = useState("");            // credits balance
+  const [ocrValue, setOcrValue] = useState("");      // OCR / data-entry balance
+  const [plan, setPlan] = useState("free");
+  const [billingCycle, setBillingCycle] = useState("monthly");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
@@ -46,8 +53,11 @@ export default function AgentsClient({
 
   function openModal(agent: Agent) {
     setSelected(agent);
-    setModalType("credits");
+    setModalType("edit");
     setValue(String(agent.credits_remaining));
+    setOcrValue(String(agent.ocr_remaining));
+    setPlan(agent.plan || "free");
+    setBillingCycle(agent.billing_cycle || "monthly");
   }
 
   async function handleSave() {
@@ -57,7 +67,12 @@ export default function AgentsClient({
       const res = await fetch(`/api/agents/${selected.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credits: Number(value) }),
+        body: JSON.stringify({
+          credits: Number(value),
+          ocr_balance: Number(ocrValue),
+          plan,
+          billing_cycle: billingCycle,
+        }),
       });
       if (!res.ok) throw new Error("Failed to update");
       setSelected(null);
@@ -118,7 +133,9 @@ export default function AgentsClient({
                   <th className="px-5 py-3 font-medium text-slate-500">City</th>
                   <th className="px-5 py-3 font-medium text-slate-500">Policies</th>
                   <th className="px-5 py-3 font-medium text-slate-500">Analyses</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">Plan</th>
                   <th className="px-5 py-3 font-medium text-slate-500">Credits</th>
+                  <th className="px-5 py-3 font-medium text-slate-500">Data-entry</th>
                   <th className="px-5 py-3 font-medium text-slate-500">Joined</th>
                   <th className="px-5 py-3 font-medium text-slate-500">Actions</th>
                 </tr>
@@ -138,9 +155,29 @@ export default function AgentsClient({
                       <Badge variant="blue">{agent.analyses_count}</Badge>
                     </td>
                     <td className="px-5 py-4">
+                      <div className="flex flex-col gap-0.5">
+                        <Badge variant={agent.plan === "free" ? "yellow" : "green"}>
+                          {agent.plan === "free" ? "Free" : agent.plan === "agency" ? "Agency" : "Agent"}
+                        </Badge>
+                        {agent.plan !== "free" && (
+                          <span className="text-[10px] uppercase tracking-wide text-slate-400">
+                            {agent.billing_cycle === "annual" ? "Annual" : "Monthly"}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
                       <Badge variant={agent.credits_remaining > 0 ? "green" : "red"}>
                         {agent.credits_remaining}
                       </Badge>
+                    </td>
+                    <td className="px-5 py-4">
+                      <Badge variant={agent.ocr_remaining > 0 ? "blue" : "red"}>
+                        {agent.ocr_remaining}
+                      </Badge>
+                      {!agent.ocr_seeded && (
+                        <span className="ml-1 text-[10px] text-slate-400">start</span>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-slate-500">
                       {new Date(agent.created_at).toLocaleDateString("en-IN", {
@@ -156,7 +193,7 @@ export default function AgentsClient({
                           className="h-7 text-xs px-3"
                           onClick={() => openModal(agent)}
                         >
-                          Credits
+                          Edit
                         </Button>
                         <button
                           onClick={() => setDeleteTarget(agent)}
@@ -171,7 +208,7 @@ export default function AgentsClient({
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-5 py-10 text-center text-slate-400">
+                    <td colSpan={9} className="px-5 py-10 text-center text-slate-400">
                       No agents found
                     </td>
                   </tr>
@@ -209,7 +246,7 @@ export default function AgentsClient({
                     </td>
                     <td className="px-5 py-4">
                       <button
-                        onClick={() => setDeleteTarget({ id: u.id, email: u.email, full_name: null, city: null, created_at: u.created_at, policies_count: 0, analyses_count: 0, credits_remaining: 0 })}
+                        onClick={() => setDeleteTarget({ id: u.id, email: u.email, full_name: null, city: null, created_at: u.created_at, policies_count: 0, analyses_count: 0, credits_remaining: 0, plan: "free", billing_cycle: "monthly", ocr_remaining: 0, ocr_seeded: false })}
                         className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -227,22 +264,68 @@ export default function AgentsClient({
       <Modal
         open={!!selected && !!modalType}
         onClose={() => { setSelected(null); setModalType(null); }}
-        title={`Set Credits — ${selected?.full_name || selected?.email}`}
+        title={`Edit Agent — ${selected?.full_name || selected?.email}`}
       >
         <div className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Credits Balance
-            </label>
-            <Input
-              type="number"
-              min="0"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="Enter number"
-            />
-            <p className="mt-1 text-xs text-slate-400">Current: {selected?.credits_remaining ?? 0} credits</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Plan</label>
+              <select
+                value={plan}
+                onChange={(e) => setPlan(e.target.value)}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+              >
+                <option value="free">Free</option>
+                <option value="agent">Agent (₹999 / ₹9,999)</option>
+                <option value="agency">Agency</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Billing cycle</label>
+              <select
+                value={billingCycle}
+                onChange={(e) => setBillingCycle(e.target.value)}
+                disabled={plan === "free"}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400"
+              >
+                <option value="monthly">Monthly (resets)</option>
+                <option value="annual">Annual (carries over)</option>
+              </select>
+            </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Policy checks</label>
+              <Input
+                type="number"
+                min="0"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="Credits"
+              />
+              <p className="mt-1 text-xs text-slate-400">Health audits. Now: {selected?.credits_remaining ?? 0}</p>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Data-entry (OCR)</label>
+              <Input
+                type="number"
+                min="0"
+                value={ocrValue}
+                onChange={(e) => setOcrValue(e.target.value)}
+                placeholder="OCR entries"
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Motor/life/term. Now: {selected?.ocr_remaining ?? 0}{selected && !selected.ocr_seeded ? " (start)" : ""}
+              </p>
+            </div>
+          </div>
+
+          <p className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            Free = 20 total, lifetime. Agent = 50 / month (annual billing carries unused over, up to 600).
+            Setting a value here holds until the next monthly refill.
+          </p>
+
           <div className="flex gap-3 justify-end">
             <Button variant="ghost" onClick={() => { setSelected(null); setModalType(null); }}>
               Cancel
