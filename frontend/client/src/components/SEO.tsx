@@ -41,16 +41,16 @@ export function SchemaMarkup({ type, data }: SchemaMarkupProps) {
 // Organization Schema (for homepage)
 export const organizationSchema = {
   name: "IndSure",
-  description: "AI-powered insurance policy analyzer. Decode your health, term life, and vehicle insurance policies in 60 seconds. Free, private, no sales.",
-  url: "https://IndSure.com",
-  logo: "https://IndSure.com/favicon.png",
+  description: "AI-powered insurance policy analyzer for India. Decode your health, term life, and vehicle insurance policies in 60 seconds. Free, private, no sales.",
+  url: "https://indsure.in",
+  logo: "https://indsure.in/favicon.png",
   sameAs: [
     // Add social media links when available
   ],
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "Customer Service",
-    email: "support@IndSure.com", // Update with actual email
+    email: "support@indsure.in",
   },
 };
 

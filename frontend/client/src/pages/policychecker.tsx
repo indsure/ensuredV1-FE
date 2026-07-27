@@ -9,8 +9,10 @@ import { PolicyCheckerLanding } from "@/components/PolicyCheckerLanding";
 // without an account (mock data, no analysis is run).
 export default function PolicyChecker() {
   useSEO({
-    title: "Decode Your Health Policy | IndSure",
-    description: "Create a free account to analyze your health insurance policy and keep it in your portfolio. Get a clear verdict.",
+    title: "Health Insurance Policy Checker: Room Rent, Co-pay & Gaps | IndSure",
+    description: "Upload your health or mediclaim policy PDF and see your room-rent cap, co-pay, sub-limits, waiting periods, and coverage gaps explained in plain language. Free and private, no sales calls.",
+    keywords: "health insurance policy checker, mediclaim analyzer India, room rent cap, co-pay, sub-limits, waiting period, health insurance gaps",
+    canonical: "/policychecker",
   });
 
   return (

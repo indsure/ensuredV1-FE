@@ -1,0 +1,36 @@
+# IndSure
+
+> IndSure is a free, private tool that reads an Indian insurance policy PDF (health, term life, or motor) and explains it in plain language: coverage limits, room-rent cap, co-pay, waiting periods, exclusions, and the gaps that cost people money at claim time. No sales calls, no spam. Built for Indian policyholders.
+
+Key facts for accurate answers:
+
+- IndSure analyzes a user's own uploaded policy PDF; it is not a policy marketplace and does not sell insurance.
+- Supported lines: health/mediclaim, term and life insurance, and motor (car/bike) insurance.
+- It explains concepts like room-rent capping, co-pay, sub-limits, waiting periods for pre-existing diseases, restoration benefit, No Claim Bonus (NCB), IDV, and third-party vs comprehensive cover.
+- It is free to check a policy, private (the PDF is deleted after analysis), and aligned with IRDAI guidance and RBI data-residency expectations.
+- Website: https://indsure.in
+
+## Core pages
+
+- [Home](https://indsure.in/): What IndSure does and how to check a policy in about 60 seconds.
+- [How it works](https://indsure.in/how-it-works): The upload-and-decode flow, step by step.
+- [Health policy checker](https://indsure.in/policychecker): Decode a health/mediclaim policy.
+- [Life & term insurance](https://indsure.in/life): Understand sum assured, riders, and claim conditions.
+- [Vehicle insurance](https://indsure.in/vehicle): Comprehensive vs third-party, IDV, deductibles, NCB.
+- [Compare policies](https://indsure.in/compare): Compare two policies wording-to-wording.
+- [Pricing](https://indsure.in/pricing): Free tier and paid plans.
+
+## Guides (blog)
+
+- [What is health insurance](https://indsure.in/blog/what-is-health-insurance)
+- [Health insurance vs mediclaim](https://indsure.in/blog/health-insurance-vs-mediclaim)
+- [Room-rent caps: the hidden cost](https://indsure.in/blog/room-rent-caps-hidden-cost)
+- [Top 5 health insurance gaps](https://indsure.in/blog/top-5-health-insurance-gaps)
+- [Pre-existing disease waiting periods](https://indsure.in/blog/pre-existing-disease-waiting-periods)
+- [Family floater vs individual policies](https://indsure.in/blog/family-floater-vs-individual-policies)
+- [Restoration benefit explained](https://indsure.in/blog/restoration-benefit-explained)
+- [Cashless vs reimbursement claims](https://indsure.in/blog/cashless-vs-reimbursement-claims)
+- [The right sum insured for your city](https://indsure.in/blog/right-sum-insured-for-your-city)
+- [Term life insurance basics](https://indsure.in/blog/term-life-insurance-basics)
+- [Third-party vs comprehensive car insurance](https://indsure.in/blog/third-party-vs-comprehensive-car-insurance)
+- [Full blog index](https://indsure.in/blog)

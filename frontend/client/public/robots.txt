@@ -1,6 +1,48 @@
+# IndSure robots.txt
+
 User-agent: *
 Allow: /
 Disallow: /api
 Disallow: /admin
+Disallow: /agent/dashboard
+Disallow: /agent/uploads
+Disallow: /agent/policies
+Disallow: /agent/customers
+Disallow: /agent/leads
+Disallow: /agent/renewals
+Disallow: /agent/my-queue
+Disallow: /agent/settings
+Disallow: /agent/profile
+Disallow: /app
+Disallow: /account
+Disallow: /report
+Disallow: /processing
+Disallow: /shared/
 
-Sitemap: https://ensured.com/sitemap.xml
+# AI / answer-engine crawlers are welcome to read the public site.
+# Explicit allows signal intent for citation in ChatGPT, Perplexity, Claude, Gemini.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://indsure.in/sitemap.xml

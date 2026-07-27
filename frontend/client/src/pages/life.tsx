@@ -39,8 +39,8 @@ export default function LifePage() {
 
   // SEO
   useSEO({
-    title: "Understand Your Life Insurance Policy | IndSure",
-    description: "Upload your life insurance PDF. Instantly see if your sum assured is enough for your family's future, understand claim conditions, exclusions, and how your riders actually protect you.",
+    title: "Life & Term Insurance Policy Checker: Sum Assured, Riders, Claims | IndSure",
+    description: "Upload your life or term insurance PDF and instantly see whether your sum assured is enough for your family, plus claim conditions, exclusions, and how your riders actually protect you. Free and private.",
     keywords: "life insurance analyzer, term life insurance, life insurance policy checker, sum assured calculator, life insurance riders",
     canonical: "/life",
   });
