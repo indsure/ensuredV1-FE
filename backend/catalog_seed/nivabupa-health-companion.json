@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP26051V092526",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Health Companion",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/Health-Companion-Variant-1-2-3-EFF-Policy-Wording.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": null,
+
+  "room_rent": { "display": "Per entitled room category", "ordinal": 4, "optional": false, "note": "Room category eligibility per Product Benefits Table varies by Variant (1/2/3); pro-rata deduction if higher room opted. VERIFY exact eligibility per variant — benefit table not in text" },
+  "icu": { "display": "Covered (at actuals)", "ordinal": 5, "optional": false, "note": "ICU charges payable as part of inpatient; no explicit ICU cap in wording. VERIFY" },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No mandatory base co-pay; optional 20% co-pay applies only if Metro/zonal restriction opted" },
+  "sub_limits": { "display": "Few sub-limits", "ordinal": 3, "optional": false, "note": "Benefit-level sub-limits apply (e.g. modern treatments, ambulance); VERIFY exact caps in benefit table" },
+  "deductible": { "display": "None (base)", "number": 0, "optional": false, "note": "Optional Annual Aggregate Deductible available (Section 5.2)" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity is an exclusion (Excl18) in this plan" },
+
+  "cumulative_bonus": { "display": "Up to 100% (20%/yr)", "number": 100, "optional": false, "note": "No Claim Bonus: +20% base SI per claim-free year up to 100%" },
+  "restoration": { "display": "Re-fill 100% base SI, once/yr", "ordinal": 3, "optional": false, "note": "Re-fill up to 100% base SI on exhaustion for a different illness (Section 3.12); not for same illness" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Domiciliary hospitalisation min 3 consecutive days (Section 3.6)" },
+  "ayush": { "display": "Covered (AYUSH inpatient)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "Living organ donor harvesting expenses (Section 3.7)" },
+  "ambulance": { "display": "Up to benefit-table limit", "number": null, "optional": false, "note": "Emergency ambulance up to amount in Product Benefits Table (varies by variant). VERIFY ₹ limit" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "Robotic, stereotactic, etc. (Section 3.13); may be sub-limited. VERIFY caps" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY — no explicit non-medical/consumables benefit found" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); standard IRDAI exclusions Excl01–18 apply" },
+  "optional_riders": { "display": "Annual Aggregate Deductible, zonal co-pay option, Hospital Cash; VERIFY full optional list" }
+}

@@ -1,0 +1,42 @@
+{
+  "uin": "NIAHLIP25048V042425",
+  "insurer": "New India Assurance",
+  "plan_name": "New India Premier Mediclaim Policy (Plan A baseline; Plan B higher variant)",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "_pdf_inbox/_txt/nia-premier-mediclaim.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "At actuals (no cap)", "ordinal": 5, "optional": false, "note": "Room rent incl. boarding & nursing reimbursed up to SI; no % cap stated (premium plan)" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false, "note": "ICU/ICCU reimbursed up to SI; no % cap stated" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory co-payment clause found; VERIFY zone-based co-pay not present" },
+  "sub_limits": { "display": "Some sub-limits", "ordinal": 3, "optional": false, "note": "Cataract ₹75k (A)/₹1L (B) per eye; maternity, infertility, modern treatments, genetic 25% capped; main inpatient otherwise up to SI" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Tiered 90 days / 24 mo / 36 mo lists" },
+  "maternity": { "display": "Covered (36mo wait)", "exists": true, "optional": false, "number": 36, "note": "₹50k (Plan A) / ₹1L (Plan B); after 36 months continuous coverage; max 2 claims" },
+
+  "cumulative_bonus": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY - no cumulative/no-claim bonus clause found; plan uses claim-free-year OPD & Critical Care benefits instead" },
+  "restoration": { "display": "Not specified", "ordinal": null, "optional": false, "note": "VERIFY - no SI restoration/reinstatement clause found" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY - domiciliary defined; inclusion/exclusion not confirmed" },
+  "ayush": { "display": "Covered up to 100% SI", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "Donor hospitalisation expenses (excl. organ cost) within SI" },
+  "ambulance": { "display": "Covered incl. air ambulance", "number": 999999, "optional": false, "note": "Ambulance incl. Air Ambulance; plus up to ₹10,000 home transfer per illness" },
+  "modern_treatments": { "display": "Covered (sub-limited)", "exists": true, "optional": false, "note": "Listed modern treatments capped per procedure (Clause 3.1.17)" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY - non-medical/consumables cover not explicitly confirmed" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Standard IRDAI Excl01-18; several conditions covered only with sub-limits" },
+  "optional_riders": { "display": "Plan B variant (higher limits): psychiatric, obesity, dietician counselling, higher OPD/maternity/critical-care limits" }
+}

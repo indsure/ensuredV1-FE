@@ -1131,12 +1131,6 @@
                 "reimbursement_allowed": {
                     "type": "boolean"
                 },
-                "claim_settlement_ratio": {
-                    "type": [
-                        "number",
-                        "null"
-                    ]
-                },
                 "risk_level": {
                     "type": "string",
                     "enum": [

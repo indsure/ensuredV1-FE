@@ -52,7 +52,7 @@ export function useSEO({
     }
 
     // OG Image
-    const fullOgImage = ogImage.startsWith("http") ? ogImage : `https://ensured.com${ogImage}`;
+    const fullOgImage = ogImage.startsWith("http") ? ogImage : `https://indsure.in${ogImage}`;
     updateMetaTag("og:image", fullOgImage, true);
     updateMetaTag("twitter:image", fullOgImage);
 
@@ -61,7 +61,7 @@ export function useSEO({
 
     // Canonical URL
     const canonicalUrl = canonical || window.location.href.split("?")[0];
-    const fullCanonical = canonicalUrl.startsWith("http") ? canonicalUrl : `https://ensured.com${canonicalUrl}`;
+    const fullCanonical = canonicalUrl.startsWith("http") ? canonicalUrl : `https://indsure.in${canonicalUrl}`;
     
     let canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
     if (!canonicalLink) {

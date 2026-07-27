@@ -1,0 +1,42 @@
+{
+  "uin": "MCIHLIP26037V052526",
+  "insurer": "ManipalCigna Health Insurance",
+  "plan_name": "ProHealth Select",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "_pdf_inbox/_txt/manipalcigna-prohealth-select.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "₹50K – higher tiers (variant-based)",
+
+  "room_rent": { "display": "Single Private Room", "ordinal": 4, "optional": false, "note": "Room up to eligible category/Room Rent per Schedule; proportionate deduction if exceeded; varies by variant (A/B) — VERIFY exact category" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false, "note": "ICU charges covered under inpatient; proportionate deduction not applicable to ICU — VERIFY no separate cap" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "Only a Voluntary Co-Pay option exists (ProHealth Select (A)); no mandatory inbuilt co-pay" },
+  "sub_limits": { "display": "Few sub-limits", "ordinal": 3, "optional": false, "note": "Cancer/Oncology, surgeries for non-malignant tumours/cysts etc. capped in benefit grid — VERIFY scope" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Optional voluntary deductible available (D.III.1)" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "Excl03; not applicable after 12 months continuous coverage" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Excl01" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl02 specified disease/procedure" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "No inbuilt maternity benefit found; only definition present — VERIFY" },
+
+  "cumulative_bonus": { "display": "Up to 100% (5%/yr)", "number": 100, "optional": false, "note": "+5% SI/yr, max 100%; not reduced for future claims. Optional Cumulative Bonus Booster available instead" },
+  "restoration": { "display": "100%, once/yr", "ordinal": 4, "optional": false, "note": "100% restoration of opted SI once per Policy Year; not for ₹0.5L/1L SI; not for same illness already claimed" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "All day-care", "exists": true, "optional": false, "note": "Day care treatment covered per Annexure II list" },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "Donor in-patient expenses up to SI" },
+  "ambulance": { "display": "Covered (per Schedule limit)", "number": 999999, "optional": false, "note": "Road ambulance reimbursement up to limit specified in Schedule — VERIFY ₹ cap" },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false, "note": "Deep Brain stimulation, Oral chemotherapy, Immunotherapy, Stereotactic radiosurgery, Bronchial Thermoplasty, Stem cell, etc." },
+  "consumables": { "display": "Not covered", "exists": false, "optional": false, "note": "Consumables/non-medical items excluded from Associated Medical Expenses — VERIFY for optional rider" },
+  "global_cover": { "display": "Optional (Worldwide Emergency)", "exists": true, "optional": true, "note": "Worldwide Emergency Cover, ProHealth Select (A) optional (D.III.7)" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Standard IRDAI exclusions (Excl01–18); maternity not inbuilt; overseas only via Worldwide Emergency add-on" },
+  "optional_riders": { "display": "Critical Illness Add-on, Cumulative Bonus Booster, Voluntary Deductible, Voluntary Co-Pay, Worldwide Emergency Cover" }
+}

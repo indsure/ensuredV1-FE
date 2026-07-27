@@ -1,34 +1,15 @@
 {
-  "include": [
-    "server/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "server/vite.ts"
-  ],
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
+    "module": "esnext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM"],
-    "outDir": "build",
-    "rootDir": "server",
-    "strict": true,
+    "target": "es2020",
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
+    "strict": true,
+    "skipLibCheck": true,
     "noEmit": true,
-    "typeRoots": [
-      "./node_modules/@types"
-    ],
-    "baseUrl": ".",
-    "paths": {
-      "@shared/*": [
-        "../shared/*"
-      ]
-    }
-  }
+    "allowJs": true
+  },
+  "include": ["server/**/*", "src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

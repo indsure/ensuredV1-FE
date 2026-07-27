@@ -1,0 +1,42 @@
+{
+  "uin": "NIAHLIP25039V092425",
+  "insurer": "New India Assurance",
+  "plan_name": "New India Floater Mediclaim Policy",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "_pdf_inbox/_txt/nia-floater-mediclaim.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹2L – ₹15L",
+
+  "room_rent": { "display": "1% of SI/day", "ordinal": 3, "optional": false, "note": "Room, boarding & nursing not exceeding 1% of SI per day; proportionate deduction if higher room opted" },
+  "icu": { "display": "2% of SI/day", "ordinal": 3, "optional": false, "note": "ICU/ICCU not exceeding 2% of SI per day" },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No flat co-pay; 20% co-pay ONLY if insured opts lower zone and is treated in a higher zone (Clause 5.29)" },
+  "sub_limits": { "display": "Many sub-limits", "ordinal": 1, "optional": false, "note": "Cataract 10% of SI / ₹50k per eye; modern treatments capped; mental illness 25%; ARMD 10%/₹75k; genetic 25%; ambulance 1%" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Tiered 90 days / 24 mo / 36 mo lists; listed-disease bulk at 24 months" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "No maternity benefit clause; only a definition appears" },
+
+  "cumulative_bonus": { "display": "Up to 50% (25%/yr)", "number": 50, "optional": false, "note": "+25% SI per claim-free year, max 50%; reduced at same rate on claim" },
+  "restoration": { "display": "Not specified", "ordinal": null, "optional": false, "note": "VERIFY - no SI restoration/reinstatement clause found" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false, "note": "Day care treatment defined and covered" },
+  "domiciliary": { "display": "Not covered", "exists": false, "optional": false, "note": "Domiciliary hospitalization expressly excluded (Clause 4.4.17)" },
+  "ayush": { "display": "Covered up to 100% SI", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "Donor hospitalisation expenses (excl. organ cost) within SI" },
+  "ambulance": { "display": "1% of SI per event", "number": 0, "optional": false, "note": "Road ambulance not exceeding 1% of SI per insured event; numeric SI-relative, not a fixed ₹" },
+  "modern_treatments": { "display": "Covered (sub-limited)", "exists": true, "optional": false, "note": "Listed modern treatments each capped (e.g. Deep Brain stimulation up to 50% SI/₹5L; oral chemo 10%)" },
+  "consumables": { "display": "Not covered", "exists": false, "optional": false, "note": "VERIFY - no consumables/non-medical cover found; standard non-medical exclusions apply" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Domiciliary hospitalisation excluded; dietary supplements; standard IRDAI Excl01-18" },
+  "optional_riders": { "display": "Revision in Cataract limit (SI ₹8L+), zone-based cover options" }
+}

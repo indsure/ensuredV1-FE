@@ -1,13 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
-  Shield,
-  Printer,
-  ChevronDown,
   AlertCircle,
   FileText,
-  Share2,
-  Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
@@ -18,9 +13,9 @@ import {
   mockReportVehicle
 } from "@/lib/mock-data";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
-// FIXED: Correct relative path to server types
-import { validateForensicAuditReport } from "../../../../backend/server/types/policy";
+import { validateForensicAuditReport } from "@/lib/policy-types";
 import { useAnalysis } from "@/hooks/use-analysis";
+import { apiFetch } from "@/lib/api";
 
 export default function Report({ params }: { params?: { id?: string } }) {
   const [, setLocation] = useLocation();
@@ -29,43 +24,51 @@ export default function Report({ params }: { params?: { id?: string } }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Check for Direct Sample ID in URL (Demo Mode)
+    // 1. Check for sample query-param (?sample=health|life|vehicle) set by analyze.tsx
+    const searchParams = new URLSearchParams(window.location.search);
+    const sampleType = searchParams.get("sample");
+    if (sampleType === "health") { setData(mockReportHealth); setLoading(false); return; }
+    if (sampleType === "life")   { setData(mockReportLife);   setLoading(false); return; }
+    if (sampleType === "vehicle"){ setData(mockReportVehicle);setLoading(false); return; }
+
+    // 2. Check for Direct Sample path ID (legacy demo mode)
     const sampleId = params?.id;
-    console.log("Report Page Loaded. Sample ID:", sampleId);
+    if (sampleId === "sample-health")  { setData(mockReportHealth);  setLoading(false); return; }
+    if (sampleId === "sample-life")    { setData(mockReportLife);    setLoading(false); return; }
+    if (sampleId === "sample-vehicle") { setData(mockReportVehicle); setLoading(false); return; }
 
-    if (sampleId === "sample-health") {
-      setData(mockReportHealth);
-      setLoading(false);
-      return;
-    }
-    if (sampleId === "sample-life") {
-      setData(mockReportLife);
-      setLoading(false);
-      return;
-    }
-    if (sampleId === "sample-vehicle") {
-      setData(mockReportVehicle);
-      setLoading(false);
-      return;
-    }
-
-    // 2. Try to load from session (Real User Data)
-    const raw = sessionStorage.getItem("ensured_report");
-    if (raw) {
+    // 2. Try to load from session (Real User Data - D2C Flow)
+    const raw = sessionStorage.getItem("IndSure_report");
+    if (raw && !params?.id) {
       try {
         const parsed = JSON.parse(raw);
-        // STRICT VALIDATION: Only accept if it matches V3 Schema
-        // NO FALLBACKS allowed for main product flow
         if (validateForensicAuditReport(parsed)) {
           setData(parsed);
+          setLoading(false);
+          return;
         } else {
-          console.error("Session data failed V3 validation.", parsed);
-          // Data remains null, triggering Error UI
         }
       } catch (e) {
-        console.error("Failed to parse report JSON", e);
       }
     }
+
+    // 3. Try to fetch from database using ID (Agent Flow)
+    if (params?.id && params.id !== "sample-health" && params.id !== "sample-life" && params.id !== "sample-vehicle") {
+      apiFetch(`/api/client-report/${params.id}`)
+        .then(res => res.json())
+        .then(dbData => {
+          if (dbData && dbData.report_data && validateForensicAuditReport(dbData.report_data)) {
+            setData(dbData.report_data);
+          } else {
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          setLoading(false);
+        });
+      return;
+    }
+
     setLoading(false);
 
     // CLEANUP: Reset state on unmount
@@ -74,13 +77,22 @@ export default function Report({ params }: { params?: { id?: string } }) {
     };
   }, [params?.id]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--color-cream-main)] flex items-center justify-center px-6">
+        <div className="flex flex-col items-center text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--color-teal-600)]" />
+          <p className="mt-4 text-sm text-[var(--color-text-secondary)]">Preparing your report…</p>
+        </div>
+      </div>
+    );
+  }
 
   // Final Validation Check
   const isValid = data && validateForensicAuditReport(data);
 
   if (isValid) {
-    return <PolicyAuditReport data={data} />;
+    return <PolicyAuditReport data={data as any} />;
   }
 
   // 3. ERROR / LEGACY FORMAT UI

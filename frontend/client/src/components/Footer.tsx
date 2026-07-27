@@ -12,9 +12,9 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   const socialLinks = [
-    { name: "LinkedIn", icon: Linkedin, href: "#" },
-    { name: "Twitter", icon: Twitter, href: "#" },
-    { name: "Instagram", icon: Instagram, href: "#" },
+    { name: "LinkedIn", icon: Linkedin, href: "https://www.linkedin.com/company/indsure" },
+    { name: "Twitter", icon: Twitter, href: "https://www.x.com/indsure" },
+    { name: "Instagram", icon: Instagram, href: "https://www.instagram.com/indsure.in" },
   ];
 
   return (
@@ -97,7 +97,28 @@ export function Footer() {
                 <li>
                   <Link href="/why-indsure">
                     <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
-                      Our Philosophy
+                      Why IndSure
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/blog">
+                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
+                      Blog
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/team">
+                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
+                      Meet the Team
+                    </span>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/pricing">
+                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
+                      Pricing (Advisors)
                     </span>
                   </Link>
                 </li>
@@ -108,9 +129,26 @@ export function Footer() {
             <div className="lg:col-span-2">
               <h4 className="font-mono text-xs uppercase tracking-widest text-[var(--color-gold-500)] mb-6 mt-2">Legal</h4>
               <ul className="space-y-4 font-normal text-sm">
-                <li><a href="#" className="text-[var(--color-gold-500)] hover:text-white transition-colors">Privacy Protocol</a></li>
-                <li><a href="#" className="text-[var(--color-gold-500)] hover:text-white transition-colors">Service Terms</a></li>
-                <li><a href="#" className="text-[var(--color-gold-500)] hover:text-white transition-colors">Security</a></li>
+                <li>
+                  <a href="/privacy-policy" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="/terms" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href="/cookie-policy" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
+                    Cookie Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="/grievance" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
+                    Grievance Officer
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -119,7 +157,8 @@ export function Footer() {
           {/* Bottom Bar - Constrained Width to bring text blocks inward */}
           <div className="pt-8 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row justify-between items-end gap-6 text-xs font-mono uppercase tracking-widest max-w-5xl mx-auto text-[var(--color-white-muted)]">
             <div className="flex flex-col gap-2">
-              <p>© {currentYear} IndSure Intelligence Inc.</p>
+              <p>© {currentYear} Indsuretech Intelligence Private Limited</p>
+              <p className="normal-case tracking-normal opacity-60 text-[10px]">CIN: U62099MR2026PTC473468</p>
               <p className="normal-case tracking-normal opacity-70">Built for Indian policy documents. Tested on real claim rejections.</p>
             </div>
             <p className="text-right max-w-xs leading-relaxed normal-case tracking-normal opacity-70">

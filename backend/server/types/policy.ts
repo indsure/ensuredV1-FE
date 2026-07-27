@@ -7,7 +7,7 @@
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 
-export type Zone = "A" | "B" | "C";
+export type Zone = "A" | "B" | "C" | "D";
 export type Confidence = "high" | "medium" | "low";
 export type RiskLevel = "low" | "medium" | "high";
 export type Severity = "high" | "medium" | "low";
@@ -104,10 +104,12 @@ export interface InitialWaitingPeriod {
 }
 
 export interface PEDWaitingPeriod {
-  duration_months: number;
+  duration_months: number | null;
+  /** True only when the document explicitly states the PED waiting period. */
+  stated?: boolean;
   start_date: string | null;
   end_date: string | null;
-  is_active_today: boolean;
+  is_active_today: boolean | null;
   months_remaining: number | null;
   risk_commentary: string | null;
 }
@@ -282,7 +284,6 @@ export interface NetworkLimitations {
   hospital_count_in_zone: number | string | null;
   major_hospitals_included: string[];
   reimbursement_allowed: boolean;
-  claim_settlement_ratio: number | null;
   risk_level: RiskLevel;
   remarks: string | null;
 }
@@ -331,6 +332,9 @@ export interface ScoreDeduction {
 
 export interface AuditScore {
   score: number;
+  raw_score?: number;           // Original score before bucketing
+  bucket_label?: string;         // Human-readable label (e.g., "Below Average")
+  bucketing_method?: string;     // Method used for bucketing (e.g., "nearest_12.5")
   ncar: number;
   nec: number;
   rct: number;
@@ -380,6 +384,7 @@ export interface Recommendations {
 
 export interface DataQuality {
   overall: Confidence;
+  wording_source: "repository_matched" | "schedule_only";
   missing_critical_fields: string[];
   ambiguous_clauses: string[];
   policy_document_quality: DocumentQuality;
@@ -413,7 +418,7 @@ export const isValidVerdict = (v: string): v is Verdict =>
   ["SAFE", "BORDERLINE", "RISKY"].includes(v);
 
 export const isValidZone = (z: string): z is Zone =>
-  ["A", "B", "C"].includes(z);
+  ["A", "B", "C", "D"].includes(z);
 
 export const isValidConfidence = (c: string): c is Confidence =>
   ["high", "medium", "low"].includes(c);
@@ -433,8 +438,10 @@ export const validateForensicAuditReport = (data: any): data is ForensicAuditRep
     if (!isValidVerdict(data.final_verdict?.label)) return false;
     if (typeof data.audit_score?.score !== "number") return false;
     if (data.audit_score.score < 0 || data.audit_score.score > 100) return false;
-    if (!Array.isArray(data.claim_simulations) || data.claim_simulations.length === 0) return false;
-    if (!Array.isArray(data.recommendations?.critical_actions)) return false;
+    // Make claim_simulations optional - allow empty array
+    if (data.claim_simulations !== undefined && !Array.isArray(data.claim_simulations)) return false;
+    // Make critical_actions optional - allow empty array
+    if (data.recommendations?.critical_actions !== undefined && !Array.isArray(data.recommendations.critical_actions)) return false;
     return true;
   } catch {
     return false;
@@ -443,11 +450,10 @@ export const validateForensicAuditReport = (data: any): data is ForensicAuditRep
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-export const calculateEffectiveCoverage = (report: ForensicAuditReport): number | null => {
+export const calculateEffectiveCoverage = (report: ForensicAuditReport): number => {
   const base = typeof report.coverage_structure.base_sum_insured === "number"
     ? report.coverage_structure.base_sum_insured
-    : null;
-  if (base === null) return null;
+    : 0;
 
   const topUp = report.coverage_structure.top_up?.exists
     ? (report.coverage_structure.top_up.sum_insured ?? 0)
@@ -457,8 +463,6 @@ export const calculateEffectiveCoverage = (report: ForensicAuditReport): number 
     ? (report.coverage_structure.super_top_up.sum_insured ?? 0)
     : 0;
 
-  // Trust prompt's total_effective_coverage if it computed one directly
-  // (accounts for porting continuity, NCB, riders that component math would miss)
   const promptTotal = typeof report.coverage_structure.total_effective_coverage === "number"
     ? report.coverage_structure.total_effective_coverage
     : null;
@@ -476,8 +480,8 @@ export const getVerdictColor = (verdict: Verdict): string => {
   return colors[verdict];
 };
 
-export const formatINR = (value: number | string | null): string => {
-  if (value === null) return "N/A";
+export const formatINR = (value: number | string | null | undefined): string => {
+  if (value === null || value === undefined) return "N/A";
   const numeric = typeof value === "string"
     ? parseFloat(value.replace(/[₹,]/g, ""))
     : value;
@@ -486,7 +490,7 @@ export const formatINR = (value: number | string | null): string => {
 
   if (numeric >= 100000) return `₹${(numeric / 100000).toFixed(1)}L`;
   if (numeric >= 1000) return `₹${Math.round(numeric / 1000)}K`;
-  return `₹${numeric.toLocaleString("en-IN")}`;
+  return `₹${numeric?.toLocaleString("en-IN")}`;
 };
 
 export const getNCARLabel = (ncar: number): string => {
@@ -508,17 +512,53 @@ export const computeUnlockDate = (
   return start.toISOString().split("T")[0];
 };
 
+/**
+ * Unlock date for a month-based waiting period, using true calendar months
+ * (not a 30-day approximation, which drifts ~10 days over 24 months).
+ */
+export const computeUnlockDateMonths = (
+  inceptionDate: string | null,
+  durationMonths: number | null
+): string | null => {
+  if (!inceptionDate || durationMonths == null) return null;
+  const start = new Date(inceptionDate);
+  if (isNaN(start.getTime())) return null;
+  const day = start.getUTCDate();
+  start.setUTCMonth(start.getUTCMonth() + durationMonths);
+  // Guard month overflow (e.g. 31 Jan + 1 month → 3 Mar): clamp back to month end
+  if (start.getUTCDate() < day) start.setUTCDate(0);
+  return start.toISOString().split("T")[0];
+};
+
+/** Whole calendar months from today until `endDate` (min 1 while active). */
+const monthsRemainingUntil = (endDate: string | null): number | null => {
+  if (!endDate) return null;
+  const end = new Date(endDate);
+  if (isNaN(end.getTime())) return null;
+  const now = new Date();
+  if (end <= now) return 0;
+  let months =
+    (end.getUTCFullYear() - now.getUTCFullYear()) * 12 +
+    (end.getUTCMonth() - now.getUTCMonth());
+  if (end.getUTCDate() < now.getUTCDate()) months -= 1;
+  return Math.max(1, months);
+};
+
 export const getWaitingPeriodStatus = (
   isActive: boolean,
   monthsRemaining: number | null,
   endDate: string | null
 ): { status: "active" | "served"; label: string } => {
   if (!isActive) return { status: "served", label: "✅ Served" };
-  if (monthsRemaining !== null) {
-    return { status: "active", label: `⏳ ${monthsRemaining} months remaining` };
+  // Always prefer remaining derived from the unlock date so the label reflects
+  // time left from today, not the policy's full original duration. Fall back to
+  // the supplied value only when there is no usable end date.
+  const remaining = monthsRemainingUntil(endDate) ?? monthsRemaining;
+  if (remaining !== null && remaining > 0) {
+    return { status: "active", label: `⏳ ${remaining} months remaining` };
   }
   if (endDate) {
     return { status: "active", label: `⏳ Unlocks ${endDate}` };
   }
   return { status: "active", label: "⏳ Active" };
-};
+}

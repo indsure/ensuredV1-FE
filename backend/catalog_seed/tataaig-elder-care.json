@@ -1,0 +1,42 @@
+{
+  "uin": "TATHLIP23179V012223",
+  "insurer": "Tata AIG General Insurance",
+  "plan_name": "Elder Care",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "tataaig/Elder-Care-Policy-Wordings-9d18315430.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹5L – ₹25L",
+
+  "room_rent": { "display": "Single Private Room", "ordinal": 4, "optional": false, "note": "Up to Single Private Room; proportionate deduction if higher room chosen" },
+  "icu": { "display": "Covered", "ordinal": 5, "optional": false, "note": "ICU/ICCU; VERIFY any cap" },
+  "copayment": { "display": "20% (mandatory, all claims)", "number": 20, "optional": false, "note": "Mandatory 20% co-pay on every admissible claim; not applied to ambulance or capped surgical sub-limit claims" },
+  "sub_limits": { "display": "Cataract & joint replacement capped", "ordinal": 1, "optional": false, "note": "Cataract ₹40k–₹1L/eye and joint replacement ₹1.6L–₹5L capped by SI/zone band" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY (standard Excl 03)" },
+  "ped_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Lower 24-month PED waiting (senior-friendly)" },
+  "specific_disease_waiting": { "display": "24 months (36mo joint replacement)", "number": 24, "optional": false, "note": "24mo for listed conditions; 36mo for joint replacement surgeries" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Senior plan; maternity is a standard exclusion (Excl 18)" },
+
+  "cumulative_bonus": { "display": "Up to 100% (10%/yr)", "number": 100, "optional": false, "note": "10%/yr up to 100%; reduced by 10% on a claim" },
+  "restoration": { "display": "Not specified", "ordinal": 0, "optional": false, "note": "No restoration/reinstatement benefit found in wording. VERIFY" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (AYUSH Benefit)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY organ donor cover" },
+  "ambulance": { "display": "₹5,000/hospitalisation", "number": 5000, "optional": false, "note": "Road ambulance; 20% co-pay not applied" },
+  "modern_treatments": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY modern treatment cover" },
+  "consumables": { "display": "Covered (Consumables Benefit)", "exists": true, "optional": false, "note": "B12 Consumables Benefit inbuilt" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY overseas cover" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "Five-year moratorium" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Mandatory 20% co-pay; cataract & joint-replacement sub-limits; maternity excluded; senior-focused plan" },
+  "optional_riders": { "display": "Preventive Health Checkup & Annual Preventive Health Consultation inbuilt; VERIFY optional riders" }
+}

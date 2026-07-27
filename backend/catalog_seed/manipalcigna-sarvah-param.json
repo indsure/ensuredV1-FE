@@ -1,0 +1,42 @@
+{
+  "uin": "MCIHLIP26038V022526",
+  "insurer": "ManipalCigna Health Insurance",
+  "plan_name": "Sarvah - Param",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "_pdf_inbox/_txt/manipalcigna-sarvah-param.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Base Sum Insured tiers (Schedule-defined) — VERIFY exact range",
+
+  "room_rent": { "display": "Single Private AC Room", "ordinal": 4, "optional": false, "note": "Room coverage limited to a Single Private AC Room up to SI; proportionate deduction if exceeded; Twin-sharing room option available via optional Room Rent Modification" },
+  "icu": { "display": "At actuals (up to SI)", "ordinal": 5, "optional": false, "note": "ICU accommodation covered up to Sum Insured" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "Only optional Voluntary Co-Payment (D.III.10); no mandatory inbuilt co-pay" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false, "note": "No disease-wise capping found on base cover — VERIFY" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Optional Deductible available (D.III.9)" },
+
+  "initial_waiting": { "display": "Nil (base)", "number": 0, "optional": false, "note": "30-day initial waiting (Excl03) applies ONLY if optional 'Pratiksha' cover (D.III.9) is opted; without Pratiksha there is no initial waiting on base cover" },
+  "ped_waiting": { "display": "Nil (base)", "number": 0, "optional": false, "note": "PED waiting (Excl01) applies ONLY if optional 'Pratiksha' cover is opted; base cover (Pratiksha not opted) has NO pre-existing disease waiting — distinctive feature. With Pratiksha opted, standard waiting applies (VERIFY months)" },
+  "specific_disease_waiting": { "display": "Nil (base)", "number": 0, "optional": false, "note": "24-month specific disease waiting (Excl02) applies ONLY if optional 'Pratiksha' cover is opted; none on base cover" },
+  "maternity": { "display": "Optional add-on", "exists": true, "optional": true, "note": "Maternity & New Born Hospitalization Expenses optional cover (D.III.4)" },
+
+  "cumulative_bonus": { "display": "Up to 1500% (100%/yr)", "number": 1500, "optional": false, "note": "Gullak Guaranteed Cumulative Bonus: +100% of Base SI per renewed year, max 1500% of Base SI; guaranteed (not claim-dependent)" },
+  "restoration": { "display": "Unlimited, 100%", "ordinal": 5, "optional": false, "note": "100% restoration of Base SI any number of times per Policy Year, same or unrelated illness/injury; not for first claim in year" },
+
+  "pre_hosp": { "display": "Covered (days VERIFY)", "number": null, "optional": false, "note": "Pre-hospitalization covered up to limit specified in Policy Schedule; day count Schedule-defined — VERIFY (commonly 60 days)" },
+  "post_hosp": { "display": "Covered (days VERIFY)", "number": null, "optional": false, "note": "Post-hospitalization covered up to limit specified in Policy Schedule; day count Schedule-defined — VERIFY (commonly 180 days)" },
+  "day_care": { "display": "All day-care", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Min 3 consecutive days" },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false, "note": "D.I.8 AYUSH Treatment" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "D.I.7 Donor in-patient expenses up to SI" },
+  "ambulance": { "display": "Covered (per Schedule limit)", "number": 999999, "optional": false, "note": "D.I.6 Road Ambulance up to Schedule limit — VERIFY ₹ cap; Air Ambulance is optional (D.III.3)" },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false, "note": "Robotic surgeries, Deep Brain stimulation, Oral chemotherapy, Immunotherapy, Stereotactic radiosurgery, Stem cell, etc." },
+  "consumables": { "display": "Optional add-on", "exists": true, "optional": true, "note": "Non-Medical Items & Durable Medical Equipment optional cover (D.III.11)" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "No clear overseas/global cover found — VERIFY" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly mode — VERIFY" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Base cover has NO waiting periods unless optional 'Pratiksha' opted; maternity, air ambulance, PA, non-medical items are optional add-ons" },
+  "optional_riders": { "display": "Pratiksha (waiting periods), Maternity & New Born, Personal Accident, Air Ambulance, Voluntary Co-Pay, Deductible, Non-Medical Items/DME, Room Rent Modification (Twin sharing), Health Check-Ups" }
+}

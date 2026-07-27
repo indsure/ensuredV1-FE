@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP24135V012324",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Health+",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/Healthplus-Policy-Wordings.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": null,
+
+  "room_rent": { "display": "Per entitled room category", "ordinal": 4, "optional": false, "note": "Room eligibility per Policy Schedule; pro-rata deduction if higher room opted. VERIFY exact eligibility — benefit table not in text" },
+  "icu": { "display": "Covered (ICU charges)", "ordinal": 5, "optional": false, "note": "ICU charges payable under inpatient; no explicit ICU cap in wording. VERIFY" },
+  "copayment": { "display": "Per schedule (variable)", "number": null, "optional": false, "note": "Co-payment is a pre-determined % as specified in Policy Schedule (Section 3.9). VERIFY base %" },
+  "sub_limits": { "display": "Specified-illness sub-limits", "ordinal": 1, "optional": false, "note": "Sub-limits on Specified Illnesses/Conditions per Annexure III; robotic surgery ₹1L cap" },
+  "deductible": { "display": "None (base)", "number": 0, "optional": false, "note": "VERIFY — deductible defined but not as base feature" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Specific waiting period up to 36 months per definition. VERIFY exact term" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity excluded (Excl18)" },
+
+  "cumulative_bonus": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY — no cumulative bonus / NCB benefit found in wording" },
+  "restoration": { "display": "Not specified", "ordinal": null, "optional": false, "note": "VERIFY — no restoration / re-fill benefit found in wording" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "Listed day-care (Annexure IV)", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered (home care)", "exists": true, "optional": false, "note": "Home care/domiciliary per schedule limit" },
+  "ayush": { "display": "Not covered", "exists": false, "optional": false, "note": "Alternate treatment (Ayurveda/Homeopathy/Unani/Yoga/Siddha) excluded (4.2.6)" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Up to schedule limit", "number": null, "optional": false, "note": "Emergency ground ambulance within India; non-network up to schedule amount. VERIFY ₹ limit" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "Robotic surgery sub-limited ₹1L on most procedures" },
+  "consumables": { "display": "Allowable consumables only", "exists": true, "optional": false, "note": "Allowable consumables in inpatient; home ambulatory devices excluded" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "AYUSH, maternity, infertility, OPD, dental (non-accident), sleep disorders all excluded; specified-illness sub-limits" },
+  "optional_riders": { "display": "VERIFY — optional covers not enumerated in wording; co-payment level selectable per schedule" }
+}

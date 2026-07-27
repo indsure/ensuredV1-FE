@@ -1,0 +1,42 @@
+{
+  "uin": "TATHLIP27059V012627",
+  "insurer": "Tata AIG General Insurance",
+  "plan_name": "MediCare Reserve",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "tataaig/tata-aig-medicare-reserve-policy-wordings-2250e635.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": null,
+
+  "room_rent": { "display": "Single Private Room", "ordinal": 4, "optional": false, "note": "Up to room category in schedule (Single Private Room); proportionate deduction if higher" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false, "note": "No proportionate deduction on ICU" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory co-payment; plan uses an aggregate deductible instead" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false },
+  "deductible": { "display": "Aggregate deductible (opted)", "number": null, "optional": false, "note": "VERIFY: Aggregate Deductible amount per schedule; waivable on renewal after 5 yrs. High-deductible reserve plan" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity excluded (Excl 18)" },
+
+  "cumulative_bonus": { "display": "Up to 100% (50%/yr)", "number": 100, "optional": false, "note": "50% per claim-free year, max 100%; reduces 50% on claim" },
+  "restoration": { "display": "Once/yr, 100% (unrelated)", "ordinal": 3, "optional": false, "note": "Auto restore base SI once/yr; not on first claim; available after deductible waiver" },
+
+  "pre_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "All day-care", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (up to SI)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Covered (at actuals, 50km)", "number": 999999, "optional": false, "note": "Road ambulance within 50km radius; no ₹ cap stated" },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false },
+  "consumables": { "display": "Optional (C1 add-on)", "exists": true, "optional": true, "note": "Consumables Benefit C1 optional cover" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl 18); high aggregate deductible applies; standard IRDAI exclusions" },
+  "optional_riders": { "display": "Consumables Benefit (C1), Waiver of Aggregate Deductible" }
+}

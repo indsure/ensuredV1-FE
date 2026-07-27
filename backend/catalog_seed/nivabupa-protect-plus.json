@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLGP25038V012425",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Protect Plus",
+  "product_type": "top_up",
+  "source_file": "nivabupa/Protect-Plus-Policy-Wordings.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Up to ₹5Cr (over aggregate deductible)",
+
+  "room_rent": { "display": "Up to 100% Base SI (categories per schedule)", "ordinal": 4, "optional": false, "note": "Option: up to 100% Base SI; or by room category (General/Shared/Single Private/Deluxe/Suite); or ₹10L disease sub-limit. VERIFY chosen option" },
+  "icu": { "display": "Covered (per schedule)", "ordinal": 4, "optional": false, "note": "ICU charges covered under inpatient; limit per schedule. VERIFY" },
+  "copayment": { "display": "None (base); up to 50% optional (tiered)", "number": 0, "optional": false, "note": "Co-payment optional (Tiered Network up to 50% for non-network). Base assumed nil. VERIFY chosen variant" },
+  "sub_limits": { "display": "Per schedule (configurable)", "ordinal": 3, "optional": false, "note": "Room/disease sub-limit options per schedule. VERIFY" },
+  "deductible": { "display": "Annual aggregate deductible (per schedule)", "number": null, "optional": false, "note": "Top-up: cover commences only once Annual Aggregate Deductible exhausted. Deductible amount per Policy Schedule (e.g. base SI of underlying plan). VERIFY chosen value" },
+
+  "initial_waiting": { "display": "30 days (range 0-30)", "number": 30, "optional": false, "note": "Initial waiting period range 0-30 days per schedule" },
+  "ped_waiting": { "display": "36 months (range 0-36)", "number": 36, "optional": false, "note": "PED waiting range 0-36 months per schedule; baseline taken as max. VERIFY chosen value" },
+  "specific_disease_waiting": { "display": "36 months (range 0-36)", "number": 36, "optional": false, "note": "Specific disease waiting range 0-36 months per schedule" },
+  "maternity": { "display": "Covered (optional, up to 2 deliveries)", "exists": true, "optional": true, "note": "Maternity benefit available (twice during cover); subject to continuous coverage requirement and schedule. VERIFY if inbuilt or optional in chosen variant" },
+
+  "cumulative_bonus": { "display": "Cumulative Bonus (per schedule)", "number": null, "optional": false, "note": "Cumulative bonus benefit referenced; rate/max per schedule. VERIFY" },
+  "restoration": { "display": "Re-Fill SI Benefit (per schedule)", "ordinal": 3, "optional": false, "note": "Re-Fill Sum Insured benefit available (not applicable on maternity claims); terms per schedule. VERIFY trigger/extent" },
+
+  "pre_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "Pre-hospitalization days per Policy Schedule. VERIFY" },
+  "post_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "Post-hospitalization days per Policy Schedule. VERIFY" },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY domiciliary cover" },
+  "ayush": { "display": "Covered (AYUSH Benefit)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Road ambulance (per schedule)", "number": null, "optional": false, "note": "Emergency road ambulance; limit per schedule. VERIFY" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false },
+  "consumables": { "display": "Covered (allowable)", "exists": true, "optional": false, "note": "Allowable consumables under inpatient charges" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "Treatments in India only unless specified in benefit" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY grace period" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY" },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Top-up with aggregate deductible (loan-linked group product); India-only; highly schedule-configured; tiered-network co-pay option" },
+  "optional_riders": { "display": "Critical Illness Cover, Maternity, Re-Fill SI, OPD/consultations, Tiered Network co-pay, room category options" }
+}

@@ -1,0 +1,42 @@
+{
+  "uin": "NIAHLIP25051V032425",
+  "insurer": "New India Assurance",
+  "plan_name": "New India Senior Citizen Mediclaim Policy",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "_pdf_inbox/_txt/nia-senior-citizen-mediclaim.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "1% of SI/day", "ordinal": 3, "optional": false, "note": "Room/boarding/nursing up to 1% of SI per day; room+ICU overall capped at 25% of SI" },
+  "icu": { "display": "2% of SI/day", "ordinal": 3, "optional": false, "note": "ICU/ICCU up to 2% of SI per day; room+ICU overall limit 25% of SI" },
+  "copayment": { "display": "10% on all claims", "number": 10, "optional": false, "note": "Mandatory: liability = lesser of SI or 90% of admissible claim (Clause 5.17)" },
+  "sub_limits": { "display": "Many sub-limits", "ordinal": 1, "optional": false, "note": "Disease-wise surgical caps (e.g. appendicectomy ₹10k, cholecystectomy ₹22k, prostate ₹16k, hernia ₹18k); modern treatments all 10% of SI; surgeon fees capped 25-50% of SI" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Diabetes & Hypertension covered from inception on extra premium" },
+  "specific_disease_waiting": { "display": "18 months", "number": 18, "optional": false, "note": "Tiered 90 days / 18 mo / 36 mo lists; listed-disease bulk at 18 months" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity expressly excluded (Excl18, Clause 4.4.15)" },
+
+  "cumulative_bonus": { "display": "Up to 30% (5%/yr)", "number": 30, "optional": false, "note": "+5% SI per claim-free year, max 30%; reduced at same rate on claim" },
+  "restoration": { "display": "Not specified", "ordinal": null, "optional": false, "note": "VERIFY - no SI restoration/reinstatement clause found" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false, "note": "Capped at max 5% of hospital bill" },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false, "note": "Capped at max 10% of hospital bill" },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY - domiciliary defined; inclusion/exclusion not confirmed" },
+  "ayush": { "display": "Covered up to 100% SI", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "Donor hospitalisation expenses (excl. organ cost) within SI (Clause 3.6)" },
+  "ambulance": { "display": "₹1,000 max", "number": 1000, "optional": false },
+  "modern_treatments": { "display": "Covered (10% of SI each)", "exists": true, "optional": false, "note": "All listed modern treatments capped at 10% of SI per policy period" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY - non-medical/consumables cover not confirmed" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "All treatment must be taken in India (Clause 5.14)" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded; treatment must be in India; heavy disease-wise surgical sub-limits; standard IRDAI Excl01-18" },
+  "optional_riders": { "display": "Diabetes/Hypertension cover from inception (extra premium)" }
+}

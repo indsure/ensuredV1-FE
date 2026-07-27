@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP27054V032627",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "ReAssure 2.0",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/ReAssure-2-0-Policy-Wording.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹5L – ₹1Cr+ (base; up to 11x via Booster+/ReAssure)",
+
+  "room_rent": { "display": "Single Private Room", "ordinal": 4, "optional": false, "note": "No room-rent cap on eligible expenses; room category modifiable (Single Private / Sharing) via Room Type Modification" },
+  "icu": { "display": "Up to Base SI", "ordinal": 5, "optional": false, "note": "ICU admission always paid up to Base Sum Insured" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory base co-pay; optional co-payment available to reduce premium" },
+  "sub_limits": { "display": "Cataract sub-limit", "ordinal": 3, "optional": false, "note": "Cataract: mono-focal lens only for SI up to ₹10L; otherwise no major sub-limits" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Annual Aggregate Deductible is an optional cost-sharing choice" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Modifiable (increase/reduce) via PED Waiting Time Modification optional" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Cancer 30-day wait; accident from day 1" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity excluded (Excl18)" },
+
+  "cumulative_bonus": { "display": "Booster+ carry-forward (up to 3/5/10x SI)", "number": 100, "optional": false, "note": "Unutilized Base SI carries forward, accumulating up to 3/5/10x Base SI based on variant (not a flat NCB %)" },
+  "restoration": { "display": "Unlimited (ReAssure Forever)", "ordinal": 5, "optional": false, "note": "First paid claim triggers ReAssure Forever — unlimited reinstatement of Base SI for life of policy" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered (Home Care)", "exists": true, "optional": false },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false, "note": "India only; Yoga/Naturopathy need prior approval" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Road up to SI; Air ₹2.5L", "number": 999999, "optional": false, "note": "Road ambulance up to SI; air ambulance max ₹2,50,000/hospitalization" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "12 modern treatments incl. robotic surgery, stem cell, deep brain stimulation" },
+  "consumables": { "display": "Safeguard optional", "exists": true, "optional": true, "note": "Non-medical consumables via optional Safeguard/Safeguard+ cover" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "Cover for treatments in India only" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly instalment mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded; AYUSH/treatment India only; cataract mono-focal lens limit; standard Excl01–18" },
+  "optional_riders": { "display": "Safeguard/Safeguard+ (consumables), PED Waiting modification, Room Type modification, Annual Aggregate Deductible, Co-payment" }
+}

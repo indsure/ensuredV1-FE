@@ -1,0 +1,42 @@
+{
+  "uin": "SBIHLIP21043V012122",
+  "insurer": "SBI General Insurance",
+  "plan_name": "Arogya Supreme",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "sbi/AROGYA-SUPREME-Policy-Wording-NEW-1-8dd1b90eac.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹1L – ₹50L",
+
+  "room_rent": { "display": "1% of SI/day (or Single Pvt AC room)", "ordinal": 3, "optional": false, "note": "Options per schedule: 1% of base SI/day OR Single Private AC room OR at actuals up to SI; baseline is capped" },
+  "icu": { "display": "2% of SI/day (or actuals)", "ordinal": 3, "optional": false, "note": "Options: 2% of base SI/day OR actual ICU/ICCU OR at actuals up to SI" },
+  "copayment": { "display": "None (optional 10%/20%)", "number": 0, "optional": false, "note": "No mandatory co-pay on base; optional voluntary co-pay 10%/20% (Section E.6) for premium discount" },
+  "sub_limits": { "display": "Few sub-limits", "ordinal": 3, "optional": false, "note": "Caps on genetic disorder (₹1L), bariatric, congenital (25% SI); main IPD up to SI" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Deductible does not reduce SI; not standard" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "PED waiting 36 months continuous coverage" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity excluded (Code-Excl 18)" },
+
+  "cumulative_bonus": { "display": "Up to 100% (15%/yr)", "number": 100, "optional": false, "note": "15% of base SI per claim-free year, max 100%; reduced at same rate on claim" },
+  "restoration": { "display": "100% Refill, once/yr", "ordinal": 3, "optional": false, "note": "Sum Insured Refill 100% base SI once/policy year on full/partial utilization; single claim cannot exceed base SI + bonus" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false, "note": "30 or 60 days per schedule; baseline 60" },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false, "note": "60/90/180 days per schedule; baseline 90 (up to 180 available)" },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false, "note": "Indicative day-care list in Annexure-II" },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Up to SI" },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false, "note": "In-patient AYUSH in govt/AYUSH hospital, within India" },
+  "organ_donor": { "display": "Covered up to SI", "exists": true, "optional": false },
+  "ambulance": { "display": "₹3,000–₹7,000/hosp", "number": 3000, "optional": false, "note": "₹3,000 / ₹5,000 / ₹7,000 per schedule; baseline ₹3,000" },
+  "modern_treatments": { "display": "Covered (incl. robotic)", "exists": true, "optional": false, "note": "Advance procedures incl. robotic surgeries" },
+  "consumables": { "display": "Not covered", "exists": false, "optional": false, "note": "Non-medical/consumable items not separately covered" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "Domestic emergency assistance only; no overseas cover" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "30 days (annual/half-yearly/quarterly); 15 days for monthly instalment" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity (Excl 18); genetic disorder & congenital sub-limited; standard IRDAI exclusions" },
+  "optional_riders": { "display": "Voluntary co-pay (10%/20%), pre/post-hosp & SI-refill tier options, Recovery/Compassionate-visit add-ons" }
+}

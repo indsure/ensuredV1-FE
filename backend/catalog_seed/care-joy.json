@@ -1,0 +1,42 @@
+{
+  "uin": "RHIHLIP21373V022021",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Joy",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care/joy-t-c-effective-from-12-september-2024.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "Single Private AC Room", "ordinal": 4, "optional": false, "note": "Eligible room: Single Private Room with A.C.; proportionate deduction if a higher category is used. Maternity & newborn focused plan" },
+  "icu": { "display": "Not specified", "ordinal": 0, "optional": false, "note": "VERIFY - ICU charge eligibility not explicitly stated separately; likely per schedule" },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No mandatory base co-pay found. VERIFY" },
+  "sub_limits": { "display": "Few/minor sub-limits", "ordinal": 3, "optional": false, "note": "Maternity benefit is capped to a separate Maternity Cover sub-limit per schedule. VERIFY other cappings" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Deductible only if optionally opted. VERIFY" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "Excl03 first 30-day waiting period" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Excl01: PED excluded until 36 months continuous coverage" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl02 Named Ailment Waiting Period: 24 months" },
+  "maternity": { "display": "Covered (9mo wait)", "exists": true, "number": 9, "optional": false, "note": "Core inbuilt benefit. Multi-variant: Plan Joy Today = 9-month maternity wait (baselined); Plan Joy Tomorrow = 24-month wait. Maternity admissible only if insured age 45 or below. Includes pre/post-natal, New Born Baby Cover & New Born Birth Defects" },
+
+  "cumulative_bonus": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY - no active No-Claim/Cumulative Bonus benefit found (term appears only in definitions); maternity-focused plan likely has none" },
+  "restoration": { "display": "Not specified", "ordinal": null, "optional": false, "note": "VERIFY - no restoration/recharge benefit found in this maternity-focused plan" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false, "note": "Day Care Treatment defined and covered" },
+  "domiciliary": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY - domiciliary defined but active benefit not confirmed" },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false, "note": "Benefit 7 AYUSH Treatments" },
+  "organ_donor": { "display": "Not covered", "exists": false, "optional": false, "note": "Donor treatment expenses appear in exclusions; no Organ Donor benefit found. VERIFY" },
+  "ambulance": { "display": "Covered (per schedule)", "number": 999999, "optional": false, "note": "Benefit 3 Ambulance Cover up to specified amount. VERIFY ₹ limit" },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false, "note": "Advance Technology Methods under Benefit 1" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "Treatment within India only (AYUSH clause); no overseas cover" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "5 continuous years per IRDAI" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY - standard 30-day free look (Care standard)" },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity-focused plan; maternity only if age <=45; ectopic pregnancy & MTP <12 weeks excluded under maternity; donor treatment excluded" },
+  "optional_riders": { "display": "VERIFY - optional covers not clearly enumerated in reviewed sections" }
+}

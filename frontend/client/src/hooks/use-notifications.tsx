@@ -7,22 +7,32 @@ export function useNotifications() {
     // Check if browser supports notifications
     if ("Notification" in window) {
       setPermission(Notification.permission);
-      
-      // Listen for permission changes
+
+      // Re-check permission when the user is likely to have changed it in
+      // browser settings (returning focus to the tab / making it visible).
+      // This replaces a wasteful 1s polling timer.
       const checkPermission = () => {
         setPermission(Notification.permission);
       };
-      
-      // Check permission periodically (in case user changes it in browser settings)
-      const interval = setInterval(checkPermission, 1000);
-      
-      return () => clearInterval(interval);
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          checkPermission();
+        }
+      };
+
+      window.addEventListener("focus", checkPermission);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+
+      return () => {
+        window.removeEventListener("focus", checkPermission);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      };
     }
   }, []);
 
   const requestPermission = async (): Promise<boolean> => {
     if (!("Notification" in window)) {
-      console.log("This browser does not support notifications");
       return false;
     }
 
@@ -41,7 +51,6 @@ export function useNotifications() {
 
   const showNotification = (title: string, options?: NotificationOptions) => {
     if (!("Notification" in window)) {
-      console.warn("Browser does not support notifications");
       return;
     }
 
@@ -61,10 +70,8 @@ export function useNotifications() {
         
         return notification;
       } catch (err) {
-        console.error("Failed to create notification:", err);
       }
     } else {
-      console.warn("Notification permission not granted. Current permission:", Notification.permission);
     }
   };
 

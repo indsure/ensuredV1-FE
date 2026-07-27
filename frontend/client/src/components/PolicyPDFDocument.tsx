@@ -400,17 +400,32 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
 
     const renderWaitingPeriod = (title: string, wp: any, durationDays: number, keyIndex?: number) => {
         if (!wp || wp.relevant === false) return null;
+
+        // No duration anywhere in the document — do not infer "Served" from a zero duration.
+        if (wp.duration_months == null) {
+            return (
+                <View style={styles.wpRow} key={keyIndex}>
+                    <View style={styles.wpHeader}>
+                        <Text style={styles.wpTitle}>{title}</Text>
+                        <Text style={styles.wpStatusPending}>⚠ Not stated — verify with insurer</Text>
+                    </View>
+                </View>
+            );
+        }
+
+        // Estimated (e.g. PED derived from the specific-illness waiting period).
+        const estimated = wp.stated === false;
         const isResolved = wp.is_active_today === false || (wp.months_remaining === 0) || (policyAgeDays >= durationDays);
         const progress = isResolved ? 100 : Math.min(100, Math.max(0, (policyAgeDays / durationDays) * 100));
 
         return (
             <View style={styles.wpRow} key={keyIndex}>
                 <View style={styles.wpHeader}>
-                    <Text style={styles.wpTitle}>{title}</Text>
+                    <Text style={styles.wpTitle}>{title}{estimated ? " (est.)" : ""}</Text>
                     {isResolved ? (
-                        <Text style={styles.wpStatusServed}>✓ Served</Text>
+                        <Text style={styles.wpStatusServed}>✓ Served{estimated ? " (est.)" : ""}</Text>
                     ) : (
-                        <Text style={styles.wpStatusPending}>⏳ Pending ({wp.months_remaining} mo left)</Text>
+                        <Text style={styles.wpStatusPending}>⏳ Pending ({wp.months_remaining} mo left){estimated ? ", est." : ""}</Text>
                     )}
                 </View>
                 {!isResolved && (
@@ -459,6 +474,11 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
                     <View style={styles.scoreBox}>
                         <Text style={styles.scoreNumber}>{data.audit_score.score}</Text>
                         <Text style={styles.scoreLabel}>Audit Score</Text>
+                        {data.audit_score.bucket_label && (
+                            <Text style={{ fontSize: 8, marginTop: 2, color: '#64748B', fontWeight: 600 }}>
+                                {data.audit_score.bucket_label}
+                            </Text>
+                        )}
                         <Text style={{ fontSize: 7, marginTop: 4, color: '#94A3B8' }}>NCAR: {data.audit_score.ncar.toFixed(2)}x</Text>
                     </View>
                     <View style={styles.verdictSummaryBox}>

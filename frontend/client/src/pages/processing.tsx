@@ -37,25 +37,9 @@ export default function Processing() {
     }
   }, [status, setLocation]);
 
-  // Poll for job status (Fallback)
-  useEffect(() => {
-    const jobId = currentJobId || sessionStorage.getItem("ensured_current_job");
-    if (!jobId || jobId.startsWith("legacy-")) return;
-
-    const pollStatus = async () => {
-      const status = await checkJobStatus(jobId);
-      if (status.status === "completed" && status.result) {
-        sessionStorage.setItem("ensured_report", JSON.stringify(status.result));
-        sessionStorage.removeItem("ensured_current_job");
-        setTimeout(() => setLocation("/report"), 800);
-      } else if (status.status === "failed") {
-        sessionStorage.removeItem("ensured_current_job");
-      }
-    };
-
-    const interval = setInterval(pollStatus, 3000);
-    return () => clearInterval(interval);
-  }, [currentJobId, checkJobStatus, setLocation]);
+  // Polling is handled centrally in AnalysisProvider (use-analysis.tsx).
+  // A second polling loop here previously caused a race condition where both
+  // could call setLocation('/report') at the same time.
 
   // Simulate Forensic Progress (Steps + Insights)
   useEffect(() => {

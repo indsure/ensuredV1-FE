@@ -54,14 +54,14 @@ You MUST output a single valid JSON object matching this structure. Use specific
     "top_up": { "exists": false, "sum_insured": null, "deductible": null, "type": "unclear", "deductible_achievable": null, "remarks": "N/A for Vehicle" },
     "super_top_up": { "exists": false, "sum_insured": null, "deductible": null, "deductible_achievable": null, "remarks": "N/A for Vehicle" },
     "restoration": { "exists": false, "type": null, "restore_amount": null, "trigger_conditions": null, "actually_useful": null, "remarks": "N/A for Vehicle" },
-    "no_claim_bonus": { 
-      "exists": true, 
-      "rate_per_year": 20, 
-      "cap_percentage": 50, 
-      "current_bonus": 20, 
-      "portability": "yes", 
-      "clarity": "clear", 
-      "remarks": "NCB valid on renewal" 
+    "no_claim_bonus": {
+      "exists": true,
+      "rate_per_year": 20,
+      "cap_percentage": 50,
+      "current_bonus": 20,
+      "portability": "yes",
+      "clarity": "clear",
+      "remarks": "NCB valid on renewal"
     },
     "riders": [
       {

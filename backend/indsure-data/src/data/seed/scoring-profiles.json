@@ -1,0 +1,74 @@
+[
+  {
+    "id": "balanced",
+    "displayName": "Balanced Profile",
+    "description": "Default balanced approach weighing coverage, cost, and insurer performance equally",
+    "weights": {
+      "coverage_adequacy": 20,
+      "cost": 15,
+      "waiting_periods": 10,
+      "exclusions_sublimits": 10,
+      "maternity_family_fit": 5,
+      "insurer_claim_performance": 15,
+      "insurer_complaint_rate": 10,
+      "insurer_financial_health": 5,
+      "network_strength": 5,
+      "renewal_terms": 5
+    },
+    "recommendedFor": "Most users seeking a comprehensive evaluation of policy quality and insurer reliability"
+  },
+  {
+    "id": "cost_focused",
+    "displayName": "Cost-Prioritized Profile",
+    "description": "Emphasizes affordability and value for money while maintaining basic coverage standards",
+    "weights": {
+      "coverage_adequacy": 15,
+      "cost": 30,
+      "waiting_periods": 10,
+      "exclusions_sublimits": 10,
+      "maternity_family_fit": 5,
+      "insurer_claim_performance": 10,
+      "insurer_complaint_rate": 5,
+      "insurer_financial_health": 5,
+      "network_strength": 5,
+      "renewal_terms": 5
+    },
+    "recommendedFor": "Budget-conscious users who prioritize premium affordability over maximum coverage"
+  },
+  {
+    "id": "coverage_focused",
+    "displayName": "Coverage-Prioritized Profile",
+    "description": "Maximizes coverage breadth and depth, ideal for comprehensive protection needs",
+    "weights": {
+      "coverage_adequacy": 30,
+      "cost": 10,
+      "waiting_periods": 15,
+      "exclusions_sublimits": 15,
+      "maternity_family_fit": 10,
+      "insurer_claim_performance": 10,
+      "insurer_complaint_rate": 5,
+      "insurer_financial_health": 3,
+      "network_strength": 2,
+      "renewal_terms": 0
+    },
+    "recommendedFor": "Users with higher health risks, families, or those seeking maximum protection regardless of cost"
+  },
+  {
+    "id": "claims_focused",
+    "displayName": "Claims-Experience-Prioritized Profile",
+    "description": "Emphasizes insurer's claim settlement track record and customer service quality",
+    "weights": {
+      "coverage_adequacy": 20,
+      "cost": 10,
+      "waiting_periods": 10,
+      "exclusions_sublimits": 10,
+      "maternity_family_fit": 0,
+      "insurer_claim_performance": 20,
+      "insurer_complaint_rate": 10,
+      "insurer_financial_health": 10,
+      "network_strength": 5,
+      "renewal_terms": 5
+    },
+    "recommendedFor": "Users with significant pre-existing diseases, older ages, or imminent surgery needs who prioritize smooth claim settlement"
+  }
+]

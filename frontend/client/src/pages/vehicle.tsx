@@ -24,7 +24,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-import { useAnalysis } from "@/hooks/use-analysis";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
@@ -33,11 +32,10 @@ import { loadSampleReport, mockReportVehicle } from "@/lib/mock-data";
 
 export default function VehiclePage() {
   const [, setLocation] = useLocation();
-  const { analyze, error: analysisError, clearAuditState } = useAnalysis();
 
   // SEO
   useSEO({
-    title: "Know Your Vehicle Coverage Before Claim Time | Vehicle Insurance Analyzer | Ensured",
+    title: "Know Your Vehicle Coverage Before Claim Time | Vehicle Insurance Analyzer | IndSure",
     description: "Upload your car or bike policy. Instantly see if you're third-party or comprehensive, your actual deductibles, IDV, no-claim bonus impact, and what a ₹50k or ₹2L accident will really cost you.",
     keywords: "vehicle insurance analyzer, car insurance checker, motor insurance policy checker, vehicle insurance explained, comprehensive vs third party, IDV calculator, NCB impact",
     canonical: "/vehicle",
@@ -68,130 +66,13 @@ export default function VehiclePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileSize, setFileSize] = useState<string | null>(null);
 
-  // Helper function to store file in sessionStorage
-  const storeFileInSession = async (file: File): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      try {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          try {
-            const base64String = reader.result as string;
-            sessionStorage.setItem("ensured_pending_file", JSON.stringify({
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              data: base64String,
-            }));
-            resolve();
-          } catch (err) {
-            reject(err);
-          }
-        };
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  };
-
-  // Helper function to restore file from sessionStorage
-  const restoreFileFromSession = (): File | null => {
-    try {
-      const stored = sessionStorage.getItem("ensured_pending_file");
-      if (stored) {
-        const fileData = JSON.parse(stored);
-        // Convert base64 back to blob, then to File
-        const byteCharacters = atob(fileData.data.split(',')[1]);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: fileData.type });
-        const file = new File([blob], fileData.name, { type: fileData.type });
-        sessionStorage.removeItem("ensured_pending_file");
-        return file;
-      }
-    } catch (err) {
-      console.error("Failed to restore file from sessionStorage:", err);
-    }
-    return null;
-  };
-
-
-  // Format file size
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
-  };
-
-  const onDrop = async (acceptedFiles: File[]) => {
+  // Analysis now requires a free account (D2C hard wall). Dropping a file
+  // funnels the visitor to signup rather than running the retired anonymous
+  // analyze path. The upload card below is kept as-is pending the LoB-page
+  // redesign; it simply routes here.
+  const onDrop = (acceptedFiles: File[]) => {
     if (!acceptedFiles.length) return;
-
-    const file = acceptedFiles[0];
-
-    // Validate file type
-    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'text/plain'];
-    const isValidType = validTypes.includes(file.type) ||
-      file.name.toLowerCase().endsWith('.pdf') ||
-      file.name.toLowerCase().endsWith('.png') ||
-      file.name.toLowerCase().endsWith('.jpg') ||
-      file.name.toLowerCase().endsWith('.jpeg');
-
-    if (!isValidType) {
-      setError(`Unsupported file type. Please upload a PDF, PNG, JPG, or text file.`);
-      return;
-    }
-
-    // Validate file size (max 25MB)
-    const maxSize = 25 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setError(`File is too large (${formatFileSize(file.size)}). Maximum size is 25 MB.`);
-      return;
-    }
-
-    setSelectedFile(file);
-    setFileSize(formatFileSize(file.size));
-    setError(null);
-
-    // Store file in sessionStorage
-    await storeFileInSession(file);
-
-    sessionStorage.removeItem("ensured_report");
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    setUploading(true);
-    setLocation("/processing");
-
-    try {
-      clearAuditState();
-      await analyze(file, "vehicle");
-      // If successful, job is created and processing page will poll for status
-    } catch (err: any) {
-      console.error("Analysis failed:", err);
-
-
-      let errorMessage = "Analysis failed";
-      if (err?.message) {
-        if (err.message.includes("timeout") || err.message.includes("took too long")) {
-          errorMessage = "Analysis timed out. This can happen with very large documents. Please try again.";
-        } else if (err.message.includes("encrypted") || err.message.includes("password")) {
-          errorMessage = "PDF is encrypted. Please unlock your PDF and try again.";
-        } else if (err.message.includes("quota") || err.message.includes("429")) {
-          errorMessage = "API is busy. This usually clears in a few seconds. Please try again.";
-        } else {
-          errorMessage = err.message;
-        }
-      }
-
-      setError(errorMessage);
-      setLocation("/vehicle");
-      setUploading(false);
-    }
+    setLocation("/signup");
   };
 
   const dropzoneOptions = {
@@ -394,14 +275,18 @@ export default function VehiclePage() {
                               <span className="text-xs font-medium text-[#0F1419] dark:text-[#FAFBFC]">Private</span>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); loadSampleReport(mockReportVehicle); setLocation("/report?sample=vehicle"); }}
-                            className="mt-3 text-xs font-medium text-[#00B4D8] hover:underline inline-flex items-center gap-1"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                            View sample report
-                          </button>
+                          <div className="pt-2 w-full flex justify-center">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={(e) => { e.stopPropagation(); loadSampleReport(mockReportVehicle); setLocation("/report?sample=vehicle"); }}
+                              className="w-full max-wxs border-[#00B4D8] text-[#00B4D8] hover:bg-[#00B4D8]/10 hover:text-[#00B4D8] h-10 font-bold shadow-sm relative overflow-hidden group"
+                            >
+                              <div className="absolute inset-0 bg-[#00B4D8]/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 slant" />
+                              <FileText className="w-4 h-4 mr-2" />
+                              View sample vehicle analysis
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -413,7 +298,7 @@ export default function VehiclePage() {
         </div>
       </section>
 
-      {/* How Ensured Works Section */}
+      {/* How IndSure Works Section */}
       <section className="relative z-10 py-8 md:py-12 px-6">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl md:text-[48px] font-semibold text-center text-black dark:text-[#FAFBFC] mb-12 md:mb-16 leading-[1.15] tracking-[-0.01em]">

@@ -1,0 +1,42 @@
+{
+  "uin": "CHIHLIP26053V032526",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Care Heart",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care/care-heart-policy-terms-and-conditions-effective-f.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "₹3L+ (variant dependent)",
+
+  "room_rent": { "display": "Single Private Room", "ordinal": 4, "optional": false, "note": "Per schedule; cardiac-focused plan (covers persons with existing heart conditions)" },
+  "icu": { "display": "Up to 2% of SI/day (or no separate limit)", "ordinal": 3, "optional": false, "note": "ICU 2% of SI/day option; no separate ICU restriction option per schedule" },
+  "copayment": { "display": "Co-pay per schedule (mandatory)", "number": 20, "optional": false, "note": "VERIFY exact %; mandatory co-pay per schedule, +10% per claim once eldest insured turns 71" },
+  "sub_limits": { "display": "Few/minor sub-limits", "ordinal": 3, "optional": false, "note": "VERIFY; cardiac-condition specific terms per schedule" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl01 PED waiting 24 months; cardiac condition covered with stated waiting per schedule" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity permanent exclusion (Excl18)" },
+
+  "cumulative_bonus": { "display": "Up to 50% (10%/yr)", "number": 50, "optional": false, "note": "No Claims Bonus 10%/yr flat up to 50%; reduces 10% on claim" },
+  "restoration": { "display": "Recharge of Sum Insured", "ordinal": 3, "optional": false, "note": "Benefit 7 Recharge inbuilt; VERIFY trigger scope" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "Covered (listed)", "exists": true, "optional": false, "note": "Day care per Annexure-I" },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered", "exists": true, "optional": false, "note": "Benefit 3 AYUSH Treatment" },
+  "organ_donor": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "ambulance": { "display": "Covered", "number": 999999, "optional": false, "note": "Limit per schedule" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "VERIFY scope" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "global_cover": { "display": "Optional", "exists": true, "optional": true, "note": "International Second Opinion (optional)" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); cardiac-condition plan with schedule-specified co-pay; standard IRDAI exclusions" },
+  "optional_riders": { "display": "OPD Care, International Second Opinion, Cardiac Health Check-up extensions" }
+}

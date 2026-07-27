@@ -1,0 +1,42 @@
+{
+  "uin": "RELHLGP21524V022021",
+  "insurer": "IndusInd General Insurance",
+  "plan_name": "IndusInd Yes Plus Health Insurance",
+  "product_type": "top_up",
+  "source_file": "indusind/indusind-yes-plus-health-insurance-pw.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "At actuals (no cap)", "ordinal": 5, "optional": false, "note": "No room-rent sub-limit stated in base In-Patient Treatment" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false, "note": "ICU paid under base hospitalisation; no cap stated" },
+  "copayment": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: co-payment 'if applicable' per Certificate of Insurance; no fixed base value in wording" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false, "note": "No disease-wise capping in base; Modern Treatment capped at 50% SI" },
+  "deductible": { "display": "Aggregate Deductible (per certificate)", "number": null, "optional": false, "note": "VERIFY: super-top-up structure - claims pay only ABOVE annual Aggregate Deductible specified in Certificate of Insurance; amount not in wording" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "Excl03 (First 30 Days)" },
+  "ped_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl01" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl02" },
+  "maternity": { "display": "Covered (above deductible)", "exists": true, "optional": false, "note": "Benefit-3 inbuilt; payable above Aggregate Deductible per certificate" },
+
+  "cumulative_bonus": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: no cumulative/no-claim bonus benefit found (group super-top-up)" },
+  "restoration": { "display": "Not covered", "ordinal": 0, "optional": false, "note": "No SI restoration/reinstatement benefit found (Benefits 1-7 only)" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "Listed only (Annexure D)", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Benefit-2" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false, "note": "Benefit-5, above Aggregate Deductible" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "Benefit-4" },
+  "ambulance": { "display": "Rs 3,500/hosp", "number": 3500, "optional": false, "note": "Benefit-6 Ambulance Cover, Rs 3500 per hospitalization" },
+  "modern_treatments": { "display": "Covered (up to 50% SI)", "exists": true, "optional": false, "note": "Benefit-7 capped at 50% of SI" },
+  "consumables": { "display": "Covered", "exists": true, "optional": false, "note": "Medicines, drugs and Consumables listed under base In-Patient Treatment" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: no overseas/global cover found" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: grace period not clearly captured" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Group product (Master Policy Holder: Yes Bank Ltd); super-top-up with annual Aggregate Deductible; Modern Treatment capped 50% SI; standard IRDAI exclusions" },
+  "optional_riders": { "display": "Not specified - benefit set fixed (Benefits 1-7) per Certificate of Insurance" }
+}

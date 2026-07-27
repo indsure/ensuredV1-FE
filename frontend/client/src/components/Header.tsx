@@ -1,27 +1,34 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, Building2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-// ARCHIVED: import { useAuth } from "@/hooks/use-auth";
 import { motion, AnimatePresence } from "framer-motion";
 
+const navLinks = [
+  { label: "How It Works", href: "/how-it-works" },
+  { label: "Why IndSure", href: "/why-indsure" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Blog", href: "/blog" },
+];
+
 const toolsItems = [
+  { label: "What We Check", href: "/policychecker" },
   { label: "Calculator", href: "/calculator" },
-  { label: "Check My Coverage", href: "/policychecker" },
   { label: "Compare", href: "/compare" },
+  { label: "Find My Provider", href: "/find-provider" },
 ];
 
 export function Header() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const user: any = null; // ARCHIVED: const { user } = useAuth();
 
+  // Hooks MUST come before any conditional return
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
@@ -32,13 +39,17 @@ export function Header() {
     setMobileMenuOpen(false);
   }, [location]);
 
+  // Agent / Admin pages manage their own nav — render nothing here
+  if (location.startsWith("/agent") || location.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[var(--color-cream-main)] border-b border-[var(--color-border-light)] ${isScrolled ? "py-3 shadow-sm" : "py-5"
-        }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[var(--color-cream-main)] border-b border-[var(--color-border-light)] ${isScrolled ? "py-3 shadow-sm" : "py-5"}`}
     >
       <div className="container-editorial flex items-center justify-between">
 
@@ -46,26 +57,28 @@ export function Header() {
         <div className="flex items-center gap-8">
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer group">
-              <div className="w-8 h-8 bg-[var(--color-green-primary)] text-[var(--color-white)] flex items-center justify-center rounded-sm font-serif font-bold text-xl group-hover:bg-[var(--color-green-secondary)] transition-colors">
-                I
-              </div>
-              <span className="font-serif text-2xl font-bold tracking-tight text-[var(--color-text-main)]">
-                IndSure.
-              </span>
+              <img
+                src="/logo.png"
+                alt="IndSure"
+                className="h-10 w-auto group-hover:opacity-80 transition-opacity"
+              />
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/#how-it-works">
-              <span
-                className={`text-xs font-semibold tracking-[0.15em] uppercase cursor-pointer hover:text-[var(--color-green-primary)] transition-colors ${location === "/#how-it-works"
-                  ? "text-[var(--color-green-primary)]"
-                  : "text-[var(--color-text-main)]"
+          <nav className="hidden lg:flex items-center gap-6">
+            {navLinks.map((item) => (
+              <Link key={item.href} href={item.href}>
+                <span
+                  className={`text-xs font-semibold tracking-[0.15em] uppercase cursor-pointer hover:text-[var(--color-green-primary)] transition-colors ${
+                    location === item.href
+                      ? "text-[var(--color-green-primary)]"
+                      : "text-[var(--color-text-main)]"
                   }`}
-              >
-                How It Works
-              </span>
-            </Link>
+                >
+                  {item.label}
+                </span>
+              </Link>
+            ))}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -93,24 +106,35 @@ export function Header() {
           </nav>
         </div>
 
-        {/* ─── RIGHT: CTA + Login ─── */}
-        <div className="hidden md:flex items-center gap-6">
-          <Link href="/find-provider">
+        {/* ─── RIGHT: CTAs + Log in + Advisor Login ─── */}
+        <div className="hidden lg:flex items-center gap-4">
+          <Link href="/login">
+            <span className="text-xs font-semibold tracking-[0.12em] uppercase text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer">
+              Log In
+            </span>
+          </Link>
+
+          <Link href="/signup">
             <button className="px-5 py-2.5 text-sm font-semibold bg-[var(--color-green-primary)] text-white rounded-lg hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer shadow-md shadow-teal-900/10">
-              Find My Provider
+              Analyze My Policy — Free
             </button>
           </Link>
 
-          <Link href={user ? "/account" : "/login"}>
-            <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer">
-              {user ? user.username : "Login"}
-            </span>
-          </Link>
+          <div className="h-6 w-px bg-[var(--color-border-main)]" />
+
+          <button
+            onClick={() => setLocation("/agent")}
+            className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.12em] uppercase text-[var(--color-text-secondary)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer outline-none"
+          >
+            <Building2 className="w-4 h-4" />
+            Advisor Login
+          </button>
+
         </div>
 
         {/* ─── MOBILE TOGGLE ─── */}
         <button
-          className="md:hidden text-[var(--color-text-main)] p-1"
+          className="lg:hidden text-[var(--color-text-main)] p-1"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
@@ -126,17 +150,19 @@ export function Header() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="md:hidden overflow-hidden bg-[var(--color-cream-main)] border-t border-[var(--color-border-light)] shadow-xl"
+            className="lg:hidden overflow-hidden bg-[var(--color-cream-main)] border-t border-[var(--color-border-light)] shadow-xl"
           >
             <div className="container-editorial py-6 space-y-1">
-              <Link href="/#how-it-works">
-                <div
-                  className="py-3 px-3 rounded-lg text-sm font-semibold tracking-wide uppercase text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  How It Works
-                </div>
-              </Link>
+              {navLinks.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <div
+                    className="py-3 px-3 rounded-lg text-sm font-semibold tracking-wide uppercase text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.label}
+                  </div>
+                </Link>
+              ))}
 
               <div className="py-2 px-3">
                 <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[var(--color-text-muted)]">
@@ -156,23 +182,34 @@ export function Header() {
 
               <div className="border-t border-[var(--color-border-light)] my-3" />
 
-              <Link href="/find-provider">
+              <Link href="/login">
+                <div
+                  className="py-3 px-3 text-center rounded-lg text-sm font-semibold border border-[var(--color-border-main)] text-[var(--color-text-main)] hover:border-[var(--color-green-primary)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Log In
+                </div>
+              </Link>
+
+              <Link href="/signup">
                 <div
                   className="py-3 px-3 text-center rounded-lg text-sm font-semibold bg-[var(--color-green-primary)] text-white hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Find My Provider
+                  Analyze My Policy — Free
                 </div>
               </Link>
 
-              <Link href={user ? "/account" : "/login"}>
-                <div
-                  className="py-3 px-3 text-center rounded-lg text-sm font-semibold tracking-wide uppercase text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {user ? user.username : "Login"}
-                </div>
-              </Link>
+              <div
+                className="py-3 px-3 text-center rounded-lg text-sm font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer flex items-center justify-center gap-2"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setTimeout(() => setLocation("/agent"), 50);
+                }}
+              >
+                <Building2 className="w-4 h-4" />
+                Advisor Login
+              </div>
             </div>
           </motion.div>
         )}

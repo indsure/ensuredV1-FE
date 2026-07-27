@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP27053V022627",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Senior First",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/Senior-First-Policy-Wording.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": null,
+
+  "room_rent": { "display": "Per entitled room category", "ordinal": 4, "optional": false, "note": "Room eligibility per Policy Schedule; additional 10% co-pay if higher room opted. VERIFY exact eligibility" },
+  "icu": { "display": "Covered", "ordinal": 5, "optional": false, "note": "ICU/CCU/NICU covered under hospitalization; no explicit cap in text. VERIFY" },
+  "copayment": { "display": "20% (default 50%, selectable)", "number": 20, "optional": false, "note": "MANDATORY co-pay. Default 50% at inception, reducible to 40/30/20% (free choice, fixed for life). Senior-citizen plan. +10% if higher room than eligible" },
+  "sub_limits": { "display": "Few sub-limits", "ordinal": 3, "optional": false, "note": "Robotic surgery ₹1L/claim cap; other benefit sub-limits may apply. VERIFY" },
+  "deductible": { "display": "None (base)", "number": 0, "optional": false, "note": "Optional Annual Aggregate Deductible available (waives co-pay if opted)" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY — standard 30-day initial waiting assumed" },
+  "ped_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity excluded (Excl18); senior-citizen product" },
+
+  "cumulative_bonus": { "display": "Up to 100% (10%/yr)", "number": 100, "optional": false, "note": "Loyalty Additions +10% base SI per year up to 100%, regardless of claims" },
+  "restoration": { "display": "Unlimited (ReAssure)", "ordinal": 5, "optional": false, "note": "ReAssure triggers on first paid claim, unlimited SI in the year; max per single claim = base SI" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Min 3 consecutive days; no room/unable to reach hospital" },
+  "ayush": { "display": "Covered (AYUSH hospital)", "exists": true, "optional": false, "note": "Min 24h admission required" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Road ₹2,000; Air ₹2.5L", "number": 2000, "optional": false, "note": "Road ambulance ₹2,000 + air ambulance ₹2.5L per hospitalisation (emergency only)" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "Robotic surgery ₹1L/claim cap on most procedures" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY — food/toiletries/cosmetics excluded; non-medical consumables not confirmed" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "India-only product (allopathic + AYUSH in India)" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Mandatory co-pay (min 20%); maternity excluded; India-only; non-invasive angiography & peritoneal-dialysis automation excluded" },
+  "optional_riders": { "display": "Annual Aggregate Deductible (waives co-pay); VERIFY full optional list" }
+}

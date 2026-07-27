@@ -81,8 +81,8 @@ export function LifeInsuranceComparer() {
   // SEO
   useSEO({
     title: compareType === "term" 
-      ? "Compare Term Life Insurance Plans | Pure Protection Comparison | Ensured"
-      : "Compare Term Life Insurance Plans | Best Life Insurance Comparison | Ensured",
+      ? "Compare Term Life Insurance Plans | Pure Protection Comparison | IndSure"
+      : "Compare Term Life Insurance Plans | Best Life Insurance Comparison | IndSure",
     description: compareType === "term"
       ? `Compare top term life insurance plans: HDFC, ICICI, Religare, LIC, Canara HSBC. Pure protection, maximum coverage per rupee. See premiums, claim settlement ratios, riders for ₹${(sumAssured / 10000000).toFixed(1)}cr coverage.`
       : `Compare top term life insurance plans: HDFC, ICICI, Religare, LIC, Canara HSBC. See premiums, claim settlement ratios, riders, and get unbiased recommendations for ₹${(sumAssured / 10000000).toFixed(1)}cr coverage.`,

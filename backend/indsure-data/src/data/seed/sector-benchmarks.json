@@ -1,0 +1,58 @@
+[
+  {
+    "fiscalYear": "FY 2022-23",
+    "segment": "OVERALL_NON_LIFE",
+    "metricName": "ICR",
+    "value": 82.95,
+    "sourceCitation": "Research §3.1 - IRDAI Annual Report 2023-24"
+  },
+  {
+    "fiscalYear": "FY 2023-24",
+    "segment": "OVERALL_NON_LIFE",
+    "metricName": "ICR",
+    "value": 82.52,
+    "sourceCitation": "Research §3.1 - IRDAI Annual Report 2023-24"
+  },
+  {
+    "fiscalYear": "FY 2022-23",
+    "segment": "PSU",
+    "metricName": "ICR",
+    "value": 99.02,
+    "sourceCitation": "Research §3.1 - IRDAI Annual Report 2023-24"
+  },
+  {
+    "fiscalYear": "FY 2023-24",
+    "segment": "PSU",
+    "metricName": "ICR",
+    "value": 97.23,
+    "sourceCitation": "Research §3.1 - IRDAI Annual Report 2023-24"
+  },
+  {
+    "fiscalYear": "FY 2022-23",
+    "segment": "PRIVATE_GENERAL",
+    "metricName": "ICR",
+    "value": 75.13,
+    "sourceCitation": "Research §3.1 - IRDAI Annual Report 2023-24"
+  },
+  {
+    "fiscalYear": "FY 2023-24",
+    "segment": "PRIVATE_GENERAL",
+    "metricName": "ICR",
+    "value": 76.49,
+    "sourceCitation": "Research §3.1 - IRDAI Annual Report 2023-24"
+  },
+  {
+    "fiscalYear": "FY 2022-23",
+    "segment": "SAHI",
+    "metricName": "ICR",
+    "value": 61.44,
+    "sourceCitation": "Research §3.1 - IRDAI Annual Report 2023-24"
+  },
+  {
+    "fiscalYear": "FY 2023-24",
+    "segment": "SAHI",
+    "metricName": "ICR",
+    "value": 63.63,
+    "sourceCitation": "Research §3.1 - IRDAI Annual Report 2023-24"
+  }
+]

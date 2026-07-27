@@ -1,29 +1,34 @@
-import dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
-
+import "./loadEnv";
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import cors from "cors";
-import session from "express-session";
+import rateLimit from "express-rate-limit";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import fetch, { Headers as NodeFetchHeaders, Request as NodeFetchRequest, Response as NodeFetchResponse } from "node-fetch";
 
-// Fix Node 18+ undici fetch IPv6 timeout issues with Gemini
+
 globalThis.fetch = fetch as any;
 globalThis.Headers = NodeFetchHeaders as any;
 globalThis.Request = NodeFetchRequest as any;
 globalThis.Response = NodeFetchResponse as any;
 
-import { registerRoutes, analysisJobs } from "./routes";
+import { registerRoutes, analysisJobs, getUserIdFromToken } from "./routes";
 import { serveStatic } from "./static";
 import { SACH_AI_SYSTEM_PROMPT } from "./sachAI.prompt";
-// ARCHIVED: import authRouter from "./auth";
+import { logGeminiUsage, extractUsage, hashActor, hashInput } from "./services/geminiUsage";
+import { pool } from "./lib/db";
+import { log } from "./lib/logger";
+import { containsPersonalData } from "./lib/pii";
+import { sendMail } from "./lib/mailer";
 
 /* ---------------- UPLOAD DIRECTORY CLEANUP ---------------- */
 
 function cleanupUploadsDirectory() {
-  const uploadsDir = path.resolve(import.meta.dirname, "..", "uploads");
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const uploadsDir = path.resolve(__dirname, "..", "uploads");
 
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -33,7 +38,7 @@ function cleanupUploadsDirectory() {
   try {
     const files = fs.readdirSync(uploadsDir);
     const now = Date.now();
-    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+    const maxAge = 24 * 60 * 60 * 1000;
 
     let cleaned = 0;
     files.forEach((file) => {
@@ -44,11 +49,13 @@ function cleanupUploadsDirectory() {
           fs.unlinkSync(filePath);
           cleaned++;
         }
-      } catch { }
+      } catch (e) {
+        console.warn("Failed to remove stale upload:", filePath, (e as any)?.message ?? e);
+      }
     });
 
     if (cleaned > 0) {
-      console.log(`🧹 Cleaned up ${cleaned} old file(s) from uploads directory`);
+      console.log(`[uploads] Cleaned ${cleaned} stale upload file(s).`);
     }
   } catch (err) {
     console.error("Failed to cleanup uploads directory:", err);
@@ -58,47 +65,313 @@ function cleanupUploadsDirectory() {
 cleanupUploadsDirectory();
 setInterval(cleanupUploadsDirectory, 60 * 60 * 1000);
 
+/* ---------------- DPDP RETENTION CLEANUP ---------------- */
+async function cleanupDpdpRetention() {
+  // Reuses the shared module-level pool; never end it here.
+  try {
+    // RETENTION POLICY (DPDP storage-limitation, lifecycle-aware).
+    // Principle: we keep data as long as the *purpose* exists — i.e. as long as
+    // the client/customer record it belongs to still exists. We ONLY purge
+    // records that have been orphaned (their client/customer was deleted) and
+    // have then aged past the grace window. Data belonging to an existing
+    // (active) client is NEVER auto-deleted, no matter how old it is — that
+    // would destroy the agent's working history and, for cover calculations,
+    // their client's records. Configurable via RETENTION_GRACE_DAYS.
+    const graceDays = Number(process.env.RETENTION_GRACE_DAYS) || 90;
+    const cutoffMs = Date.now() - graceDays * 24 * 60 * 60 * 1000;
+    const interval = `${graceDays} days`;
+
+    // analysis_jobs: keyed to a client via policy_id. Purge only jobs that are
+    // orphaned (no policy_id, or the client no longer exists) AND older than the
+    // grace window. Jobs for existing clients are kept so the Sach AI chat keeps
+    // its policy context. created_at may be bigint(ms) OR timestamptz.
+    const orphanedJobWhere = `
+      (policy_id IS NULL OR NOT EXISTS (
+        SELECT 1 FROM clients c WHERE c.id = analysis_jobs.policy_id))`;
+    try {
+      await pool.query(
+        `DELETE FROM analysis_jobs WHERE ${orphanedJobWhere} AND created_at < $1`,
+        [cutoffMs]
+      );
+    } catch (e) {
+      // created_at stored as timestamptz — retry with interval arithmetic.
+      try {
+        await pool.query(
+          `DELETE FROM analysis_jobs WHERE ${orphanedJobWhere} AND created_at < NOW() - interval '${interval}'`
+        );
+      } catch (e2) {
+        console.warn("[dpdp] analysis_jobs cleanup skipped:", (e2 as any)?.message ?? e2);
+      }
+    }
+
+    // calculator_reports: optionally linked to a customer via customer_id.
+    // Keep any report tied to a customer who still exists (active client work).
+    // Purge, once past the grace window, only: (a) untethered scratch reports
+    // with no customer attached, and (b) reports orphaned by a deleted customer.
+    try {
+      await pool.query(
+        `DELETE FROM calculator_reports
+         WHERE created_at < NOW() - interval '${interval}'
+           AND (
+             customer_id IS NULL
+             OR NOT EXISTS (
+                  SELECT 1 FROM customers cu WHERE cu.id = calculator_reports.customer_id)
+           )`
+      );
+    } catch (e) {
+      // column/table shape mismatch on older DBs — non-fatal.
+      console.warn("[dpdp] calculator_reports cleanup skipped:", (e as any)?.message ?? e);
+    }
+  } catch (err) {
+    console.error("Failed to cleanup DPDP retention tables:", err);
+  }
+}
+
+// Nightly-ish run (every 24h). Replace with real cron in infra if needed.
+setInterval(cleanupDpdpRetention, 24 * 60 * 60 * 1000);
+
+/* ---------------- CONSUMER RENEWAL REMINDERS ---------------- */
+// Emails consumers ~30 days before a policy renews, so a 40+ user never lets a
+// health/motor cover lapse by accident. Opt-in per account
+// (individual_profiles.renewal_reminders_enabled, default on); keyed off the
+// user-confirmed individual_policies.renewal_date. reminder_sent_at stops a
+// second email for the same upcoming renewal. Mirrors the DPDP job pattern:
+// shared pool, never throws, daily interval + a run shortly after boot.
+async function sendRenewalReminders() {
+  try {
+    // Policies renewing within the next 30 days that we haven't reminded on yet,
+    // whose owner still has reminders on and a deliverable email.
+    const due = await pool.query(
+      `SELECT p.id, p.insurance_type, p.insurer, p.policy_name, p.nickname,
+              p.renewal_date, pr.email, pr.full_name
+         FROM individual_policies p
+         JOIN individual_profiles pr ON pr.id = p.user_id
+        WHERE p.renewal_date IS NOT NULL
+          AND p.renewal_date >= CURRENT_DATE
+          AND p.renewal_date <= CURRENT_DATE + INTERVAL '30 days'
+          AND p.reminder_sent_at IS NULL
+          AND pr.renewal_reminders_enabled = true
+          AND pr.email IS NOT NULL
+          AND p.status = 'done'`
+    );
+
+    if (due.rows.length === 0) return;
+    console.log(`[reminders] ${due.rows.length} renewal reminder(s) due.`);
+
+    for (const row of due.rows) {
+      const label = row.nickname || row.policy_name || row.insurer || `your ${row.insurance_type} policy`;
+      const firstName = (row.full_name || "").trim().split(/\s+/)[0] || "there";
+      const dateStr = new Date(row.renewal_date).toLocaleDateString("en-IN", {
+        day: "numeric", month: "long", year: "numeric",
+      });
+
+      const sent = await sendMail({
+        to: row.email,
+        subject: `Reminder: ${label} renews on ${dateStr}`,
+        text: [
+          `Hi ${firstName},`,
+          "",
+          `A quick heads-up from IndSure — ${label} is due to renew on ${dateStr}.`,
+          "",
+          "Renewing on time keeps your cover continuous (and protects benefits like",
+          "no-claim bonus and waiting periods already served).",
+          "",
+          "Open your portfolio to review it, or reply to this email and an advisor",
+          "can help you renew:",
+          "https://beta.indsure.in/app",
+          "",
+          "— Team IndSure",
+          "",
+          "You're getting this because renewal reminders are on for your account.",
+          "You can turn them off any time from your portfolio.",
+        ].join("\n"),
+      });
+
+      // Only mark as reminded once it actually went out — so reminders start
+      // flowing the moment SMTP creds are added, rather than being silently lost.
+      if (sent) {
+        await pool.query(
+          "UPDATE individual_policies SET reminder_sent_at = now() WHERE id = $1",
+          [row.id]
+        );
+      }
+    }
+  } catch (err) {
+    console.error("Failed to send renewal reminders:", err);
+  }
+}
+
+// Daily run + a run shortly after boot (the interval alone waits 24h).
+setInterval(sendRenewalReminders, 24 * 60 * 60 * 1000);
+
+/* ---------------- AGENT OCR ALLOWANCE REFILL ---------------- */
+
+// Monthly top-up of the agent OCR / data-entry allowance, by plan + billing
+// cycle. Mirrors the balance model in routes.ts (ensureOcrBalance/consumeOcr):
+//   free            → never refilled (flat 20, lifetime — excluded below)
+//   agent / monthly → reset to 50 each month (no carryover)
+//   agent / annual  → +50 each month, capped at 600 (carryover); the bank is
+//                     wiped back to 50 in the agent's signup-anniversary month
+//   agency          → treated like agent / annual, per seat
+// Idempotent via the `period` marker ('YYYY-MM'): a row is only touched when
+// its stored period differs from the current calendar month, so it is safe to
+// run on a coarse interval (and to re-run on every boot / restart).
+const OCR_MONTHLY = 50;
+const OCR_BANK_CAP = 600;
+
+async function refillOcrAllowance() {
+  try {
+    const now = new Date();
+    const period = now.toISOString().slice(0, 7); // 'YYYY-MM'
+    const month = now.getUTCMonth() + 1; // 1-12
+
+    // Paid rows whose balance still belongs to an earlier month are due a refill.
+    const due = await pool.query(
+      `SELECT c.agent_id, c.balance, a.plan, a.billing_cycle,
+              EXTRACT(MONTH FROM a.created_at)::int AS anniv_month
+         FROM agent_ocr_credits c
+         JOIN agents a ON a.id = c.agent_id
+        WHERE c.period IS DISTINCT FROM $1
+          AND lower(a.plan) <> 'free'`,
+      [period]
+    );
+
+    for (const r of due.rows) {
+      const carryover = String(r.plan).toLowerCase() === "agency" ||
+                        String(r.billing_cycle).toLowerCase() === "annual";
+      let newBal: number;
+      if (!carryover) {
+        newBal = OCR_MONTHLY;                              // monthly: reset, drop unused
+      } else if (r.anniv_month === month) {
+        newBal = OCR_MONTHLY;                              // annual renewal month: wipe the bank
+      } else {
+        newBal = Math.min((r.balance ?? 0) + OCR_MONTHLY, OCR_BANK_CAP); // accrue up to the cap
+      }
+      await pool.query(
+        "UPDATE agent_ocr_credits SET balance = $1, period = $2, updated_at = NOW() WHERE agent_id = $3",
+        [newBal, period, r.agent_id]
+      );
+    }
+
+    if (due.rows.length > 0) {
+      log.info(`[ocr] refilled ${due.rows.length} agent allowance(s) for ${period}`);
+    }
+  } catch (err) {
+    console.error("Failed to refill OCR allowances:", err);
+  }
+}
+
+// Run on boot + every 6h. The period guard makes both safe/idempotent.
+refillOcrAllowance();
+setInterval(refillOcrAllowance, 6 * 60 * 60 * 1000);
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 /* ---------------- SERVER SETUP ---------------- */
 
 const app = express();
+// Behind nginx (proxy_pass → localhost:5000 with X-Forwarded-For). Trust the
+// first proxy hop so req.ip is the real client IP — required for the per-IP rate
+// limiters and IP-hash audit to work (otherwise every request looks like 127.0.0.1).
+app.set("trust proxy", 1);
 const server = createServer(app);
 
 /* ---------------- CORS ---------------- */
 
+// Built-in production origins, always allowed, plus anything in CORS_ORIGIN.
+// Vercel preview deployments (*.vercel.app) and localhost (dev) are matched
+// by pattern below so previews and local dev never break.
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://indsure.in",
+  "https://www.indsure.in",
+  "https://beta.indsure.in",
+];
+
 app.use(
   cors({
-    origin: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+    origin: (origin, callback) => {
+      const envOrigins = (process.env.CORS_ORIGIN || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const allowedOrigins = new Set([...DEFAULT_ALLOWED_ORIGINS, ...envOrigins]);
 
-/* ---------------- SESSION ────────────────────── */
+      // Non-browser clients (curl, server-to-server, health checks) send no Origin.
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.has(origin)) return callback(null, true);
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "indsure-local-dev-secret-change-in-prod",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: false,           // localhost — no HTTPS
-      sameSite: "lax" as const,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      // Allow our own Vercel preview URLs and localhost during development.
+      // Only *.vercel.app hosts that also mention this project ("indsure") pass,
+      // so arbitrary third-party Vercel deployments can't hit the API.
+      let host = "";
+      try { host = new URL(origin).hostname; } catch { /* malformed origin */ }
+      const isOwnVercelPreview = host.endsWith(".vercel.app") && host.includes("indsure");
+      const isLocalhost = host === "localhost" || host === "127.0.0.1";
+      if (isOwnVercelPreview || isLocalhost) return callback(null, true);
+
+      console.warn(`[CORS] Rejected origin: ${origin}`);
+      return callback(null, false);
     },
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-user-id", "x-sach-session-id"],
+    credentials: true,
   })
 );
 
 /* ---------------- BODY PARSING ---------------- */
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: false, limit: "10mb" }));
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
-/* ---------------- AUTH ROUTES ────────────────── */
+/* ---------------- RATE LIMITING ---------------- */
+// Global IP limiter to stop abuse loops (e.g. hammering the AI/analyze routes,
+// which cost Gemini credits). Generous enough for normal portal use. The
+// per-route share/Sach AI limiters remain in place on top of this.
+const globalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // ~20 req/min/IP sustained
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === "/api/health",
+  message: { error: "rate_limited", message: "Too many requests, please slow down." },
+});
+app.use("/api", globalApiLimiter);
 
-// ARCHIVED: app.use("/api/auth", authRouter);
+/* ---------------- PRODUCTION ERROR SANITIZER ---------------- */
+// In production, never leak internal error text/stack to clients. Applies to
+// every route (and any future one): 5xx responses are genericized, and the
+// `details`/`stack` fields are always stripped. Validation (4xx) messages such
+// as "email is required" are preserved. Beta runs NODE_ENV=production with
+// APP_ENV=staging, so this is active on beta.
+if (process.env.NODE_ENV === "production") {
+  app.use((_req, res, next) => {
+    const originalJson = res.json.bind(res);
+    res.json = (body: any) => {
+      if (body && typeof body === "object") {
+        if (res.statusCode >= 500) {
+          body = { error: "Internal Server Error" };
+        } else {
+          if ("details" in body) delete (body as any).details;
+          if ("stack" in body) delete (body as any).stack;
+        }
+      }
+      return originalJson(body);
+    };
+    next();
+  });
+}
+
+/* ---------------- HEALTH CHECK ---------------- */
+
+app.get("/api/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    env: process.env.NODE_ENV || "development",
+    appEnv: process.env.APP_ENV || process.env.DEPLOY_ENV || "unknown",
+  });
+});
 
 /* ---------------- API LOGGER ---------------- */
 
@@ -108,7 +381,7 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     if (req.path.startsWith("/api")) {
       const ms = Date.now() - start;
-      console.log(`${req.method} ${req.path} ${res.statusCode} ${ms}ms`);
+      log.info("api_request", { method: req.method, path: req.path, status: res.statusCode, ms });
     }
   });
 
@@ -116,70 +389,186 @@ app.use((req, res, next) => {
 });
 
 /* =========================================================
-   SACH AI — TRUTH MODE (NEW, STANDALONE)
+   SACH AI — TRUTH MODE
    ========================================================= */
+
+type SachAiRateState = { count: number; resetAt: number };
+const sachAiRateMap = new Map<string, SachAiRateState>();
+const SACH_AI_MAX_MESSAGES_PER_SESSION = 20;
+const SACH_AI_MAX_INPUT_CHARS = 500;
+
+// Prune expired rate-limit entries every 10 minutes so the map doesn't grow
+// unbounded (one entry accumulates per session/user/IP otherwise).
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, state] of sachAiRateMap) {
+    if (state.resetAt <= now) sachAiRateMap.delete(key);
+  }
+}, 10 * 60 * 1000);
+
+function getSachAiSessionKey(req: Request, sessionId: unknown): string {
+  const sid = typeof sessionId === "string" && sessionId.trim() ? sessionId.trim() : "";
+  if (sid) return `sid:${sid}`;
+  const userId = (req.headers["x-user-id"] as string | undefined) || "";
+  return userId ? `user:${userId}` : `ip:${req.ip}`;
+}
 
 app.post("/api/sach-ai", async (req: Request, res: Response) => {
   try {
-    const { messages = [], jobId } = req.body;
+    const { messages = [], jobId, sessionId, language, stream } = req.body || {};
+    // Disable streaming by default due to Node.js Web Streams API compatibility issues
+    // with @google/generative-ai SDK (pipeThrough not available in all environments)
+    const streamEnabled = stream === true;
 
-    let policyText = "";
-
-    if (jobId) {
-      const job = (analysisJobs as any)?.get?.(jobId);
-      policyText = job?.result?.__internal?.policyText || "";
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ message: "Invalid request: messages must be a non-empty array" });
     }
 
-    // fallback to demo policy if no job text
-    if (!policyText) {
-      try {
-        const demoPath = path.join(process.cwd(), "server", "knowledge_base", "demo_policy.txt");
-        console.log("Loading Demo Policy from:", demoPath); // Debug log
-        policyText = fs.readFileSync(demoPath, "utf-8");
-      } catch (e) {
-        console.error("FAILED to load demo policy:", e);
-        policyText = "No policy uploaded yet.";
-      }
+    // AUTH GUARD: Sach AI is an Agent Portal–only feature. Require a valid
+    // logged-in user (agents authenticate via Supabase; the portal's apiFetch
+    // sends the bearer token automatically). This stops the endpoint from being
+    // called anonymously from anywhere else — and closes the unauthenticated
+    // Gemini-cost/abuse surface.
+    const authHeader = req.headers["authorization"] as string | undefined;
+    const authToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const requesterId = authToken ? await getUserIdFromToken(authToken) : null;
+    if (!requesterId) {
+      return res.status(401).json({ message: "Authentication required" });
     }
-
-    const systemPrompt =
-      SACH_AI_SYSTEM_PROMPT +
-      "\n\nUPLOADED POLICY TEXT (SOURCE OF TRUTH):\n" +
-      policyText;
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not defined in environment variables");
+      return res.status(500).json({
+        message: "Sach AI misconfigured",
+        details: "GEMINI_API_KEY is not defined in environment variables",
+      });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    // Aligning with routes.ts to use the model that is known to work with this key
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview" });
+    // Fetch policy context if jobId is provided.
+    // OWNERSHIP GUARD: a job's analysis contains a client's policy PII. Only the
+    // owning agent may ground the chat on it. We require a valid bearer token
+    // and match it against analysis_jobs.agent_id. If the caller is not the
+    // owner (or sends no token), we silently skip policy context rather than
+    // leaking it — the chat still answers, just without policy grounding.
+    // (Agent callers always send their token via apiFetch, so this is
+    // non-breaking for the legitimate flow.)
+    let policyContext = "";
+    if (jobId && typeof jobId === "string") {
+      try {
+        const authHeader = req.headers["authorization"] as string | undefined;
+        const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
+        const requesterId = token ? await getUserIdFromToken(token) : null;
 
-    // Format history for SDK
+        const jobRes = requesterId
+          ? await pool.query(
+              "SELECT result FROM analysis_jobs WHERE id = $1 AND agent_id = $2",
+              [jobId, requesterId]
+            )
+          : { rows: [] as any[] };
+
+        if (jobRes.rows.length > 0 && jobRes.rows[0].result) {
+          const analysisData = jobRes.rows[0].result;
+          
+          // Extract key policy information for context
+          const policyName = analysisData?.coverage_structure?.policy_name || "Unknown Policy";
+          const insurerName = analysisData?.identity?.insurer_name || "Unknown Insurer";
+          const sumInsured = analysisData?.coverage_structure?.base_sum_insured || "Not specified";
+          const coverageDetails = analysisData?.coverage_structure?.coverage_details || [];
+          const exclusions = analysisData?.coverage_structure?.exclusions || [];
+          const waitingPeriods = analysisData?.policy_timeline?.waiting_periods || [];
+          const copayDetails = analysisData?.cost_structure?.copay_details || [];
+          const roomRentCapping = analysisData?.cost_structure?.room_rent_capping || {};
+          
+          // Build context string with relevant policy details
+          policyContext = `\n\n=== USER'S POLICY CONTEXT ===
+Policy Name: ${policyName}
+Insurer: ${insurerName}
+Sum Insured: ${sumInsured}
+
+Coverage Details:
+${coverageDetails.map((c: any) => `- ${c.coverage_type || c.name}: ${c.description || c.details || 'Covered'}`).join('\n') || 'Not available'}
+
+Exclusions:
+${exclusions.map((e: any) => `- ${typeof e === 'string' ? e : e.exclusion || e.description}`).join('\n') || 'Not available'}
+
+Waiting Periods:
+${waitingPeriods.map((w: any) => `- ${w.condition || w.type}: ${w.period || w.duration}`).join('\n') || 'Not available'}
+
+Copay Details:
+${copayDetails.map((c: any) => `- ${c.condition || c.type}: ${c.percentage || c.amount}`).join('\n') || 'Not available'}
+
+Room Rent Capping:
+${roomRentCapping.limit ? `Limit: ${roomRentCapping.limit}` : 'No capping information available'}
+
+=== END POLICY CONTEXT ===
+
+IMPORTANT: The user has uploaded their policy document. Use the above policy context to answer their specific questions about THEIR policy. Be specific and reference their actual policy details when answering.`;
+        }
+      } catch (dbErr: any) {
+        console.error("Failed to fetch policy context:", dbErr);
+        // Continue without policy context rather than failing the request
+      }
+    }
+
+    const lastMessage = messages[messages.length - 1] as any;
+    if (!lastMessage || typeof lastMessage.content !== "string") {
+      return res.status(400).json({ message: "Invalid request: last message is missing content" });
+    }
+
+    const lastText = lastMessage.content.trim();
+    if (!lastText) {
+      return res.status(400).json({ message: "Invalid request: message content cannot be empty" });
+    }
+
+    if (lastText.length > SACH_AI_MAX_INPUT_CHARS) {
+      return res.status(400).json({ message: `Message too long (max ${SACH_AI_MAX_INPUT_CHARS} characters)` });
+    }
+
+    const userTexts = messages
+      .filter((m: any) => m?.role === "user" && typeof m?.content === "string")
+      .map((m: any) => m.content)
+      .join("\n");
+    if (containsPersonalData(userTexts)) {
+      return res.status(400).json({
+        message: "Personal data detected",
+        details: "Please remove personal identifiers like Aadhaar numbers, phone numbers, email addresses, and policy numbers.",
+      });
+    }
+
+    // Rate limit per session.
+    const sessionKey = getSachAiSessionKey(req, sessionId);
+    const now = Date.now();
+    const existing = sachAiRateMap.get(sessionKey);
+    const resetAt = existing?.resetAt && existing.resetAt > now ? existing.resetAt : now + 60 * 60 * 1000; // 1 hour
+    const nextCount = existing?.count != null ? existing.count : 0;
+    if (nextCount >= SACH_AI_MAX_MESSAGES_PER_SESSION) {
+      return res.status(429).json({
+        message: "Rate limit exceeded",
+        details: `Max ${SACH_AI_MAX_MESSAGES_PER_SESSION} messages per session.`,
+      });
+    }
+    sachAiRateMap.set(sessionKey, { count: nextCount + 1, resetAt });
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-3.5-flash" });
+
     const history = messages.slice(0, -1).map((m: any) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     }));
 
-    const lastMessage = messages[messages.length - 1];
-
-    // Safety check for empty message
-    if (!lastMessage || !lastMessage.content) {
-      throw new Error("Invalid message format: missing content");
-    }
-
     const { HarmCategory, HarmBlockThreshold } = await import("@google/generative-ai");
+
+    const userTextForModel =
+      typeof language === "string" && language.trim() && language !== "auto"
+        ? `Respond entirely in ${language.trim()}. Do not mix languages. Write only in ${language.trim()}. User message: ${lastText}`
+        : `Detect the language of this message and respond entirely in that language: ${lastText}. If unsure, respond in English. Do not mix languages. Write only in the detected language.`;
 
     const chat = model.startChat({
       history: [
         {
           role: "user",
-          parts: [{ text: systemPrompt }]
-        },
-        {
-          role: "model",
-          parts: [{ text: "Understood. I am Sach AI, ready to tell the truth about this policy." }]
+          parts: [{ text: SACH_AI_SYSTEM_PROMPT + policyContext }]
         },
         ...history
       ],
@@ -187,66 +576,82 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
         maxOutputTokens: 8192,
       },
       safetySettings: [
-        {
-          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        // Adding more explicit categories just in case
-        {
-          category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        }
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE },
       ],
     });
 
-    const result = await chat.sendMessageStream(lastMessage.content);
+    const sachUsageMeta = {
+      feature: "sach_ai" as const,
+      route: "/api/sach-ai",
+      sourceType: "anonymous" as const,
+      actorId: hashActor(req.ip),
+      inputHash: hashInput(lastText),
+    };
+    const sachModelName = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 
-    res.setHeader("Content-Type", "text/plain");
+    // Non-stream mode for stable fallback.
+    if (!streamEnabled) {
+      const sachStart = Date.now();
+      const result = await chat.sendMessage(userTextForModel);
+      const content = result?.response?.text?.() ?? "";
+      void logGeminiUsage(sachUsageMeta, {
+        model: sachModelName,
+        tokens: extractUsage(result?.response),
+        status: "ok",
+        latencyMs: Date.now() - sachStart,
+      });
+      return res.json({ content });
+    }
+
+    const sachStreamStart = Date.now();
+    const result = await chat.sendMessageStream(userTextForModel);
+
+    // Only set streaming headers after the model request has succeeded.
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
+    let sentAny = false;
     try {
       for await (const chunk of result.stream) {
-        try {
-          const chunkText = chunk.text();
-          res.write(chunkText);
-        } catch (chunkError) {
-          const logMsg = `[CHUNK ERROR] ${chunkError} | FinishReason: ${JSON.stringify(chunk.candidates?.[0]?.finishReason)}\n`;
-          fs.appendFileSync(path.join(process.cwd(), "sach_debug.log"), logMsg);
-
-          // If safety filter triggered, send a message to user
-          if (!res.headersSent) {
-            res.write("\n\n(Note: The response was interrupted by safety filters. We are tuning them.)");
-          }
-        }
+        const chunkText = chunk?.text?.() ?? "";
+        if (!chunkText) continue;
+        sentAny = true;
+        res.write(chunkText);
       }
     } catch (streamError: any) {
-      const logMsg = `[STREAM ERROR] ${streamError.message}\n`;
-      fs.appendFileSync(path.join(process.cwd(), "sach_debug.log"), logMsg);
-    }
+      const logMsg = `[STREAM ERROR] ${streamError?.message || streamError}\n`;
+      fs.promises.appendFile(path.join(process.cwd(), "sach_debug.log"), logMsg).catch(() => {});
 
-    res.end();
+      // If streaming fails before we sent anything, return a full response.
+      if (!sentAny) {
+        const fallback = await chat.sendMessage(userTextForModel);
+        res.write(fallback?.response?.text?.() ?? "");
+      } else {
+        res.write("\n\n(Temporary streaming interruption. Please resend your question for the full answer.)");
+      }
+    } finally {
+      // Ledger: the aggregated stream response carries usageMetadata once drained.
+      try {
+        const finalResponse = await result.response;
+        void logGeminiUsage(sachUsageMeta, {
+          model: sachModelName,
+          tokens: extractUsage(finalResponse),
+          status: "ok",
+          latencyMs: Date.now() - sachStreamStart,
+        });
+      } catch { /* logging must never break the response */ }
+      res.end();
+    }
   } catch (err: any) {
     const errorMsg = `[${new Date().toISOString()}] Sach AI Error: ${err.message}\nStack: ${err.stack}\n\n`;
     console.error(errorMsg);
 
-    try {
-      fs.appendFileSync(path.join(process.cwd(), "sach_debug.log"), errorMsg);
-    } catch (fsErr) {
-      console.error("Failed to write to log file", fsErr);
-    }
+    fs.promises.appendFile(path.join(process.cwd(), "sach_debug.log"), errorMsg).catch(() => {});
 
     if (!res.headersSent) {
       res.status(500).json({
@@ -263,25 +668,41 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
 /* ---------------- BOOTSTRAP ---------------- */
 
 async function start() {
-  console.log("[SERVER] Registering routes...");
   await registerRoutes(server, app);
-  console.log("[SERVER] Routes registered successfully");
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    console.error("API ERROR:", err);
+    log.error("unhandled_api_error", { message: err?.message, stack: err?.stack });
     const status = err.status || 500;
     const message = err.message || "Internal Server Error";
     res.status(status).json({ message });
   });
 
-  if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
+  // Static serving is decoupled from NODE_ENV so this API-only host can run in
+  // production mode without a frontend build present. Enable only when explicitly
+  // requested (SERVE_STATIC=true) AND a build exists; never crash the API if not.
+  if (process.env.SERVE_STATIC === "true") {
+    try {
+      serveStatic(app);
+      console.log("[static] Serving frontend build.");
+    } catch (e: any) {
+      console.error("[static] Static serving disabled (no build found):", e?.message);
+    }
   }
 
   const port = Number(process.env.PORT) || 5000;
 
-  server.listen(port, "127.0.0.1", () => {
+  server.listen(port, "0.0.0.0", () => {
     console.log(`API server running on http://localhost:${port}`);
+    // Run DPDP retention once shortly after boot (the interval only fires 24h
+    // later otherwise). Guarded so a cleanup failure never crashes the server.
+    setTimeout(() => {
+      void cleanupDpdpRetention().catch((e) =>
+        console.error("[dpdp] initial cleanup failed:", e?.message ?? e)
+      );
+      void sendRenewalReminders().catch((e) =>
+        console.error("[reminders] initial run failed:", e?.message ?? e)
+      );
+    }, 30 * 1000);
   });
 }
 

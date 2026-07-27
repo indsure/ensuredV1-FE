@@ -1,0 +1,42 @@
+{
+  "uin": "MCIHLIP26036V022526",
+  "insurer": "ManipalCigna Health Insurance",
+  "plan_name": "ProHealth Prime (Active Plan)",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "_pdf_inbox/_txt/manipalcigna-prohealth-prime.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "₹3L – above ₹10L (tiered: 3L/5L/7.5L/10L+)",
+
+  "room_rent": { "display": "Single Private Room", "ordinal": 4, "optional": false, "note": "Room up to Category as per opted Sum Insured per Schedule; varies by SI tier — VERIFY exact category" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false, "note": "ICU charges covered under inpatient — VERIFY no separate cap" },
+  "copayment": { "display": "Mandatory co-pay (% VERIFY)", "number": null, "optional": false, "note": "Active Plan has a compulsory co-payment on all claims (% unreadable in source due to font corruption — VERIFY, ManipalCigna lists 20%); removable via optional; not applied on sub-limited named ailments; zone-based co-pay also applies for higher-zone treatment" },
+  "sub_limits": { "display": "Disease-wise sub-limits", "ordinal": 1, "optional": false, "note": "Sub-limits for Hernia, Hysterectomy, BPH, renal stones, Cataract (per eye), Total Knee Replacement (per knee), fracture treatment — vary by SI tier" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Optional deductible may apply — VERIFY" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "Excl03; not applicable after 12 months continuous coverage" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Excl01" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl02 specified disease/procedure" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "No inbuilt maternity benefit found — VERIFY" },
+
+  "cumulative_bonus": { "display": "Up to 100% (rate VERIFY)", "number": 100, "optional": false, "note": "CB increases base SI yearly up to 100% max; per-year % unreadable in source (font corruption) — VERIFY (ManipalCigna Prime lists ~25%/yr)" },
+  "restoration": { "display": "Unlimited, 100%", "ordinal": 5, "optional": false, "note": "100% restoration available for any number of times during a Policy Year (D.I.8 e); not for same illness already claimed" },
+
+  "pre_hosp": { "display": "Covered (days VERIFY)", "number": null, "optional": false, "note": "Pre-hospitalization covered up to Schedule limit; day count unreadable in source — VERIFY (typically 60 days)" },
+  "post_hosp": { "display": "Covered (days VERIFY)", "number": null, "optional": false, "note": "Post-hospitalization covered up to Schedule limit; day count unreadable in source — VERIFY (typically 180 days)" },
+  "day_care": { "display": "All day-care", "exists": true, "optional": false, "note": "Day care treatment covered per Annexure II list" },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "Donor in-patient expenses up to SI" },
+  "ambulance": { "display": "Covered (per Schedule limit)", "number": 999999, "optional": false, "note": "Road ambulance up to limit specified in Schedule — VERIFY ₹ cap" },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false, "note": "Robotic surgeries, Deep Brain stimulation, Oral chemotherapy, Immunotherapy, Stereotactic radiosurgery, Bronchial Thermoplasty, Stem cell, etc." },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "Non-medical/consumables cover not clearly found — VERIFY" },
+  "global_cover": { "display": "Optional (Worldwide Accidental Emergency)", "exists": true, "optional": true, "note": "Worldwide Accidental Emergency Hospitalization Cover optional add-on" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "Digit garbled in source but standard 60 continuous months — VERIFY" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false, "note": "Standard free look; digit garbled in source — VERIFY" },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Mandatory co-pay & disease sub-limits on base Active Plan; maternity not inbuilt; overseas only via optional accidental emergency cover" },
+  "optional_riders": { "display": "Worldwide Accidental Emergency Hospitalization, Mandatory Co-pay removal, Wellness/Healthy Rewards programs" }
+}

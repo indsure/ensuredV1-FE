@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Session - IndSure</title>
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+        
+        const SUPABASE_URL = 'https://khxbabotbvnyjwvqtumt.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeGJhYm90YnZueWp3dnF0dW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMDc1OTIsImV4cCI6MjA4ODc4MzU5Mn0.H7mVu4EUWLTzzUN4DhA_xWk2bi4LR8vFFN2NT1jIs08'
+        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+        
+        async function clearSession() {
+            const log = document.getElementById('log');
+            
+            log.innerHTML += '<p>🔄 Clearing Supabase session...</p>';
+            await supabase.auth.signOut();
+            
+            log.innerHTML += '<p>🔄 Clearing localStorage...</p>';
+            localStorage.clear();
+            
+            log.innerHTML += '<p>🔄 Clearing sessionStorage...</p>';
+            sessionStorage.clear();
+            
+            log.innerHTML += '<p>✅ All sessions cleared!</p>';
+            log.innerHTML += '<p><strong>Now you can <a href="/agent/login">log in again</a></strong></p>';
+        }
+        
+        window.addEventListener('DOMContentLoaded', clearSession);
+    </script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        #log {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        a {
+            color: #0D9488;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Clear Session</h1>
+    <div id="log">
+        <p>⏳ Loading...</p>
+    </div>
+</body>
+</html>

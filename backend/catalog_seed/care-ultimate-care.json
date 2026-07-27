@@ -1,0 +1,42 @@
+{
+  "uin": "CHIHLIP26058V022526",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Ultimate Care",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care/ultimate-care-policy-terms-conditions-effective-fr.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "Up to Unlimited Sum Insured option",
+
+  "room_rent": { "display": "No limit (any room)", "ordinal": 5, "optional": false, "note": "Room Rent / Room Category: 'No limit' - no separate restriction on room charges" },
+  "icu": { "display": "No limit", "ordinal": 5, "optional": false, "note": "ICU Charges: 'No limit'" },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "Co-payment applies only if optionally opted" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false, "note": "Premium plan; no significant disease sub-limits found. VERIFY" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Deductible only if optionally opted" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "Excl03 initial waiting. VERIFY exact days" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Excl01: PED excluded until 36 months continuous coverage" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl02 Named Ailment Waiting Period: 24 months" },
+  "maternity": { "display": "Optional add-on", "exists": true, "optional": true, "note": "Maternity Cover available only as an Optional Benefit (also New Born Baby Cover, Assisted Reproductive Treatment)" },
+
+  "cumulative_bonus": { "display": "Up to 100% (50%/yr)", "number": 100, "optional": false, "note": "Cumulative Bonus: +50% SI flat per claim-free year, max 100%. Optional Infinity Bonus / Loyalty Boost / Tenure Multiplier available on top" },
+  "restoration": { "display": "Unlimited, base SI", "ordinal": 5, "optional": false, "note": "Unlimited Automatic Recharge inbuilt: re-instatement of base SI unlimited times/year (from 2nd claim), same & different illnesses" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY - domiciliary cover not explicitly confirmed in reviewed sections" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false, "note": "VERIFY - AYUSH typically covered; confirm" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "VERIFY - organ donor cover typical for this tier; confirm" },
+  "ambulance": { "display": "At actuals (Road/Air/Train)", "number": 999999, "optional": false, "note": "Ambulance Cover up to SI via any mode incl Road, Air, Train" },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false, "note": "VERIFY - advance technology methods typical for this tier" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY - Claim Shield optional may cover non-medical items" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY - international cover not confirmed in reviewed sections" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "5 continuous years per IRDAI" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly installment mode; 30 days otherwise" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY - standard 30-day free look (Care standard)" },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity only via optional cover; many boosters (Infinity Bonus, Inflation Shield, Tenure Multiplier) not applicable on Unlimited SI option" },
+  "optional_riders": { "display": "Maternity Cover, New Born Baby, Infinity Bonus, Unlimited Automatic Recharge Booster, Unlimited Care, Claim Shield, Inflation Shield, Cancer Care, Women Care, Smoking & Mental Health" }
+}

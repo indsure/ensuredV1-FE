@@ -1,0 +1,42 @@
+{
+  "uin": "CHIHLIP26048V022526",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Care Classic",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care/care-classic-policy-terms-conditions-effective-fro.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "₹3L – ₹25L",
+
+  "room_rent": { "display": "Single Private AC Room", "ordinal": 4, "optional": false, "note": "Variant plan: base is Single Private AC Room; some SI bands capped at 1% of SI/day per Policy Schedule" },
+  "icu": { "display": "2% of SI/day", "ordinal": 3, "optional": false, "note": "Variant: 2% of SI/day or 'no limit' depending on Policy Schedule" },
+  "copayment": { "display": "None (20% if entry age 61+)", "number": 0, "optional": false, "note": "No base co-pay under 61; mandatory 20% per claim if eldest insured aged 61+ at first issue" },
+  "sub_limits": { "display": "Cataract & some sub-limits", "ordinal": 1, "optional": false, "note": "Cataract treatment capped; room/ICU may be percentage-capped — budget plan" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Optional Deductible available" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Named-ailment waiting up to 36 months" },
+  "maternity": { "display": "Optional add-on", "exists": true, "optional": true, "note": "Maternity excluded from base (Excl18); available via optional Maternity & New Born Cover" },
+
+  "cumulative_bonus": { "display": "Up to 150% (25%/yr)", "number": 150, "optional": false, "note": "25% flat SI/yr, capped at 150%; only if claim-free; forfeited/reduced on claim" },
+  "restoration": { "display": "Unlimited Automatic Recharge (100%)", "ordinal": 5, "optional": false, "note": "Unlimited re-instatement of base SI per year" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "All day-care", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered (per schedule limit)", "exists": true, "optional": false },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered (per schedule limit)", "exists": true, "optional": false },
+  "ambulance": { "display": "Covered (per schedule limit)", "number": 999999, "optional": false, "note": "VERIFY ₹ cap — road ambulance up to schedule amount; Air Ambulance optional" },
+  "modern_treatments": { "display": "Covered (per schedule limit)", "exists": true, "optional": false, "note": "Advance Technology Methods up to specified limit" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "VERIFY" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "5 continuous years" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); cataract sub-limit; room/ICU percentage caps possible; standard IRDAI Excl01–18" },
+  "optional_riders": { "display": "Maternity & New Born, OPD Care, Air Ambulance, Home Care, Deductible, Smart Select, International Second Opinion, Annual Health Check-up" }
+}

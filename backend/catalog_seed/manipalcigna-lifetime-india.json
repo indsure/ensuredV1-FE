@@ -1,0 +1,42 @@
+{
+  "uin": "MCIHLIP27041V022627",
+  "insurer": "ManipalCigna Health Insurance",
+  "plan_name": "Lifetime Health India Plan",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "_pdf_inbox/_txt/manipalcigna-lifetime-india.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Schedule-defined tiers (India SI) — VERIFY exact range",
+
+  "room_rent": { "display": "Single Private Room", "ordinal": 4, "optional": false, "note": "Room rent up to room category as per Sum Insured per Schedule; proportionate deduction if higher; higher SI tiers may have no cap — VERIFY exact category" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false, "note": "ICU charges covered under Hospitalization Expenses; proportionate deduction not applicable to ICU — VERIFY no separate cap" },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No mandatory per-claim co-pay on base. Zonal co-pay applies only if treating in a higher zone than premium zone (% per Schedule); +10% additional co-pay penalty if prolonged-hospitalization (>10 days) intimation is delayed" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false, "note": "Modern/Advanced Treatments and Robotic/Cyber Knife covered up to full Sum Insured; no disease-wise caps found — VERIFY" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Optional deductible may be available — VERIFY" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "Standard initial waiting — VERIFY" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Excl01" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl02 specified disease/procedure" },
+  "maternity": { "display": "Optional add-on", "exists": true, "optional": true, "note": "Maternity excluded on base (Excl-18); available via optional 'ManipalCigna Lifetime Plus' add-on (D.IV.3) incl. infertility, oocyte donor, surrogacy" },
+
+  "cumulative_bonus": { "display": "Offered (rate VERIFY)", "number": null, "optional": false, "note": "Cumulative bonus is offered (base); value Schedule/variant-defined and modifiable via optional 'Lifetime Plus' add-on; base % not stated in wording — VERIFY" },
+  "restoration": { "display": "Unlimited reinstatement", "ordinal": 5, "optional": false, "note": "D.II.14: reinstates utilized portion of Base SI unlimited times per Policy Year; not for same illness already claimed in the year; not for Any One Illness" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false, "note": "D.II.3, up to Sum Insured" },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false, "note": "D.II.4, up to Sum Insured" },
+  "day_care": { "display": "All day-care", "exists": true, "optional": false, "note": "D.II.2 Day Care Treatment" },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "D.II.8 Domiciliary Expenses incl. 60/180-day pre/post hosp" },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false, "note": "D.II.5 AYUSH Treatment" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "D.II.7 Donor in-patient expenses up to SI" },
+  "ambulance": { "display": "Covered (per Schedule limit)", "number": 999999, "optional": false, "note": "D.II.6 Road Ambulance up to Schedule limit — VERIFY ₹ cap; Air Ambulance via optional HEALTH+ package" },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false, "note": "D.II.10 Robotic & Cyber Knife and D.II.11 Modern/Advanced Treatments, both up to full Sum Insured" },
+  "consumables": { "display": "Optional add-on", "exists": true, "optional": true, "note": "Medical Devices & Non-Medical Items via optional HEALTH+ package (D.III.1.ii)" },
+  "global_cover": { "display": "Optional (Lifetime Plus)", "exists": true, "optional": true, "note": "Worldwide medical emergency hospitalization via optional Lifetime Plus add-on" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded on base (Excl-18, optional add-on); zonal co-pay on cross-zone treatment; +10% co-pay if delayed intimation of prolonged stay" },
+  "optional_riders": { "display": "HEALTH+ (Air Ambulance, Non-Medical Items, Bariatric, Hospi Cash, Tele-consult), WOMEN+ (cancer screening/vaccination), Lifetime Plus (Maternity/infertility/oocyte/CB modification/worldwide emergency)" }
+}

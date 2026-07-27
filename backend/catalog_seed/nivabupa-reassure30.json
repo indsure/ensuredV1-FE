@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP26047V012526",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "ReAssure 3.0",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/ReAssure30-Policy-Wordings.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹5L – ₹1Cr+ base (up to 11x via Booster+/ReAssure Forever)",
+
+  "room_rent": { "display": "Per plan variant (Single Private Room)", "ordinal": 4, "optional": false, "note": "Room eligibility (single private / twin sharing / general ward) fixed by chosen variant; copay applies if room outside category" },
+  "icu": { "display": "Covered (ICU charges)", "ordinal": 5, "optional": false },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory base co-pay; copay applies only if a higher room than plan category is chosen" },
+  "sub_limits": { "display": "Cataract sub-limit (some variants)", "ordinal": 3, "optional": false, "note": "Classic & Select variants cover mono-focal lens only; modern treatments up to plan limit" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Annual Aggregate Deductible optional" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Modifiable via PED Waiting Time Modification optional" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity excluded (Excl18)" },
+
+  "cumulative_bonus": { "display": "Booster+ carry-forward (up to 10x SI)", "number": 100, "optional": false, "note": "Unutilized Base SI carries forward, up to 10x Base SI (variant-dependent); not a flat NCB %" },
+  "restoration": { "display": "Unlimited (ReAssure Forever)", "ordinal": 5, "optional": false, "note": "First paid claim triggers ReAssure Forever — unlimited reinstatement of Base SI for life of policy" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered (Home Care)", "exists": true, "optional": false },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false, "note": "India only" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Road & Air per plan limit", "number": 999999, "optional": false, "note": "Road ambulance up to plan limit; air ambulance for emergency per hospitalization" },
+  "modern_treatments": { "display": "Covered (up to plan limit)", "exists": true, "optional": false },
+  "consumables": { "display": "Claim Safeguard+ optional", "exists": true, "optional": true, "note": "Non-medical consumables via optional Safeguard+" },
+  "global_cover": { "display": "Borderless (optional)", "exists": true, "optional": true, "note": "Borderless / Borderless for Specific Illness optional add-on — worldwide treatment, up to standard private room" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded; treatment India only (unless Borderless); cataract mono-focal on some variants; standard Excl01–18" },
+  "optional_riders": { "display": "Borderless / Borderless Specific Illness (global), Claim Safeguard+, PED Waiting modification, Annual Aggregate Deductible" }
+}

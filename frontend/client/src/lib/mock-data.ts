@@ -1,10 +1,9 @@
-// @ts-nocheck
-import { ForensicAuditReport } from "../../../../backend/server/types/policy";
+import { ForensicAuditReport } from "@/lib/policy-types";
 import { TERM_RIDERS_DATABASE } from "./data/term-rider-data";
 import { VEHICLE_RIDERS_DATABASE } from "./data/vehicle-rider-data";
 
 export function loadSampleReport(data: any): void {
-  sessionStorage.setItem("ensured_report", JSON.stringify(data));
+  sessionStorage.setItem("IndSure_report", JSON.stringify(data));
 }
 
 // --- SAMPLE 1: HEALTH (Care Supreme - "Perfectly Flawed") ---
@@ -193,7 +192,6 @@ export const mockReportCareSupreme: ForensicAuditReport = {
     hospital_count_in_zone: "200+",
     major_hospitals_included: ["Nanavati", "Kokilaben", "Lilavati"],
     reimbursement_allowed: true,
-    claim_settlement_ratio: 95.2,
     risk_level: "low",
     remarks: "Good network in Mumbai."
   },
@@ -340,7 +338,6 @@ export const mockReportLife: ForensicAuditReport = {
     hospital_count_in_zone: null,
     major_hospitals_included: [],
     reimbursement_allowed: true,
-    claim_settlement_ratio: 99.2,
     risk_level: "low",
     remarks: "Excellent settlement record. HDFC Life typically settles claims within 30 days."
   },
@@ -444,7 +441,6 @@ export const mockReportVehicle: ForensicAuditReport = {
     hospital_count_in_zone: "450+",
     major_hospitals_included: ["Maruti Auth", "Hyundai Auth"],
     reimbursement_allowed: true,
-    claim_settlement_ratio: 98,
     risk_level: "low",
     remarks: "Strong Garage Network"
   },

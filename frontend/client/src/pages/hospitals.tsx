@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { getApiBase } from "@/lib/queryClient";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,9 +11,10 @@ import { InsurerCard, InsurerCount } from "@/components/hospitals/InsurerCard";
 import { ComparisonTray } from "@/components/hospitals/ComparisonTray";
 import { HospitalSkeleton } from "@/components/hospitals/HospitalSkeleton";
 import { EmptyState } from "@/components/hospitals/EmptyState";
-import { getAllStates, getCitiesForState } from "@/lib/indian-cities-data";
+import { getAllStates, getCitiesForState } from "@/lib/data/indian-cities-data";
 import { toast } from "sonner";
 import { Info } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 // Local interfaces using the shared InsurerCount
 interface CityResult {
@@ -111,7 +111,19 @@ export default function HospitalFilter() {
     // Helper to calculate total stats
     const getStats = (data: FilterResult) => {
         const source = data.pincodeLevel.length > 0 ? data.pincodeLevel : data.cityLevel;
-        const totalHospitals = source.reduce((acc, loc) => acc + loc.unique_hospital_count, 0);
+        
+        // Calculate total hospitals - if unique_hospital_count is missing or 0, 
+        // sum up the insurer counts as a fallback
+        const totalHospitals = source.reduce((acc, loc) => {
+            let count = loc.unique_hospital_count;
+            
+            // If unique_hospital_count is missing or 0, sum the insurer counts
+            if (!count || count === 0) {
+                count = loc.insurers.reduce((sum, ins) => sum + (ins.hospital_count || 0), 0);
+            }
+            
+            return acc + count;
+        }, 0);
 
         const uniqueInsurers = new Set<string>();
         source.forEach(loc => loc.insurers.forEach(i => uniqueInsurers.add(i.insurer_slug)));
@@ -149,7 +161,7 @@ export default function HospitalFilter() {
             if (city) params.append("city", city);
             if (pincode) params.append("pincode", pincode);
 
-            const response = await fetch(`${getApiBase()}/api/hospitals/filter?${params.toString()}`);
+            const response = await apiFetch(`/api/hospitals/filter?${params.toString()}`);
             const data = await response.json();
 
             if (!response.ok) {
@@ -175,7 +187,7 @@ export default function HospitalFilter() {
         <div className="bg-[var(--color-navy-900)] text-white font-sans min-h-screen flex flex-col">
             <Header />
 
-            <main className="flex-grow pt-32 sm:pt-36 md:pt-40 pb-12 md:pb-24 overflow-x-hidden">
+            <main className="flex-grow pt-32 pb-24">
                 {/* Pre-Search Leading Hero */}
                 {!results && (
                     <section className="min-h-[60vh] flex flex-col justify-center items-center pb-16 bg-[var(--color-navy-900)] px-4">
@@ -367,12 +379,19 @@ export default function HospitalFilter() {
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                             {results.cityLevel.slice(0, 12).map((cityData, idx) => {
+                                                // Calculate hospital count - use unique_hospital_count if available,
+                                                // otherwise sum up insurer counts
+                                                let hospitalCount = cityData.unique_hospital_count || 0;
+                                                if (hospitalCount === 0 && cityData.insurers.length > 0) {
+                                                    hospitalCount = cityData.insurers.reduce((sum, ins) => sum + (ins.hospital_count || 0), 0);
+                                                }
+                                                
                                                 return (
                                                     <InsurerCard
                                                         key={idx}
                                                         type="city"
                                                         title={cityData.city}
-                                                        subtitle={`${cityData.unique_hospital_count} hospitals · ${cityData.insurers.length} insurers`}
+                                                        subtitle={`${hospitalCount} hospitals · ${cityData.insurers.length} insurers`}
                                                         insurers={cityData.insurers}
                                                         delay={idx * 0.05}
                                                         isSelected={selectedItems.some(i => i.id === cityData.city)}
@@ -407,12 +426,19 @@ export default function HospitalFilter() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {results.pincodeLevel.slice(0, 12).map((pincodeData, idx) => {
+                                            // Calculate hospital count - use unique_hospital_count if available,
+                                            // otherwise sum up insurer counts
+                                            let hospitalCount = pincodeData.unique_hospital_count || 0;
+                                            if (hospitalCount === 0 && pincodeData.insurers.length > 0) {
+                                                hospitalCount = pincodeData.insurers.reduce((sum, ins) => sum + (ins.hospital_count || 0), 0);
+                                            }
+                                            
                                             return (
                                                 <InsurerCard
                                                     key={idx}
                                                     type="pincode"
                                                     title={pincodeData.pincode}
-                                                    subtitle={`${pincodeData.unique_hospital_count} hospitals · ${pincodeData.insurers.length} insurers`}
+                                                    subtitle={`${hospitalCount} hospitals · ${pincodeData.insurers.length} insurers`}
                                                     insurers={pincodeData.insurers}
                                                     delay={idx * 0.05}
                                                     isSelected={selectedItems.some(i => i.id === pincodeData.pincode)}

@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP22156V032122",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Health Recharge",
+  "product_type": "top_up",
+  "source_file": "nivabupa/health-recharge-t-and-c.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹2L – ₹95L (over deductible)",
+
+  "room_rent": { "display": "Single Private Room (up to 1% SI)", "ordinal": 3, "optional": false, "note": "Room rent up to 1% of Base SI per day / single private room; modification to higher room available as option" },
+  "icu": { "display": "Covered up to SI", "ordinal": 5, "optional": false, "note": "ICU charges covered under inpatient; VERIFY any % cap" },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No mandatory base co-pay found. VERIFY any zone/optional co-pay" },
+  "sub_limits": { "display": "Room rent 1% SI; else up to SI", "ordinal": 3, "optional": false, "note": "Room rent sub-limit 1% of SI (single private). VERIFY other sub-limits" },
+  "deductible": { "display": "E-saver ₹10k-50k / Super Top-up ₹1L-10L", "number": 100000, "optional": false, "note": "Annual aggregate deductible: E-saver variant 10k/25k/50k; Super Top-up variant 1L-10L (multiples of 1L). Cover commences once deductible exhausted. Number shows lowest super top-up tier; VERIFY chosen value" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY exact initial waiting" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "VERIFY exact specific-disease waiting" },
+  "maternity": { "display": "Not covered (base)", "exists": false, "optional": false, "note": "Maternity listed under Excl18. VERIFY optional availability" },
+
+  "cumulative_bonus": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY cumulative bonus on top-up" },
+  "restoration": { "display": "Not specified", "ordinal": null, "optional": false, "note": "VERIFY restoration/re-fill benefit" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Reimbursement basis; min 3 consecutive days" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY ambulance limit" },
+  "modern_treatments": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY modern treatments cover" },
+  "consumables": { "display": "Covered", "exists": true, "optional": false, "note": "Consumables listed under inpatient charges" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY exact grace" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Top-up / super top-up with aggregate deductible (cover starts above deductible); maternity excluded (Excl18)" },
+  "optional_riders": { "display": "Personal Accident Cover, Critical Illness Cover, e-Consultation, room rent modification, deductible alteration (once/lifetime)" }
+}

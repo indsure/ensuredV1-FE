@@ -2,8 +2,15 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Import Fonts: Inter (Sans) & Playfair Display (Serif) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+/* Semantic status colors — required for bg-error / text-success / border-warning
+   etc. used throughout components/ui. Values match indsure-ui/tailwind.config.ts
+   (danger/success/warning). */
+@theme {
+  --color-error: #DC2626;
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-info: #2563EB;
+}
 
 /* =========================================
    PALETTE: "The Financialist" / IndSure Rebrand
@@ -140,7 +147,10 @@
    UTILITIES & CLASSES
    ========================================= */
 .container-editorial {
-  @apply mx-4 sm:mx-6 md:mx-12 lg:mx-20;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-right: var(--space-container);
+  padding-left: var(--space-container);
 }
 
 .card-white {

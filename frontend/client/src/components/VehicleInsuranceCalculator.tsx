@@ -73,7 +73,7 @@ export function VehicleInsuranceCalculator() {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem("ensured_vehicle_calculator_form");
+    const saved = localStorage.getItem("IndSure_vehicle_calculator_form");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -86,7 +86,7 @@ export function VehicleInsuranceCalculator() {
 
   useEffect(() => {
     if (Object.keys(formData).length > 0) {
-      localStorage.setItem("ensured_vehicle_calculator_form", JSON.stringify(formData));
+      localStorage.setItem("IndSure_vehicle_calculator_form", JSON.stringify(formData));
     }
   }, [formData]);
 
@@ -161,7 +161,7 @@ export function VehicleInsuranceCalculator() {
   };
 
   useSEO({
-    title: "Vehicle Insurance Accident Cost Calculator | NCB Impact Calculator | Ensured",
+    title: "Vehicle Insurance Accident Cost Calculator | NCB Impact Calculator | IndSure",
     description: "Calculate your real accident costs. Enter vehicle details and damage amount. See out-of-pocket cost, NCB impact, depreciation, and whether to claim or pay yourself.",
     keywords: "vehicle insurance calculator, car insurance calculator, accident cost calculator, NCB impact calculator, vehicle insurance claim calculator",
     canonical: "/calculator?type=vehicle",

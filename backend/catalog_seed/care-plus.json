@@ -1,0 +1,42 @@
+{
+  "uin": "CHIHLIP22047V012122",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Care Plus",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care/care-plus-policy-terms-and-conditions-effective-fr.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹5L – ₹25L+ (variant dependent; young-adult plan)",
+
+  "room_rent": { "display": "Single Private AC Room", "ordinal": 4, "optional": false, "note": "Per schedule; bonus/inflation-shield amounts excluded from room-rent calc base" },
+  "icu": { "display": "Up to 2% of SI/day", "ordinal": 3, "optional": false, "note": "Per schedule" },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No mandatory co-pay on base; 20% co-pay only under optional 'Smart Select' network restriction" },
+  "sub_limits": { "display": "No major sub-limits", "ordinal": 4, "optional": false, "note": "VERIFY" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Excl01 PED 36 months; reducible via optional add-on" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Optional add-on", "exists": true, "optional": true, "note": "Maternity & New Born Cover available as Optional Benefit; base maternity excluded (Excl18)" },
+
+  "cumulative_bonus": { "display": "Up to 200% (50%/yr)", "number": 200, "optional": false, "note": "Cumulative Bonus 50% flat/yr, cap 200% of SI; not reduced if total claims ≤25% of base SI" },
+  "restoration": { "display": "Unlimited Automatic Recharge", "ordinal": 5, "optional": false, "note": "Unlimited Automatic Recharge inbuilt, same & different illness, floater-wide" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "Organ Donor Cover" },
+  "ambulance": { "display": "Covered (road; air optional)", "number": 999999, "optional": false, "note": "Road ambulance; Air Ambulance optional" },
+  "modern_treatments": { "display": "Covered (advanced technology methods)", "exists": true, "optional": false, "note": "Robotic, stem cell, oral chemo, IONM etc." },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "global_cover": { "display": "Optional", "exists": true, "optional": true, "note": "International Second Opinion; global coverage per variant" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Base maternity excluded (Excl18, add-on available); standard IRDAI exclusions" },
+  "optional_riders": { "display": "Maternity & New Born, Smart Select, Air Ambulance, Inflation Shield, PED reduction, OPD Coverage" }
+}

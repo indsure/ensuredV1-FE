@@ -1,0 +1,42 @@
+{
+  "uin": "TATHLIP21253V022021",
+  "insurer": "Tata AIG General Insurance",
+  "plan_name": "Medi Care Plus",
+  "product_type": "top_up",
+  "source_file": "tataaig/Tata-AIG-Medi-Care-Plus-e8a0cf5358.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": null,
+
+  "room_rent": { "display": "Per Policy Schedule", "ordinal": 3, "optional": false, "note": "Room rent per category in Schedule; no explicit % cap stated in wording. VERIFY" },
+  "icu": { "display": "Covered (per Schedule)", "ordinal": 3, "optional": false, "note": "ICU/ICCU per Schedule limits. VERIFY" },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No mandatory base co-pay found; VERIFY" },
+  "sub_limits": { "display": "Not specified", "ordinal": 3, "optional": false, "note": "Sub-limits per Schedule; VERIFY" },
+  "deductible": { "display": "Aggregate deductible (per Schedule)", "number": null, "optional": false, "note": "Super top-up style: cover begins only after aggregate annual deductible per Schedule is exceeded. VERIFY amount" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity is a standard exclusion (Excl 18); no maternity benefit in wording" },
+
+  "cumulative_bonus": { "display": "Up to 100% (50%/yr)", "number": 100, "optional": false, "note": "50%/yr up to 100%; reduced by 50% on a claim" },
+  "restoration": { "display": "Not specified", "ordinal": 0, "optional": false, "note": "No restoration/reinstatement benefit found in wording. VERIFY" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "Listed day-care", "exists": true, "optional": false, "note": "Listed day-care procedures per website" },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Treatment exceeding 3 days" },
+  "ayush": { "display": "Covered (AYUSH Benefit)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "₹3,000/hospitalisation", "number": 3000, "optional": false },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false },
+  "consumables": { "display": "Covered (Consumables Benefit)", "exists": true, "optional": false, "note": "B10 Consumables Benefit inbuilt for listed items" },
+  "global_cover": { "display": "Optional", "exists": true, "optional": true, "note": "B13 Global Cover optional; diagnosis in India required" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "Five-year moratorium" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Aggregate deductible (cover starts only above it); maternity excluded (Excl 18)" },
+  "optional_riders": { "display": "Global Cover" }
+}

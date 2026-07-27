@@ -1,0 +1,42 @@
+{
+  "uin": "BAJHLIP26073V082526",
+  "insurer": "Bajaj Allianz General Insurance",
+  "plan_name": "Health Guard",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Bajaj/Health-Guard_PW.pdf",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "₹1.5L – ₹50L (Silver/Gold/Platinum)",
+
+  "room_rent": { "display": "Single Private Room (Gold)", "ordinal": 4, "optional": false, "note": "Silver: 1%/day cap; ₹10L+ SI: any room category" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "Optional voluntary co-pay available" },
+  "sub_limits": { "display": "Cataract & bariatric capped", "ordinal": 3, "optional": false, "note": "Bariatric 50% max ₹5L (Gold); some procedure caps" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Covered (Gold/Platinum, 72mo)", "exists": true, "optional": false, "note": "Not in Silver; 72-month waiting; max 2 deliveries" },
+
+  "cumulative_bonus": { "display": "Up to 100% (10%/yr)", "number": 100, "optional": false, "note": "Super Cumulative Bonus up to 150% if claim-free" },
+  "restoration": { "display": "100% reinstatement, once/yr", "ordinal": 4, "optional": false, "note": "Cancer/kidney dialysis once per lifetime" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Not specified", "exists": null, "optional": false, "note": "Not found as a named cover — VERIFY" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "₹20,000 / year", "number": 20000, "optional": false, "note": "Road ambulance limit" },
+  "modern_treatments": { "display": "Covered (Annexure III)", "exists": true, "optional": false, "note": "Oral chemo, robotic surgery, etc." },
+  "consumables": { "display": "Not covered (base)", "exists": false, "optional": false, "note": "Consumables defined but likely excluded in base — VERIFY" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "30 days", "number": 30, "optional": false, "note": "IRDAI standard" },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Standard IRDAI exclusions (Excl01–18); bariatric & maternity restricted by plan variant" },
+  "optional_riders": { "display": "Super Cumulative Bonus, voluntary co-pay, room-rent modifications (Silver/Gold/Platinum)" }
+}

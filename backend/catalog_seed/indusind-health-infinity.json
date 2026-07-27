@@ -1,0 +1,42 @@
+{
+  "uin": "RELHLIP23120V042223",
+  "insurer": "IndusInd General Insurance",
+  "plan_name": "IndusInd Health Infinity",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "indusind/indusind-health-infinity-pw.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "At actuals (no cap)", "ordinal": 5, "optional": false, "note": "No room-rent sub-limit stated in base Inpatient Care; optional 'Reduction in Room Rent' (3.4.11) discounts premium for a cap" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false, "note": "ICU charges paid under base Inpatient Care; no cap stated" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory co-pay on base; Voluntary Co-payment (3.4.1) optional for premium discount" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false, "note": "No disease-wise capping found in base benefits" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Voluntary Aggregate Deductible (3.4.13) optional" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "Excl03; not applicable after 12 months continuous cover" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Excl01; reducible to 24 or 12 months via optional add-on (3.4.9)" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl02; reducible to 12 months via optional (3.4.10)" },
+  "maternity": { "display": "Optional add-on", "exists": true, "optional": true, "note": "Mother & Child Care (3.4.4), 3-yr policy only, 12/24mo wait, female 18-45" },
+
+  "cumulative_bonus": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: no inbuilt cumulative/no-claim bonus found in base; Super Charger SI is an optional add-on (3.4.3.1)" },
+  "restoration": { "display": "100%, once/yr (unrelated)", "ordinal": 3, "optional": false, "note": "Base Restore (3.1.11) 100% SI once/yr, not for same illness; Unlimited Restore (3.4.2.2) optional" },
+
+  "pre_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false, "note": "Day Care surgical/chemo/radio/dialysis (3.1.3)" },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered", "exists": true, "optional": false, "note": "AYUSH Benefit (3.1.6)" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Covered (at actuals)", "number": 999999, "optional": false, "note": "Emergency + intercity ambulance (3.1.9); air ambulance optional (3.4.3.2)" },
+  "modern_treatments": { "display": "Covered (Special Treatment)", "exists": true, "optional": false, "note": "Robotic, stem cell, immunotherapy etc. under 3.1.2" },
+  "consumables": { "display": "Optional add-on", "exists": true, "optional": true, "note": "Consumables Cover (3.4.2.1)" },
+  "global_cover": { "display": "Optional add-on", "exists": true, "optional": true, "note": "MoreGlobal (3.2.3) More Options Benefit" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days if monthly mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Standard IRDAI exclusions (Excl01-18); maternity, consumables, global, super-charger bonus all need add-ons" },
+  "optional_riders": { "display": "Consumables, Unlimited Restore, Super Charger, Air Ambulance, Maternity/Newborn, OPD, Global, PED/specific waiting reduction, Room Rent reduction" }
+}

@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP26048V092526",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Heartbeat",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/HBPolicy-Wording.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹2L – ₹50L (Silver ₹2-3L renewal-only; Gold ₹5-50L; Platinum higher)",
+
+  "room_rent": { "display": "Any room up to SI (except Suite+)", "ordinal": 4, "optional": false, "note": "Gold variant baseline: room rent covered up to SI except Suite or above category; pro-rata if higher than eligible. Silver variant has tighter limits" },
+  "icu": { "display": "Covered up to SI", "ordinal": 5, "optional": false, "note": "ICU charges covered under inpatient up to SI" },
+  "copayment": { "display": "None (base, optional 10%/20%)", "number": 0, "optional": false, "note": "Co-pay optional (10%/20%). Zone-2 metro 20% co-pay applies for Silver/Gold if Zone 2 chosen; Platinum has no zone co-pay. VERIFY chosen zone" },
+  "sub_limits": { "display": "Modern treatment ₹50k on few conditions", "ordinal": 4, "optional": false, "note": "Modern treatments covered up to SI with ₹50,000 sub-limit on a few conditions" },
+  "deductible": { "display": "None (base)", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "90 days (first policy)", "number": 90, "optional": false, "note": "30-day standard initial illness waiting; some illness exclusions reference 90 days from first policy. VERIFY exact initial waiting" },
+  "ped_waiting": { "display": "24 months (Gold/Platinum)", "number": 24, "optional": false, "note": "24 months under Gold & Platinum; 36 months under Silver plan" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Covered (24mo wait, up to 2 pregnancies)", "exists": true, "optional": false, "note": "Maternity benefit covered up to 2 pregnancies/terminations; 24 months continuous coverage required; new-born baby cover included" },
+
+  "cumulative_bonus": { "display": "Up to 100% (10%/yr)", "number": 100, "optional": false, "note": "Cumulative Bonus / Loyalty Additions: +10% of expiring Base SI per policy year, max 100% of Base SI" },
+  "restoration": { "display": "Re-fill 100%, once/yr (same & different illness)", "ordinal": 4, "optional": false, "note": "Re-fill reinstates up to 100% Base SI once per policy year, applicable for same and different illness; floater basis" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "Covered up to SI", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Reimbursement basis; min 3 consecutive days" },
+  "ayush": { "display": "Covered (Alternative Treatment)", "exists": true, "optional": false, "note": "AYUSH treatment in AYUSH hospital up to SI" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Covered (₹2,000 non-network/event)", "number": 2000, "optional": false, "note": "Emergency road ambulance; non-network up to ₹2,000 per event; network up to SI. VERIFY" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "Up to SI; ₹50,000 sub-limit on a few conditions" },
+  "consumables": { "display": "Covered (allowable)", "exists": true, "optional": false, "note": "Allowable consumables listed under inpatient charges" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY overseas cover" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY exact grace; 15 days for instalment mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Multi-variant (Silver/Gold/Platinum); HIV/AIDS 4yr & mental disorder 3yr waiting; Zone-2 metro co-pay for Silver/Gold" },
+  "optional_riders": { "display": "Hospital Cash, Personal Accident (up to 5x SI, max ₹1Cr), Critical Illness (up to ₹10L), premium waiver, co-pay options, e-consultation" }
+}

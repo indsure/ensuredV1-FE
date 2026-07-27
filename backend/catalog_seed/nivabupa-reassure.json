@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP26050V042526",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "ReAssure",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/ReAssure-Policy-Wording.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹3L – ₹1Cr (per variant; see Policy Schedule)",
+
+  "room_rent": { "display": "Eligible room category (per Schedule)", "ordinal": 4, "optional": false, "note": "Room category per Policy Schedule/variant; pro-rata deduction if higher room opted" },
+  "icu": { "display": "Covered (ICU charges)", "ordinal": 5, "optional": false, "note": "ICU charges payable under Inpatient Care" },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory base co-pay; optional co-pay available to reduce premium" },
+  "sub_limits": { "display": "Few minor sub-limits", "ordinal": 3, "optional": false, "note": "Benefit sub-limits per Schedule; Modern Treatments within sub-limit" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Optional aggregate deductible available" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity excluded (Excl18)" },
+
+  "cumulative_bonus": { "display": "Up to 100% (50%/yr)", "number": 100, "optional": false, "note": "Booster benefit: +50% Base SI per claim-free year up to 100%; reduces 50% on claim" },
+  "restoration": { "display": "Unlimited (ReAssure)", "ordinal": 5, "optional": false, "note": "ReAssure benefit triggered on first paid claim, available for all subsequent claims in policy year; single-claim cap = Base SI" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "Covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Domiciliary Hospitalization min 3 consecutive days; Home Care for chemo/dialysis" },
+  "ayush": { "display": "Covered (AYUSH Hospital)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Road ₹2,000; Air per Schedule", "number": 2000, "optional": false, "note": "Road ambulance up to ₹2,000/hospitalization; air ambulance per Policy Schedule" },
+  "modern_treatments": { "display": "Covered (sub-limit)", "exists": true, "optional": false, "note": "Within overall benefit sub-limit" },
+  "consumables": { "display": "Safeguard optional", "exists": true, "optional": true, "note": "Allowable consumables inbuilt; non-medical via optional Safeguard/Safeguard+" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "Treatment in India only" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "15 days for monthly instalments" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded; treatment India only; Modern Treatments sub-limited; standard Excl01–18" },
+  "optional_riders": { "display": "Safeguard/Safeguard+ (consumables), Personal Accident Cover, Hospital Cash, Co-payment, Deductible" }
+}

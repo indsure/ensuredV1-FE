@@ -1,0 +1,44 @@
+{
+  "uin": "RHIHLIP21375V022021",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Assure (Care Assure)",
+  "product_type": "fixed_benefit",
+  "source_file": "care/assure-t-c-effective-from-12-september-2024.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Up to ₹10L / ₹10L–₹50L / above ₹50L (premium-set bands)",
+
+  "_reclassification_note": "RECLASSIFIED: This is NOT a comprehensive hospitalization indemnity plan. It is a FIXED-BENEFIT Critical Illness + Personal Accident plan (Benefit 1: Critical Illnesses/Medical Events/Surgical Procedures pays lump-sum SI on diagnosis then cover terminates; Benefit 2: Personal Accident). Standard hospitalization axes (room rent, ICU, co-pay, restoration, sub-limits, pre/post-hosp) DO NOT APPLY. Most axes null/Not specified by design. VERIFY before catalog inclusion — likely belongs in a separate CI/benefit category, not the indemnity Compare set.",
+
+  "room_rent": { "display": "Not applicable (fixed-benefit CI plan)", "ordinal": null, "optional": false, "note": "No room-rent concept; lump-sum on CI diagnosis" },
+  "icu": { "display": "Not applicable", "ordinal": null, "optional": false },
+  "copayment": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY" },
+  "sub_limits": { "display": "Not applicable", "ordinal": null, "optional": false, "note": "Lump-sum benefit; no disease capping in indemnity sense" },
+  "deductible": { "display": "Not specified", "number": null, "optional": false },
+
+  "initial_waiting": { "display": "90 days", "number": 90, "optional": false, "note": "90-day waiting on Benefit 1 (Critical Illness)" },
+  "ped_waiting": { "display": "Pre-existing excluded (no waiting buy-back stated)", "number": null, "optional": false, "note": "Any pre-existing disease/complication is a permanent exclusion under Benefit 1; VERIFY" },
+  "specific_disease_waiting": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY; CI plan uses 90-day initial waiting" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity permanent exclusion (Excl18); not relevant to CI plan" },
+
+  "cumulative_bonus": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY" },
+  "restoration": { "display": "Not applicable", "ordinal": null, "optional": false, "note": "Cover terminates for insured after a CI claim" },
+
+  "pre_hosp": { "display": "Not applicable", "number": null, "optional": false },
+  "post_hosp": { "display": "Not applicable", "number": null, "optional": false },
+  "day_care": { "display": "Not applicable", "exists": null, "optional": false },
+  "domiciliary": { "display": "Not applicable", "exists": null, "optional": false },
+  "ayush": { "display": "Not applicable", "exists": null, "optional": false },
+  "organ_donor": { "display": "Not specified", "exists": null, "optional": false, "note": "Major Organ Transplant is a covered CI event, not donor indemnity" },
+  "ambulance": { "display": "Not specified", "number": null, "optional": false },
+  "modern_treatments": { "display": "Not applicable", "exists": null, "optional": false },
+  "consumables": { "display": "Not applicable", "exists": null, "optional": false },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false },
+
+  "moratorium": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY" },
+  "grace_period": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY" },
+  "free_look": { "display": "Covered (free-look period applies)", "number": null, "optional": false, "note": "VERIFY exact days (standard 15/30)" },
+  "portability": { "display": "Allowed", "exists": true, "optional": false, "note": "IRDAI mandate" },
+  "notable_exclusions": { "display": "Fixed-benefit CI plan: pre-existing disease permanently excluded; cover terminates after CI claim; congenital, self-harm, substance abuse" },
+  "optional_riders": { "display": "Personal Accident (Benefit 2), Second Opinion, Add-on benefits per schedule" }
+}

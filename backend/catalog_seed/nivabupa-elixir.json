@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP23156V012223",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Elixir",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/Elixir-PolicyWording.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified (per Policy Schedule)",
+
+  "room_rent": { "display": "Per eligible room category (schedule)", "ordinal": 4, "optional": false, "note": "Room category as specified in Policy Schedule; pro-rata deduction if higher room opted. VERIFY exact eligibility for chosen variant" },
+  "icu": { "display": "Per schedule", "ordinal": 4, "optional": false, "note": "VERIFY ICU eligibility in Policy Schedule" },
+  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No mandatory co-pay found in wording; voluntary/zonal co-pay may be opted per schedule. VERIFY" },
+  "sub_limits": { "display": "Robotic surgery capped ₹1L (others full SI)", "ordinal": 4, "optional": false, "note": "Full SI for listed robotic surgeries (prostatectomy, cardiac, nephrectomy, malignancies); ₹1,00,000 cap for other robotic surgeries" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Cancer covered after 30 days; accident from day 1" },
+  "maternity": { "display": "Not covered (base)", "exists": false, "optional": false, "note": "Maternity Expenses listed under Excl18 exclusion in base wording. VERIFY optional maternity availability" },
+
+  "cumulative_bonus": { "display": "Up to 100% (Booster 50%/yr)", "number": 100, "optional": false, "note": "Booster Sum Insured: +50% base SI per claim-free year, accrues up to 100%; reduced 50% if claim made" },
+  "restoration": { "display": "Unlimited (ReAssure)", "ordinal": 5, "optional": false, "note": "ReAssure: unlimited restorations triggered on first paid claim; max per single claim = base SI" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "All day-care (>2hrs)", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Domiciliary hospitalization + home care (chemo/dialysis)" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false, "note": "AYUSH treatment in India covered" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "₹2,000/hospitalization", "number": 2000, "optional": false, "note": "Road ambulance ₹2,000; air ambulance up to SI (cashless) / ₹2.5L (reimbursement)" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false, "note": "12 modern treatments listed; robotic surgery sub-limit ₹1L for non-listed procedures" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY consumables / non-medical items cover" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "Covers treatment in India only per wording" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "15 days", "number": 15, "optional": false, "note": "Wording states 15 days for non-annual/instalment mode; VERIFY 30-day grace for annual mode" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); India-only (no overseas); non-invasive angiography & home medical devices not paid" },
+  "optional_riders": { "display": "Personal Accident Cover, APTD/APPD, Sum Insured Safeguard / Safeguard+, Health Check-up" }
+}

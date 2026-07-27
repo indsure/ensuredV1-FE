@@ -1,4 +1,4 @@
-// Blog posts data with full content following the Ensured Blog Writing Framework
+// Blog posts data with full content following the IndSure Blog Writing Framework
 import {
   BookOpen,
   AlertCircle,
@@ -57,8 +57,7 @@ import {
   article27Content,
   article27FAQs,
   article28Content,
-  article28FAQs,
-  generateArticleStats,
+  article28FAQs ,
 } from "./article-content";
 
 export interface BlogPost {
@@ -75,135 +74,102 @@ export interface BlogPost {
   tags?: string[]; // Optional tags
   insuranceType?: "Health" | "Life" | "Vehicle" | "Home" | "Travel" | "Business" | "General";
   featuredImage?: string; // Featured image URL
-  faqs?: Array<{ question: string; answer: string }>; // FAQ items
-  readCount?: number; // Number of reads
-  helpfulPercentage?: number; // Percentage who found it helpful
-  sharesCount?: number; // Number of shares
+  faqs?: Array<{ question: string; answer: string }>; // FAQ items // Number of reads // Percentage who found it helpful // Number of shares
 }
 
 // Article 1: Understanding Health Insurance Sufficiency
 const article1Content = `
-<div class="space-y-6 text-gray-700 dark:text-gray-300 leading-relaxed">
-  <div class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-    Your ₹10L policy might be enough. Or it might leave you bankrupt.
-  </div>
-  
-  <p class="text-lg">The difference? Nobody explained what 'sufficient' means for YOU.</p>
+<div class="blog-article-content">
+  <p><strong>Your ₹10L policy might be enough. Or it might leave you bankrupt.</strong></p>
 
-  <p>Meet Arun. 35 years old. Bangalore. Works in IT, makes ₹18L a year. Bought a ₹10L health insurance policy because "that's what most people buy."</p>
+  <p>The difference? Nobody explained what "sufficient" means for YOU.</p>
 
-  <p>He thought he was safe. ₹10L seemed like a lot. Until his father needed cardiac bypass surgery at Apollo Hospital, Bangalore.</p>
+  <p>Meet Arun. 35. Bangalore. Works in IT, makes ₹18L a year. Bought a ₹10L health policy because "that's what most people buy."</p>
+
+  <p>He felt safe — until his father needed cardiac bypass surgery at Apollo Hospital, Bangalore.</p>
 
   <p>Total cost: ₹8.5L. Arun's policy: ₹10L. Should cover it, right?</p>
 
-  <p class="font-semibold text-gray-900 dark:text-gray-100">Wrong.</p>
+  <p><strong>Wrong.</strong></p>
 
-  <p>The surgery was covered. But the room rent? Capped at ₹3,500/day. Apollo charged ₹5,200/day. 12-day stay. Gap: ₹20,400 out-of-pocket.</p>
+  <p>The surgery was covered. But room rent was capped at ₹3,500/day, and Apollo charged ₹5,200/day. Over a 12-day stay, that gap alone was ₹20,400 out-of-pocket.</p>
 
-  <p>Plus, his father had a complication. Extended ICU stay. Another ₹2L. Total out-of-pocket: ₹2.2L.</p>
+  <p>Then a complication meant an extended ICU stay — another ₹2L. Total out-of-pocket: ₹2.2L.</p>
 
-  <p>Arun had ₹10L coverage but paid ₹2.2L from pocket. Because nobody explained that "sufficient" isn't just about the sum insured number. It's about matching YOUR life.</p>
+  <p>Arun had ₹10L of coverage and still paid ₹2.2L himself. Because "sufficient" isn't just the sum insured number. It's whether the policy matches YOUR life.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Here's What Arun Thought vs Reality</h2>
+  <h2 id="what-arun-thought-vs-reality">Here's What Arun Thought vs Reality</h2>
 
-  <div class="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border-l-4 border-blue-500 mb-6">
-    <p class="font-semibold mb-2">What Arun thought:</p>
-    <p>"I have ₹10L coverage. That's enough for any medical emergency. I'm in Bangalore, not Mumbai, so costs are lower. ₹10L should be safe."</p>
-  </div>
+  <blockquote>
+    <p><strong>What Arun thought:</strong> "I have ₹10L coverage. That's enough for any medical emergency. I'm in Bangalore, not Mumbai, so costs are lower. ₹10L should be safe."</p>
+  </blockquote>
 
-  <div class="bg-amber-50 dark:bg-amber-900/20 p-6 rounded-lg border-l-4 border-amber-500 mb-6">
-    <p class="font-semibold mb-2">What actually happened:</p>
-    <p>Bangalore's healthcare costs have risen 40% in 3 years. A major cardiac procedure at a good hospital costs ₹8-12L. Room rent caps, sub-limits, and co-pays mean your ₹10L doesn't actually cover ₹10L in real-world scenarios.</p>
-  </div>
+  <blockquote>
+    <p><strong>What actually happened:</strong> Bangalore's healthcare costs have risen 40% in 3 years. A major cardiac procedure at a good hospital costs ₹8-12L. Room rent caps, sub-limits, and co-pays mean your ₹10L never pays out a full ₹10L in the real world.</p>
+  </blockquote>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Sufficiency: It's Not About the Number</h2>
+  <h2 id="sufficiency-not-about-the-number">Sufficiency: It's Not About the Number</h2>
 
-  <p>Sufficiency isn't "Do I have ₹10L or ₹20L?" It's "Will this policy protect ME when I need it?"</p>
-
-  <p>That depends on:</p>
-  <ul class="list-disc list-inside space-y-2 ml-4">
+  <p>Sufficiency isn't "Do I have ₹10L or ₹20L?" It's "Will this policy protect ME when I need it?" That depends on:</p>
+  <ul>
     <li>Your city's actual healthcare costs (Mumbai ≠ Bangalore ≠ Pune)</li>
-    <li>Your age (older = higher risk = need more coverage)</li>
+    <li>Your age (older = higher risk = more coverage needed)</li>
     <li>Your family size (4 people sharing ₹10L ≠ 1 person with ₹10L)</li>
     <li>Pre-existing conditions (diabetes, hypertension = higher claim risk)</li>
     <li>Policy gaps (room rent caps, sub-limits, co-pays)</li>
   </ul>
 
-  <h3 class="text-2xl font-bold mt-6 mb-4 text-gray-900 dark:text-gray-100">Calculating YOUR Sufficiency</h3>
+  <h3 id="calculating-your-sufficiency">Calculating YOUR Sufficiency</h3>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 1: Worst-Case Scenario</p>
-    <p class="mb-2">Think of the most expensive procedure you might need:</p>
-    <ul class="list-disc list-inside space-y-1 ml-4 text-sm">
-      <li>Age 35-45: Cardiac, cancer, major accident</li>
-      <li>Age 45-60: Cardiac, cancer, organ issues</li>
-      <li>Age 60+: Multiple procedures, extended ICU</li>
-    </ul>
-    <p class="mt-3">For Arun (35, Bangalore): Cardiac bypass = ₹10L worst-case</p>
-  </div>
+  <p><strong>Step 1: Worst-case scenario.</strong> Think of the most expensive procedure you might realistically face:</p>
+  <ul>
+    <li>Age 35-45: cardiac, cancer, major accident</li>
+    <li>Age 45-60: cardiac, cancer, organ issues</li>
+    <li>Age 60+: multiple procedures, extended ICU</li>
+  </ul>
+  <p>For Arun (35, Bangalore): cardiac bypass = ₹10L worst-case.</p>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 2: City Multiplier</p>
-    <p class="mb-2">Bangalore is Tier-1. Costs are 30-40% higher than Tier-2 cities.</p>
-    <p class="text-sm">Base cost × 1.3 = City-adjusted cost</p>
-    <p class="mt-3">Arun's ₹10L worst-case × 1.3 = ₹13L needed</p>
-  </div>
+  <p><strong>Step 2: City multiplier.</strong> Bangalore is Tier-1, where costs run 30-40% higher than Tier-2 cities. Base cost × 1.3 = city-adjusted cost. Arun's ₹10L worst-case × 1.3 = ₹13L needed.</p>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 3: Policy Gaps</p>
-    <p class="mb-2">Room rent cap, sub-limits, co-pays reduce your effective coverage:</p>
-    <ul class="list-disc list-inside space-y-1 ml-4 text-sm">
-      <li>Room rent gap: ₹20-30K (12-day stay)</li>
-      <li>Sub-limits on specific procedures: ₹50K-1L</li>
-      <li>Co-pay (if any): 10-20% of claim</li>
-    </ul>
-    <p class="mt-3">Arun's effective coverage: ₹10L - ₹30K gaps = ₹9.7L</p>
-  </div>
+  <p><strong>Step 3: Policy gaps.</strong> Room rent caps, sub-limits, and co-pays shrink your effective coverage:</p>
+  <ul>
+    <li>Room rent gap: ₹20-30K (12-day stay)</li>
+    <li>Sub-limits on specific procedures: ₹50K-1L</li>
+    <li>Co-pay (if any): 10-20% of the claim</li>
+  </ul>
+  <p>Arun's effective coverage: ₹10L − ₹30K in gaps = ₹9.7L.</p>
 
-  <div class="bg-gradient-to-r from-[#1A3A52] to-[#4A9B9E] text-white p-6 rounded-lg my-8">
-    <p class="font-bold text-xl mb-2">Arun's Optimal Coverage: ₹15-18L</p>
-    <p class="text-sm opacity-90">Not ₹10L. Not ₹20L. ₹15-18L based on HIS life, HIS city, HIS risks.</p>
-  </div>
+  <p><strong>Arun's optimal coverage: ₹15-18L.</strong> Not ₹10L. Not ₹20L. A number based on HIS life, HIS city, HIS risks.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">What Arun Did (And What You Should Do)</h2>
+  <h2 id="what-arun-did">What Arun Did (And What You Should Do)</h2>
 
-  <p>After his father's surgery, Arun did the math. He realized his ₹10L base policy wasn't enough.</p>
+  <p>After his father's surgery, Arun did the math and realized his ₹10L base policy wasn't enough. His fix: keep the ₹10L base policy (already paid for) and add a ₹5L top-up for ₹2,800 extra per year.</p>
 
-  <p>His solution? He kept the ₹10L base policy (already paid for) and added a ₹5L top-up policy. Cost: ₹2,800 extra per year.</p>
+  <p>Now he has ₹15L total coverage. That's ₹0.56 per ₹1,000 of extra protection. Worth it.</p>
 
-  <p>Now he has ₹15L total coverage. ₹2,800/year for ₹5L extra protection. That's ₹0.56 per ₹1,000 of coverage. Worth it.</p>
+  <p><strong>Your action plan:</strong></p>
+  <ol>
+    <li>Calculate your worst-case scenario (age, city, family size)</li>
+    <li>Add 30% for the city multiplier (if metro)</li>
+    <li>Add 10% as an inflation buffer</li>
+    <li>Subtract 5-10% for policy gaps (room rent, sub-limits)</li>
+    <li>That's your optimal coverage amount</li>
+  </ol>
 
-  <div class="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg my-6 border-l-4 border-green-500">
-    <p class="font-semibold mb-2">Your Action Plan:</p>
-    <ol class="list-decimal list-inside space-y-2 ml-4">
-      <li>Calculate your worst-case scenario (age, city, family size)</li>
-      <li>Add 30% for city multiplier (if metro)</li>
-      <li>Add 10% for inflation buffer</li>
-      <li>Subtract 5-10% for policy gaps (room rent, sub-limits)</li>
-      <li>That's your optimal coverage amount</li>
-    </ol>
-  </div>
+  <p>Arun could have caught this gap before the surgery — the numbers were sitting in his policy document the whole time.</p>
 
-  <p>Arun could have caught this gap before the surgery. He didn't have a tool that explained sufficiency in plain English.</p>
-
-  <p>That's why we built Ensured.</p>
-
-  <p>Upload your policy (3 minutes), tell us your age and city, and we'll calculate YOUR optimal coverage. Not generic advice. YOUR number.</p>
-
-  <p>Because the best time to find a gap is before you're in a hospital bed, not after.</p>
+  <p>Generic advice ends here. The gap that actually hurts is written into YOUR policy — find out what yours says before you're in a hospital bed, not after.</p>
 </div>
 `;
 
 // Article 2: Top 5 Gaps in Health Insurance
 const article2Content = `
-<div class="space-y-6 text-gray-700 dark:text-gray-300 leading-relaxed">
-  <div class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-    Your policy covers cancer. But only ₹5L of it. You need ₹12L.
-  </div>
-  
-  <p class="text-lg">Welcome to the gap nobody sees coming.</p>
+<div class="blog-article-content">
+  <p><strong>Your policy covers cancer. But only ₹5L of it. You need ₹12L.</strong></p>
 
-  <p>Meet Neha. 48 years old. Mumbai. Works as a school principal. ₹12L household income. Bought a ₹15L health policy because "cancer is covered."</p>
+  <p>Welcome to the gap nobody sees coming.</p>
+
+  <p>Meet Neha. 48. Mumbai. School principal, ₹12L household income. Bought a ₹15L health policy because "cancer is covered."</p>
 
   <p>Last month, she was diagnosed with breast cancer. Stage 2. Treatable, but expensive.</p>
 
@@ -211,65 +177,56 @@ const article2Content = `
 
   <p>Her policy covers ₹15L. Should be fine, right?</p>
 
-  <p class="font-semibold text-gray-900 dark:text-gray-100">Wrong.</p>
+  <p><strong>Wrong.</strong></p>
 
-  <p>Her policy has a cancer sub-limit: ₹5L. That's all they'll pay for cancer treatment, even though her total SI is ₹15L.</p>
+  <p>Her policy has a cancer sub-limit: ₹5L. That's all the insurer will pay for cancer treatment, even though her total SI is ₹15L.</p>
 
-  <p>Out-of-pocket: ₹7L. On a ₹12L income. That's 58% of her annual salary.</p>
+  <p>Out-of-pocket: ₹7L. On a ₹12L income, that's 58% of her annual salary.</p>
 
-  <p>Neha thought she was protected. She wasn't. Because nobody explained that "covered" doesn't mean "fully covered."</p>
+  <p>Neha thought she was protected. She wasn't. Nobody explained that "covered" doesn't mean "fully covered."</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">The 5 Gaps That Hurt Most</h2>
+  <h2 id="five-gaps-that-hurt-most">The 5 Gaps That Hurt Most</h2>
 
-  <h3 class="text-2xl font-bold mt-6 mb-4 text-gray-900 dark:text-gray-100">1. Disease-Specific Sub-Limits</h3>
-  <p>Your policy says "cancer covered." But buried in page 47: "Cancer treatment sub-limit: ₹5L."</p>
-  <p>This means: Even if you have ₹20L coverage, cancer gets only ₹5L. Everything else? Out-of-pocket.</p>
+  <h3 id="disease-specific-sub-limits">1. Disease-Specific Sub-Limits</h3>
+  <p>Your policy says "cancer covered." Buried on page 47: "Cancer treatment sub-limit: ₹5L." Even with ₹20L coverage, cancer gets only ₹5L. Everything beyond that is out-of-pocket.</p>
 
-  <h3 class="text-2xl font-bold mt-6 mb-4 text-gray-900 dark:text-gray-100">2. Room Rent Caps</h3>
-  <p>Your policy covers ₹10L. But room rent is capped at ₹3,500/day. Mumbai hospitals charge ₹5,500/day.</p>
-  <p>Daily gap: ₹2,000. 10-day stay: ₹20,000 out-of-pocket.</p>
+  <h3 id="room-rent-caps">2. Room Rent Caps</h3>
+  <p>Your policy covers ₹10L, but room rent is capped at ₹3,500/day while Mumbai hospitals charge ₹5,500/day. Daily gap: ₹2,000. A 10-day stay: ₹20,000 out-of-pocket.</p>
 
-  <h3 class="text-2xl font-bold mt-6 mb-4 text-gray-900 dark:text-gray-100">3. Missing Riders</h3>
-  <p>Your base policy covers hospitalization. But what about maternity, critical illness, personal accident? These aren't gaps—they're missing coverage you might need.</p>
+  <h3 id="missing-riders">3. Missing Riders</h3>
+  <p>Your base policy covers hospitalization. Maternity, critical illness, personal accident? Those aren't gaps — they're coverage you might need that simply isn't there.</p>
 
-  <h3 class="text-2xl font-bold mt-6 mb-4 text-gray-900 dark:text-gray-100">4. Waiting Periods</h3>
-  <p>You just bought a policy. Your father needs cardiac care next month. Claim denied. Why? Waiting period. Most policies have 30-day general waiting, 24-36 month pre-existing disease waiting.</p>
+  <h3 id="waiting-periods">4. Waiting Periods</h3>
+  <p>You just bought a policy. Your father needs cardiac care next month. Claim denied — waiting period. Most policies have a 30-day general wait and a 24-36 month pre-existing disease wait.</p>
 
-  <h3 class="text-2xl font-bold mt-6 mb-4 text-gray-900 dark:text-gray-100">5. OPD Exclusions</h3>
-  <p>Your policy covers hospitalization. But routine diabetes checkups? Not covered. Annual cost: ₹15-20K out-of-pocket.</p>
+  <h3 id="opd-exclusions">5. OPD Exclusions</h3>
+  <p>Your policy covers hospitalization. Routine diabetes checkups? Not covered. Annual cost: ₹15-20K out-of-pocket.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">How to Check YOUR Policy</h2>
+  <h2 id="how-to-check-your-policy">How to Check YOUR Policy</h2>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 1: Find Your Policy Document</p>
-    <p class="text-sm">Download from insurer's website or check your email.</p>
-  </div>
+  <p><strong>Step 1: Find your policy document.</strong> Download it from your insurer's website or dig it out of your email.</p>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 2: Search for These Terms</p>
-    <ul class="list-disc list-inside space-y-1 ml-4 text-sm">
-      <li>"Sub-limit" or "disease-specific limit"</li>
-      <li>"Room rent" or "accommodation"</li>
-      <li>"Waiting period"</li>
-      <li>"OPD" or "out-patient"</li>
-      <li>"Rider" or "add-on"</li>
-    </ul>
-  </div>
+  <p><strong>Step 2: Search for these terms:</strong></p>
+  <ul>
+    <li>"Sub-limit" or "disease-specific limit"</li>
+    <li>"Room rent" or "accommodation"</li>
+    <li>"Waiting period"</li>
+    <li>"OPD" or "out-patient"</li>
+    <li>"Rider" or "add-on"</li>
+  </ul>
 
-  <p>Neha could have caught her cancer sub-limit before the diagnosis. She didn't have a tool that explained gaps in plain English.</p>
+  <p>Neha could have caught her cancer sub-limit before the diagnosis. The clause was always there — in fine print nobody translated for her.</p>
 
-  <p>That's why we built Ensured. Upload your policy (3 minutes), and we'll tell you exactly where your gaps are. Not to scare you—to prepare you.</p>
+  <p>Generic advice ends here. These five gaps are real, but which ones apply to you is written in YOUR policy — go check what it actually says.</p>
 </div>
 `;
 
 // Article 3: How to Choose Right Sum Insured for Your City
 const article3Content = `
-<div class="space-y-6 text-gray-700 dark:text-gray-300 leading-relaxed">
-  <div class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-    Mumbai's ₹10L and Delhi's ₹10L are NOT the same coverage.
-  </div>
-  
-  <p class="text-lg">Here's why your city matters more than you think.</p>
+<div class="blog-article-content">
+  <p><strong>Mumbai's ₹10L and Delhi's ₹10L are NOT the same coverage.</strong></p>
+
+  <p>Here's why your city matters more than you think.</p>
 
   <p>Same procedure. Same ₹10L policy. Different cities. Different outcomes.</p>
 
@@ -277,439 +234,341 @@ const article3Content = `
 
   <p>Same procedure in Pune: ₹8L. Your ₹10L policy? Fully covered.</p>
 
-  <p>The difference? Your city's healthcare costs. They vary by 40-60% across India.</p>
+  <p>The difference is your city's healthcare costs. They vary by 40-60% across India.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Real Costs by City (January 2026)</h2>
+  <h2 id="real-costs-by-city">Real Costs by City (January 2026)</h2>
 
-  <div class="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg my-6">
-    <p class="font-semibold mb-3">Mumbai (Tier 1 - Metro)</p>
-    <ul class="space-y-1 text-sm">
-      <li>• Cardiac bypass: ₹10-15L</li>
-      <li>• Cancer treatment: ₹18-28L</li>
-      <li>• Room rent: ₹5,500-6,500/day</li>
-    </ul>
-    <p class="mt-3 font-semibold">Recommended SI: ₹20-25L</p>
-  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>City</th>
+        <th>Cardiac bypass</th>
+        <th>Cancer treatment</th>
+        <th>Room rent/day</th>
+        <th>Recommended SI</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Mumbai (Tier 1 - Metro)</td>
+        <td>₹10-15L</td>
+        <td>₹18-28L</td>
+        <td>₹5,500-6,500</td>
+        <td><strong>₹20-25L</strong></td>
+      </tr>
+      <tr>
+        <td>Delhi/Bangalore (Tier 1 - Metro)</td>
+        <td>₹8-13L</td>
+        <td>₹15-24L</td>
+        <td>₹4,800-6,000</td>
+        <td><strong>₹18-22L</strong></td>
+      </tr>
+      <tr>
+        <td>Pune/Hyderabad (Tier 2)</td>
+        <td>₹6-9L</td>
+        <td>₹12-18L</td>
+        <td>₹3,500-4,500</td>
+        <td><strong>₹15-18L</strong></td>
+      </tr>
+      <tr>
+        <td>Tier 3 cities</td>
+        <td>₹5-8L</td>
+        <td>₹10-15L</td>
+        <td>₹2,500-3,500</td>
+        <td><strong>₹10-12L</strong></td>
+      </tr>
+    </tbody>
+  </table>
 
-  <div class="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg my-6">
-    <p class="font-semibold mb-3">Delhi/Bangalore (Tier 1 - Metro)</p>
-    <ul class="space-y-1 text-sm">
-      <li>• Cardiac bypass: ₹8-13L</li>
-      <li>• Cancer treatment: ₹15-24L</li>
-      <li>• Room rent: ₹4,800-6,000/day</li>
-    </ul>
-    <p class="mt-3 font-semibold">Recommended SI: ₹18-22L</p>
-  </div>
+  <h2 id="what-to-do-right-now">What to Do Right Now</h2>
 
-  <div class="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg my-6">
-    <p class="font-semibold mb-3">Pune/Hyderabad (Tier 2)</p>
-    <ul class="space-y-1 text-sm">
-      <li>• Cardiac bypass: ₹6-9L</li>
-      <li>• Cancer treatment: ₹12-18L</li>
-      <li>• Room rent: ₹3,500-4,500/day</li>
-    </ul>
-    <p class="mt-3 font-semibold">Recommended SI: ₹15-18L</p>
-  </div>
+  <p><strong>Step 1: Identify your city tier.</strong> Are you in a metro, Tier-2, or Tier-3 city?</p>
 
-  <div class="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg my-6">
-    <p class="font-semibold mb-3">Tier 3 Cities</p>
-    <ul class="space-y-1 text-sm">
-      <li>• Cardiac bypass: ₹5-8L</li>
-      <li>• Cancer treatment: ₹10-15L</li>
-      <li>• Room rent: ₹2,500-3,500/day</li>
-    </ul>
-    <p class="mt-3 font-semibold">Recommended SI: ₹10-12L</p>
-  </div>
+  <p><strong>Step 2: Check your current SI.</strong> Open your policy document and find "Sum Insured" or "Coverage Amount." Compare it against the row for your city.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">What to Do Right Now</h2>
+  <p>Your city's healthcare costs aren't something you can change. Your coverage is.</p>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 1: Identify Your City Tier</p>
-    <p class="text-sm">Are you in a metro, tier-2, or tier-3 city?</p>
-  </div>
-
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 2: Check Your Current SI</p>
-    <p class="text-sm">Open your policy document. Find "Sum Insured" or "Coverage Amount."</p>
-  </div>
-
-  <p>Your city's healthcare costs aren't something you can change. But your coverage? That's in your control.</p>
-
-  <p>Upload your policy to Ensured, tell us your city, and we'll calculate YOUR optimal coverage. Not generic advice. YOUR number for YOUR city.</p>
+  <p>Generic advice ends here — a table can tell you the market rate, but only YOUR policy document says what you're actually covered for. Go check the number.</p>
 </div>
 `;
 
 // Article 4: Room Rent Caps (Detailed version)
 const article4Content = `
-<div class="space-y-6 text-gray-700 dark:text-gray-300 leading-relaxed">
-  <div class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-    You're in the hospital. Surgery was ₹4 lakhs. Your policy? ₹10 lakhs. Should cover it, right?
-  </div>
-  
-  <p class="text-lg">Wrong.</p>
+<div class="blog-article-content">
+  <p><strong>You're in the hospital. Surgery was ₹4 lakhs. Your policy? ₹10 lakhs. Should cover it, right?</strong></p>
 
-  <p>The insurer sends a letter: Room rent claim denied. Your policy covers ₹3,500/day, but the hospital charged ₹5,000/day. Out-of-pocket: ₹30,000.</p>
+  <p>Wrong.</p>
+
+  <p>The insurer sends a letter: room rent claim denied. Your policy covers ₹3,500/day, but the hospital charged ₹5,000/day. Out-of-pocket: ₹30,000.</p>
 
   <p>This is the gap nobody talks about.</p>
 
-  <p>Meet Priya. 45 years old, Mumbai, works in IT. Bought a ₹10L ICICI policy because it seemed solid (good reviews, affordable premium). Never read the fine print.</p>
+  <p>Meet Priya. 45, Mumbai, works in IT. Bought a ₹10L ICICI policy because it seemed solid — good reviews, affordable premium. Never read the fine print.</p>
 
   <p>Last month, her mother had a cardiac episode. Apollo Hospital, South Mumbai. CABG surgery. World-class care. ₹4.5L total cost.</p>
 
   <p>Here's what Priya found when she filed the claim:</p>
-  <ul class="list-disc list-inside space-y-1 ml-4">
+  <ul>
     <li>Hospital room: ₹5,000/day (semi-private, standard in Mumbai)</li>
     <li>Her policy limit: ₹3,500/day</li>
     <li>Daily gap: ₹1,500</li>
     <li>7-day stay: ₹10,500 out-of-pocket</li>
   </ul>
 
-  <p>She had ₹10L coverage but paid ₹10.5K from pocket. Because nobody explained what that ₹3,500 meant in her city.</p>
+  <p>She had ₹10L of coverage and still paid ₹10.5K from pocket. Because nobody explained what that ₹3,500 meant in her city.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Room Rent Cap: What Is It, Really?</h2>
+  <h2 id="room-rent-cap-what-is-it">Room Rent Cap: What Is It, Really?</h2>
 
-  <p>Your policy says: 'Room rent covered up to ₹3,500/day.'</p>
+  <p>Your policy says: "Room rent covered up to ₹3,500/day."</p>
 
-  <p>This means: On any given day you're hospitalized, the insurer will pay up to ₹3,500 of your room charges. If the hospital charges ₹5,000, you cover the ₹1,500 difference.</p>
+  <p>Meaning: for every day you're hospitalized, the insurer pays up to ₹3,500 of your room charges. If the hospital charges ₹5,000, you cover the ₹1,500 difference.</p>
 
-  <p>Why do insurers cap this? Because room costs vary wildly. A private room in Delhi costs ₹2,000/day. A private room in Mumbai costs ₹6,000/day. The insurer needs to manage risk, so they set a cap that reflects the 'expected' room cost in your area.</p>
+  <p>Why the cap? Room costs vary wildly — a private room costs ₹2,000/day in Delhi and ₹6,000/day in Mumbai. Insurers manage that risk by setting a cap based on the "expected" room cost in your area.</p>
 
-  <p>But here's the catch: Their 'expected' cost is often outdated or too low for major metro cities.</p>
+  <p>The catch: their "expected" cost is often outdated or too low for major metros.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Where Room Rent Caps Hurt Most</h2>
+  <h2 id="where-room-rent-caps-hurt-most">Where Room Rent Caps Hurt Most</h2>
 
-  <div class="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg my-6 border-l-4 border-red-500">
-    <p class="font-semibold mb-2">1. Metro cities (Mumbai, Delhi, Bangalore)</p>
-    <p class="text-sm">Expected room cost: ₹5,000-6,000/day | Policy limit (avg): ₹3,500/day | Annual gap exposure: ₹20-30K possible</p>
-  </div>
+  <p><strong>1. Metro cities (Mumbai, Delhi, Bangalore).</strong> Actual room cost: ₹5,000-6,000/day. Average policy limit: ₹3,500/day. Gap exposure: ₹20-30K possible.</p>
 
-  <div class="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg my-6 border-l-4 border-red-500">
-    <p class="font-semibold mb-2">2. Multi-day procedures</p>
-    <p class="text-sm">Cancer treatment: 10-14 day stay (gap = ₹15-20K) | Complications: Extended stay = more gap</p>
-  </div>
+  <p><strong>2. Multi-day procedures.</strong> Cancer treatment means a 10-14 day stay — a gap of ₹15-20K. Complications extend the stay and the gap.</p>
 
-  <div class="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg my-6 border-l-4 border-red-500">
-    <p class="font-semibold mb-2">3. Private hospitals</p>
-    <p class="text-sm">Apollo, Fortis, Reliance: ₹5-7K/day | If you're forced to private (availability), gap is ₹40-50K</p>
-  </div>
+  <p><strong>3. Private hospitals.</strong> Apollo, Fortis, Reliance run ₹5-7K/day. If availability forces you private, the gap can hit ₹40-50K.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">What to Do Right Now</h2>
+  <h2 id="what-to-do-right-now">What to Do Right Now</h2>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 1: Know Your City's Room Rent Reality</p>
-    <p class="text-sm mb-2">Find 2-3 major hospitals in your city. Go to their website → Patient info → Tariffs/Room charges.</p>
-    <p class="text-sm">Write down: Semi-private room cost (what you'll likely use)</p>
-  </div>
+  <p><strong>Step 1: Know your city's room rent reality.</strong> Find 2-3 major hospitals in your city. Website → Patient info → Tariffs/Room charges. Write down the semi-private room cost — that's what you'll likely use.</p>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 2: Check Your Policy</p>
-    <p class="text-sm">Open your policy document. Search for: 'Room rent', 'Accommodation limit', 'Room charges'</p>
-    <p class="text-sm mt-2">Write down: ₹______/day</p>
-  </div>
+  <p><strong>Step 2: Check your policy.</strong> Search the document for "Room rent," "Accommodation limit," or "Room charges." Write down: ₹______/day.</p>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 3: Calculate Your Gap</p>
-    <p class="text-sm">Your city's average room rent: ₹4,500/day</p>
-    <p class="text-sm">Your policy limit: ₹3,500/day</p>
-    <p class="text-sm">Daily gap: ₹1,000/day</p>
-    <p class="text-sm mt-2">If you're hospitalized for 7 days (avg): Potential gap: ₹7,000</p>
-  </div>
+  <p><strong>Step 3: Calculate your gap.</strong> Example: city average ₹4,500/day, policy limit ₹3,500/day. Daily gap: ₹1,000. Over an average 7-day stay: ₹7,000 out of your pocket.</p>
 
-  <p>Priya could have caught this gap before the surgery. She didn't have a tool that explained room rent in plain English.</p>
+  <p>Priya could have caught this gap before the surgery. The cap was printed in her policy the whole time — just never explained.</p>
 
-  <p>That's why we built Ensured. Upload your policy (3 minutes), answer a few questions about your city, and we'll tell you exactly where your gaps are. Not to scare you—to prepare you.</p>
-
-  <p>Because the best time to find a gap is before you're in a hospital bed, not after.</p>
+  <p>Generic advice ends here. Your room rent cap is one line in YOUR policy document — find it before the hospital finds it for you.</p>
 </div>
 `;
 
 // Article 5: Pre-Existing Diseases & Waiting Periods
 const article5Content = `
-<div class="space-y-6 text-gray-700 dark:text-gray-300 leading-relaxed">
-  <div class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-    You have diabetes for 10 years. You finally buy insurance. Diabetes is excluded. For 3 years. How is that fair?
-  </div>
-  
-  <p class="text-lg">Waiting periods aren't punishment. They're insurance math. But they suck.</p>
+<div class="blog-article-content">
+  <p><strong>You have diabetes for 10 years. You finally buy insurance. Diabetes is excluded. For 3 years. How is that fair?</strong></p>
 
-  <p>Meet Rajesh. 45, diagnosed with Type 2 diabetes in September 2024, bought a policy in March 2025. When he had a kidney complication in August 2025 (only 5 months into the policy), the claim was denied.</p>
+  <p>Waiting periods aren't punishment. They're insurance math. But they suck.</p>
 
-  <p>Reason: His pre-existing disease waiting period (36 months) was still active. The diabetes diagnosis (Sept 2024) happened before the policy (March 2025), so the clock doesn't reset.</p>
+  <p>Meet Rajesh. 45. Diagnosed with Type 2 diabetes in September 2024, bought a policy in March 2025. When a kidney complication hit in August 2025 — only 5 months into the policy — the claim was denied.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Why Waiting Periods Exist</h2>
+  <p>Reason: his pre-existing disease waiting period (36 months) was still active. The diabetes diagnosis (Sept 2024) came before the policy (March 2025), so the clock doesn't reset.</p>
 
-  <p>Insurance companies need to protect against "adverse selection"—people buying insurance only when they know they're sick. Waiting periods ensure you can't game the system.</p>
+  <h2 id="why-waiting-periods-exist">Why Waiting Periods Exist</h2>
 
-  <p>It's fair, but it hurts when you're the one waiting.</p>
+  <p>Insurers need to protect against "adverse selection" — people buying insurance only once they know they're sick. Waiting periods make the system ungameable.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Types of Waiting Periods</h2>
+  <p>Fair in aggregate. Painful when you're the one waiting.</p>
 
-  <div class="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg my-6 border-l-4 border-blue-500">
-    <p class="font-semibold mb-2">1. General Waiting Period (30 days)</p>
-    <p class="text-sm">Applies to: All diseases (except accidents)</p>
-    <p class="text-sm">Duration: 30 days from policy start</p>
-    <p class="text-sm">Example: You buy policy Jan 1, get hospitalized Jan 15. Claim denied (only 15 days in).</p>
-  </div>
+  <h2 id="types-of-waiting-periods">Types of Waiting Periods</h2>
 
-  <div class="bg-amber-50 dark:bg-amber-900/20 p-6 rounded-lg my-6 border-l-4 border-amber-500">
-    <p class="font-semibold mb-2">2. Pre-Existing Disease Waiting Period (24-48 months)</p>
-    <p class="text-sm">Applies to: Any disease you had before buying the policy</p>
-    <p class="text-sm">Duration: 24-48 months (varies by insurer)</p>
-    <p class="text-sm">Example: Rajesh's diabetes (diagnosed before policy) = 36 months wait.</p>
-  </div>
+  <p><strong>1. General waiting period (30 days).</strong> Applies to all diseases except accidents, for the first 30 days from policy start. Buy a policy on Jan 1, get hospitalized Jan 15 — claim denied, you're only 15 days in.</p>
 
-  <div class="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg my-6 border-l-4 border-red-500">
-    <p class="font-semibold mb-2">3. Disease-Specific Waiting Period (12-48 months)</p>
-    <p class="text-sm">Applies to: Specific diseases (cataract, hernia, joint replacement)</p>
-    <p class="text-sm">Duration: 12-48 months</p>
-    <p class="text-sm">Example: Cataract surgery = 24 months wait, even if you don't have it now.</p>
-  </div>
+  <p><strong>2. Pre-existing disease waiting period (24-48 months).</strong> Applies to any disease you had before buying the policy; duration varies by insurer. Rajesh's diabetes, diagnosed before the policy, meant a 36-month wait.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Strategy: Buy NOW, Not Later</h2>
+  <p><strong>3. Disease-specific waiting period (12-48 months).</strong> Applies to listed conditions like cataract, hernia, and joint replacement — even if you don't have them yet. Cataract surgery typically carries a 24-month wait.</p>
 
-  <p>The best time to buy insurance? When you're healthy. Because once you're diagnosed, the waiting period clock starts ticking.</p>
+  <h2 id="strategy-buy-now-not-later">Strategy: Buy NOW, Not Later</h2>
 
-  <p>Rajesh waited too long. He should have bought insurance in 2023, before his diabetes diagnosis. Now he's stuck waiting 36 months.</p>
+  <p>The best time to buy insurance is when you're healthy. Once you're diagnosed, every policy you buy afterwards starts the waiting-period clock from zero.</p>
 
-  <div class="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg my-6 border-l-4 border-green-500">
-    <p class="font-semibold mb-2">Your Action Plan:</p>
-    <ol class="list-decimal list-inside space-y-2 ml-4 text-sm">
-      <li>Buy insurance NOW, even if you're healthy</li>
-      <li>If you have pre-existing conditions, check waiting periods before buying</li>
-      <li>Some insurers waive PED wait for first ₹50K/year—ask about this</li>
-      <li>Don't wait until you need it—by then, it's too late</li>
-    </ol>
-  </div>
+  <p>Rajesh should have bought in 2023, before his diagnosis. Now he's stuck waiting 36 months.</p>
 
-  <p>Rajesh could have avoided this. He didn't understand waiting periods until it was too late.</p>
+  <p><strong>Your action plan:</strong></p>
+  <ol>
+    <li>Buy insurance NOW, even if you're healthy</li>
+    <li>If you have pre-existing conditions, check waiting periods before buying</li>
+    <li>Some insurers waive the PED wait for the first ₹50K/year — ask</li>
+    <li>Don't wait until you need it — by then, it's too late</li>
+  </ol>
 
-  <p>That's why we built Ensured. Upload your policy, and we'll explain your waiting periods in plain English. Not legal jargon. Plain English.</p>
+  <p>Rajesh could have avoided all of this. He just didn't know what his waiting periods said until the denial letter arrived.</p>
+
+  <p>Generic advice ends here. Your waiting periods — how long, for what — are spelled out in YOUR policy. Read them before you need them.</p>
 </div>
 `;
 
 // Article 6: Family Floater vs Individual Policies
 const article6Content = `
-<div class="space-y-6 text-gray-700 dark:text-gray-300 leading-relaxed">
-  <div class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-    You bought a ₹25L family floater. Your mom got sick. ₹20L used. Now your kid needs appendicitis surgery. ₹8L remaining. Not enough.
-  </div>
-  
-  <p class="text-lg">Family floater is NOT always cheaper. You might need both.</p>
+<div class="blog-article-content">
+  <p><strong>You bought a ₹25L family floater. Your mom got sick. ₹20L used. Now your kid needs appendicitis surgery. Not enough left.</strong></p>
 
-  <p>Meet the Sharma family. Father (45), Mother (42), Son (12), Daughter (8). Bought a ₹25L family floater because "it's cheaper than individual policies."</p>
+  <p>Family floater is NOT always cheaper. You might need both.</p>
+
+  <p>Meet the Sharma family. Father (45), mother (42), son (12), daughter (8). Bought a ₹25L family floater because "it's cheaper than individual policies."</p>
 
   <p>Last year, mother had cardiac surgery. ₹20L used. ₹5L remaining in the floater.</p>
 
-  <p>This year, son needs appendicitis surgery. ₹3L cost. But ₹5L remaining should cover it, right?</p>
+  <p>This year, son needs appendicitis surgery. ₹3L cost. ₹5L remaining should cover it, right?</p>
 
-  <p class="font-semibold text-gray-900 dark:text-gray-100">Wrong.</p>
+  <p><strong>Wrong.</strong></p>
 
-  <p>Appendicitis surgery at a good hospital: ₹3.5L. But with complications, it went to ₹6L. Floater had only ₹5L. Out-of-pocket: ₹1L.</p>
+  <p>Appendicitis surgery at a good hospital: ₹3.5L. With complications, it went to ₹6L. The floater had only ₹5L left. Out-of-pocket: ₹1L.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Family Floater Basics</h2>
+  <h2 id="family-floater-basics">Family Floater Basics</h2>
 
-  <p>Family floater = Shared pool of coverage. All family members share the same ₹25L. If one person uses ₹20L, everyone else has ₹5L left.</p>
+  <p>Family floater = one shared pool. All members draw from the same ₹25L. If one person uses ₹20L, everyone else shares the remaining ₹5L.</p>
 
-  <p>Cost: ₹12-15K/year for ₹25L (covers 4 people)</p>
+  <p>Cost: ₹12-15K/year for ₹25L covering 4 people.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Individual Policy Basics</h2>
+  <h2 id="individual-policy-basics">Individual Policy Basics</h2>
 
-  <p>Individual policy = Separate coverage per person. Each person has their own ₹10L. If one person uses ₹10L, others still have ₹10L each.</p>
+  <p>Individual policy = separate coverage per person. Each person gets their own ₹10L. One person exhausting theirs leaves everyone else untouched.</p>
 
-  <p>Cost: ₹4-5K/year per person × 4 = ₹16-20K/year for ₹40L total</p>
+  <p>Cost: ₹4-5K/year per person × 4 = ₹16-20K/year for ₹40L total.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Real Comparison</h2>
+  <h2 id="real-comparison">Real Comparison</h2>
 
-  <div class="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg my-6">
-    <p class="font-semibold mb-3">Scenario A: No Claims</p>
-    <p class="text-sm">Floater ₹25L: ₹12K/year ✅ (cheaper)</p>
-    <p class="text-sm">Individual ₹10L each: ₹18K/year</p>
-  </div>
+  <p><strong>Scenario A: No claims.</strong> Floater ₹25L costs ₹12K/year — cheaper. Individual ₹10L each costs ₹18K/year.</p>
 
-  <div class="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg my-6">
-    <p class="font-semibold mb-3">Scenario B: One Major Claim</p>
-    <p class="text-sm">Floater ₹25L: Used ₹20L, ₹5L remaining ⚠️ (risky)</p>
-    <p class="text-sm">Individual ₹10L each: One person used ₹10L, others still have ₹10L each ✅ (safer)</p>
-  </div>
+  <p><strong>Scenario B: One major claim.</strong> Floater: ₹20L used, ₹5L left for the whole family — risky. Individual: one person used their ₹10L, everyone else still has ₹10L each — safer.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">When Each Works</h2>
+  <h2 id="when-each-works">When Each Works</h2>
 
-  <div class="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg my-6 border-l-4 border-green-500">
-    <p class="font-semibold mb-2">Family Floater Works If:</p>
-    <ul class="list-disc list-inside space-y-1 ml-4 text-sm">
-      <li>Young, healthy family (low claim risk)</li>
-      <li>Budget is tight (₹12K vs ₹18K)</li>
-      <li>You're okay with shared risk</li>
-    </ul>
-  </div>
+  <p><strong>Family floater works if:</strong></p>
+  <ul>
+    <li>Young, healthy family (low claim risk)</li>
+    <li>Budget is tight (₹12K vs ₹18K)</li>
+    <li>You're okay with shared risk</li>
+  </ul>
 
-  <div class="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg my-6 border-l-4 border-blue-500">
-    <p class="font-semibold mb-2">Individual Policies Work If:</p>
-    <ul class="list-disc list-inside space-y-1 ml-4 text-sm">
-      <li>Multiple people with pre-existing conditions</li>
-      <li>You want guaranteed coverage per person</li>
-      <li>Budget allows (₹18K vs ₹12K)</li>
-    </ul>
-  </div>
+  <p><strong>Individual policies work if:</strong></p>
+  <ul>
+    <li>Multiple people have pre-existing conditions</li>
+    <li>You want guaranteed coverage per person</li>
+    <li>Budget allows (₹18K vs ₹12K)</li>
+  </ul>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-2">Hybrid Approach (Recommended):</p>
-    <p class="text-sm">Floater ₹20L + Individual ₹5L per person = Best of both worlds</p>
-    <p class="text-sm">Cost: ₹14K/year | Coverage: ₹20L shared + ₹5L per person guaranteed</p>
-  </div>
+  <p><strong>Hybrid approach (recommended):</strong> Floater ₹20L + individual ₹5L per person. Cost: ₹14K/year. Coverage: ₹20L shared plus ₹5L per person guaranteed. Best of both worlds.</p>
 
-  <p>The Sharma family could have avoided the gap. They didn't understand that floater = shared risk.</p>
+  <p>The Sharmas could have avoided the gap. Nobody told them that floater means shared risk.</p>
 
-  <p>That's why we built Ensured. Upload your policy, tell us your family size, and we'll recommend the best structure. Floater? Individual? Hybrid? We'll tell you.</p>
+  <p>Generic advice ends here. Whether your family is one bad year away from an empty pool depends on what YOUR policy says — go look at the structure you actually bought.</p>
 </div>
 `;
 
 // Article 7: Restoration Benefit
 const article7Content = `
-<div class="space-y-6 text-gray-700 dark:text-gray-300 leading-relaxed">
-  <div class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-    You claimed ₹8L and exhausted your SI. Bad luck strikes again that year. Can you claim again?
-  </div>
-  
-  <p class="text-lg">If your policy has restoration: YES. If not: You're ₹500K out of pocket.</p>
+<div class="blog-article-content">
+  <p><strong>You claimed ₹8L and exhausted your SI. Bad luck strikes again that year. Can you claim again?</strong></p>
 
-  <p>Meet Vikram. 38, Mumbai, IT professional. Has a ₹10L policy. January 2026: Cardiac surgery ₹7L (exhausts ₹10L SI).</p>
+  <p>If your policy has restoration: YES. If not: you're paying the second bill yourself.</p>
 
-  <p>June 2026: Cancer diagnosis. Treatment needed: ₹12L.</p>
+  <p>Meet Vikram. 38, Mumbai, IT professional. Has a ₹10L policy. January 2026: cardiac surgery, ₹7L — his ₹10L SI is exhausted.</p>
+
+  <p>June 2026: cancer diagnosis. Treatment needed: ₹12L.</p>
 
   <p>Without restoration: ₹0 coverage left. Out-of-pocket: ₹12L.</p>
 
-  <p>With restoration: SI restored to ₹10L. Can claim ₹10L again. Out-of-pocket: ₹2L (much better).</p>
+  <p>With restoration: SI restored to ₹10L, claimable again. Out-of-pocket: ₹2L. Much better.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">What Restoration Is</h2>
+  <h2 id="what-restoration-is">What Restoration Is</h2>
 
-  <p>Restoration = Your sum insured gets replenished after you exhaust it. One per year typically.</p>
+  <p>Restoration means your sum insured gets replenished after you exhaust it — typically once per policy year.</p>
 
-  <p>Cost: Usually free (built into premium) or premium-based (₹500-1,000 extra/year).</p>
+  <p>Cost: usually free (built into the premium) or ₹500-1,000 extra per year.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Limitations</h2>
+  <h2 id="restoration-limitations">Limitations</h2>
 
-  <ul class="list-disc list-inside space-y-2 ml-4">
-    <li>Only once per year (typically)</li>
-    <li>Not always automatic (check your policy)</li>
+  <ul>
+    <li>Typically only once per year</li>
+    <li>Not always automatic — check your policy</li>
     <li>Some policies restore only for unrelated diseases</li>
-    <li>Some policies have waiting period before restoration activates</li>
+    <li>Some have a waiting period before restoration activates</li>
   </ul>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Compare Insurers</h2>
+  <h2 id="compare-insurers">Compare Insurers</h2>
 
-  <div class="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg my-6">
-    <p class="font-semibold mb-3">ICICI: Unlimited restoration (best)</p>
-    <p class="text-sm">Can restore multiple times per year. No limit.</p>
-  </div>
+  <p><strong>ICICI: unlimited restoration.</strong> Can restore multiple times per year, no limit. The best on this feature.</p>
 
-  <div class="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg my-6">
-    <p class="font-semibold mb-3">HDFC: 2x per year</p>
-    <p class="text-sm">Can restore twice per year. Better than most.</p>
-  </div>
+  <p><strong>HDFC: twice per year.</strong> Better than most.</p>
 
-  <div class="bg-gray-50 dark:bg-gray-700/50 p-6 rounded-lg my-6">
-    <p class="font-semibold mb-3">Apollo: Limited, premium-based</p>
-    <p class="text-sm">Restoration available but costs extra. Check if worth it.</p>
-  </div>
+  <p><strong>Apollo: limited, premium-based.</strong> Restoration is available but costs extra — check whether it's worth it for you.</p>
 
   <p>Vikram's policy had restoration. It saved him ₹10L. Without it, he'd be bankrupt.</p>
 
-  <p>That's why we built Ensured. Upload your policy, and we'll tell you if you have restoration, how it works, and if you need more.</p>
+  <p>Generic advice ends here. Restoration is a single clause that decides whether a second bad diagnosis ruins you — check whether YOUR policy has it, and on what terms.</p>
 </div>
 `;
 
 // Article 8: Cashless vs Reimbursement
 const article8Content = `
-<div class="space-y-6 text-gray-700 dark:text-gray-300 leading-relaxed">
-  <div class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-    Your hospital isn't empaneled. Insurer says: 'We won't pay.' But if you understand reimbursement, you can pay yourself and get ₹8L back later.
-  </div>
-  
-  <p class="text-lg">Cashless sounds better. But reimbursement gives you choice.</p>
+<div class="blog-article-content">
+  <p><strong>Your hospital isn't empaneled. Insurer says: "We won't pay." But if you understand reimbursement, you can pay yourself and get ₹8L back later.</strong></p>
 
-  <p>Meet Anjali. 32, Delhi, marketing professional. Needs cardiac surgery. Best surgeon in Delhi works at a non-empaneled hospital.</p>
+  <p>Cashless sounds better. But reimbursement gives you choice.</p>
 
-  <p>Option A: Go to empaneled hospital (cashless) = Average surgeon, ₹6L cost</p>
+  <p>Meet Anjali. 32, Delhi, marketing professional. Needs cardiac surgery. The best surgeon in Delhi works at a non-empaneled hospital.</p>
 
-  <p>Option B: Go to non-empaneled hospital (reimbursement) = Best surgeon, ₹8L cost, but she pays upfront</p>
+  <p>Option A: empaneled hospital (cashless) — average surgeon, ₹6L cost.</p>
 
-  <p>She chose Option B. Paid ₹8L upfront. Got ₹7.5L reimbursed (within policy limits). Net cost: ₹500K for the best surgeon. Worth it.</p>
+  <p>Option B: non-empaneled hospital (reimbursement) — best surgeon, ₹8L cost, paid upfront.</p>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Cashless: How It Works</h2>
+  <p>She chose Option B. Paid ₹8L upfront, got ₹7.5L reimbursed within policy limits. The difference bought her the best surgeon. Worth it.</p>
 
-  <p>Insurer pays hospital directly. You don't pay anything upfront.</p>
+  <h2 id="cashless-how-it-works">Cashless: How It Works</h2>
 
-  <div class="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg my-6 border-l-4 border-green-500">
-    <p class="font-semibold mb-2">Pros:</p>
-    <ul class="list-disc list-inside space-y-1 ml-4 text-sm">
-      <li>No upfront payment</li>
-      <li>Simpler process</li>
-      <li>Less paperwork</li>
-    </ul>
-  </div>
+  <p>The insurer pays the hospital directly. You pay nothing upfront.</p>
 
-  <div class="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg my-6 border-l-4 border-red-500">
-    <p class="font-semibold mb-2">Cons:</p>
-    <ul class="list-disc list-inside space-y-1 ml-4 text-sm">
-      <li>Limited to empaneled hospitals</li>
-      <li>No negotiation power</li>
-      <li>Can't choose best doctor if hospital isn't empaneled</li>
-    </ul>
-  </div>
+  <p><strong>Pros:</strong></p>
+  <ul>
+    <li>No upfront payment</li>
+    <li>Simpler process</li>
+    <li>Less paperwork</li>
+  </ul>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Reimbursement: How It Works</h2>
+  <p><strong>Cons:</strong></p>
+  <ul>
+    <li>Limited to empaneled hospitals</li>
+    <li>No negotiation power</li>
+    <li>Can't choose the best doctor if their hospital isn't empaneled</li>
+  </ul>
 
-  <p>You pay hospital. Submit bills. Insurer refunds you (30-45 days later).</p>
+  <h2 id="reimbursement-how-it-works">Reimbursement: How It Works</h2>
 
-  <div class="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg my-6 border-l-4 border-green-500">
-    <p class="font-semibold mb-2">Pros:</p>
-    <ul class="list-disc list-inside space-y-1 ml-4 text-sm">
-      <li>Any hospital (your choice)</li>
-      <li>You control the choice</li>
-      <li>Can negotiate with hospital</li>
-    </ul>
-  </div>
+  <p>You pay the hospital, submit bills, and the insurer refunds you 30-45 days later.</p>
 
-  <div class="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg my-6 border-l-4 border-red-500">
-    <p class="font-semibold mb-2">Cons:</p>
-    <ul class="list-disc list-inside space-y-1 ml-4 text-sm">
-      <li>Upfront cost (₹5-10L)</li>
-      <li>Wait for refund (30-45 days)</li>
-      <li>More paperwork</li>
-    </ul>
-  </div>
+  <p><strong>Pros:</strong></p>
+  <ul>
+    <li>Any hospital — your choice</li>
+    <li>You control the treatment decisions</li>
+    <li>You can negotiate with the hospital</li>
+  </ul>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Documents Needed for Reimbursement</h2>
+  <p><strong>Cons:</strong></p>
+  <ul>
+    <li>Upfront cost (₹5-10L)</li>
+    <li>Waiting 30-45 days for the refund</li>
+    <li>More paperwork</li>
+  </ul>
 
-  <ul class="list-disc list-inside space-y-2 ml-4">
-    <li>Discharge summary (from hospital)</li>
+  <h2 id="documents-needed-for-reimbursement">Documents Needed for Reimbursement</h2>
+
+  <ul>
+    <li>Discharge summary (from the hospital)</li>
     <li>Itemized bill (breakdown of all charges)</li>
     <li>Medical reports (test results, doctor notes)</li>
     <li>Proof of payment (bank statement, receipt)</li>
-    <li>Claim form (from insurer's website)</li>
+    <li>Claim form (from the insurer's website)</li>
   </ul>
 
-  <h2 class="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-gray-100">Timeline: How to Speed Up Reimbursement</h2>
+  <h2 id="speed-up-reimbursement">Timeline: How to Speed Up Reimbursement</h2>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 1: Submit Within 7 Days</p>
-    <p class="text-sm">Don't wait. Submit all documents within 7 days of discharge.</p>
-  </div>
+  <p><strong>Step 1: Submit within 7 days.</strong> Don't wait — send all documents within 7 days of discharge.</p>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 2: Follow Up Weekly</p>
-    <p class="text-sm">Call insurer every week. Ask for status. Push them.</p>
-  </div>
+  <p><strong>Step 2: Follow up weekly.</strong> Call the insurer every week. Ask for status. Push.</p>
 
-  <div class="bg-teal-50 dark:bg-teal-900/20 p-6 rounded-lg my-6 border-l-4 border-teal-500">
-    <p class="font-semibold mb-3">Step 3: Escalate If Delayed</p>
-    <p class="text-sm">If it takes more than 45 days, escalate to IRDAI complaint.</p>
-  </div>
+  <p><strong>Step 3: Escalate if delayed.</strong> Past 45 days, escalate with an IRDAI complaint.</p>
 
-  <p>Anjali could have gone to an average surgeon (cashless). She chose the best surgeon (reimbursement). That choice saved her life.</p>
+  <p>Anjali could have settled for an average surgeon and cashless convenience. She chose the best surgeon instead — and reimbursement made that choice possible.</p>
 
-  <p>That's why we built Ensured. Upload your policy, and we'll explain your claim options. Cashless? Reimbursement? When to use each? We'll tell you.</p>
+  <p>Generic advice ends here. Which hospitals are empaneled, what gets reimbursed, and within what limits — that's all written in YOUR policy. Check it before the emergency, not during.</p>
 </div>
 `;
 
@@ -718,9 +577,9 @@ export const blogPosts: BlogPost[] = [
     id: 1,
     title: "Understanding Health Insurance Sufficiency: A Complete Guide",
     excerpt: "Your ₹10L policy might be enough. Or it might leave you bankrupt. The difference? Nobody explained what 'sufficient' means for YOU.",
-    author: "Ensured Team",
-    date: "2025-12-27",
-    readTime: "7 min read",
+    author: "IndSure Team",
+    date: "2026-02-05",
+    readTime: "3 min read",
     category: "Education",
     icon: BookOpen,
     featured: true,
@@ -730,9 +589,9 @@ export const blogPosts: BlogPost[] = [
     id: 2,
     title: "Top 5 Gaps in Health Insurance Policies You Should Know",
     excerpt: "Your policy covers cancer. But only ₹5L of it. You need ₹12L. Welcome to the gap nobody sees coming.",
-    author: "Ensured Team",
-    date: "2026-01-03",
-    readTime: "8 min read",
+    author: "IndSure Team",
+    date: "2026-02-19",
+    readTime: "2 min read",
     category: "Tips",
     icon: AlertCircle,
     featured: true,
@@ -742,9 +601,9 @@ export const blogPosts: BlogPost[] = [
     id: 3,
     title: "How to Choose the Right Sum Insured for Your City",
     excerpt: "Mumbai's ₹10L and Delhi's ₹10L are NOT the same coverage. Here's why your city matters more than you think.",
-    author: "Ensured Team",
-    date: "2026-01-10",
-    readTime: "6 min read",
+    author: "IndSure Team",
+    date: "2026-03-05",
+    readTime: "1 min read",
     category: "Guide",
     icon: TrendingUp,
     featured: false,
@@ -754,9 +613,9 @@ export const blogPosts: BlogPost[] = [
     id: 4,
     title: "Room Rent Caps: The Hidden Cost in Your Policy",
     excerpt: "You're in the hospital. Surgery was ₹4 lakhs. Your policy? ₹10 lakhs. Should cover it, right? Wrong. The insurer sends a letter: Room rent claim denied.",
-    author: "Ensured Team",
-    date: "2026-01-17",
-    readTime: "8 min read",
+    author: "IndSure Team",
+    date: "2026-03-19",
+    readTime: "2 min read",
     category: "Education",
     icon: Lightbulb,
     featured: false,
@@ -766,9 +625,9 @@ export const blogPosts: BlogPost[] = [
     id: 5,
     title: "Pre-Existing Diseases: Waiting Periods Explained",
     excerpt: "You have diabetes for 10 years. You finally buy insurance. Diabetes is excluded. For 3 years. How is that fair? Waiting periods aren't punishment. They're insurance math. But they suck.",
-    author: "Ensured Team",
-    date: "2026-01-24",
-    readTime: "6 min read",
+    author: "IndSure Team",
+    date: "2026-04-09",
+    readTime: "2 min read",
     category: "Education",
     icon: BookOpen,
     featured: false,
@@ -778,9 +637,9 @@ export const blogPosts: BlogPost[] = [
     id: 6,
     title: "Family Floater vs Individual Policies: Which is Better?",
     excerpt: "You bought a ₹25L family floater. Your mom got sick. ₹20L used. Now your kid needs appendicitis surgery. ₹8L remaining. Not enough. Family floater is NOT always cheaper.",
-    author: "Ensured Team",
-    date: "2026-02-01",
-    readTime: "7 min read",
+    author: "IndSure Team",
+    date: "2026-04-30",
+    readTime: "2 min read",
     category: "Guide",
     icon: TrendingUp,
     featured: false,
@@ -790,9 +649,9 @@ export const blogPosts: BlogPost[] = [
     id: 7,
     title: "Restoration Benefit: What It Means and Why It Matters",
     excerpt: "You claimed ₹8L and exhausted your SI. Bad luck strikes again that year. Can you claim again? If your policy has restoration: YES. If not: You're ₹500K out of pocket.",
-    author: "Ensured Team",
-    date: "2026-02-08",
-    readTime: "5 min read",
+    author: "IndSure Team",
+    date: "2026-05-21",
+    readTime: "1 min read",
     category: "Education",
     icon: Lightbulb,
     featured: false,
@@ -802,9 +661,9 @@ export const blogPosts: BlogPost[] = [
     id: 8,
     title: "Cashless vs Reimbursement: Understanding Claim Processes",
     excerpt: "Your hospital isn't empaneled. Insurer says: 'We won't pay.' But if you understand reimbursement, you can pay yourself and get ₹8L back later. Cashless sounds better. But reimbursement gives you choice.",
-    author: "Ensured Team",
-    date: "2026-02-15",
-    readTime: "6 min read",
+    author: "IndSure Team",
+    date: "2026-06-11",
+    readTime: "2 min read",
     category: "Tips",
     icon: AlertCircle,
     featured: false,
@@ -815,9 +674,9 @@ export const blogPosts: BlogPost[] = [
     id: 9,
     title: "What Is Health Insurance? A Complete Guide for Indians",
     excerpt: "Understanding health insurance in India. Learn how it works, what it covers, room limits, co-pay, and why ₹5L+ healthcare costs make insurance essential—not optional.",
-    author: "Ensured Team",
-    date: "2026-01-27",
-    readTime: "12 min read",
+    author: "IndSure Team",
+    date: "2026-02-10",
+    readTime: "4 min read",
     category: "Health Insurance",
     icon: Heart,
     featured: true,
@@ -826,15 +685,14 @@ export const blogPosts: BlogPost[] = [
     content: article9Content,
     faqs: article9FAQs,
     featuredImage: "/images/blog/health-insurance-guide.jpg",
-    ...generateArticleStats(9),
   },
   {
     id: 10,
     title: "What Is Life Insurance? Complete Guide for Indian Families",
     excerpt: "If you die today, is your family financially secure? Life insurance is your family's safety net. Learn about term life, whole life, endowment plans, and what ₹1cr coverage actually means for your loved ones.",
-    author: "Ensured Team",
-    date: "2026-01-28",
-    readTime: "12 min read",
+    author: "IndSure Team",
+    date: "2026-03-03",
+    readTime: "4 min read",
     category: "Life Insurance",
     icon: Shield,
     featured: true,
@@ -843,15 +701,14 @@ export const blogPosts: BlogPost[] = [
     content: article10Content,
     faqs: article10FAQs,
     featuredImage: "/images/blog/life-insurance-guide.jpg",
-    ...generateArticleStats(10),
   },
   {
     id: 11,
     title: "Car Insurance Explained: Third-Party vs Comprehensive",
     excerpt: "Accident statistics show why vehicle insurance isn't optional. Understand third-party (mandatory) vs comprehensive coverage, no-claim bonus, deductibles, and how to save ₹5k+ while staying protected.",
-    author: "Ensured Team",
-    date: "2026-01-29",
-    readTime: "11 min read",
+    author: "IndSure Team",
+    date: "2026-03-24",
+    readTime: "3 min read",
     category: "Vehicle Insurance",
     icon: Car,
     featured: true,
@@ -860,15 +717,14 @@ export const blogPosts: BlogPost[] = [
     content: article11Content,
     faqs: article11FAQs,
     featuredImage: "/images/blog/car-insurance-explained.jpg",
-    ...generateArticleStats(11),
   },
   {
     id: 12,
     title: "Home Insurance Explained: Building vs Contents Coverage",
     excerpt: "Your ₹50L home is likely your biggest asset. Fire, theft, floods—home insurance protects your investment. Learn building vs contents coverage, landlord insurance, and what's actually covered.",
-    author: "Ensured Team",
-    date: "2026-01-30",
-    readTime: "10 min read",
+    author: "IndSure Team",
+    date: "2026-04-14",
+    readTime: "2 min read",
     category: "Home Insurance",
     icon: Home,
     featured: false,
@@ -877,15 +733,14 @@ export const blogPosts: BlogPost[] = [
     content: article12Content,
     faqs: article12FAQs,
     featuredImage: "/images/blog/home-insurance-explained.jpg",
-    ...generateArticleStats(12),
   },
   {
     id: 13,
     title: "Travel Insurance Explained: Domestic vs International",
     excerpt: "Flight cancelled? Medical emergency abroad? Lost baggage? Travel insurance = peace of mind. Learn what's covered, what's not, and when ₹500 insurance saves you ₹2L+.",
-    author: "Ensured Team",
-    date: "2026-01-31",
-    readTime: "10 min read",
+    author: "IndSure Team",
+    date: "2026-05-12",
+    readTime: "2 min read",
     category: "Travel Insurance",
     icon: Plane,
     featured: false,
@@ -894,15 +749,14 @@ export const blogPosts: BlogPost[] = [
     content: article13Content,
     faqs: article13FAQs,
     featuredImage: "/images/blog/travel-insurance-explained.jpg",
-    ...generateArticleStats(13),
   },
   {
     id: 14,
     title: "What Is General Insurance? Types Explained",
     excerpt: "General insurance covers everything except life: health, vehicle, home, travel, business. Understand the broad category and how it differs from life insurance in India.",
-    author: "Ensured Team",
-    date: "2026-02-01",
-    readTime: "9 min read",
+    author: "IndSure Team",
+    date: "2026-06-09",
+    readTime: "1 min read",
     category: "General",
     icon: FileText,
     featured: false,
@@ -911,15 +765,14 @@ export const blogPosts: BlogPost[] = [
     content: article14Content,
     faqs: article14FAQs,
     featuredImage: "/images/blog/general-insurance-types.jpg",
-    ...generateArticleStats(14),
   },
   {
     id: 15,
     title: "Health Insurance vs Mediclaim: What's the Difference?",
     excerpt: "Mediclaim vs health insurance—same thing? Not exactly. Understand the differences, evolution in India, and which one suits your needs better.",
-    author: "Ensured Team",
-    date: "2026-02-02",
-    readTime: "10 min read",
+    author: "IndSure Team",
+    date: "2026-02-10",
+    readTime: "1 min read",
     category: "Health Insurance",
     icon: Heart,
     featured: false,
@@ -928,15 +781,14 @@ export const blogPosts: BlogPost[] = [
     content: article15Content,
     faqs: article15FAQs,
     featuredImage: "/images/blog/health-vs-mediclaim.jpg",
-    ...generateArticleStats(15),
   },
   {
     id: 16,
     title: "Term Life Insurance Basics: Pure Protection Explained",
     excerpt: "Term life is the cheapest, purest form of life insurance. ₹500/month for ₹1cr coverage. Understand why it's perfect for young professionals and families—and what you're actually buying.",
-    author: "Ensured Team",
-    date: "2026-02-03",
-    readTime: "9 min read",
+    author: "IndSure Team",
+    date: "2026-03-05",
+    readTime: "2 min read",
     category: "Life Insurance",
     icon: Shield,
     featured: false,
@@ -945,15 +797,14 @@ export const blogPosts: BlogPost[] = [
     content: article16Content,
     faqs: article16FAQs,
     featuredImage: "/images/blog/term-life-basics.jpg",
-    ...generateArticleStats(16),
   },
   {
     id: 17,
     title: "Property Insurance Explained: Commercial & Residential",
     excerpt: "Protect your property investments—commercial or residential. Learn about property damage coverage, liability, rent loss, and how property insurance differs from home insurance.",
-    author: "Ensured Team",
-    date: "2026-02-04",
-    readTime: "9 min read",
+    author: "IndSure Team",
+    date: "2026-03-26",
+    readTime: "1 min read",
     category: "Home Insurance",
     icon: Building2,
     featured: false,
@@ -962,15 +813,14 @@ export const blogPosts: BlogPost[] = [
     content: article17Content,
     faqs: article17FAQs,
     featuredImage: "/images/blog/property-insurance.jpg",
-    ...generateArticleStats(17),
   },
   {
     id: 18,
     title: "Personal Accident Insurance: Complete Guide",
     excerpt: "Accidents happen. Personal accident insurance covers death, disability, and medical expenses from accidents—separate from health insurance. Learn what ₹5L coverage actually means.",
-    author: "Ensured Team",
-    date: "2026-02-05",
-    readTime: "9 min read",
+    author: "IndSure Team",
+    date: "2026-04-16",
+    readTime: "1 min read",
     category: "General",
     icon: AlertCircle,
     featured: false,
@@ -979,15 +829,14 @@ export const blogPosts: BlogPost[] = [
     content: article18Content,
     faqs: article18FAQs,
     featuredImage: "/images/blog/personal-accident.jpg",
-    ...generateArticleStats(18),
   },
   {
     id: 19,
     title: "Business Insurance 101: Protecting Your Enterprise",
     excerpt: "Your business needs protection too. From fire to liability, business insurance covers risks that could shut down your company. Learn what types exist and what you actually need.",
-    author: "Ensured Team",
-    date: "2026-02-06",
-    readTime: "10 min read",
+    author: "IndSure Team",
+    date: "2026-05-07",
+    readTime: "1 min read",
     category: "Business Insurance",
     icon: Briefcase,
     featured: false,
@@ -996,15 +845,14 @@ export const blogPosts: BlogPost[] = [
     content: article19Content,
     faqs: article19FAQs,
     featuredImage: "/images/blog/business-insurance.jpg",
-    ...generateArticleStats(19),
   },
   {
     id: 20,
     title: "Liability Insurance Explained: Professional & General",
     excerpt: "When you're liable for damages—professional errors, public injuries, product defects—liability insurance protects you. Understand professional indemnity, public liability, and product liability.",
-    author: "Ensured Team",
-    date: "2026-02-07",
-    readTime: "9 min read",
+    author: "IndSure Team",
+    date: "2026-05-28",
+    readTime: "1 min read",
     category: "Business Insurance",
     icon: AlertCircle,
     featured: false,
@@ -1013,15 +861,14 @@ export const blogPosts: BlogPost[] = [
     content: article20Content,
     faqs: article20FAQs,
     featuredImage: "/images/blog/liability-insurance.jpg",
-    ...generateArticleStats(20),
   },
   {
     id: 21,
     title: "Workers Compensation Insurance: Employer's Guide",
     excerpt: "Employers are legally required to cover employees for workplace injuries. Workers compensation insurance protects both you and your team. Learn what's mandatory and what's recommended.",
-    author: "Ensured Team",
-    date: "2026-02-08",
-    readTime: "9 min read",
+    author: "IndSure Team",
+    date: "2026-06-18",
+    readTime: "1 min read",
     category: "Business Insurance",
     icon: Users,
     featured: false,
@@ -1030,15 +877,14 @@ export const blogPosts: BlogPost[] = [
     content: article21Content,
     faqs: article21FAQs,
     featuredImage: "/images/blog/workers-compensation.jpg",
-    ...generateArticleStats(21),
   },
   {
     id: 22,
     title: "Marine & Cargo Insurance: Shipping Protection",
     excerpt: "Importing or exporting goods? Marine insurance covers cargo in transit—by sea, air, or land. Learn about coverage, exclusions, and when ₹50k insurance protects ₹50L shipments.",
-    author: "Ensured Team",
-    date: "2026-02-09",
-    readTime: "8 min read",
+    author: "IndSure Team",
+    date: "2026-02-26",
+    readTime: "1 min read",
     category: "Business Insurance",
     icon: Globe,
     featured: false,
@@ -1047,15 +893,14 @@ export const blogPosts: BlogPost[] = [
     content: article22Content,
     faqs: article22FAQs,
     featuredImage: "/images/blog/marine-cargo-insurance.jpg",
-    ...generateArticleStats(22),
   },
   {
     id: 23,
     title: "Cyber Insurance: Protecting Digital Assets",
     excerpt: "Data breaches cost companies crores. Cyber insurance covers hacking, ransomware, data loss, and liability from cyberattacks. Essential for businesses in the digital age.",
-    author: "Ensured Team",
-    date: "2026-02-10",
-    readTime: "9 min read",
+    author: "IndSure Team",
+    date: "2026-03-12",
+    readTime: "1 min read",
     category: "Business Insurance",
     icon: Shield,
     featured: false,
@@ -1064,15 +909,14 @@ export const blogPosts: BlogPost[] = [
     content: article23Content,
     faqs: article23FAQs,
     featuredImage: "/images/blog/cyber-insurance.jpg",
-    ...generateArticleStats(23),
   },
   {
     id: 24,
     title: "What Is Reinsurance? The Insurance for Insurers",
     excerpt: "Insurance companies need insurance too. Reinsurance spreads risk across multiple insurers. Understand how it works and why it matters for policyholders.",
-    author: "Ensured Team",
-    date: "2026-02-11",
-    readTime: "7 min read",
+    author: "IndSure Team",
+    date: "2026-04-02",
+    readTime: "1 min read",
     category: "General",
     icon: HelpCircle,
     featured: false,
@@ -1081,15 +925,14 @@ export const blogPosts: BlogPost[] = [
     content: article24Content,
     faqs: article24FAQs,
     featuredImage: "/images/blog/reinsurance-explained.jpg",
-    ...generateArticleStats(24),
   },
   {
     id: 25,
     title: "Retirement & Pension Plans: Securing Your Future",
     excerpt: "Retirement planning isn't just savings—it's insurance-backed pension plans. Understand annuity plans, pension schemes, and how to secure ₹50L+ for retirement.",
-    author: "Ensured Team",
-    date: "2026-02-12",
-    readTime: "10 min read",
+    author: "IndSure Team",
+    date: "2026-04-23",
+    readTime: "1 min read",
     category: "Life Insurance",
     icon: Wallet,
     featured: false,
@@ -1098,15 +941,14 @@ export const blogPosts: BlogPost[] = [
     content: article25Content,
     faqs: article25FAQs,
     featuredImage: "/images/blog/pension-retirement-plans.jpg",
-    ...generateArticleStats(25),
   },
   {
     id: 26,
     title: "Agricultural Insurance: Crop Protection Explained",
     excerpt: "Farmers face weather risks, pests, and crop failures. Agricultural insurance protects against losses. Learn about PMFBY, crop insurance, and what ₹10k premium covers.",
-    author: "Ensured Team",
-    date: "2026-02-13",
-    readTime: "9 min read",
+    author: "IndSure Team",
+    date: "2026-05-14",
+    readTime: "1 min read",
     category: "General",
     icon: TrendingUp,
     featured: false,
@@ -1115,15 +957,14 @@ export const blogPosts: BlogPost[] = [
     content: article26Content,
     faqs: article26FAQs,
     featuredImage: "/images/blog/agricultural-insurance.jpg",
-    ...generateArticleStats(26),
   },
   {
     id: 27,
     title: "Micro-Insurance: Affordable Protection for All",
     excerpt: "Low-income households need insurance too. Micro-insurance offers affordable, simplified coverage—₹100/month for health, ₹50/month for life. Learn what's available and how it works.",
-    author: "Ensured Team",
-    date: "2026-02-14",
-    readTime: "8 min read",
+    author: "IndSure Team",
+    date: "2026-06-04",
+    readTime: "1 min read",
     category: "General",
     icon: Users,
     featured: false,
@@ -1132,15 +973,14 @@ export const blogPosts: BlogPost[] = [
     content: article27Content,
     faqs: article27FAQs,
     featuredImage: "/images/blog/micro-insurance.jpg",
-    ...generateArticleStats(27),
   },
   {
     id: 28,
     title: "Top Types of Insurance: Complete Overview",
     excerpt: "A comprehensive guide to all insurance types in India—health, life, vehicle, home, travel, business, and more. Understand what each covers and when you need it.",
-    author: "Ensured Team",
-    date: "2026-02-15",
-    readTime: "11 min read",
+    author: "IndSure Team",
+    date: "2026-06-25",
+    readTime: "1 min read",
     category: "General",
     icon: BookOpen,
     featured: true,
@@ -1149,6 +989,5 @@ export const blogPosts: BlogPost[] = [
     content: article28Content,
     faqs: article28FAQs,
     featuredImage: "/images/blog/insurance-types-overview.jpg",
-    ...generateArticleStats(28),
   },
 ];

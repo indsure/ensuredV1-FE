@@ -1,0 +1,42 @@
+{
+  "uin": "PENDING-TATAAIG-HEALTH-SUPER-CHARGE",
+  "insurer": "Tata AIG General Insurance",
+  "plan_name": "Health Super Charge",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "tataaig/Health-Super-Charge-Policy-Wordings-eed27d4280.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": null,
+
+  "room_rent": { "display": "Per Policy Schedule", "ordinal": 3, "optional": false, "note": "Room rent up to limit/category per Schedule; proportionate deduction if higher. VERIFY category" },
+  "icu": { "display": "Covered (no proportionate deduction)", "ordinal": 5, "optional": false },
+  "copayment": { "display": "None (national base)", "number": 0, "optional": false, "note": "Base/national plan no co-pay. Variants: Value Plan = 30% if hospitalised out-of-network; Geo Plan = 20% if hospitalised in Zone A; plus 20% age-linked co-pay where applicable. VERIFY age-linked threshold" },
+  "sub_limits": { "display": "Modern-treatment sub-limits", "ordinal": 3, "optional": false, "note": "Procedure sub-limits exist (e.g. robotic surgery capped by SI band). VERIFY full list" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY (standard Excl 03)" },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity is a standard exclusion (Excl 18); no maternity benefit found. VERIFY" },
+
+  "cumulative_bonus": { "display": "Up to 500% (50%/yr)", "number": 500, "optional": false, "note": "5X Supercharge Bonus: 50%/yr up to 500%, not reduced on claim" },
+  "restoration": { "display": "Unlimited (with Restore Infinity)", "ordinal": 5, "optional": false, "note": "Restore Benefit 100% once/yr inbuilt; Restore Infinity (optional) gives unlimited reinstatements after Restore Benefit exhausted" },
+
+  "pre_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "post_hosp": { "display": "90 days", "number": 90, "optional": false },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered (AYUSH Benefit)", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Covered (per Schedule)", "number": null, "optional": false, "note": "Road ambulance per Schedule; Emergency Air Ambulance is optional (C2). VERIFY road limit" },
+  "modern_treatments": { "display": "Covered (sub-limited)", "exists": true, "optional": false, "note": "Robotic/modern treatments covered with per-procedure sub-limits by SI band" },
+  "consumables": { "display": "Optional (Consumables Benefit)", "exists": true, "optional": true, "note": "C3 Consumables Benefit optional cover" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY overseas cover" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false, "note": "Five-year moratorium" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Plan-variant co-pays (Value=out-of-network, Geo=Zone A); modern-treatment sub-limits; maternity excluded" },
+  "optional_riders": { "display": "Restore Infinity (unlimited restore), Emergency Air Ambulance, Consumables Benefit" }
+}

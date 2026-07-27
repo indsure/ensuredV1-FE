@@ -1,0 +1,42 @@
+{
+  "uin": "HDFHLIP26058V082526",
+  "insurer": "HDFC ERGO",
+  "plan_name": "my:Optima Secure",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "HDFC Ergo/PolicyWordings_myOptimaSecure-76673175551.pdf",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "₹5L – ₹2Cr",
+
+  "room_rent": { "display": "At actuals (no cap)", "ordinal": 5, "optional": false, "note": "No room-rent limit on base plan" },
+  "icu": { "display": "At actuals", "ordinal": 5, "optional": false },
+  "copayment": { "display": "None", "number": 0, "optional": false, "note": "No mandatory co-pay (optional tier-based available)" },
+  "sub_limits": { "display": "No sub-limits", "ordinal": 5, "optional": false },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "Reducible to 24 or 12 months via optional add-on" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false },
+  "maternity": { "display": "Optional add-on (2yr wait)", "exists": true, "optional": true, "note": "Via 'Parenthood' optional cover; also covers IVF/embryo freezing" },
+
+  "cumulative_bonus": { "display": "Up to 100% (50%/yr)", "number": 100, "optional": false, "note": "Plus Benefit: +50% SI/yr up to 100%, not reduced on claim" },
+  "restoration": { "display": "100%, once/yr", "ordinal": 4, "optional": false, "note": "Automatic Restore 100% base SI; 'Unlimited times' available if specified" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "All day-care", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false },
+  "ayush": { "display": "Covered up to SI", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "Covered (at actuals)", "number": 999999, "optional": false, "note": "Road ambulance; air ambulance optional" },
+  "modern_treatments": { "display": "Covered (up to SI)", "exists": true, "optional": false },
+  "consumables": { "display": "Covered (Protect Benefit)", "exists": true, "optional": false, "note": "Non-medical items via inbuilt Protect Benefit" },
+  "global_cover": { "display": "Optional", "exists": true, "optional": true, "note": "Global Health Cover optional add-on" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Standard IRDAI exclusions (Excl01–18); maternity & global cover need add-ons" },
+  "optional_riders": { "display": "Global Health Cover, Air Ambulance, Parenthood (maternity), PED reduction, Room/ICU modification" }
+}

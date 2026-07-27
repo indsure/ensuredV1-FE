@@ -42,35 +42,196 @@ interface FilterEngineResult {
 }
 
 /**
- * Load hospital data
+ * Cached data
  */
-function loadHospitalData(): HospitalRecord[] {
-    const dataPath = path.join(__dirname, 'insurance_hospital_networks.json');
-    return JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+let cachedHospitals: HospitalRecord[] | null = null;
+let cachedIndexes: any = null;
+let cachedAggregates: any = null;
+let insurersByCityMap = new Map<string, InsurerCount[]>();
+let insurersByPincodeMap = new Map<string, InsurerCount[]>();
+
+function IndSureataLoaded() {
+    if (cachedHospitals && cachedIndexes && cachedAggregates && insurersByCityMap.size > 0) return;
+
+    try {
+        const dataPath = path.join(__dirname, 'insurance_hospital_networks.json');
+        const indexesPath = path.join(__dirname, 'indexes.json');
+        const aggregatesPath = path.join(__dirname, 'aggregates.json');
+
+        console.log(`[FilterEngine] Checking files in: ${__dirname}`);
+        console.log(`[FilterEngine] Data exists: ${fs.existsSync(dataPath)}`);
+        console.log(`[FilterEngine] Indexes exists: ${fs.existsSync(indexesPath)}`);
+        console.log(`[FilterEngine] Aggregates exists: ${fs.existsSync(aggregatesPath)}`);
+
+        const start = Date.now();
+
+        if (fs.existsSync(dataPath)) {
+            cachedHospitals = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+            console.log(`[FilterEngine] Loaded hospitals: ${cachedHospitals?.length}`);
+        }
+        if (fs.existsSync(indexesPath)) {
+            cachedIndexes = JSON.parse(fs.readFileSync(indexesPath, 'utf-8'));
+            console.log(`[FilterEngine] Loaded indexes: ${Object.keys(cachedIndexes?.byState || {}).length} states`);
+        }
+        if (fs.existsSync(aggregatesPath)) {
+            cachedAggregates = JSON.parse(fs.readFileSync(aggregatesPath, 'utf-8'));
+            
+            // Pre-index insurers for fast lookup (ONCE)
+            if (cachedAggregates.insurerByCity) {
+                insurersByCityMap.clear();
+                Object.entries(cachedAggregates.insurerByCity).forEach(([key, count]) => {
+                    const [insurer_slug, city] = key.split('|');
+                    if (!insurersByCityMap.has(city)) insurersByCityMap.set(city, []);
+                    insurersByCityMap.get(city)!.push({ insurer_slug, hospital_count: count as number });
+                });
+            }
+
+            if (cachedAggregates.insurerByPincode) {
+                insurersByPincodeMap.clear();
+                Object.entries(cachedAggregates.insurerByPincode).forEach(([key, count]) => {
+                    const [insurer_slug, pincode] = key.split('|');
+                    if (!insurersByPincodeMap.has(pincode)) insurersByPincodeMap.set(pincode, []);
+                    insurersByPincodeMap.get(pincode)!.push({ insurer_slug, hospital_count: count as number });
+                });
+            }
+            console.log(`[FilterEngine] Aggregates processed: ${insurersByCityMap.size} cities, ${insurersByPincodeMap.size} pincodes`);
+        }
+        
+        console.log(`[FilterEngine] Data load took ${Date.now() - start}ms`);
+    } catch (error) {
+        console.error('[FilterEngine] Error loading hospital data:', error);
+    }
 }
 
 /**
- * Filter hospitals based on geo parameters
+ * Filter hospitals based on geo parameters (Optimized)
  */
-function filterHospitals(hospitals: HospitalRecord[], params: FilterParams): HospitalRecord[] {
-    return hospitals.filter(hospital => {
-        // State filter
-        if (params.state && hospital.state !== params.state) {
-            return false;
-        }
+function filterHospitalsOptimized(params: FilterParams): HospitalRecord[] {
+    IndSureataLoaded();
+    if (!cachedHospitals || !cachedIndexes) return [];
 
-        // City filter
-        if (params.city && hospital.city !== params.city) {
-            return false;
-        }
+    let indices: number[] | null = null;
 
-        // Pincode filter
-        if (params.pincode && hospital.pincode !== params.pincode) {
-            return false;
-        }
+    // Use indexes to narrow down search
+    if (params.pincode && cachedIndexes.byPincode[params.pincode]) {
+        indices = cachedIndexes.byPincode[params.pincode];
+    } else if (params.city && cachedIndexes.byCity[params.city]) {
+        indices = cachedIndexes.byCity[params.city];
+    } else if (params.state && cachedIndexes.byState[params.state]) {
+        indices = cachedIndexes.byState[params.state];
+    }
 
+    // If no index hit and no filters, return all (not recommended for performance)
+    if (indices === null) {
+        if (!params.state && !params.city && !params.pincode) {
+            return cachedHospitals;
+        }
+        return [];
+    }
+
+    // Filter the indexed records further if needed
+    return indices.map(idx => cachedHospitals![idx]).filter(hospital => {
+        if (params.state && hospital.state !== params.state) return false;
+        if (params.city && hospital.city !== params.city) return false;
+        if (params.pincode && hospital.pincode !== params.pincode) return false;
         return true;
     });
+}
+
+/**
+ * Main filter engine function (Optimized)
+ */
+export function filterHospitalNetwork(params: FilterParams): FilterEngineResult {
+    IndSureataLoaded();
+    
+    if (!cachedIndexes || !cachedAggregates) {
+        console.warn('Filter engine data not fully loaded. Falling back to manual filter.');
+        console.log('cachedIndexes:', !!cachedIndexes, 'cachedAggregates:', !!cachedAggregates);
+    }
+
+    // If we have aggregates, we can use them for simple queries
+    if (cachedAggregates) {
+        let cityResults: CityLevelResult[] = [];
+        let pincodeResults: PincodeLevelResult[] = [];
+
+        // 1. City-Level Aggregation
+        if (params.city) {
+            const insurers = insurersByCityMap.get(params.city);
+            if (insurers) {
+                cityResults.push({ 
+                    city: params.city, 
+                    insurers: insurers.sort((a,b) => b.hospital_count - a.hospital_count) 
+                });
+            }
+        } else if (params.state) {
+            const citiesInState = new Set<string>();
+            const stateIndices = cachedIndexes?.byState[params.state] || [];
+            stateIndices.forEach((idx: number) => {
+                const city = cachedHospitals?.[idx]?.city;
+                if (city) citiesInState.add(city);
+            });
+
+            citiesInState.forEach(city => {
+                const insurers = insurersByCityMap.get(city);
+                if (insurers) {
+                    cityResults.push({ 
+                        city, 
+                        insurers: insurers.sort((a,b) => b.hospital_count - a.hospital_count) 
+                    });
+                }
+            });
+            cityResults.sort((a, b) => {
+                const totalA = a.insurers.reduce((sum, i) => sum + i.hospital_count, 0);
+                const totalB = b.insurers.reduce((sum, i) => sum + i.hospital_count, 0);
+                return totalB - totalA;
+            });
+        }
+
+        // 2. Pincode-Level Aggregation
+        if (params.pincode) {
+            const insurers = insurersByPincodeMap.get(params.pincode);
+            if (insurers) {
+                pincodeResults.push({ 
+                    pincode: params.pincode, 
+                    insurers: insurers.sort((a,b) => b.hospital_count - a.hospital_count) 
+                });
+            }
+        } else if (params.city) {
+            const pincodesInCity = new Set<string>();
+            const cityIndices = cachedIndexes?.byCity[params.city] || [];
+            cityIndices.forEach((idx: number) => {
+                const pincode = cachedHospitals?.[idx]?.pincode;
+                if (pincode) pincodesInCity.add(pincode);
+            });
+
+            pincodesInCity.forEach(pincode => {
+                const insurers = insurersByPincodeMap.get(pincode);
+                if (insurers) {
+                    pincodeResults.push({ 
+                        pincode, 
+                        insurers: insurers.sort((a,b) => b.hospital_count - a.hospital_count) 
+                    });
+                }
+            });
+            pincodeResults.sort((a, b) => {
+                const totalA = a.insurers.reduce((sum, i) => sum + i.hospital_count, 0);
+                const totalB = b.insurers.reduce((sum, i) => sum + i.hospital_count, 0);
+                return totalB - totalA;
+            });
+        }
+
+        return {
+            cityLevel: cityResults,
+            pincodeLevel: pincodeResults
+        };
+    }
+
+    // Fallback to manual filtering if aggregates/indexes not available
+    const hospitals = filterHospitalsOptimized(params);
+    return {
+        cityLevel: aggregateByCity(hospitals),
+        pincodeLevel: aggregateByPincode(hospitals)
+    };
 }
 
 /**
@@ -154,74 +315,57 @@ function aggregateByPincode(hospitals: HospitalRecord[]): PincodeLevelResult[] {
 }
 
 /**
- * Main filter engine function
+ * Get sample hospital names for a location
  */
-export function filterHospitalNetwork(params: FilterParams): FilterEngineResult {
-    // Load data
-    const allHospitals = loadHospitalData();
-
-    let cityResults: CityLevelResult[] = [];
-    let pincodeResults: PincodeLevelResult[] = [];
-
-    // 1. City-Level Query
-    // Runs if State OR City is provided (Standard hierarchical search)
-    // If City provided -> Filter by State(optional) + City -> Aggregate by City(singleton)
-    // If State only -> Filter by State -> Aggregate all Cities in State
-    if (params.state || params.city) {
-        const cityScopeHospitals = allHospitals.filter(h => {
-            if (params.state && h.state !== params.state) return false;
-            if (params.city && h.city !== params.city) return false;
-            return true;
-        });
-        cityResults = aggregateByCity(cityScopeHospitals);
+export function getHospitalSamples(params: { city?: string; pincode?: string; limit?: number }): { hospital_name: string; address: string; insurer_slug: string }[] {
+    IndSureataLoaded();
+    
+    if (!cachedHospitals || !cachedIndexes) {
+        console.warn('[getHospitalSamples] Data not loaded');
+        return [];
     }
 
-    // 2. Pincode-Level Query
-    // Runs if Pincode is provided (Specific local search)
-    // Independent of City query.
-    // Logic: If Pincode exists, find matches for that pincode.
-    if (params.pincode) {
-        const pincodeScopeHospitals = allHospitals.filter(h => {
-            // Note: We intentionally DO NOT allow State/City to restrict Pincode search 
-            // if a specific Pincode is asked for. Pincode is globally unique enough 
-            // (or usually implies a specific state).
-            // However, IF the user provided state context, strict safety dictates we might check it,
-            // but the requirement says "Run pincode-level aggregation: insurer x pincode".
-            // Direct Pincode match is the most precise intent.
-            return h.pincode === params.pincode;
-        });
-        pincodeResults = aggregateByPincode(pincodeScopeHospitals);
-    } else if (params.city && !params.pincode) {
-        // Fallback: If only City is provided, we might want to show Pincodes *within* that city 
-        // to be helpful? The requirements didn't explicitly forbid this "drill-down" behavior 
-        // for pure city searches, but the user emphasized "Independent".
-        // Let's stick to the user's strict pseudocode: "if (pincode exists) -> query_pincode".
-        // BUT, existing behavior likely showed breakdown.
-        // Let's look at the "Fallback" logic from before...
-        // Actually, the user said: "If City provided: Run city-level aggregation... If Pincode provided: Run pincode-level..."
-        // This implies if NO Pincode is provided, we might NOT want to populate pincodeLevel?
-        // Let's check the old behavior: `aggregateByPincode(filteredHospitals)` where filteredHospitals had City applied.
-        // So simply selecting a City *did* return all pincodes in that city.
-        // The user's compliant: "When BOTH... is executing ONLY city-level... Pincode input is ignored".
-        // So we should maintain "Drill down" behavior if Pincode is MISSING, 
-        // but strictly separate them if Pincode IS PRESENT.
-
-        // Revised Logic for Contextual Drill-down:
-        // If I search "Mumbai", I expect to see "Hospitals in Mumbai" AND "Hospitals in 400001, 400002..."
-        // If I search "Mumbai" + "400001", I expect "Hospitals in Mumbai" AND "Hospitals in 400001" (just that one).
-
-        const cityDrillDownHospitals = allHospitals.filter(h => {
-            if (params.state && h.state !== params.state) return false;
-            if (params.city && h.city !== params.city) return false;
-            return true;
-        });
-        pincodeResults = aggregateByPincode(cityDrillDownHospitals);
+    const limit = params.limit || 10;
+    const uniqueHospitals = new Map<string, { hospital_name: string; address: string; insurer_slug: string }>();
+    
+    // Get indices based on the filter
+    let indices: number[] | null = null;
+    
+    if (params.pincode && cachedIndexes.byPincode[params.pincode]) {
+        indices = cachedIndexes.byPincode[params.pincode];
+        console.log(`[getHospitalSamples] Found ${indices?.length ?? 0} hospitals for pincode ${params.pincode}`);
+    } else if (params.city && cachedIndexes.byCity[params.city]) {
+        indices = cachedIndexes.byCity[params.city];
+        console.log(`[getHospitalSamples] Found ${indices?.length ?? 0} hospitals for city ${params.city}`);
     }
-
-    return {
-        cityLevel: cityResults,
-        pincodeLevel: pincodeResults
-    };
+    
+    if (!indices || indices.length === 0) {
+        console.warn(`[getHospitalSamples] No indices found for city=${params.city}, pincode=${params.pincode}`);
+        return [];
+    }
+    
+    // Collect unique hospital names
+    for (const idx of indices) {
+        const hospital = cachedHospitals[idx];
+        if (!hospital) continue;
+        
+        // Apply additional filters if needed
+        if (params.pincode && hospital.pincode !== params.pincode) continue;
+        if (params.city && hospital.city !== params.city) continue;
+        
+        if (!uniqueHospitals.has(hospital.hospital_name)) {
+            uniqueHospitals.set(hospital.hospital_name, {
+                hospital_name: hospital.hospital_name,
+                address: hospital.address,
+                insurer_slug: hospital.insurer_slug,
+            });
+        }
+        
+        if (uniqueHospitals.size >= limit) break;
+    }
+    
+    console.log(`[getHospitalSamples] Returning ${uniqueHospitals.size} unique hospitals`);
+    return Array.from(uniqueHospitals.values());
 }
 
 // Demo/Test function

@@ -20,7 +20,7 @@ export default function AnalyzePage() {
   const [, setLocation] = useLocation();
 
   useSEO({
-    title: "Analyze Your Insurance Policy | Health, Life, Vehicle Insurance Analyzer | Ensured",
+    title: "Analyze Your Insurance Policy | Health, Life, Vehicle Insurance Analyzer | IndSure",
     description: "Choose your insurance type: Health, Life, or Vehicle. Upload your policy PDF and get instant analysis of your coverage, gaps, and recommendations.",
     keywords: "insurance analyzer, health insurance analyzer, life insurance analyzer, vehicle insurance analyzer, policy analyzer",
     canonical: "/analyze",

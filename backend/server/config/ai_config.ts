@@ -1,5 +1,7 @@
 export const AI_CONFIG = {
-    model: "gemini-1.5-pro-preview-0514", // Locked version
+    // Model is env-driven so it can be switched without a code change/redeploy.
+    // e.g. set GEMINI_MODEL=gemini-2.5-flash in .env to fall back off a busy model.
+    model: process.env.GEMINI_MODEL || "gemini-3.5-flash",
     generation_config: {
         temperature: 0.0,      // Maximum determinism
         top_p: 1.0,           // No nucleus sampling randomness
@@ -19,6 +21,5 @@ export const AI_CONFIG = {
         user_evidence: 4000,
         official_wordings: 30000, // Large context window for Gemini 1.5 Pro
         audit_task: 500
-    },
-    timeout_ms: 120000 // 2 minutes hard timeout
+    }
 };

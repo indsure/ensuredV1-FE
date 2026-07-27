@@ -1,0 +1,42 @@
+{
+  "uin": "RELHLIP23197V012223",
+  "insurer": "IndusInd General Insurance",
+  "plan_name": "IndusInd Specially Abled Health Insurance",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "indusind/indusind-specially-abled-health-insurance-pw.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "1% of SI/day", "ordinal": 3, "optional": false, "note": "Room/Boarding/Nursing capped at 1% of SI per day; proportionate deduction applies if exceeded" },
+  "icu": { "display": "2% of SI/day", "ordinal": 3, "optional": false, "note": "ICU/ICCU capped at 2% of SI per day" },
+  "copayment": { "display": "20% (every claim)", "number": 20, "optional": false, "note": "Mandatory 20% co-payment on each and every admissible claim (cl.10.5)" },
+  "sub_limits": { "display": "Cataract & others capped", "ordinal": 1, "optional": false, "note": "Cataract Rs 40,000/eye/yr; room/ICU % caps; other sub-limits per schedule" },
+  "deductible": { "display": "None", "number": 0, "optional": false },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "Excl03 (First 30 days)" },
+  "ped_waiting": { "display": "24 months (disability)", "number": 24, "optional": false, "note": "Excl01: 24 months for pre-existing disability / 48 months for all other pre-existing conditions (except HIV/AIDS & Disability), as per schedule; best 24mo" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Excl02" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity is a standard exclusion (Excl18)" },
+
+  "cumulative_bonus": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: no cumulative/no-claim bonus benefit found in wording" },
+  "restoration": { "display": "Not covered", "ordinal": 0, "optional": false, "note": "No SI restoration/reinstatement benefit found" },
+
+  "pre_hosp": { "display": "30 days", "number": 30, "optional": false },
+  "post_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "day_care": { "display": "All day-care", "exists": true, "optional": false, "note": "All day care treatments covered (4.1)" },
+  "domiciliary": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: domiciliary hospitalisation not clearly found" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false, "note": "AYUSH Treatment (4.2) per schedule limit" },
+  "organ_donor": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: organ donor cover not clearly found" },
+  "ambulance": { "display": "Rs 2,000/hosp", "number": 2000, "optional": false, "note": "Emergency Ground Ambulance capped at Rs 2000 per hospitalisation (4.5)" },
+  "modern_treatments": { "display": "Covered (per schedule)", "exists": true, "optional": false, "note": "Modern Treatments (4.7) per schedule limit" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: no overseas/global cover found" },
+
+  "moratorium": { "display": "8 years", "number": 96, "optional": false, "note": "8 continuous years (= 96 months)" },
+  "grace_period": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: grace period not clearly captured (30-day break-in reference only)" },
+  "free_look": { "display": "15 days", "number": 15, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); mandatory 20% co-pay; room 1%/ICU 2% of SI per day caps; cataract Rs40k/eye; designed for specially-abled lives" },
+  "optional_riders": { "display": "Not specified - no optional riders/add-ons clearly listed in wording" }
+}

@@ -451,7 +451,7 @@ export const articleBriefs: ArticleBrief[] = [
  * Use this with ChatGPT/Claude/Gemini to generate articles
  */
 export function generateArticlePrompt(brief: ArticleBrief): string {
-  return `You are an expert insurance writer for Ensured (ensured.com), an AI-powered insurance clarity platform for Indian customers.
+  return `You are an expert insurance writer for IndSure (IndSure.com), an AI-powered insurance clarity platform for Indian customers.
 
 Your task: Write a ${brief.wordCount}-word blog article about "${brief.title}".
 

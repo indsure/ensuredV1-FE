@@ -1,0 +1,42 @@
+{
+  "uin": "SBIHLIP26038V012526",
+  "insurer": "SBI General Insurance",
+  "plan_name": "SBI General Health Alpha",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "sbi/SBI-General-Health-Alpha-Policy-Wording-New-002-a0.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "At actuals (no cap)", "ordinal": 5, "optional": false, "note": "Base room rent at actuals up to SI; optional Modifier 9.1 can REDUCE to Single Private AC / Twin Sharing for premium discount" },
+  "icu": { "display": "At actuals (no cap)", "ordinal": 5, "optional": false, "note": "ICU/ICCU at actuals up to SI" },
+  "copayment": { "display": "None (optional voluntary)", "number": 0, "optional": false, "note": "No mandatory co-pay; optional Voluntary Co-Payment (10.2) for premium discount" },
+  "sub_limits": { "display": "No major sub-limits", "ordinal": 4, "optional": false, "note": "Main IPD/room/ICU at actuals up to SI; optional room-rent reduction modifier" },
+  "deductible": { "display": "None", "number": 0, "optional": false, "note": "Optional Voluntary Deductible (10.1) available for premium discount" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "First 30 days waiting (Code-Excl 03)" },
+  "ped_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "PED waiting 24 months (12.1); changeable via optional Modifier 9.3" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Reducible to 12 months via optional Modifier 9.2" },
+  "maternity": { "display": "Optional cover (24mo wait)", "exists": true, "optional": true, "note": "Maternity & Child Care (3.3) is an optional cover; 24-month waiting; waives Excl 18 when opted; not inbuilt in base" },
+
+  "cumulative_bonus": { "display": "Yes (% per schedule)", "number": null, "optional": false, "note": "VERIFY %: Cumulative Bonus (11.1) per claim-free year as specified in Policy Schedule; alternatively opt premium discount (11.2)" },
+  "restoration": { "display": "Unlimited, 100% (related+unrelated)", "ordinal": 5, "optional": false, "note": "Restore Benefit (3.1(h), Essential Cover) restores base SI unlimited times for subsequent related & unrelated claims; not available if optional Unlimited/Endless SI opted" },
+
+  "pre_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "VERIFY: Pre-hospitalization for period specified in Policy Schedule; days not stated in wording" },
+  "post_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "VERIFY: Post-hospitalization for period specified in Policy Schedule; days not stated in wording" },
+  "day_care": { "display": "Day-care covered", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Domiciliary hospitalization covered (condition continuing 3+ days)" },
+  "ayush": { "display": "Covered (3(c))", "exists": true, "optional": false },
+  "organ_donor": { "display": "Covered (3.1(d))", "exists": true, "optional": false },
+  "ambulance": { "display": "Per schedule limit", "number": null, "optional": false, "note": "VERIFY: Road Ambulance (3.1(a)) up to limit specified in Policy Schedule; amount not stated in wording" },
+  "modern_treatments": { "display": "Covered (3.1(e))", "exists": true, "optional": false },
+  "consumables": { "display": "Covered (consumables in IPD)", "exists": true, "optional": false, "note": "Medicines, drugs and consumables listed under In-Patient Treatment cover" },
+  "global_cover": { "display": "Optional (Plan Ahead)", "exists": true, "optional": true, "note": "Plan Ahead / Planned Hospitalization abroad is an optional cover (3.2(j)); 24-month waiting" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "30 days (single/half-yearly/quarterly); 15 days monthly instalment" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity & global (Plan Ahead) are optional covers; standard IRDAI exclusions (Excl01-18)" },
+  "optional_riders": { "display": "Maternity & Child Care, Plan Ahead (overseas), Endless/Unlimited Sum Insured, Convalescence, Voluntary Deductible/Co-pay, Room-rent reduction, PED/specific-waiting reduction modifiers" }
+}

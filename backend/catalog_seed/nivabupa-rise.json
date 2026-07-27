@@ -1,0 +1,42 @@
+{
+  "uin": "NBHHLIP25041V012425",
+  "insurer": "Niva Bupa Health Insurance",
+  "plan_name": "Rise",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "nivabupa/Rise-Policy-Wordings.txt",
+  "status": "unverified",
+  "confidence": "high",
+  "sum_insured_options": "Not specified (per Policy Schedule)",
+
+  "room_rent": { "display": "Twin-sharing (no co-pay); upgradable", "ordinal": 3, "optional": false, "note": "Base: any twin-sharing room (min 2 beds) without co-pay. Single Private / All Room Category opted via room-modification benefit; co-pay applies if higher than eligible category" },
+  "icu": { "display": "At actuals (up to SI)", "ordinal": 5, "optional": false, "note": "Any ICU ward always paid up to Sum Insured" },
+  "copayment": { "display": "None (base, in-network twin-sharing)", "number": 0, "optional": false, "note": "No co-pay for twin-sharing in Rise-Tiered Network. Flat 20% co-pay if treatment outside network or higher room category opted; 'No Co-Pay Network' optional removes it" },
+  "sub_limits": { "display": "No major sub-limits", "ordinal": 4, "optional": false, "note": "VERIFY modern treatment / robotic sub-limits" },
+  "deductible": { "display": "None (base)", "number": 0, "optional": false, "note": "Annual Aggregate Deductible available as option (cannot combine with co-pay option)" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false },
+  "ped_waiting": { "display": "36 months", "number": 36, "optional": false, "note": "PED Waiting Time Modification: can reduce or increase PED waiting via option" },
+  "specific_disease_waiting": { "display": "24 months", "number": 24, "optional": false, "note": "Cancer covered after 30 days; accident from day 1" },
+  "maternity": { "display": "Not covered (base)", "exists": false, "optional": false, "note": "Maternity listed under Excl18. VERIFY optional maternity availability" },
+
+  "cumulative_bonus": { "display": "Up to 100% (10%/yr)", "number": 100, "optional": false, "note": "+10% of expiring Base SI each policy year, accumulates up to 100%" },
+  "restoration": { "display": "Once/yr full SI (Re-fill); unlimited via ReAssure Forever", "ordinal": 4, "optional": false, "note": "Re-fill: once/year adds full Base SI for any illness (same or different). ReAssure Forever (unlimited restorations) available; baseline Re-fill kept" },
+
+  "pre_hosp": { "display": "60 days", "number": 60, "optional": false },
+  "post_hosp": { "display": "180 days", "number": 180, "optional": false },
+  "day_care": { "display": "All day-care (>2hrs)", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Home Care / Domiciliary Treatment covered" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false, "note": "AYUSH treatment in India covered" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
+  "ambulance": { "display": "₹2,000/hospitalization", "number": 2000, "optional": false, "note": "Road ambulance up to ₹2,000 per hospitalization" },
+  "modern_treatments": { "display": "Covered", "exists": true, "optional": false },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY consumables cover" },
+  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "India-only treatment" },
+
+  "moratorium": { "display": "60 months", "number": 60, "optional": false },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "30 days all modes; 15 days for monthly instalments" },
+  "free_look": { "display": "30 days", "number": 30, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity/IVF/OPD excluded (Excl18); India-only; 20% co-pay outside Rise-Tiered Network or higher room category" },
+  "optional_riders": { "display": "ReAssure Forever (unlimited SI), Room modification, PED waiting modification, No Co-Pay Network, Annual Aggregate Deductible, Personal Accident, Hospital Daily Cash, Return/Smart Cash" }
+}

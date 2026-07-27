@@ -60,7 +60,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       window.localStorage.setItem("ea-theme", theme);
     } catch (e) {
       // Ignore localStorage errors (e.g., private browsing mode)
-      console.warn("Failed to save theme preference:", e);
     }
   }, [theme]);
 
@@ -69,10 +68,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toggle = () => {
-    console.log("Theme toggle clicked, current theme:", theme);
     setThemeState((prev) => {
       const newTheme = prev === "dark" ? "light" : "dark";
-      console.log("Toggling theme from", prev, "to", newTheme);
       return newTheme;
     });
   };

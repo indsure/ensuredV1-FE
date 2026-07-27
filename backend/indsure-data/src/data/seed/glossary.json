@@ -1,0 +1,227 @@
+[
+  {
+    "term": "sum_insured",
+    "language": "EN",
+    "displayName": "Sum Insured",
+    "shortDefinition": "The maximum amount an insurer will pay for covered medical expenses during the policy period.",
+    "longDefinition": "Sum Insured is the maximum coverage amount specified in your health insurance policy. It represents the upper limit of financial protection available for hospitalization and medical treatment expenses during the policy year. For individual policies, each person has their own sum insured. For family floater policies, the sum insured is shared among all family members. The sum insured should be chosen based on your city's healthcare costs, family medical history, and financial capacity.",
+    "example": "If your policy has a sum insured of ₹10 lakh, the insurer will pay up to ₹10 lakh for covered medical expenses in that policy year.",
+    "relatedTerms": ["deductible", "co_pay", "sub_limit", "restoration_benefit"]
+  },
+  {
+    "term": "deductible",
+    "language": "EN",
+    "displayName": "Deductible",
+    "shortDefinition": "The amount you must pay out-of-pocket before insurance coverage begins.",
+    "longDefinition": "A deductible is a fixed amount that you must pay from your own pocket before the insurance company starts paying for covered medical expenses. Deductibles help reduce premium costs – policies with higher deductibles typically have lower premiums. There are two types: compulsory deductibles (mandatory for all claims) and voluntary deductibles (you choose to add them for premium discounts). Once you've paid the deductible amount, the insurer covers the remaining eligible expenses up to the sum insured.",
+    "example": "With a ₹50,000 deductible, if your hospital bill is ₹3 lakh, you pay the first ₹50,000 and the insurer pays the remaining ₹2.5 lakh.",
+    "relatedTerms": ["co_pay", "sum_insured"]
+  },
+  {
+    "term": "co_pay",
+    "language": "EN",
+    "displayName": "Co-payment (Co-pay)",
+    "shortDefinition": "A percentage of the claim amount that you must pay, with the insurer paying the rest.",
+    "longDefinition": "Co-payment (or co-pay) is a cost-sharing mechanism where you pay a fixed percentage of every claim, and the insurer pays the remaining percentage. Common co-pay percentages range from 10% to 30%. Co-pay clauses are often applied to senior citizen policies or specific treatments. Unlike deductibles (which are one-time per claim), co-pay applies to the total claim amount. Policies with co-pay typically have lower premiums, but you bear a portion of every medical expense.",
+    "example": "With a 20% co-pay clause, if your hospital bill is ₹2 lakh, you pay ₹40,000 (20%) and the insurer pays ₹1.6 lakh (80%).",
+    "relatedTerms": ["deductible", "sum_insured", "sub_limit"]
+  },
+  {
+    "term": "sub_limit",
+    "language": "EN",
+    "displayName": "Sub-limit",
+    "shortDefinition": "A cap on the amount payable for specific treatments or expenses within the overall sum insured.",
+    "longDefinition": "Sub-limits are internal caps within your policy that restrict the maximum payout for specific categories of medical expenses, even if your overall sum insured is higher. Common sub-limits apply to room rent, ICU charges, specific diseases (like cataract surgery), or treatments (like knee replacement). Sub-limits significantly reduce the effective coverage of your policy. For example, a ₹10 lakh policy with a ₹5,000/day room rent sub-limit may leave you paying substantial out-of-pocket costs if you're hospitalized in a room costing ₹15,000/day.",
+    "example": "A policy with ₹10 lakh sum insured but a ₹2 lakh sub-limit on knee replacement will only pay up to ₹2 lakh for that surgery, even though your total coverage is higher.",
+    "relatedTerms": ["sum_insured", "co_pay", "room_rent_limit"]
+  },
+  {
+    "term": "ped",
+    "language": "EN",
+    "displayName": "Pre-Existing Disease (PED)",
+    "shortDefinition": "Any medical condition you had before buying the insurance policy.",
+    "longDefinition": "Pre-Existing Diseases (PED) are any illnesses, injuries, or medical conditions that you had or showed symptoms of before purchasing your health insurance policy. Common PEDs include diabetes, hypertension, asthma, thyroid disorders, and heart conditions. Most health insurance policies impose a waiting period (typically 24-48 months, capped at 36 months by IRDAI) before covering PED-related claims. During this waiting period, any hospitalization or treatment related to your pre-existing condition will not be covered. It's crucial to declare all PEDs honestly during policy purchase to avoid claim rejections.",
+    "example": "If you have diabetes when buying a policy with a 36-month PED waiting period, any diabetes-related hospitalization in the first 3 years won't be covered.",
+    "relatedTerms": ["waiting_period", "moratorium_period", "portability"]
+  },
+  {
+    "term": "waiting_period",
+    "language": "EN",
+    "displayName": "Waiting Period",
+    "shortDefinition": "The time you must wait after buying a policy before certain coverages become active.",
+    "longDefinition": "Waiting periods are time intervals during which specific types of claims are not covered, even though your policy is active. There are three main types: (1) Initial waiting period (typically 30 days) – no coverage except for accidents; (2) Pre-existing disease waiting period (24-48 months) – PED-related claims not covered; (3) Specific disease waiting period (1-4 years) – certain illnesses like hernia, cataract, joint replacement not covered. IRDAI has capped PED waiting periods at 36 months maximum. Some insurers offer reduced waiting periods as a policy feature or for an additional premium.",
+    "example": "A policy with a 2-year waiting period for knee replacement won't cover that surgery if it occurs within the first 2 years of the policy.",
+    "relatedTerms": ["ped", "moratorium_period", "initial_waiting_period"]
+  },
+  {
+    "term": "no_claim_bonus",
+    "language": "EN",
+    "displayName": "No Claim Bonus (NCB)",
+    "shortDefinition": "A reward for not making claims, typically increasing your sum insured or reducing your premium.",
+    "longDefinition": "No Claim Bonus (NCB) is a reward mechanism that incentivizes policyholders to maintain good health and avoid making claims. For every claim-free year, insurers offer benefits such as: (1) Cumulative bonus – your sum insured increases by a percentage (typically 5-50% per year) up to a maximum (often 100-200% of base sum insured), or (2) Premium discount – your renewal premium is reduced. NCB is a valuable feature that effectively increases your coverage over time without additional cost. However, making even one claim typically resets your accumulated bonus, though some policies offer NCB protection riders.",
+    "example": "With a ₹5 lakh policy and 50% NCB per claim-free year, after 2 years without claims, your effective coverage becomes ₹7.5 lakh.",
+    "relatedTerms": ["sum_insured", "restoration_benefit", "renewal"]
+  },
+  {
+    "term": "restoration_benefit",
+    "language": "EN",
+    "displayName": "Restoration Benefit",
+    "shortDefinition": "Automatic reinstatement of your sum insured if it gets exhausted during the policy year.",
+    "longDefinition": "Restoration benefit is a valuable feature that automatically restores your sum insured if it gets fully or partially exhausted due to a claim during the policy year. This provides an additional layer of protection for multiple hospitalizations in the same year. There are two types: (1) Full restoration – the entire sum insured is restored, and (2) Partial restoration – only the utilized amount is restored. Some policies restore for the same illness, while others restore only for different illnesses. Restoration typically happens once per policy year and doesn't carry forward to the next year.",
+    "example": "With a ₹10 lakh policy with restoration benefit, if you use ₹8 lakh for one hospitalization, the sum insured is restored to ₹10 lakh for any subsequent hospitalization in the same year.",
+    "relatedTerms": ["sum_insured", "no_claim_bonus"]
+  },
+  {
+    "term": "cashless",
+    "language": "EN",
+    "displayName": "Cashless Treatment",
+    "shortDefinition": "Medical treatment where the insurer directly settles bills with the hospital, requiring no upfront payment from you.",
+    "longDefinition": "Cashless treatment is a facility where you can get hospitalized and treated at network hospitals without paying from your pocket. The insurance company directly settles the bill with the hospital. To avail cashless treatment: (1) Get hospitalized at a network hospital, (2) Submit your health card and policy details, (3) Hospital sends pre-authorization request to insurer, (4) Insurer approves (usually within 2-6 hours), (5) Treatment proceeds, and (6) Insurer settles eligible expenses directly with hospital. You only pay for non-covered expenses, co-pay amounts, or expenses beyond sub-limits. Cashless is not available at non-network hospitals.",
+    "example": "At a network hospital, you show your health card, get pre-authorization approved, receive treatment, and the insurer pays the hospital directly – you don't need to arrange funds upfront.",
+    "relatedTerms": ["reimbursement", "network_hospital", "pre_authorization"]
+  },
+  {
+    "term": "reimbursement",
+    "language": "EN",
+    "displayName": "Reimbursement Claim",
+    "shortDefinition": "You pay the hospital bills first, then submit documents to the insurer for repayment.",
+    "longDefinition": "Reimbursement is a claim settlement method where you pay the hospital bills from your own funds first, and then submit claim documents to the insurance company for repayment. This is typically used when: (1) Treatment is at a non-network hospital, (2) Emergency hospitalization where cashless pre-authorization wasn't possible, or (3) Cashless facility is not available. The reimbursement process involves: (1) Pay hospital bills, (2) Collect all original bills, discharge summary, prescriptions, and diagnostic reports, (3) Submit claim form with documents to insurer within the specified time (usually 15-30 days), (4) Insurer processes and approves, (5) Amount is credited to your bank account. Processing typically takes 15-30 days.",
+    "example": "You get treated at a non-network hospital, pay ₹2 lakh, submit all bills and documents to your insurer, and receive ₹2 lakh (minus any deductible/co-pay) in your bank account within 3 weeks.",
+    "relatedTerms": ["cashless", "network_hospital", "claim_settlement"]
+  },
+  {
+    "term": "network_hospital",
+    "language": "EN",
+    "displayName": "Network Hospital",
+    "shortDefinition": "Hospitals that have a tie-up with your insurer for cashless treatment facility.",
+    "longDefinition": "Network hospitals are healthcare facilities that have a formal agreement with your insurance company to provide cashless treatment to policyholders. These hospitals are empaneled by the insurer and agree to follow the insurer's billing and claim settlement processes. Benefits of network hospitals: (1) Cashless treatment – no upfront payment needed, (2) Faster pre-authorization, (3) Streamlined claim process, (4) Often negotiated rates with insurers. Each insurer has its own network, which can range from a few hundred to over 14,000 hospitals across India. When choosing a policy, check if good hospitals in your city are in the network. You can still get treated at non-network hospitals, but you'll need to pay first and claim reimbursement later.",
+    "example": "If Apollo Hospital is in your insurer's network, you can get cashless treatment there by showing your health card and getting pre-authorization approved.",
+    "relatedTerms": ["cashless", "reimbursement", "pre_authorization"]
+  },
+  {
+    "term": "day_care_procedure",
+    "language": "EN",
+    "displayName": "Day Care Procedure",
+    "shortDefinition": "Medical procedures that don't require 24-hour hospitalization due to technological advances.",
+    "longDefinition": "Day care procedures are medical treatments or surgeries that can be completed within a few hours and don't require the patient to stay in the hospital overnight (less than 24 hours). Due to medical and technological advancements, many procedures that previously required multi-day hospitalization can now be done as day care. Common examples include cataract surgery, dialysis, chemotherapy, tonsillectomy, and certain diagnostic procedures. IRDAI mandates that health insurance policies must cover a specified list of day care procedures. This coverage is important because traditional policies only covered hospitalization of 24 hours or more, leaving day care treatments uncovered.",
+    "example": "Cataract surgery can now be done in 2-3 hours as a day care procedure, and your health insurance will cover it even though you're not admitted overnight.",
+    "relatedTerms": ["hospitalization", "sum_insured"]
+  },
+  {
+    "term": "ayush",
+    "language": "EN",
+    "displayName": "AYUSH Treatment",
+    "shortDefinition": "Coverage for Ayurveda, Yoga, Unani, Siddha, and Homeopathy treatments.",
+    "longDefinition": "AYUSH stands for Ayurveda, Yoga & Naturopathy, Unani, Siddha, and Homeopathy – traditional and alternative medicine systems recognized by the Government of India. IRDAI mandates that health insurance policies must provide coverage for AYUSH treatments when taken at government hospitals or recognized AYUSH institutions. Coverage typically includes hospitalization expenses for treatments under these systems. However, there may be sub-limits (often 50% of sum insured or a fixed amount) and the treatment must be taken at empaneled AYUSH hospitals. This is beneficial for those who prefer traditional medicine systems or when allopathic treatment has limitations.",
+    "example": "If you undergo Ayurvedic treatment for a chronic condition at a recognized Ayurveda hospital, your health insurance will cover the hospitalization costs up to the AYUSH sub-limit.",
+    "relatedTerms": ["sum_insured", "sub_limit", "network_hospital"]
+  },
+  {
+    "term": "modern_treatment",
+    "language": "EN",
+    "displayName": "Modern Treatment",
+    "shortDefinition": "Coverage for advanced medical technologies and procedures not widely available when the policy was designed.",
+    "longDefinition": "Modern treatment coverage refers to the inclusion of advanced, contemporary medical technologies, procedures, and treatments that may not have been widely available or standardized when traditional health insurance policies were designed. This includes treatments like robotic surgery, stem cell therapy, immunotherapy, targeted cancer therapies, advanced imaging techniques, and minimally invasive procedures. Many older policies excluded such treatments or required specific riders. IRDAI now encourages insurers to cover modern treatments to ensure policies remain relevant as medical science advances. However, coverage terms, sub-limits, and specific inclusions vary by policy, so it's important to check your policy wording.",
+    "example": "Robotic-assisted knee replacement surgery, which uses advanced technology for precision, would be covered under modern treatment provisions in comprehensive health policies.",
+    "relatedTerms": ["sum_insured", "sub_limit", "day_care_procedure"]
+  },
+  {
+    "term": "domiciliary",
+    "language": "EN",
+    "displayName": "Domiciliary Hospitalization",
+    "shortDefinition": "Coverage for medical treatment taken at home when hospitalization is not possible or advisable.",
+    "longDefinition": "Domiciliary hospitalization refers to medical treatment taken at home for a condition that would normally require hospitalization, but due to the patient's medical condition or unavailability of hospital beds, treatment is provided at home under a doctor's supervision. This coverage is valuable during situations like: (1) Patient is too ill to be moved to a hospital, (2) Hospital beds are unavailable (as seen during COVID-19), (3) Doctor advises home treatment for better recovery. Coverage typically requires: (1) Treatment for at least 3 consecutive days, (2) Medical practitioner's supervision, (3) Condition must be such that it would have required hospitalization. There are usually sub-limits on domiciliary claims.",
+    "example": "During COVID-19, if you were treated at home with oxygen support and doctor visits because hospital beds were unavailable, domiciliary hospitalization coverage would apply.",
+    "relatedTerms": ["hospitalization", "sub_limit", "sum_insured"]
+  },
+  {
+    "term": "free_look_period",
+    "language": "EN",
+    "displayName": "Free Look Period",
+    "shortDefinition": "A cooling-off period (typically 15-30 days) during which you can cancel the policy and get a full refund.",
+    "longDefinition": "The free look period is a consumer protection feature mandated by IRDAI that allows you to review your health insurance policy after purchase and cancel it if you're not satisfied, receiving a full refund of the premium paid (minus proportionate risk premium for days covered and stamp duty). The period is typically 15 days for offline policies and 30 days for policies purchased online. During this time, you should carefully read the policy document, understand all terms and conditions, check coverage details, exclusions, waiting periods, and sub-limits. If the policy doesn't meet your expectations or you find better alternatives, you can return it without penalty. This is your opportunity to ensure the policy matches what was promised during sales.",
+    "example": "You buy a health policy online, receive the documents, realize it has a 20% co-pay clause that wasn't clearly explained, and cancel within 30 days to get your full premium back.",
+    "relatedTerms": ["policy_document", "premium", "irdai"]
+  },
+  {
+    "term": "portability",
+    "language": "EN",
+    "displayName": "Portability",
+    "shortDefinition": "The right to transfer your health insurance from one insurer to another without losing accrued benefits.",
+    "longDefinition": "Portability is an IRDAI-mandated feature that allows you to switch your health insurance policy from one insurer to another without losing the benefits you've accumulated, such as waiting period credits and no-claim bonus. When you port: (1) Your waiting periods (initial, PED, specific diseases) are credited based on continuous coverage with the previous insurer, (2) Your no-claim bonus is typically transferred, (3) You don't have to serve waiting periods again for the same conditions. To port successfully: (1) Apply to the new insurer at least 45 days before your current policy expires, (2) Provide previous policy details and claim history, (3) New insurer evaluates and may accept, reject, or modify terms. Portability is valuable when you find better coverage, lower premiums, or better service elsewhere.",
+    "example": "After 3 years with Insurer A (completing PED waiting period), you port to Insurer B. Your PED waiting period is credited, so PED claims are covered immediately with Insurer B.",
+    "relatedTerms": ["waiting_period", "ped", "no_claim_bonus", "irdai"]
+  },
+  {
+    "term": "moratorium_period",
+    "language": "EN",
+    "displayName": "Moratorium Period",
+    "shortDefinition": "After 8 years of continuous coverage, all pre-existing diseases are automatically covered without waiting periods.",
+    "longDefinition": "The moratorium period is a significant consumer protection provision introduced by IRDAI. It states that after completing 8 consecutive years of continuous health insurance coverage (with the same or different insurers through portability), all pre-existing diseases and conditions are automatically covered without any waiting period restrictions. This means: (1) After 8 years, you don't need to prove when a disease started, (2) All PED-related claims are covered, (3) The insurer cannot deny claims citing pre-existing conditions, except for conditions you intentionally hid or misrepresented. The 8-year period must be continuous – any break in coverage resets the clock. This provision is particularly beneficial for individuals with chronic conditions or those who develop conditions during the policy tenure.",
+    "example": "You've had continuous health insurance for 8 years. Even if you develop diabetes in year 5 (which would normally have a waiting period), after completing 8 years, all diabetes-related claims are fully covered.",
+    "relatedTerms": ["ped", "waiting_period", "portability", "irdai"]
+  },
+  {
+    "term": "csr_count",
+    "language": "EN",
+    "displayName": "Claim Settlement Ratio (by Count)",
+    "shortDefinition": "The percentage of health insurance claims settled by an insurer out of total claims received.",
+    "longDefinition": "Claim Settlement Ratio (CSR) by count is a key performance metric that indicates what percentage of health insurance claims an insurer settles (approves and pays) versus the total number of claims received in a financial year. For example, a 95% CSR means the insurer settled 95 out of every 100 claims received. A higher CSR generally indicates better claim settlement practices and customer-friendly operations. However, CSR should be interpreted carefully: (1) Very high CSR (>98%) might indicate the insurer settles many small, easy claims but may still reject complex, high-value claims, (2) CSR doesn't distinguish between full and partial settlements, (3) It should be evaluated alongside ICR (Incurred Claim Ratio) and complaint data. IRDAI and comparison portals publish CSR data annually, though insurer-specific health-only CSR is often derived from journalistic sources rather than official IRDAI tables.",
+    "example": "If an insurer received 10,000 health claims in FY 2023-24 and settled 9,500 of them, the CSR by count is 95%.",
+    "relatedTerms": ["icr", "claim_rejection", "irdai"]
+  },
+  {
+    "term": "csr_value",
+    "language": "EN",
+    "displayName": "Claim Settlement Ratio (by Value)",
+    "shortDefinition": "The percentage of total claim amount settled versus total claim amount received.",
+    "longDefinition": "Claim Settlement Ratio (CSR) by value measures the proportion of the total claim amount (in rupees) that an insurer pays out versus the total claim amount received. Unlike CSR by count (which counts number of claims), CSR by value focuses on the monetary value. For example, if an insurer received claims worth ₹100 crore and paid out ₹85 crore, the CSR by value is 85%. This metric is important because: (1) An insurer might settle many small claims (high CSR by count) but reject or partially settle large claims (lower CSR by value), (2) It reveals how much of the claimed amount actually reaches policyholders, (3) It's more relevant for understanding financial protection. However, CSR by value data is rarely published in a standardized, insurer-wise format by IRDAI, making it harder to compare insurers on this metric.",
+    "example": "An insurer receives claims totaling ₹50 crore and settles claims worth ₹42 crore, resulting in a CSR by value of 84%.",
+    "relatedTerms": ["csr_count", "icr", "claim_rejection"]
+  },
+  {
+    "term": "icr",
+    "language": "EN",
+    "displayName": "Incurred Claim Ratio (ICR)",
+    "shortDefinition": "The ratio of claims paid (including outstanding) to premium earned, indicating how much premium flows back as claims.",
+    "longDefinition": "Incurred Claim Ratio (ICR) is a critical financial metric that measures the ratio of total claims incurred (claims paid plus outstanding claims) to the net premium earned by an insurer during a financial year. ICR = (Claims Paid + Outstanding Claims) / Net Premium Earned × 100. For example, an ICR of 75% means the insurer paid out ₹75 as claims for every ₹100 of premium collected. ICR interpretation: (1) Healthy range for retail health insurance is typically 70-100%, (2) Very low ICR (<60%) may indicate aggressive pricing, tight underwriting, or high claim rejections, (3) Very high ICR (>100%) suggests the insurer is paying out more in claims than it collects in premiums, indicating potential financial stress, (4) Standalone health insurers (SAHIs) typically have lower ICRs (60-65%) compared to PSU insurers (95-100%). ICR is portfolio-level data and doesn't predict individual claim outcomes, but it's a useful indicator of an insurer's claim-paying philosophy and financial health.",
+    "example": "If an insurer earned ₹1,000 crore in health premiums and incurred ₹820 crore in claims (paid + outstanding), the ICR is 82%.",
+    "relatedTerms": ["csr_count", "solvency_ratio", "claim_rejection"]
+  },
+  {
+    "term": "solvency_ratio",
+    "language": "EN",
+    "displayName": "Solvency Ratio",
+    "shortDefinition": "The ratio of available capital to required capital, indicating an insurer's financial strength to honor claims.",
+    "longDefinition": "Solvency ratio is a regulatory financial metric that measures an insurance company's ability to meet its long-term obligations and honor all future claims. It's calculated as: Solvency Ratio = Available Solvency Margin / Required Solvency Margin. IRDAI mandates a minimum solvency ratio of 1.50 (or 150%) for all insurers. This means the insurer must have at least 1.5 times the capital required to cover its underwritten risks. Interpretation: (1) Ratio >2.0 is excellent, indicating strong financial health and buffer against adverse claims, (2) Ratio 1.5-2.0 is adequate and meets regulatory requirements, (3) Ratio close to or below 1.5 is concerning and may trigger IRDAI intervention, (4) Higher solvency provides confidence that the insurer can withstand unexpected claim surges or economic downturns. Solvency ratios are disclosed in insurers' annual reports and IRDAI publications.",
+    "example": "An insurer with a solvency ratio of 2.3 has ₹2.30 of available capital for every ₹1 of required capital, indicating strong financial health.",
+    "relatedTerms": ["icr", "irdai", "financial_health"]
+  },
+  {
+    "term": "ombudsman",
+    "language": "EN",
+    "displayName": "Insurance Ombudsman",
+    "shortDefinition": "An independent authority that resolves disputes between policyholders and insurance companies.",
+    "longDefinition": "The Insurance Ombudsman is a quasi-judicial authority appointed by the Government of India to resolve disputes between insurance policyholders and insurance companies in a cost-free, efficient manner. There are multiple Ombudsman offices across India covering different regions. You can approach the Ombudsman if: (1) Your complaint to the insurer is not resolved within 30 days, (2) You're not satisfied with the insurer's response, (3) The claim amount is within the Ombudsman's jurisdiction (typically up to ₹50 lakh for health insurance). The Ombudsman can pass Awards (binding decisions) or Recommendations (suggestions). The process is: (1) File complaint with insurer first, (2) If unresolved, approach Ombudsman within 1 year, (3) Ombudsman hears both parties, (4) Passes Award or Recommendation, (5) Insurer must comply with Awards within 30 days. This is a valuable consumer protection mechanism for claim disputes, policy interpretation issues, and service grievances.",
+    "example": "If your insurer rejects a claim citing a pre-existing disease that you believe was disclosed, and the insurer doesn't resolve your complaint, you can approach the Insurance Ombudsman for an independent review.",
+    "relatedTerms": ["bima_bharosa", "irdai", "claim_rejection", "grievance"]
+  },
+  {
+    "term": "bima_bharosa",
+    "language": "EN",
+    "displayName": "Bima Bharosa (IGMS)",
+    "shortDefinition": "IRDAI's online portal for registering and tracking insurance complaints and grievances.",
+    "longDefinition": "Bima Bharosa (formerly IGMS - Integrated Grievance Management System) is IRDAI's centralized online portal for policyholders to register complaints against insurance companies and track their resolution. Accessible at bimabharosa.irdai.gov.in, it covers life, health, and general insurance grievances. Features: (1) Online complaint registration with document upload, (2) Real-time tracking of complaint status, (3) Automatic routing to the concerned insurer, (4) Escalation mechanism if not resolved within timelines, (5) Integration with insurer systems for status updates. Common complaint categories include claim rejection/delay, policy servicing issues, mis-selling, premium disputes, and renewal problems. The portal aims to ensure transparency, accountability, and timely resolution. If your complaint isn't resolved satisfactorily through Bima Bharosa, you can escalate to the Insurance Ombudsman.",
+    "example": "If your cashless claim is rejected and the insurer's customer service isn't helping, you can register a complaint on Bima Bharosa, which will be tracked and must be addressed by the insurer within specified timelines.",
+    "relatedTerms": ["ombudsman", "irdai", "grievance", "claim_rejection"]
+  },
+  {
+    "term": "irdai",
+    "language": "EN",
+    "displayName": "IRDAI (Insurance Regulatory and Development Authority of India)",
+    "shortDefinition": "The regulatory body that governs and supervises the insurance industry in India.",
+    "longDefinition": "The Insurance Regulatory and Development Authority of India (IRDAI) is the statutory body established under the IRDAI Act, 1999, to regulate, promote, and ensure orderly growth of the insurance industry in India. IRDAI's key functions include: (1) Licensing and regulating insurance companies, (2) Protecting policyholders' interests, (3) Setting standards for insurance products and practices, (4) Monitoring insurers' financial health (solvency, reserves), (5) Regulating insurance intermediaries (agents, brokers), (6) Promoting insurance awareness and penetration, (7) Handling grievances through Bima Bharosa and Ombudsman systems. IRDAI issues regulations, guidelines, and circulars that insurers must follow, such as standardized policy wordings, claim settlement timelines, waiting period caps, and disclosure norms. All health insurance policies in India must be IRDAI-approved, and insurers must file annual reports with IRDAI.",
+    "example": "IRDAI mandated that pre-existing disease waiting periods cannot exceed 36 months, protecting consumers from excessively long waiting periods.",
+    "relatedTerms": ["bima_bharosa", "ombudsman", "solvency_ratio", "policy_regulation"]
+  }
+]

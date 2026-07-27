@@ -1,0 +1,42 @@
+{
+  "uin": "RELHLIP22185V042122",
+  "insurer": "IndusInd General Insurance",
+  "plan_name": "IndusInd HealthWise Policy",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "indusind/revised-indusind-healthwise-policy-wording.txt",
+  "status": "unverified",
+  "confidence": "medium",
+  "sum_insured_options": "Not specified",
+
+  "room_rent": { "display": "Capped (eligible room category)", "ordinal": 3, "optional": false, "note": "VERIFY: room rent subject to eligible-room-category sub-limit per plan/schedule; proportionate deduction if exceeded (Standard/Silver/Gold)" },
+  "icu": { "display": "Per plan limit", "ordinal": 3, "optional": false, "note": "VERIFY: ICU charges subject to plan/schedule limits" },
+  "copayment": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: co-pay/deductible defined per chosen Plan (Standard/Silver/Gold) in schedule; no fixed base value in wording" },
+  "sub_limits": { "display": "Plan-based sub-limits", "ordinal": 1, "optional": false, "note": "VERIFY: plan-based product with room-rent caps and Modern Treatment capped at 50% SI; other sub-limits per schedule" },
+  "deductible": { "display": "Not specified", "number": null, "optional": false, "note": "VERIFY: deductible defined per plan/schedule" },
+
+  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY: standard Excl03 (not explicitly captured); inferred" },
+  "ped_waiting": { "display": "24 months (best)", "number": 24, "optional": false, "note": "Excl01: 24 or 48 months as specified in schedule; best achievable 24mo" },
+  "specific_disease_waiting": { "display": "12 months", "number": 12, "optional": false, "note": "Excl02: 12 months" },
+  "maternity": { "display": "Not covered", "exists": false, "optional": false, "note": "Maternity is a standard exclusion (Excl18); no maternity benefit found" },
+
+  "cumulative_bonus": { "display": "Renewal discount up to 20% (5%/yr)", "number": null, "optional": false, "note": "No SI cumulative bonus; only a premium 'No Claim Bonus' renewal discount 5%/yr up to 20%, forfeited on claim" },
+  "restoration": { "display": "Not covered", "ordinal": 0, "optional": false, "note": "No SI restoration/recharge/reinstatement benefit found" },
+
+  "pre_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "VERIFY: pre-hospitalisation days specified in Policy Schedule per plan" },
+  "post_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "VERIFY: post-hospitalisation days specified in Policy Schedule per plan" },
+  "day_care": { "display": "Listed only (Annexure D)", "exists": true, "optional": false },
+  "domiciliary": { "display": "Covered (10% SI)", "exists": true, "optional": false, "note": "Limited to 10% of SI; listed chronic conditions excluded" },
+  "ayush": { "display": "Covered", "exists": true, "optional": false, "note": "AYUSH hospitalisation included in In-Patient benefit" },
+  "organ_donor": { "display": "Covered", "exists": true, "optional": false, "note": "Donor Expenses (3.8)" },
+  "ambulance": { "display": "Covered (per schedule)", "number": 999999, "optional": false, "note": "Local Road Ambulance up to schedule limit" },
+  "modern_treatments": { "display": "Covered (up to 50% SI)", "exists": true, "optional": false, "note": "Modern Treatment (3.10) capped at 50% of SI" },
+  "consumables": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: non-medical/consumables not clearly addressed" },
+  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY: no overseas/global cover found" },
+
+  "moratorium": { "display": "8 years", "number": 96, "optional": false, "note": "Older-format moratorium of 8 continuous years (= 96 months)" },
+  "grace_period": { "display": "30 days", "number": 30, "optional": false },
+  "free_look": { "display": "15 days", "number": 15, "optional": false },
+  "portability": { "display": "Allowed", "exists": true, "optional": false },
+  "notable_exclusions": { "display": "Maternity excluded (Excl18); domiciliary capped 10% SI & excludes listed chronic conditions; Modern Treatment capped 50% SI; plan-based room-rent caps" },
+  "optional_riders": { "display": "Critical Illness benefit, Daily Hospitalization Allowance, Nursing Allowance, Recovery Benefit (plan/schedule dependent)" }
+}

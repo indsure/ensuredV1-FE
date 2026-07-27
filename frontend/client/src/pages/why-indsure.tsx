@@ -2,92 +2,102 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { CheckCircle2, ShieldCheck, TrendingUp, Users, Scale, Search } from "lucide-react";
+import { Database, Cpu, Share2, ShieldOff } from "lucide-react";
+
+const pillars = [
+    {
+        icon: Database,
+        title: "The Catalog",
+        body: "We didn't scrape brochures. We hand-built a wording-level database of 63 health insurance plans across 10 insurers — every room-rent clause, co-pay clause, sub-limit, and waiting period, extracted from the actual policy documents insurers file, not their marketing copy. That takes months of work most competitors won't do.",
+    },
+    {
+        icon: Cpu,
+        title: "The Engine",
+        body: "Reading one policy properly takes a trained human the better part of an hour. Our engine reads clause-by-clause, deterministically — the same policy produces the same audit every time, whether it's run by a lawyer or a first-time buyer. 50+ risk checks, in under a minute.",
+    },
+    {
+        icon: Share2,
+        title: "Distribution",
+        body: "The best analysis in the world is useless if it never reaches the person deciding. We built for the channel that already reaches millions of Indian households: the insurance advisor. Compare, Calculator, and client tools — in agents' hands, with WhatsApp as the front door, not a CRM login.",
+    },
+    {
+        icon: ShieldOff,
+        title: "The Business Model",
+        body: "We are not an IRDAI-registered broker or agent. We cannot earn a commission on what we recommend — even if we wanted to. That's not a tagline, it's a structural constraint most of this industry can't claim.",
+    },
+];
+
+const stats = [
+    { value: "63", label: "Plans indexed" },
+    { value: "10", label: "Insurers covered" },
+    { value: "50+", label: "Risk checks per audit" },
+    { value: "0", label: "Commissions earned, ever" },
+];
 
 export default function WhyIndSure() {
     return (
         <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
             <Header />
 
-            <main className="flex-grow pt-32 sm:pt-36 md:pt-40 pb-12 md:pb-20 px-4 sm:px-6 w-full overflow-x-hidden">
+            <main className="flex-grow pt-32 pb-20 px-6 w-full">
 
                 {/* HERO SECTION */}
-                <section className="max-w-4xl mx-auto text-center mb-24 animate-reveal">
+                <section className="max-w-4xl mx-auto text-center mb-20 animate-reveal">
                     <div className="inline-block py-1 px-3 border border-[var(--color-border-main)] rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-text-secondary)] mb-6 bg-white">
-                        Our Philosophy
+                        Why IndSure
                     </div>
                     <h1 className="text-5xl md:text-7xl font-serif mb-8 tracking-tight text-[var(--color-text-main)] leading-tight">
                         Insurance, <br />
                         <span className="italic text-[var(--color-green-primary)]">Decoded.</span>
                     </h1>
                     <p className="text-xl md:text-2xl text-[var(--color-text-secondary)] font-light leading-relaxed max-w-2xl mx-auto">
-                        We built IndSure because the insurance industry is designed to confuse you.
-                        We are here to give you the clarity they won't.
+                        Everyone promises "unbiased advice." Almost nobody can back it with the
+                        data, the technology, and the business model to prove it. Here's ours.
                     </p>
                 </section>
 
+                {/* STATS STRIP */}
+                <section className="max-w-5xl mx-auto mb-24 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+                    {stats.map((s) => (
+                        <div key={s.label} className="text-center">
+                            <div className="text-4xl md:text-5xl font-serif text-[var(--color-green-primary)] mb-1">{s.value}</div>
+                            <div className="text-xs md:text-sm uppercase tracking-widest text-[var(--color-text-secondary)]">{s.label}</div>
+                        </div>
+                    ))}
+                </section>
+
                 {/* PILLARS GRID */}
-                <section className="max-w-6xl mx-auto mb-32 grid md:grid-cols-3 gap-8">
-
-                    <div className="card-white p-8 md:p-10 hover:shadow-lg transition-all duration-500 group">
-                        <div className="w-14 h-14 bg-[var(--color-cream-dark)] rounded-full flex items-center justify-center mb-6 group-hover:bg-[var(--color-green-primary)] transition-colors">
-                            <Scale className="w-6 h-6 text-[var(--color-text-main)] group-hover:text-white" />
-                        </div>
-                        <h3 className="text-2xl font-serif mb-4">Unbiased analysis</h3>
-                        <p className="text-[var(--color-text-secondary)] leading-relaxed">
-                            We don't sell data. We don't push commissions. Our analysis engine looks at the fine print that agents gloss over, giving you the raw, unvarnished truth.
-                        </p>
-                    </div>
-
-                    <div className="card-white p-8 md:p-10 hover:shadow-lg transition-all duration-500 group relative overflow-hidden">
-                        {/* Decorative gradient for the middle card */}
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--color-green-primary)] to-[var(--color-gold-500)]"></div>
-                        <div className="w-14 h-14 bg-[var(--color-cream-dark)] rounded-full flex items-center justify-center mb-6 group-hover:bg-[var(--color-green-primary)] transition-colors">
-                            <Search className="w-6 h-6 text-[var(--color-text-main)] group-hover:text-white" />
-                        </div>
-                        <h3 className="text-2xl font-serif mb-4">Deep Logic</h3>
-                        <p className="text-[var(--color-text-secondary)] leading-relaxed">
-                            Insurance isn't just about premiums. It's about Room Rent Limits, Co-pay clauses, and Restoration benefits. We calculate the <i>real</i> value of a policy.
-                        </p>
-                    </div>
-
-                    <div className="card-white p-8 md:p-10 hover:shadow-lg transition-all duration-500 group">
-                        <div className="w-14 h-14 bg-[var(--color-cream-dark)] rounded-full flex items-center justify-center mb-6 group-hover:bg-[var(--color-green-primary)] transition-colors">
-                            <Users className="w-6 h-6 text-[var(--color-text-main)] group-hover:text-white" />
-                        </div>
-                        <h3 className="text-2xl font-serif mb-4">You-First</h3>
-                        <p className="text-[var(--color-text-secondary)] leading-relaxed">
-                            Designed for the modern Indian family. Whether you are in a Tier 1 metro or a Tier 3 city, our algorithms adapt to your specific medical landscape.
-                        </p>
-                    </div>
-
+                <section className="max-w-6xl mx-auto mb-32 grid md:grid-cols-2 gap-8">
+                    {pillars.map((p) => {
+                        const Icon = p.icon;
+                        return (
+                            <div key={p.title} className="card-white p-8 md:p-10 hover:shadow-lg transition-all duration-500 group">
+                                <div className="w-14 h-14 bg-[var(--color-cream-dark)] rounded-full flex items-center justify-center mb-6 group-hover:bg-[var(--color-green-primary)] transition-colors">
+                                    <Icon className="w-6 h-6 text-[var(--color-text-main)] group-hover:text-white" />
+                                </div>
+                                <h3 className="text-2xl font-serif mb-4">{p.title}</h3>
+                                <p className="text-[var(--color-text-secondary)] leading-relaxed">
+                                    {p.body}
+                                </p>
+                            </div>
+                        );
+                    })}
                 </section>
 
                 {/* MANIFESTO / STORY */}
-                <section className="max-w-4xl mx-auto mb-32 flex flex-col md:flex-row gap-12 items-center">
-                    <div className="flex-1">
-                        <h2 className="text-4xl font-serif mb-6 text-[var(--color-text-main)]">The "Fine Print" Problem</h2>
-                        <div className="w-20 h-1 bg-[var(--color-green-primary)] mb-8"></div>
-                        <div className="space-y-6 text-lg text-[var(--color-text-secondary)] font-light leading-relaxed">
-                            <p>
-                                Every year, millions of claims are rejected not because of fraud, but because of "hidden clauses" buried in page 42 of a policy document.
-                            </p>
-                            <p>
-                                We realized that no human can keep up with the changing landscape of 50+ insurers and 200+ products. But an AI can.
-                            </p>
-                            <p>
-                                IndSure is the result of thousands of hours of codifying insurance logic into a system that works for <strong>you</strong>, not the insurer.
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex-1 relative">
-                        <div className="aspect-square bg-[var(--color-cream-dark)] rounded-full border border-[var(--color-border-main)] flex items-center justify-center p-12 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2070&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-multiply"></div>
-                            <div className="relative z-10 text-center">
-                                <span className="block text-6xl font-serif text-[var(--color-green-primary)] mb-2">100%</span>
-                                <span className="text-sm uppercase tracking-widest text-[var(--color-text-secondary)]">Unbiased</span>
-                            </div>
-                        </div>
+                <section className="max-w-4xl mx-auto mb-32">
+                    <h2 className="text-4xl font-serif mb-6 text-[var(--color-text-main)] text-center">The "Fine Print" Problem</h2>
+                    <div className="w-20 h-1 bg-[var(--color-green-primary)] mb-8 mx-auto"></div>
+                    <div className="space-y-6 text-lg text-[var(--color-text-secondary)] font-light leading-relaxed text-center max-w-2xl mx-auto">
+                        <p>
+                            Every year, thousands of claims are rejected not because of fraud, but because of clauses buried in page 42 of a policy document — a room-rent cap, a co-pay, a waiting period nobody read out loud at the time of sale.
+                        </p>
+                        <p>
+                            No human advisor can hold 10 insurers' worth of fine print in their head, consistently, for every customer, every time. A system built to do exactly that — and nothing else — can.
+                        </p>
+                        <p>
+                            That's the bet IndSure is built on: codify the fine print once, apply it consistently, and never let a commission check the outcome.
+                        </p>
                     </div>
                 </section>
 

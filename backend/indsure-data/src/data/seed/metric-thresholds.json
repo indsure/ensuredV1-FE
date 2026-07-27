@@ -1,0 +1,145 @@
+[
+  {
+    "metricName": "CSR_BY_COUNT",
+    "excellentMin": 97.0,
+    "goodMin": 92.0,
+    "concerningMin": 85.0,
+    "redFlagMax": 85.0,
+    "direction": "HIGHER_IS_BETTER",
+    "interpretationText": "Share of claims by number that the insurer settles (fully or partially) versus total claims received in a period. High CSR suggests most claims eventually get paid. Proxy for ease of getting a claim accepted.",
+    "misinterpretationWarning": "High CSR may hide low ticket, easy claims being paid, while high-value claims face friction. Must be cross-checked against ICR, complaint rates and Ombudsman awards.",
+    "sourceCitation": "Research §8.1"
+  },
+  {
+    "metricName": "ICR",
+    "excellentMin": 80.0,
+    "goodMin": 70.0,
+    "concerningMin": 60.0,
+    "redFlagMax": 105.0,
+    "direction": "BAND",
+    "interpretationText": "Ratio of claims paid (including outstanding) to premium earned. Represents how much of premium flows back as claims. Indicates balance between pricing adequacy and willingness to pay. Healthy range for retail health is roughly 70-100%. Excellent for consumers: 80-95% with stable solvency and no major complaints.",
+    "misinterpretationWarning": "ICR is portfolio-level; a high ICR may be driven by a couple of corporate/group contracts rather than retail health. It does not directly tell an individual what will happen to their own claim. Extremely low ICR (<60%) may indicate aggressive pricing or denials; extremely high ICR (>105%) suggests financial strain.",
+    "sourceCitation": "Research §8.2"
+  },
+  {
+    "metricName": "SOLVENCY_RATIO",
+    "excellentMin": 2.0,
+    "goodMin": 1.5,
+    "concerningMin": 1.5,
+    "redFlagMax": 1.5,
+    "direction": "HIGHER_IS_BETTER",
+    "interpretationText": "Ratio of available capital to required capital for current underwritten risks; IRDAI minimum is 1.50. Ensures insurer can withstand adverse claim experience and continue honouring future claims.",
+    "misinterpretationWarning": "Consistently close to 1.5 or declining trend is concerning. Below 1.5 typically triggers supervisory intervention.",
+    "sourceCitation": "Research §8.4"
+  },
+  {
+    "metricName": "COMPLAINTS_PER_10K_POLICIES",
+    "excellentMin": null,
+    "goodMin": null,
+    "concerningMin": null,
+    "redFlagMax": null,
+    "direction": "LOWER_IS_BETTER",
+    "interpretationText": "Normalises complaint volume; high value suggests frequent friction even if CSR is good. Low normalised complaint rate indicates better customer service.",
+    "misinterpretationWarning": "Ombudsman data is a tip of the iceberg – only a fraction of unhappy customers escalate; low Ombudsman cases may reflect lack of awareness as much as good service.",
+    "sourceCitation": "Research §8.3"
+  },
+  {
+    "metricName": "COMPLAINTS_PER_CRORE_PREMIUM",
+    "excellentMin": null,
+    "goodMin": null,
+    "concerningMin": null,
+    "redFlagMax": null,
+    "direction": "LOWER_IS_BETTER",
+    "interpretationText": "Alternative normalisation; highlights friction relative to business size. Lower is better.",
+    "misinterpretationWarning": "Ombudsman data is a tip of the iceberg – only a fraction of unhappy customers escalate.",
+    "sourceCitation": "Research §8.3"
+  },
+  {
+    "metricName": "OMBUDSMAN_AWARDS_AGAINST",
+    "excellentMin": null,
+    "goodMin": null,
+    "concerningMin": null,
+    "redFlagMax": null,
+    "direction": "LOWER_IS_BETTER",
+    "interpretationText": "Shows how often insurer positions are overturned at final escalation; a persistent pattern is a red flag about fairness.",
+    "misinterpretationWarning": "Only a fraction of unhappy customers escalate to Ombudsman; low cases may reflect lack of awareness as much as good service.",
+    "sourceCitation": "Research §8.3"
+  },
+  {
+    "metricName": "NETWORK_HOSPITAL_COUNT",
+    "excellentMin": null,
+    "goodMin": null,
+    "concerningMin": null,
+    "redFlagMax": null,
+    "direction": "HIGHER_IS_BETTER",
+    "interpretationText": "Number of network hospitals for cashless treatment. More is better only if distributed geographically.",
+    "misinterpretationWarning": "A big number concentrated in metros may not help a tier-3 customer. Not audited by IRDAI and changes frequently.",
+    "sourceCitation": "Research §8.5"
+  },
+  {
+    "metricName": "CLAIM_REJECTION_RATE",
+    "excellentMin": null,
+    "goodMin": null,
+    "concerningMin": null,
+    "redFlagMax": null,
+    "direction": "LOWER_IS_BETTER",
+    "interpretationText": "Percentage of claims rejected or repudiated. Lower is better for consumers.",
+    "misinterpretationWarning": "Industry-wide data available but insurer-specific data not always disclosed publicly.",
+    "sourceCitation": "Research §3.4"
+  },
+  {
+    "metricName": "AVG_CLAIM_PROCESSING_DAYS",
+    "excellentMin": null,
+    "goodMin": null,
+    "concerningMin": 30.0,
+    "redFlagMax": 30.0,
+    "direction": "LOWER_IS_BETTER",
+    "interpretationText": "Average time to process and settle claims. IRDAI regulations require claim decisions within 30 days of receipt of all documents.",
+    "misinterpretationWarning": "No central IRDAI table of average processing times per insurer; data may come from insurer self-reporting.",
+    "sourceCitation": "Research §3.5"
+  },
+  {
+    "metricName": "CASHLESS_APPROVAL_RATIO",
+    "excellentMin": 90.0,
+    "goodMin": 80.0,
+    "concerningMin": 70.0,
+    "redFlagMax": 70.0,
+    "direction": "HIGHER_IS_BETTER",
+    "interpretationText": "Percentage of pre-authorization requests approved for cashless treatment. Higher is better.",
+    "misinterpretationWarning": "Seldom disclosed on a per-insurer public basis; comparison portals may quote network-level approvals but this is not standard, auditable data.",
+    "sourceCitation": "Research §3.5"
+  },
+  {
+    "metricName": "GWP_HEALTH",
+    "excellentMin": null,
+    "goodMin": null,
+    "concerningMin": null,
+    "redFlagMax": null,
+    "direction": "HIGHER_IS_BETTER",
+    "interpretationText": "Gross Written Premium for health business. Indicates market size and scale of operations.",
+    "misinterpretationWarning": "Larger GWP doesn't necessarily mean better service; must be evaluated with other metrics.",
+    "sourceCitation": "Research §5.2"
+  },
+  {
+    "metricName": "COMPLAINT_RESOLUTION_RATE",
+    "excellentMin": 90.0,
+    "goodMin": 80.0,
+    "concerningMin": 70.0,
+    "redFlagMax": 70.0,
+    "direction": "HIGHER_IS_BETTER",
+    "interpretationText": "Percentage of complaints resolved satisfactorily. Higher is better.",
+    "misinterpretationWarning": "Definition of 'resolved' may vary; check if it means resolved in favor of policyholder or just closed.",
+    "sourceCitation": "Research §4.2"
+  },
+  {
+    "metricName": "REGULATORY_ACTIONS_COUNT_5Y",
+    "excellentMin": null,
+    "goodMin": null,
+    "concerningMin": 1.0,
+    "redFlagMax": 3.0,
+    "direction": "LOWER_IS_BETTER",
+    "interpretationText": "Number of regulatory actions (fines, warnings, suspensions) in the last 5 years. Lower is better.",
+    "misinterpretationWarning": "Requires targeted crawling of IRDAI's orders/press release repository; not always easily accessible.",
+    "sourceCitation": "Research §5.4"
+  }
+]
