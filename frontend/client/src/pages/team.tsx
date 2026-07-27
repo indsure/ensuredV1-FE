@@ -1,31 +1,9 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { Link } from "wouter";
 import { Linkedin } from "lucide-react";
-
-const founders = [
-  {
-    name: "Deep Shah",
-    role: "CEO",
-    bio: "Deep started IndSure after watching a family member's hospital claim get slashed by a room-rent clause nobody had explained at the time of buying the policy. The pattern was obvious: insurance isn't complicated because it has to be — it's complicated because complexity is profitable for whoever's selling it. He leads product and the long-term bet that clarity should be a right, not a service you pay a commission for.",
-    linkedin: "https://www.linkedin.com/in/deeepp/",
-    initials: "DS",
-  },
-  {
-    name: "Aniket Bang, CFA",
-    role: "CRO",
-    bio: "Aniket reads policy documents the way most people read term sheets — line by line, looking for what the bold-print number is hiding. A CFA by training, he leads revenue and partnerships, and spends an uncomfortable amount of time arguing that a room-rent cap belongs above the fold, not in Annexure IV.",
-    linkedin: "https://www.linkedin.com/in/aniketbang13/",
-    initials: "AB",
-  },
-  {
-    name: "Nikhil Mhaskar",
-    role: "COO",
-    bio: "Nikhil runs the unglamorous half of IndSure — the pipelines that turn a scanned PDF into a clause-by-clause audit in under a minute, the agent onboarding that doesn't need a training manual, the systems that keep working when nobody's watching. If IndSure feels simple to use, it's because he made the complicated part invisible.",
-    linkedin: "https://www.linkedin.com/in/mhaskar-nikhil01/?skipRedirect=true",
-    initials: "NM",
-  },
-];
+import { FOUNDERS as founders, displayName } from "@/data/team";
 
 export default function Team() {
   return (
@@ -53,11 +31,15 @@ export default function Team() {
         {/* FOUNDERS */}
         <section className="max-w-6xl mx-auto mb-24 grid md:grid-cols-3 gap-8">
           {founders.map((f) => (
-            <div key={f.name} className="card-white p-8 flex flex-col items-center text-center hover:shadow-lg transition-all duration-500">
+            <div key={f.name} id={f.slug} className="card-white p-8 flex flex-col items-center text-center hover:shadow-lg transition-all duration-500 scroll-mt-32">
               <div className="w-24 h-24 rounded-full bg-[var(--color-cream-dark)] border border-[var(--color-border-main)] flex items-center justify-center mb-6 text-2xl font-serif text-[var(--color-green-primary)]">
                 {f.initials}
               </div>
-              <h3 className="text-2xl font-serif mb-1">{f.name}</h3>
+              <h3 className="text-2xl font-serif mb-1">
+                <Link href={`/author/${f.slug}`} className="hover:text-[var(--color-green-primary)] transition-colors">
+                  {displayName(f)}
+                </Link>
+              </h3>
               <p className="text-sm uppercase tracking-widest text-[var(--color-green-primary)] font-semibold mb-5">{f.role}</p>
               <p className="text-[var(--color-text-secondary)] leading-relaxed text-sm mb-6">
                 {f.bio}
@@ -67,7 +49,7 @@ export default function Team() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full border border-[var(--color-border-main)] flex items-center justify-center text-[var(--color-text-secondary)] hover:bg-[var(--color-green-primary)] hover:text-white hover:border-[var(--color-green-primary)] transition-colors"
-                aria-label={`${f.name} on LinkedIn`}
+                aria-label={`${displayName(f)} on LinkedIn`}
               >
                 <Linkedin className="w-4 h-4" />
               </a>

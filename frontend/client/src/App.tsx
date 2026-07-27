@@ -78,6 +78,7 @@ const BlogPost = lazy(() => import("@/pages/blog/[id]"));
 const Mission = lazy(() => import("@/pages/mission"));
 const Vision = lazy(() => import("@/pages/vision"));
 const Team = lazy(() => import("@/pages/team"));
+const AuthorPage = lazy(() => import("@/pages/author"));
 const WhyIndSure = lazy(() => import("@/pages/why-indsure"));
 const Help = lazy(() => import("@/pages/help"));
 const Account = lazy(() => import("@/pages/account"));
@@ -238,6 +239,7 @@ function App() {
                       <Route path="/mission" component={Mission} />
                       <Route path="/vision" component={Vision} />
                       <Route path="/team" component={Team} />
+                      <Route path="/author/:slug" component={AuthorPage} />
                       <Route path="/why-indsure" component={WhyIndSure} />
 
                       {/* --- Support & Account --- */}

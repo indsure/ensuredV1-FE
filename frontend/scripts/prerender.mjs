@@ -33,6 +33,7 @@ async function loadBlogData() {
     [
       `export { blogPosts } from "../client/src/pages/blog/blog-data.ts";`,
       `export { POST_SLUGS, slugFor } from "../client/src/pages/blog/slugs.ts";`,
+      `export { FOUNDERS, authorForId, displayName } from "../client/src/data/team.ts";`,
     ].join("\n"),
   );
   const outfile = join(__dirname, ".blog-bundle.mjs");
@@ -296,7 +297,7 @@ async function main() {
   }
 
   // Blog posts
-  const { blogPosts, slugFor } = await loadBlogData();
+  const { blogPosts, slugFor, FOUNDERS, authorForId, displayName } = await loadBlogData();
   let postCount = 0;
   for (const post of blogPosts) {
     const slug = slugFor(post.id);
@@ -304,6 +305,7 @@ async function main() {
     const canonical = SITE + path;
     const title = `${post.title} | IndSure Blog`;
     const description = post.excerpt;
+    const author = authorForId(post.id);
 
     let html = applyHead(template, { title, description, canonical, ogType: "article" });
 
@@ -313,7 +315,14 @@ async function main() {
         "@type": "Article",
         headline: post.title,
         description: post.excerpt,
-        author: { "@type": "Organization", name: post.author || "IndSure" },
+        author: {
+          "@type": "Person",
+          name: author.name,
+          ...(author.suffix ? { honorificSuffix: author.suffix } : {}),
+          jobTitle: author.role,
+          url: `${SITE}/author/${author.slug}`,
+          sameAs: [author.linkedin],
+        },
         datePublished: post.date,
         dateModified: post.date,
         publisher: {
@@ -350,9 +359,10 @@ async function main() {
             .map((f) => `<h3>${escText(f.question)}</h3><p>${escText(f.answer)}</p>`)
             .join("")}</section>`
         : "";
+    const byline = `<p>By <a href="/author/${author.slug}">${escText(displayName(author))}</a>, ${escText(author.role)}, IndSure</p>`;
     const body =
       `<article><h1>${escText(post.title)}</h1>` +
-      `<p>${escText(post.excerpt)}</p>` +
+      `<p>${escText(post.excerpt)}</p>${byline}` +
       `${post.content || ""}${faqHtml}</article>`;
     html = injectBody(html, body);
 
@@ -360,16 +370,60 @@ async function main() {
     postCount++;
   }
 
-  await writeSitemap(blogPosts, slugFor);
+  // Author pages (E-E-A-T entity pages)
+  for (const f of FOUNDERS) {
+    const path = `/author/${f.slug}`;
+    const canonical = SITE + path;
+    const name = displayName(f);
+    let html = applyHead(template, {
+      title: `${name}, ${f.role} at IndSure`,
+      description: `${name} is ${f.role} at IndSure. ${f.bio}`.slice(0, 300),
+      canonical,
+      ogType: "profile",
+    });
+    const authored = blogPosts.filter((p) => authorForId(p.id).slug === f.slug);
+    const blocks = [
+      breadcrumbLd([
+        { name: "Home", url: `${SITE}/` },
+        { name: "Team", url: `${SITE}/team` },
+        { name: name, url: canonical },
+      ]),
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        name: f.name,
+        ...(f.suffix ? { honorificSuffix: f.suffix } : {}),
+        jobTitle: f.role,
+        description: f.bio,
+        url: canonical,
+        sameAs: [f.linkedin],
+        worksFor: { "@type": "Organization", name: "IndSure", url: SITE },
+      },
+    ];
+    html = injectJsonLd(html, blocks);
+    const list = authored
+      .map((p) => `<li><a href="/blog/${slugFor(p.id)}">${escText(p.title)}</a></li>`)
+      .join("");
+    const body =
+      `<main><h1>${escText(name)}</h1>` +
+      `<p>${escText(f.role)}, IndSure</p>` +
+      `<p>${escText(f.bio)}</p>` +
+      (list ? `<h2>Articles by ${escText(f.name)}</h2><ul>${list}</ul>` : "") +
+      `</main>`;
+    html = injectBody(html, body);
+    await writeRoute(path, html);
+  }
+
+  await writeSitemap(blogPosts, slugFor, FOUNDERS);
 
   console.log(
-    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + sitemap.`,
+    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + ${FOUNDERS.length} author pages + sitemap.`,
   );
 }
 
 // Regenerate dist/sitemap.xml with honest lastmod: blog posts use their own
 // publish date; marketing pages use the build date.
-async function writeSitemap(blogPosts, slugFor) {
+async function writeSitemap(blogPosts, slugFor, FOUNDERS = []) {
   const buildDate = new Date().toISOString().slice(0, 10);
   const marketing = [
     { path: "/", priority: "1.0", changefreq: "weekly" },
@@ -394,6 +448,7 @@ async function writeSitemap(blogPosts, slugFor) {
 
   const rows = [];
   for (const m of marketing) rows.push(url(m.path, buildDate, m.changefreq, m.priority));
+  for (const f of FOUNDERS) rows.push(url(`/author/${f.slug}`, buildDate, "monthly", "0.4"));
   for (const post of blogPosts) {
     const lastmod = /^\d{4}-\d{2}-\d{2}$/.test(post.date || "") ? post.date : buildDate;
     rows.push(url(`/blog/${slugFor(post.id)}`, lastmod, "monthly", "0.6"));

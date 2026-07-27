@@ -9,6 +9,7 @@ import { blogPosts } from "../blog/blog-data";
 import { postFromParam, blogPath } from "../blog/slugs";
 import { useSEO } from "@/hooks/use-seo";
 import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
+import { authorForId, displayName } from "@/data/team";
 import { TableOfContents } from "@/components/TableOfContents";
 import { ReadingProgress } from "@/components/ReadingProgress";
 import { ShareButtons } from "@/components/ShareButtons";
@@ -50,13 +51,20 @@ export default function BlogPost() {
     );
   }
 
+  // Named author (rotates across the founding team, single source of truth).
+  const author = post ? authorForId(post.id) : null;
+
   // Article Schema
-  const articleSchema = post ? {
+  const articleSchema = post && author ? {
     headline: post.title,
     description: post.excerpt,
     author: {
-      "@type": "Organization",
-      name: post.author,
+      "@type": "Person",
+      name: author.name,
+      ...(author.suffix ? { honorificSuffix: author.suffix } : {}),
+      jobTitle: author.role,
+      url: `https://indsure.in/author/${author.slug}`,
+      sameAs: [author.linkedin],
     },
     datePublished: post.date,
     dateModified: post.date,
@@ -142,7 +150,11 @@ export default function BlogPost() {
                   <span>•</span>
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4" />
-                    <span>By {post.author}</span>
+                    <span>By {author ? (
+                      <Link href={`/author/${author.slug}`} className="hover:text-[var(--color-green-primary)] transition-colors">
+                        {displayName(author)}
+                      </Link>
+                    ) : post.author}</span>
                   </div>
                 </div>
               </div>
@@ -202,21 +214,30 @@ export default function BlogPost() {
               )}
 
               {/* Author Bio */}
-              <div className="mt-12 pt-8 border-t border-[var(--color-border-light)]">
-                <div className="bg-[var(--color-cream-dark)] rounded-xl p-6">
-                  <div className="flex gap-4">
-                    <div className="w-16 h-16 rounded-full bg-white border border-[var(--color-border-light)] flex items-center justify-center flex-shrink-0 text-[var(--color-teal-600)] font-serif text-2xl font-bold">
-                      {(post.author || "IndSure").charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-[var(--color-text-main)] mb-1">{post.author}</h3>
-                      <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                        We decode insurance so you don't have to — health, life, vehicle, everything explained clearly.
-                      </p>
+              {author && (
+                <div className="mt-12 pt-8 border-t border-[var(--color-border-light)]">
+                  <div className="bg-[var(--color-cream-dark)] rounded-xl p-6">
+                    <div className="flex gap-4">
+                      <div className="w-16 h-16 rounded-full bg-white border border-[var(--color-border-light)] flex items-center justify-center flex-shrink-0 text-[var(--color-teal-600)] font-serif text-2xl font-bold">
+                        {author.initials}
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-[var(--color-text-main)] mb-0.5">
+                          <Link href={`/author/${author.slug}`} className="hover:text-[var(--color-green-primary)] transition-colors">
+                            {displayName(author)}
+                          </Link>
+                        </h3>
+                        <p className="text-xs uppercase tracking-wider text-[var(--color-green-primary)] font-semibold mb-2">
+                          {author.role}, IndSure
+                        </p>
+                        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                          {author.bio}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </article>
           </div>
 

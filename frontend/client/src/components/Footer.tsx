@@ -13,8 +13,8 @@ export function Footer() {
 
   const socialLinks = [
     { name: "LinkedIn", icon: Linkedin, href: "https://www.linkedin.com/company/indsure" },
-    { name: "Twitter", icon: Twitter, href: "https://www.x.com/indsure" },
-    { name: "Instagram", icon: Instagram, href: "https://www.instagram.com/indsure.in" },
+    { name: "Twitter", icon: Twitter, href: "https://x.com/IndSure_Ind" },
+    { name: "Instagram", icon: Instagram, href: "https://www.instagram.com/indsure.in/" },
   ];
 
   return (

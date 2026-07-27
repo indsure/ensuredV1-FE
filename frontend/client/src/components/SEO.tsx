@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 interface SchemaMarkupProps {
-  type: "Organization" | "FAQPage" | "WebSite" | "Article";
+  type: "Organization" | "FAQPage" | "WebSite" | "Article" | "Person" | "ProfilePage";
   data: any;
 }
 
@@ -45,7 +45,8 @@ export const organizationSchema = {
   url: "https://indsure.in",
   logo: "https://indsure.in/favicon.png",
   sameAs: [
-    // Add social media links when available
+    "https://www.instagram.com/indsure.in/",
+    "https://x.com/IndSure_Ind",
   ],
   contactPoint: {
     "@type": "ContactPoint",
