@@ -31,7 +31,7 @@ export function ctaTargetFor(post: Pick<BlogPost, "title" | "category" | "insura
   };
 }
 
-const PROMISE = "No calls. No spam. No agent will ever contact you.";
+const PROMISE = "No spam. No cold calls. An advisor reaches out only if you ask.";
 
 /** Inline cream box — sits at the end of the article body. */
 export function BlogInlineCTA({ post }: { post: Pick<BlogPost, "title" | "category" | "insuranceType"> }) {

@@ -132,7 +132,7 @@ export default function Home() {
               className="mt-6 flex items-center gap-2.5 text-sm text-[var(--color-white-muted)]"
             >
               <Lock className="w-4 h-4 text-[var(--color-teal-400)] shrink-0" />
-              <span>No calls. No spam. No agent will ever contact you — we sell zero leads.</span>
+              <span>No spam. No cold calls. We sell zero leads — an advisor reaches out only if you ask.</span>
             </motion.div>
 
             {/* Trust strip */}

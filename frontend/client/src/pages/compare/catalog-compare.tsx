@@ -318,7 +318,7 @@ function HealthCatalogCompare() {
                   </button>
                 </Link>
                 <p className="mt-4 text-xs text-white/50 flex items-center justify-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5" /> No calls. No spam. No agent will ever contact you.
+                  <Lock className="w-3.5 h-3.5" /> No spam. No cold calls. An advisor reaches out only if you ask.
                 </p>
               </div>
             )}
