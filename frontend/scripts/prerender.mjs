@@ -117,6 +117,20 @@ function injectBody(html, bodyHtml) {
   );
 }
 
+// BreadcrumbList JSON-LD from [{name, url}] items.
+function breadcrumbLd(items) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.name,
+      item: it.url,
+    })),
+  };
+}
+
 async function writeRoute(path, html) {
   const outPath =
     path === "/" ? join(DIST, "index.html") : join(DIST, path.replace(/^\//, ""), "index.html");
@@ -238,6 +252,44 @@ async function main() {
       description: r.description,
       canonical,
     });
+
+    const blocks = [];
+    // Breadcrumbs (Home > Page) for every non-home page.
+    if (r.path !== "/") {
+      blocks.push(
+        breadcrumbLd([
+          { name: "Home", url: `${SITE}/` },
+          { name: r.h1, url: canonical },
+        ]),
+      );
+    }
+    if (r.path === "/how-it-works") {
+      blocks.push({
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        name: "How to understand your insurance policy with IndSure",
+        description: r.description,
+        step: [
+          { "@type": "HowToStep", position: 1, name: "Upload your policy", text: "Upload your health, term life, or motor insurance policy PDF." },
+          { "@type": "HowToStep", position: 2, name: "IndSure reads it", text: "IndSure reads the policy clause by clause and extracts the terms that matter." },
+          { "@type": "HowToStep", position: 3, name: "Get a plain-language verdict", text: "See your coverage, limits, waiting periods, exclusions, and gaps explained simply." },
+        ],
+      });
+    }
+    if (r.path === "/") {
+      blocks.push({
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "IndSure",
+        url: `${SITE}/`,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        description: r.description,
+        offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
+      });
+    }
+    if (blocks.length) html = injectJsonLd(html, blocks);
+
     const body = `<main><h1>${escText(r.h1)}</h1><p>${escText(r.intro)}</p></main>`;
     html = injectBody(html, body);
     await writeRoute(r.path, html);
@@ -283,6 +335,13 @@ async function main() {
         })),
       });
     }
+    jsonLd.push(
+      breadcrumbLd([
+        { name: "Home", url: `${SITE}/` },
+        { name: "Blog", url: `${SITE}/blog` },
+        { name: post.title, url: canonical },
+      ]),
+    );
     html = injectJsonLd(html, jsonLd);
 
     const faqHtml =
@@ -301,9 +360,50 @@ async function main() {
     postCount++;
   }
 
+  await writeSitemap(blogPosts, slugFor);
+
   console.log(
-    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts.`,
+    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + sitemap.`,
   );
+}
+
+// Regenerate dist/sitemap.xml with honest lastmod: blog posts use their own
+// publish date; marketing pages use the build date.
+async function writeSitemap(blogPosts, slugFor) {
+  const buildDate = new Date().toISOString().slice(0, 10);
+  const marketing = [
+    { path: "/", priority: "1.0", changefreq: "weekly" },
+    { path: "/policychecker", priority: "0.9", changefreq: "weekly" },
+    { path: "/life", priority: "0.8", changefreq: "monthly" },
+    { path: "/term", priority: "0.8", changefreq: "monthly" },
+    { path: "/vehicle", priority: "0.8", changefreq: "monthly" },
+    { path: "/compare", priority: "0.9", changefreq: "weekly" },
+    { path: "/calculator", priority: "0.8", changefreq: "monthly" },
+    { path: "/how-it-works", priority: "0.7", changefreq: "monthly" },
+    { path: "/why-indsure", priority: "0.7", changefreq: "monthly" },
+    { path: "/pricing", priority: "0.7", changefreq: "monthly" },
+    { path: "/blog", priority: "0.8", changefreq: "weekly" },
+    { path: "/signup", priority: "0.9", changefreq: "monthly" },
+    { path: "/mission", priority: "0.5", changefreq: "monthly" },
+    { path: "/vision", priority: "0.5", changefreq: "monthly" },
+    { path: "/team", priority: "0.5", changefreq: "monthly" },
+    { path: "/help", priority: "0.6", changefreq: "monthly" },
+  ];
+  const url = (loc, lastmod, changefreq, priority) =>
+    `  <url>\n    <loc>${SITE}${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+
+  const rows = [];
+  for (const m of marketing) rows.push(url(m.path, buildDate, m.changefreq, m.priority));
+  for (const post of blogPosts) {
+    const lastmod = /^\d{4}-\d{2}-\d{2}$/.test(post.date || "") ? post.date : buildDate;
+    rows.push(url(`/blog/${slugFor(post.id)}`, lastmod, "monthly", "0.6"));
+  }
+  const xml =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    rows.join("\n") +
+    `\n</urlset>\n`;
+  await writeFile(join(DIST, "sitemap.xml"), xml);
 }
 
 main().catch((err) => {
