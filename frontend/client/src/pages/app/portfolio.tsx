@@ -8,6 +8,7 @@ import { ConnectAgentDialog } from "@/components/app/ConnectAgentDialog";
 import {
   Upload, FileText, ShieldCheck, LogOut, AlertCircle, Loader2, Lock, Pencil,
   Download, Bell, CalendarClock, PhoneCall, Sparkles, Check, Plus, ArrowRight,
+  MessageCircle,
 } from "lucide-react";
 
 // The four consumer lines of business. `type` is the value the backend meters
@@ -43,6 +44,8 @@ type Portfolio = {
   phone: string | null;
   renewalRemindersEnabled: boolean;
   hasOpenAgentRequest: boolean;
+  // Set once the consumer's advisor request has been assigned to an agent.
+  advisor: { name: string; phone: string | null; city: string | null } | null;
   freeSlotsPerType: number;
   slotsUsedByType: Record<string, number>;
   policies: Policy[];
@@ -70,6 +73,16 @@ const fmtDate = (d: string | null) => {
   if (!d) return "";
   const dt = new Date(d + "T00:00:00");
   return Number.isNaN(dt.getTime()) ? d : dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
+
+// Advisor contact links — Indian mobiles: last 10 digits, +91.
+const advisorTel = (phone: string | null): string | null => {
+  const d = (phone ?? "").replace(/\D/g, "");
+  return d.length >= 10 ? `tel:+91${d.slice(-10)}` : null;
+};
+const advisorWa = (phone: string | null): string | null => {
+  const d = (phone ?? "").replace(/\D/g, "");
+  return d.length >= 10 ? `https://wa.me/91${d.slice(-10)}` : null;
 };
 
 export default function PortfolioPage() {
@@ -320,12 +333,21 @@ export default function PortfolioPage() {
             <span className="hidden sm:inline text-sm font-semibold text-[var(--color-text-secondary)]">Portfolio</span>
           </div>
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => openConnect("review")}
-              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-400)] transition-colors"
-            >
-              <PhoneCall className="w-4 h-4" /> Talk to an advisor
-            </button>
+            {data?.advisor ? (
+              <button
+                onClick={() => document.getElementById("advisor-card")?.scrollIntoView({ behavior: "smooth" })}
+                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-400)] transition-colors"
+              >
+                <ShieldCheck className="w-4 h-4" /> Your advisor
+              </button>
+            ) : (
+              <button
+                onClick={() => openConnect("review")}
+                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-400)] transition-colors"
+              >
+                <PhoneCall className="w-4 h-4" /> Talk to an advisor
+              </button>
+            )}
             <button
               onClick={signOut}
               className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
@@ -759,26 +781,62 @@ export default function PortfolioPage() {
           </section>
         )}
 
-        {/* Talk-to-advisor footer CTA */}
+        {/* Advisor footer: once assigned, show the advisor's details; otherwise the CTA. */}
         {data && (
-          <section className="bg-[var(--color-navy-900)] rounded-2xl p-6 sm:p-8 text-center">
-            <h2 className="font-serif text-xl sm:text-2xl font-bold text-white">
-              {data.hasOpenAgentRequest ? "An advisor will reach out to you soon" : "Want a real person to help?"}
-            </h2>
-            <p className="mt-2 text-sm text-[var(--color-white-muted)] max-w-md mx-auto leading-relaxed">
-              {data.hasOpenAgentRequest
-                ? "We've got your request. A licensed advisor will call you on the number you shared — no obligation."
-                : "Talk to a licensed advisor about renewing, buying, or fixing your cover. No pressure, no spam."}
-            </p>
-            {!data.hasOpenAgentRequest && (
-              <button
-                onClick={() => openConnect("review")}
-                className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] transition-colors"
-              >
-                <PhoneCall className="w-4 h-4" /> Connect me to an advisor
-              </button>
-            )}
-          </section>
+          data.advisor ? (
+            <section id="advisor-card" className="bg-[var(--color-navy-900)] rounded-2xl p-6 sm:p-8 text-center">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-[var(--color-teal-600)]/20 flex items-center justify-center">
+                <ShieldCheck className="w-7 h-7 text-[var(--color-teal-400)]" />
+              </div>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-teal-400)]">Your advisor</p>
+              <h2 className="mt-1 font-serif text-xl sm:text-2xl font-bold text-white">{data.advisor.name}</h2>
+              {data.advisor.city && (
+                <p className="mt-1 text-sm text-[var(--color-white-muted)]">{data.advisor.city}</p>
+              )}
+              <p className="mt-2 text-sm text-[var(--color-white-muted)] max-w-md mx-auto leading-relaxed">
+                A licensed advisor is looking after your cover. Reach out any time — no obligation.
+              </p>
+              <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
+                {advisorTel(data.advisor.phone) && (
+                  <a
+                    href={advisorTel(data.advisor.phone)!}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] transition-colors"
+                  >
+                    <PhoneCall className="w-4 h-4" /> Call
+                  </a>
+                )}
+                {advisorWa(data.advisor.phone) && (
+                  <a
+                    href={advisorWa(data.advisor.phone)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" /> WhatsApp
+                  </a>
+                )}
+              </div>
+            </section>
+          ) : (
+            <section className="bg-[var(--color-navy-900)] rounded-2xl p-6 sm:p-8 text-center">
+              <h2 className="font-serif text-xl sm:text-2xl font-bold text-white">
+                {data.hasOpenAgentRequest ? "An advisor will reach out to you soon" : "Want a real person to help?"}
+              </h2>
+              <p className="mt-2 text-sm text-[var(--color-white-muted)] max-w-md mx-auto leading-relaxed">
+                {data.hasOpenAgentRequest
+                  ? "We've got your request. A licensed advisor will call you on the number you shared — no obligation."
+                  : "Talk to a licensed advisor about renewing, buying, or fixing your cover. No pressure, no spam."}
+              </p>
+              {!data.hasOpenAgentRequest && (
+                <button
+                  onClick={() => openConnect("review")}
+                  className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] transition-colors"
+                >
+                  <PhoneCall className="w-4 h-4" /> Connect me to an advisor
+                </button>
+              )}
+            </section>
+          )
         )}
 
         <div className="flex items-center justify-center gap-2 text-[var(--color-text-muted)] text-xs font-semibold pt-2">

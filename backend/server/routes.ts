@@ -2773,12 +2773,25 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         [userId]
       );
 
-      // Does the consumer have an advisor request still being worked? Drives the
-      // "an agent will reach out to you soon" state in the UI.
+      // Does the consumer have an advisor request still being worked, and has it
+      // been assigned to an agent yet? Drives the /app advisor card: once assigned,
+      // we surface that agent's name + contact so the consumer can reach them.
+      // Joins agents server-side because the consumer can't read the agents table
+      // directly (its RLS restricts rows to the agent themselves).
       const openReq = await pool.query(
-        "SELECT 1 FROM agent_connect_requests WHERE user_id = $1 AND status <> 'closed' LIMIT 1",
+        `SELECT r.assigned_agent_id,
+                a.full_name AS advisor_name, a.phone AS advisor_phone, a.city AS advisor_city
+           FROM agent_connect_requests r
+           LEFT JOIN agents a ON a.id = r.assigned_agent_id
+          WHERE r.user_id = $1 AND r.status <> 'closed'
+          ORDER BY r.created_at DESC
+          LIMIT 1`,
         [userId]
       );
+      const reqRow = openReq.rows[0];
+      const advisor = reqRow && reqRow.assigned_agent_id && reqRow.advisor_name
+        ? { name: reqRow.advisor_name, phone: reqRow.advisor_phone ?? null, city: reqRow.advisor_city ?? null }
+        : null;
 
       const slotsUsedByType: Record<string, number> = {};
       for (const row of policies.rows) {
@@ -2795,6 +2808,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         phone: p.phone ?? null,
         renewalRemindersEnabled: p.renewal_reminders_enabled ?? true,
         hasOpenAgentRequest: openReq.rows.length > 0,
+        advisor,
         freeSlotsPerType: FREE_SLOTS_PER_TYPE,
         slotsUsedByType,
         policies: policies.rows,
