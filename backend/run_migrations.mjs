@@ -1,12 +1,28 @@
+import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
 import pkg from 'pg';
 const { Pool } = pkg;
 
+// Load DATABASE_URL from the repo-root .env (gitignored), regardless of the
+// directory this script is run from. Existing shell env vars take precedence.
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: resolve(__dirname, '..', '.env') });
+
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL is not set. Add it to the repo-root .env (or export it) before running migrations.');
+  process.exit(1);
+}
+
+// Supabase's pooler presents a self-signed cert chain; newer pg treats the
+// URL's sslmode=require as verify-full and rejects it, so strip sslmode and
+// hand pg an explicit relaxed ssl config (TLS is still negotiated).
+const connectionString = process.env.DATABASE_URL
+  .replace(/([?&])sslmode=[^&]*/gi, '$1')
+  .replace(/[?&]+$/, '');
+
 const pool = new Pool({
-  host: 'aws-1-ap-south-1.pooler.supabase.com',
-  port: 6543,
-  database: 'postgres',
-  user: 'postgres.khxbabotbvnyjwvqtumt',
-  password: 'zQqau#PVNTZG,m6',
+  connectionString,
   ssl: { rejectUnauthorized: false },
   connectionTimeoutMillis: 10000,
 });
