@@ -191,20 +191,20 @@ export default function HowItWorks() {
         </section>
 
         {/* CTA */}
-        <section className="bg-[var(--color-petrol-900)] text-white rounded-lg p-16 text-center max-w-5xl mx-auto shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+        <section className="bg-[var(--color-cream-dark)] border border-[var(--color-border-light)] text-[var(--color-text-main)] rounded-lg p-16 text-center max-w-5xl mx-auto shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full opacity-[0.07] pointer-events-none">
             <div className="absolute top-[-50%] left-[-20%] w-[500px] h-[500px] bg-[var(--color-green-primary)] rounded-full blur-[100px]"></div>
           </div>
           <div className="relative z-10">
             <h2 className="text-3xl md:text-5xl font-serif mb-6">Ready to see where you actually stand?</h2>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto mb-10 font-light">
+            <p className="text-xl text-[var(--color-text-secondary)] max-w-2xl mx-auto mb-10 font-light">
               Two minutes. No signup. Just clarity.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-[var(--color-green-primary)] hover:bg-[var(--color-green-secondary)] text-white h-14 px-8 text-lg rounded-full">
                 <Link href="/policychecker">Check My Coverage</Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="bg-transparent border-white text-white hover:bg-white hover:text-[var(--color-petrol-900)] h-14 px-8 text-lg rounded-full">
+              <Button asChild variant="outline" size="lg" className="bg-transparent border-[var(--color-petrol-900)] text-[var(--color-petrol-900)] hover:bg-[var(--color-petrol-900)] hover:text-white h-14 px-8 text-lg rounded-full">
                 <Link href="/compare">Compare Plans <ArrowRight className="w-4 h-4 ml-1" /></Link>
               </Button>
             </div>

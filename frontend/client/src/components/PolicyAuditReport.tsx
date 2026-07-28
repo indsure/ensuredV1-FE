@@ -85,14 +85,28 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
     const [openBreakdown, setOpenBreakdown] = useState<Record<string, boolean>>({});
     const auditId = useRef(Math.random().toString(36).substr(2, 9).toUpperCase());
 
+    const [downloading, setDownloading] = useState(false);
+
     const handleDownload = async () => {
-        const blob = await pdf(<PolicyPDFDocument data={data} />).toBlob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `indsure_audit_${data.identity.insured_names.join('_').replace(/\s+/g, '_').toLowerCase()}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
+        if (downloading) return;
+        setDownloading(true);
+        try {
+            const blob = await pdf(<PolicyPDFDocument data={data} />).toBlob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `indsure_audit_${data.identity.insured_names.join('_').replace(/\s+/g, '_').toLowerCase()}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            // Give the browser a tick to start the download before revoking.
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+            console.error('Report download failed:', err);
+            alert('Sorry — we could not generate the PDF just now. Please try again.');
+        } finally {
+            setDownloading(false);
+        }
     };
 
     const toggleBreakdown = (category: string) => {
@@ -355,6 +369,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
 
     const verdict = data.final_verdict?.label ?? "RISKY";
     const score = data.audit_score?.score ?? 0;
+    const hasNcar = typeof data.audit_score?.ncar === "number";
     const ncar = data.audit_score?.ncar ?? 0;
     const simulations = data.claim_simulations ?? [];
     const effectiveCoverage = calculateEffectiveCoverage(data);
@@ -411,8 +426,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                     <div className="text-sm text-[var(--color-text-secondary)] font-mono">
                         AUDIT ID: {auditId.current}
                     </div>
-                    <Button variant="ghost" size="sm" onClick={handleDownload} className="hover:bg-[var(--color-cream-dark)]">
-                        <Printer className="w-4 h-4 mr-2" /> Download Report
+                    <Button variant="ghost" size="sm" onClick={handleDownload} disabled={downloading} className="hover:bg-[var(--color-cream-dark)]">
+                        <Printer className="w-4 h-4 mr-2" /> {downloading ? 'Preparing…' : 'Download Report'}
                     </Button>
                 </div>
 
@@ -492,6 +507,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 {data.audit_score.bucket_label}
                             </div>
                         )}
+                        {hasNcar && (
                         <div className="text-xs text-[var(--color-text-secondary)] mb-3">
                             NCAR: <span className="font-mono font-bold">{ncar.toFixed(2)}×</span>
                             {" — "}<span className="italic">{getNCARLabel(ncar)}</span>
@@ -499,6 +515,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 Your cover is {ncar.toFixed(2)}× the minimum recommended for your age and city.
                             </div>
                         </div>
+                        )}
                         <div className="text-xs text-[var(--color-text-secondary)] max-w-[220px] leading-relaxed mx-auto space-y-1">
                             <p>Computed from {data.audit_score?.deductions?.length ?? 0} deduction {(data.audit_score?.deductions?.length ?? 0) === 1 ? 'rule' : 'rules'}.</p>
                             <p>All scores are AI-computed from your policy text.</p>

@@ -22,13 +22,31 @@ export default function LoginNew() {
     }
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError(error.message);
       setLoading(false);
-    } else {
-      setLocation('/agent/dashboard');
+      return;
     }
+
+    // Gate the advisor portal to advisor accounts only. Consumer/retail
+    // accounts share the same Supabase auth pool, so a valid client login
+    // would otherwise land here. Require a matching row in `agents`.
+    const userId = data.user?.id;
+    const { data: agentProfile } = await supabase
+      .from('agents')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!agentProfile) {
+      await supabase.auth.signOut();
+      setError('This is a client account, not an advisor account. Please sign in at the client portal.');
+      setLoading(false);
+      return;
+    }
+
+    setLocation('/agent/dashboard');
   }
 
   const benefits = [

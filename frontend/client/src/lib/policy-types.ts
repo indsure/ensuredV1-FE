@@ -387,7 +387,7 @@ export const validateForensicAuditReport = (data: any): data is ForensicAuditRep
     const zone = data.identity.assumed_zone;
     if (!["A", "B", "C", "D"].includes(zone)) return false;
     const verdict = data.final_verdict?.label;
-    if (!["SAFE", "BORDERLINE", "RISKY"].includes(verdict)) return false;
+    if (!["SAFE", "BORDERLINE", "RISKY", "EXCELLENT"].includes(verdict)) return false;
     if (typeof data.audit_score?.score !== "number") return false;
     if (data.audit_score.score < 0 || data.audit_score.score > 100) return false;
     // Make claim_simulations optional - allow empty array

@@ -57,8 +57,12 @@ export default function SettingsNew() {
       if (!agent?.agentId) return;
       setLoading(true);
       
-      const { data: q1, error } = await supabase.from('agents').select('id, name, email, role, status, location, experience_years').eq('id', agent.agentId).single();
-      
+      // Select * rather than an explicit column list: the live `agents` table
+      // has drifted from local (some columns like `status`/`experience_years`
+      // may not exist), and naming a missing column 500s the whole query and
+      // blanks this page. `*` returns whatever exists.
+      const { data: q1, error } = await supabase.from('agents').select('*').eq('id', agent.agentId).single();
+
       if (error) { setError(error.message); setLoading(false); return; }
       const profile = q1 as unknown as AgentProfile;
       setAgentProfile(profile);

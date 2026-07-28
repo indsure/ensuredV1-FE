@@ -438,9 +438,9 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
     };
 
     const allRecommendations = [
-        ...data.recommendations.critical_actions.map(r => ({ ...r, level: 'critical' })),
-        ...data.recommendations.medium_priority.map(r => ({ ...r, level: 'medium' })),
-        ...data.recommendations.low_priority.map(r => ({ ...r, level: 'low' }))
+        ...(data.recommendations?.critical_actions ?? []).map(r => ({ ...r, level: 'critical' })),
+        ...(data.recommendations?.medium_priority ?? []).map(r => ({ ...r, level: 'medium' })),
+        ...(data.recommendations?.low_priority ?? []).map(r => ({ ...r, level: 'low' }))
     ];
 
     const formatCurr = (val: number | string | null | undefined) => {
@@ -479,7 +479,9 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
                                 {data.audit_score.bucket_label}
                             </Text>
                         )}
-                        <Text style={{ fontSize: 7, marginTop: 4, color: '#94A3B8' }}>NCAR: {data.audit_score.ncar.toFixed(2)}x</Text>
+                        {typeof data.audit_score.ncar === 'number' && (
+                            <Text style={{ fontSize: 7, marginTop: 4, color: '#94A3B8' }}>NCAR: {data.audit_score.ncar.toFixed(2)}x</Text>
+                        )}
                     </View>
                     <View style={styles.verdictSummaryBox}>
                         <Text style={styles.verdictLabel}>{data.final_verdict.label}</Text>
@@ -512,7 +514,7 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
                 <View style={[styles.twoColumn, { alignItems: 'stretch' }]} wrap={false}>
                     <View style={styles.column}>
                         <Text style={styles.sectionTitle}>What Actually Works</Text>
-                        {data.benefit_evaluation.what_actually_works.map((item, i) => (
+                        {(data.benefit_evaluation?.what_actually_works ?? []).map((item, i) => (
                             <View style={styles.strengthCard} key={i}>
                                 <Text style={styles.cardTitle}>{item.benefit}</Text>
                                 <Text style={styles.cardText}>{item.why_it_matters_in_claim}</Text>
@@ -522,7 +524,7 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
                     </View>
                     <View style={styles.column}>
                         <Text style={styles.sectionTitle}>Where It May Cost You</Text>
-                        {data.benefit_evaluation.where_policy_fails.map((item, i) => (
+                        {(data.benefit_evaluation?.where_policy_fails ?? []).map((item, i) => (
                             <View style={[styles.gapCard, { borderLeftColor: THEME.amberBorder, backgroundColor: THEME.amberBg }]} key={i}>
                                 <Text style={styles.cardTitle}>{item.issue}</Text>
                                 <Text style={styles.cardText}>{item.real_world_claim_impact}</Text>
@@ -533,10 +535,10 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
                 </View>
 
                 {/* Claim Simulations */}
-                {data.claim_simulations.length > 0 && (
+                {(data.claim_simulations?.length ?? 0) > 0 && (
                     <View wrap={false}>
                         <Text style={styles.sectionTitle}>Simulated Scenario Projections</Text>
-                        {data.claim_simulations.map((sim, i) => {
+                        {data.claim_simulations!.map((sim, i) => {
                             const oopCost = sim.total_bill - sim.insurer_pays;
                             const isZeroOOP = oopCost === 0;
                             return (

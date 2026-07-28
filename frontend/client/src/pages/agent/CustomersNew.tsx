@@ -87,7 +87,10 @@ export default function CustomersNew() {
   }, [customers, search]);
 
   async function handleCreate() {
-    if (!agent?.agentId) return;
+    if (!agent?.agentId) {
+      toast({ variant: "destructive", title: "Still loading your account", description: "Please wait a moment and try again." });
+      return;
+    }
     if (!draft.name.trim()) {
       toast({ variant: "destructive", title: "Name required" });
       return;
