@@ -34,6 +34,7 @@ async function loadBlogData() {
       `export { blogPosts } from "../client/src/pages/blog/blog-data.ts";`,
       `export { POST_SLUGS, slugFor } from "../client/src/pages/blog/slugs.ts";`,
       `export { FOUNDERS, authorForId, displayName } from "../client/src/data/team.ts";`,
+      `export { CLAUSE_LIBRARY } from "../client/src/data/clause-library.ts";`,
     ].join("\n"),
   );
   const outfile = join(__dirname, ".blog-bundle.mjs");
@@ -297,7 +298,8 @@ async function main() {
   }
 
   // Blog posts
-  const { blogPosts, slugFor, FOUNDERS, authorForId, displayName } = await loadBlogData();
+  const { blogPosts, slugFor, FOUNDERS, authorForId, displayName, CLAUSE_LIBRARY } =
+    await loadBlogData();
   let postCount = 0;
   for (const post of blogPosts) {
     const slug = slugFor(post.id);
@@ -414,16 +416,134 @@ async function main() {
     await writeRoute(path, html);
   }
 
-  await writeSitemap(blogPosts, slugFor, FOUNDERS);
+  // Clause library hub (/learn)
+  {
+    const canonical = `${SITE}/learn`;
+    let html = applyHead(template, {
+      title: "Insurance Clause Library: Every Term Explained Plainly | IndSure",
+      description:
+        "A plain-language library of Indian insurance clauses, waiting periods, sub-limits, and benefits. Understand room-rent caps, co-pay, PED, restoration, IDV, and more before you claim.",
+      canonical,
+    });
+    html = injectJsonLd(html, [
+      breadcrumbLd([
+        { name: "Home", url: `${SITE}/` },
+        { name: "Learn", url: canonical },
+      ]),
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: "IndSure Insurance Clause Library",
+        description:
+          "A plain-language library of Indian insurance clauses, waiting periods, sub-limits, and benefits.",
+        url: canonical,
+        hasPart: CLAUSE_LIBRARY.map((c) => ({
+          "@type": "DefinedTerm",
+          name: c.term,
+          url: `${SITE}/learn/${c.slug}`,
+        })),
+      },
+    ]);
+    const list = CLAUSE_LIBRARY.map(
+      (c) =>
+        `<li><a href="/learn/${c.slug}">${escText(c.term)}</a> — ${escText(c.shortAnswer)}</li>`,
+    ).join("");
+    const body =
+      `<main><h1>Every insurance clause, explained plainly</h1>` +
+      `<p>The plain-language library of the clauses, waiting periods, and benefits that decide whether your claim gets paid.</p>` +
+      `<ul>${list}</ul></main>`;
+    html = injectBody(html, body);
+    await writeRoute("/learn", html);
+  }
+
+  // Clause library detail pages (/learn/:slug)
+  for (const c of CLAUSE_LIBRARY) {
+    const path = `/learn/${c.slug}`;
+    const canonical = SITE + path;
+    let html = applyHead(template, {
+      title: `What is a ${c.term}? Meaning, Examples & Mistakes | IndSure`,
+      description: c.shortAnswer.slice(0, 300),
+      canonical,
+      ogType: "article",
+    });
+
+    const blocks = [
+      breadcrumbLd([
+        { name: "Home", url: `${SITE}/` },
+        { name: "Learn", url: `${SITE}/learn` },
+        { name: c.term, url: canonical },
+      ]),
+      {
+        "@context": "https://schema.org",
+        "@type": "DefinedTerm",
+        name: c.term,
+        ...(c.aka?.length ? { alternateName: c.aka } : {}),
+        description: c.shortAnswer,
+        inDefinedTermSet: {
+          "@type": "DefinedTermSet",
+          name: "IndSure Insurance Clause Library",
+          url: `${SITE}/learn`,
+        },
+        url: canonical,
+      },
+    ];
+    if (Array.isArray(c.faqs) && c.faqs.length) {
+      blocks.push({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: c.faqs.map((f) => ({
+          "@type": "Question",
+          name: f.question,
+          acceptedAnswer: { "@type": "Answer", text: f.answer },
+        })),
+      });
+    }
+    html = injectJsonLd(html, blocks);
+
+    const sectionsHtml = c.sections
+      .map(
+        (s) =>
+          `<h2>${escText(s.h2)}</h2>${s.body.map((p) => `<p>${escText(p)}</p>`).join("")}`,
+      )
+      .join("");
+    const exampleHtml = c.example ? `<h2>Example</h2><p>${escText(c.example)}</p>` : "";
+    const mistakesHtml =
+      c.mistakes && c.mistakes.length
+        ? `<h2>Common mistakes</h2><ul>${c.mistakes.map((m) => `<li>${escText(m)}</li>`).join("")}</ul>`
+        : "";
+    const faqHtml =
+      c.faqs && c.faqs.length
+        ? `<h2>Frequently asked questions</h2>${c.faqs
+            .map((f) => `<h3>${escText(f.question)}</h3><p>${escText(f.answer)}</p>`)
+            .join("")}`
+        : "";
+    const relatedHtml =
+      c.related && c.related.length
+        ? `<h2>Related concepts</h2><ul>${c.related
+            .map((s) => {
+              const r = CLAUSE_LIBRARY.find((x) => x.slug === s);
+              return r ? `<li><a href="/learn/${r.slug}">${escText(r.term)}</a></li>` : "";
+            })
+            .join("")}</ul>`
+        : "";
+    const body =
+      `<article><h1>What is a ${escText(c.term)}?</h1>` +
+      `<p>${escText(c.shortAnswer)}</p>` +
+      `${sectionsHtml}${exampleHtml}${mistakesHtml}${faqHtml}${relatedHtml}</article>`;
+    html = injectBody(html, body);
+    await writeRoute(path, html);
+  }
+
+  await writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY);
 
   console.log(
-    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + ${FOUNDERS.length} author pages + sitemap.`,
+    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + ${FOUNDERS.length} author pages + ${CLAUSE_LIBRARY.length} clause pages + sitemap.`,
   );
 }
 
 // Regenerate dist/sitemap.xml with honest lastmod: blog posts use their own
 // publish date; marketing pages use the build date.
-async function writeSitemap(blogPosts, slugFor, FOUNDERS = []) {
+async function writeSitemap(blogPosts, slugFor, FOUNDERS = [], CLAUSE_LIBRARY = []) {
   const buildDate = new Date().toISOString().slice(0, 10);
   const marketing = [
     { path: "/", priority: "1.0", changefreq: "weekly" },
@@ -448,6 +568,8 @@ async function writeSitemap(blogPosts, slugFor, FOUNDERS = []) {
 
   const rows = [];
   for (const m of marketing) rows.push(url(m.path, buildDate, m.changefreq, m.priority));
+  rows.push(url("/learn", buildDate, "weekly", "0.8"));
+  for (const c of CLAUSE_LIBRARY) rows.push(url(`/learn/${c.slug}`, buildDate, "monthly", "0.7"));
   for (const f of FOUNDERS) rows.push(url(`/author/${f.slug}`, buildDate, "monthly", "0.4"));
   for (const post of blogPosts) {
     const lastmod = /^\d{4}-\d{2}-\d{2}$/.test(post.date || "") ? post.date : buildDate;

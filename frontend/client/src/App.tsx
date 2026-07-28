@@ -75,6 +75,8 @@ const CalculatorPage = lazy(() => import("@/pages/calculator"));
 const CalculatorReportPage = lazy(() => import("@/pages/calculator-report"));
 const Blog = lazy(() => import("@/pages/blog"));
 const BlogPost = lazy(() => import("@/pages/blog/[id]"));
+const LearnHub = lazy(() => import("@/pages/learn/index"));
+const ClauseDetail = lazy(() => import("@/pages/learn/[slug]"));
 const Mission = lazy(() => import("@/pages/mission"));
 const Vision = lazy(() => import("@/pages/vision"));
 const Team = lazy(() => import("@/pages/team"));
@@ -236,6 +238,8 @@ function App() {
                       {/* --- Company pages --- */}
                       <Route path="/blog" component={Blog} />
                       <Route path="/blog/:id" component={BlogPost} />
+                      <Route path="/learn" component={LearnHub} />
+                      <Route path="/learn/:slug" component={ClauseDetail} />
                       <Route path="/mission" component={Mission} />
                       <Route path="/vision" component={Vision} />
                       <Route path="/team" component={Team} />
