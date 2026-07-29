@@ -32,6 +32,15 @@ export const POST_SLUGS: Record<number, string> = {
   26: "agricultural-crop-insurance",
   27: "micro-insurance-explained",
   28: "top-types-of-insurance",
+  // Question hub (natural-language Q&A)
+  29: "claim-health-insurance-for-existing-disease",
+  30: "missed-insurance-premium-payment",
+  31: "is-normal-delivery-covered-by-health-insurance",
+  32: "does-car-insurance-cover-flood-damage",
+  33: "can-i-have-two-health-insurance-policies",
+  34: "is-ambulance-covered-by-health-insurance",
+  35: "what-is-not-covered-in-health-insurance",
+  36: "how-many-health-insurance-claims-per-year",
 };
 
 const SLUG_TO_ID: Record<string, number> = Object.fromEntries(
