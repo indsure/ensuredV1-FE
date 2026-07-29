@@ -41,6 +41,17 @@ export const POST_SLUGS: Record<number, string> = {
   34: "is-ambulance-covered-by-health-insurance",
   35: "what-is-not-covered-in-health-insurance",
   36: "how-many-health-insurance-claims-per-year",
+  // High-intent how-to / decision guides
+  37: "health-insurance-claim-rejected-what-to-do",
+  38: "how-to-file-a-cashless-claim-step-by-step",
+  39: "how-to-port-health-insurance-without-losing-benefits",
+  40: "health-insurance-for-parents-senior-citizens",
+  41: "how-much-health-cover-do-you-need-by-life-stage",
+  42: "term-vs-whole-life-vs-endowment",
+  43: "best-age-to-buy-health-and-term-insurance",
+  44: "cover-size-5-lakh-vs-10-lakh-vs-1-crore",
+  45: "individual-vs-group-health-insurance",
+  46: "top-up-vs-super-top-up-health-insurance",
 };
 
 const SLUG_TO_ID: Record<string, number> = Object.fromEntries(
