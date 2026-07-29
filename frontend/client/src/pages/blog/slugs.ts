@@ -52,6 +52,15 @@ export const POST_SLUGS: Record<number, string> = {
   44: "cover-size-5-lakh-vs-10-lakh-vs-1-crore",
   45: "individual-vs-group-health-insurance",
   46: "top-up-vs-super-top-up-health-insurance",
+  // Trust / category-defining
+  47: "common-hidden-clauses-in-indian-health-policies",
+  48: "why-insurers-reject-claims-how-to-claim-proof",
+  49: "how-to-read-a-policy-wording-in-10-minutes",
+  50: "health-insurance-myths-that-cost-you-money",
+  // Seasonal / news-pegged
+  51: "irdai-rule-changes-what-they-mean-for-your-policy",
+  52: "tax-benefits-health-life-insurance-80d-80c",
+  53: "buying-insurance-before-or-after-a-diagnosis",
 };
 
 const SLUG_TO_ID: Record<string, number> = Object.fromEntries(
