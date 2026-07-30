@@ -61,7 +61,10 @@ const escAttr = (s = "") =>
 const escText = (s = "") =>
   String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-function applyHead(template, { title, description, canonical, ogType = "website" }) {
+function applyHead(
+  template,
+  { title, description, canonical, ogType = "website", image, imageAlt },
+) {
   let html = template;
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escText(title)}</title>`);
   // description / og:description / twitter:description
@@ -96,6 +99,29 @@ function applyHead(template, { title, description, canonical, ogType = "website"
     `$1${escAttr(canonical)}$2`,
   );
   html = html.replace(/(<meta property="og:type" content=")[\s\S]*?("\s*\/>)/, `$1${ogType}$2`);
+  // og:image / twitter:image (per-route social preview). Defaults to the
+  // homepage image baked into the template when a route sets none.
+  if (image) {
+    const imageUrl = image.startsWith("http") ? image : SITE + image;
+    html = html.replace(
+      /(<meta property="og:image" content=")[\s\S]*?("\s*\/>)/,
+      `$1${escAttr(imageUrl)}$2`,
+    );
+    html = html.replace(
+      /(<meta name="twitter:image" content=")[\s\S]*?("\s*\/>)/,
+      `$1${escAttr(imageUrl)}$2`,
+    );
+  }
+  if (imageAlt) {
+    html = html.replace(
+      /(<meta property="og:image:alt" content=")[\s\S]*?("\s*\/>)/,
+      `$1${escAttr(imageAlt)}$2`,
+    );
+    html = html.replace(
+      /(<meta name="twitter:image:alt" content=")[\s\S]*?("\s*\/>)/,
+      `$1${escAttr(imageAlt)}$2`,
+    );
+  }
   // canonical link
   html = html.replace(
     /(<link rel="canonical" href=")[\s\S]*?("\s*\/>)/,
@@ -146,9 +172,10 @@ async function writeRoute(path, html) {
 const STATIC_ROUTES = [
   {
     path: "/",
-    title: "Decode Your Insurance Policy Free in 60 Seconds | IndSure India",
+    title: "Understand Any Insurance Policy in Plain Language | IndSure India",
     description:
-      "Upload your health, term life, or car insurance PDF. IndSure shows your room-rent cap, co-pay, waiting periods, and coverage gaps in plain language in about 60 seconds. Free, private, no sales calls.",
+      "IndSure decodes your health, term life, or motor insurance policy. See your limits, co-pay, waiting periods, and coverage gaps in plain language in about 60 seconds. Free, private, no sales calls.",
+    imageAlt: "IndSure — understand any insurance policy in plain language.",
     h1: "Understand your insurance policy, in plain language",
     intro:
       "IndSure reads your Indian health, term life, or motor insurance policy PDF and explains what it actually covers: room-rent cap, co-pay, sub-limits, waiting periods, exclusions, and the gaps that cost people money at claim time. Free, private, and with no sales calls.",
@@ -234,6 +261,28 @@ const STATIC_ROUTES = [
     intro:
       "IndSure earns zero commissions and sells zero leads. We decode your policy so you understand your cover, with no cold calls and no pressure to buy.",
   },
+  {
+    path: "/signup",
+    title: "Your Insurance Portfolio, All in One Place | IndSure",
+    description:
+      "Create a free IndSure account to store every policy, get renewal reminders before they lapse, and see exactly where your family is under-covered. Private, no sales calls.",
+    h1: "Your insurance portfolio, all in one place",
+    intro:
+      "Create a free IndSure account to keep every policy in one place. Store your health, term life, and motor policies, get renewal reminders before they lapse, and see exactly where your cover falls short, in plain language.",
+    image: "/opengraph-signup.jpg",
+    imageAlt: "IndSure — all your insurance policies, organised in one clear place.",
+  },
+  {
+    path: "/agent",
+    title: "IndSure for Advisors: The CRM Built for Insurance Agents | IndSure",
+    description:
+      "Manage clients, never miss a renewal, and decode any policy for your customers — all from one simple dashboard. IndSure is the CRM built for Indian insurance advisors.",
+    h1: "The CRM built for insurance advisors",
+    intro:
+      "IndSure gives insurance advisors one simple dashboard to manage clients, track every renewal, and decode any policy for their customers in plain language. Built for how Indian agents actually work.",
+    image: "/opengraph-agent.jpg",
+    imageAlt: "IndSure for advisors — the CRM built for insurance agents.",
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -253,6 +302,8 @@ async function main() {
       title: r.title,
       description: r.description,
       canonical,
+      image: r.image,
+      imageAlt: r.imageAlt,
     });
 
     const blocks = [];
@@ -558,6 +609,7 @@ async function writeSitemap(blogPosts, slugFor, FOUNDERS = [], CLAUSE_LIBRARY = 
     { path: "/pricing", priority: "0.7", changefreq: "monthly" },
     { path: "/blog", priority: "0.8", changefreq: "weekly" },
     { path: "/signup", priority: "0.9", changefreq: "monthly" },
+    { path: "/agent", priority: "0.8", changefreq: "monthly" },
     { path: "/mission", priority: "0.5", changefreq: "monthly" },
     { path: "/vision", priority: "0.5", changefreq: "monthly" },
     { path: "/team", priority: "0.5", changefreq: "monthly" },
