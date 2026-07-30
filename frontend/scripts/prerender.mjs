@@ -22,6 +22,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const DIST = join(ROOT, "dist");
 const SITE = "https://indsure.in";
+// Canonical URLs/JSON-LD always point at production (SITE) so the beta preview
+// never competes with prod for indexing. Social-preview images are the one
+// exception: they must be absolute, so on Vercel *preview* builds we serve them
+// from the beta host, otherwise the beta pages would reference prod's images
+// (which still hold the old artwork until this ships to production).
+const IMAGE_HOST =
+  process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production"
+    ? "https://beta.indsure.in"
+    : SITE;
 
 // ---------------------------------------------------------------------------
 // Load blog data (TS with lucide imports) by bundling it for Node with esbuild.
@@ -63,7 +72,7 @@ const escText = (s = "") =>
 
 function applyHead(
   template,
-  { title, description, canonical, ogType = "website", image, imageAlt },
+  { title, description, canonical, ogType = "website", image = "/opengraph.jpg", imageAlt },
 ) {
   let html = template;
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escText(title)}</title>`);
@@ -99,19 +108,18 @@ function applyHead(
     `$1${escAttr(canonical)}$2`,
   );
   html = html.replace(/(<meta property="og:type" content=")[\s\S]*?("\s*\/>)/, `$1${ogType}$2`);
-  // og:image / twitter:image (per-route social preview). Defaults to the
-  // homepage image baked into the template when a route sets none.
-  if (image) {
-    const imageUrl = image.startsWith("http") ? image : SITE + image;
-    html = html.replace(
-      /(<meta property="og:image" content=")[\s\S]*?("\s*\/>)/,
-      `$1${escAttr(imageUrl)}$2`,
-    );
-    html = html.replace(
-      /(<meta name="twitter:image" content=")[\s\S]*?("\s*\/>)/,
-      `$1${escAttr(imageUrl)}$2`,
-    );
-  }
+  // og:image / twitter:image (per-route social preview). Always rewritten so
+  // every page resolves its image from IMAGE_HOST (prod, or beta on preview
+  // builds); routes that set no `image` fall back to the general brand image.
+  const imageUrl = image.startsWith("http") ? image : IMAGE_HOST + image;
+  html = html.replace(
+    /(<meta property="og:image" content=")[\s\S]*?("\s*\/>)/,
+    `$1${escAttr(imageUrl)}$2`,
+  );
+  html = html.replace(
+    /(<meta name="twitter:image" content=")[\s\S]*?("\s*\/>)/,
+    `$1${escAttr(imageUrl)}$2`,
+  );
   if (imageAlt) {
     html = html.replace(
       /(<meta property="og:image:alt" content=")[\s\S]*?("\s*\/>)/,
