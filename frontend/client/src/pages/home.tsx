@@ -4,6 +4,7 @@ import { ArrowRight, Shield, CheckCircle, AlertTriangle, Lock, FileText, Server,
 import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { useSEO } from "@/hooks/use-seo";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 16 },
@@ -76,6 +77,12 @@ const CountUp = ({ target, suffix = "" }: { target: number, suffix?: string }) =
 };
 
 export default function Home() {
+  useSEO({
+    title: "Understand Any Insurance Policy in Plain Language | IndSure India",
+    description:
+      "IndSure decodes your health, term life, or motor insurance policy. See your limits, co-pay, waiting periods, and coverage gaps in plain language in about 60 seconds. Free, private, no sales calls.",
+    canonical: "https://indsure.in/",
+  });
   return (
     <div className="bg-[var(--color-navy-900)] text-white font-sans selection:bg-[var(--color-teal-600)] selection:text-white min-h-screen flex flex-col overflow-x-hidden">
 
