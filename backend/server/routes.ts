@@ -3767,6 +3767,373 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   });
 
+  /* ── Public: Advisor landing pages (indsure.in/a/:slug) ──────────────────
+   * A per-agent public page an advisor shares on WhatsApp, in an Instagram bio,
+   * or as a printed QR code. Everything submitted lands in that agent's
+   * existing agent_leads pipeline.
+   *
+   * Three rules hold this path together:
+   *  1. NO Gemini, ever. This is an unauthenticated URL that accepts file
+   *     uploads from strangers; running extraction here would be an unbounded
+   *     spend hole. The advisor reads the uploaded policy himself.
+   *  2. Reads never touch the `agents` table — only the marketing subset in
+   *     agent_pages, which holds nothing private.
+   *  3. A page is live only when WE enabled it and the AGENT published it.
+   */
+
+  // Deliberately loose. Indian mobile carriers put thousands of subscribers
+  // behind one NAT egress IP, so a tight per-IP cap blocks real prospects
+  // (several genuine visitors can share an IP) while barely inconveniencing a
+  // scripted abuser. There is no phone verification by design — the agent calls
+  // every lead anyway — so this limiter is a brake on floods, not a spam filter.
+  const advisorLeadLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many submissions. Please try again later." },
+  });
+
+  const advisorViewLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests." },
+  });
+
+  // Separate from the global `upload`: a prospect photographing a paper policy
+  // sends several images, not one PDF, so this takes up to 8 files at 8MB each
+  // rather than a single 25MB file.
+  const advisorUpload = multer({
+    dest: "uploads/",
+    limits: { fileSize: 8 * 1024 * 1024, files: 8 },
+  });
+
+  const ADVISOR_ALLOWED_MIME = new Set([
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    // iPhones hand over HEIC/HEIF by default. We never decode these — the file
+    // is stored and handed to the advisor as-is — so accepting them is safe and
+    // avoids rejecting a large share of real uploads.
+    "image/heic",
+    "image/heif",
+  ]);
+
+  // agent_pages.lines_of_business uses the four public marketing lines; the
+  // lead_policies table predates it and uses its own set. Map, don't guess.
+  const LOB_TO_POLICY_TYPE: Record<string, string> = {
+    vehicle: "motor",
+    health: "health",
+    life: "life",
+    term: "life",
+  };
+
+  const isLiveSlug = (s: string) => /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(s);
+
+  /**
+   * Which app the link was opened in, and on what.
+   *
+   * This exists because advisors paste bare, untagged links — so UTM parameters
+   * alone would leave most traffic as "direct". In-app browsers identify
+   * themselves in the User-Agent, which recovers the channel with no cooperation
+   * from the advisor and nothing visible to the visitor.
+   *
+   * Returns coarse buckets only. The raw User-Agent is deliberately NOT stored
+   * anywhere: a full UA string is high-entropy enough to help fingerprint an
+   * individual, and none of these callers need that.
+   */
+  function readClient(req: any): { app: string; device: string; os: string } {
+    const ua = String(req.headers?.["user-agent"] || "");
+
+    // Order matters. Instagram's and Facebook's webviews also carry FBAV/FBAN
+    // tokens, so the more specific app has to be tested first.
+    const app =
+      /Instagram/i.test(ua) ? "instagram"
+      : /FBAN|FBAV|FB_IAB/i.test(ua) ? "facebook"
+      : /WhatsApp/i.test(ua) ? "whatsapp"
+      : /Telegram/i.test(ua) ? "telegram"
+      : /LinkedInApp/i.test(ua) ? "linkedin"
+      : ua ? "browser"
+      : "other";
+
+    const isTablet = /iPad|Tablet|PlayBook|Silk|(Android(?!.*Mobile))/i.test(ua);
+    const isMobile = /Mobi|Android|iPhone|iPod|IEMobile|BlackBerry|Opera Mini/i.test(ua);
+    const device = isTablet ? "tablet" : isMobile ? "mobile" : ua ? "desktop" : "unknown";
+
+    const os =
+      /iPhone|iPad|iPod|iOS/i.test(ua) ? "ios"
+      : /Android/i.test(ua) ? "android"
+      : /Windows/i.test(ua) ? "windows"
+      : /Mac OS X|Macintosh/i.test(ua) ? "macos"
+      : /Linux/i.test(ua) ? "linux"
+      : "unknown";
+
+    return { app, device, os };
+  }
+
+  /** Public page data. 404 = no such advisor; { live:false } = page pulled.
+   *  The distinction matters: QR codes outlive subscriptions, so a page that
+   *  was real yesterday must say so rather than showing a bare 404. */
+  app.get("/api/p/:slug", async (req, res) => {
+    const slug = String(req.params.slug || "").toLowerCase();
+    if (!isLiveSlug(slug)) return res.status(404).json({ error: "Not found" });
+
+    try {
+      const { rows } = await pool.query(
+        `SELECT id, slug, display_name, photo_url, city, languages,
+                lines_of_business, primary_locale, whatsapp_number,
+                (enabled AND published) AS live
+           FROM agent_pages
+          WHERE slug = $1`,
+        [slug]
+      );
+      if (rows.length === 0) return res.status(404).json({ error: "Not found" });
+
+      const page = rows[0];
+      if (!page.live) return res.json({ live: false, display_name: page.display_name });
+
+      return res.json({
+        live: true,
+        slug: page.slug,
+        display_name: page.display_name,
+        photo_url: page.photo_url,
+        city: page.city,
+        languages: page.languages ?? [],
+        lines_of_business: page.lines_of_business ?? [],
+        primary_locale: page.primary_locale,
+        // The advisor's own business number is the point of the page; the login
+        // phone on their profile is not exposed here.
+        whatsapp_number: page.whatsapp_number,
+      });
+    } catch (err: any) {
+      console.error("advisor page fetch error:", err?.message);
+      return res.status(500).json({ error: "Could not load this page" });
+    }
+  });
+
+  /** Anonymous view counter. Rolled up per page/day/source — no IP, no user
+   *  agent, nothing identifying. Without this, lead counts have no denominator
+   *  and "which ad worked" is unanswerable. */
+  app.post("/api/p/:slug/view", advisorViewLimiter, async (req, res) => {
+    const slug = String(req.params.slug || "").toLowerCase();
+    if (!isLiveSlug(slug)) return res.status(204).end();
+
+    const source = String(req.body?.utm_source || "direct").slice(0, 40).toLowerCase() || "direct";
+    const { app, device } = readClient(req);
+    try {
+      await pool.query(
+        `INSERT INTO advisor_page_views (page_id, viewed_on, utm_source, app, device, views)
+         SELECT id, CURRENT_DATE, $2, $3, $4, 1 FROM agent_pages
+          WHERE slug = $1 AND enabled AND published
+         ON CONFLICT (page_id, viewed_on, utm_source, app, device)
+         DO UPDATE SET views = advisor_page_views.views + 1`,
+        [slug, source, app, device]
+      );
+    } catch (err: any) {
+      // A analytics write must never break the page for a visitor.
+      console.warn("advisor view count failed:", err?.message);
+    }
+    return res.status(204).end();
+  });
+
+  /** Lead capture. Writes agent_leads (+ lead_policies for any uploaded file)
+   *  stamped with the advisor, the campaign, and the exact consent sentence the
+   *  visitor ticked. */
+  app.post(
+    "/api/p/:slug/lead",
+    advisorLeadLimiter,
+    (req, res, next) => {
+      advisorUpload.array("files", 8)(req, res, (err: any) => {
+        if (err) {
+          console.error("ADVISOR LEAD MULTER ERROR:", err?.message);
+          return res.status(400).json({
+            error:
+              err?.code === "LIMIT_FILE_SIZE"
+                ? "Each file must be under 8MB."
+                : "Could not read those files. Please try again.",
+          });
+        }
+        next();
+      });
+    },
+    async (req, res) => {
+      const slug = String(req.params.slug || "").toLowerCase();
+      const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+      const cleanup = () => {
+        for (const f of files) {
+          try {
+            if (f.path && fs.existsSync(f.path)) fs.unlinkSync(f.path);
+          } catch { /* best effort */ }
+        }
+      };
+
+      try {
+        // Hidden field no human ever sees. A bot that fills every input gets a
+        // 200 and goes away none the wiser; nothing is written.
+        if (String(req.body?.company || "").trim() !== "") {
+          cleanup();
+          return res.json({ ok: true });
+        }
+
+        const name = String(req.body?.name || "").trim();
+        const phoneRaw = String(req.body?.phone || "").replace(/\D/g, "");
+        const phone = phoneRaw.length > 10 ? phoneRaw.slice(-10) : phoneRaw;
+        const intent = String(req.body?.intent || "talk"); // 'talk' | 'policy'
+        const lob = String(req.body?.lob || "").toLowerCase();
+        const message = String(req.body?.message || "").trim().slice(0, 1000);
+        const consentText = String(req.body?.consent_text || "").trim().slice(0, 500);
+
+        if (!name || name.length > 120) {
+          cleanup();
+          return res.status(400).json({ error: "Please enter your name." });
+        }
+        if (!/^[6-9][0-9]{9}$/.test(phone)) {
+          cleanup();
+          return res.status(400).json({ error: "Please enter a valid 10-digit mobile number." });
+        }
+        if (!consentText) {
+          cleanup();
+          return res.status(400).json({ error: "Please tick the consent box to continue." });
+        }
+        if (lob && !LOB_TO_POLICY_TYPE[lob]) {
+          cleanup();
+          return res.status(400).json({ error: "Unknown insurance type." });
+        }
+        for (const f of files) {
+          if (!ADVISOR_ALLOWED_MIME.has(f.mimetype)) {
+            cleanup();
+            return res.status(400).json({ error: "Please upload a PDF or a photo." });
+          }
+        }
+
+        const pageRes = await pool.query(
+          `SELECT id, agent_id, display_name FROM agent_pages
+            WHERE slug = $1 AND enabled AND published`,
+          [slug]
+        );
+        if (pageRes.rows.length === 0) {
+          cleanup();
+          return res.status(404).json({ error: "This advisor's page is no longer active." });
+        }
+        const page = pageRes.rows[0];
+        const agentId: string = page.agent_id;
+
+        const utm = {
+          source: String(req.body?.utm_source || "").slice(0, 60) || null,
+          medium: String(req.body?.utm_medium || "").slice(0, 60) || null,
+          campaign: String(req.body?.utm_campaign || "").slice(0, 80) || null,
+        };
+        const ip = (req.ip || "").slice(0, 45) || null;
+
+        // Context the advisor sees on the card before ringing them. Unlike the
+        // anonymous view counter this is attached to a person who gave their
+        // name, their number and explicit consent.
+        const client = readClient(req);
+        const referrer = String(req.headers?.referer || req.headers?.referrer || "").slice(0, 300) || null;
+
+        // Someone who taps "talk" and then comes back to send a policy is one
+        // prospect, not two. Inside 24h we append to the existing lead instead
+        // of splitting the advisor's follow-up across duplicate cards.
+        const dupe = await pool.query(
+          `SELECT id, notes FROM agent_leads
+            WHERE agent_id = $1 AND regexp_replace(coalesce(phone,''), '\\D', '', 'g') LIKE $2
+              AND created_at > now() - interval '24 hours'
+            ORDER BY created_at DESC LIMIT 1`,
+          [agentId, `%${phone}`]
+        );
+
+        let leadId: string;
+        const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
+        const noteLine = [
+          `[${stamp}] via ${slug} page`,
+          intent === "policy" ? "sent a policy for review" : "asked to talk",
+          lob ? `(${lob})` : "",
+          message ? `— "${message}"` : "",
+        ].filter(Boolean).join(" ");
+
+        if (dupe.rows.length > 0) {
+          leadId = dupe.rows[0].id;
+          await pool.query(
+            `UPDATE agent_leads
+                SET notes = coalesce(notes || E'\\n', '') || $2,
+                    status = CASE WHEN status IN ('won','lost') THEN status ELSE 'new' END,
+                    updated_at = now()
+              WHERE id = $1`,
+            [leadId, noteLine]
+          );
+        } else {
+          const ins = await pool.query(
+            `INSERT INTO agent_leads (
+               agent_id, name, phone, source, insurance_interest, status, notes,
+               utm_source, utm_medium, utm_campaign, landing_slug,
+               consent_text, consent_at, consent_ip,
+               source_app, source_device, source_os, referrer
+             ) VALUES ($1,$2,$3,$4,$5,'new',$6,$7,$8,$9,$10,$11,now(),$12,$13,$14,$15,$16)
+             RETURNING id`,
+            [
+              agentId, name, phone, "Advisor page", lob || null, noteLine,
+              utm.source, utm.medium, utm.campaign, slug,
+              consentText, ip,
+              client.app, client.device, client.os, referrer,
+            ]
+          );
+          leadId = ins.rows[0].id;
+        }
+
+        // Files go to the private policy bucket under the owning agent, exactly
+        // like an agent-uploaded lead policy. No extraction is run on them.
+        let stored = 0;
+        for (const f of files) {
+          const policyId = crypto.randomUUID();
+          try {
+            const buf = fs.readFileSync(f.path);
+            const ext = f.originalname.includes(".")
+              ? f.originalname.split(".").pop()!.toLowerCase().slice(0, 5)
+              : "pdf";
+            const storagePath = `${agentId}/advisor-page/${leadId}/${policyId}.${ext}`;
+            const { error: upErr } = await supabaseAdmin.storage
+              .from(PDF_BUCKET)
+              .upload(storagePath, buf, { contentType: f.mimetype, upsert: true });
+            if (upErr) {
+              console.error(`[advisor-lead ${leadId}] storage upload failed:`, upErr.message);
+              continue;
+            }
+            const { data: signed } = await supabaseAdmin.storage
+              .from(PDF_BUCKET)
+              .createSignedUrl(storagePath, 60 * 60 * 24 * 365);
+
+            await pool.query(
+              `INSERT INTO lead_policies (
+                 id, lead_id, agent_id, insurance_type, file_url, file_name, notes
+               ) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+              [
+                policyId, leadId, agentId,
+                LOB_TO_POLICY_TYPE[lob] || "motor",
+                signed?.signedUrl ?? null,
+                String(f.originalname || "policy").slice(0, 160),
+                "Uploaded by the prospect on the advisor page. Not analysed.",
+              ]
+            );
+            stored += 1;
+          } catch (storeErr: any) {
+            console.error(`[advisor-lead ${leadId}] file error:`, storeErr?.message);
+          }
+        }
+
+        cleanup();
+        console.log(`✅ Advisor-page lead for ${slug}: ${name} (${stored} file(s))`);
+        return res.status(201).json({ ok: true, files_saved: stored });
+      } catch (err: any) {
+        cleanup();
+        console.error("advisor lead error:", err?.message);
+        return res.status(500).json({ error: "Could not send that. Please try again." });
+      }
+    }
+  );
+
   /* ── Admin: Get Leads ─────────────────────────────────────────── */
 
   app.get("/api/leads", isAdmin, async (req, res) => {

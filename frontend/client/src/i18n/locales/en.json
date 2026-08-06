@@ -86,6 +86,7 @@
     "my_policies": "My Policies",
     "customers": "Customers",
     "leads": "Leads",
+    "my_page": "My Page",
     "renewals": "Renewals",
     "grow": "Grow",
     "my_book": "My Book",
@@ -264,5 +265,56 @@
     "credits_remaining": "Policy checks left",
     "privacy_note": "Your profile is private. Only admins can view your account details from the admin panel.",
     "est": "Est."
+  },
+  "advisor_page": {
+    "role": "Insurance Advisor",
+    "speaks": "Speaks",
+
+    "help_title": "How I can help",
+    "help_1": "I read your policy properly — what it actually covers, and what it quietly leaves out.",
+    "help_2": "I explain it in plain language, on a call or on WhatsApp, in the language you are comfortable in.",
+    "help_3": "If something is missing or you are paying for cover you don't need, I tell you honestly.",
+
+    "cta_policy": "Send me your policy",
+    "cta_policy_sub": "I'll review it and call you back",
+    "cta_talk": "Talk to me",
+    "cta_talk_sub": "Ask anything about your insurance",
+
+    "form_title_policy": "Send your policy",
+    "form_title_talk": "Let's talk",
+    "f_name": "Your name",
+    "f_phone": "Mobile number",
+    "f_lob": "What is this about?",
+    "f_message": "Your question (optional)",
+    "f_files": "Your policy",
+    "f_files_hint": "A PDF, or simply photos of the pages. You can add up to 8.",
+    "f_files_btn": "Choose file or photo",
+    "submit_policy": "Send to advisor",
+    "submit_talk": "Send",
+    "close": "Close",
+    "remove": "Remove",
+
+    "err_name": "Please enter your name.",
+    "err_phone": "Please enter a valid 10-digit mobile number.",
+    "err_consent": "Please tick the box so we can share your details with the advisor.",
+    "err_generic": "Could not send that. Please try again.",
+
+    "done_title": "Sent",
+    "done_policy": "{name} has received your policy and will get back to you.",
+    "done_talk": "{name} has your details and will get back to you.",
+    "open_whatsapp": "Message on WhatsApp",
+    "call_now": "Call now",
+    "send_another": "Send something else",
+
+    "next_title": "What happens next",
+    "next_1": "Your details go straight to the advisor — nobody else.",
+    "next_2": "The advisor calls or messages you, usually within a day.",
+    "next_3": "You decide what to do next. There is no obligation.",
+    "privacy_note": "Your documents are stored privately and shared only with this advisor. You can ask us to delete them at any time.",
+
+    "disclaimer": "{name} is an independent insurance advisor. IndSure is a technology platform that helps read and explain insurance policies — IndSure does not sell insurance, does not earn commission on any policy, and is not a party to anything you agree with the advisor. Anything explained here is information, not financial advice.",
+    "privacy_link": "Privacy",
+    "grievance_link": "Grievance officer",
+    "powered_by": "Page powered by IndSure"
   }
 }

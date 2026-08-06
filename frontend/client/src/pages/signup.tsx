@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, ArrowRight, MailCheck, FileText } from "lucide-react";
 import { loadSampleReport, mockReportHealth } from "@/lib/mock-data";
+import { MpEvent, identifyUser, track } from "@/lib/mixpanel";
 
 // Consumer (D2C individual) signup — email + password, SELF-SERVE, no invite.
 // Restricted to personal email providers (no business/Workspace domains — those
@@ -50,12 +51,29 @@ export default function SignupPublic() {
       return;
     }
 
-    // If email confirmation is required, there is no session yet.
+    // If email confirmation is required, there is no session yet — so there is
+    // no confirmed user to identify against. Track it anonymously; the identify
+    // happens when they come back and sign in.
     if (!data.session) {
+      track(MpEvent.SignupCompleted, {
+        account_type: "consumer",
+        sign_up_method: "email",
+        pending_confirmation: true,
+      });
       setNeedsConfirm(true);
       setLoading(false);
       return;
     }
+
+    // Order matters: identify() before track() so sign_up_completed lands on the
+    // real user profile rather than the anonymous device id. The auth listener in
+    // components/Mixpanel.tsx would get here eventually, but not before this event.
+    if (data.user?.id) identifyUser(data.user.id, { userType: "consumer" });
+    track(MpEvent.SignupCompleted, {
+      account_type: "consumer",
+      sign_up_method: "email",
+      pending_confirmation: false,
+    });
 
     try {
       await apiFetch("/api/me/bootstrap", { method: "POST" });

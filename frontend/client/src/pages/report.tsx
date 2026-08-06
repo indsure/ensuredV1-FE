@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   AlertCircle,
@@ -16,6 +16,7 @@ import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { validateForensicAuditReport } from "@/lib/policy-types";
 import { useAnalysis } from "@/hooks/use-analysis";
 import { apiFetch } from "@/lib/api";
+import { MpEvent, track } from "@/lib/mixpanel";
 
 export default function Report({ params }: { params?: { id?: string } }) {
   const [, setLocation] = useLocation();
@@ -23,19 +24,30 @@ export default function Report({ params }: { params?: { id?: string } }) {
   const [data, setData] = useState(null as any | null);
   const [loading, setLoading] = useState(true);
 
+  // Where the report on screen came from, for the Analysis Viewed event below.
+  // A sample report is a very different signal from a user's own analysis.
+  const sourceRef = useRef<"sample" | "session" | "db" | null>(null);
+  const viewTracked = useRef(false);
+
+  useEffect(() => {
+    if (!data || viewTracked.current) return;
+    viewTracked.current = true;
+    track(MpEvent.AnalysisViewed, { source: sourceRef.current ?? "unknown" });
+  }, [data]);
+
   useEffect(() => {
     // 1. Check for sample query-param (?sample=health|life|vehicle) set by analyze.tsx
     const searchParams = new URLSearchParams(window.location.search);
     const sampleType = searchParams.get("sample");
-    if (sampleType === "health") { setData(mockReportHealth); setLoading(false); return; }
-    if (sampleType === "life")   { setData(mockReportLife);   setLoading(false); return; }
-    if (sampleType === "vehicle"){ setData(mockReportVehicle);setLoading(false); return; }
+    if (sampleType === "health") { sourceRef.current = "sample"; setData(mockReportHealth); setLoading(false); return; }
+    if (sampleType === "life")   { sourceRef.current = "sample"; setData(mockReportLife);   setLoading(false); return; }
+    if (sampleType === "vehicle"){ sourceRef.current = "sample"; setData(mockReportVehicle);setLoading(false); return; }
 
     // 2. Check for Direct Sample path ID (legacy demo mode)
     const sampleId = params?.id;
-    if (sampleId === "sample-health")  { setData(mockReportHealth);  setLoading(false); return; }
-    if (sampleId === "sample-life")    { setData(mockReportLife);    setLoading(false); return; }
-    if (sampleId === "sample-vehicle") { setData(mockReportVehicle); setLoading(false); return; }
+    if (sampleId === "sample-health")  { sourceRef.current = "sample"; setData(mockReportHealth);  setLoading(false); return; }
+    if (sampleId === "sample-life")    { sourceRef.current = "sample"; setData(mockReportLife);    setLoading(false); return; }
+    if (sampleId === "sample-vehicle") { sourceRef.current = "sample"; setData(mockReportVehicle); setLoading(false); return; }
 
     // 2. Try to load from session (Real User Data - D2C Flow)
     const raw = sessionStorage.getItem("IndSure_report");
@@ -43,6 +55,7 @@ export default function Report({ params }: { params?: { id?: string } }) {
       try {
         const parsed = JSON.parse(raw);
         if (validateForensicAuditReport(parsed)) {
+          sourceRef.current = "session";
           setData(parsed);
           setLoading(false);
           return;
@@ -58,6 +71,7 @@ export default function Report({ params }: { params?: { id?: string } }) {
         .then(res => res.json())
         .then(dbData => {
           if (dbData && dbData.report_data && validateForensicAuditReport(dbData.report_data)) {
+            sourceRef.current = "db";
             setData(dbData.report_data);
           } else {
           }

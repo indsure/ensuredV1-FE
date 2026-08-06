@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { Loader2, Scale, Zap, Search, Plus, X, ArrowRight, Lock, FileText } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { MpEvent, track } from "@/lib/mixpanel";
 import ComparisonView, { SIDE_PALETTE } from "@/components/ComparisonView";
 import { type ComparisonResult } from "@/lib/wordingProfile";
 import { Header } from "@/components/Header";
@@ -222,7 +223,16 @@ function HealthCatalogCompare() {
         });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Compare failed");
         const json = await res.json();
-        if (alive) setResult(json.result);
+        if (alive) {
+          setResult(json.result);
+          // Plan UINs are public IRDAI identifiers, not user data — safe to
+          // send, and knowing which plans get compared is the whole point.
+          track(MpEvent.CompareRun, {
+            surface: "public-catalog",
+            plan_count: selected.length,
+            uins: selected,
+          });
+        }
       } catch (e: any) {
         if (alive) setError(e.message || "Compare failed");
       } finally {

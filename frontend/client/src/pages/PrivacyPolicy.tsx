@@ -51,6 +51,14 @@ You are never required to provide health information to use IndSure. If you choo
 
 We set one first-party cookie named sidebar_state (max age 7 days) to remember your dashboard sidebar preference. See our Cookie Policy for details.`,
       },
+      {
+        title: "2.7 Advisor pages (indsure.in/a/…)",
+        body: `Some licensed advisors have a public page on our site. If you visit one, we record — in aggregate only — which app the link was opened in (for example Instagram or WhatsApp) and whether the device is a phone, tablet or computer. This is derived from information your browser sends with every request. We do not store your IP address, your full browser identifier, or any record that identifies you individually as a visitor.
+
+If you choose to submit the form on an advisor's page, you are asked to tick a consent box that names that specific advisor. The details you provide — your name, phone number, what you need help with, and any policy document you upload — are shared with that named advisor so they can contact you. We also record the app and device you submitted from, and the campaign link you arrived through, so the advisor knows the context of your enquiry.
+
+We do not request or collect precise GPS location on these pages. IndSure remains responsible for this data: you can ask us to delete it at any time by contacting our Grievance Officer, and we will remove it from the advisor's records as well as our own.`,
+      },
     ],
   },
   {
