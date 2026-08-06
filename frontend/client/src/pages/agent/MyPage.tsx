@@ -417,12 +417,20 @@ function ShareKit({ slug, name }: { slug: string; name: string }) {
   // society standee is distinguishable from a WhatsApp tap in the numbers.
   const qrUrl = pageUrl(slug, "qr", campaign);
 
+  const [qrError, setQrError] = useState(false);
+
   useEffect(() => {
     if (!qrRef.current) return;
-    void QRCode.toCanvas(qrRef.current, qrUrl, {
+    setQrError(false);
+    QRCode.toCanvas(qrRef.current, qrUrl, {
       width: 220,
       margin: 2,
       color: { dark: "#0F172A", light: "#FFFFFF" },
+    }).catch((err) => {
+      // Previously this was fire-and-forget, so a failed render just left a
+      // blank square and the advisor had no idea why.
+      console.error("QR render failed:", err);
+      setQrError(true);
     });
   }, [qrUrl]);
 
@@ -493,10 +501,25 @@ function ShareKit({ slug, name }: { slug: string; name: string }) {
 
         <div className="grid gap-6 sm:grid-cols-[auto,1fr] sm:items-start">
           <div className="text-center">
-            <canvas ref={qrRef} className="rounded-lg border border-slate-200 bg-white" />
-            <Button variant="outline" size="sm" className="mt-3 w-full gap-2" onClick={downloadQr}>
+            <canvas
+              ref={qrRef}
+              className={`rounded-lg border border-slate-200 bg-white ${qrError ? "hidden" : ""}`}
+            />
+            {qrError && (
+              <div className="grid h-[220px] w-[220px] place-items-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 text-xs text-slate-500">
+                Could not draw the QR code. Please reload the page.
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 w-full gap-2"
+              onClick={downloadQr}
+              disabled={qrError}
+            >
               <Download className="h-4 w-4" /> Download QR
             </Button>
+            <p className="mt-2 text-[11px] text-slate-400 break-all">{qrUrl}</p>
           </div>
 
           <div className="space-y-3">

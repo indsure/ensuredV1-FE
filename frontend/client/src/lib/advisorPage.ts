@@ -203,12 +203,29 @@ export const SHARE_CHANNELS = [
 
 export type ShareChannel = (typeof SHARE_CHANNELS)[number]["key"];
 
-/** Public origin for shared links. Always the production domain — an advisor
- *  must never hand a prospect a beta preview URL. */
+/**
+ * Origin for shared links, QR codes and the copy buttons.
+ *
+ * On production this is always the canonical apex domain, so an advisor can
+ * never hand a prospect a preview URL that will disappear.
+ *
+ * Anywhere else — beta, or a laptop — it is the host you are actually on.
+ * Hardcoding production everywhere made the whole share kit untestable: the QR
+ * pointed at indsure.in while the feature only existed on beta, so scanning it
+ * landed on the marketing homepage.
+ */
+export function publicOrigin(): string {
+  if (typeof window === "undefined") return "https://indsure.in";
+  const host = window.location.hostname;
+  if (host === "indsure.in" || host === "www.indsure.in") return "https://indsure.in";
+  return window.location.origin;
+}
+
+/** @deprecated Prefer publicOrigin() — this cannot reflect the current host. */
 export const PUBLIC_ORIGIN = "https://indsure.in";
 
 export function pageUrl(slug: string, channel?: ShareChannel, campaign?: string): string {
-  const base = `${PUBLIC_ORIGIN}/a/${slug}`;
+  const base = `${publicOrigin()}/a/${slug}`;
   const ch = SHARE_CHANNELS.find((c) => c.key === channel);
   if (!ch) return base;
   const q = new URLSearchParams({ utm_source: ch.utm, utm_medium: "share" });
