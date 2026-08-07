@@ -3607,21 +3607,32 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         return res.status(404).json({ error: "No PDF stored for this policy" });
       }
 
-      // Re-sign if it's a Supabase storage signed URL
-      let downloadUrl = pdf_url;
+      // Stream the bytes through us. We never hand the browser a storage URL —
+      // that would leak the Supabase project/bucket and stay openable for the
+      // life of the signature.
       const pathMatch = pdf_url.match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/);
-      if (pathMatch) {
-        const [bucket, ...rest] = pathMatch[1].split("/");
-        const storagePath = rest.join("/");
-        const { data: freshSign, error: signErr } = await supabaseAdmin.storage
-          .from(bucket)
-          .createSignedUrl(storagePath, 60 * 60);
-        if (!signErr && freshSign?.signedUrl) {
-          downloadUrl = freshSign.signedUrl;
-        }
+      if (!pathMatch) {
+        return res.status(409).json({ error: "Stored document URL is not recognized" });
+      }
+      const [bucket, ...rest] = pathMatch[1].split("/");
+      const storagePath = rest.join("/");
+
+      const { data: blob, error: dlErr } = await supabaseAdmin.storage.from(bucket).download(storagePath);
+      if (dlErr || !blob) {
+        return res.status(409).json({ error: "Could not fetch the stored document" });
       }
 
-      res.json({ url: downloadUrl, filename: filename || "policy.pdf" });
+      const ext = (storagePath.split(".").pop() || "pdf").toLowerCase();
+      const contentType =
+        ext === "png" ? "image/png"
+        : ext === "jpg" || ext === "jpeg" ? "image/jpeg"
+        : ext === "txt" ? "text/plain"
+        : "application/pdf";
+      const safeName = (filename || `policy.${ext}`).replace(/[^\w.\-() ]/g, "_").slice(0, 120);
+
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}"`);
+      return res.send(Buffer.from(await blob.arrayBuffer()));
     } catch (err: any) {
       console.error("Download PDF error:", err);
       res.status(500).json({ error: "Internal server error" });
