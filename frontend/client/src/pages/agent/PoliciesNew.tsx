@@ -221,13 +221,17 @@ export default function PoliciesNew() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Download failed");
       }
-      const { url, filename } = await res.json();
+      // The endpoint streams the file itself — no storage URL ever reaches the
+      // browser — so save the blob client-side.
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = filename;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
+      a.download = row.filename || "policy.pdf";
+      document.body.appendChild(a);
       a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Could not download PDF.");
     } finally {
