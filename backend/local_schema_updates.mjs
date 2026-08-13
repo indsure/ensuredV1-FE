@@ -3,8 +3,14 @@ import pkg from 'pg';
 import crypto from 'crypto';
 
 const { Pool } = pkg;
+
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  console.error('DATABASE_URL is not set. Export it or add it to the repo-root .env before running this script.');
+  process.exit(1);
+}
 // Default to local Supabase running on 5412, or whatever is in DATABASE_URL
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5412/postgres';
+const connectionString = DATABASE_URL;
 
 const pool = new Pool({
   connectionString

@@ -2,9 +2,15 @@ import pg from 'pg';
 import { randomUUID } from 'crypto';
 const { Pool } = pg;
 
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  console.error('DATABASE_URL is not set. Export it or add it to the repo-root .env before running this script.');
+  process.exit(1);
+}
+
 // Uses PostgreSQL connection to directly insert a user into auth.users
 // AND the agents table — bypassing email entirely
-const CONN = "postgresql://postgres:zQqau%23PVNTZG%2Cm6@db.khxbabotbvnyjwvqtumt.supabase.co:5432/postgres";
+const CONN = DATABASE_URL;
 const pool = new Pool({ connectionString: CONN });
 
 // ─── CONFIGURE YOUR TEST ACCOUNT HERE ─────────────────────────────────────

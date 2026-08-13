@@ -3,7 +3,13 @@ const { Client } = pkg;
 const fs = require('fs');
 const path = require('path');
 
-const connectionString = 'postgresql://postgres:zQqau%23PVNTZG%2Cm6@db.khxbabotbvnyjwvqtumt.supabase.co:5432/postgres';
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  console.error('DATABASE_URL is not set. Export it or add it to the repo-root .env before running this script.');
+  process.exit(1);
+}
+
+const connectionString = DATABASE_URL;
 
 async function setup() {
   const client = new Client({ connectionString });
