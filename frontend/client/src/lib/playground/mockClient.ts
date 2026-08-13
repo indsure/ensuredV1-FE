@@ -13,7 +13,10 @@
  * is never contacted while in playground mode.
  */
 
-import { buildSeed, DEMO_COMPARE_RESPONSE, type Store } from "./seed";
+import {
+  buildSeed, buildCatalogComparison, buildUploadedPolicy,
+  DEMO_CATALOG, DEMO_COMPARE_RESPONSE, type Store,
+} from "./seed";
 import { DEMO_AGENT_ID, DEMO_EMAIL, exitPlayground } from "./mode";
 
 let store: Store | null = null;
@@ -265,8 +268,72 @@ const json = (body: any, status = 200) =>
 
 const demoUuid = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 
+/**
+ * Uploads in flight. The upload flow starts an analysis and then polls a job id
+ * until it reports `completed`, so the mock has to remember the job long enough
+ * to answer the poll and mark the policy done.
+ */
+const pendingJobs = new Map<string, { clientId: string }>();
+
+/** Read a field off a FormData body without assuming one is present. */
+function field(init: any, key: string): string | undefined {
+  try {
+    const body = init?.body;
+    if (body && typeof body.get === "function") {
+      const v = body.get(key);
+      if (typeof v === "string" && v.trim()) return v.trim();
+      if (v && typeof v === "object" && "name" in v) return (v as File).name;
+    }
+  } catch {
+    /* ignore */
+  }
+  return undefined;
+}
+
 /** Route a simulated `/api/*` request to a canned response. */
-function playgroundApiResponse(url: string): Response {
+function playgroundApiResponse(url: string, init?: any): Response {
+  // Analysis status poll — must be tested before /api/agent/analyze itself,
+  // which is a prefix of this path.
+  if (url.includes("/api/agent/analyze/status/")) {
+    const jobId = url.split("/api/agent/analyze/status/")[1].split(/[?#]/)[0];
+    const job = pendingJobs.get(jobId);
+    if (job) {
+      pendingJobs.delete(jobId);
+      const row = getStore().clients.find((c) => c.id === job.clientId);
+      if (row) Object.assign(row, buildUploadedPolicy(job.clientId, row));
+    }
+    return json({ status: "completed", clientId: job?.clientId ?? null });
+  }
+
+  if (url.includes("/api/agent/analyze")) {
+    const clientId = demoUuid("demo-policy");
+    const jobId = demoUuid("demo-job");
+    // Land it in the list as "processing" straight away, so My Queue and the
+    // dashboard reflect the upload while the card is still spinning.
+    getStore().clients.unshift({
+      ...buildUploadedPolicy(clientId, {
+        policyholder_name: field(init, "policyholder_name"),
+        insurance_type: field(init, "type"),
+        filename: field(init, "file"),
+      }),
+      status: "processing",
+      score: null,
+      report_data: null,
+    });
+    pendingJobs.set(jobId, { clientId });
+    return json({ clientId, jobId, success: true });
+  }
+
+  if (url.includes("/api/compare/catalog")) return json({ policies: DEMO_CATALOG });
+  if (url.includes("/api/compare/from-catalog")) {
+    let uins: string[] = [];
+    try {
+      uins = JSON.parse(init?.body ?? "{}").uins ?? [];
+    } catch {
+      /* ignore */
+    }
+    return json({ result: buildCatalogComparison(uins) });
+  }
   if (url.includes("/api/agent/compare")) return json(DEMO_COMPARE_RESPONSE);
   if (url.includes("/api/compare/save-report")) return json({ uuid: demoUuid("demo-compare"), success: true });
   if (url.includes("/api/calculator/save-report")) return json({ uuid: demoUuid("demo-calc"), success: true });
@@ -282,8 +349,10 @@ export function installPlaygroundFetch(): void {
     const url = typeof input === "string" ? input : input?.url ?? "";
     if (url && url.includes("/api/")) {
       // Small delay so the "reading both wordings…" spinner reads as real work.
-      if (url.includes("/api/agent/compare")) await new Promise((r) => setTimeout(r, 900));
-      return playgroundApiResponse(url);
+      if (url.includes("/api/compare/") || url.includes("/api/agent/compare")) {
+        await new Promise((r) => setTimeout(r, 900));
+      }
+      return playgroundApiResponse(url, init);
     }
     return orig(input, init);
   };
