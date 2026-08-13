@@ -52,7 +52,45 @@ export type Lead = {
   customer_id: string | null;
   created_at: string;
   updated_at: string;
+  /* Set only on leads that came in through an advisor landing page. Recovered
+   * from the browser at submit time, so the advisor knows the context before
+   * ringing: which app they were in, on what kind of device. */
+  source_app: string | null;
+  source_device: string | null;
+  source_os: string | null;
+  landing_slug: string | null;
+  utm_campaign: string | null;
 };
+
+/** Plain labels for where a landing-page lead came from. */
+const SOURCE_APP_LABELS: Record<string, string> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  whatsapp: "WhatsApp",
+  telegram: "Telegram",
+  linkedin: "LinkedIn",
+  browser: "web",
+};
+
+const SOURCE_DEVICE_LABELS: Record<string, string> = {
+  mobile: "phone",
+  tablet: "tablet",
+  desktop: "computer",
+};
+
+/**
+ * One short line for the lead card, e.g. "Instagram · phone". Returns null for
+ * leads that didn't come from a landing page, so the card stays unchanged for
+ * every lead the agent added by hand.
+ */
+export function sourceContext(lead: Lead): string | null {
+  if (!lead.landing_slug) return null;
+  const parts = [
+    lead.source_app ? SOURCE_APP_LABELS[lead.source_app] ?? null : null,
+    lead.source_device ? SOURCE_DEVICE_LABELS[lead.source_device] ?? null : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
+}
 
 export type LeadDraft = {
   name: string;

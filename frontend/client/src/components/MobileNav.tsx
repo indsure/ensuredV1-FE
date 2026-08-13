@@ -27,6 +27,13 @@ export function MobileNav() {
     return null;
   }
 
+  // Advisor landing pages (/a/<slug>) are ad + referral destinations, not part
+  // of the D2C site: this bar would sit on top of the lead form on a phone and
+  // hand the visitor a way off the page before they submit.
+  if (window.location.pathname.startsWith('/a/')) {
+    return null;
+  }
+
   const isActive = (href: string) => {
     if (href === "/") {
       return location === "/";

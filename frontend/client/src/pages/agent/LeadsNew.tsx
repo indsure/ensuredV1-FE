@@ -19,6 +19,7 @@ import {
   LEAD_STATUS_META,
   LEAD_STATUSES,
   setLeadStatus,
+  sourceContext,
   telHref,
   waHref,
   type Lead,
@@ -397,6 +398,8 @@ function LeadCard({ lead, busy, onOpen, onStatus, onDraft }: { lead: Lead; busy:
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
           {lead.expected_value != null && <span className="font-semibold text-slate-500">≈ {formatAmount(lead.expected_value)}</span>}
           {lead.source && <span>via {lead.source}</span>}
+          {sourceContext(lead) && <span className="text-slate-500">{sourceContext(lead)}</span>}
+          {lead.utm_campaign && <span className="text-slate-500">“{lead.utm_campaign}”</span>}
           {lead.next_follow_up && (
             <span className={due ? "font-bold text-amber-600" : ""}>
               {due ? "⏰ Call " : "Next: "}{format(new Date(lead.next_follow_up), "d MMM")}

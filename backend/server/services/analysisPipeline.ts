@@ -13,6 +13,20 @@ import { applyScoreBucketing, getBucketingExplanation } from "../utils/scoreBuck
 import { AI_CONFIG } from "../config/ai_config";
 import type { GeminiCallMeta } from "./geminiUsage";
 
+/**
+ * Today's date as YYYY-MM-DD in IST. Deliberately NOT toISOString() — that is
+ * UTC, so between 00:00 and 05:30 IST every audit would be stamped with
+ * yesterday's date and every waiting period would look a day less served.
+ */
+export function todayISO(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
 export interface AnalysisResult {
   status: "completed" | "failed";
   result?: any;
@@ -111,6 +125,34 @@ export function clampDisplayScoreToVerdict(parsed: any) {
   }
 }
 
+/** Per-category caps from the prompt's SCORING SYSTEM. net_cover_penalty is
+ *  uncapped by design (Step 1 is applied first and not capped). */
+const BREAKDOWN_CAPS: Record<string, number> = {
+  claim_rejection_risk: 30,
+  oop_exposure: 30,
+  coverage_quality_gap: 20,
+};
+
+/**
+ * The score is rebuilt from `breakdown`, so a breakdown value that exceeds its
+ * cap silently corrupts the score. Clamp before the arithmetic runs.
+ */
+export function enforceBreakdownCaps(parsed: any) {
+  const breakdown = parsed?.audit_score?.breakdown;
+  if (!breakdown) return;
+  for (const [key, cap] of Object.entries(BREAKDOWN_CAPS)) {
+    const value = breakdown[key];
+    if (typeof value === "number" && value > cap) {
+      console.warn(`[Pipeline] breakdown.${key}=${value} exceeds cap ${cap}; clamping.`);
+      breakdown[key] = cap;
+      pushConfidenceNote(
+        parsed,
+        `Scoring ledger corrected server-side: ${key} exceeded its maximum of ${cap}.`
+      );
+    }
+  }
+}
+
 export function performScoreArithmeticCheck(parsed: any) {
   if (parsed.audit_score && parsed.audit_score.breakdown) {
     const breakdown = parsed.audit_score.breakdown;
@@ -118,7 +160,15 @@ export function performScoreArithmeticCheck(parsed: any) {
                 (breakdown.claim_rejection_risk || 0) +
                 (breakdown.oop_exposure || 0) +
                 (breakdown.coverage_quality_gap || 0);
-    const expectedScore = Math.max(0, 100 - sum);
+    let expectedScore = Math.max(0, 100 - sum);
+
+    // NCAR auto-failure caps the score at 40 (prompt: STEP 1 / FINAL SCORE), so
+    // the recomputed score must respect it too — otherwise the arithmetic check
+    // would undo the cap the model correctly applied.
+    const ncar = parsed.audit_score.ncar;
+    if (typeof ncar === "number" && ncar < 0.5) {
+      expectedScore = Math.min(expectedScore, 40);
+    }
 
     if (Math.abs(expectedScore - parsed.audit_score.score) > 2) {
       console.warn(`[Pipeline] Score mismatch warning: Original AI score=${parsed.audit_score.score}, Corrected=${expectedScore}`);
@@ -184,6 +234,12 @@ export async function runAnalysisPipeline(
     // Interpolate wording matched variable
     promptToUse = promptToUse.replace("{{WORDING_MATCHED}}", wordingMatched ? "true" : "false");
 
+    // Interpolate today's date. Without this the model has no anchor for "today"
+    // and every waiting-period field (is_active_today, months_remaining,
+    // policy_age_days, policy_fully_active) drifts toward its training cutoff.
+    // Global replace: the token appears in several sections of the prompt.
+    promptToUse = promptToUse.replace(/{{ANALYSIS_DATE}}/g, todayISO());
+
     // Step 5: Call AI
     const aiStartTime = Date.now();
     const rawText = await AIService.generateContent(
@@ -210,6 +266,7 @@ export async function runAnalysisPipeline(
       return { status: "failed", error: `AI response validation failed: ${validation.reason}` };
     }
 
+    enforceBreakdownCaps(parsed);
     performScoreArithmeticCheck(parsed);
 
     // Lock the verdict label to the (raw) score + NCAR before bucketing

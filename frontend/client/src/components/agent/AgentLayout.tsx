@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { BookOpen, Calculator, FileText, LayoutDashboard, Settings, ListChecks, LogOut, Scale, Target, Upload, User, Users, Menu, X } from "lucide-react"
+import { BookOpen, Calculator, FileText, Globe, LayoutDashboard, Settings, ListChecks, LogOut, Scale, Target, Upload, User, Users, Menu, X } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -47,6 +47,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         label: t("layout.grow") ?? "Grow",
         items: [
           { label: t("layout.leads") ?? "Leads", href: "/agent/leads", icon: <Target className="h-4 w-4" /> },
+          { label: t("layout.my_page") ?? "My Page", href: "/agent/my-page", icon: <Globe className="h-4 w-4" /> },
           { label: t("layout.calculator") ?? "Calculator", href: "/agent/calculator", icon: <Calculator className="h-4 w-4" /> },
           { label: t("layout.compare") ?? "Compare", href: "/agent/compare", icon: <Scale className="h-4 w-4" /> },
         ],

@@ -2,6 +2,17 @@ import { createContext, useContext, useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { AnalysisResponse, AnalysisState } from "@/lib/types";
 import { apiFetch } from "@/lib/api";
+import { MpEvent, track } from "@/lib/mixpanel";
+
+/** Coarse size buckets — the exact byte count of someone's policy PDF is not
+ *  something we need in an analytics warehouse. */
+function sizeBucket(bytes: number): string {
+  if (bytes < 512_000) return "<0.5MB";
+  if (bytes < 2_000_000) return "0.5-2MB";
+  if (bytes < 5_000_000) return "2-5MB";
+  if (bytes < 10_000_000) return "5-10MB";
+  return ">10MB";
+}
 
 interface AnalysisContextType {
   state: AnalysisState;
@@ -40,6 +51,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
 
+  // Analytics only: carries the line of business and upload start time from
+  // analyze() through to whenever polling settles, so the completion event can
+  // report both without threading them through the job state.
+  const analyticsRef = useRef<{ lob: string; startedAt: number } | null>(null);
+
   const clearAuditState = () => {
     setState({
       analysis: null,
@@ -77,6 +93,13 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const analyze = async (file: File, type?: string): Promise<{ jobId: string }> => {
     setStatus("loading");
     setError(null);
+
+    analyticsRef.current = { lob: type || "unknown", startedAt: Date.now() };
+    track(MpEvent.UploadStarted, {
+      lob: type || "unknown",
+      file_type: file.type || "unknown",
+      file_size_bucket: sizeBucket(file.size),
+    });
 
     try {
       const formData = new FormData();
@@ -120,6 +143,12 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           "Cannot connect to backend server. Please ensure the server is running.";
       }
 
+      track(MpEvent.AnalysisFailed, {
+        lob: analyticsRef.current?.lob ?? "unknown",
+        reason: "upload_request_failed",
+        duration_ms: analyticsRef.current ? Date.now() - analyticsRef.current.startedAt : null,
+      });
+
       setError(errorMessage);
       setState((prev: AnalysisState) => ({ ...prev, error: errorMessage }));
       setStatus("error");
@@ -154,6 +183,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
 
       // Timeout guard: stop polling once we've exceeded the max elapsed time.
       if (Date.now() - jobStartTime > MAX_POLL_ELAPSED) {
+        track(MpEvent.AnalysisFailed, {
+          lob: analyticsRef.current?.lob ?? "unknown",
+          reason: "poll_timeout",
+          duration_ms: Date.now() - jobStartTime,
+        });
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
@@ -184,6 +218,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem("IndSure_report", JSON.stringify(status.result));
         setStatus("success");
 
+        track(MpEvent.UploadCompleted, {
+          lob: analyticsRef.current?.lob ?? "unknown",
+          duration_ms: analyticsRef.current ? Date.now() - analyticsRef.current.startedAt : null,
+        });
+
         setTimeout(() => {
           if (!cancelled) {
             sessionStorage.removeItem("IndSure_current_job");
@@ -196,6 +235,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           pollingIntervalRef.current = null;
         }
       } else if (status.status === "failed") {
+        track(MpEvent.AnalysisFailed, {
+          lob: analyticsRef.current?.lob ?? "unknown",
+          reason: "job_failed",
+          duration_ms: analyticsRef.current ? Date.now() - analyticsRef.current.startedAt : null,
+        });
         if (!cancelled) {
           setError(status.error || "Analysis failed");
           setState((prev: AnalysisState) => ({

@@ -9,7 +9,7 @@ import { AnalysisProvider } from "@/hooks/use-analysis";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { usePageTransition } from "@/hooks/use-page-transition";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { Clarity } from "@/components/Clarity";
+import { Mixpanel } from "@/components/Mixpanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ReportDispatcher from "@/components/ReportDispatcher";
 
@@ -45,7 +45,11 @@ const LeadDetail = lazy(() => import("@/pages/agent/LeadDetail"));
 const MyQueue = lazy(() => import("@/pages/agent/MyQueue"));
 const SettingsNew = lazy(() => import("@/pages/agent/SettingsNew"));
 const MyProfile = lazy(() => import("@/pages/agent/MyProfile"));
+const AgentMyPage = lazy(() => import("@/pages/agent/MyPage"));
 import AgentProtectedRoute from "@/components/agent/ProtectedRoute";
+
+// --- Advisor landing pages (public, per-agent lead capture) ---
+const AdvisorPage = lazy(() => import("@/pages/advisor-page"));
 
 // --- Public Report ---
 const PublicReport = lazy(() => import("@/pages/report/PublicReport"));
@@ -126,7 +130,7 @@ function App() {
             <AnalysisProvider>
                 <TooltipProvider>
                   <Toaster />
-                  <Clarity />
+                  <Mixpanel />
 
                   <Suspense fallback={<PageLoader />}>
                     <Switch>
@@ -139,6 +143,9 @@ function App() {
                       {/* --- Report routes --- */}
                       <Route path="/report" component={Report} />
                       <Route path="/report/:token" component={PublicReport} />
+
+                      {/* --- Advisor landing page (public, noindex) --- */}
+                      <Route path="/a/:slug" component={AdvisorPage} />
                       
                       {/* PUBLIC ROUTE — do NOT add AgentProtectedRoute here.
                           This is the client-facing shared report view. */}
@@ -204,6 +211,9 @@ function App() {
                       </Route>
                       <Route path="/agent/renewals">
                         {() => <AgentProtectedRoute><LeadRenewals /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/my-page">
+                        {() => <AgentProtectedRoute><AgentMyPage /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/my-queue">
                         {() => <AgentProtectedRoute><MyQueue /></AgentProtectedRoute>}

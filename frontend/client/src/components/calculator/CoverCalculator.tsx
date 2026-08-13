@@ -33,6 +33,7 @@ import {
   sanitizeIntegerInput,
   getAgeError,
 } from "@/lib/validation/calculator-validation";
+import { MpEvent, track } from "@/lib/mixpanel";
 
 /**
  * The cover-need wizard, shared between the consumer site (/calculator) and
@@ -478,6 +479,18 @@ export default function CoverCalculator({
       // public funnel; agents running repeat scenarios don't need it.
       if (!embedded) await new Promise((r) => setTimeout(r, 1500));
       const analysis = calculateHealthCover(finalInputs, { partnerCompanies });
+
+      // Segmentation inputs only — age *band*, city tier and family structure.
+      // Never exactAge, city, spouseAge or childCount: those identify a household.
+      track(MpEvent.CalculatorCompleted, {
+        surface: embedded ? "agent" : "public",
+        age_band: finalInputs.ageBand,
+        city_tier: finalInputs.cityTier,
+        family_structure: finalInputs.familyStructure,
+        employer_cover: finalInputs.employerCover,
+        risk_posture: finalInputs.riskPosture,
+        recommended_cover: analysis.coverageBreakdown?.finalOptimal ?? null,
+      });
 
       // Save to backend with retry logic
       setIsSaving(true);

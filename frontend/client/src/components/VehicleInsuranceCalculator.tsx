@@ -143,7 +143,7 @@ export function VehicleInsuranceCalculator() {
 
     const calculation = calculateVehicleInsuranceCost(input);
     setResult(calculation);
-    
+
     setTimeout(() => {
       document.getElementById("vehicle-calculator-results")?.scrollIntoView({ behavior: "smooth" });
     }, 100);
