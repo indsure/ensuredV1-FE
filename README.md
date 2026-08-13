@@ -26,23 +26,31 @@ cd IndSure-Advisor-main
 npm install
 ```
 
-### 2. Configure Environment
+### 2. Enable the secret-scanning hook
 
-Create a `.env.local` file in the root directory:
+Do this before your first commit. It blocks staged changes containing DB
+passwords, API keys or tokens, and is not enabled automatically by `git clone`:
 
 ```bash
-cp .env.local.example .env.local
+git config core.hooksPath .githooks
 ```
 
-Edit `.env.local` and add your Gemini API key:
+### 3. Configure Environment
 
-```env
-GEMINI_API_KEY=your_actual_api_key_here
-PORT=5000
-NODE_ENV=development
+Create a `.env` in the root directory — that is the file the backend loads:
+
+```bash
+cp .env.example .env
 ```
 
-### 3. Run the Application
+`.env.example` lists every variable the code reads. At minimum set
+`DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and
+`GEMINI_API_KEY`. Never commit `.env` itself.
+
+Note: Vite reads frontend variables from `frontend/client/.env`, not the repo
+root — the `VITE_*` values go there.
+
+### 4. Run the Application
 
 **Development (frontend + backend):**
 
@@ -125,7 +133,7 @@ npm run check
 
 ### Server won't start
 - Check if port 5000 is already in use
-- Verify `.env.local` exists and has `GEMINI_API_KEY` set
+- Verify `.env` exists and has `GEMINI_API_KEY` set
 - Check Node.js version: `node --version` (should be 18+)
 
 ### API errors
