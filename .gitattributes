@@ -1,0 +1,7 @@
+# Deliberately narrow. The rest of the repo is CRLF in the working tree and a
+# blanket rule here would renormalise hundreds of files in one unreviewable diff.
+
+# Git hooks must stay LF even on Windows (core.autocrlf=true). With CRLF the
+# shebang becomes "#!/usr/bin/env bash\r" and every hook run dies with
+# "bad interpreter: /usr/bin/env bash^M" -- silently disabling the check.
+.githooks/** text eol=lf
