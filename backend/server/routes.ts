@@ -4136,6 +4136,62 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
         cleanup();
         console.log(`✅ Advisor-page lead for ${slug}: ${name} (${stored} file(s))`);
+
+        // Tell the advisor, without making the prospect wait for SES.
+        //
+        // Deliberately not awaited: the person on the other end is sitting on a
+        // spinner, and an advisor page whose success screen is gated on an SMTP
+        // round-trip is a page that feels broken on a patchy phone connection.
+        // Nothing downstream depends on the result, and sendMail() already
+        // swallows its own failures, so the send can finish after the response.
+        //
+        // The email carries no policy contents — a name, a number and what they
+        // asked about. Documents stay behind the portal login.
+        void (async () => {
+          try {
+            const who = await pool.query(
+              `SELECT email, coalesce(full_name, name) AS name FROM agents WHERE id = $1`,
+              [agentId]
+            );
+            const to = who.rows[0]?.email;
+            if (!to) return;
+
+            const firstName = String(who.rows[0]?.name || "").trim().split(/\s+/)[0] || "there";
+            const asked = intent === "policy" ? "sent a policy for you to look at" : "asked to talk";
+            const lobLine = lob ? `Interested in: ${lob}` : null;
+            const campaign = utm.campaign ? `Campaign: ${utm.campaign}` : null;
+            const via = utm.source ? `Came from: ${utm.source}` : null;
+
+            await sendMail({
+              to,
+              subject: `New enquiry from ${name} — your IndSure page`,
+              text: [
+                `Hi ${firstName},`,
+                "",
+                `${name} just ${asked} on your IndSure page.`,
+                "",
+                `Phone: +91 ${phone}`,
+                lobLine,
+                stored > 0 ? `They attached ${stored} document${stored === 1 ? "" : "s"}.` : null,
+                message ? `They wrote: "${message}"` : null,
+                via,
+                campaign,
+                "",
+                "Open the lead to call or message them:",
+                `https://indsure.in/agent/leads/${leadId}`,
+                "",
+                "— Team IndSure",
+                "",
+                "You're getting this because this enquiry came through your advisor page.",
+              ].filter((l) => l !== null).join("\n"),
+            });
+          } catch (mailErr: any) {
+            // A lead that was saved must never look like a failure because the
+            // notification did not go out.
+            console.error(`[advisor-lead ${leadId}] notify failed:`, mailErr?.message);
+          }
+        })();
+
         return res.status(201).json({ ok: true, files_saved: stored });
       } catch (err: any) {
         cleanup();
