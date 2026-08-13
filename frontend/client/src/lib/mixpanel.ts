@@ -24,9 +24,17 @@ import mixpanel from "mixpanel-browser";
 
 // The project token is not a secret — it ships in the client bundle either way,
 // and it only grants permission to WRITE events into the project, never to read
-// anything out. So it is baked in with an env override, which means production
-// works off a plain `git push` — no Vercel env var, no redeploy dance.
-const TOKEN = import.meta.env.VITE_MIXPANEL_TOKEN || "31b42a826c8e7069f9a72799b83cf783";
+// anything out.
+//
+// It is nonetheless read from the environment with NO fallback, because the
+// fallback was the switch. Baked in, `ENABLED` below was unconditionally true in
+// any production build, so merging this module to main would have started
+// recording sessions on indsure.in — into a US-residency project, for Indian
+// users — as a side effect of shipping an unrelated feature. Whether that is
+// acceptable under the DPDP Act is an open question, and an open question should
+// not be settled by a deploy. Set the var per environment to answer it
+// deliberately: beta has it, production does not until someone decides.
+const TOKEN = import.meta.env.VITE_MIXPANEL_TOKEN || "";
 
 // Data residency. Verified against Project Settings → Overview on 2026-08-05:
 // project "Indsure" (id 4039086) is a **US residency** project, so this must be
