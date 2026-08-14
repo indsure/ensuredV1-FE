@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { supabase } from '@/lib/supabase';
+import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -17,16 +17,23 @@ export default function ForgotPassword() {
     }
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/agent/reset-password`,
-    });
-    setLoading(false);
-    if (error) {
-      setError(error.message);
-    } else {
-      // Always show success regardless of whether the email exists (avoids account enumeration).
-      setSent(true);
+    // Same server route as the consumer flow — it works out from the address
+    // whether this is an agent and points the link at /agent/reset-password.
+    // Delivered by our SES, not Supabase's rate-limited built-in sender.
+    try {
+      await apiFetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      setError('Could not reach IndSure. Check your connection and try again.');
+      setLoading(false);
+      return;
     }
+    setLoading(false);
+    // Always show success regardless of whether the email exists (avoids account enumeration).
+    setSent(true);
   }
 
   return (

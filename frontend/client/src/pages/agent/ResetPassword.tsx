@@ -28,11 +28,31 @@ export default function ResetPassword() {
       }
     });
 
-    supabase.auth.getSession().then(({ data }) => {
+    (async () => {
+      // Reset emails link straight here with the token hash instead of bouncing
+      // through Supabase's /auth/v1/verify, whose redirect only honours
+      // allowlisted URLs and was silently dropping people on the Site URL.
+      const params = new URLSearchParams(window.location.search);
+      const tokenHash = params.get('token_hash');
+      if (tokenHash && params.get('type') === 'recovery') {
+        const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+        if (!active) return;
+        if (error) {
+          setReady(false);
+          return;
+        }
+        // Strip the token from the address bar — a shared or refreshed URL must
+        // not carry a live credential.
+        window.history.replaceState({}, '', window.location.pathname);
+        setReady(true);
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
       if (!active) return;
       if (data.session) setReady(true);
       else setReady((prev) => (prev === null ? false : prev));
-    });
+    })();
 
     return () => {
       active = false;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { supabase } from "@/lib/supabase";
+import { apiFetch } from "@/lib/api";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,13 +26,24 @@ export default function ForgotPasswordPublic() {
     }
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    // Goes through our own SES rather than Supabase's built-in sender, which is
+    // rate-limited to a few messages an hour and frequently lands in spam. The
+    // server mints the same Supabase recovery link and mails it itself, so the
+    // /reset-password screen is unchanged.
+    try {
+      await apiFetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      setError("Could not reach IndSure. Please check your connection and try again.");
+      setLoading(false);
+      return;
+    }
     setLoading(false);
     // Always show success regardless of whether the email exists (no enumeration).
-    if (error) setError(error.message);
-    else setSent(true);
+    setSent(true);
   }
 
   return (

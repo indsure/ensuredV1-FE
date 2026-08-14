@@ -179,6 +179,20 @@ const consumerLoginRateLimiter = rateLimit({
   },
 });
 
+// Password-reset requests: 5 / hour / IP. Tighter than login because each one
+// sends a real email to a third party — an unbounded endpoint is a way to spam
+// someone else's inbox using our verified domain, which costs us the sending
+// reputation SES took weeks to earn.
+const forgotPasswordRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Deliberately still shaped like the success response: a distinct 429 body
+  // would let someone probe which addresses trigger a send.
+  message: { ok: true },
+});
+
 // Strict limiter for public lead capture to stop lead-spam: 5 leads / hour / IP.
 const leadsRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -2842,6 +2856,90 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      personal portfolio. Auth via requireIndividual; spend gated by
      checkIndividualQuota. Data lives in individual_profiles / individual_policies.
      ══════════════════════════════════════════════════════════════════════ */
+
+  /* ── Password reset, sent through OUR mail, not Supabase's ────────────────
+     Supabase Auth will happily send the recovery email itself, and that is what
+     this used to do. The problem is deliverability: the built-in sender is
+     rate-limited to a handful of messages an hour and lands in spam often
+     enough that "I never got the email" becomes the support burden. We already
+     run SES for ap-south-1 with indsure.in DKIM-verified, and every other
+     transactional mail we send goes through it.
+
+     So: mint the recovery link with the service role, then deliver it ourselves.
+     The link is the ordinary Supabase action link, so /reset-password (which
+     just waits for the PASSWORD_RECOVERY event) needs no change.
+
+     Serves agents and consumers from one route — the account type only decides
+     where the link lands and how the mail reads. Always answers 200 whether or
+     not the address exists; the response must never reveal who has an account. */
+  app.post("/api/auth/forgot-password", forgotPasswordRateLimiter, async (req, res) => {
+    // Answered before any lookup so every path takes the same shape.
+    const ok = () => res.json({ ok: true });
+    try {
+      const email = String(req.body?.email || "").trim().toLowerCase();
+      if (!email || !email.includes("@")) return ok();
+
+      const origin = (process.env.PUBLIC_APP_ORIGIN || "https://indsure.in").replace(/\/+$/, "");
+      const agentRow = await pool.query("SELECT 1 FROM agents WHERE lower(email) = $1", [email]);
+      const isAgent = agentRow.rows.length > 0;
+      const resetPath = isAgent ? "/agent/reset-password" : "/reset-password";
+
+      const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+        type: "recovery",
+        email,
+        options: { redirectTo: `${origin}${resetPath}` },
+      });
+      // No such user is the common case for a typo — indistinguishable from success.
+      if (error || !data?.properties?.hashed_token) return ok();
+
+      // Deliberately NOT data.properties.action_link. That link points at
+      // Supabase's /auth/v1/verify, which honours `redirect_to` only if the URL
+      // is on the project's allowlist — and it is not. Supabase substitutes the
+      // Site URL instead, silently and with a 303, so every reset link landed on
+      // the beta homepage with tokens in the fragment and no reset screen. That
+      // was true of the old client-side resetPasswordForEmail call too, which is
+      // why "forgot password" has never actually worked.
+      //
+      // Sending the token hash to our own domain removes Supabase's redirect
+      // from the path entirely: /reset-password calls verifyOtp() with it and
+      // establishes the recovery session itself. Nothing to allowlist, and the
+      // link cannot be re-pointed by a dashboard setting changing under us.
+      const link = `${origin}${resetPath}?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=recovery`;
+      const sent = await sendMail({
+        to: email,
+        subject: "Reset your IndSure password",
+        text: [
+          "Hello,",
+          "",
+          "Someone asked to reset the password on this IndSure account. Open the link below to choose a new one:",
+          "",
+          link,
+          "",
+          "The link can be used once and expires in about an hour.",
+          "",
+          "If this wasn't you, ignore this email — nothing has changed and your current password still works.",
+          "",
+          "— Team IndSure",
+        ].join("\n"),
+        html: `
+          <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#0f2233;max-width:520px">
+            <p>Hello,</p>
+            <p>Someone asked to reset the password on this IndSure account. Choose a new one here:</p>
+            <p style="margin:26px 0">
+              <a href="${link}" style="background:#0e7c6b;color:#fff;text-decoration:none;padding:13px 26px;border-radius:10px;font-weight:600;display:inline-block">Set a new password</a>
+            </p>
+            <p style="color:#5b6b7a;font-size:13px">The link can be used once and expires in about an hour.</p>
+            <p style="color:#5b6b7a;font-size:13px">If this wasn't you, ignore this email — nothing has changed and your current password still works.</p>
+            <p style="margin-top:26px">— Team IndSure</p>
+          </div>`.trim(),
+      });
+      if (!sent) console.warn("forgot-password: SMTP not configured or send failed");
+      return ok();
+    } catch (err: any) {
+      console.error("forgot-password error:", err?.message);
+      return ok();
+    }
+  });
 
   /* ── Consumer: log in with a mobile number ────────────────────────────────
      Supabase Auth is email+password, so a mobile login resolves the number to

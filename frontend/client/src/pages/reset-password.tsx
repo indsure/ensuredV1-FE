@@ -32,11 +32,40 @@ export default function ResetPasswordPublic() {
       if (!active) return;
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
-    supabase.auth.getSession().then(({ data }) => {
+
+    (async () => {
+      // Our reset emails link straight here carrying the token hash, rather than
+      // bouncing through Supabase's /auth/v1/verify — that redirect only honours
+      // URLs on the project allowlist and was silently dropping people on the
+      // Site URL instead, with no reset screen in sight. Exchanging the hash for
+      // a recovery session here keeps the whole flow on our own domain.
+      const params = new URLSearchParams(window.location.search);
+      const tokenHash = params.get("token_hash");
+      if (tokenHash && params.get("type") === "recovery") {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+        if (!active) return;
+        if (error) {
+          setReady(false);
+          return;
+        }
+        // Drop the token from the address bar so a shared or re-opened URL does
+        // not carry a live credential, and a refresh cannot try to reuse it.
+        window.history.replaceState({}, "", window.location.pathname);
+        setReady(true);
+        return;
+      }
+
+      // Legacy path: a link that did route through Supabase leaves tokens in the
+      // fragment and the client picks them up on its own.
+      const { data } = await supabase.auth.getSession();
       if (!active) return;
       if (data.session) setReady(true);
       else setReady((prev) => (prev === null ? false : prev));
-    });
+    })();
+
     return () => {
       active = false;
       sub.subscription.unsubscribe();
