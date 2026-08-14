@@ -4158,8 +4158,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         }
 
         const pageRes = await pool.query(
-          `SELECT id, agent_id, display_name FROM agent_pages
-            WHERE slug = $1 AND enabled AND published`,
+          `SELECT p.id, p.agent_id, p.display_name,
+                  a.email AS agent_email,
+                  coalesce(a.full_name, a.name) AS agent_name
+             FROM agent_pages p
+             JOIN agents a ON a.id = p.agent_id
+            WHERE p.slug = $1 AND p.enabled AND p.published`,
           [slug]
         );
         if (pageRes.rows.length === 0) {
@@ -4194,6 +4198,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         );
 
         let leadId: string;
+        const isFollowUp = dupe.rows.length > 0;
         const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
         const noteLine = [
           `[${stamp}] via ${slug} page`,
@@ -4202,7 +4207,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           message ? `— "${message}"` : "",
         ].filter(Boolean).join(" ");
 
-        if (dupe.rows.length > 0) {
+        if (isFollowUp) {
           leadId = dupe.rows[0].id;
           await pool.query(
             `UPDATE agent_leads
@@ -4272,6 +4277,53 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         }
 
         cleanup();
+
+        // Tell the advisor straight away. The in-portal badge only works if they
+        // happen to be logged in, and a lead that sits unread for a day is a lead
+        // lost — these prospects are ringing three agents, not one. Best-effort:
+        // the lead is already committed above, so a mail failure costs nothing.
+        const advisorEmail = String(page.agent_email || "").trim();
+        if (advisorEmail) {
+          const waLink = `https://wa.me/91${phone}`;
+          const portalLink = `${(process.env.PUBLIC_APP_ORIGIN || "https://indsure.in").replace(/\/+$/, "")}/agent/leads`;
+          const wants = intent === "policy" ? "sent you a policy to check" : "asked you to call them";
+          const lobLabel = lob ? ` (${lob})` : "";
+          const esc = (s: string) =>
+            s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+          void sendMail({
+            to: advisorEmail,
+            subject: isFollowUp
+              ? `${name} sent you something else — ${phone}`
+              : `New lead: ${name} — ${phone}`,
+            text: [
+              isFollowUp
+                ? `${name} came back to your IndSure page and ${wants}${lobLabel}.`
+                : `${name} filled your IndSure page and ${wants}${lobLabel}.`,
+              "",
+              `Phone: ${phone}`,
+              `WhatsApp: ${waLink}`,
+              stored > 0 ? `Files: ${stored} attached to the lead in your portal` : "",
+              message ? `\nWhat they wrote:\n"${message}"` : "",
+              "",
+              `Open the lead: ${portalLink}`,
+              "",
+              "Call them today if you can — they are usually asking more than one advisor.",
+            ].filter(Boolean).join("\n"),
+            html: [
+              `<p>${esc(name)} ${isFollowUp ? "came back to" : "filled"} your IndSure page and ${wants}${esc(lobLabel)}.</p>`,
+              `<p style="font-size:20px;margin:16px 0"><b><a href="tel:+91${phone}">${phone}</a></b>`,
+              ` &nbsp; <a href="${waLink}">WhatsApp</a></p>`,
+              stored > 0 ? `<p>${stored} file(s) attached to the lead in your portal.</p>` : "",
+              message ? `<p>What they wrote:<br><i>"${esc(message)}"</i></p>` : "",
+              `<p><a href="${portalLink}">Open the lead</a></p>`,
+              `<p style="color:#666">Call them today if you can — they are usually asking more than one advisor.</p>`,
+            ].filter(Boolean).join(""),
+          });
+        } else {
+          console.warn(`[advisor-lead ${leadId}] no email on agent ${agentId} — portal badge only`);
+        }
+
         console.log(`✅ Advisor-page lead for ${slug}: ${name} (${stored} file(s))`);
         return res.status(201).json({ ok: true, files_saved: stored });
       } catch (err: any) {
