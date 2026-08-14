@@ -34,6 +34,14 @@ export function MobileNav() {
     return null;
   }
 
+  // The signed-in consumer portfolio (/app) is the product, not the marketing
+  // site: a bar offering Home / Calculator / Compare / Blog is a way *out* of
+  // the app, and on a phone it covers the portfolio's own actions.
+  const path = window.location.pathname;
+  if (path === '/app' || path.startsWith('/app/')) {
+    return null;
+  }
+
   const isActive = (href: string) => {
     if (href === "/") {
       return location === "/";
