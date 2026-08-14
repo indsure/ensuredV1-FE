@@ -1,0 +1,36 @@
+-- ============================================================================
+-- 012_drop_advisor_page_views_shim.sql
+-- Removes the last piece of scaffolding from the 010 rename.
+--
+-- Background: 010 renamed `advisor_page_views` to `agent_page_views`. The
+-- backend was redeployed the same day, but the Vercel frontend was not, so 011
+-- left a read-only view behind under the old name to keep the un-redeployed
+-- build working. That was always meant to be temporary.
+--
+-- The frontend is now deployed (main `3904aef`, 2026-08-14), and nothing reads
+-- the old name any more — verified by grepping all of `main` outside
+-- `migrations/`: zero hits. The live backend on EC2 writes `agent_page_views`
+-- directly.
+--
+-- Leaving it in place is not free: a stale alias is exactly the kind of thing a
+-- future query gets written against by accident, at which point the two names
+-- drift back apart and 010 has to be re-litigated.
+--
+-- Idempotent. Safe to run more than once.
+-- ============================================================================
+
+DROP VIEW IF EXISTS public.advisor_page_views;
+
+-- ============================================================================
+-- Rollback (only needed if something old is redeployed against the old name):
+--   CREATE OR REPLACE VIEW public.advisor_page_views
+--     WITH (security_invoker = true) AS
+--     SELECT page_id, viewed_on, utm_source, views, app, device
+--       FROM public.agent_page_views;
+--
+-- Note the column list: `agent_page_views` gained `app` and `device` in 009, so
+-- a recreated shim must list them explicitly to match what the base table now
+-- holds. The original 011 shim predates nothing — 009 was already applied when
+-- it was written — but spelling the columns out keeps the rollback honest
+-- rather than relying on SELECT *.
+-- ============================================================================
