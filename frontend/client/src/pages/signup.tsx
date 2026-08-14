@@ -82,7 +82,17 @@ export default function SignupPublic() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: name, phone: digits } },
+      options: {
+        data: { full_name: name, phone: digits },
+        // Send the confirmation link back to the site the person actually signed
+        // up on. Without this, Supabase falls back to the project's Site URL —
+        // a single global value, so for a long time every confirmation email,
+        // including ones from indsure.in, pointed at beta. Deriving it from the
+        // current origin makes each environment self-consistent and stops the
+        // link depending on a dashboard setting nobody remembers is there.
+        // (Origins still have to be on the Auth allowlist to be honoured.)
+        emailRedirectTo: `${window.location.origin}/app`,
+      },
     });
     if (error) {
       setError(error.message);

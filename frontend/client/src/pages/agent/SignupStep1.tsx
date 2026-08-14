@@ -194,6 +194,13 @@ export default function AgentSignupStep1() {
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: form.email,
             password: form.password,
+            options: {
+                // Same reasoning as the consumer signup: without this the
+                // confirmation link falls back to the project's single global
+                // Site URL, so an agent signing up on indsure.in was sent to
+                // beta. Derive it from where they actually are.
+                emailRedirectTo: `${window.location.origin}/agent/login`,
+            },
         })
 
         if (authError || !authData.user) {
