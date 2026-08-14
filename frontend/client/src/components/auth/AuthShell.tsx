@@ -22,15 +22,22 @@ const BENEFITS = [
   "Private by default — no agent ever sees your policy.",
 ];
 
+// The standing promise, shown twice (desktop panel + mobile card). Pages that
+// ask for a phone number override it — claiming "we will never message you"
+// while collecting a mobile reads as a contradiction, not as reassurance.
+const DEFAULT_PROMISE = "We will never call you, message you, or sell your data. Ever.";
+
 export function AuthShell({
   eyebrow,
   title,
   subtitle,
+  promise = DEFAULT_PROMISE,
   children,
 }: {
   eyebrow: string;
   title: ReactNode;
   subtitle: string;
+  promise?: string;
   children: ReactNode;
 }) {
   return (
@@ -93,7 +100,7 @@ export function AuthShell({
         {/* The promise. This is the brand — it stays on screen. */}
         <div className="relative z-10 hidden lg:flex items-start gap-2.5 mt-12 text-sm text-white/60">
           <Lock className="w-4 h-4 mt-0.5 shrink-0 text-[var(--color-teal-400)]" />
-          <span>We will never call you, message you, or sell your data. Ever.</span>
+          <span>{promise}</span>
         </div>
       </div>
 
@@ -106,7 +113,7 @@ export function AuthShell({
           {/* promise repeated at the moment of hesitation (mobile especially) */}
           <div className="lg:hidden mt-6 flex items-start gap-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
             <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--color-teal-600)]" />
-            <span>We will never call you, message you, or sell your data. Ever.</span>
+            <span>{promise}</span>
           </div>
         </div>
       </div>

@@ -6,15 +6,38 @@ import { isPersonalEmail } from "@/lib/emailDomains";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, ArrowRight, MailCheck, FileText } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, MailCheck, FileText, ShieldCheck } from "lucide-react";
 import { loadSampleReport, mockReportHealth } from "@/lib/mock-data";
 import { MpEvent, identifyUser, track } from "@/lib/mixpanel";
 
-// Consumer (D2C individual) signup — email + password, SELF-SERVE, no invite.
-// Restricted to personal email providers (no business/Workspace domains — those
-// belong on the agent portal).
+// Consumer (D2C individual) signup — name + mobile + email + password, SELF-SERVE,
+// no invite. Restricted to personal email providers (no business/Workspace domains
+// — those belong on the agent portal).
+//
+// Name and mobile are collected for demographics, NOT for verification: there is
+// no OTP anywhere in this flow, and the copy on the page says so. Both land on
+// individual_profiles via /api/me/bootstrap; they also go into Supabase user
+// metadata so the email-confirmation path (no session yet → no bootstrap call)
+// still gets them when the user comes back and signs in.
+/**
+ * Keeps the field at the 10 digits we actually store, whether the number is
+ * pasted or typed. Separators go first; a country code or trunk 0 is only
+ * dropped once what's left would still overflow 10 digits, so "+91 98765 43210"
+ * typed one key at a time self-corrects the moment it runs past ten.
+ * The field carries no maxLength for exactly that reason — the value has to be
+ * allowed to reach eleven digits for the prefix to be recognisable as a prefix.
+ */
+function normalizeMobile(raw: string): string {
+  let d = raw.replace(/\D/g, "");
+  if (d.length > 10 && d.startsWith("91")) d = d.slice(2);
+  if (d.length > 10 && d.startsWith("0")) d = d.slice(1);
+  return d.slice(0, 10);
+}
+
 export default function SignupPublic() {
   const [, setLocation] = useLocation();
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,6 +51,18 @@ export default function SignupPublic() {
   }, []);
 
   async function handleSignUp() {
+    const name = fullName.trim();
+    // Already normalized on input; re-derived here so autofill can't slip past.
+    const digits = normalizeMobile(phone);
+
+    if (!name) {
+      setError("Please enter your name.");
+      return;
+    }
+    if (!/^[6-9][0-9]{9}$/.test(digits)) {
+      setError("Please enter a valid 10-digit Indian mobile number.");
+      return;
+    }
     if (!email || !password) {
       setError("Please enter your email and a password.");
       return;
@@ -44,7 +79,11 @@ export default function SignupPublic() {
     setLoading(true);
     setError(null);
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: name, phone: digits } },
+    });
     if (error) {
       setError(error.message);
       setLoading(false);
@@ -76,7 +115,11 @@ export default function SignupPublic() {
     });
 
     try {
-      await apiFetch("/api/me/bootstrap", { method: "POST" });
+      await apiFetch("/api/me/bootstrap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ full_name: name, phone: digits }),
+      });
     } catch { /* non-fatal — bootstrap is idempotent and retried on /app entry */ }
     setLocation("/app");
   }
@@ -123,6 +166,7 @@ export default function SignupPublic() {
       eyebrow="Free account"
       title={<>See what your policy <span className="italic text-[var(--color-teal-400)]">won't</span> pay for.</>}
       subtitle="Upload your policies, get an unbiased audit in about a minute, and keep everything in one private dashboard."
+      promise="No OTP, no spam calls, no messages you didn't ask for. We will never sell your data."
     >
       <div className="space-y-5">
         <div className="space-y-1">
@@ -137,18 +181,62 @@ export default function SignupPublic() {
 
         <div className="space-y-4">
           <div className="space-y-1.5">
+            <label htmlFor="su-name" className="text-sm font-semibold text-[var(--color-navy-900)]">Full name</label>
+            <Input
+              id="su-name"
+              type="text"
+              autoComplete="name"
+              autoFocus
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium px-4 rounded-xl"
+              placeholder="Rahul Sharma"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="su-phone" className="text-sm font-semibold text-[var(--color-navy-900)]">Mobile number</label>
+            {/* +91 is a static prefix, not part of the value — we store 10 digits. */}
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[var(--color-text-muted)] pointer-events-none">
+                +91
+              </span>
+              <Input
+                id="su-phone"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                value={phone}
+                onChange={(e) => setPhone(normalizeMobile(e.target.value))}
+                className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium pl-14 pr-4 rounded-xl tracking-wide"
+                placeholder="9876543210"
+              />
+            </div>
+          </div>
+
+          {/* The honest reason we're asking. Sits right under the two new fields,
+              where the hesitation actually happens. */}
+          <div className="flex items-start gap-2.5 rounded-xl border border-[var(--color-border-light)] bg-[var(--color-cream-main)] p-3">
+            <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-[var(--color-teal-600)]" />
+            <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
+              <span className="font-semibold text-[var(--color-navy-900)]">No OTP. Nothing to verify.</span>{" "}
+              We ask for your name and number only to understand who our early users are.
+              We will never spam you, and we will never sell or share your details.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
             <label htmlFor="su-email" className="text-sm font-semibold text-[var(--color-navy-900)]">Email</label>
             <Input
               id="su-email"
               type="email"
               autoComplete="email"
-              autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium px-4 rounded-xl"
               placeholder="you@gmail.com"
             />
-            <p className="text-xs text-[var(--color-text-muted)] pl-1">Personal email only. No spam — we mean it.</p>
+            <p className="text-xs text-[var(--color-text-muted)] pl-1">Personal email only. This is your login.</p>
           </div>
 
           <div className="space-y-1.5">

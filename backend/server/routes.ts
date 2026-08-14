@@ -2828,11 +2828,30 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       let email: string | null = null;
       let fullName: string | null = null;
+      let phone: string | null = null;
       try {
         const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
         email = data?.user?.email ?? null;
         fullName = (data?.user?.user_metadata?.full_name as string) ?? null;
+        phone = (data?.user?.user_metadata?.phone as string) ?? null;
       } catch { /* best-effort; profile row still created */ }
+
+      // The signup form also posts name + mobile directly (demographics — there
+      // is no OTP and nothing is verified). Body wins over user_metadata; the
+      // metadata copy is what covers the confirm-your-email path, where signup
+      // has no session and never reaches this endpoint.
+      const bodyName = typeof req.body?.full_name === "string" ? req.body.full_name : null;
+      if (bodyName) fullName = bodyName;
+      if (typeof req.body?.phone === "string") phone = req.body.phone;
+
+      // Same sanitising as PATCH /api/me/profile: strip control chars, cap length.
+      fullName = fullName
+        ? (fullName.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 80) || null)
+        : null;
+      // Store the last 10 digits, matching every other phone we keep. Anything
+      // that isn't a plausible Indian mobile is dropped rather than stored dirty.
+      const phoneDigits = (phone ?? "").replace(/\D/g, "").slice(-10);
+      phone = /^[6-9][0-9]{9}$/.test(phoneDigits) ? phoneDigits : null;
 
       // Personal providers only — reject business/Workspace/custom domains.
       // The signup form blocks this pre-signup; this is the server-side backstop
@@ -2847,13 +2866,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const marketing = req.body?.marketing_consent === true;
 
       await pool.query(
-        `INSERT INTO individual_profiles (id, email, full_name, marketing_consent)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO individual_profiles (id, email, full_name, phone, marketing_consent)
+         VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (id) DO UPDATE SET
            email = COALESCE(individual_profiles.email, EXCLUDED.email),
            full_name = COALESCE(individual_profiles.full_name, EXCLUDED.full_name),
+           phone = COALESCE(individual_profiles.phone, EXCLUDED.phone),
            updated_at = now()`,
-        [userId, email, fullName, marketing]
+        [userId, email, fullName, phone, marketing]
       );
 
       const prof = await pool.query(
