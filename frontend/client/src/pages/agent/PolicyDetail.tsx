@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { Copy, ExternalLink, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, FileText, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import CustomerTagCard from "@/components/agent/CustomerTagCard";
@@ -67,6 +67,21 @@ async function copyText(text: string, title: string) {
   }
 }
 
+/** Extra health cover the agent attached at upload time. Stored alongside the
+ *  report (report_data.__companions), so there is no separate table to read. */
+type CompanionRecord = {
+  kind: "super_topup" | "corporate" | "ayushman";
+  filename: string | null;
+  declaredOnly: boolean;
+  read: boolean;
+};
+
+const COMPANION_LABEL: Record<CompanionRecord["kind"], string> = {
+  super_topup: "Super top-up",
+  corporate: "Company / corporate policy",
+  ayushman: "Ayushman Bharat (PM-JAY)",
+};
+
 export default function PolicyDetail() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
@@ -74,6 +89,8 @@ export default function PolicyDetail() {
   const [policy, setPolicy] = useState<PolicyRow | null>(null);
   const [reportData, setReportData] = useState<ForensicAuditReport | null>(null);
   const [insuranceType, setInsuranceType] = useState<string>("health");
+  // Other cover uploaded alongside this policy and read in the same audit.
+  const [companions, setCompanions] = useState<CompanionRecord[]>([]);
   const [extractedData, setExtractedData] = useState<Record<string, any> | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
@@ -146,6 +163,8 @@ export default function PolicyDetail() {
           ? clientData.report_data
           : null
       );
+      const rawCompanions = (clientData.report_data as any)?.__companions;
+      setCompanions(Array.isArray(rawCompanions) ? rawCompanions : []);
       
       // Set file metadata
       setFileMeta({
@@ -418,6 +437,34 @@ export default function PolicyDetail() {
               )}
             </CardContent>
           </Card>
+
+          {/* Extra cover fed into this audit, so it's clear what the report saw. */}
+          {companions.length > 0 && (
+            <Card className="border-slate-100 shadow-sm">
+              <CardHeader><CardTitle>Also read in this audit</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm text-slate-600">
+                  This person's other cover was read together with the policy above, so the report judges their
+                  total protection.
+                </p>
+                <ul className="space-y-1.5">
+                  {companions.map((c, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-slate-700">
+                      <FileText className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
+                      <span className="break-all">
+                        <span className="font-semibold">{COMPANION_LABEL[c.kind] ?? c.kind}</span>
+                        {c.declaredOnly
+                          ? " — confirmed by the advisor, no document attached"
+                          : c.filename
+                          ? ` — ${c.filename}${c.read ? "" : " (could not be read)"}`
+                          : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Data-entry types show an editable details form; health shows the full audit report. */}
           {isDataEntry ? (

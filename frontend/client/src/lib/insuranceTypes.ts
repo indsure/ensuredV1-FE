@@ -2,9 +2,10 @@
  * Insurance-type registry for the agent portal.
  *
  * `health` keeps the full forensic-audit flow (score + PolicyAuditReport).
- * The "data-entry" types (motor/life/travel/property) use OCR-only extraction
- * into the flat fields below — no score, no audit. The review form, the
- * type-aware list, and the Excel export are all driven by this file.
+ * The "data-entry" types (motor/life/term/travel/property, plus the commercial
+ * lines fire/marine/contractor_all_risk) use OCR-only extraction into the flat
+ * fields below — no score, no audit. The review form, the type-aware list, and
+ * the Excel export are all driven by this file.
  *
  * IMPORTANT: keep the field lists in sync with the backend copy at
  *   backend/server/services/extractionFields.ts
@@ -26,7 +27,16 @@ export interface ExtractionField {
   shared?: SharedColumn;
 }
 
-export const DATA_ENTRY_TYPES = ["motor", "life", "term", "travel", "property"] as const;
+export const DATA_ENTRY_TYPES = [
+  "motor",
+  "life",
+  "term",
+  "travel",
+  "property",
+  "fire",
+  "marine",
+  "contractor_all_risk",
+] as const;
 export type DataEntryType = (typeof DATA_ENTRY_TYPES)[number];
 export type InsuranceType = "health" | DataEntryType;
 
@@ -42,6 +52,9 @@ export const TYPE_META: Record<InsuranceType, { label: string; emoji: string }> 
   term: { label: "Term", emoji: "⏳" },
   travel: { label: "Travel", emoji: "✈️" },
   property: { label: "Property", emoji: "🏠" },
+  fire: { label: "Fire", emoji: "🔥" },
+  marine: { label: "Marine", emoji: "🚢" },
+  contractor_all_risk: { label: "Contractor's All Risk", emoji: "🏗️" },
 };
 
 export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
@@ -122,6 +135,56 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "premium", label: "Premium", type: "number" },
     { key: "policy_start_date", label: "Policy start date", type: "date" },
     { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
+  ],
+  fire: [
+    { key: "policyholder_name", label: "Insured name", type: "text", shared: "policyholder_name" },
+    { key: "insurer", label: "Insurer", type: "text", shared: "insurer" },
+    { key: "policy_number", label: "Policy number", type: "text" },
+    { key: "plan_name", label: "Plan / product name", type: "text", shared: "policy_name" },
+    { key: "risk_location", label: "Risk location / address", type: "text" },
+    { key: "occupancy", label: "Occupancy / nature of business", type: "text" },
+    { key: "building_sum_insured", label: "Building sum insured", type: "number" },
+    { key: "plant_machinery_sum_insured", label: "Plant & machinery sum insured", type: "number" },
+    { key: "stock_sum_insured", label: "Stock sum insured", type: "number" },
+    { key: "sum_insured", label: "Total sum insured", type: "number", shared: "sum_insured" },
+    { key: "valuation_basis", label: "Basis of valuation (reinstatement / market value)", type: "text" },
+    { key: "add_on_covers", label: "Add-on covers", type: "text" },
+    { key: "premium", label: "Premium", type: "number" },
+    { key: "policy_start_date", label: "Policy start date", type: "date" },
+    { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
+  ],
+  marine: [
+    { key: "policyholder_name", label: "Insured name", type: "text", shared: "policyholder_name" },
+    { key: "insurer", label: "Insurer", type: "text", shared: "insurer" },
+    { key: "policy_number", label: "Policy / certificate number", type: "text" },
+    { key: "plan_name", label: "Policy type (open / specific voyage)", type: "text", shared: "policy_name" },
+    { key: "cover_clauses", label: "Cover clauses (ICC A / B / C)", type: "text" },
+    { key: "goods_description", label: "Goods / commodity insured", type: "text" },
+    { key: "transit_mode", label: "Mode of transit (sea / air / road / rail)", type: "text" },
+    { key: "transit_from", label: "Transit from", type: "text" },
+    { key: "transit_to", label: "Transit to", type: "text" },
+    { key: "sum_insured", label: "Sum insured", type: "number", shared: "sum_insured" },
+    { key: "per_sending_limit", label: "Limit per sending / per bottom", type: "number" },
+    { key: "valuation_basis", label: "Basis of valuation", type: "text" },
+    { key: "premium", label: "Premium", type: "number" },
+    { key: "policy_start_date", label: "Policy start date", type: "date" },
+    { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
+  ],
+  contractor_all_risk: [
+    { key: "policyholder_name", label: "Insured (principal / contractor)", type: "text", shared: "policyholder_name" },
+    { key: "insurer", label: "Insurer", type: "text", shared: "insurer" },
+    { key: "policy_number", label: "Policy number", type: "text" },
+    { key: "plan_name", label: "Plan / product name", type: "text", shared: "policy_name" },
+    { key: "project_name", label: "Project / contract name", type: "text" },
+    { key: "project_site", label: "Project site address", type: "text" },
+    { key: "contract_value", label: "Contract value / sum insured", type: "number", shared: "sum_insured" },
+    { key: "material_damage_sum_insured", label: "Section I — material damage sum insured", type: "number" },
+    { key: "third_party_liability_limit", label: "Section II — third-party liability limit", type: "number" },
+    { key: "deductible", label: "Deductible / excess", type: "number" },
+    { key: "premium", label: "Premium", type: "number" },
+    { key: "project_start_date", label: "Project start date", type: "date" },
+    { key: "project_completion_date", label: "Project completion date", type: "date", shared: "expiry_date" },
+    { key: "maintenance_period_months", label: "Maintenance period (months)", type: "number" },
   ],
 };
 

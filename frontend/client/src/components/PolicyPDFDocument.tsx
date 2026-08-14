@@ -47,6 +47,16 @@ const THEME = {
     slateLight: '#F8FAFC'
 };
 
+/** Plain-English names for the other-cover kinds the audit can return. */
+const OTHER_COVER_LABEL_PDF: Record<string, string> = {
+    super_topup: 'Super top-up',
+    corporate: 'Company / corporate policy',
+    ayushman: 'Ayushman Bharat (PM-JAY)'
+};
+
+const formatCurrencyPDF = (val: number | null | undefined): string =>
+    typeof val === 'number' ? `₹${val.toLocaleString('en-IN')}` : '—';
+
 const styles = StyleSheet.create({
     page: {
         padding: 40,
@@ -630,6 +640,72 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
                         })}
                     </View>
                 </View>
+
+                {/* Other cover held. Rendered only when other policies were
+                    uploaded with this one — absent on every pre-feature report. */}
+                {((data.other_cover?.length ?? 0) > 0 || data.cover_stack) && (
+                    <View wrap={false}>
+                        <Text style={styles.sectionTitle}>Other Cover Held</Text>
+
+                        {data.cover_stack && typeof data.cover_stack.combined_effective_cover === 'number' && (
+                            <View style={styles.wpRow}>
+                                <Text style={styles.cardTitle}>
+                                    Usable cover across all policies: {formatCurrencyPDF(data.cover_stack.combined_effective_cover)}
+                                    {typeof data.cover_stack.required_cover === 'number'
+                                        ? ` of ${formatCurrencyPDF(data.cover_stack.required_cover)} needed`
+                                        : ''}
+                                    {data.cover_stack.verdict && data.cover_stack.verdict !== 'unclear'
+                                        ? ` — ${data.cover_stack.verdict}`
+                                        : ''}
+                                </Text>
+                                {!!data.cover_stack.remarks && (
+                                    <Text style={styles.cardText}>{data.cover_stack.remarks}</Text>
+                                )}
+                                {(data.cover_stack.excluded ?? []).map((e, i) => (
+                                    <Text key={i} style={styles.cardText}>• Not counted: {e}</Text>
+                                ))}
+                                {(data.cover_stack.where_the_stack_still_breaks ?? []).map((e, i) => (
+                                    <Text key={i} style={[styles.cardText, { color: THEME.redText }]}>
+                                        • Still breaks: {e}
+                                    </Text>
+                                ))}
+                            </View>
+                        )}
+
+                        {(data.other_cover ?? []).map((cover, i) => (
+                            <View key={i} style={styles.wpRow}>
+                                <Text style={styles.cardTitle}>
+                                    {OTHER_COVER_LABEL_PDF[cover.kind] ?? cover.kind}
+                                    {typeof cover.sum_insured === 'number' ? ` — ${formatCurrencyPDF(cover.sum_insured)}` : ''}
+                                    {typeof cover.deductible === 'number' && cover.deductible > 0
+                                        ? ` (deductible ${formatCurrencyPDF(cover.deductible)})`
+                                        : ''}
+                                    {cover.usable_today === false
+                                        ? ' — NOT USABLE YET'
+                                        : cover.counted_in_total === false
+                                        ? ' — NOT IN TOTAL'
+                                        : ''}
+                                </Text>
+                                {!!(cover.insurer || cover.plan_name) && (
+                                    <Text style={styles.cardText}>
+                                        {[cover.insurer, cover.plan_name].filter(Boolean).join(' — ')}
+                                    </Text>
+                                )}
+                                {(cover.own_limits ?? []).map((l, j) => (
+                                    <Text key={j} style={styles.cardText}>• {l}</Text>
+                                ))}
+                                {!!cover.dependency_risk && (
+                                    <Text style={[styles.cardText, { color: THEME.amberText }]}>
+                                        What can take it away: {cover.dependency_risk}
+                                    </Text>
+                                )}
+                                {!!cover.what_it_does_not_solve && (
+                                    <Text style={styles.cardText}>Does not fix: {cover.what_it_does_not_solve}</Text>
+                                )}
+                            </View>
+                        ))}
+                    </View>
+                )}
 
                 {/* Recommendations */}
                 <Text style={styles.sectionTitle}>Personalized Recommendations</Text>

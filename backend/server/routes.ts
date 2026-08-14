@@ -12,7 +12,7 @@ import { LIFE_INSURANCE_PROMPT } from "./lifeInsurancePrompt";
 import { VEHICLE_INSURANCE_PROMPT } from "./vehicleInsurancePrompt";
 import { POLICY_EXTRACTION_PROMPT } from "./policyExtractionPrompt";
 import { AIService } from "./services/aiService";
-import { runAnalysisPipeline } from "./services/analysisPipeline";
+import { runAnalysisPipeline, type CompanionDoc, type CompanionKind } from "./services/analysisPipeline";
 import { extractStructuredData } from "./services/dataExtraction";
 import { isDataEntryType, deriveSharedColumns } from "./services/extractionFields";
 import { extractWordingProfile, hashText } from "./services/wordingCompare";
@@ -2307,7 +2307,16 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   app.post(
     "/api/agent/analyze",
     (req, res, next) => {
-      upload.single("file")(req, res, (err: any) => {
+      // "file" is the policy under audit. The companion fields are OTHER health
+      // covers the same insured already holds (health lane only) — read in the
+      // same audit so the report reflects their real total protection.
+      const analyzeUpload = upload.fields([
+        { name: "file", maxCount: 1 },
+        { name: "companion_super_topup", maxCount: 1 },
+        { name: "companion_corporate", maxCount: 1 },
+        { name: "companion_ayushman", maxCount: 1 },
+      ]);
+      analyzeUpload(req, res, (err: any) => {
         if (err) {
           console.error("MULTER ERROR:", err);
           return res
@@ -2318,16 +2327,30 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       });
     },
     async (req, res) => {
+      // Every file multer wrote to disk for this request, collected up front so
+      // the early returns below (bad account, no credits) clean up too instead
+      // of leaving temp uploads behind.
+      const uploadedFiles = (req.files || {}) as Record<string, Express.Multer.File[]>;
+      const tempFiles = Object.values(uploadedFiles).flat();
+      const dropTempFiles = () => {
+        for (const tmp of tempFiles) {
+          try {
+            if (tmp?.path && fs.existsSync(tmp.path)) fs.unlinkSync(tmp.path);
+          } catch { /* best-effort */ }
+        }
+      };
+
       try {
         // Verify agent auth
         const agentId = await verifyJwt(req, res);
-        if (!agentId) return;
+        if (!agentId) { dropTempFiles(); return; }
 
         // Must be a real agent account. Without this, a D2C consumer (who has a
         // valid Supabase token) could reach the free OCR/data-entry lane below
         // and burn Gemini outside their own metered /api/me/analyze quota.
         const agentRow = await pool.query("SELECT 1 FROM agents WHERE id = $1", [agentId]);
         if (agentRow.rows.length === 0) {
+          dropTempFiles();
           return res.status(403).json({ error: "WRONG_ACCOUNT_TYPE", message: "This endpoint is for agent accounts." });
         }
 
@@ -2345,20 +2368,39 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           );
           const credits = creditRes.rows[0]?.balance ?? 0;
           if (credits <= 0) {
+            dropTempFiles();
             return res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
           }
         } else {
           const ocrBalance = await ensureOcrBalance(agentId);
           if (ocrBalance <= 0) {
+            dropTempFiles();
             return res.status(403).json({ error: "NO_OCR_CREDITS", message: NO_OCR_CREDITS_MSG });
           }
         }
 
-        if (!req.file) {
+        const file = uploadedFiles.file?.[0];
+        if (!file) {
+          dropTempFiles();
           return res.status(400).json({ error: "No file uploaded" });
         }
 
-        const file = req.file;
+        // Companion covers — health lane only. On a data-entry type the extra
+        // files are ignored (and still cleaned up), so a cheap OCR upload can
+        // never smuggle in additional Gemini work.
+        const ayushmanDeclared = !isDataEntry && String(req.body.has_ayushman || "") === "true";
+        const companionSpecs: { kind: CompanionKind; field: string }[] = [
+          { kind: "super_topup", field: "companion_super_topup" },
+          { kind: "corporate", field: "companion_corporate" },
+          { kind: "ayushman", field: "companion_ayushman" },
+        ];
+        const companionUploads: { kind: CompanionKind; file: Express.Multer.File }[] = [];
+        if (!isDataEntry) {
+          for (const spec of companionSpecs) {
+            const f = uploadedFiles[spec.field]?.[0];
+            if (f) companionUploads.push({ kind: spec.kind, file: f });
+          }
+        }
 
         // Parse optional client detail fields
         const policyholder_name = req.body.policyholder_name || null;
@@ -2524,13 +2566,86 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               return;
             }
 
-            const result = await runAnalysisPipeline(uploadedPolicyText, insuranceType, {
-              route: "/api/agent/analyze",
-              sourceType: "agent",
-              actorId: agentId,
-              jobId,
-              clientId,
-            });
+            // ── Companion covers (health lane) ──────────────────────────────
+            // Read each attached cover and keep a record of what was supplied.
+            // A companion that fails to read must never fail the audit — the
+            // base policy is still analysable on its own.
+            const companions: CompanionDoc[] = [];
+            const companionRecords: {
+              kind: CompanionKind;
+              filename: string | null;
+              declaredOnly: boolean;
+              read: boolean;
+              pdf_url?: string | null;
+            }[] = [];
+
+            for (const { kind, file: cFile } of companionUploads) {
+              let text = "";
+              try {
+                text = await extractPolicyText(cFile, {
+                  feature: "image_ocr",
+                  route: "/api/agent/analyze",
+                  sourceType: "agent",
+                  actorId: agentId,
+                  jobId,
+                  clientId,
+                });
+              } catch (cErr: any) {
+                console.warn(`[Job ${jobId}] companion ${kind} extraction failed:`, cErr?.message);
+              }
+
+              // Keep the original document alongside the base policy's PDF.
+              let companionUrl: string | null = null;
+              try {
+                const cBuffer = fs.readFileSync(cFile.path);
+                const cExt = cFile.originalname.includes(".") ? cFile.originalname.split(".").pop() : "pdf";
+                const cPath = `${agentId}/${clientId}-${kind}.${cExt}`;
+                const { error: cUpErr } = await supabaseAdmin.storage
+                  .from(PDF_BUCKET)
+                  .upload(cPath, cBuffer, {
+                    contentType: cFile.mimetype || "application/pdf",
+                    upsert: true,
+                  });
+                if (!cUpErr) {
+                  const { data: cSigned } = await supabaseAdmin.storage
+                    .from(PDF_BUCKET)
+                    .createSignedUrl(cPath, 60 * 60);
+                  companionUrl = cSigned?.signedUrl ?? null;
+                }
+              } catch (cStoreErr: any) {
+                console.warn(`[Job ${jobId}] companion ${kind} storage failed:`, cStoreErr?.message);
+              }
+
+              if (text.trim()) companions.push({ kind, text });
+              companionRecords.push({
+                kind,
+                filename: cFile.originalname,
+                declaredOnly: false,
+                read: !!text.trim(),
+                pdf_url: companionUrl,
+              });
+            }
+
+            // Ayushman Bharat is usually a card, not a policy document — the
+            // agent can simply declare it. Only add the declaration if no
+            // Ayushman document was attached above.
+            if (ayushmanDeclared && !companionUploads.some((c) => c.kind === "ayushman")) {
+              companions.push({ kind: "ayushman", declaredOnly: true });
+              companionRecords.push({ kind: "ayushman", filename: null, declaredOnly: true, read: false });
+            }
+
+            const result = await runAnalysisPipeline(
+              uploadedPolicyText,
+              insuranceType,
+              {
+                route: "/api/agent/analyze",
+                sourceType: "agent",
+                actorId: agentId,
+                jobId,
+                clientId,
+              },
+              companions
+            );
 
             if (result.status === "completed") {
               job.status = "completed";
@@ -2546,6 +2661,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               // top-level audit_score; insurer/product come from the pipeline's
               // metadata step (extractPolicyMetadata), not the report body.
               const reportData = result.result;
+              // Travels with the report (like __internal) so the policy page can
+              // show which extra covers were fed into this audit — no schema change.
+              if (companionRecords.length > 0) {
+                reportData.__companions = companionRecords;
+              }
               const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
               // clients.score is integer; the engine emits 12.5-step buckets (e.g. 87.5)
               const score = rawScore == null ? null : Math.round(Number(rawScore));
@@ -2607,17 +2727,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             // Guarantee the temp upload is removed even if extraction/storage
             // threw before the success-path unlink above. Guarded by existsSync
             // so the normal-path unlink isn't double-freed.
-            try {
-              if (file.path && fs.existsSync(file.path)) {
-                fs.unlinkSync(file.path);
-              }
-            } catch (cleanupErr: any) {
-              console.warn(`[Job ${jobId}] temp file cleanup failed:`, cleanupErr?.message);
-            }
+            dropTempFiles();
           }
         })();
       } catch (err: any) {
         console.error("Agent analyze error:", err);
+        // The background worker never started, so its finally-block cleanup
+        // will not run — drop the temp uploads here instead.
+        dropTempFiles();
         res.status(500).json({ error: err.message || "Failed to create analysis job" });
       }
     }

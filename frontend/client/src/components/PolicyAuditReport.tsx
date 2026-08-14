@@ -3,7 +3,7 @@ import {
     Shield, CheckCircle2, AlertCircle,
     ChevronDown, ChevronUp, FileText, Printer,
     Clock, Zap, Search, AlertTriangle, Activity,
-    Hospital, Baby, Pill, Info
+    Hospital, Baby, Pill, Info, Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
@@ -27,6 +27,13 @@ import { pdf } from '@react-pdf/renderer';
 import { PolicyPDFDocument } from './PolicyPDFDocument';
 import { apiFetch } from "@/lib/api";
 import { LeadCollectionCTA } from "./LeadCollectionCTA";
+
+/** Plain-English names for the other-cover kinds the audit can return. */
+const OTHER_COVER_LABEL: Record<string, string> = {
+    super_topup: "Super top-up",
+    corporate: "Company / corporate policy",
+    ayushman: "Ayushman Bharat (PM-JAY)",
+};
 
 interface PolicyAuditReportProps {
     data: ForensicAuditReport;
@@ -382,6 +389,9 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
     })();
 
     const portingRec = data.recommendations?.should_port_to_better_policy;
+    // Other cover uploaded with this policy. Absent on every pre-feature report.
+    const otherCover = data.other_cover ?? [];
+    const coverStack = data.cover_stack;
 
     useEffect(() => {
         const city = data.identity?.city;
@@ -698,6 +708,176 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 </ul>
                             </div>
                         )}
+                    </section>
+                )}
+
+                {/* 3b. OTHER COVER HELD + TOTAL STACK.
+                       Only rendered when other cover was uploaded with the policy —
+                       every report produced before this feature simply has none. */}
+                {(otherCover.length > 0 || coverStack) && (
+                    <section className="mb-16">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Layers className="w-6 h-6 text-[var(--color-teal-600)]" />
+                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">Other Cover Held</h3>
+                        </div>
+                        <p className="text-sm text-[var(--color-text-muted)] mb-6">
+                            Read together with this policy. The audit score above still rates this policy on its
+                            own, so it stays comparable with every other report.
+                        </p>
+
+                        {/* Total across the stack — deliberately styled as a fact panel,
+                            not a score, so it never reads as a competing verdict. */}
+                        {coverStack && typeof coverStack.combined_effective_cover === "number" && (
+                            <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm mb-6">
+                                <div className="flex flex-wrap items-end justify-between gap-4">
+                                    <div>
+                                        <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                                            Usable cover across all policies
+                                        </div>
+                                        <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
+                                            {formatINR(coverStack.combined_effective_cover)}
+                                        </div>
+                                        {typeof coverStack.required_cover === "number" && (
+                                            <div className="mt-1 text-sm text-[var(--color-text-muted)]">
+                                                against {formatINR(coverStack.required_cover)} needed for this family
+                                                {typeof coverStack.stack_ratio === "number" && ` — ${Math.round(coverStack.stack_ratio * 100)}%`}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {coverStack.verdict && coverStack.verdict !== "unclear" && (
+                                        <span className={cn(
+                                            "text-xs font-bold uppercase px-3 py-1 rounded border",
+                                            coverStack.verdict === "ADEQUATE"
+                                                ? "border-green-300 bg-green-50 text-green-700"
+                                                : coverStack.verdict === "THIN"
+                                                ? "border-amber-300 bg-amber-50 text-amber-700"
+                                                : "border-red-300 bg-red-50 text-red-700"
+                                        )}>{coverStack.verdict}</span>
+                                    )}
+                                </div>
+
+                                {coverStack.remarks && (
+                                    <p className="mt-4 text-sm text-[var(--color-navy-900)]">{coverStack.remarks}</p>
+                                )}
+
+                                {(coverStack.counted?.length || coverStack.excluded?.length) && (
+                                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                        {coverStack.counted && coverStack.counted.length > 0 && (
+                                            <div>
+                                                <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+                                                    Counted
+                                                </div>
+                                                <ul className="space-y-1">
+                                                    {coverStack.counted.map((c, i) => (
+                                                        <li key={i} className="text-sm text-[var(--color-navy-900)]">• {c}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        {coverStack.excluded && coverStack.excluded.length > 0 && (
+                                            <div>
+                                                <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+                                                    Not counted
+                                                </div>
+                                                <ul className="space-y-1">
+                                                    {coverStack.excluded.map((c, i) => (
+                                                        <li key={i} className="text-sm text-slate-600">• {c}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {coverStack.where_the_stack_still_breaks && coverStack.where_the_stack_still_breaks.length > 0 && (
+                                    <div className="mt-4 border-t border-[var(--color-border-light)] pt-4">
+                                        <div className="text-xs font-bold uppercase tracking-wider text-red-700 mb-1">
+                                            Even with everything together, this still breaks
+                                        </div>
+                                        <ul className="space-y-1">
+                                            {coverStack.where_the_stack_still_breaks.map((c, i) => (
+                                                <li key={i} className="text-sm text-[var(--color-navy-900)]">• {c}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {otherCover.map((cover, i) => (
+                                <div key={i} className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
+                                    <div className="flex justify-between items-start gap-3 mb-4">
+                                        <div className="min-w-0">
+                                            <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                                                {OTHER_COVER_LABEL[cover.kind] ?? cover.kind}
+                                            </div>
+                                            <div className="mt-1 font-semibold text-[var(--color-navy-900)] break-words">
+                                                {[cover.insurer, cover.plan_name].filter(Boolean).join(" — ") || "Details not stated"}
+                                            </div>
+                                        </div>
+                                        {/* A cover can be usable today and still be left out of the
+                                            total (employer cover ends with the job) — the card must
+                                            say so, or only the "Not counted" list would reveal it. */}
+                                        {cover.usable_today === false ? (
+                                            <span className="flex-shrink-0 text-xs font-bold uppercase px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-700">
+                                                Not usable yet
+                                            </span>
+                                        ) : cover.counted_in_total === false ? (
+                                            <span className="flex-shrink-0 text-xs font-bold uppercase px-2 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-600">
+                                                Not in total
+                                            </span>
+                                        ) : null}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {typeof cover.sum_insured === "number" && (
+                                            <div className="flex justify-between">
+                                                <span className="text-sm">Sum insured</span>
+                                                <span className="font-mono font-bold text-slate-600">{formatINR(cover.sum_insured)}</span>
+                                            </div>
+                                        )}
+                                        {/* A group policy has no deductible; the model returns 0
+                                            rather than null, and "Deductible ₹0" reads as a finding. */}
+                                        {typeof cover.deductible === "number" && cover.deductible > 0 && (
+                                            <div className="flex justify-between">
+                                                <span className="text-sm">Deductible</span>
+                                                <span className="font-mono font-bold text-slate-600">{formatINR(cover.deductible)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {cover.own_limits && cover.own_limits.length > 0 && (
+                                        <div className="mt-4">
+                                            <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+                                                Its own limits
+                                            </div>
+                                            <ul className="space-y-1">
+                                                {cover.own_limits.map((l, j) => (
+                                                    <li key={j} className="text-sm text-[var(--color-navy-900)]">• {l}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {cover.dependency_risk && (
+                                        <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3">
+                                            <div className="text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">
+                                                What can take it away
+                                            </div>
+                                            <p className="text-sm text-amber-900">{cover.dependency_risk}</p>
+                                        </div>
+                                    )}
+
+                                    {cover.what_it_does_not_solve && (
+                                        <p className="mt-3 text-sm text-slate-600">
+                                            <span className="font-semibold">Does not fix: </span>
+                                            {cover.what_it_does_not_solve}
+                                        </p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </section>
                 )}
 
