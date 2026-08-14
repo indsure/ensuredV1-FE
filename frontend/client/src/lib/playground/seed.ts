@@ -807,7 +807,7 @@ export function buildSeed(): Store {
   ];
 
   // Per-day view rows behind the "where your visitors come from" panel.
-  const advisor_page_views = (() => {
+  const agent_page_views = (() => {
     const rows: any[] = [];
     const mix = [
       { utm_source: "whatsapp", app: "whatsapp", device: "mobile", base: 9 },
@@ -849,7 +849,7 @@ export function buildSeed(): Store {
     lead_policies,
     calculator_reports,
     agent_pages,
-    advisor_page_views,
+    agent_page_views,
     // Tables some pages query but the demo leaves empty — return [] gracefully.
     report_shares: [],
     invite_codes: [],

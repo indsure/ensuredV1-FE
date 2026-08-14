@@ -310,7 +310,7 @@ export type ViewStat = {
 export async function fetchPageViews(pageId: string, sinceDays = 30): Promise<ViewStat[]> {
   const since = new Date(Date.now() - sinceDays * 86400_000).toISOString().slice(0, 10);
   const { data, error } = await supabase
-    .from("advisor_page_views")
+    .from("agent_page_views")
     .select("viewed_on, utm_source, app, device, views")
     .eq("page_id", pageId)
     .gte("viewed_on", since)

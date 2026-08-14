@@ -33,7 +33,11 @@ async function getStats() {
     credits,
   ] = await Promise.all([
     supabaseAdmin.from("agents").select("id", { count: "exact", head: true }),
-    supabaseAdmin.from("policies").select("id", { count: "exact", head: true }),
+    // Uploaded policies live in `clients` (one row per PDF + its analysis), read
+    // here through the correctly-named `policy_analyses` alias. The `policies`
+    // table this used to read is abandoned March-2026 test data and has no
+    // agent_id column at all, so the activation query below silently errored.
+    supabaseAdmin.from("policy_analyses").select("id", { count: "exact", head: true }),
     supabaseAdmin.from("analysis_jobs").select("id", { count: "exact", head: true }),
     supabaseAdmin.from("invite_codes").select("id, used_by", { count: "exact" }),
     supabaseAdmin
@@ -46,15 +50,15 @@ async function getStats() {
       .gte("created_at", startOfLastMonth)
       .lt("created_at", startOfThisMonth),
     supabaseAdmin
-      .from("policies")
+      .from("policy_analyses")
       .select("id", { count: "exact", head: true })
       .gte("created_at", startOfThisMonth),
     supabaseAdmin
       .from("analysis_jobs")
       .select("id", { count: "exact", head: true })
       .gte("created_at", startOfThisMonth),
-    // agents who have at least 1 policy — distinct agent_ids in policies table
-    supabaseAdmin.from("policies").select("agent_id").limit(10000),
+    // agents who have at least 1 policy — distinct agent_ids in policy_analyses
+    supabaseAdmin.from("policy_analyses").select("agent_id").limit(10000),
     supabaseAdmin.from("agent_credits").select("balance").limit(10000),
   ]);
 

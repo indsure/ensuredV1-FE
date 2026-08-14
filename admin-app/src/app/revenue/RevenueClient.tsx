@@ -102,7 +102,10 @@ export function RevenueClient({ snapshot }: { snapshot: Snapshot }) {
   }, [snapshot.totalAgents, snapshot.totalCredits, monthlyGrowthRate, creditsPerAgent]);
 
   const chartData = [
-    { label: "Now", revenue: currentMRR, agents: snapshot.totalAgents, credits: snapshot.totalCredits, isNow: true },
+    // isLast must be present here too: the bar-colour ternary reads it off every
+    // entry, and without it the union has no common shape and the build fails.
+    // "Now" is the starting point, never the final projected month.
+    { label: "Now", revenue: currentMRR, agents: snapshot.totalAgents, credits: snapshot.totalCredits, isNow: true, isLast: false },
     ...projection.map((r) => ({ ...r, isNow: false })),
   ];
 

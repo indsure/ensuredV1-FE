@@ -67,25 +67,6 @@ async function copyText(text: string, title: string) {
   }
 }
 
-async function ensureShare(reportId: string, agentId: string) {
-  const existing = await supabase
-    .from("report_shares")
-    .select("token")
-    .eq("report_id", reportId)
-    .is("revoked_at", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (!existing.error && existing.data?.token) return existing.data.token;
-
-  const token = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-    .map((value) => value.toString(16).padStart(2, "0"))
-    .join("");
-  const created = await supabase.from("report_shares").insert({ report_id: reportId, token, created_by_agent_id: agentId });
-  if (created.error) throw new Error(created.error.message);
-  return token;
-}
-
 export default function PolicyDetail() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();

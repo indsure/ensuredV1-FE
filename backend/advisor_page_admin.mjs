@@ -51,7 +51,7 @@ try {
       `SELECT p.slug, p.display_name, p.city, p.enabled, p.published, p.published_at,
               a.email,
               (SELECT count(*) FROM agent_leads l WHERE l.landing_slug = p.slug) AS leads,
-              (SELECT coalesce(sum(v.views),0) FROM advisor_page_views v WHERE v.page_id = p.id) AS views
+              (SELECT coalesce(sum(v.views),0) FROM agent_page_views v WHERE v.page_id = p.id) AS views
          FROM agent_pages p JOIN agents a ON a.id = p.agent_id
         ORDER BY p.created_at DESC`,
     );

@@ -3743,7 +3743,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       // Insert lead into database
       const result = await pool.query(
-        `INSERT INTO leads (name, email, phone, city, source, status, created_at, updated_at)
+        `INSERT INTO marketing_leads (name, email, phone, city, source, status, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, 'new', NOW(), NOW())
          RETURNING id, created_at`,
         [name, email, phone, city || null, source || 'policy_report']
@@ -3936,11 +3936,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     const { app, device } = readClient(req);
     try {
       await pool.query(
-        `INSERT INTO advisor_page_views (page_id, viewed_on, utm_source, app, device, views)
+        `INSERT INTO agent_page_views (page_id, viewed_on, utm_source, app, device, views)
          SELECT id, CURRENT_DATE, $2, $3, $4, 1 FROM agent_pages
           WHERE slug = $1 AND enabled AND published
          ON CONFLICT (page_id, viewed_on, utm_source, app, device)
-         DO UPDATE SET views = advisor_page_views.views + 1`,
+         DO UPDATE SET views = agent_page_views.views + 1`,
         [slug, source, app, device]
       );
     } catch (err: any) {
@@ -4154,7 +4154,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       let query = `
         SELECT id, name, email, phone, city, source, status, notes, 
                created_at, updated_at, contacted_at, contacted_by
-        FROM leads
+        FROM marketing_leads
       `;
       const params: any[] = [];
 
@@ -4170,8 +4170,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       // Get total count
       const countQuery = status 
-        ? `SELECT COUNT(*) FROM leads WHERE status = $1`
-        : `SELECT COUNT(*) FROM leads`;
+        ? `SELECT COUNT(*) FROM marketing_leads WHERE status = $1`
+        : `SELECT COUNT(*) FROM marketing_leads`;
       const countParams = status ? [status] : [];
       const countResult = await pool.query(countQuery, countParams);
       const total = parseInt(countResult.rows[0].count);

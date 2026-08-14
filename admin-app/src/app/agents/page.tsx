@@ -13,8 +13,11 @@ async function getAgents() {
   const agentIds = agents.map((a) => a.id);
 
   const [policiesRes, analysesRes, creditsRes, ocrRes] = await Promise.all([
+    // `policy_analyses` (= clients) is where uploaded policies actually live.
+    // The old `policies` table has no agent_id column, so this returned nothing
+    // and every agent showed 0 policies.
     supabaseAdmin
-      .from("policies")
+      .from("policy_analyses")
       .select("agent_id")
       .in("agent_id", agentIds),
     supabaseAdmin
