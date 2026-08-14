@@ -7,12 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 
-// Consumer (D2C individual) login — email + password. Signs individuals into
-// their personal insurance portfolio (/app). The agent portal keeps its own
-// login at /agent/login — deliberately untouched.
+// Consumer (D2C individual) login — mobile number OR email, plus password.
+// Signs individuals into their personal insurance portfolio (/app). The agent
+// portal keeps its own login at /agent/login — deliberately untouched.
+//
+// One field rather than a mobile/email toggle: our users are largely 40+ and on
+// a phone, and a toggle is one more decision before they can start typing. Ten
+// digits is unambiguously a mobile and anything else is treated as an email, so
+// the form works out which it is instead of asking.
 export default function LoginPublic() {
   const [, setLocation] = useLocation();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,19 +28,63 @@ export default function LoginPublic() {
     document.title = "Sign in — IndSure";
   }, []);
 
+  /** Ten digits after stripping punctuation and any +91 / leading 0 = a mobile.
+   *  Anything containing "@" is an email. Everything else falls through to the
+   *  email path so the error comes from Supabase rather than from us guessing. */
+  function asMobile(input: string): string | null {
+    if (input.includes("@")) return null;
+    const digits = input.replace(/\D/g, "").slice(-10);
+    return /^[6-9][0-9]{9}$/.test(digits) ? digits : null;
+  }
+
   async function handleSignIn() {
-    if (!email || !password) {
-      setError("Please enter your email and password.");
+    const value = identifier.trim();
+    if (!value || !password) {
+      setError("Please enter your mobile number or email, and your password.");
       return;
     }
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
+    const mobile = asMobile(value);
+
+    if (mobile) {
+      // Mobile path. The number is resolved to an account server-side, inside
+      // the sign-in, so this request cannot be used to test which numbers exist.
+      try {
+        const res = await apiFetch("/api/auth/consumer-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: mobile, password }),
+        });
+        const body = await res.json().catch(() => null);
+        if (!res.ok || !body?.access_token) {
+          setError(body?.message || "That mobile number and password don't match an account.");
+          setLoading(false);
+          return;
+        }
+        const { error: sessErr } = await supabase.auth.setSession({
+          access_token: body.access_token,
+          refresh_token: body.refresh_token,
+        });
+        if (sessErr) {
+          setError(sessErr.message);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        setError("Could not reach IndSure. Please check your connection and try again.");
+        setLoading(false);
+        return;
+      }
+    } else {
+      // Email path — unchanged, still straight to Supabase from the browser.
+      const { error } = await supabase.auth.signInWithPassword({ email: value, password });
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
     }
     // Idempotent — ensures the profile + trial clock exist.
     try {
@@ -63,16 +112,17 @@ export default function LoginPublic() {
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="login-email" className="text-sm font-semibold text-[var(--color-navy-900)]">Email</label>
+            <label htmlFor="login-identifier" className="text-sm font-semibold text-[var(--color-navy-900)]">Mobile number or email</label>
             <Input
-              id="login-email"
-              type="email"
-              autoComplete="email"
+              id="login-identifier"
+              type="text"
+              inputMode="text"
+              autoComplete="username"
               autoFocus
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium px-4 rounded-xl"
-              placeholder="you@gmail.com"
+              placeholder="9876543210 or you@gmail.com"
             />
           </div>
 

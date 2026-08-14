@@ -39,6 +39,20 @@ const supabaseAdmin = createClient(
   SUPABASE_SERVICE_KEY
 );
 
+// A second client on the ANON key, used only to verify a password on behalf of
+// someone logging in with their mobile number. The service-role client cannot do
+// this: it bypasses auth entirely and has no "is this password correct" call, so
+// using it would mean trusting the caller's word about who they are.
+//
+// No session is persisted and nothing is refreshed — this client exists to
+// exchange one password for one session and then forget it.
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const supabaseAuth = SUPABASE_ANON_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  : null;
+
 /* ---------- DB POOL (shared, see ./lib/db) ---------- */
 
 pool.query("SELECT 1")
@@ -145,6 +159,25 @@ async function consumeOcr(agentId: string): Promise<void> {
 
 const NO_OCR_CREDITS_MSG =
   "You've used all the data-entry policies included in your plan for this period. Upgrade or wait for your monthly refill.";
+
+// Strict limiter for mobile-number login. This endpoint checks a password, so
+// it is a brute-force target in a way the rest of /api is not.
+//
+// 20/15min rather than something tighter because Indian mobile carriers route
+// large subscriber pools through a handful of NAT gateways — a strict per-IP cap
+// locks out real users who share an exit address with strangers. The generic
+// failure response matters more than the ceiling here: an attacker learns
+// nothing about whether the NUMBER was wrong or the PASSWORD was.
+const consumerLoginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "TOO_MANY_ATTEMPTS",
+    message: "Too many login attempts. Please wait a few minutes and try again.",
+  },
+});
 
 // Strict limiter for public lead capture to stop lead-spam: 5 leads / hour / IP.
 const leadsRateLimiter = rateLimit({
@@ -2810,6 +2843,64 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      checkIndividualQuota. Data lives in individual_profiles / individual_policies.
      ══════════════════════════════════════════════════════════════════════ */
 
+  /* ── Consumer: log in with a mobile number ────────────────────────────────
+     Supabase Auth is email+password, so a mobile login resolves the number to
+     the account's email and then performs an ordinary password grant.
+
+     That resolution happens HERE, inside the sign-in, and is deliberately not
+     exposed as its own "which account owns this number" endpoint — that would
+     be an oracle anyone could use to test whether a given mobile is registered,
+     against a user base who never consented to being enumerated.
+
+     Every failure returns the same 401 with the same wording. An unrecognised
+     number still runs a password grant against a throwaway address, so a wrong
+     number and a wrong password take a similar amount of time to answer rather
+     than the unknown-number case returning noticeably faster. */
+  app.post("/api/auth/consumer-login", consumerLoginRateLimiter, async (req, res) => {
+    try {
+      if (!supabaseAuth) {
+        console.error("consumer-login: SUPABASE_ANON_KEY is not set on this server");
+        return res.status(500).json({ error: "Internal server error" });
+      }
+
+      const password = typeof req.body?.password === "string" ? req.body.password : "";
+      const raw = typeof req.body?.phone === "string" ? req.body.phone : "";
+      // Same normalisation as everywhere else we store a phone: last 10 digits.
+      const digits = raw.replace(/\D/g, "").slice(-10);
+
+      const fail = () =>
+        res.status(401).json({
+          error: "INVALID_CREDENTIALS",
+          message: "That mobile number and password don't match an account.",
+        });
+
+      if (!password || !/^[6-9][0-9]{9}$/.test(digits)) return fail();
+
+      const row = await pool.query(
+        "SELECT email FROM individual_profiles WHERE phone = $1 LIMIT 1",
+        [digits]
+      );
+      const email = (row.rows[0]?.email as string | undefined) || null;
+
+      const { data, error } = await supabaseAuth.auth.signInWithPassword({
+        email: email ?? `unknown-${crypto.randomUUID()}@indsure.invalid`,
+        password,
+      });
+      if (error || !data?.session) return fail();
+
+      // The client puts these straight into supabase.auth.setSession(), so the
+      // resulting session is indistinguishable from an email login.
+      return res.json({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_in: data.session.expires_in,
+      });
+    } catch (err: any) {
+      console.error("consumer-login error:", err?.message);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   /* ── Consumer: bootstrap profile (idempotent, called after signup/login) ── */
   app.post("/api/me/bootstrap", async (req, res) => {
     try {
@@ -2865,16 +2956,51 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       const marketing = req.body?.marketing_consent === true;
 
-      await pool.query(
-        `INSERT INTO individual_profiles (id, email, full_name, phone, marketing_consent)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (id) DO UPDATE SET
-           email = COALESCE(individual_profiles.email, EXCLUDED.email),
-           full_name = COALESCE(individual_profiles.full_name, EXCLUDED.full_name),
-           phone = COALESCE(individual_profiles.phone, EXCLUDED.phone),
-           updated_at = now()`,
-        [userId, email, fullName, phone, marketing]
+      // Server-side backstop for the two fields the signup form marks required.
+      // The form already blocks both; this catches a client bypass, since
+      // supabase.auth.signUp runs in the browser and an account can be created
+      // without ever touching this API.
+      //
+      // Applied ONLY when the profile row does not exist yet. This endpoint also
+      // runs on every login and on entry to /app, and the accounts created before
+      // mobile capture shipped (2026-08-14) have no number — rejecting them here
+      // would lock existing users out of their own portfolio for a rule that did
+      // not exist when they signed up.
+      const existing = await pool.query(
+        "SELECT 1 FROM individual_profiles WHERE id = $1",
+        [userId]
       );
+      const isFirstTime = existing.rows.length === 0;
+      if (isFirstTime && (!fullName || !phone)) {
+        return res.status(400).json({
+          error: "PROFILE_INCOMPLETE",
+          message: "A name and a valid 10-digit Indian mobile number are required to create an account.",
+        });
+      }
+
+      try {
+        await pool.query(
+          `INSERT INTO individual_profiles (id, email, full_name, phone, marketing_consent)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (id) DO UPDATE SET
+             email = COALESCE(individual_profiles.email, EXCLUDED.email),
+             full_name = COALESCE(individual_profiles.full_name, EXCLUDED.full_name),
+             phone = COALESCE(individual_profiles.phone, EXCLUDED.phone),
+             updated_at = now()`,
+          [userId, email, fullName, phone, marketing]
+        );
+      } catch (err: any) {
+        // Migration 013 makes phone unique so mobile login can resolve to exactly
+        // one account. Say so plainly rather than surfacing a 500 — the person
+        // typing it almost certainly has an older account on that number.
+        if (err?.code === "23505") {
+          return res.status(409).json({
+            error: "PHONE_IN_USE",
+            message: "That mobile number is already on an IndSure account. Log in with it instead, or use a different number.",
+          });
+        }
+        throw err;
+      }
 
       const prof = await pool.query(
         "SELECT plan, trial_started_at FROM individual_profiles WHERE id = $1",
