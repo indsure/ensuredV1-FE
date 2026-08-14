@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
 import { isPersonalEmail } from "@/lib/emailDomains";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { FieldLabel, FieldError, RequiredLegend, inputStateClass } from "@/components/auth/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, ArrowRight, MailCheck, FileText, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, MailCheck, FileText, ShieldCheck, AlertCircle } from "lucide-react";
 import { loadSampleReport, mockReportHealth } from "@/lib/mock-data";
 import { MpEvent, identifyUser, track } from "@/lib/mixpanel";
 
@@ -34,6 +35,8 @@ function normalizeMobile(raw: string): string {
   return d.slice(0, 10);
 }
 
+type FieldName = "name" | "phone" | "email" | "password";
+
 export default function SignupPublic() {
   const [, setLocation] = useLocation();
   const [fullName, setFullName] = useState("");
@@ -44,38 +47,58 @@ export default function SignupPublic() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsConfirm, setNeedsConfirm] = useState(false);
+  // Per-field messages. The single bottom-of-form banner is kept only for
+  // failures that belong to no field (a rejected signup from the server).
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldName, string>>>({});
+
+  const refs = {
+    name: useRef<HTMLInputElement>(null),
+    phone: useRef<HTMLInputElement>(null),
+    email: useRef<HTMLInputElement>(null),
+    password: useRef<HTMLInputElement>(null),
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
     document.title = "Create your free account — IndSure";
   }, []);
 
+  /** Clear a field's error as soon as the person starts fixing it — leaving red
+   *  text under a field someone is actively correcting reads as nagging. */
+  function clearFieldError(f: FieldName) {
+    setFieldErrors((prev) => (prev[f] ? { ...prev, [f]: undefined } : prev));
+  }
+
   async function handleSignUp() {
     const name = fullName.trim();
     // Already normalized on input; re-derived here so autofill can't slip past.
     const digits = normalizeMobile(phone);
 
-    if (!name) {
-      setError("Please enter your name.");
-      return;
-    }
-    if (!/^[6-9][0-9]{9}$/.test(digits)) {
-      setError("Please enter a valid 10-digit Indian mobile number.");
-      return;
-    }
-    if (!email || !password) {
-      setError("Please enter your email and a password.");
-      return;
-    }
+    // Collect EVERY problem in one pass rather than surfacing them one at a
+    // time. Being told about the mobile number, fixing it, and only then being
+    // told about the password is three round trips for one form.
+    const next: Partial<Record<FieldName, string>> = {};
+    if (!name) next.name = "Please enter your name.";
+    if (!digits) next.phone = "Please enter your mobile number.";
+    else if (!/^[6-9][0-9]{9}$/.test(digits))
+      next.phone = "That doesn't look like a 10-digit Indian mobile number.";
+    if (!email) next.email = "Please enter your email.";
     // Personal providers only — reject business/Workspace/custom domains.
-    if (!isPersonalEmail(email)) {
-      setError("Please use a personal email (Gmail, Outlook, Yahoo, iCloud…). Work or business email? That's the agent portal.");
+    else if (!isPersonalEmail(email))
+      next.email = "Please use a personal email (Gmail, Outlook, Yahoo, iCloud…). Work email? That's the agent portal.";
+    if (!password) next.password = "Please choose a password.";
+    else if (password.length < 6) next.password = "Use at least 6 characters.";
+
+    setFieldErrors(next);
+    const firstBad = (["name", "phone", "email", "password"] as FieldName[]).find((f) => next[f]);
+    if (firstBad) {
+      setError(null);
+      // Send them straight to the field rather than leaving them to find it.
+      refs[firstBad].current?.focus();
+      refs[firstBad].current?.scrollIntoView({ block: "center", behavior: "smooth" });
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
+
     setLoading(true);
     setError(null);
 
@@ -191,21 +214,26 @@ export default function SignupPublic() {
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="su-name" className="text-sm font-semibold text-[var(--color-navy-900)]">Full name</label>
+            <FieldLabel htmlFor="su-name" required>Full name</FieldLabel>
             <Input
               id="su-name"
+              ref={refs.name}
               type="text"
               autoComplete="name"
               autoFocus
+              aria-required="true"
+              aria-invalid={Boolean(fieldErrors.name)}
+              aria-describedby={fieldErrors.name ? "su-name-err" : undefined}
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium px-4 rounded-xl"
+              onChange={(e) => { setFullName(e.target.value); clearFieldError("name"); }}
+              className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.name))} transition-all font-medium px-4 rounded-xl`}
               placeholder="Rahul Sharma"
             />
+            <FieldError id="su-name-err" message={fieldErrors.name} />
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="su-phone" className="text-sm font-semibold text-[var(--color-navy-900)]">Mobile number</label>
+            <FieldLabel htmlFor="su-phone" required>Mobile number</FieldLabel>
             {/* +91 is a static prefix, not part of the value — we store 10 digits. */}
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[var(--color-text-muted)] pointer-events-none">
@@ -213,15 +241,20 @@ export default function SignupPublic() {
               </span>
               <Input
                 id="su-phone"
+                ref={refs.phone}
                 type="tel"
                 inputMode="numeric"
                 autoComplete="tel-national"
+                aria-required="true"
+                aria-invalid={Boolean(fieldErrors.phone)}
+                aria-describedby={fieldErrors.phone ? "su-phone-err" : undefined}
                 value={phone}
-                onChange={(e) => setPhone(normalizeMobile(e.target.value))}
-                className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium pl-14 pr-4 rounded-xl tracking-wide"
+                onChange={(e) => { setPhone(normalizeMobile(e.target.value)); clearFieldError("phone"); }}
+                className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.phone))} transition-all font-medium pl-14 pr-4 rounded-xl tracking-wide`}
                 placeholder="9876543210"
               />
             </div>
+            <FieldError id="su-phone-err" message={fieldErrors.phone} />
           </div>
 
           {/* The honest reason we're asking. Sits right under the two new fields,
@@ -236,30 +269,44 @@ export default function SignupPublic() {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="su-email" className="text-sm font-semibold text-[var(--color-navy-900)]">Email</label>
+            <FieldLabel htmlFor="su-email" required>Email</FieldLabel>
             <Input
               id="su-email"
+              ref={refs.email}
               type="email"
               autoComplete="email"
+              aria-required="true"
+              aria-invalid={Boolean(fieldErrors.email)}
+              aria-describedby={fieldErrors.email ? "su-email-err" : "su-email-hint"}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium px-4 rounded-xl"
+              onChange={(e) => { setEmail(e.target.value); clearFieldError("email"); }}
+              className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.email))} transition-all font-medium px-4 rounded-xl`}
               placeholder="you@gmail.com"
             />
-            <p className="text-xs text-[var(--color-text-muted)] pl-1">Personal email only. This is your login.</p>
+            {fieldErrors.email ? (
+              <FieldError id="su-email-err" message={fieldErrors.email} />
+            ) : (
+              <p id="su-email-hint" className="text-xs text-[var(--color-text-muted)] pl-1">
+                Personal email only. This is your login.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="su-password" className="text-sm font-semibold text-[var(--color-navy-900)]">Password</label>
+            <FieldLabel htmlFor="su-password" required>Password</FieldLabel>
             <div className="relative">
               <Input
                 id="su-password"
+                ref={refs.password}
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
+                aria-required="true"
+                aria-invalid={Boolean(fieldErrors.password)}
+                aria-describedby={fieldErrors.password ? "su-password-err" : "su-password-hint"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
                 onKeyDown={(e) => e.key === "Enter" && handleSignUp()}
-                className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium px-4 pr-12 rounded-xl"
+                className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.password))} transition-all font-medium px-4 pr-12 rounded-xl`}
                 placeholder="At least 6 characters"
               />
               <button
@@ -271,12 +318,29 @@ export default function SignupPublic() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            {fieldErrors.password ? (
+              <FieldError id="su-password-err" message={fieldErrors.password} />
+            ) : (
+              // A requirement that lives only in the placeholder vanishes the
+              // moment someone starts typing, which is exactly when it matters.
+              <p id="su-password-hint" className="text-xs text-[var(--color-text-muted)] pl-1">
+                At least 6 characters.
+              </p>
+            )}
           </div>
+
+          <RequiredLegend />
         </div>
 
+        {/* Reserved for failures that belong to no single field — a signup the
+            server rejected. Field-level problems render against their input. */}
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl border border-red-100 text-sm font-medium">
-            {error}
+          <div
+            role="alert"
+            className="flex items-start gap-2 bg-red-50 text-red-700 p-3.5 rounded-xl border border-red-200 text-sm font-medium"
+          >
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+            <span>{error}</span>
           </div>
         )}
 

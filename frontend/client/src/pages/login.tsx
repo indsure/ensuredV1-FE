@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { FieldLabel, FieldError, RequiredLegend, inputStateClass } from "@/components/auth/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
 
 // Consumer (D2C individual) login — mobile number OR email, plus password.
 // Signs individuals into their personal insurance portfolio (/app). The agent
@@ -22,6 +23,15 @@ export default function LoginPublic() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Empty-field prompts sit against their field; a rejected credential stays in
+  // the banner, since we must not say which half was wrong.
+  const [fieldErrors, setFieldErrors] = useState<{ identifier?: string; password?: string }>({});
+  const identifierRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  function clearFieldError(f: "identifier" | "password") {
+    setFieldErrors((prev) => (prev[f] ? { ...prev, [f]: undefined } : prev));
+  }
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -39,10 +49,17 @@ export default function LoginPublic() {
 
   async function handleSignIn() {
     const value = identifier.trim();
-    if (!value || !password) {
-      setError("Please enter your mobile number or email, and your password.");
+
+    const next: { identifier?: string; password?: string } = {};
+    if (!value) next.identifier = "Please enter your mobile number or email.";
+    if (!password) next.password = "Please enter your password.";
+    setFieldErrors(next);
+    if (next.identifier || next.password) {
+      setError(null);
+      (next.identifier ? identifierRef : passwordRef).current?.focus();
       return;
     }
+
     setLoading(true);
     setError(null);
 
@@ -112,23 +129,36 @@ export default function LoginPublic() {
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="login-identifier" className="text-sm font-semibold text-[var(--color-navy-900)]">Mobile number or email</label>
+            <FieldLabel htmlFor="login-identifier" required>Mobile number or email</FieldLabel>
             <Input
               id="login-identifier"
+              ref={identifierRef}
               type="text"
               inputMode="text"
               autoComplete="username"
               autoFocus
+              aria-required="true"
+              aria-invalid={Boolean(fieldErrors.identifier)}
+              aria-describedby={fieldErrors.identifier ? "login-identifier-err" : "login-identifier-hint"}
               value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium px-4 rounded-xl"
+              onChange={(e) => { setIdentifier(e.target.value); clearFieldError("identifier"); }}
+              className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.identifier))} transition-all font-medium px-4 rounded-xl`}
               placeholder="9876543210 or you@gmail.com"
             />
+            {fieldErrors.identifier ? (
+              <FieldError id="login-identifier-err" message={fieldErrors.identifier} />
+            ) : (
+              // Say the number works before they wonder — mobile login is new and
+              // nobody expects it on a form that used to be email-only.
+              <p id="login-identifier-hint" className="text-xs text-[var(--color-text-muted)] pl-1">
+                Use whichever you registered with.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label htmlFor="login-password" className="text-sm font-semibold text-[var(--color-navy-900)]">Password</label>
+            <div className="flex items-center justify-between gap-3">
+              <FieldLabel htmlFor="login-password" required>Password</FieldLabel>
               <Link href="/forgot-password">
                 <span className="text-xs font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">Forgot password?</span>
               </Link>
@@ -136,12 +166,16 @@ export default function LoginPublic() {
             <div className="relative">
               <Input
                 id="login-password"
+                ref={passwordRef}
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
+                aria-required="true"
+                aria-invalid={Boolean(fieldErrors.password)}
+                aria-describedby={fieldErrors.password ? "login-password-err" : undefined}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
                 onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
-                className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium px-4 pr-12 rounded-xl"
+                className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.password))} transition-all font-medium px-4 pr-12 rounded-xl`}
                 placeholder="Your password"
               />
               <button
@@ -153,12 +187,22 @@ export default function LoginPublic() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            <FieldError id="login-password-err" message={fieldErrors.password} />
           </div>
+
+          <RequiredLegend />
         </div>
 
+        {/* Wrong credentials belong here, not against a field: we cannot say
+            WHICH of the two was wrong without telling an attacker which
+            accounts exist. */}
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl border border-red-100 text-sm font-medium">
-            {error}
+          <div
+            role="alert"
+            className="flex items-start gap-2 bg-red-50 text-red-700 p-3.5 rounded-xl border border-red-200 text-sm font-medium"
+          >
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+            <span>{error}</span>
           </div>
         )}
 
