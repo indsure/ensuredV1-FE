@@ -359,6 +359,38 @@ export interface DataQuality {
   policy_document_quality: DocumentQuality;
 }
 
+/** One other health cover the same insured holds, uploaded alongside the base
+ *  policy. Optional everywhere: reports produced before this existed have none. */
+export interface OtherCover {
+  kind: "super_topup" | "corporate" | "ayushman";
+  insurer?: string | null;
+  plan_name?: string | null;
+  sum_insured?: number | null;
+  deductible?: number | null;
+  expiry_date?: string | null;
+  own_limits?: string[];
+  dependency_risk?: string | null;
+  what_it_does_not_solve?: string | null;
+  usable_today?: boolean | null;
+  /** False when the cover is left out of cover_stack.combined_effective_cover —
+   *  e.g. employment-linked cover, real today and gone when the job ends. */
+  counted_in_total?: boolean | null;
+  remarks?: string | null;
+}
+
+/** Total protection across the base policy and every other cover supplied.
+ *  Indicative only — it is read off schedules, not a second audit score. */
+export interface CoverStack {
+  combined_effective_cover?: number | null;
+  required_cover?: number | null;
+  stack_ratio?: number | null;
+  verdict?: "ADEQUATE" | "THIN" | "INADEQUATE" | "unclear" | null;
+  counted?: string[];
+  excluded?: string[];
+  where_the_stack_still_breaks?: string[];
+  remarks?: string | null;
+}
+
 export interface ForensicAuditReport {
   identity: Identity;
   policy_timeline: PolicyTimeline;
@@ -372,6 +404,9 @@ export interface ForensicAuditReport {
   audit_score: AuditScore;
   final_verdict: FinalVerdict;
   recommendations: Recommendations;
+  /** Present only when other cover was uploaded with the policy. */
+  other_cover?: OtherCover[];
+  cover_stack?: CoverStack;
   confidence_notes: string[];
   data_quality: DataQuality;
   __internal?: {

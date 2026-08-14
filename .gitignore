@@ -18,14 +18,17 @@ backend/dist/
 .env.development.local
 .env.test.local
 .env.production.local
-.env.example
 **/.env
 **/.env.local
 **/.env.development.local
 **/.env.test.local
 **/.env.production.local
-**/.env.example
 **/.env.*
+
+# ...but .env.example carries no secrets and documents what to set, so it is
+# tracked on purpose. These negations must stay below the **/.env.* rule above.
+!.env.example
+!**/.env.example
 
 # Logs
 logs

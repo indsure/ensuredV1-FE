@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Zap,
   UserCheck,
+  User,
   Coins,
   ArrowUpRight,
   ArrowDownRight,
@@ -31,9 +32,16 @@ async function getStats() {
     analysesThisMonth,
     activatedAgents,
     credits,
+    consumers,
+    consumersThisMonth,
+    consumerPolicies,
   ] = await Promise.all([
     supabaseAdmin.from("agents").select("id", { count: "exact", head: true }),
-    supabaseAdmin.from("policies").select("id", { count: "exact", head: true }),
+    // Uploaded policies live in `clients` (one row per PDF + its analysis), read
+    // here through the correctly-named `policy_analyses` alias. The `policies`
+    // table this used to read is abandoned March-2026 test data and has no
+    // agent_id column at all, so the activation query below silently errored.
+    supabaseAdmin.from("policy_analyses").select("id", { count: "exact", head: true }),
     supabaseAdmin.from("analysis_jobs").select("id", { count: "exact", head: true }),
     supabaseAdmin.from("invite_codes").select("id, used_by", { count: "exact" }),
     supabaseAdmin
@@ -46,16 +54,23 @@ async function getStats() {
       .gte("created_at", startOfLastMonth)
       .lt("created_at", startOfThisMonth),
     supabaseAdmin
-      .from("policies")
+      .from("policy_analyses")
       .select("id", { count: "exact", head: true })
       .gte("created_at", startOfThisMonth),
     supabaseAdmin
       .from("analysis_jobs")
       .select("id", { count: "exact", head: true })
       .gte("created_at", startOfThisMonth),
-    // agents who have at least 1 policy — distinct agent_ids in policies table
-    supabaseAdmin.from("policies").select("agent_id").limit(10000),
+    // agents who have at least 1 policy — distinct agent_ids in policy_analyses
+    supabaseAdmin.from("policy_analyses").select("agent_id").limit(10000),
     supabaseAdmin.from("agent_credits").select("balance").limit(10000),
+    // D2C consumers (indsure.in/login) — separate population from agents.
+    supabaseAdmin.from("individual_profiles").select("id", { count: "exact", head: true }),
+    supabaseAdmin
+      .from("individual_profiles")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", startOfThisMonth),
+    supabaseAdmin.from("individual_policies").select("user_id").limit(10000),
   ]);
 
   const usedCodes = inviteCodes.data?.filter((c) => c.used_by).length ?? 0;
@@ -83,7 +98,17 @@ async function getStats() {
   const totalCredits = (credits.data ?? []).reduce((sum, r) => sum + (r.balance ?? 0), 0);
   const inviteConversion = totalCodes === 0 ? 0 : Math.round((usedCodes / totalCodes) * 100);
 
+  const totalConsumers = consumers.count ?? 0;
+  const consumerPolicyRows = consumerPolicies.data ?? [];
+  const activatedConsumers = new Set(consumerPolicyRows.map((p) => p.user_id)).size;
+
   return {
+    totalConsumers,
+    consumersThisMonth: consumersThisMonth.count ?? 0,
+    consumerPolicies: consumerPolicyRows.length,
+    activatedConsumers,
+    consumerActivationRate:
+      totalConsumers === 0 ? 0 : Math.round((activatedConsumers / totalConsumers) * 100),
     totalAgents,
     totalPolicies,
     totalAnalyses,
@@ -332,6 +357,37 @@ export default async function DashboardPage() {
                     </span>
                   }
                 />
+              </CardContent>
+            </Card>
+
+            {/* Consumers (D2C — indsure.in/login) */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <User className="h-4 w-4 text-teal-500" />
+                  Consumers (D2C)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <StatRow
+                  label="Consumer accounts"
+                  value={stats.totalConsumers}
+                  sub={
+                    <span className="text-xs text-slate-400">
+                      +{stats.consumersThisMonth} this month
+                    </span>
+                  }
+                />
+                <StatRow
+                  label="Added a policy"
+                  value={`${stats.activatedConsumers} / ${stats.totalConsumers}`}
+                  sub={
+                    <span className="text-xs font-semibold text-teal-600">
+                      {stats.consumerActivationRate}% rate
+                    </span>
+                  }
+                />
+                <StatRow label="Consumer policies" value={stats.consumerPolicies} />
               </CardContent>
             </Card>
 

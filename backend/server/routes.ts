@@ -12,7 +12,7 @@ import { LIFE_INSURANCE_PROMPT } from "./lifeInsurancePrompt";
 import { VEHICLE_INSURANCE_PROMPT } from "./vehicleInsurancePrompt";
 import { POLICY_EXTRACTION_PROMPT } from "./policyExtractionPrompt";
 import { AIService } from "./services/aiService";
-import { runAnalysisPipeline } from "./services/analysisPipeline";
+import { runAnalysisPipeline, type CompanionDoc, type CompanionKind } from "./services/analysisPipeline";
 import { extractStructuredData } from "./services/dataExtraction";
 import { isDataEntryType, deriveSharedColumns } from "./services/extractionFields";
 import { extractWordingProfile, hashText } from "./services/wordingCompare";
@@ -2307,7 +2307,16 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   app.post(
     "/api/agent/analyze",
     (req, res, next) => {
-      upload.single("file")(req, res, (err: any) => {
+      // "file" is the policy under audit. The companion fields are OTHER health
+      // covers the same insured already holds (health lane only) — read in the
+      // same audit so the report reflects their real total protection.
+      const analyzeUpload = upload.fields([
+        { name: "file", maxCount: 1 },
+        { name: "companion_super_topup", maxCount: 1 },
+        { name: "companion_corporate", maxCount: 1 },
+        { name: "companion_ayushman", maxCount: 1 },
+      ]);
+      analyzeUpload(req, res, (err: any) => {
         if (err) {
           console.error("MULTER ERROR:", err);
           return res
@@ -2318,16 +2327,30 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       });
     },
     async (req, res) => {
+      // Every file multer wrote to disk for this request, collected up front so
+      // the early returns below (bad account, no credits) clean up too instead
+      // of leaving temp uploads behind.
+      const uploadedFiles = (req.files || {}) as Record<string, Express.Multer.File[]>;
+      const tempFiles = Object.values(uploadedFiles).flat();
+      const dropTempFiles = () => {
+        for (const tmp of tempFiles) {
+          try {
+            if (tmp?.path && fs.existsSync(tmp.path)) fs.unlinkSync(tmp.path);
+          } catch { /* best-effort */ }
+        }
+      };
+
       try {
         // Verify agent auth
         const agentId = await verifyJwt(req, res);
-        if (!agentId) return;
+        if (!agentId) { dropTempFiles(); return; }
 
         // Must be a real agent account. Without this, a D2C consumer (who has a
         // valid Supabase token) could reach the free OCR/data-entry lane below
         // and burn Gemini outside their own metered /api/me/analyze quota.
         const agentRow = await pool.query("SELECT 1 FROM agents WHERE id = $1", [agentId]);
         if (agentRow.rows.length === 0) {
+          dropTempFiles();
           return res.status(403).json({ error: "WRONG_ACCOUNT_TYPE", message: "This endpoint is for agent accounts." });
         }
 
@@ -2345,20 +2368,39 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           );
           const credits = creditRes.rows[0]?.balance ?? 0;
           if (credits <= 0) {
+            dropTempFiles();
             return res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
           }
         } else {
           const ocrBalance = await ensureOcrBalance(agentId);
           if (ocrBalance <= 0) {
+            dropTempFiles();
             return res.status(403).json({ error: "NO_OCR_CREDITS", message: NO_OCR_CREDITS_MSG });
           }
         }
 
-        if (!req.file) {
+        const file = uploadedFiles.file?.[0];
+        if (!file) {
+          dropTempFiles();
           return res.status(400).json({ error: "No file uploaded" });
         }
 
-        const file = req.file;
+        // Companion covers — health lane only. On a data-entry type the extra
+        // files are ignored (and still cleaned up), so a cheap OCR upload can
+        // never smuggle in additional Gemini work.
+        const ayushmanDeclared = !isDataEntry && String(req.body.has_ayushman || "") === "true";
+        const companionSpecs: { kind: CompanionKind; field: string }[] = [
+          { kind: "super_topup", field: "companion_super_topup" },
+          { kind: "corporate", field: "companion_corporate" },
+          { kind: "ayushman", field: "companion_ayushman" },
+        ];
+        const companionUploads: { kind: CompanionKind; file: Express.Multer.File }[] = [];
+        if (!isDataEntry) {
+          for (const spec of companionSpecs) {
+            const f = uploadedFiles[spec.field]?.[0];
+            if (f) companionUploads.push({ kind: spec.kind, file: f });
+          }
+        }
 
         // Parse optional client detail fields
         const policyholder_name = req.body.policyholder_name || null;
@@ -2524,13 +2566,86 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               return;
             }
 
-            const result = await runAnalysisPipeline(uploadedPolicyText, insuranceType, {
-              route: "/api/agent/analyze",
-              sourceType: "agent",
-              actorId: agentId,
-              jobId,
-              clientId,
-            });
+            // ── Companion covers (health lane) ──────────────────────────────
+            // Read each attached cover and keep a record of what was supplied.
+            // A companion that fails to read must never fail the audit — the
+            // base policy is still analysable on its own.
+            const companions: CompanionDoc[] = [];
+            const companionRecords: {
+              kind: CompanionKind;
+              filename: string | null;
+              declaredOnly: boolean;
+              read: boolean;
+              pdf_url?: string | null;
+            }[] = [];
+
+            for (const { kind, file: cFile } of companionUploads) {
+              let text = "";
+              try {
+                text = await extractPolicyText(cFile, {
+                  feature: "image_ocr",
+                  route: "/api/agent/analyze",
+                  sourceType: "agent",
+                  actorId: agentId,
+                  jobId,
+                  clientId,
+                });
+              } catch (cErr: any) {
+                console.warn(`[Job ${jobId}] companion ${kind} extraction failed:`, cErr?.message);
+              }
+
+              // Keep the original document alongside the base policy's PDF.
+              let companionUrl: string | null = null;
+              try {
+                const cBuffer = fs.readFileSync(cFile.path);
+                const cExt = cFile.originalname.includes(".") ? cFile.originalname.split(".").pop() : "pdf";
+                const cPath = `${agentId}/${clientId}-${kind}.${cExt}`;
+                const { error: cUpErr } = await supabaseAdmin.storage
+                  .from(PDF_BUCKET)
+                  .upload(cPath, cBuffer, {
+                    contentType: cFile.mimetype || "application/pdf",
+                    upsert: true,
+                  });
+                if (!cUpErr) {
+                  const { data: cSigned } = await supabaseAdmin.storage
+                    .from(PDF_BUCKET)
+                    .createSignedUrl(cPath, 60 * 60);
+                  companionUrl = cSigned?.signedUrl ?? null;
+                }
+              } catch (cStoreErr: any) {
+                console.warn(`[Job ${jobId}] companion ${kind} storage failed:`, cStoreErr?.message);
+              }
+
+              if (text.trim()) companions.push({ kind, text });
+              companionRecords.push({
+                kind,
+                filename: cFile.originalname,
+                declaredOnly: false,
+                read: !!text.trim(),
+                pdf_url: companionUrl,
+              });
+            }
+
+            // Ayushman Bharat is usually a card, not a policy document — the
+            // agent can simply declare it. Only add the declaration if no
+            // Ayushman document was attached above.
+            if (ayushmanDeclared && !companionUploads.some((c) => c.kind === "ayushman")) {
+              companions.push({ kind: "ayushman", declaredOnly: true });
+              companionRecords.push({ kind: "ayushman", filename: null, declaredOnly: true, read: false });
+            }
+
+            const result = await runAnalysisPipeline(
+              uploadedPolicyText,
+              insuranceType,
+              {
+                route: "/api/agent/analyze",
+                sourceType: "agent",
+                actorId: agentId,
+                jobId,
+                clientId,
+              },
+              companions
+            );
 
             if (result.status === "completed") {
               job.status = "completed";
@@ -2546,6 +2661,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               // top-level audit_score; insurer/product come from the pipeline's
               // metadata step (extractPolicyMetadata), not the report body.
               const reportData = result.result;
+              // Travels with the report (like __internal) so the policy page can
+              // show which extra covers were fed into this audit — no schema change.
+              if (companionRecords.length > 0) {
+                reportData.__companions = companionRecords;
+              }
               const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
               // clients.score is integer; the engine emits 12.5-step buckets (e.g. 87.5)
               const score = rawScore == null ? null : Math.round(Number(rawScore));
@@ -2607,17 +2727,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             // Guarantee the temp upload is removed even if extraction/storage
             // threw before the success-path unlink above. Guarded by existsSync
             // so the normal-path unlink isn't double-freed.
-            try {
-              if (file.path && fs.existsSync(file.path)) {
-                fs.unlinkSync(file.path);
-              }
-            } catch (cleanupErr: any) {
-              console.warn(`[Job ${jobId}] temp file cleanup failed:`, cleanupErr?.message);
-            }
+            dropTempFiles();
           }
         })();
       } catch (err: any) {
         console.error("Agent analyze error:", err);
+        // The background worker never started, so its finally-block cleanup
+        // will not run — drop the temp uploads here instead.
+        dropTempFiles();
         res.status(500).json({ error: err.message || "Failed to create analysis job" });
       }
     }
@@ -2711,11 +2828,30 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       let email: string | null = null;
       let fullName: string | null = null;
+      let phone: string | null = null;
       try {
         const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
         email = data?.user?.email ?? null;
         fullName = (data?.user?.user_metadata?.full_name as string) ?? null;
+        phone = (data?.user?.user_metadata?.phone as string) ?? null;
       } catch { /* best-effort; profile row still created */ }
+
+      // The signup form also posts name + mobile directly (demographics — there
+      // is no OTP and nothing is verified). Body wins over user_metadata; the
+      // metadata copy is what covers the confirm-your-email path, where signup
+      // has no session and never reaches this endpoint.
+      const bodyName = typeof req.body?.full_name === "string" ? req.body.full_name : null;
+      if (bodyName) fullName = bodyName;
+      if (typeof req.body?.phone === "string") phone = req.body.phone;
+
+      // Same sanitising as PATCH /api/me/profile: strip control chars, cap length.
+      fullName = fullName
+        ? (fullName.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 80) || null)
+        : null;
+      // Store the last 10 digits, matching every other phone we keep. Anything
+      // that isn't a plausible Indian mobile is dropped rather than stored dirty.
+      const phoneDigits = (phone ?? "").replace(/\D/g, "").slice(-10);
+      phone = /^[6-9][0-9]{9}$/.test(phoneDigits) ? phoneDigits : null;
 
       // Personal providers only — reject business/Workspace/custom domains.
       // The signup form blocks this pre-signup; this is the server-side backstop
@@ -2730,13 +2866,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const marketing = req.body?.marketing_consent === true;
 
       await pool.query(
-        `INSERT INTO individual_profiles (id, email, full_name, marketing_consent)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO individual_profiles (id, email, full_name, phone, marketing_consent)
+         VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (id) DO UPDATE SET
            email = COALESCE(individual_profiles.email, EXCLUDED.email),
            full_name = COALESCE(individual_profiles.full_name, EXCLUDED.full_name),
+           phone = COALESCE(individual_profiles.phone, EXCLUDED.phone),
            updated_at = now()`,
-        [userId, email, fullName, marketing]
+        [userId, email, fullName, phone, marketing]
       );
 
       const prof = await pool.query(
@@ -3743,7 +3880,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       // Insert lead into database
       const result = await pool.query(
-        `INSERT INTO leads (name, email, phone, city, source, status, created_at, updated_at)
+        `INSERT INTO marketing_leads (name, email, phone, city, source, status, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, 'new', NOW(), NOW())
          RETURNING id, created_at`,
         [name, email, phone, city || null, source || 'policy_report']
@@ -3936,11 +4073,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     const { app, device } = readClient(req);
     try {
       await pool.query(
-        `INSERT INTO advisor_page_views (page_id, viewed_on, utm_source, app, device, views)
+        `INSERT INTO agent_page_views (page_id, viewed_on, utm_source, app, device, views)
          SELECT id, CURRENT_DATE, $2, $3, $4, 1 FROM agent_pages
           WHERE slug = $1 AND enabled AND published
          ON CONFLICT (page_id, viewed_on, utm_source, app, device)
-         DO UPDATE SET views = advisor_page_views.views + 1`,
+         DO UPDATE SET views = agent_page_views.views + 1`,
         [slug, source, app, device]
       );
     } catch (err: any) {
@@ -4021,8 +4158,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         }
 
         const pageRes = await pool.query(
-          `SELECT id, agent_id, display_name FROM agent_pages
-            WHERE slug = $1 AND enabled AND published`,
+          `SELECT p.id, p.agent_id, p.display_name,
+                  a.email AS agent_email,
+                  coalesce(a.full_name, a.name) AS agent_name
+             FROM agent_pages p
+             JOIN agents a ON a.id = p.agent_id
+            WHERE p.slug = $1 AND p.enabled AND p.published`,
           [slug]
         );
         if (pageRes.rows.length === 0) {
@@ -4057,6 +4198,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         );
 
         let leadId: string;
+        const isFollowUp = dupe.rows.length > 0;
         const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
         const noteLine = [
           `[${stamp}] via ${slug} page`,
@@ -4065,7 +4207,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           message ? `— "${message}"` : "",
         ].filter(Boolean).join(" ");
 
-        if (dupe.rows.length > 0) {
+        if (isFollowUp) {
           leadId = dupe.rows[0].id;
           await pool.query(
             `UPDATE agent_leads
@@ -4135,62 +4277,54 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         }
 
         cleanup();
+
+        // Tell the advisor straight away. The in-portal badge only works if they
+        // happen to be logged in, and a lead that sits unread for a day is a lead
+        // lost — these prospects are ringing three agents, not one. Best-effort:
+        // the lead is already committed above, so a mail failure costs nothing.
+        const advisorEmail = String(page.agent_email || "").trim();
+        if (advisorEmail) {
+          const waLink = `https://wa.me/91${phone}`;
+          const portalLink = `${(process.env.PUBLIC_APP_ORIGIN || "https://indsure.in").replace(/\/+$/, "")}/agent/leads`;
+          const wants = intent === "policy" ? "sent you a policy to check" : "asked you to call them";
+          const lobLabel = lob ? ` (${lob})` : "";
+          const esc = (s: string) =>
+            s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+          void sendMail({
+            to: advisorEmail,
+            subject: isFollowUp
+              ? `${name} sent you something else — ${phone}`
+              : `New lead: ${name} — ${phone}`,
+            text: [
+              isFollowUp
+                ? `${name} came back to your IndSure page and ${wants}${lobLabel}.`
+                : `${name} filled your IndSure page and ${wants}${lobLabel}.`,
+              "",
+              `Phone: ${phone}`,
+              `WhatsApp: ${waLink}`,
+              stored > 0 ? `Files: ${stored} attached to the lead in your portal` : "",
+              message ? `\nWhat they wrote:\n"${message}"` : "",
+              "",
+              `Open the lead: ${portalLink}`,
+              "",
+              "Call them today if you can — they are usually asking more than one advisor.",
+            ].filter(Boolean).join("\n"),
+            html: [
+              `<p>${esc(name)} ${isFollowUp ? "came back to" : "filled"} your IndSure page and ${wants}${esc(lobLabel)}.</p>`,
+              `<p style="font-size:20px;margin:16px 0"><b><a href="tel:+91${phone}">${phone}</a></b>`,
+              ` &nbsp; <a href="${waLink}">WhatsApp</a></p>`,
+              stored > 0 ? `<p>${stored} file(s) attached to the lead in your portal.</p>` : "",
+              message ? `<p>What they wrote:<br><i>"${esc(message)}"</i></p>` : "",
+              `<p><a href="${portalLink}">Open the lead</a></p>`,
+              `<p style="color:#666">Call them today if you can — they are usually asking more than one advisor.</p>`,
+            ].filter(Boolean).join(""),
+          });
+        } else {
+          console.warn(`[advisor-lead ${leadId}] no email on agent ${agentId} — portal badge only`);
+        }
+
         console.log(`✅ Advisor-page lead for ${slug}: ${name} (${stored} file(s))`);
-
-        // Tell the advisor, without making the prospect wait for SES.
-        //
-        // Deliberately not awaited: the person on the other end is sitting on a
-        // spinner, and an advisor page whose success screen is gated on an SMTP
-        // round-trip is a page that feels broken on a patchy phone connection.
-        // Nothing downstream depends on the result, and sendMail() already
-        // swallows its own failures, so the send can finish after the response.
-        //
-        // The email carries no policy contents — a name, a number and what they
-        // asked about. Documents stay behind the portal login.
-        void (async () => {
-          try {
-            const who = await pool.query(
-              `SELECT email, coalesce(full_name, name) AS name FROM agents WHERE id = $1`,
-              [agentId]
-            );
-            const to = who.rows[0]?.email;
-            if (!to) return;
-
-            const firstName = String(who.rows[0]?.name || "").trim().split(/\s+/)[0] || "there";
-            const asked = intent === "policy" ? "sent a policy for you to look at" : "asked to talk";
-            const lobLine = lob ? `Interested in: ${lob}` : null;
-            const campaign = utm.campaign ? `Campaign: ${utm.campaign}` : null;
-            const via = utm.source ? `Came from: ${utm.source}` : null;
-
-            await sendMail({
-              to,
-              subject: `New enquiry from ${name} — your IndSure page`,
-              text: [
-                `Hi ${firstName},`,
-                "",
-                `${name} just ${asked} on your IndSure page.`,
-                "",
-                `Phone: +91 ${phone}`,
-                lobLine,
-                stored > 0 ? `They attached ${stored} document${stored === 1 ? "" : "s"}.` : null,
-                message ? `They wrote: "${message}"` : null,
-                via,
-                campaign,
-                "",
-                "Open the lead to call or message them:",
-                `https://indsure.in/agent/leads/${leadId}`,
-                "",
-                "— Team IndSure",
-                "",
-                "You're getting this because this enquiry came through your advisor page.",
-              ].filter((l) => l !== null).join("\n"),
-            });
-          } catch (mailErr: any) {
-            // A lead that was saved must never look like a failure because the
-            // notification did not go out.
-            console.error(`[advisor-lead ${leadId}] notify failed:`, mailErr?.message);
-          }
-        })();
 
         return res.status(201).json({ ok: true, files_saved: stored });
       } catch (err: any) {
@@ -4210,7 +4344,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       let query = `
         SELECT id, name, email, phone, city, source, status, notes, 
                created_at, updated_at, contacted_at, contacted_by
-        FROM leads
+        FROM marketing_leads
       `;
       const params: any[] = [];
 
@@ -4226,8 +4360,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       // Get total count
       const countQuery = status 
-        ? `SELECT COUNT(*) FROM leads WHERE status = $1`
-        : `SELECT COUNT(*) FROM leads`;
+        ? `SELECT COUNT(*) FROM marketing_leads WHERE status = $1`
+        : `SELECT COUNT(*) FROM marketing_leads`;
       const countParams = status ? [status] : [];
       const countResult = await pool.query(countQuery, countParams);
       const total = parseInt(countResult.rows[0].count);

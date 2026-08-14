@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+#
+# Blocks commits that would add a secret. Zero dependencies -- git + coreutils
+# only, so it works in Git Bash on Windows without anyone installing anything.
+#
+# Enable (once per clone):   git config core.hooksPath .githooks
+# Bypass a false positive:   git commit --no-verify
+#
+# Scans only ADDED lines in staged content, so pre-existing secrets in history
+# don't block unrelated work.
+
+set -u
+
+RED=$'\033[31m'; YEL=$'\033[33m'; OFF=$'\033[0m'
+fail=0
+
+report() {
+  [ "$fail" -eq 0 ] && printf '%s\n' "${RED}BLOCKED: staged changes look like they contain a secret.${OFF}"
+  fail=1
+  printf '  %s\n' "$1"
+}
+
+# Added lines only (strip the leading +), excluding .env.example, which holds
+# documented placeholders on purpose.
+added=$(git diff --cached --unified=0 -- . ':(exclude).env.example' \
+        | grep '^+[^+]' | sed 's/^+//')
+
+# A placeholder like <password> or your_key_here is not a secret.
+is_placeholder() {
+  printf '%s' "$1" | grep -qiE '<[^>]*>|YOUR_|_HERE|example\.com|xxxx|\*\*\*|changeme|placeholder'
+}
+
+# --- Postgres / MySQL URLs carrying an inline password ----------------------
+while IFS= read -r line; do
+  [ -z "$line" ] && continue
+  is_placeholder "$line" && continue
+  report "inline DB password in a connection string"
+  break
+done <<< "$(printf '%s\n' "$added" | grep -oE '(postgres(ql)?|mysql)://[^:/[:space:]]+:[^@[:space:]]+@' || true)"
+
+# --- GitHub tokens ----------------------------------------------------------
+if printf '%s\n' "$added" | grep -qE '(ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{50,}|gho_[A-Za-z0-9]{30,})'; then
+  report "GitHub token"
+fi
+
+# --- Google / Gemini API keys ----------------------------------------------
+if printf '%s\n' "$added" | grep -qE 'AIza[0-9A-Za-z_-]{33}'; then
+  report "Google/Gemini API key"
+fi
+
+# --- AWS access key ids -----------------------------------------------------
+if printf '%s\n' "$added" | grep -qE '\b(AKIA|ASIA)[0-9A-Z]{16}\b'; then
+  report "AWS access key id"
+fi
+
+# --- Supabase service_role JWTs ---------------------------------------------
+# The anon key IS committed on purpose (one shared Supabase for prod + beta),
+# so decode the payload and only block when the role is actually service_role.
+while IFS= read -r tok; do
+  [ -z "$tok" ] && continue
+  payload=$(printf '%s' "$tok" | cut -d. -f2)
+  case $(( ${#payload} % 4 )) in 2) payload="${payload}==";; 3) payload="${payload}=";; esac
+  if printf '%s' "$payload" | tr '_-' '/+' | base64 -d 2>/dev/null | grep -q 'service_role'; then
+    report "Supabase service_role JWT (bypasses RLS)"
+    break
+  fi
+done <<< "$(printf '%s\n' "$added" | grep -oE 'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}' || true)"
+
+# --- A real .env being staged ----------------------------------------------
+env_staged=$(git diff --cached --name-only --diff-filter=A \
+             | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$' || true)
+if [ -n "$env_staged" ]; then
+  report "env file staged: $(printf '%s' "$env_staged" | tr '\n' ' ')"
+fi
+
+if [ "$fail" -ne 0 ]; then
+  printf '\n%s\n' "${YEL}Move the value to an env var and read it via process.env.${OFF}"
+  printf '%s\n' "${YEL}Document the name in .env.example. If this is a false positive:${OFF}"
+  printf '%s\n\n' "${YEL}  git commit --no-verify${OFF}"
+  exit 1
+fi
+
+exit 0

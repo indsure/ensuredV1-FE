@@ -157,6 +157,29 @@ EF = months_remaining ÷ duration_months, clamped to the range 0 to 1.
 
 In ALL cases where stated is false, do NOT apply any PED coverage-gap penalty (it is an estimate/unknown, not a confirmed defect).
 
+**CONTINUOUS RENEWAL — CHECK THIS BEFORE ANY WAITING PERIOD MATH.** A schedule
+almost never shows the original inception date directly. It shows the CURRENT
+policy year plus a list of previous policy numbers and expiry dates (often
+labelled "Previous Policy Number and Expiry Date", "Preceding policy", or a
+renewal history). Waiting periods run from the FIRST inception of continuous
+cover, NOT from the start of the current policy year.
+
+1. If the schedule lists previous policy numbers or previous expiry dates, the
+   cover is a RENEWAL. Take the EARLIEST previous expiry date, subtract one
+   policy year, and use that as policy_inception_date. State in confidence_notes
+   how you derived it.
+2. Every waiting period — initial, PED, specific disease, maternity — is then
+   measured from that derived inception, so a long-renewed policy will normally
+   have them all SERVED.
+3. Only treat the policy as newly incepted if there is genuinely no renewal
+   history, no previous policy number and no accrued cumulative bonus.
+4. An accrued cumulative bonus or no-claim bonus is by itself proof of at least
+   one prior claim-free year — a policy carrying one is NEVER a fresh policy.
+
+Getting this wrong is a serious failure: it reports served waiting periods as
+active and tells the customer a claim will be rejected when it will in fact be
+paid.
+
 **Portability rule:** If policy is ported, continuous coverage from ORIGINAL inception date applies for waiting period calculation. Use the original inception date if stated.
 
 **Personal/special waiting periods:** Extract any individually applied waiting periods from the policy schedule (e.g., "2 years for ear disorders"). These are separate from standard waiting periods and ARE scored — they are imposed on a condition the insured is already known to have, which makes them the most claim-lethal item on a schedule.
@@ -450,6 +473,8 @@ If Repository Match Found is true:
 
 ---
 
+{{COMPANION_RULES}}
+
 ### FINAL JSON OUTPUT
 
 Output this exact structure:
@@ -741,6 +766,32 @@ Output this exact structure:
         "reason": "string"
       }
     ]
+  },
+  "other_cover": [
+    {
+      "kind": "super_topup | corporate | ayushman",
+      "insurer": "string | null",
+      "plan_name": "string | null",
+      "sum_insured": "number | null",
+      "deductible": "number | null",
+      "expiry_date": "YYYY-MM-DD | null",
+      "own_limits": ["string (its OWN room rent caps, co-pay, sub-limits, waiting periods — not the base policy's)"],
+      "dependency_risk": "string (what makes this cover disappear or shrink: job change, retirement, dependent age-out, scheme eligibility, unexpired waiting period)",
+      "what_it_does_not_solve": "string (the base policy defect this cover does NOT fix)",
+      "usable_today": "boolean (false if a waiting period, deductible or eligibility rule blocks it right now)",
+      "counted_in_total": "boolean (false if this cover is left out of cover_stack.combined_effective_cover — e.g. employment-linked or unverified. A cover can be usable today and still not counted.)",
+      "remarks": "string"
+    }
+  ],
+  "cover_stack": {
+    "combined_effective_cover": "number | null (base NEC + other cover actually usable today, in rupees)",
+    "required_cover": "number | null (same RCT used in the audit score)",
+    "stack_ratio": "number | null (combined_effective_cover / required_cover, 2 decimals)",
+    "verdict": "ADEQUATE | THIN | INADEQUATE | unclear",
+    "counted": ["string (each cover included in the total and why)"],
+    "excluded": ["string (each cover left out and why — unexpired waiting period, unbridgeable deductible, employment-linked)"],
+    "where_the_stack_still_breaks": ["string (a real claim situation the whole stack together still does not cover)"],
+    "remarks": "string (1-2 plain sentences an advisor can read out to the customer)"
   },
   "confidence_notes": ["string"],
   "data_quality": {

@@ -13,8 +13,11 @@ async function getAgents() {
   const agentIds = agents.map((a) => a.id);
 
   const [policiesRes, analysesRes, creditsRes, ocrRes] = await Promise.all([
+    // `policy_analyses` (= clients) is where uploaded policies actually live.
+    // The old `policies` table has no agent_id column, so this returned nothing
+    // and every agent showed 0 policies.
     supabaseAdmin
-      .from("policies")
+      .from("policy_analyses")
       .select("agent_id")
       .in("agent_id", agentIds),
     supabaseAdmin
@@ -70,11 +73,18 @@ async function getAgents() {
   });
 }
 
+// Auth users who are neither an agent nor a D2C consumer. Consumers
+// (individual_profiles) are real accounts with their own page — excluding them
+// keeps this list to genuinely stuck agent signups.
 async function getIncompleteUsers(agentIds: string[]) {
-  const { data } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
+  const [{ data }, { data: consumerRows }] = await Promise.all([
+    supabaseAdmin.auth.admin.listUsers({ perPage: 200 }),
+    supabaseAdmin.from("individual_profiles").select("id"),
+  ]);
   const allUsers = data?.users ?? [];
+  const consumerIds = new Set((consumerRows ?? []).map((c) => c.id));
   return allUsers
-    .filter((u) => !agentIds.includes(u.id))
+    .filter((u) => !agentIds.includes(u.id) && !consumerIds.has(u.id))
     .map((u) => ({ id: u.id, email: u.email ?? "", created_at: u.created_at }));
 }
 

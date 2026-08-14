@@ -1,6 +1,7 @@
 /**
- * Field registry for the "data-entry" insurance lanes (motor / life / travel /
- * property). These types do NOT run the forensic audit pipeline — AI is used
+ * Field registry for the "data-entry" insurance lanes (motor / life / term /
+ * travel / property, plus the commercial lines fire / marine /
+ * contractor_all_risk). These types do NOT run the forensic audit pipeline — AI is used
  * only to OCR the document and read these flat fields, which the agent then
  * reviews/edits.
  *
@@ -29,7 +30,16 @@ export interface ExtractionField {
 }
 
 /** The non-health types that use the OCR/data-entry lane. */
-export const DATA_ENTRY_TYPES = ["motor", "life", "term", "travel", "property"] as const;
+export const DATA_ENTRY_TYPES = [
+  "motor",
+  "life",
+  "term",
+  "travel",
+  "property",
+  "fire",
+  "marine",
+  "contractor_all_risk",
+] as const;
 export type DataEntryType = (typeof DATA_ENTRY_TYPES)[number];
 
 export function isDataEntryType(type: string): type is DataEntryType {
@@ -115,6 +125,69 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "policy_start_date", label: "Policy start date", type: "date" },
     { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
   ],
+  fire: [
+    { key: "policyholder_name", label: "Insured name", type: "text", shared: "policyholder_name" },
+    { key: "insurer", label: "Insurer", type: "text", shared: "insurer" },
+    { key: "policy_number", label: "Policy number", type: "text" },
+    { key: "plan_name", label: "Plan / product name", type: "text", shared: "policy_name" },
+    { key: "risk_location", label: "Risk location / address", type: "text" },
+    { key: "occupancy", label: "Occupancy / nature of business", type: "text" },
+    { key: "building_sum_insured", label: "Building sum insured", type: "number" },
+    { key: "plant_machinery_sum_insured", label: "Plant & machinery sum insured", type: "number" },
+    { key: "stock_sum_insured", label: "Stock sum insured", type: "number" },
+    { key: "sum_insured", label: "Total sum insured", type: "number", shared: "sum_insured" },
+    { key: "valuation_basis", label: "Basis of valuation (reinstatement / market value)", type: "text" },
+    { key: "add_on_covers", label: "Add-on covers", type: "text" },
+    { key: "premium", label: "Premium", type: "number" },
+    { key: "policy_start_date", label: "Policy start date", type: "date" },
+    { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
+  ],
+  marine: [
+    { key: "policyholder_name", label: "Insured name", type: "text", shared: "policyholder_name" },
+    { key: "insurer", label: "Insurer", type: "text", shared: "insurer" },
+    { key: "policy_number", label: "Policy / certificate number", type: "text" },
+    { key: "plan_name", label: "Policy type (open / specific voyage)", type: "text", shared: "policy_name" },
+    { key: "cover_clauses", label: "Cover clauses (ICC A / B / C)", type: "text" },
+    { key: "goods_description", label: "Goods / commodity insured", type: "text" },
+    { key: "transit_mode", label: "Mode of transit (sea / air / road / rail)", type: "text" },
+    { key: "transit_from", label: "Transit from", type: "text" },
+    { key: "transit_to", label: "Transit to", type: "text" },
+    { key: "sum_insured", label: "Sum insured", type: "number", shared: "sum_insured" },
+    { key: "per_sending_limit", label: "Limit per sending / per bottom", type: "number" },
+    { key: "valuation_basis", label: "Basis of valuation", type: "text" },
+    { key: "premium", label: "Premium", type: "number" },
+    { key: "policy_start_date", label: "Policy start date", type: "date" },
+    { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
+  ],
+  contractor_all_risk: [
+    { key: "policyholder_name", label: "Insured (principal / contractor)", type: "text", shared: "policyholder_name" },
+    { key: "insurer", label: "Insurer", type: "text", shared: "insurer" },
+    { key: "policy_number", label: "Policy number", type: "text" },
+    { key: "plan_name", label: "Plan / product name", type: "text", shared: "policy_name" },
+    { key: "project_name", label: "Project / contract name", type: "text" },
+    { key: "project_site", label: "Project site address", type: "text" },
+    { key: "contract_value", label: "Contract value / sum insured", type: "number", shared: "sum_insured" },
+    { key: "material_damage_sum_insured", label: "Section I — material damage sum insured", type: "number" },
+    { key: "third_party_liability_limit", label: "Section II — third-party liability limit", type: "number" },
+    { key: "deductible", label: "Deductible / excess", type: "number" },
+    { key: "premium", label: "Premium", type: "number" },
+    { key: "project_start_date", label: "Project start date", type: "date" },
+    { key: "project_completion_date", label: "Project completion date", type: "date", shared: "expiry_date" },
+    { key: "maintenance_period_months", label: "Maintenance period (months)", type: "number" },
+  ],
+};
+
+/** Human-readable name for the prompt — the raw key reads badly for the
+ *  commercial lines ("contractor_all_risk insurance"). */
+const TYPE_PROMPT_NAME: Record<DataEntryType, string> = {
+  motor: "motor",
+  life: "life",
+  term: "term life",
+  travel: "travel",
+  property: "property / home",
+  fire: "fire (standard fire & special perils / Bharat commercial fire)",
+  marine: "marine cargo",
+  contractor_all_risk: "contractor's all risk (CAR)",
 };
 
 /** Build the strict, type-specific OCR/extraction prompt. */
@@ -139,7 +212,7 @@ export function buildExtractionPrompt(type: DataEntryType): string {
 - "next_premium_date": today's date is ${today}. Premiums are usually stated as a recurring schedule (e.g. "Due Dates of Premium: 21 June of every Year") alongside a "Due Date of Last Premium". Return the NEXT premium due date strictly AFTER today — the next future occurrence of that recurring due date — NOT the maturity date and NOT the last/final premium date. If one explicit upcoming due date is stated, use it. If the plan is single-premium / fully paid-up / no further premium is payable, use null. (This is the only field where computing the next recurring date from the stated schedule is expected.)`
     : "";
 
-  return `You are an insurance policy data-entry assistant for ${type} insurance.
+  return `You are an insurance policy data-entry assistant for ${TYPE_PROMPT_NAME[type]} insurance.
 Read the provided policy document text and extract ONLY the fields below.
 Return STRICTLY a single JSON object with EXACTLY these keys and nothing else:
 

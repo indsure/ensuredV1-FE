@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { Upload, FileText, AlertCircle, AlertTriangle, CheckCircle2, Loader2, ShieldAlert } from "lucide-react";
+import { Upload, FileText, AlertCircle, AlertTriangle, CheckCircle2, Loader2, ShieldAlert, Layers } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,83 @@ type UploadStatus = {
   progress?: number;
 };
 
+/**
+ * Other health cover the same person already holds. These ride along with the
+ * base health policy in the SAME policy check, so the audit judges their real
+ * total protection instead of the base policy in isolation.
+ */
+const COMPANION_SLOTS = [
+  {
+    key: "superTopup",
+    field: "companion_super_topup",
+    label: "Super top-up policy",
+    hint: "We check whether its deductible is actually bridged by the base cover.",
+  },
+  {
+    key: "corporate",
+    field: "companion_corporate",
+    label: "Company / corporate policy",
+    hint: "Employer cover ends with the job — the report will say where that leaves them.",
+  },
+] as const;
+
+/** One optional companion-document slot: attach, show, remove. */
+function CompanionSlot({
+  label,
+  hint,
+  file,
+  onPick,
+  disabled,
+}: {
+  label: string;
+  hint: string;
+  file: File | null;
+  onPick: (file: File | null) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-700">{label}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{hint}</p>
+        </div>
+        {file ? (
+          <button
+            type="button"
+            onClick={() => onPick(null)}
+            disabled={disabled}
+            className="flex-shrink-0 text-xs font-semibold text-slate-500 hover:text-red-600 disabled:opacity-50"
+          >
+            Remove
+          </button>
+        ) : (
+          <label
+            className={`flex-shrink-0 cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-[#0D9488] hover:bg-slate-50 ${
+              disabled ? "pointer-events-none opacity-50" : ""
+            }`}
+          >
+            Attach PDF
+            <input
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              disabled={disabled}
+              onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+            />
+          </label>
+        )}
+      </div>
+      {file && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-slate-600 break-all">
+          <FileText className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
+          {file.name}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function AgentUploads() {
   const [, setLocation] = useLocation();
   const { agent, ocrRemaining } = useAgent();
@@ -35,7 +112,30 @@ export default function AgentUploads() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  // Files chosen but NOT yet sent. Nothing is analysed until the agent presses
+  // "Analyze" — they need time to attach the other cover first.
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+
+  // Other health cover the same person holds — health lane only.
+  const [superTopupFile, setSuperTopupFile] = useState<File | null>(null);
+  const [corporateFile, setCorporateFile] = useState<File | null>(null);
+  const [ayushmanFile, setAyushmanFile] = useState<File | null>(null);
+  const [hasAyushman, setHasAyushman] = useState(false);
+
+  const companionFiles: Record<string, File | null> = {
+    companion_super_topup: superTopupFile,
+    companion_corporate: corporateFile,
+    companion_ayushman: ayushmanFile,
+  };
+  const companionCount =
+    [superTopupFile, corporateFile, ayushmanFile].filter(Boolean).length + (hasAyushman && !ayushmanFile ? 1 : 0);
+
+  function clearCompanions() {
+    setSuperTopupFile(null);
+    setCorporateFile(null);
+    setAyushmanFile(null);
+    setHasAyushman(false);
+  }
 
   // Names of policies this agent has already uploaded, so we can warn that a
   // re-upload will run a fresh analysis (and spend another credit on health).
@@ -64,10 +164,10 @@ export default function AgentUploads() {
     return () => { active = false; };
   }, [agent?.agentId]);
 
-  // Pending files whose name matches a policy already in this agent's account.
+  // Staged files whose name matches a policy already in this agent's account.
   const duplicateNames = useMemo(
-    () => pendingFiles.filter((f) => existingNames.has(normalizeName(f.name))).map((f) => f.name),
-    [pendingFiles, existingNames]
+    () => stagedFiles.filter((f) => existingNames.has(normalizeName(f.name))).map((f) => f.name),
+    [stagedFiles, existingNames]
   );
 
   const processFiles = async (acceptedFiles: File[]) => {
@@ -78,9 +178,10 @@ export default function AgentUploads() {
 
     if (acceptedFiles.length === 0) return;
 
-    // Validate file sizes
+    // Validate file sizes — companion documents go through the same 25MB cap.
     const maxSize = 25 * 1024 * 1024; // 25MB
-    const invalidFiles = acceptedFiles.filter(f => f.size > maxSize);
+    const invalidFiles = [...acceptedFiles, ...Object.values(companionFiles).filter(Boolean) as File[]]
+      .filter(f => f.size > maxSize);
     if (invalidFiles.length > 0) {
       toast({
         variant: "destructive",
@@ -135,6 +236,17 @@ export default function AgentUploads() {
         if (clientEmail) formData.append("client_email", clientEmail);
         if (clientPhone) formData.append("client_phone", clientPhone);
         if (policyIdentifier) formData.append("policy_identifier", policyIdentifier);
+
+        // Other cover the same person holds. Read in the same audit call, so
+        // the report reflects the whole stack and still costs 1 policy check.
+        if (insuranceType === "health") {
+          for (const [field, companion] of Object.entries(companionFiles)) {
+            if (companion) formData.append(field, companion);
+          }
+          // Ayushman Bharat is usually a card, not a document — a tick alone is
+          // enough for the audit to account for it.
+          if (hasAyushman) formData.append("has_ayushman", "true");
+        }
 
         // Upload and start analysis
         const uploadRes = await fetch(`${getApiBase()}/api/agent/analyze`, {
@@ -241,37 +353,66 @@ export default function AgentUploads() {
       }
     }
 
+    // The attached covers belong to the policy just sent — clear them so the
+    // next upload can't silently carry someone else's documents along.
+    clearCompanions();
     setIsProcessing(false);
   };
 
+  // Choosing files only stages them. Analysis starts from the Analyze button,
+  // so there is time to attach the other cover (or add more files to a batch).
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
 
-    let files = acceptedFiles;
-    // Health runs a full audit and uses a credit per policy, so it stays one-at-a-time.
-    // Every other (data-entry) type can be uploaded in a batch.
-    if (insuranceType === "health" && files.length > 1) {
-      files = [files[0]];
+    const maxSize = 25 * 1024 * 1024; // 25MB
+    const tooBig = acceptedFiles.find((f) => f.size > maxSize);
+    if (tooBig) {
       toast({
-        title: "One health policy at a time",
-        description: `Only "${files[0].name}" will be analysed — health policies run a full audit and use 1 policy check each. Upload the rest individually.`,
+        variant: "destructive",
+        title: "File too large",
+        description: `${tooBig.name} exceeds the 25MB limit`,
       });
+      return;
     }
 
-    setPendingFiles(files);
+    setStagedFiles((current) => {
+      // Skip files already staged, so dropping the same PDF twice is harmless.
+      const seen = new Set(current.map((f) => `${f.name}:${f.size}`));
+      const fresh = acceptedFiles.filter((f) => !seen.has(`${f.name}:${f.size}`));
+      let next = [...current, ...fresh];
+
+      // Health runs a full audit and uses a policy check each, so it stays
+      // one-at-a-time. Every other (data-entry) type can be sent as a batch.
+      if (insuranceType === "health" && next.length > 1) {
+        next = [next[0]];
+        toast({
+          title: "One health policy at a time",
+          description: `Keeping "${next[0].name}". Health policies run a full audit and use 1 policy check each — analyse the rest separately.`,
+        });
+      }
+      return next;
+    });
+  };
+
+  const removeStagedFile = (index: number) =>
+    setStagedFiles((current) => current.filter((_, i) => i !== index));
+
+  // Opens the consent step. Nothing has been sent at this point.
+  function startAnalysis() {
+    if (stagedFiles.length === 0) return;
     setConsentChecked(false);
     setShowConsentModal(true);
-  };
+  }
 
   function handleConsentConfirm() {
     setShowConsentModal(false);
-    void processFiles(pendingFiles);
-    setPendingFiles([]);
+    void processFiles(stagedFiles);
+    setStagedFiles([]);
   }
 
+  // Backing out of consent must not throw away what they queued up.
   function handleConsentCancel() {
     setShowConsentModal(false);
-    setPendingFiles([]);
     setConsentChecked(false);
   }
 
@@ -322,6 +463,21 @@ export default function AgentUploads() {
               </div>
             </div>
 
+            {insuranceType === "health" && companionCount > 0 && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-sm font-bold text-slate-700">Also being sent with this policy</p>
+                <ul className="mt-1 space-y-0.5 text-sm text-slate-600">
+                  {superTopupFile && <li className="break-all">• Super top-up — {superTopupFile.name}</li>}
+                  {corporateFile && <li className="break-all">• Company / corporate — {corporateFile.name}</li>}
+                  {ayushmanFile && <li className="break-all">• Ayushman Bharat — {ayushmanFile.name}</li>}
+                  {hasAyushman && !ayushmanFile && <li>• Ayushman Bharat (PM-JAY) — declared, no document</li>}
+                </ul>
+                <p className="mt-1.5 text-xs text-slate-500">
+                  The consent above covers these documents too.
+                </p>
+              </div>
+            )}
+
             {duplicateNames.length > 0 && (
               <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 flex gap-3">
                 <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -371,7 +527,12 @@ export default function AgentUploads() {
               <button
                 key={tkey}
                 type="button"
-                onClick={() => setInsuranceType(tkey)}
+                onClick={() => {
+                  setInsuranceType(tkey);
+                  // Companion covers are a health-lane concept — don't let them
+                  // linger invisibly after switching to another type.
+                  if (tkey !== "health") clearCompanions();
+                }}
                 disabled={isProcessing}
                 className={[
                   "inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all",
@@ -431,7 +592,184 @@ export default function AgentUploads() {
                   Tip: select multiple files to upload a batch at once.
                 </p>
               )}
+              <p className="mt-2 text-xs text-slate-400">
+                Nothing is analysed until you press Analyze.
+              </p>
             </div>
+
+            {/* Staged files — chosen, not yet sent. */}
+            {stagedFiles.length > 0 && (
+              <div className="rounded-xl border border-[#0D9488]/30 bg-[#0D9488]/5 p-4">
+                <h4 className="text-sm font-bold text-slate-900">
+                  Ready to analyse ({stagedFiles.length} {stagedFiles.length === 1 ? "file" : "files"})
+                </h4>
+                <ul className="mt-2 space-y-1.5">
+                  {stagedFiles.map((f, idx) => (
+                    <li
+                      key={`${f.name}-${idx}`}
+                      className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <FileText className="h-4 w-4 flex-shrink-0 text-slate-400" />
+                        <span className="truncate text-sm font-medium text-slate-700">{f.name}</span>
+                        <span className="flex-shrink-0 text-xs text-slate-400">
+                          {(f.size / (1024 * 1024)).toFixed(1)} MB
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeStagedFile(idx)}
+                        disabled={isProcessing}
+                        className="flex-shrink-0 text-xs font-semibold text-slate-500 hover:text-red-600 disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+
+                {duplicateNames.length > 0 && (
+                  <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="break-all">
+                      Already in your account: {duplicateNames.join(", ")}. Analysing again
+                      {insuranceType === "health" ? " uses another policy check." : " uses another data-entry entry."}
+                    </span>
+                  </p>
+                )}
+
+                {insuranceType === "health" && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Attach any other cover below before you analyse — it goes in the same policy check.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Other health cover the same person holds. Read together with the
+                base policy in the same policy check. */}
+            {insuranceType === "health" && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                <div className="flex items-start gap-3">
+                  <Layers className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#0D9488]" />
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">Other cover this person already has</h4>
+                    <p className="mt-0.5 text-xs text-slate-600 leading-relaxed">
+                      Optional. Attach these and the report reads them together with the base policy — so it judges
+                      their total protection, not one policy in isolation. Still 1 policy check in total.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 space-y-2.5">
+                  <CompanionSlot
+                    label={COMPANION_SLOTS[0].label}
+                    hint={COMPANION_SLOTS[0].hint}
+                    file={superTopupFile}
+                    onPick={setSuperTopupFile}
+                    disabled={isProcessing}
+                  />
+                  <CompanionSlot
+                    label={COMPANION_SLOTS[1].label}
+                    hint={COMPANION_SLOTS[1].hint}
+                    file={corporateFile}
+                    onPick={setCorporateFile}
+                    disabled={isProcessing}
+                  />
+
+                  {/* Ayushman Bharat is usually a card, not a policy document —
+                      a tick is enough, the document is optional. */}
+                  <div className="rounded-xl border border-slate-200 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="flex min-w-0 cursor-pointer select-none items-start gap-2.5">
+                        <input
+                          type="checkbox"
+                          checked={hasAyushman}
+                          onChange={(e) => {
+                            setHasAyushman(e.target.checked);
+                            if (!e.target.checked) setAyushmanFile(null);
+                          }}
+                          disabled={isProcessing}
+                          className="mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded accent-[#0D9488]"
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold text-slate-700">
+                            Ayushman Bharat (PM-JAY)
+                          </span>
+                          <span className="mt-0.5 block text-xs text-slate-500">
+                            ₹5 lakh family cover at empanelled hospitals only. Card is enough — no document needed.
+                          </span>
+                        </span>
+                      </label>
+                      {hasAyushman && !ayushmanFile && (
+                        <label
+                          className={`flex-shrink-0 cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-[#0D9488] hover:bg-white ${
+                            isProcessing ? "pointer-events-none opacity-50" : ""
+                          }`}
+                        >
+                          Attach PDF
+                          <input
+                            type="file"
+                            accept="application/pdf"
+                            className="hidden"
+                            disabled={isProcessing}
+                            onChange={(e) => setAyushmanFile(e.target.files?.[0] ?? null)}
+                          />
+                        </label>
+                      )}
+                      {ayushmanFile && (
+                        <button
+                          type="button"
+                          onClick={() => setAyushmanFile(null)}
+                          disabled={isProcessing}
+                          className="flex-shrink-0 text-xs font-semibold text-slate-500 hover:text-red-600 disabled:opacity-50"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    {ayushmanFile && (
+                      <p className="mt-2 flex items-center gap-1.5 break-all text-xs font-medium text-slate-600">
+                        <FileText className="h-3.5 w-3.5 flex-shrink-0 text-slate-400" />
+                        {ayushmanFile.name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* The only control that actually sends anything. Sits last, after
+                the companion slots, so nothing runs before they're attached. */}
+            {stagedFiles.length > 0 && (
+              <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
+                <Button
+                  onClick={startAnalysis}
+                  disabled={isProcessing}
+                  size="lg"
+                  className="bg-[#0D9488] hover:bg-[#0f766e]"
+                >
+                  {isProcessing
+                    ? "Working…"
+                    : insuranceType === "health"
+                    ? `Analyze${companionCount > 0 ? ` with ${companionCount} other cover` : ""}`
+                    : `Analyze ${stagedFiles.length} ${stagedFiles.length === 1 ? "policy" : "policies"}`}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setStagedFiles([])}
+                  disabled={isProcessing}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-700 disabled:opacity-50"
+                >
+                  Clear all
+                </button>
+                <span className="text-xs text-slate-500">
+                  {insuranceType === "health"
+                    ? "Uses 1 policy check."
+                    : `Uses ${stagedFiles.length} data-entry ${stagedFiles.length === 1 ? "entry" : "entries"}.`}
+                </span>
+              </div>
+            )}
 
             {/* Upload Progress */}
             {uploads.length > 0 && (
