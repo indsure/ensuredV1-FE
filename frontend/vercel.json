@@ -4,6 +4,6 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/a/:slug", "destination": "/api/advisor-page?slug=:slug" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ]
 }
