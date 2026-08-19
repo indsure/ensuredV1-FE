@@ -110,24 +110,39 @@ export default function AgentLanding() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Top bar — Logo (left) + Playground demo & Language Toggle (right) */}
-      <div className="flex justify-between items-center gap-3 px-6 pt-4">
+      {/* Top bar — Logo (left) + Pricing, Playground, Log in, Language (right).
+          Pricing and Log in were missing entirely: pricing was unreachable from
+          this page, and logging in meant scrolling to the hero. On a phone the
+          Playground label collapses to its icon so the row still fits 375px. */}
+      <nav className="flex justify-between items-center gap-2 px-4 sm:px-6 pt-4" aria-label="Advisor">
         <Link href="/agent" className="flex items-center gap-2 shrink-0">
           <img src="/logo.png" alt="IndSure" className="h-9 w-auto object-contain" />
           <span className="hidden sm:inline font-bold text-lg text-slate-900">IndSure</span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+        <Link
+          href="/advisors/pricing"
+          className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 hover:text-[var(--color-green-primary)] transition-colors whitespace-nowrap"
+        >
+          Pricing
+        </Link>
         <Link
           href="/agent/playground"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-[var(--color-green-primary)] border border-[var(--color-green-primary)]/40 rounded-lg hover:bg-[var(--color-green-primary)] hover:text-white transition-all"
+          className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-[var(--color-green-primary)] border border-[var(--color-green-primary)]/40 rounded-lg hover:bg-[var(--color-green-primary)] hover:text-white transition-all"
           title="डेमो आज़माएँ — कोई अकाउंट नहीं"
         >
-          <Sparkles className="h-4 w-4" />
-          Playground
+          <Sparkles className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">Playground</span>
+        </Link>
+        <Link
+          href="/agent/login"
+          className="px-2.5 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold text-white bg-[var(--color-green-primary)] rounded-lg hover:bg-[#0F766E] transition-colors whitespace-nowrap"
+        >
+          Log in
         </Link>
         <LanguageToggle />
         </div>
-      </div>
+      </nav>
 
       {/* Hero Section */}
       <div className="mx-auto max-w-7xl px-6 py-8 lg:py-16">
