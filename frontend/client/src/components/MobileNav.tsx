@@ -34,6 +34,12 @@ export function MobileNav() {
     return null;
   }
 
+  // Same for /start, the reel campaign page: this bar would sit over its CTA
+  // on a phone and offer four ways off the page before the visitor signs up.
+  if (window.location.pathname === '/start') {
+    return null;
+  }
+
   // The signed-in consumer portfolio (/app) is the product, not the marketing
   // site: a bar offering Home / Calculator / Compare / Blog is a way *out* of
   // the app, and on a phone it covers the portfolio's own actions.

@@ -244,12 +244,30 @@ const STATIC_ROUTES = [
   },
   {
     path: "/pricing",
-    title: "IndSure Pricing: Free Policy Checks & Paid Plans | IndSure",
+    title: "IndSure Pricing: Free Plan, ₹99 a Month or ₹999 a Year | IndSure",
     description:
-      "Check your insurance policy for free. See IndSure's plans for deeper analysis, comparisons, and portfolio tracking. No commissions, no lead selling.",
+      "One policy of each type checked free, forever, no card needed. Personal is ₹99 a month or ₹999 a year: 4 health policy checks, room for 12 term life and vehicle policies, renewal reminders and unlimited consultation. No commissions.",
     h1: "IndSure pricing",
     intro:
-      "Checking a policy is free. Paid plans unlock deeper analysis, comparisons, and portfolio tracking. IndSure earns zero commissions and never sells your data as a lead.",
+      "The free plan does not expire: one policy of each type — health, term life and vehicle — checked in plain language, with renewal reminders and PDF reports. The Personal plan is ₹99 a month or ₹999 a year, and covers 4 health policy checks, space for 12 more term life and vehicle policies, and unlimited consultation. IndSure earns zero commissions and never sells your data as a lead.",
+  },
+  {
+    path: "/start",
+    title: "Review Your Insurance. Make Your Portfolio Today | IndSure",
+    description:
+      "Upload your health, term life or vehicle policy and see what it actually covers in plain language. Keep every policy in one portfolio with renewal reminders. Free forever for one policy of each type, no card needed.",
+    h1: "Review your insurance. Make your portfolio today.",
+    intro:
+      "Add your policy, and IndSure reads the wording — room rent limits, co-pay, sub-limits and waiting periods — in plain language. Every policy sits in one portfolio with a reminder 30 days before anything expires. One policy of each type is free forever, with no card needed. IndSure earns no commission from any insurer.",
+  },
+  {
+    path: "/advisors/pricing",
+    title: "Pricing for Insurance Advisors: Free, ₹999, ₹9,999 | IndSure",
+    description:
+      "IndSure plans for insurance agents and advisors. Free daily tools, ₹999 a month for the full plan, ₹9,999 a year. Leads, customer portfolios, renewals and policy checks. No commissions.",
+    h1: "IndSure pricing for advisors",
+    intro:
+      "Your daily tools — leads, customer portfolios, renewals, the cover calculator and message drafts — are free forever. The full plan is ₹999 a month or ₹9,999 a year and adds monthly policy checks, the Sach assistant and priority support. IndSure takes no commission on anything you sell.",
   },
   {
     path: "/blog",
@@ -614,7 +632,8 @@ async function writeSitemap(blogPosts, slugFor, FOUNDERS = [], CLAUSE_LIBRARY = 
     { path: "/calculator", priority: "0.8", changefreq: "monthly" },
     { path: "/how-it-works", priority: "0.7", changefreq: "monthly" },
     { path: "/why-indsure", priority: "0.7", changefreq: "monthly" },
-    { path: "/pricing", priority: "0.7", changefreq: "monthly" },
+    { path: "/pricing", priority: "0.8", changefreq: "monthly" },
+    { path: "/advisors/pricing", priority: "0.7", changefreq: "monthly" },
     { path: "/blog", priority: "0.8", changefreq: "weekly" },
     { path: "/signup", priority: "0.9", changefreq: "monthly" },
     { path: "/agent", priority: "0.8", changefreq: "monthly" },

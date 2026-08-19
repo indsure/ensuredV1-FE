@@ -103,9 +103,13 @@ const analyzeRateLimiter = rateLimit({
 });
 
 // ── D2C consumer ("individual") metering knobs ───────────────────────────
-// Free plan holds one policy per line of business; the trial is a 30-day
-// full-access window from signup. Both are enforced at ONE server-side choke
-// point (checkIndividualQuota) — never duplicated per lane.
+// Free plan holds one policy per line of business, and does not expire. That
+// cap is enforced at ONE server-side choke point (checkIndividualQuota) —
+// never duplicated per lane.
+//
+// TRIAL_DAYS no longer gates anything: it is kept because the admin consumer
+// view and /api/me endpoints still report a trial window off trial_started_at,
+// which doubles as the signup date.
 const TRIAL_DAYS = 30;
 const FREE_SLOTS_PER_TYPE = 1;
 
@@ -514,9 +518,8 @@ const requireIndividual = async (req: any, res: any): Promise<string | null> => 
 };
 
 // THE single quota choke point. Runs BEFORE any Gemini spend on /api/me/analyze.
-// Allow if: paid; OR (within 30-day trial AND under the per-type free slot cap).
-// Returns a machine reason so the paywall UX can distinguish slot-full from
-// trial-expired.
+// Allow if: paid; OR under the per-type free slot cap. The free plan does not
+// expire — it is capped by slots, so "trial_expired" is no longer returned.
 async function checkIndividualQuota(
   userId: string,
   insuranceType: string
@@ -529,10 +532,13 @@ async function checkIndividualQuota(
   if (!row) return { allowed: false, reason: "no_profile" };
   if (row.plan === "paid") return { allowed: true };
 
-  const withinTrial =
-    Date.now() - new Date(row.trial_started_at).getTime() < TRIAL_DAYS * 86400_000;
-  if (!withinTrial) return { allowed: false, reason: "trial_expired" };
-
+  // Free is forever, not a trial — it is limited by slots, not by time. The
+  // trial gate used to sit here and returned "trial_expired" on day 31, which
+  // locked a free user out of the one-policy-per-type allowance they still
+  // had. Slots are now the only thing that meters the free plan.
+  //
+  // TRIAL_DAYS and trial_started_at are left in place: other endpoints still
+  // read them, and the column records signup date regardless.
   const cnt = await pool.query(
     "SELECT count(*)::int AS c FROM individual_policies WHERE user_id = $1 AND insurance_type = $2 AND status <> 'error'",
     [userId, insuranceType]

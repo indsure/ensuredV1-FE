@@ -317,9 +317,6 @@ export default function PortfolioPage() {
     });
   }, [d.policies, filter, sort]);
 
-  const trialDaysLeft = data
-    ? Math.max(0, Math.ceil((new Date(data.trialEndsAt).getTime() - Date.now()) / 86_400_000))
-    : 0;
   const isEmpty = !!data && data.policies.length === 0;
   const firstName = data?.fullName?.trim().split(/\s+/)[0] ?? null;
 
@@ -409,7 +406,7 @@ export default function PortfolioPage() {
               onClick={() => setLocation("/pricing")}
               className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-teal-600)]/10 px-4 py-2.5 text-[11px] font-mono uppercase tracking-widest text-[var(--color-teal-600)] hover:bg-[var(--color-teal-600)]/20 transition-colors"
             >
-              {data.plan === "paid" ? "Paid · unlimited" : `Free trial · ${trialDaysLeft} days left`}
+              {data.plan === "paid" ? "Paid · unlimited" : "Free · one policy per type"}
               {data.plan !== "paid" && <ArrowRight className="w-3 h-3" />}
             </button>
           )}
@@ -973,12 +970,12 @@ export default function PortfolioPage() {
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-sm text-[var(--color-navy-900)]">
-                    {data.plan === "paid" ? "Paid plan" : "Free trial"}
+                    {data.plan === "paid" ? "Paid plan" : "Free plan"}
                   </p>
                   <p className="text-xs text-[var(--color-text-muted)]">
                     {data.plan === "paid"
                       ? "Unlimited policy audits."
-                      : `${trialDaysLeft} days left · one free policy per type.`}
+                      : "One free policy per type. Does not expire."}
                   </p>
                 </div>
               </div>

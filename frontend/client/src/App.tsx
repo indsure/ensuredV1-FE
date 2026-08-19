@@ -67,6 +67,8 @@ const SharedComparison = lazy(() => import("@/pages/compare/SharedComparison"));
 const Home = lazy(() => import("@/pages/home"));
 const HowItWorks = lazy(() => import("@/pages/how-it-works"));
 const Pricing = lazy(() => import("@/pages/pricing"));
+const AdvisorsPricing = lazy(() => import("@/pages/advisors-pricing"));
+const Start = lazy(() => import("@/pages/start"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Processing = lazy(() => import("@/pages/processing"));
 const Report = lazy(() => import("@/pages/report"));
@@ -138,6 +140,8 @@ function App() {
                       <Route path="/" component={Home} />
                       <Route path="/how-it-works" component={HowItWorks} />
                       <Route path="/pricing" component={Pricing} />
+                      <Route path="/advisors/pricing" component={AdvisorsPricing} />
+                      <Route path="/start" component={Start} />
                       <Route path="/processing" component={Processing} />
 
                       {/* --- Report routes --- */}

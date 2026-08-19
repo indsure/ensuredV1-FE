@@ -9,11 +9,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // PRIMARY BUTTON (Main CTA) - Cyan #00B4D8, white text, 8px radius
+        // PRIMARY BUTTON (Main CTA) — brand teal, white text, 8px radius.
+        // Was a hardcoded cyan (#00B4D8) that belonged to no palette and sat
+        // next to teal badges and links in the same card. Base is the brand
+        // token; hover/active darken down the same teal ramp so white text
+        // keeps its contrast (lightening toward --color-teal-400 would drop
+        // it to roughly 1.9:1).
         default:
-          "bg-[#00B4D8] text-white rounded-lg shadow-sm hover:bg-[#0099B4] hover:shadow-md active:bg-[#007D9A]",
+          "bg-[var(--color-green-primary)] text-white rounded-lg shadow-sm hover:bg-[#0F766E] hover:shadow-md active:bg-[#115E59]",
         primary:
-          "bg-[#00B4D8] text-white rounded-lg shadow-sm hover:bg-[#0099B4] hover:shadow-md active:bg-[#007D9A]",
+          "bg-[var(--color-green-primary)] text-white rounded-lg shadow-sm hover:bg-[#0F766E] hover:shadow-md active:bg-[#115E59]",
         
         // SECONDARY BUTTON (Alternative action)
         secondary:

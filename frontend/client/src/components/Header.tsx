@@ -44,6 +44,12 @@ export function Header() {
     return null;
   }
 
+  // /start is the reel campaign landing page. Site nav on it is five ways for
+  // a cold visitor to not sign up, so it carries its own logo and one CTA.
+  if (location === "/start") {
+    return null;
+  }
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -10 }}
