@@ -212,6 +212,22 @@ export default function PortfolioPage() {
     }, 3000);
   }, [load, toast]);
 
+  // Arriving from signup or login having just claimed a pre-signup upload. The
+  // analysis is already running, so attach to it immediately — otherwise the
+  // first thing someone sees after handing over their details is a row that
+  // says "pending" and does not visibly move.
+  //
+  // The param is stripped straight away so a refresh does not re-attach to a
+  // job that has since finished.
+  useEffect(() => {
+    const jobId = new URLSearchParams(window.location.search).get("job");
+    if (!jobId) return;
+    window.history.replaceState({}, "", window.location.pathname);
+    setUploading(true);
+    setUploadStage("In the queue…");
+    pollStatus(jobId);
+  }, [pollStatus]);
+
   const onDrop = useCallback(async (files: File[]) => {
     if (!files.length) return;
     const file = files[0];

@@ -1,6 +1,6 @@
-import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useSEO } from "@/hooks/use-seo";
+import { PolicyUploadGate } from "@/components/PolicyUploadGate";
 import { FileText, Search, Bell, ShieldCheck, Lock, IndianRupee } from "lucide-react";
 
 // Campaign landing page for the "review your insurance, make a portfolio
@@ -9,7 +9,9 @@ import { FileText, Search, Bell, ShieldCheck, Lock, IndianRupee } from "lucide-r
 //  - No Header and no MobileNav (both return null on /start). A cold visitor
 //    arriving from a reel has one job here, and site nav is five ways to not
 //    do it. Same reasoning as the /a/<slug> advisor pages.
-//  - One CTA, repeated. Every button on this page goes to /signup.
+//  - One action, repeated: the uploader. The closing button scrolls back to it
+//    rather than jumping to /signup — the account is asked for after there is a
+//    file waiting, which is the whole point of the flow.
 //  - The reel's own words are the h1, so the page reads as the payoff to the
 //    thing they just watched rather than a general homepage.
 //
@@ -72,14 +74,12 @@ export default function Start() {
           </p>
         </section>
 
-        {/* PRIMARY CTA — above the fold on a phone */}
-        <section className="max-w-2xl mx-auto mb-12">
-          <Button asChild size="lg" className="w-full md:w-auto text-base py-6 px-8">
-            <Link href="/signup">Start my portfolio — free</Link>
-          </Button>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-3">
-            Free forever. No card needed.
-          </p>
+        {/* PRIMARY ACTION — the uploader itself, above the fold on a phone.
+            This used to be a button to /signup, which asked someone who had
+            just watched a reel to create an account before seeing anything.
+            Now the file comes first and the account comes after. */}
+        <section id="upload" className="max-w-2xl mx-auto mb-12">
+          <PolicyUploadGate compact />
         </section>
 
         {/* HOW IT WORKS */}
@@ -135,8 +135,10 @@ export default function Start() {
           <p className="text-[var(--color-text-secondary)] mb-6">
             One policy of each type is free forever — health, term life and vehicle.
           </p>
+          {/* Back to the uploader rather than off to /signup: the account is
+              worth asking for once they have a file waiting, not before. */}
           <Button asChild size="lg" className="w-full md:w-auto text-base py-6 px-8">
-            <Link href="/signup">Start my portfolio — free</Link>
+            <a href="#upload">Check my policy — free</a>
           </Button>
         </section>
 

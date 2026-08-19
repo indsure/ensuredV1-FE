@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
+import { claimPendingUpload } from "@/lib/pendingUpload";
 import { isPersonalEmail } from "@/lib/emailDomains";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { FieldLabel, FieldError, RequiredLegend, inputStateClass } from "@/components/auth/field";
@@ -154,6 +155,16 @@ export default function SignupPublic() {
         body: JSON.stringify({ full_name: name, phone: digits }),
       });
     } catch { /* non-fatal — bootstrap is idempotent and retried on /app entry */ }
+
+    // If they uploaded a policy before signing up, redeem it now. Must come
+    // after bootstrap: the quota check reads the profile row bootstrap creates.
+    // ?job= tells the portfolio which analysis to follow so they land on live
+    // progress rather than an inert list.
+    const claimed = await claimPendingUpload();
+    if (claimed.status === "started") {
+      setLocation(`/app?job=${claimed.jobId}`);
+      return;
+    }
     setLocation("/app");
   }
 

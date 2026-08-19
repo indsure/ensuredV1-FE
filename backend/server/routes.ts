@@ -102,6 +102,60 @@ const analyzeRateLimiter = rateLimit({
   message: { error: "Too many analysis requests. Please try again in an hour." },
 });
 
+// Pre-signup uploads. Tighter than the authenticated limiter because there is
+// no account behind the request: this endpoint is a writable bucket exposed to
+// anyone who finds it, so the cap is per-IP and low. It costs no Gemini spend,
+// only storage, and the hourly sweep reclaims whatever is never claimed.
+const pendingUploadRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many uploads. Please try again in an hour." },
+});
+
+// Anonymous uploads are capped well below the authenticated 25MB: a stranger
+// should not be able to park 25MB at a time in the bucket.
+const PENDING_UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+const PENDING_UPLOAD_TTL_HOURS = 24;
+const PENDING_PREFIX = "pending";
+
+// Most pre-signup uploads are never claimed — that is inherent to a funnel, so
+// the majority of what this stores is destined for deletion. It is also the
+// least-consented data we hold (see migrations/014), which makes the sweep a
+// privacy control, not just housekeeping.
+//
+// Objects are removed BEFORE their rows: remove() on an already-gone object is
+// a no-op, so a crash mid-sweep costs a retry next hour rather than orphaning a
+// file that no row points at any more.
+async function sweepExpiredPendingUploads() {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, storage_path FROM pending_uploads
+        WHERE claimed_by IS NULL AND expires_at < now()
+        LIMIT 500`
+    );
+    if (rows.length === 0) return;
+
+    const paths = rows.map((r: any) => r.storage_path);
+    const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove(paths);
+    if (error) {
+      console.error("[pending uploads] object sweep failed:", error.message);
+      return; // leave the rows; next run retries the pair together
+    }
+
+    await pool.query("DELETE FROM pending_uploads WHERE id = ANY($1::uuid[])", [
+      rows.map((r: any) => r.id),
+    ]);
+    console.log(`[pending uploads] swept ${paths.length} unclaimed upload(s).`);
+  } catch (err: any) {
+    console.error("[pending uploads] sweep error:", err?.message || err);
+  }
+}
+
+void sweepExpiredPendingUploads();
+setInterval(sweepExpiredPendingUploads, 60 * 60 * 1000);
+
 // ── D2C consumer ("individual") metering knobs ───────────────────────────
 // Free plan holds one policy per line of business, and does not expire. That
 // cap is enforced at ONE server-side choke point (checkIndividualQuota) —
@@ -372,8 +426,16 @@ async function extractTextFromPlain(filePath: string): Promise<string> {
   return fs.readFileSync(filePath, "utf-8");
 }
 
+// The subset of a multer upload that the extraction path actually uses. The
+// deferred flow (upload while anonymous, analyse after signup) rehydrates a
+// file from storage and has no multer request to borrow, so these functions
+// take the four fields they read rather than a whole Express.Multer.File.
+// Express.Multer.File satisfies this structurally, so existing callers are
+// unaffected.
+type PolicyFile = { path: string; originalname: string; size: number; mimetype: string };
+
 async function extractTextFromImage(
-  file: Express.Multer.File,
+  file: PolicyFile,
   apiKey: string,
   usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta>
 ): Promise<string> {
@@ -421,7 +483,7 @@ async function extractTextFromImage(
 }
 
 async function extractPolicyText(
-  file: Express.Multer.File,
+  file: PolicyFile,
   usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta>
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -3440,33 +3502,18 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   });
 
   /* ── Consumer: upload & analyze OWN policy (clone of /api/agent/analyze) ── */
-  app.post(
-    "/api/me/analyze",
-    analyzeRateLimiter,
-    (req, res, next) => {
-      upload.single("file")(req, res, (err: any) => {
-        if (err) {
-          console.error("MULTER ERROR:", err);
-          return res.status(400).json({ error: "File upload failed: " + (err.message || "Unknown error") });
-        }
-        next();
-      });
-    },
-    async (req, res) => {
-      try {
-        const userId = await requireIndividual(req, res);
-        if (!userId) return;
-
-        const insuranceType = (req.body.type || "health").toLowerCase();
-
-        // ── THE quota choke point — before any Gemini spend ──
-        const quota = await checkIndividualQuota(userId, insuranceType);
-        if (!quota.allowed) {
-          return res.status(403).json({ error: "NEEDS_UPGRADE", reason: quota.reason });
-        }
-
-        if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-        const file = req.file;
+  // Starts a consumer analysis for an already-authorised, already-quota-checked
+  // user. Split out of POST /api/me/analyze so the deferred flow (upload while
+  // anonymous, claim after signup) runs the identical path instead of a copy —
+  // the two must never drift, because this is where Gemini spend happens.
+  //
+  // `file` is multer-shaped: a temp path on disk plus the original metadata.
+  // Callers own the quota check; this function does not re-check it.
+  async function startIndividualAnalysis(
+    userId: string,
+    file: PolicyFile,
+    insuranceType: string
+  ): Promise<{ policyId: string; jobId: string }> {
         const isDataEntry = isDataEntryType(insuranceType);
 
         const jobId = crypto.randomUUID();
@@ -3487,7 +3534,6 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         );
         const policyId = policyResult.rows[0].id;
 
-        res.json({ policyId, jobId, status: "pending" });
 
         // ── background processing ──
         (async () => {
@@ -3623,12 +3669,239 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             }
           }
         })();
+    return { policyId, jobId };
+  }
+
+  app.post(
+    "/api/me/analyze",
+    analyzeRateLimiter,
+    (req, res, next) => {
+      upload.single("file")(req, res, (err: any) => {
+        if (err) {
+          console.error("MULTER ERROR:", err);
+          return res.status(400).json({ error: "File upload failed: " + (err.message || "Unknown error") });
+        }
+        next();
+      });
+    },
+    async (req, res) => {
+      try {
+        const userId = await requireIndividual(req, res);
+        if (!userId) return;
+
+        const insuranceType = (req.body.type || "health").toLowerCase();
+
+        // ── THE quota choke point — before any Gemini spend ──
+        const quota = await checkIndividualQuota(userId, insuranceType);
+        if (!quota.allowed) {
+          return res.status(403).json({ error: "NEEDS_UPGRADE", reason: quota.reason });
+        }
+
+        if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+        const file = req.file;
+        const { policyId, jobId } = await startIndividualAnalysis(userId, file, insuranceType);
+        res.json({ policyId, jobId, status: "pending" });
       } catch (err: any) {
         console.error("Consumer analyze error:", err);
         res.status(500).json({ error: err.message || "Failed to create analysis job" });
       }
     }
   );
+
+  /* ── Consumer: upload BEFORE signup, claim after ─────────────────────── */
+  //
+  // Two halves of one flow. A visitor with no account uploads a policy, we park
+  // it, and they see a "sign up to view your results" screen. Nothing has been
+  // read yet. When they come back authenticated they present the token and the
+  // normal metered path runs.
+  //
+  // The split exists so the wall lands after the effort instead of before it —
+  // the old funnel asked strangers to create an account before showing them
+  // anything at all.
+  //
+  // INVARIANT: no Gemini call is reachable from the anonymous half. The quota
+  // check lives in the claim handler, on the authenticated side, and
+  // startIndividualAnalysis is only ever called from there.
+
+  const pendingUpload = multer({
+    dest: "uploads/",
+    limits: { fileSize: PENDING_UPLOAD_MAX_BYTES },
+  });
+
+  // Only the types extractPolicyText can actually read. Validated before the
+  // object is stored, so the bucket never accumulates files nothing can open.
+  const PENDING_ALLOWED_MIME = (m: string) =>
+    m.includes("pdf") || m.startsWith("image/") || m === "text/plain";
+
+  app.post(
+    "/api/upload/pending",
+    pendingUploadRateLimiter,
+    (req, res, next) => {
+      pendingUpload.single("file")(req, res, (err: any) => {
+        if (err) {
+          const tooBig = err?.code === "LIMIT_FILE_SIZE";
+          return res.status(400).json({
+            error: tooBig ? "FILE_TOO_LARGE" : "UPLOAD_FAILED",
+            message: tooBig
+              ? "That file is larger than 10 MB. Try a smaller PDF."
+              : "We could not read that file. Try uploading it again.",
+          });
+        }
+        next();
+      });
+    },
+    async (req, res) => {
+      const file = req.file;
+      try {
+        if (!file) return res.status(400).json({ error: "NO_FILE", message: "No file uploaded." });
+
+        const mime = file.mimetype || "";
+        if (!PENDING_ALLOWED_MIME(mime)) {
+          return res.status(400).json({
+            error: "UNSUPPORTED_TYPE",
+            message: "Upload a PDF, an image, or a text file.",
+          });
+        }
+
+        const insuranceType = (req.body.type || "health").toLowerCase();
+        const token = crypto.randomBytes(32).toString("base64url");
+        const ext = file.originalname.includes(".")
+          ? file.originalname.split(".").pop()!.toLowerCase().replace(/[^a-z0-9]/g, "")
+          : "pdf";
+        const storagePath = `${PENDING_PREFIX}/${token}.${ext || "pdf"}`;
+
+        const buffer = fs.readFileSync(file.path);
+        const { error: upErr } = await supabaseAdmin.storage
+          .from(PDF_BUCKET)
+          .upload(storagePath, buffer, { contentType: mime || "application/pdf", upsert: false });
+        if (upErr) {
+          console.error("[pending upload] storage failed:", upErr.message);
+          return res.status(500).json({
+            error: "STORAGE_FAILED",
+            message: "We could not save that file. Please try again.",
+          });
+        }
+
+        // Hashed, never stored raw — abuse triage only.
+        const ipHash = crypto
+          .createHash("sha256")
+          .update(String(req.ip || ""))
+          .digest("hex")
+          .slice(0, 32);
+
+        await pool.query(
+          `INSERT INTO pending_uploads
+             (token, storage_path, filename, file_size, mime_type, insurance_type, ip_hash, expires_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, now() + ($8 || ' hours')::interval)`,
+          [token, storagePath, file.originalname, file.size, mime, insuranceType, ipHash, String(PENDING_UPLOAD_TTL_HOURS)]
+        );
+
+        res.json({
+          token,
+          filename: file.originalname,
+          insuranceType,
+          expiresInHours: PENDING_UPLOAD_TTL_HOURS,
+        });
+      } catch (err: any) {
+        console.error("[pending upload] error:", err);
+        res.status(500).json({ error: "UPLOAD_FAILED", message: "Something went wrong. Please try again." });
+      } finally {
+        try {
+          if (file?.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        } catch {
+          /* temp file cleanup is best-effort; the hourly sweep catches strays */
+        }
+      }
+    }
+  );
+
+  // Claim: the authenticated half. This is where the account, the quota and the
+  // spend all enter. A token can only be claimed once — claimed_by is set at the
+  // end and checked at the start.
+  app.post("/api/me/claim-upload", analyzeRateLimiter, async (req, res) => {
+    let tempPath: string | null = null;
+    try {
+      const userId = await requireIndividual(req, res);
+      if (!userId) return;
+
+      const token = String(req.body?.token || "");
+      if (!token) return res.status(400).json({ error: "NO_TOKEN", message: "No upload to claim." });
+
+      const found = await pool.query(
+        `SELECT id, storage_path, filename, file_size, mime_type, insurance_type, claimed_by, expires_at
+           FROM pending_uploads WHERE token = $1`,
+        [token]
+      );
+      const row = found.rows[0];
+      if (!row) {
+        return res.status(404).json({ error: "UPLOAD_NOT_FOUND", message: "That upload is no longer available. Please upload your policy again." });
+      }
+      if (row.claimed_by) {
+        return res.status(409).json({ error: "ALREADY_CLAIMED", message: "That upload has already been used." });
+      }
+      if (new Date(row.expires_at).getTime() < Date.now()) {
+        return res.status(410).json({ error: "UPLOAD_EXPIRED", message: "That upload expired. Please upload your policy again." });
+      }
+
+      // ── THE quota choke point — same guard as /api/me/analyze, before spend ──
+      // Deliberately BEFORE the file is rehydrated: someone out of slots gets the
+      // paywall while their upload stays parked, so upgrading and retrying works
+      // without a re-upload.
+      const quota = await checkIndividualQuota(userId, row.insurance_type);
+      if (!quota.allowed) {
+        return res.status(403).json({ error: "NEEDS_UPGRADE", reason: quota.reason, token });
+      }
+
+      const { data: blob, error: dlErr } = await supabaseAdmin.storage
+        .from(PDF_BUCKET)
+        .download(row.storage_path);
+      if (dlErr || !blob) {
+        console.error("[claim upload] download failed:", dlErr?.message);
+        return res.status(500).json({ error: "DOWNLOAD_FAILED", message: "We could not open your file. Please upload it again." });
+      }
+
+      // startIndividualAnalysis takes a file on disk, so rehydrate to the same
+      // uploads/ dir multer uses. Its finally block unlinks this path.
+      const ext = row.storage_path.split(".").pop() || "pdf";
+      tempPath = `uploads/claim-${crypto.randomUUID()}.${ext}`;
+      fs.writeFileSync(tempPath, Buffer.from(await blob.arrayBuffer()));
+
+      const { policyId, jobId } = await startIndividualAnalysis(
+        userId,
+        {
+          path: tempPath,
+          originalname: row.filename,
+          size: row.file_size,
+          mimetype: row.mime_type,
+        },
+        row.insurance_type
+      );
+      tempPath = null; // ownership passed to startIndividualAnalysis
+
+      await pool.query(
+        "UPDATE pending_uploads SET claimed_by = $1, claimed_at = now() WHERE id = $2",
+        [userId, row.id]
+      );
+
+      // The holding copy has served its purpose — startIndividualAnalysis writes
+      // its own copy under the user's path. Best-effort: the sweep is the backstop.
+      supabaseAdmin.storage
+        .from(PDF_BUCKET)
+        .remove([row.storage_path])
+        .catch((e: any) => console.warn("[claim upload] pending object cleanup failed:", e?.message));
+
+      res.json({ policyId, jobId, status: "pending" });
+    } catch (err: any) {
+      console.error("[claim upload] error:", err);
+      res.status(500).json({ error: "CLAIM_FAILED", message: err.message || "Could not start your analysis." });
+    } finally {
+      try {
+        if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+      } catch {
+        /* best-effort */
+      }
+    }
+  });
 
   /* ── Agent: Toggle Share ─────────────────────────────────────────────── */
 

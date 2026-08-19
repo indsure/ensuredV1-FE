@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
+import { claimPendingUpload } from "@/lib/pendingUpload";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { FieldLabel, FieldError, RequiredLegend, inputStateClass } from "@/components/auth/field";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,16 @@ export default function LoginPublic() {
     try {
       await apiFetch("/api/me/bootstrap", { method: "POST" });
     } catch { /* non-fatal — retried on /app entry */ }
+
+    // Someone who uploaded while logged out then signed in here gets the same
+    // redemption as a new signup. On NEEDS_UPGRADE the token is kept and the
+    // portfolio shows its paywall — the file stays parked, so upgrading and
+    // retrying does not need a re-upload.
+    const claimed = await claimPendingUpload();
+    if (claimed.status === "started") {
+      setLocation(`/app?job=${claimed.jobId}`);
+      return;
+    }
     setLocation("/app");
   }
 
