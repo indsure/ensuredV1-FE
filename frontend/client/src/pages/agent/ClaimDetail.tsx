@@ -1037,6 +1037,13 @@ function OutcomeDialog({
   const [proof, setProof] = useState<ClaimDocument[]>(claim.documents.filter((d) => d.category === "outcome"));
   const ref = useRef<HTMLInputElement>(null);
 
+  // An insurer cannot pay more than was asked for, so this is a typo guard —
+  // and these two figures are what the track record is computed from.
+  const claimedNum = claim.claimed_amount != null ? Number(claim.claimed_amount) : null;
+  const typed = Number(String(amount).replace(/[₹,\s_]/g, ""));
+  const overClaimed =
+    kind === "settled" && claimedNum != null && Number.isFinite(typed) && typed > claimedNum;
+
   async function pick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -1058,6 +1065,14 @@ function OutcomeDialog({
   async function confirm() {
     if (proof.length === 0) {
       toast({ variant: "destructive", title: "Attach the insurer's letter first" });
+      return;
+    }
+    if (overClaimed) {
+      toast({
+        variant: "destructive",
+        title: "Settled is more than claimed",
+        description: "An insurer cannot pay out more than was asked for. Check the figure.",
+      });
       return;
     }
     setBusy(true);
@@ -1094,14 +1109,31 @@ function OutcomeDialog({
 
         {kind === "settled" && (
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-bold text-slate-600">Amount settled</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-xs font-bold text-slate-600">Amount settled</span>
+              {claimedNum != null && (
+                <span className="text-xs text-slate-400">
+                  claimed {formatAmount(claimedNum)}
+                </span>
+              )}
+            </div>
             <input
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               inputMode="numeric"
-              placeholder={claim.claimed_amount != null ? `of ${Number(claim.claimed_amount)}` : "e.g. 171400"}
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base font-bold focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
+              placeholder={claimedNum != null ? `up to ${claimedNum}` : "e.g. 171400"}
+              className={`w-full rounded-xl border px-4 py-3 text-base font-bold focus:outline-none focus:ring-2 ${
+                overClaimed
+                  ? "border-red-300 focus:ring-red-200"
+                  : "border-slate-200 focus:ring-[#0D9488]/30"
+              }`}
             />
+            {overClaimed && (
+              <span className="text-xs font-semibold text-red-600">
+                More than the {formatAmount(claimedNum as number)} claimed. Check the figure, or
+                edit the claimed amount first.
+              </span>
+            )}
           </label>
         )}
 
@@ -1200,7 +1232,25 @@ function EditDialog({
   });
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Checked as a pair: lowering the claimed amount below an existing settled
+  // figure breaks the relationship just as surely as raising the settled one.
+  const num = (v: string) => {
+    const n = Number(String(v).replace(/[₹,\s_]/g, ""));
+    return v.trim() !== "" && Number.isFinite(n) ? n : null;
+  };
+  const claimedNum = num(form.claimed_amount);
+  const settledNum = num(form.settled_amount);
+  const overClaimed = claimedNum != null && settledNum != null && settledNum > claimedNum;
+
   async function save() {
+    if (overClaimed) {
+      toast({
+        variant: "destructive",
+        title: "Settled is more than claimed",
+        description: "An insurer cannot pay out more than was asked for.",
+      });
+      return;
+    }
     setBusy(true);
     try {
       await updateClaim(claim.id, form);
@@ -1238,16 +1288,29 @@ function EditDialog({
             <input value={form.claimed_amount} onChange={(e) => set("claimed_amount", e.target.value)} inputMode="numeric" placeholder="e.g. 185000" className={field} />
           </Field>
           <Field label="Amount settled">
-            <input value={form.settled_amount} onChange={(e) => set("settled_amount", e.target.value)} inputMode="numeric" placeholder="e.g. 171400" className={field} />
+            <input
+              value={form.settled_amount}
+              onChange={(e) => set("settled_amount", e.target.value)}
+              inputMode="numeric"
+              placeholder={claimedNum != null ? `up to ${claimedNum}` : "e.g. 171400"}
+              className={overClaimed ? field.replace("border-slate-200", "border-red-300") : field}
+            />
           </Field>
           <Field label="Admitted on"><input type="date" value={form.admitted_on} onChange={(e) => set("admitted_on", e.target.value)} className={field} /></Field>
           <Field label="Discharged on"><input type="date" value={form.discharged_on} onChange={(e) => set("discharged_on", e.target.value)} className={field} /></Field>
         </div>
 
-        <p className="text-xs text-slate-400">
-          Amounts in numbers only — commas and ₹ are fine, they are stripped. Every change is
-          recorded in the claim's history below.
-        </p>
+        {overClaimed ? (
+          <p className="text-xs font-semibold text-red-600">
+            The settled amount is more than the amount claimed. An insurer cannot pay out more
+            than was asked for — raise the claimed figure, or correct the settled one.
+          </p>
+        ) : (
+          <p className="text-xs text-slate-400">
+            Amounts in numbers only — commas and ₹ are fine, they are stripped. Every change is
+            recorded in the claim's history below.
+          </p>
+        )}
 
         <div className="flex flex-col gap-2">
           <button

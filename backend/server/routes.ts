@@ -2052,6 +2052,31 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     return { ok: true, value: Math.round(n * 100) / 100 };
   }
 
+  // An insurer cannot pay out more than was asked for, so a settled figure
+  // above the claimed one is a typo — usually a digit too many, which is
+  // exactly the mistake that matters here because these two numbers are what
+  // the advisor's track record is computed from.
+  //
+  // Checked as a PAIR, not per field: editing the CLAIMED amount downward
+  // breaks the relationship just as surely as raising the settled one, so both
+  // write paths compare the values the row will actually end up holding.
+  function checkAmountPair(
+    claimed: unknown,
+    settled: unknown
+  ): { ok: true } | { ok: false; message: string } {
+    if (claimed == null || settled == null) return { ok: true };
+    const c = Number(claimed);
+    const s = Number(settled);
+    if (!Number.isFinite(c) || !Number.isFinite(s)) return { ok: true };
+    if (s > c) {
+      return {
+        ok: false,
+        message: `The settled amount cannot be more than the amount claimed (₹${c.toLocaleString("en-IN")}).`,
+      };
+    }
+    return { ok: true };
+  }
+
   // Closing a claim destroys its personal and case documents immediately —
   // the purpose they were collected for has ended, so holding them to the
   // 30-day mark would be keeping identity documents for no reason. The outcome
@@ -2322,6 +2347,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const before = await claimForAgent(req.params.id, agentId);
       if (!before) return res.status(404).json({ error: "Claim not found" });
 
+      // Compare what the row will HOLD after this edit, so lowering the claimed
+      // amount under an existing settled figure is caught too.
+      const nextClaimed = "claimed_amount" in wanted ? wanted.claimed_amount : before.claimed_amount;
+      const nextSettled = "settled_amount" in wanted ? wanted.settled_amount : before.settled_amount;
+      const pair = checkAmountPair(nextClaimed, nextSettled);
+      if (!pair.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: pair.message });
+
       vals.push(req.params.id, agentId);
       const upd = await pool.query(
         `UPDATE claims SET ${sets.join(", ")}, updated_at = now()
@@ -2383,6 +2415,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       const money = parseMoney(settledAmount);
       if (!money.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: money.message });
+
+      if (money.value != null) {
+        const pair = checkAmountPair(claim.claimed_amount, money.value);
+        if (!pair.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: pair.message });
+      }
 
       if (closing) {
         // Count only proof that will still be here afterwards. Counting every
