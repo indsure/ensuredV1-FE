@@ -381,8 +381,8 @@ setInterval(() => {
  * clients.error_message and rendered verbatim in the consumer portfolio, the
  * agent upload list and the admin portal, so it has to name the actual problem
  * ("password-protected", "a scan we couldn't read") and say what to do next.
- * Internal detail — the pdf.js exception, the OCR failure — goes to the log and
- * to analysis_jobs.error, never into this message.
+ * Internal detail — the pdf.js exception — goes to the log and to
+ * analysis_jobs.error, never into this message.
  *
  * `reason` is the stable, machine-readable half. Nothing keys off it today; it
  * exists so a caller can branch (or a dashboard can group) without parsing prose.
@@ -390,8 +390,7 @@ setInterval(() => {
 export type PdfFailureReason =
   | "password_protected"
   | "scanned_unreadable"
-  | "corrupt"
-  | "too_large_to_ocr";
+  | "corrupt";
 
 export class PdfExtractionError extends Error {
   constructor(readonly reason: PdfFailureReason, message: string) {
@@ -404,11 +403,9 @@ const PDF_FAILURE_MESSAGE: Record<PdfFailureReason, string> = {
   password_protected:
     "This PDF is locked with a password, so we could not open it. Please remove the password and upload it again, or send it to our team and we will do it for you.",
   scanned_unreadable:
-    "This looks like a scanned or photographed copy, and we could not read any text from it. The original PDF from your insurer usually works. If you only have this copy, send it to our team and we will read it for you.",
+    "This looks like a scanned or photographed copy, and we could not read any text from it. We need the original PDF from your insurer — the one that came by email, where you can select the text. If you only have this copy, send it to our team and we will read it for you.",
   corrupt:
     "This file is damaged or is not a readable PDF. Please download a fresh copy from your insurer and upload it again, or send it to our team.",
-  too_large_to_ocr:
-    "This scanned file is too large for us to read automatically. Please upload a copy under 12 MB, or send it to our team and we will handle it.",
 };
 
 /**
@@ -440,25 +437,28 @@ function readableFailure(err: unknown): string {
   );
 }
 
-/** Anything shorter than this is a header or a page number, not a policy. */
+/**
+ * Anything shorter than this is a header or a page number, not a policy.
+ * Below it the PDF is treated as a scan and rejected, which also stops us
+ * paying to analyse an extraction that was never going to score.
+ */
 const MIN_USABLE_TEXT_CHARS = 200;
 
 /**
- * Ceiling for sending a PDF to Gemini as inline data. Base64 inflates by ~4/3,
- * so 12 MB of PDF is ~16 MB on the wire, inside the ~20 MB request limit.
- * Uploads themselves are capped higher (25 MB), hence the separate limit and
- * its own message.
+ * Text-layer extraction only. A PDF we cannot read is rejected, never OCR'd.
+ *
+ * DELIBERATE: no OCR path exists here. Insurer-issued PDFs are machine-readable
+ * by definition, so a policy with no text layer is a phone photo or a desk-scan
+ * of a printout — and running those through a model costs money on every upload
+ * to produce a transcription nobody has verified. We would rather ask for the
+ * original PDF, which the person almost always has in their email, and offer to
+ * do it by hand when they genuinely do not. If you are about to add an OCR
+ * fallback, that is the tradeoff you are reversing.
  */
-const OCR_MAX_BYTES = 12 * 1024 * 1024;
-
-export async function extractTextFromPDF(
-  filePath: string,
-  ocr?: { apiKey: string; usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta> }
-): Promise<string> {
+export async function extractTextFromPDF(filePath: string): Promise<string> {
   const fileData = fs.readFileSync(filePath);
   const data = new Uint8Array(fileData);
 
-  // Pass 1: the text layer. Covers every insurer-issued PDF.
   let text = "";
   try {
     const loadingTask = pdfjs.getDocument({ data, disableFontFace: true });
@@ -475,47 +475,25 @@ export async function extractTextFromPDF(
       }
     }
   } catch (error: any) {
-    // Two failures are the file's own doing and no amount of OCR fixes them,
-    // so they are reported as-is rather than costing an OCR call first.
     if (error?.name === "PasswordException") {
       throw new PdfExtractionError("password_protected", PDF_FAILURE_MESSAGE.password_protected);
     }
     if (error?.name === "InvalidPDFException") {
       throw new PdfExtractionError("corrupt", PDF_FAILURE_MESSAGE.corrupt);
     }
-    // Everything else falls through to OCR: some genuine policy bonds trip
-    // pdf.js on fonts or a malformed xref yet still render perfectly.
-    console.warn("[PDF Extraction] pdf.js could not read the text layer:", error?.message?.substring(0, 150));
+    // A file pdf.js cannot open at all, for any other reason, is not something
+    // we can read either. Reported as damaged rather than as a scan, because
+    // "send us the original" is the wrong advice when the file itself is broken.
+    console.warn("[PDF Extraction] pdf.js could not open the file:", error?.message?.substring(0, 150));
+    throw new PdfExtractionError("corrupt", PDF_FAILURE_MESSAGE.corrupt);
   }
 
   if (text.trim().length >= MIN_USABLE_TEXT_CHARS) return text;
 
-  // Pass 2: no usable text layer, so this is a scan or a photo. OCR is the only
-  // way through — the old pdf-parse fallback that used to sit here could never
-  // have helped, because it reads the same (absent) text layer.
   console.warn(
-    `[PDF Extraction] text layer yielded ${text.trim().length} chars — falling back to OCR`
+    `[PDF Extraction] text layer yielded ${text.trim().length} chars — treating as a scan, not analysing`
   );
-
-  if (!ocr?.apiKey) {
-    throw new PdfExtractionError("scanned_unreadable", PDF_FAILURE_MESSAGE.scanned_unreadable);
-  }
-  if (fileData.length > OCR_MAX_BYTES) {
-    throw new PdfExtractionError("too_large_to_ocr", PDF_FAILURE_MESSAGE.too_large_to_ocr);
-  }
-
-  let ocrText = "";
-  try {
-    ocrText = await ocrWithGemini(fileData, "application/pdf", ocr.apiKey, ocr.usageMeta);
-  } catch (ocrErr: any) {
-    console.error("[PDF Extraction] OCR failed:", ocrErr?.message);
-    throw new PdfExtractionError("scanned_unreadable", PDF_FAILURE_MESSAGE.scanned_unreadable);
-  }
-
-  if (ocrText.trim().length < MIN_USABLE_TEXT_CHARS) {
-    throw new PdfExtractionError("scanned_unreadable", PDF_FAILURE_MESSAGE.scanned_unreadable);
-  }
-  return ocrText;
+  throw new PdfExtractionError("scanned_unreadable", PDF_FAILURE_MESSAGE.scanned_unreadable);
 }
 
 async function extractTextFromPlain(filePath: string): Promise<string> {
@@ -531,13 +509,13 @@ async function extractTextFromPlain(filePath: string): Promise<string> {
 type PolicyFile = { path: string; originalname: string; size: number; mimetype: string };
 
 /**
- * Transcribe a document Gemini can see but we cannot parse — a photographed
- * policy, or a scanned PDF with no text layer. Gemini takes application/pdf as
- * inline data directly, so a scan needs no page rasterising on our side.
+ * Transcribe an uploaded image — a photographed policy. This is the only OCR in
+ * the app and it exists because an image has no text layer to read instead;
+ * PDFs deliberately have no such fallback (see extractTextFromPDF).
  *
  * Metered like every other call: one gemini_usage_log row per attempt, success
  * or failure. Only ever reached from inside an analysis, which is behind the
- * quota check, so OCR cannot be spent by an account without slots.
+ * quota check, so it cannot be spent by an account without slots.
  */
 async function ocrWithGemini(
   buffer: Buffer,
@@ -603,7 +581,7 @@ async function extractPolicyText(
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
-  if (file.mimetype.includes("pdf")) return extractTextFromPDF(file.path, { apiKey, usageMeta });
+  if (file.mimetype.includes("pdf")) return extractTextFromPDF(file.path);
   if (file.mimetype.startsWith("image/")) return extractTextFromImage(file, apiKey, usageMeta);
   if (file.mimetype === "text/plain") return extractTextFromPlain(file.path);
 
