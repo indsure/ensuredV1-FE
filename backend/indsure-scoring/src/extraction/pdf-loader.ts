@@ -2,7 +2,7 @@
  * PDF Loader - Extracts text from PDFs (text-based or scanned)
  */
 
-import * as pdfParse from 'pdf-parse';
+import { PDFParse } from 'pdf-parse';
 import { createWorker } from 'tesseract.js';
 
 export interface PDFPage {
@@ -36,25 +36,21 @@ function isScannedPDF(text: string, pageCount: number): boolean {
  * Extracts text from a text-based PDF
  */
 async function extractTextPDF(buffer: Buffer): Promise<PDFLoadResult> {
+  // pdf-parse v2 is a class, not a callable module, and it holds a pdf.js
+  // worker open until destroy() — hence the finally.
+  const parser = new PDFParse({ data: new Uint8Array(buffer) });
+
   try {
-    const data = await (pdfParse as any)(buffer);
-    
-    const fullText = data.text;
-    const pageCount = data.numpages;
-    
-    // pdf-parse doesn't provide per-page text easily, so we approximate
-    const pages: PDFPage[] = [];
-    const textPerPage = Math.ceil(fullText.length / pageCount);
-    
-    for (let i = 0; i < pageCount; i++) {
-      const start = i * textPerPage;
-      const end = Math.min((i + 1) * textPerPage, fullText.length);
-      pages.push({
-        pageNum: i + 1,
-        text: fullText.substring(start, end),
-      });
-    }
-    
+    const result = await parser.getText();
+
+    const fullText = result.text;
+    // v2 returns real per-page text, so no approximation is needed.
+    const pages: PDFPage[] = result.pages.map((page) => ({
+      pageNum: page.num,
+      text: page.text,
+    }));
+    const pageCount = Math.max(result.total || pages.length, 1);
+
     return {
       fullText,
       pages,
@@ -65,6 +61,8 @@ async function extractTextPDF(buffer: Buffer): Promise<PDFLoadResult> {
       'Failed to extract text from PDF',
       error instanceof Error ? error : undefined
     );
+  } finally {
+    await parser.destroy();
   }
 }
 

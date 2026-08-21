@@ -1,14 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { createRequire } from 'module';
+import { PDFParse } from 'pdf-parse';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const require = createRequire(import.meta.url);
-
-// pdf-parse exports a function directly
-const pdf = require('pdf-parse');
 
 // Canonical insurer slug mapping
 const INSURER_SLUG_MAP: Record<string, string> = {
@@ -84,7 +80,14 @@ async function extractPDFMetadata(
     try {
         // Read PDF file
         const dataBuffer = fs.readFileSync(pdfPath);
-        const data = await pdf(dataBuffer);
+        // pdf-parse v2 exposes a PDFParse class; the module itself is not callable.
+        const parser = new PDFParse({ data: new Uint8Array(dataBuffer) });
+        let data;
+        try {
+            data = await parser.getText();
+        } finally {
+            await parser.destroy();
+        }
 
         // Extract header text (first 5 pages only for performance)
         const headerText = data.text.substring(0, 5000);
@@ -100,7 +103,7 @@ async function extractPDFMetadata(
             };
         }
 
-        if (data.numpages === 0) {
+        if (data.total === 0) {
             return {
                 filename,
                 reason: 'page_count = 0'
@@ -119,7 +122,7 @@ async function extractPDFMetadata(
             insurer_name: INSURER_SLUG_MAP[insurerSlug],
             insurer_slug: insurerSlug,
             last_updated_date: lastUpdatedDate,
-            page_count: data.numpages,
+            page_count: data.total,
             source_filename: filename,
             file_path: pdfPath,
             ingested_at: new Date().toISOString()
