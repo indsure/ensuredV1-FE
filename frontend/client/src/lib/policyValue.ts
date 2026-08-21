@@ -46,6 +46,8 @@ export interface ValueRow {
   cover: number;
   /** null = payable straight away; otherwise the date the money is released. */
   deferredTo: string | null;
+  /** Annual return on the real cashflows if the policy is exited that year. */
+  irr: number | null;
   note: string;
 }
 
@@ -63,6 +65,8 @@ export interface ValueSchedule {
   lockInEnds: string | null;
   guaranteed: boolean;
   steps: string[];
+  /** Annual return if the policy is held to the end. */
+  irrAtMaturity: number | null;
   /** Value the document itself states at maturity, when it was extracted. */
   illustratedMaturity: number | null;
   /** How far our schedule sits from the document's own figure. */
@@ -128,6 +132,40 @@ function addYears(iso: string | null, years: number): string | null {
   if (Number.isNaN(dt.getTime())) return null;
   dt.setFullYear(dt.getFullYear() + years);
   return dt.toISOString().slice(0, 10);
+}
+
+/**
+ * Internal rate of return on the policy's actual cashflows.
+ *
+ * A life policy pays premiums in over years and one lump sum out, so a simple
+ * CAGR on the total premiums overstates the return badly — money paid in year
+ * 15 has not been working for 15 years. IRR is the measure that handles a
+ * stream of payments, and it is what a customer should compare against an FD.
+ *
+ * Solved by bisection: no derivative to blow up, and it either brackets a root
+ * or returns null rather than a made-up number.
+ */
+export function irr(flows: number[]): number | null {
+  const npv = (r: number) => flows.reduce((sum, cf, t) => sum + cf / Math.pow(1 + r, t), 0);
+  let lo = -0.9999, hi = 5;
+  let flo = npv(lo), fhi = npv(hi);
+  if (!Number.isFinite(flo) || !Number.isFinite(fhi) || flo * fhi > 0) return null;
+  for (let i = 0; i < 240; i++) {
+    const mid = (lo + hi) / 2;
+    const fm = npv(mid);
+    if (fm === 0) return mid;
+    if (flo * fm < 0) { hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
+  }
+  return (lo + hi) / 2;
+}
+
+/** Cashflows for exiting at the end of policy year `exitYear`: premiums out at
+ *  the start of each paying year, the payout in at exit. */
+function exitFlows(annualPremium: number, ppt: number, exitYear: number, payout: number): number[] {
+  const flows: number[] = new Array(exitYear + 1).fill(0);
+  for (let t = 0; t < Math.min(ppt, exitYear); t++) flows[t] -= annualPremium;
+  flows[exitYear] += payout;
+  return flows;
 }
 
 function penaltyFor(year: number, ap: number, fv: number, params: PolicyParams): number {
@@ -241,6 +279,7 @@ export function computePolicyValue(
         back,
         cover: Math.max(sumAssured, fv, floor * (annualPremium * Math.min(y, ppt))),
         deferredTo: inLock ? lockInEnds : null,
+        irr: irr(exitFlows(annualPremium, ppt, y, back)),
         note: inLock
           ? `Held in the discontinued fund until ${lockInEnds ?? "the end of the lock-in"}, earning ${params.discontinuedFundRatePct.value}% a year.`
           : "Fund value on the day you surrender.",
@@ -304,6 +343,7 @@ export function computePolicyValue(
         year: y,
         age: entryAge === null ? null : entryAge + y,
         paid, value, penalty: 0, back, cover, deferredTo: null, note,
+        irr: irr(exitFlows(annualPremium, ppt, y, back)),
       });
     }
 
@@ -338,6 +378,7 @@ export function computePolicyValue(
 
   return {
     shape, rows, params, annualPremium, totalPremiums, maturity,
+    irrAtMaturity: rows[rows.length - 1]?.irr ?? null,
     term: term!, ppt, entryAge, lockInYears, lockInEnds, guaranteed, steps,
     illustratedMaturity, reconciliation,
   };

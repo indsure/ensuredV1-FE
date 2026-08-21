@@ -21,6 +21,8 @@ import {
 } from "@/lib/policyBook";
 
 const rupee = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
+const pct = (r: number | null) => (r === null ? "—" : (r * 100).toFixed(1) + "%");
+
 const short = (n: number) => {
   if (!n) return "₹0";
   if (n >= 1e7) return "₹" + (n / 1e7).toFixed(2).replace(/\.?0+$/, "") + " Cr";
@@ -176,12 +178,12 @@ export default function PolicyValues() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left">
-                {["Client", "Year", "Paid in", "Worth today", "At next anniversary", "What to do"].map((h, i) => (
+                {["Client", "Year", "Paid in", "Worth today", "At next anniversary", "Return", "What to do"].map((h, i) => (
                   <th
                     key={h}
                     className={
                       "px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 " +
-                      (i >= 2 && i <= 4 ? "text-right" : "")
+                      (i >= 2 && i <= 5 ? "text-right" : "")
                     }
                   >
                     {h}
@@ -222,6 +224,15 @@ export default function PolicyValues() {
                         {r.uplift > 0 && (
                           <span className="ml-1 text-xs">+{Math.round(r.upliftPct)}%</span>
                         )}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    {r.irrToday === null ? (
+                      <span className="text-slate-300">—</span>
+                    ) : (
+                      <span className={r.irrToday < 0 ? "font-semibold text-amber-700" : "text-slate-700"}>
+                        {pct(r.irrToday)}
                       </span>
                     )}
                   </td>

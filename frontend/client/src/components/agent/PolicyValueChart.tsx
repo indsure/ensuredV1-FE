@@ -32,6 +32,8 @@ const short = (n: number) => {
   return "₹" + Math.round(n);
 };
 
+const pct = (r: number | null) => (r === null ? "—" : (r * 100).toFixed(2) + "%");
+
 const SOURCE_STYLE: Record<ParamSource, string> = {
   document: "bg-[#0D9488]/10 text-[#0f766e] border-[#0D9488]/30",
   entered: "bg-blue-50 text-blue-700 border-blue-200",
@@ -132,7 +134,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
 
   const {
     shape, rows, params, totalPremiums, maturity, lockInYears, lockInEnds,
-    steps, illustratedMaturity, reconciliation,
+    steps, illustratedMaturity, reconciliation, irrAtMaturity,
   } = result;
   const row = rows[yr - 1];
   const relevant = RELEVANT_PARAMS[shape] ?? [];
@@ -156,13 +158,15 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
       };
     if (shape === "return_of_premium")
       return {
-        title: `All ${rupee(totalPremiums)} of the premiums come back at the end.`,
+        title: `All ${rupee(totalPremiums)} of the premiums come back at the end` +
+          (irrAtMaturity !== null ? `, a return of ${pct(irrAtMaturity)} a year.` : "."),
         body: `Stop earlier and only the guaranteed surrender value is paid, which stays below the premiums ` +
           `paid until close to the end of the term.`,
       };
     if (shape === "endowment")
       return {
-        title: `About ${short(maturity)} at maturity, on ${rupee(totalPremiums)} of premiums.`,
+        title: `About ${short(maturity)} at maturity, on ${rupee(totalPremiums)} of premiums` +
+          (irrAtMaturity !== null ? ` — a return of ${pct(irrAtMaturity)} a year.` : "."),
         body: `Surrender before the end pays the higher of the guaranteed value and the paid-up value, both ` +
           `well below the premiums paid for most of the term.`,
       };
@@ -321,7 +325,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
           />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border border-slate-100 p-4">
             <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Paid by then</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: PAID }}>{rupee(row.paid)}</div>
@@ -337,6 +341,19 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             </div>
             <div className="mt-1 text-xs text-slate-500">
               {row.penalty > 0 ? `After a ${rupee(row.penalty)} discontinuance charge. ` : ""}{row.note}
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-100 p-4">
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Return if they stop here</div>
+            <div className={"mt-1 text-2xl font-bold " + (row.irr === null ? "text-slate-400" : row.irr < 0 ? "text-amber-700" : "text-slate-900")}>
+              {row.irr === null ? "No return" : pct(row.irr)}
+            </div>
+            <div className="mt-1 text-xs text-slate-500">
+              {row.irr === null
+                ? "Nothing comes back, so there is no return to measure."
+                : row.irr < 0
+                ? "A loss. They get back less than they put in."
+                : "A year, on the money actually paid in. Compare it with a fixed deposit."}
             </div>
           </div>
           <div className="rounded-xl border border-slate-100 p-4">
@@ -408,6 +425,13 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             estimated, and the same document always gives the same numbers.
           </p>
           <ul className="mt-3 space-y-1.5">
+            {irrAtMaturity !== null && (
+              <li className="text-xs text-slate-600">
+                · Return = the rate at which the premiums actually paid, year by year, grow into the payout
+                (internal rate of return). A plain average over total premiums would overstate it, because a
+                premium paid late has not been invested for the whole term.
+              </li>
+            )}
             {steps.map((s, i) => (
               <li key={i} className="text-xs text-slate-600">· {s}</li>
             ))}

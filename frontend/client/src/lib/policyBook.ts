@@ -39,6 +39,9 @@ export interface PolicyValueSummary {
   uplift: number;
   upliftPct: number;
   deferredTo: string | null;
+  /** Annual return if exited today, and if held to the end. */
+  irrToday: number | null;
+  irrAtMaturity: number | null;
   action: ValueAction;
   headline: string;
 }
@@ -127,6 +130,8 @@ export function summarisePolicy(row: {
     uplift,
     upliftPct,
     deferredTo: today.deferredTo,
+    irrToday: today.irr,
+    irrAtMaturity: result.irrAtMaturity,
     action,
     headline,
   };
