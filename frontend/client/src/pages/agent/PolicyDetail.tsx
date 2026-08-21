@@ -5,6 +5,7 @@ import { Copy, ExternalLink, FileText, RefreshCw, ShieldCheck, Trash2 } from "lu
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import CustomerTagCard from "@/components/agent/CustomerTagCard";
 import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
+import PolicyValueChart from "@/components/agent/PolicyValueChart";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
 import { Button } from "@/components/ui/button";
@@ -469,12 +470,24 @@ export default function PolicyDetail() {
           {/* Data-entry types show an editable details form; health shows the full audit report. */}
           {isDataEntry ? (
             policy.status === "done" ? (
-              <ExtractedDataForm
-                clientId={policy.id}
-                insuranceType={insuranceType}
-                initialData={extractedData}
-                onSaved={() => void loadDetail()}
-              />
+              <div className="space-y-6">
+                <ExtractedDataForm
+                  clientId={policy.id}
+                  insuranceType={insuranceType}
+                  initialData={extractedData}
+                  onSaved={() => void loadDetail()}
+                />
+                {/* Life and term policies also get the value schedule worked out
+                    from those same fields — arithmetic only, no analysis run. */}
+                {(insuranceType === "life" || insuranceType === "term") && (
+                  <PolicyValueChart
+                    clientId={policy.id}
+                    insuranceType={insuranceType}
+                    data={extractedData}
+                    onSaved={() => void loadDetail()}
+                  />
+                )}
+              </div>
             ) : (
               <Card className="border-slate-100 shadow-sm">
                 <CardContent className="p-8 text-center text-slate-400 text-sm italic">

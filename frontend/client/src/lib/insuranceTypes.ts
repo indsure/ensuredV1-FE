@@ -89,6 +89,9 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "start_date", label: "Commencement date", type: "date" },
     { key: "next_premium_date", label: "Next premium due date", type: "date" },
     { key: "maturity_date", label: "Maturity date", type: "date", shared: "expiry_date" },
+    { key: "plan_type", label: "Plan type (term / return of premium / endowment / unit linked)", type: "text" },
+    { key: "bonus_per_1000", label: "Declared bonus per ₹1,000 sum assured (if any)", type: "number" },
+    { key: "fund_value", label: "Fund value (unit linked only)", type: "number" },
     { key: "nominee_name", label: "Nominee", type: "text" },
   ],
   term: [
@@ -106,6 +109,7 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "start_date", label: "Commencement date", type: "date" },
     { key: "next_premium_date", label: "Next premium due date", type: "date" },
     { key: "cover_end_date", label: "Cover end date", type: "date", shared: "expiry_date" },
+    { key: "plan_type", label: "Plan type (term / return of premium)", type: "text" },
     { key: "death_benefit_payout", label: "Death benefit payout (lump sum / income)", type: "text" },
     { key: "nominee_name", label: "Nominee", type: "text" },
   ],
