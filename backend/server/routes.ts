@@ -2349,10 +2349,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       // Compare what the row will HOLD after this edit, so lowering the claimed
       // amount under an existing settled figure is caught too.
-      const nextClaimed = "claimed_amount" in wanted ? wanted.claimed_amount : before.claimed_amount;
-      const nextSettled = "settled_amount" in wanted ? wanted.settled_amount : before.settled_amount;
-      const pair = checkAmountPair(nextClaimed, nextSettled);
-      if (!pair.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: pair.message });
+      //
+      // Only when the edit actually TOUCHES an amount, though. Rows written
+      // before this rule existed can already violate it, and refusing to let
+      // the advisor correct the hospital name on such a claim — with an error
+      // about amounts he did not touch — would trap the row permanently, with
+      // no way to reach the very fields that would fix it.
+      const touchesMoney = "claimed_amount" in wanted || "settled_amount" in wanted;
+      if (touchesMoney) {
+        const nextClaimed = "claimed_amount" in wanted ? wanted.claimed_amount : before.claimed_amount;
+        const nextSettled = "settled_amount" in wanted ? wanted.settled_amount : before.settled_amount;
+        const pair = checkAmountPair(nextClaimed, nextSettled);
+        if (!pair.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: pair.message });
+      }
 
       vals.push(req.params.id, agentId);
       const upd = await pool.query(
