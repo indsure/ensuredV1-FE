@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import {
-  AlertTriangle, ArrowLeft, Check, CheckCircle2, Circle, Clock, Loader2, MessageCircle,
-  Phone, Plus, Trash2, Upload, X,
+  AlertTriangle, ArrowLeft, Check, CheckCircle2, Circle, Clock, Download, Eye, Loader2,
+  MessageCircle, Pencil, Phone, Plus, Trash2, Upload, X,
 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
@@ -11,7 +11,7 @@ import { formatAmount } from "@/lib/customers";
 import {
   addQuery, CASE_DOCS, CLAIM_SPINE, CLAIM_STATUS_META, deleteClaimDocument, deleteQuery,
   extendRetention, fetchClaim, formatDate, formatDay, openClaimDocument, PERSONAL_DOCS,
-  setClaimStatus, spineIndex, telLink, updateQuery, uploadClaimDocument, waLink,
+  renameClaimDocument, setClaimStatus, spineIndex, telLink, updateQuery, uploadClaimDocument, waLink,
   type ClaimDetail as ClaimDetailType, type ClaimDocument, type ClaimQuery, type DocCategory,
 } from "@/lib/claims";
 
@@ -541,7 +541,17 @@ function Retention({ claim, onChanged }: { claim: ClaimDetailType; onChanged: ()
   );
 }
 
-/* ── document piles ───────────────────────────────────────────────────────── */
+/* ── document piles ───────────────────────────────────────────────────────────
+ * Every row is a SLOT, not a log. The checklist labels are the rows: an empty
+ * one offers an upload, a filled one shows what went in with download, rename
+ * and delete on it. That is the whole point of the screen — the advisor needs
+ * to see at a glance what he has filed where, and to pull a file back out when
+ * he is sitting in front of the insurer's portal.
+ *
+ * Anything whose label is not on the checklist (his own categories, or files
+ * from before this screen existed) lands under "Your own" rather than being
+ * hidden, and "Write your own" adds a new label on the spot.
+ */
 
 function Pile({
   claim, category, title, subtitle, checklist, onChanged,
@@ -553,100 +563,318 @@ function Pile({
   checklist: string[];
   onChanged: () => void;
 }) {
-  // Only files filed against the pile itself — query replies live with their round.
+  // Query replies live with their round, not in the pile.
   const docs = claim.documents.filter((d) => d.category === category && !d.query_id);
-  const done = new Set(docs.map((d) => d.doc_type).filter(Boolean) as string[]);
-  const missing = checklist.filter((c) => !done.has(c));
+
+  // One document fills one slot. Anything left over — a second file under the
+  // same label, or a label of his own — falls through to "Your own", so every
+  // document is on screen exactly once and none can be silently swallowed.
+  const byLabel = new Map<string, ClaimDocument>();
+  for (const d of docs) {
+    if (d.doc_type && checklist.includes(d.doc_type) && !byLabel.has(d.doc_type)) {
+      byLabel.set(d.doc_type, d);
+    }
+  }
+  const slottedIds = new Set(Array.from(byLabel.values(), (d) => d.id));
+  const extras = docs.filter((d) => !slottedIds.has(d.id));
+  const filledFromList = byLabel.size;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <div className="flex-1">
-          <h2 className="text-base font-bold text-slate-800">{title}</h2>
-          <p className="text-xs text-slate-500">{docs.length} of {checklist.length} · {subtitle}</p>
-        </div>
-        <UploadButton
-          claim={claim}
-          category={category}
-          onChanged={onChanged}
-          className="shrink-0 h-11 px-4 inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#0D9488]/30 bg-[#0D9488]/5 text-sm font-bold text-[#0D9488] hover:bg-[#0D9488]/10"
-          label="Add"
-        />
+      <div>
+        <h2 className="text-base font-bold text-slate-800">{title}</h2>
+        <p className="text-xs text-slate-500">
+          {filledFromList} of {checklist.length} · {subtitle}
+          {extras.length > 0 && ` · ${extras.length} of your own`}
+        </p>
       </div>
 
       <div className="flex flex-col">
-        {docs.map((d) => <DocRow key={d.id} claim={claim} doc={d} onChanged={onChanged} />)}
-        {missing.map((label) => (
-          <div key={label} className="flex items-center gap-3 py-2.5 border-b border-slate-50 last:border-0">
-            <Circle size={18} className="text-slate-300 shrink-0" strokeDasharray="3 3" />
-            <span className="text-sm font-medium text-slate-400">{label}</span>
-          </div>
+        {checklist.map((label) => (
+          <Slot
+            key={label}
+            claim={claim}
+            category={category}
+            label={label}
+            doc={byLabel.get(label) ?? null}
+            onChanged={onChanged}
+          />
         ))}
       </div>
 
-      <p className="text-xs text-slate-400">This list is a reminder, not a rule.</p>
+      {extras.length > 0 && (
+        <div className="flex flex-col">
+          <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 pb-1">Your own</p>
+          {extras.map((d) => (
+            <Slot
+              key={d.id}
+              claim={claim}
+              category={category}
+              label={d.doc_type || d.filename}
+              doc={d}
+              onChanged={onChanged}
+            />
+          ))}
+        </div>
+      )}
+
+      <CustomAdd claim={claim} category={category} onChanged={onChanged} />
+
+      <p className="text-xs text-slate-400">
+        The list is a reminder, not a rule — add anything else the insurer asks for.
+      </p>
     </div>
   );
 }
 
-function DocRow({
-  claim, doc, onChanged, compact,
-}: { claim: ClaimDetailType; doc: ClaimDocument; onChanged: () => void; compact?: boolean }) {
+/** One checklist line: empty and awaiting a file, or filled and manageable. */
+function Slot({
+  claim, category, label, doc, onChanged,
+}: {
+  claim: ClaimDetailType;
+  category: DocCategory;
+  label: string;
+  doc: ClaimDocument | null;
+  onChanged: () => void;
+}) {
+  if (!doc) {
+    return (
+      <div className="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
+        <Circle size={18} className="text-slate-300 shrink-0" strokeDasharray="3 3" />
+        <span className="flex-1 min-w-0 text-sm font-medium text-slate-400 truncate">{label}</span>
+        <UploadButton
+          claim={claim}
+          category={category}
+          docType={label}
+          onChanged={onChanged}
+          className="shrink-0 h-10 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#0D9488]/30 bg-[#0D9488]/5 text-xs font-bold text-[#0D9488] hover:bg-[#0D9488]/10"
+          label="Upload"
+        />
+      </div>
+    );
+  }
+  return <FilledSlot claim={claim} doc={doc} onChanged={onChanged} />;
+}
+
+function FilledSlot({
+  claim, doc, onChanged,
+}: { claim: ClaimDetailType; doc: ClaimDocument; onChanged: () => void }) {
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState(doc.doc_type || doc.filename);
   const [busy, setBusy] = useState(false);
 
-  async function open() {
+  async function saveName() {
+    const next = draft.trim();
+    if (!next || next === doc.doc_type) { setRenaming(false); return; }
     setBusy(true);
+    try {
+      await renameClaimDocument(claim.id, doc.id, next);
+      setRenaming(false);
+      onChanged();
+    } catch (e: unknown) {
+      toast({ variant: "destructive", title: "Could not rename", description: e instanceof Error ? e.message : undefined });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (renaming) {
+    return (
+      <div className="flex items-center gap-2 py-2 border-b border-slate-50 last:border-0">
+        <CheckCircle2 size={18} className="text-[#0D9488] shrink-0" />
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void saveName();
+            if (e.key === "Escape") { setDraft(doc.doc_type || doc.filename); setRenaming(false); }
+          }}
+          className="flex-1 min-w-0 rounded-lg border border-[#0D9488] px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
+        />
+        <button
+          onClick={saveName}
+          disabled={busy}
+          className="shrink-0 h-10 px-3 rounded-lg bg-[#0D9488] text-xs font-bold text-white hover:bg-[#0f766e] disabled:opacity-50"
+        >
+          {busy ? <Loader2 size={14} className="animate-spin" /> : "Save"}
+        </button>
+        <button
+          onClick={() => { setDraft(doc.doc_type || doc.filename); setRenaming(false); }}
+          className="shrink-0 h-10 w-10 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700"
+          aria-label="Cancel rename"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2.5 py-2 border-b border-slate-50 last:border-0">
+      <CheckCircle2 size={18} className="text-[#0D9488] shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-semibold text-slate-800 truncate">{doc.doc_type || doc.filename}</div>
+        <div className="text-[11px] text-slate-400 truncate">
+          {doc.filename}
+          {doc.file_size ? ` · ${Math.max(1, Math.round(doc.file_size / 1024))} KB` : ""}
+        </div>
+      </div>
+      <DocControls claim={claim} doc={doc} onRename={() => setRenaming(true)} onChanged={onChanged} />
+    </div>
+  );
+}
+
+/** View, download, rename, delete — the four things an advisor does to a file. */
+function DocControls({
+  claim, doc, onRename, onChanged,
+}: {
+  claim: ClaimDetailType;
+  doc: ClaimDocument;
+  onRename: () => void;
+  onChanged: () => void;
+}) {
+  const [busy, setBusy] = useState<null | "view" | "download" | "delete">(null);
+
+  async function view() {
+    setBusy("view");
     try {
       const url = await openClaimDocument(claim.id, doc.id);
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (e: unknown) {
       toast({ variant: "destructive", title: "Could not open the file", description: e instanceof Error ? e.message : undefined });
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(null); }
+  }
+
+  async function download() {
+    setBusy("download");
+    try {
+      const url = await openClaimDocument(claim.id, doc.id, { download: true });
+      // Storage serves this as an attachment, so a plain navigation saves it
+      // under the document's own name instead of its storage uuid.
+      window.location.assign(url);
+    } catch (e: unknown) {
+      toast({ variant: "destructive", title: "Could not download", description: e instanceof Error ? e.message : undefined });
+    } finally { setBusy(null); }
   }
 
   async function remove() {
-    setBusy(true);
+    if (!window.confirm(`Delete “${doc.doc_type || doc.filename}”? This cannot be undone.`)) return;
+    setBusy("delete");
     try {
       await deleteClaimDocument(claim.id, doc.id);
       onChanged();
     } catch (e: unknown) {
       toast({ variant: "destructive", title: "Could not delete", description: e instanceof Error ? e.message : undefined });
-    } finally {
-      setBusy(false);
+    } finally { setBusy(null); }
+  }
+
+  const btn = "h-10 w-10 shrink-0 inline-flex items-center justify-center rounded-lg transition-colors disabled:opacity-40";
+
+  return (
+    <div className="flex items-center gap-0.5 shrink-0">
+      <button onClick={view} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-slate-100 hover:text-slate-700`} title="View" aria-label="View">
+        {busy === "view" ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
+      </button>
+      <button onClick={download} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-teal-50 hover:text-[#0D9488]`} title="Download" aria-label="Download">
+        {busy === "download" ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+      </button>
+      <button onClick={onRename} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-slate-100 hover:text-slate-700`} title="Rename" aria-label="Rename">
+        <Pencil size={15} />
+      </button>
+      <button onClick={remove} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-red-50 hover:text-red-600`} title="Delete" aria-label="Delete">
+        {busy === "delete" ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={15} />}
+      </button>
+    </div>
+  );
+}
+
+/** "Write your own" — a label he types, then uploads against. */
+function CustomAdd({
+  claim, category, onChanged,
+}: { claim: ClaimDetailType; category: DocCategory; onChanged: () => void }) {
+  const [label, setLabel] = useState("");
+  const typed = label.trim();
+
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-dashed border-slate-300 p-2">
+      <input
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        placeholder="Write your own — e.g. Dental records"
+        className="flex-1 min-w-0 rounded-lg px-2.5 py-2.5 text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
+      />
+      <UploadButton
+        claim={claim}
+        category={category}
+        docType={typed || undefined}
+        disabled={!typed}
+        onChanged={() => { setLabel(""); onChanged(); }}
+        className="shrink-0 h-11 px-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#0D9488] text-sm font-bold text-white hover:bg-[#0f766e]"
+        label="Upload"
+      />
+    </div>
+  );
+}
+
+/** Compact row used where a pile's slot layout does not apply: query replies. */
+function DocRow({
+  claim, doc, onChanged, compact,
+}: { claim: ClaimDetailType; doc: ClaimDocument; onChanged: () => void; compact?: boolean }) {
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState(doc.doc_type || doc.filename);
+
+  async function saveName() {
+    const next = draft.trim();
+    if (!next || next === doc.doc_type) { setRenaming(false); return; }
+    try {
+      await renameClaimDocument(claim.id, doc.id, next);
+      setRenaming(false);
+      onChanged();
+    } catch (e: unknown) {
+      toast({ variant: "destructive", title: "Could not rename", description: e instanceof Error ? e.message : undefined });
     }
   }
 
   return (
-    <div className={`flex items-center gap-3 py-2.5 ${compact ? "rounded-xl border border-amber-200 bg-white px-3" : "border-b border-slate-50 last:border-0"}`}>
+    <div className={`flex items-center gap-2.5 py-2 ${compact ? "rounded-xl border border-amber-200 bg-white px-2.5" : "border-b border-slate-50 last:border-0"}`}>
       <CheckCircle2 size={18} className="text-[#0D9488] shrink-0" />
-      <button onClick={open} disabled={busy} className="min-w-0 flex-1 text-left group">
-        <div className="text-sm font-semibold text-slate-800 truncate group-hover:text-[#0D9488]">
-          {doc.doc_type || doc.filename}
-        </div>
-        <div className="text-[11px] text-slate-400 truncate">
-          {doc.filename}
-          {doc.file_size ? ` · ${Math.max(1, Math.round(doc.file_size / 1024))} KB` : ""}
-        </div>
-      </button>
-      {busy ? (
-        <Loader2 size={15} className="animate-spin text-slate-300 shrink-0" />
+      {renaming ? (
+        <>
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void saveName();
+              if (e.key === "Escape") { setDraft(doc.doc_type || doc.filename); setRenaming(false); }
+            }}
+            className="flex-1 min-w-0 rounded-lg border border-[#0D9488] px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
+          />
+          <button onClick={saveName} className="shrink-0 h-10 px-3 rounded-lg bg-[#0D9488] text-xs font-bold text-white hover:bg-[#0f766e]">Save</button>
+        </>
       ) : (
-        <button onClick={remove} title="Delete" className="text-slate-300 hover:text-red-600 shrink-0">
-          <X size={16} />
-        </button>
+        <>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-slate-800 truncate">{doc.doc_type || doc.filename}</div>
+            <div className="text-[11px] text-slate-400 truncate">{doc.filename}</div>
+          </div>
+          <DocControls claim={claim} doc={doc} onRename={() => setRenaming(true)} onChanged={onChanged} />
+        </>
       )}
     </div>
   );
 }
 
 function UploadButton({
-  claim, category, queryId, onChanged, className, label,
+  claim, category, queryId, docType, disabled, onChanged, className, label,
 }: {
   claim: ClaimDetailType;
   category: DocCategory;
   queryId?: string;
+  /** The advisor's label for the slot. Falls back to the file's own name. */
+  docType?: string;
+  disabled?: boolean;
   onChanged: () => void;
   className: string;
   label: string;
@@ -662,8 +890,9 @@ function UploadButton({
     try {
       const res = await uploadClaimDocument(claim.id, file, {
         category,
-        // The file name is the advisor's own label for it — no OCR reads it.
-        doc_type: file.name.replace(/\.[^.]+$/, "").slice(0, 80),
+        // The slot's label wins, so the file lands where the advisor put it.
+        // Nothing reads the file itself — there is no OCR in this lane.
+        doc_type: docType || file.name.replace(/\.[^.]+$/, "").slice(0, 80),
         query_id: queryId,
       });
       if ((res as any).retention) {
@@ -683,7 +912,11 @@ function UploadButton({
   return (
     <>
       <input ref={ref} type="file" onChange={pick} className="hidden" accept="application/pdf,image/*" />
-      <button onClick={() => ref.current?.click()} disabled={busy} className={`${className} disabled:opacity-50`}>
+      <button
+        onClick={() => ref.current?.click()}
+        disabled={busy || disabled}
+        className={`${className} disabled:opacity-40 disabled:cursor-not-allowed`}
+      >
         {busy ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} {label}
       </button>
     </>

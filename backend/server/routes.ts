@@ -2504,36 +2504,86 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   );
 
-  /* ── Agent: open a document ───────────────────────────────────────────────
+  /* ── Agent: open or download a document ──────────────────────────────────
    * Ten minutes, minted on demand, audited every time. The lead-policy route
    * writes a ONE-YEAR url into its row; that is tolerable for a prospect's own
    * policy PDF and not for an Aadhaar scan, and it would outlive the
    * incineration it is supposed to be subject to.
+   *
+   * ?download=1 asks storage to serve it as an attachment named after the
+   * document's label rather than its storage uuid — the advisor is usually
+   * pulling these back out to attach to an insurer's portal, and a folder of
+   * uuid.pdf files is useless to him at that moment.
    */
   app.get("/api/agent/claims/:id/documents/:docId/url", async (req, res) => {
     const agentId = await verifyJwt(req, res);
     if (!agentId) return;
     try {
       const doc = await pool.query(
-        `SELECT d.storage_path, d.filename
+        `SELECT d.storage_path, d.filename, d.doc_type
            FROM claim_documents d
            JOIN claims c ON c.id = d.claim_id
           WHERE d.id = $1 AND d.claim_id = $2 AND c.agent_id = $3`,
         [req.params.docId, req.params.id, agentId]
       );
       if (doc.rows.length === 0) return res.status(404).json({ error: "Document not found" });
+      const row = doc.rows[0];
+
+      const wantsDownload = String(req.query.download ?? "") === "1";
+      // Name the download after the advisor's own label, keeping the real
+      // extension so the file still opens in the right app.
+      const ext = row.filename?.includes(".") ? `.${row.filename.split(".").pop()}` : "";
+      const safeLabel = String(row.doc_type || row.filename || "document")
+        .replace(/[\\/:*?"<>|]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 80);
+      const downloadName = safeLabel.toLowerCase().endsWith(ext.toLowerCase())
+        ? safeLabel
+        : `${safeLabel}${ext}`;
 
       const { data: signed, error } = await supabaseAdmin.storage
         .from(PDF_BUCKET)
-        .createSignedUrl(doc.rows[0].storage_path, 600);
+        .createSignedUrl(row.storage_path, 600, wantsDownload ? { download: downloadName } : undefined);
       if (error || !signed?.signedUrl) {
         return res.status(502).json({ error: "Could not open the file" });
       }
-      void recordAccess(req, agentId, req.params.id, "claim_doc_view");
-      return res.json({ url: signed.signedUrl, filename: doc.rows[0].filename, expires_in: 600 });
+      void recordAccess(req, agentId, req.params.id, wantsDownload ? "claim_doc_download" : "claim_doc_view");
+      return res.json({ url: signed.signedUrl, filename: row.filename, expires_in: 600 });
     } catch (err: any) {
       console.error("claim document url error:", err);
       return res.status(500).json({ error: "Could not open the file" });
+    }
+  });
+
+  /* ── Agent: rename a document ─────────────────────────────────────────────
+   * Only the LABEL changes. filename and storage_path are provenance — what
+   * the advisor actually received and where it sits — and renaming must never
+   * rewrite either, or the record stops matching the file.
+   */
+  app.patch("/api/agent/claims/:id/documents/:docId", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
+    const label = String(req.body?.doc_type ?? "").trim().slice(0, 120);
+    if (!label) return res.status(400).json({ error: "Give the document a name" });
+
+    try {
+      const upd = await pool.query(
+        `UPDATE claim_documents d
+            SET doc_type = $1
+           FROM claims c
+          WHERE d.id = $2 AND d.claim_id = $3
+            AND c.id = d.claim_id AND c.agent_id = $4
+          RETURNING d.id, d.claim_id, d.query_id, d.category, d.doc_type,
+                    d.filename, d.file_size, d.mime_type, d.uploaded_at`,
+        [label, req.params.docId, req.params.id, agentId]
+      );
+      if (upd.rows.length === 0) return res.status(404).json({ error: "Document not found" });
+      return res.json(upd.rows[0]);
+    } catch (err: any) {
+      console.error("claim document rename error:", err);
+      return res.status(500).json({ error: "Could not rename the document" });
     }
   });
 

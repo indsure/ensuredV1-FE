@@ -219,12 +219,36 @@ export async function deleteClaimDocument(claimId: string, docId: string): Promi
   );
 }
 
-/** Ten-minute signed URL, minted per view and audited server-side. */
-export async function openClaimDocument(claimId: string, docId: string): Promise<string> {
+/**
+ * Ten-minute signed URL, minted per view and audited server-side.
+ * `download` asks storage to serve it as an attachment named after the
+ * document's label, for pulling files back out to fill an insurer's portal.
+ */
+export async function openClaimDocument(
+  claimId: string,
+  docId: string,
+  opts?: { download?: boolean }
+): Promise<string> {
+  const q = opts?.download ? "?download=1" : "";
   const { url } = await json<{ url: string }>(
-    await apiFetch(`/api/agent/claims/${claimId}/documents/${docId}/url`)
+    await apiFetch(`/api/agent/claims/${claimId}/documents/${docId}/url${q}`)
   );
   return url;
+}
+
+/** Renames the LABEL only — the original filename stays as provenance. */
+export async function renameClaimDocument(
+  claimId: string,
+  docId: string,
+  docType: string
+): Promise<ClaimDocument> {
+  return json<ClaimDocument>(
+    await apiFetch(`/api/agent/claims/${claimId}/documents/${docId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doc_type: docType }),
+    })
+  );
 }
 
 export async function extendRetention(claimId: string): Promise<{ purge_at: string }> {
