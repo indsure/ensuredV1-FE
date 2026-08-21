@@ -156,6 +156,86 @@ async function sweepExpiredPendingUploads() {
 void sweepExpiredPendingUploads();
 setInterval(sweepExpiredPendingUploads, 60 * 60 * 1000);
 
+// ── CLAIM DOCUMENT INCINERATION ──────────────────────────────────────────────
+// The promise the upload screen makes to the customer, kept by a machine.
+//
+// Claim documents live 30 days from the first upload, extendable once to 60.
+// Past purge_at this destroys the bucket objects and the claim_documents rows,
+// then stamps claims.documents_purged_at so the UI can say plainly that the
+// files are gone. Same ordering as the sweep above and for the same reason:
+// objects first, rows second, so a crash costs a retry rather than an orphan.
+//
+// The CASE RECORD is never touched — insurer, hospital, ailment, amounts,
+// dates, the query rounds and the timeline all survive. Once the files are
+// gone those columns describe a case, not a person, and they are what the
+// advisor's claims track record is built from.
+//
+// THE ONE EXCEPTION is outcome proof. A settlement letter is what the advisor
+// shows future customers, and it also carries a name, a policy number and an
+// amount — so it survives only where the customer agreed on the record
+// (claims.proof_consent_at). No consent, and it burns with everything else.
+async function incinerateExpiredClaimDocuments() {
+  try {
+    const { rows: claims } = await pool.query(
+      `SELECT id, proof_consent_at
+         FROM claims
+        WHERE purge_at IS NOT NULL
+          AND purge_at < now()
+          AND documents_purged_at IS NULL
+        LIMIT 200`
+    );
+    if (claims.length === 0) return;
+
+    for (const claim of claims) {
+      // A claim that consented keeps its outcome proof; everything else on it
+      // still goes. Without consent the whole set is in scope.
+      const { rows: docs } = await pool.query(
+        claim.proof_consent_at
+          ? `SELECT id, storage_path FROM claim_documents
+              WHERE claim_id = $1 AND category IN ('personal','case')`
+          : `SELECT id, storage_path FROM claim_documents WHERE claim_id = $1`,
+        [claim.id]
+      );
+
+      if (docs.length > 0) {
+        const paths = docs.map((d: any) => d.storage_path);
+        const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove(paths);
+        if (error) {
+          // Leave the rows and the stamp alone; next run retries the pair
+          // together. Never stamp purged while files are still standing.
+          console.error(`[claims] object purge failed for ${claim.id}:`, error.message);
+          continue;
+        }
+        await pool.query("DELETE FROM claim_documents WHERE id = ANY($1::uuid[])", [
+          docs.map((d: any) => d.id),
+        ]);
+      }
+
+      await pool.query(
+        "UPDATE claims SET documents_purged_at = now(), updated_at = now() WHERE id = $1",
+        [claim.id]
+      );
+      await pool.query(
+        `INSERT INTO claim_events (claim_id, agent_id, status, note)
+         SELECT id, agent_id, 'documents_purged', $2 FROM claims WHERE id = $1`,
+        [
+          claim.id,
+          claim.proof_consent_at
+            ? `${docs.length} document(s) deleted. Settlement proof kept with the customer's permission.`
+            : `${docs.length} document(s) deleted.`,
+        ]
+      );
+      console.log(`[claims] incinerated ${docs.length} document(s) on claim ${claim.id}.`);
+    }
+  } catch (err: any) {
+    console.error("[claims] incineration sweep error:", err?.message || err);
+  }
+}
+
+// Daily. The deadline is a date, not a minute, so hourly would buy nothing.
+void incinerateExpiredClaimDocuments();
+setInterval(incinerateExpiredClaimDocuments, 24 * 60 * 60 * 1000);
+
 // ── D2C consumer ("individual") metering knobs ───────────────────────────
 // Free plan holds one policy per line of business, and does not expire. That
 // cap is enforced at ONE server-side choke point (checkIndividualQuota) —
@@ -1889,6 +1969,646 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       }
     }
   );
+
+  /* ═══════════════════════════════════════════════════════════════════════
+   * CLAIMS DESK
+   *
+   * An advisor tracks a customer's health claim from first consultation to
+   * settlement letter. ZERO AI in this lane: no OCR, no extraction, no scoring.
+   * Every field is typed. Note that the extraction pipeline is deliberately NOT
+   * referenced anywhere below — adding a model call here should require a
+   * visible new import, not a quiet flag flip.
+   *
+   * Retention: documents live 30 days from the FIRST upload, extendable once by
+   * 30 more while the claim is open, hard ceiling 60. The daily sweep that
+   * actually destroys them lives in index.ts next to the other lifecycle jobs.
+   * ═══════════════════════════════════════════════════════════════════════ */
+
+  const CLAIM_RETENTION_DAYS = 30;
+  const CLAIM_EXTENSION_DAYS = 30;
+  // Extend unlocks this many days before purge_at — i.e. day 25 of the first 30.
+  const CLAIM_EXTEND_UNLOCK_DAYS = 5;
+
+  const CLAIM_TERMINAL = ["settled", "rejected"];
+  const CLAIM_STATUSES = [
+    "opened", "docs_received", "submitted", "under_process",
+    "query_raised", "settled", "rejected",
+  ];
+
+  // Ownership check. Every claim route starts here, so a claim id from another
+  // agent is a 404 rather than a 403 — we do not confirm the row exists.
+  async function claimForAgent(claimId: string, agentId: string) {
+    const r = await pool.query(
+      "SELECT * FROM claims WHERE id = $1 AND agent_id = $2",
+      [claimId, agentId]
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async function logClaimEvent(
+    claimId: string, agentId: string, status: string, note?: string | null
+  ) {
+    try {
+      await pool.query(
+        `INSERT INTO claim_events (claim_id, agent_id, status, note)
+         VALUES ($1, $2, $3, $4)`,
+        [claimId, agentId, status, note ?? null]
+      );
+    } catch (e: any) {
+      // The timeline is a record, not a gate — never fail the caller for it.
+      console.error(`[claims ${claimId}] event log failed:`, e?.message ?? e);
+    }
+  }
+
+  async function openQueryCount(claimId: string): Promise<number> {
+    const r = await pool.query(
+      "SELECT count(*)::int AS c FROM claim_queries WHERE claim_id = $1 AND resolved_on IS NULL",
+      [claimId]
+    );
+    return r.rows[0]?.c ?? 0;
+  }
+
+  /* ── Agent: list claims ───────────────────────────────────────────────── */
+  app.get("/api/agent/claims", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const result = await pool.query(
+        `SELECT c.*,
+                cu.name  AS customer_name,
+                cu.phone AS customer_phone,
+                (SELECT count(*)::int FROM claim_queries q
+                   WHERE q.claim_id = c.id AND q.resolved_on IS NULL) AS open_queries,
+                (SELECT count(*)::int FROM claim_queries q
+                   WHERE q.claim_id = c.id)                            AS total_queries,
+                (SELECT count(*)::int FROM claim_documents d
+                   WHERE d.claim_id = c.id)                            AS document_count,
+                CASE WHEN c.purge_at IS NULL THEN NULL
+                     ELSE GREATEST(0, EXTRACT(DAY FROM (c.purge_at - now()))::int)
+                END AS days_to_purge
+           FROM claims c
+           LEFT JOIN customers cu ON cu.id = c.customer_id
+          WHERE c.agent_id = $1
+          ORDER BY
+            -- Needs-attention first: open queries, then nearest purge, then new.
+            (SELECT count(*) FROM claim_queries q
+               WHERE q.claim_id = c.id AND q.resolved_on IS NULL) DESC,
+            c.purge_at ASC NULLS LAST,
+            c.created_at DESC`,
+        [agentId]
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("list claims error:", err);
+      return res.status(500).json({ error: "Could not load claims" });
+    }
+  });
+
+  /* ── Agent: open a claim ──────────────────────────────────────────────── */
+  app.post("/api/agent/claims", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
+    const {
+      customer_id, new_customer_name, new_customer_phone,
+      claim_type, insurer, tpa, policy_number, hospital, ailment,
+      claimed_amount, admitted_on, discharged_on,
+    } = req.body ?? {};
+
+    const type = String(claim_type || "reimbursement").toLowerCase();
+    if (type !== "cashless" && type !== "reimbursement") {
+      return res.status(400).json({ error: "claim_type must be cashless or reimbursement" });
+    }
+
+    try {
+      // Resolve the customer: an existing one this agent owns, or create it
+      // inline so a walk-in claim never forces a detour through Customers.
+      let resolvedCustomerId: string | null = null;
+      if (customer_id) {
+        const own = await pool.query(
+          "SELECT id FROM customers WHERE id = $1 AND agent_id = $2",
+          [customer_id, agentId]
+        );
+        if (own.rows.length === 0) return res.status(404).json({ error: "Customer not found" });
+        resolvedCustomerId = customer_id;
+      } else if (new_customer_name) {
+        const created = await pool.query(
+          `INSERT INTO customers (agent_id, name, phone) VALUES ($1, $2, $3) RETURNING id`,
+          [agentId, String(new_customer_name).trim(), new_customer_phone || null]
+        );
+        resolvedCustomerId = created.rows[0].id;
+      } else {
+        return res.status(400).json({ error: "Pick a customer, or give a name for a new one" });
+      }
+
+      const ins = await pool.query(
+        `INSERT INTO claims
+           (agent_id, customer_id, claim_type, insurer, tpa, policy_number,
+            hospital, ailment, claimed_amount, admitted_on, discharged_on)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         RETURNING *`,
+        [
+          agentId, resolvedCustomerId, type,
+          insurer || null, tpa || null, policy_number || null,
+          hospital || null, ailment || null,
+          claimed_amount != null && claimed_amount !== "" ? Number(claimed_amount) : null,
+          admitted_on || null, discharged_on || null,
+        ]
+      );
+      const claim = ins.rows[0];
+      await logClaimEvent(claim.id, agentId, "opened", "Claim opened");
+      void recordAccess(req, agentId, claim.id, "claim_open");
+      return res.json(claim);
+    } catch (err: any) {
+      console.error("create claim error:", err);
+      return res.status(500).json({ error: "Could not open the claim" });
+    }
+  });
+
+  /* ── Agent: one claim, with documents, queries and timeline ───────────── */
+  app.get("/api/agent/claims/:id", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const c = await pool.query(
+        `SELECT c.*, cu.name AS customer_name, cu.phone AS customer_phone,
+                CASE WHEN c.purge_at IS NULL THEN NULL
+                     ELSE GREATEST(0, EXTRACT(DAY FROM (c.purge_at - now()))::int)
+                END AS days_to_purge,
+                (c.purge_at IS NOT NULL
+                   AND NOT c.extension_used
+                   AND c.status NOT IN ('settled','rejected')
+                   AND now() >= c.purge_at - make_interval(days => $3)) AS can_extend
+           FROM claims c
+           LEFT JOIN customers cu ON cu.id = c.customer_id
+          WHERE c.id = $1 AND c.agent_id = $2`,
+        [req.params.id, agentId, CLAIM_EXTEND_UNLOCK_DAYS]
+      );
+      if (c.rows.length === 0) return res.status(404).json({ error: "Claim not found" });
+
+      const [docs, queries, events] = await Promise.all([
+        pool.query(
+          `SELECT id, claim_id, query_id, category, doc_type, filename,
+                  file_size, mime_type, uploaded_at
+             FROM claim_documents WHERE claim_id = $1
+            ORDER BY uploaded_at ASC`,
+          [req.params.id]
+        ),
+        pool.query(
+          "SELECT * FROM claim_queries WHERE claim_id = $1 ORDER BY seq ASC",
+          [req.params.id]
+        ),
+        pool.query(
+          "SELECT * FROM claim_events WHERE claim_id = $1 ORDER BY occurred_at ASC",
+          [req.params.id]
+        ),
+      ]);
+
+      void recordAccess(req, agentId, req.params.id, "claim_view");
+      // storage_path is deliberately not returned — the browser never needs it,
+      // and a URL is minted per document through the route below.
+      return res.json({
+        ...c.rows[0],
+        documents: docs.rows,
+        queries: queries.rows,
+        events: events.rows,
+      });
+    } catch (err: any) {
+      console.error("get claim error:", err);
+      return res.status(500).json({ error: "Could not load the claim" });
+    }
+  });
+
+  /* ── Agent: edit the typed fields ─────────────────────────────────────── */
+  app.patch("/api/agent/claims/:id", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    const EDITABLE = [
+      "insurer", "tpa", "policy_number", "hospital", "ailment",
+      "claimed_amount", "settled_amount", "admitted_on", "discharged_on", "claim_type",
+    ];
+    const sets: string[] = [];
+    const vals: any[] = [];
+    for (const key of EDITABLE) {
+      if (req.body?.[key] !== undefined) {
+        vals.push(req.body[key] === "" ? null : req.body[key]);
+        sets.push(`${key} = $${vals.length}`);
+      }
+    }
+    if (sets.length === 0) return res.status(400).json({ error: "Nothing to update" });
+    vals.push(req.params.id, agentId);
+    try {
+      const upd = await pool.query(
+        `UPDATE claims SET ${sets.join(", ")}, updated_at = now()
+          WHERE id = $${vals.length - 1} AND agent_id = $${vals.length}
+          RETURNING *`,
+        vals
+      );
+      if (upd.rows.length === 0) return res.status(404).json({ error: "Claim not found" });
+      return res.json(upd.rows[0]);
+    } catch (err: any) {
+      console.error("update claim error:", err);
+      return res.status(500).json({ error: "Could not save the change" });
+    }
+  });
+
+  /* ── Agent: move the claim ────────────────────────────────────────────────
+   * Deliberately permissive about ORDER. A 40+ advisor logging a claim after
+   * the fact should not be told he cannot record what already happened, so any
+   * of the non-terminal states can be set at any time. Two hard rules remain:
+   * settling or rejecting needs proof attached, and query_raised is owned by
+   * the queries routes rather than settable by hand.
+   */
+  app.post("/api/agent/claims/:id/status", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
+    const next = String(req.body?.status || "").toLowerCase();
+    const note = req.body?.note || null;
+    const settledAmount = req.body?.settled_amount;
+    const proofConsent = req.body?.proof_consent === true;
+
+    if (!CLAIM_STATUSES.includes(next)) {
+      return res.status(400).json({ error: "Unknown status" });
+    }
+    if (next === "query_raised") {
+      return res.status(400).json({
+        error: "Log the query itself so it keeps its own question and dates.",
+        use: "POST /api/agent/claims/:id/queries",
+      });
+    }
+
+    try {
+      const claim = await claimForAgent(req.params.id, agentId);
+      if (!claim) return res.status(404).json({ error: "Claim not found" });
+
+      if (CLAIM_TERMINAL.includes(next)) {
+        // Enforced here, not just disabled in the UI: this record's whole value
+        // is that it is more than the advisor's word about himself.
+        const proof = await pool.query(
+          "SELECT count(*)::int AS c FROM claim_documents WHERE claim_id = $1 AND category = 'outcome'",
+          [claim.id]
+        );
+        if ((proof.rows[0]?.c ?? 0) === 0) {
+          return res.status(400).json({
+            error: "NEEDS_PROOF",
+            message: "Attach the insurer's letter before closing the claim.",
+          });
+        }
+      }
+
+      const closing = CLAIM_TERMINAL.includes(next);
+      const upd = await pool.query(
+        `UPDATE claims
+            SET status = $1,
+                settled_amount = COALESCE($2, settled_amount),
+                closed_at = CASE WHEN $3 THEN now() ELSE NULL END,
+                proof_consent_at = CASE WHEN $4 THEN COALESCE(proof_consent_at, now())
+                                        ELSE proof_consent_at END,
+                updated_at = now()
+          WHERE id = $5 AND agent_id = $6
+          RETURNING *`,
+        [
+          next,
+          settledAmount != null && settledAmount !== "" ? Number(settledAmount) : null,
+          closing,
+          proofConsent,
+          claim.id,
+          agentId,
+        ]
+      );
+
+      await logClaimEvent(claim.id, agentId, next, note);
+      void recordAccess(req, agentId, claim.id, `claim_status_${next}`);
+      return res.json(upd.rows[0]);
+    } catch (err: any) {
+      console.error("claim status error:", err);
+      return res.status(500).json({ error: "Could not update the claim" });
+    }
+  });
+
+  /* ── Agent: log an insurer query round ────────────────────────────────────
+   * No cap. Insurers routinely raise two or three rounds and a messy claim can
+   * run to five; each gets its own row, question, dates and reply papers.
+   */
+  app.post("/api/agent/claims/:id/queries", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
+    const question = String(req.body?.question || "").trim();
+    if (!question) return res.status(400).json({ error: "Write down what the insurer asked" });
+
+    try {
+      const claim = await claimForAgent(req.params.id, agentId);
+      if (!claim) return res.status(404).json({ error: "Claim not found" });
+
+      // seq is max+1 and never reused, so deleting a mis-logged round leaves a
+      // gap rather than renumbering history under the advisor's feet.
+      const seqRow = await pool.query(
+        "SELECT COALESCE(MAX(seq), 0) + 1 AS next FROM claim_queries WHERE claim_id = $1",
+        [claim.id]
+      );
+      const seq = seqRow.rows[0].next;
+
+      const ins = await pool.query(
+        `INSERT INTO claim_queries (claim_id, agent_id, seq, question, raised_on, raised_by)
+         VALUES ($1,$2,$3,$4,COALESCE($5::date, CURRENT_DATE),$6)
+         RETURNING *`,
+        [claim.id, agentId, seq, question, req.body?.raised_on || null, req.body?.raised_by || null]
+      );
+
+      await pool.query(
+        `UPDATE claims SET status = 'query_raised', updated_at = now()
+          WHERE id = $1 AND agent_id = $2 AND status NOT IN ('settled','rejected')`,
+        [claim.id, agentId]
+      );
+      await logClaimEvent(claim.id, agentId, "query_raised", `Round ${seq}: ${question}`);
+      return res.json(ins.rows[0]);
+    } catch (err: any) {
+      console.error("create claim query error:", err);
+      return res.status(500).json({ error: "Could not save the query" });
+    }
+  });
+
+  /* ── Agent: edit or resolve a query round ─────────────────────────────── */
+  app.patch("/api/agent/claims/:id/queries/:queryId", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const claim = await claimForAgent(req.params.id, agentId);
+      if (!claim) return res.status(404).json({ error: "Claim not found" });
+
+      const sets: string[] = [];
+      const vals: any[] = [];
+      for (const key of ["question", "raised_on", "raised_by", "resolution_note"]) {
+        if (req.body?.[key] !== undefined) {
+          vals.push(req.body[key] === "" ? null : req.body[key]);
+          sets.push(`${key} = $${vals.length}`);
+        }
+      }
+      // resolve: true stamps today; passing an explicit resolved_on wins.
+      if (req.body?.resolved_on !== undefined) {
+        vals.push(req.body.resolved_on || null);
+        sets.push(`resolved_on = $${vals.length}`);
+      } else if (req.body?.resolve === true) {
+        sets.push("resolved_on = CURRENT_DATE");
+      } else if (req.body?.resolve === false) {
+        sets.push("resolved_on = NULL");
+      }
+      if (sets.length === 0) return res.status(400).json({ error: "Nothing to update" });
+
+      vals.push(req.params.queryId, claim.id);
+      const upd = await pool.query(
+        `UPDATE claim_queries SET ${sets.join(", ")}
+          WHERE id = $${vals.length - 1} AND claim_id = $${vals.length}
+          RETURNING *`,
+        vals
+      );
+      if (upd.rows.length === 0) return res.status(404).json({ error: "Query not found" });
+      const row = upd.rows[0];
+
+      // The claim leaves query_raised only when the LAST open round closes.
+      const stillOpen = await openQueryCount(claim.id);
+      if (stillOpen === 0 && !CLAIM_TERMINAL.includes(claim.status)) {
+        await pool.query(
+          `UPDATE claims SET status = 'under_process', updated_at = now() WHERE id = $1`,
+          [claim.id]
+        );
+      }
+      if (row.resolved_on) {
+        await logClaimEvent(claim.id, agentId, "query_resolved", `Round ${row.seq} resolved`);
+      }
+      return res.json({ ...row, open_queries: stillOpen });
+    } catch (err: any) {
+      console.error("update claim query error:", err);
+      return res.status(500).json({ error: "Could not update the query" });
+    }
+  });
+
+  /* ── Agent: remove a query logged by mistake ──────────────────────────── */
+  app.delete("/api/agent/claims/:id/queries/:queryId", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const claim = await claimForAgent(req.params.id, agentId);
+      if (!claim) return res.status(404).json({ error: "Claim not found" });
+      await pool.query(
+        "DELETE FROM claim_queries WHERE id = $1 AND claim_id = $2",
+        [req.params.queryId, claim.id]
+      );
+      const stillOpen = await openQueryCount(claim.id);
+      if (stillOpen === 0 && !CLAIM_TERMINAL.includes(claim.status)) {
+        await pool.query(
+          `UPDATE claims SET status = 'under_process', updated_at = now() WHERE id = $1`,
+          [claim.id]
+        );
+      }
+      return res.json({ ok: true, open_queries: stillOpen });
+    } catch (err: any) {
+      console.error("delete claim query error:", err);
+      return res.status(500).json({ error: "Could not remove the query" });
+    }
+  });
+
+  /* ── Agent: upload a document ─────────────────────────────────────────────
+   * The retention clock starts HERE, on the first file, not at ticket creation:
+   * an empty ticket holds nothing worth counting down.
+   */
+  app.post(
+    "/api/agent/claims/:id/documents",
+    (req, res, next) => {
+      upload.single("file")(req, res, (err: any) => {
+        if (err) {
+          console.error("CLAIM DOC MULTER ERROR:", err);
+          return res.status(400).json({ error: "File upload failed: " + (err.message || "Unknown error") });
+        }
+        next();
+      });
+    },
+    async (req, res) => {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      if (!req.file) return res.status(400).json({ error: "No file received" });
+
+      const category = String(req.body?.category || "").toLowerCase();
+      if (!["personal", "case", "outcome"].includes(category)) {
+        return res.status(400).json({ error: "category must be personal, case or outcome" });
+      }
+
+      const file = req.file;
+      try {
+        const claim = await claimForAgent(req.params.id, agentId);
+        if (!claim) return res.status(404).json({ error: "Claim not found" });
+        if (claim.documents_purged_at) {
+          return res.status(409).json({
+            error: "PURGED",
+            message: "This claim's documents were deleted. It cannot take new files.",
+          });
+        }
+
+        const docId = crypto.randomUUID();
+        const ext = file.originalname.includes(".") ? file.originalname.split(".").pop() : "pdf";
+        const storagePath = `${agentId}/claims/${claim.id}/${category}/${docId}.${ext}`;
+
+        const fileBuffer = fs.readFileSync(file.path);
+        const { error: upErr } = await supabaseAdmin.storage
+          .from(PDF_BUCKET)
+          .upload(storagePath, fileBuffer, {
+            contentType: file.mimetype || "application/pdf",
+            upsert: true,
+          });
+        if (upErr) {
+          console.error(`[claim-doc ${docId}] storage upload failed:`, upErr.message);
+          return res.status(502).json({ error: "Could not store the file. Try again." });
+        }
+
+        const ins = await pool.query(
+          `INSERT INTO claim_documents
+             (id, claim_id, agent_id, query_id, category, doc_type,
+              storage_path, filename, file_size, mime_type)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+           RETURNING id, claim_id, query_id, category, doc_type, filename,
+                     file_size, mime_type, uploaded_at`,
+          [
+            docId, claim.id, agentId, req.body?.query_id || null, category,
+            req.body?.doc_type || null, storagePath, file.originalname,
+            file.size ?? null, file.mimetype ?? null,
+          ]
+        );
+
+        // Start the clock, once, on the first file that lands.
+        let clock = null;
+        if (!claim.retention_started_at) {
+          const started = await pool.query(
+            `UPDATE claims
+                SET retention_started_at = now(),
+                    purge_at = now() + make_interval(days => $2),
+                    updated_at = now()
+              WHERE id = $1 AND retention_started_at IS NULL
+              RETURNING retention_started_at, purge_at`,
+            [claim.id, CLAIM_RETENTION_DAYS]
+          );
+          clock = started.rows[0] ?? null;
+        }
+
+        void recordAccess(req, agentId, claim.id, `claim_doc_upload_${category}`);
+        return res.json({ ...ins.rows[0], retention: clock });
+      } catch (err: any) {
+        console.error("claim document upload error:", err);
+        return res.status(500).json({ error: "Could not save the document" });
+      } finally {
+        if (file?.path && fs.existsSync(file.path)) {
+          try { fs.unlinkSync(file.path); } catch { /* best effort */ }
+        }
+      }
+    }
+  );
+
+  /* ── Agent: open a document ───────────────────────────────────────────────
+   * Ten minutes, minted on demand, audited every time. The lead-policy route
+   * writes a ONE-YEAR url into its row; that is tolerable for a prospect's own
+   * policy PDF and not for an Aadhaar scan, and it would outlive the
+   * incineration it is supposed to be subject to.
+   */
+  app.get("/api/agent/claims/:id/documents/:docId/url", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const doc = await pool.query(
+        `SELECT d.storage_path, d.filename
+           FROM claim_documents d
+           JOIN claims c ON c.id = d.claim_id
+          WHERE d.id = $1 AND d.claim_id = $2 AND c.agent_id = $3`,
+        [req.params.docId, req.params.id, agentId]
+      );
+      if (doc.rows.length === 0) return res.status(404).json({ error: "Document not found" });
+
+      const { data: signed, error } = await supabaseAdmin.storage
+        .from(PDF_BUCKET)
+        .createSignedUrl(doc.rows[0].storage_path, 600);
+      if (error || !signed?.signedUrl) {
+        return res.status(502).json({ error: "Could not open the file" });
+      }
+      void recordAccess(req, agentId, req.params.id, "claim_doc_view");
+      return res.json({ url: signed.signedUrl, filename: doc.rows[0].filename, expires_in: 600 });
+    } catch (err: any) {
+      console.error("claim document url error:", err);
+      return res.status(500).json({ error: "Could not open the file" });
+    }
+  });
+
+  /* ── Agent: delete a document ─────────────────────────────────────────── */
+  app.delete("/api/agent/claims/:id/documents/:docId", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const doc = await pool.query(
+        `SELECT d.id, d.storage_path
+           FROM claim_documents d
+           JOIN claims c ON c.id = d.claim_id
+          WHERE d.id = $1 AND d.claim_id = $2 AND c.agent_id = $3`,
+        [req.params.docId, req.params.id, agentId]
+      );
+      if (doc.rows.length === 0) return res.status(404).json({ error: "Document not found" });
+
+      // Object first, row second: a crash between the two costs an orphaned
+      // row the sweep will retry, never a file nothing can reach.
+      const { error } = await supabaseAdmin.storage
+        .from(PDF_BUCKET)
+        .remove([doc.rows[0].storage_path]);
+      if (error) console.error("claim doc object remove failed:", error.message);
+
+      await pool.query("DELETE FROM claim_documents WHERE id = $1", [doc.rows[0].id]);
+      void recordAccess(req, agentId, req.params.id, "claim_doc_delete");
+      return res.json({ ok: true });
+    } catch (err: any) {
+      console.error("claim document delete error:", err);
+      return res.status(500).json({ error: "Could not delete the document" });
+    }
+  });
+
+  /* ── Agent: extend retention by 30 days ───────────────────────────────────
+   * Triple-guarded so 60 days is a structural ceiling rather than a policy
+   * someone has to remember: inside the unlock window, claim still open, and
+   * no extension used yet. All three are checked in the UPDATE's WHERE so two
+   * taps in quick succession cannot both win.
+   */
+  app.post("/api/agent/claims/:id/extend", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const upd = await pool.query(
+        `UPDATE claims
+            SET purge_at = purge_at + make_interval(days => $3),
+                extension_used = true,
+                extension_granted_at = now(),
+                updated_at = now()
+          WHERE id = $1 AND agent_id = $2
+            AND purge_at IS NOT NULL
+            AND extension_used = false
+            AND documents_purged_at IS NULL
+            AND status NOT IN ('settled','rejected')
+            AND now() >= purge_at - make_interval(days => $4)
+          RETURNING purge_at, extension_used`,
+        [req.params.id, agentId, CLAIM_EXTENSION_DAYS, CLAIM_EXTEND_UNLOCK_DAYS]
+      );
+      if (upd.rows.length === 0) {
+        const claim = await claimForAgent(req.params.id, agentId);
+        if (!claim) return res.status(404).json({ error: "Claim not found" });
+        return res.status(409).json({
+          error: "CANNOT_EXTEND",
+          message: claim.extension_used
+            ? "This claim has already had its one extension."
+            : "Extending opens in the last 5 days, and only while the claim is open.",
+        });
+      }
+      await logClaimEvent(req.params.id, agentId, "retention_extended", "Kept 30 more days");
+      return res.json(upd.rows[0]);
+    } catch (err: any) {
+      console.error("claim extend error:", err);
+      return res.status(500).json({ error: "Could not extend" });
+    }
+  });
 
   /* ── Agent: Create Public Report ─────────────────────────────────────── */
 
