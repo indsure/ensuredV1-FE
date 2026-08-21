@@ -391,17 +391,29 @@ function QueryRound({
 
   if (!open) {
     return (
-      <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3.5 flex items-center gap-3">
-        <CheckCircle2 size={19} className="text-emerald-600 shrink-0" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
-            <span className="text-[11px] font-black tracking-wider text-slate-400">ROUND {round.seq}</span>
-            <span className="text-sm font-semibold text-slate-700 truncate">{round.question}</span>
-          </div>
-          <div className="text-[11px] text-slate-400">
-            {formatDay(round.raised_on)} to {formatDay(round.resolved_on)}
+      <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3.5 flex flex-col gap-2.5">
+        <div className="flex items-center gap-3">
+          <CheckCircle2 size={19} className="text-emerald-600 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[11px] font-black tracking-wider text-slate-400">ROUND {round.seq}</span>
+              <span className="text-sm font-semibold text-slate-700 truncate">{round.question}</span>
+            </div>
+            <div className="text-[11px] text-slate-400">
+              {formatDay(round.raised_on)} to {formatDay(round.resolved_on)}
+            </div>
           </div>
         </div>
+        {/* A resolved round still holds the papers that answered it. Collapsing
+            them out of sight would hide documents the advisor filed, which is
+            the one thing this screen exists to prevent. */}
+        {replies.length > 0 && (
+          <div className="flex flex-col gap-1.5 pl-8">
+            {replies.map((d) => (
+              <DocRow key={d.id} claim={claim} doc={d} onChanged={onChanged} compact />
+            ))}
+          </div>
+        )}
       </div>
     );
   }

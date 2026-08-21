@@ -13,6 +13,8 @@
  */
 
 import { apiFetch } from "@/lib/api";
+import { isPlaygroundMode } from "@/lib/playground/mode";
+import { playgroundClaims } from "@/lib/playground/claimsSeed";
 
 export type ClaimStatus =
   | "opened"
@@ -106,10 +108,12 @@ async function json<T>(res: Response): Promise<T> {
 }
 
 export async function fetchClaims(): Promise<Claim[]> {
+  if (isPlaygroundMode()) return playgroundClaims.list();
   return json<Claim[]>(await apiFetch("/api/agent/claims"));
 }
 
 export async function fetchClaim(id: string): Promise<ClaimDetail> {
+  if (isPlaygroundMode()) return playgroundClaims.get(id);
   return json<ClaimDetail>(await apiFetch(`/api/agent/claims/${id}`));
 }
 
@@ -127,6 +131,7 @@ export type NewClaimDraft = {
 };
 
 export async function createClaim(draft: NewClaimDraft): Promise<Claim> {
+  if (isPlaygroundMode()) return playgroundClaims.create(draft);
   return json<Claim>(
     await apiFetch("/api/agent/claims", {
       method: "POST",
@@ -137,6 +142,7 @@ export async function createClaim(draft: NewClaimDraft): Promise<Claim> {
 }
 
 export async function updateClaim(id: string, patch: Record<string, unknown>): Promise<Claim> {
+  if (isPlaygroundMode()) return playgroundClaims.update(id, patch);
   return json<Claim>(
     await apiFetch(`/api/agent/claims/${id}`, {
       method: "PATCH",
@@ -157,6 +163,7 @@ export async function setClaimStatus(
   status: ClaimStatus,
   opts?: { note?: string; settled_amount?: string; proof_consent?: boolean }
 ): Promise<Claim> {
+  if (isPlaygroundMode()) return playgroundClaims.setStatus(id, status, opts ?? {});
   return json<Claim>(
     await apiFetch(`/api/agent/claims/${id}/status`, {
       method: "POST",
@@ -170,6 +177,7 @@ export async function addQuery(
   claimId: string,
   q: { question: string; raised_on?: string; raised_by?: string }
 ): Promise<ClaimQuery> {
+  if (isPlaygroundMode()) return playgroundClaims.addQuery(claimId, q);
   return json<ClaimQuery>(
     await apiFetch(`/api/agent/claims/${claimId}/queries`, {
       method: "POST",
@@ -184,6 +192,7 @@ export async function updateQuery(
   queryId: string,
   patch: Record<string, unknown>
 ): Promise<ClaimQuery> {
+  if (isPlaygroundMode()) return playgroundClaims.updateQuery(claimId, queryId, patch);
   return json<ClaimQuery>(
     await apiFetch(`/api/agent/claims/${claimId}/queries/${queryId}`, {
       method: "PATCH",
@@ -194,6 +203,7 @@ export async function updateQuery(
 }
 
 export async function deleteQuery(claimId: string, queryId: string): Promise<void> {
+  if (isPlaygroundMode()) return playgroundClaims.deleteQuery(claimId, queryId);
   await json(await apiFetch(`/api/agent/claims/${claimId}/queries/${queryId}`, { method: "DELETE" }));
 }
 
@@ -202,6 +212,7 @@ export async function uploadClaimDocument(
   file: File,
   meta: { category: DocCategory; doc_type?: string; query_id?: string }
 ): Promise<ClaimDocument> {
+  if (isPlaygroundMode()) return playgroundClaims.upload(claimId, file, meta);
   const form = new FormData();
   form.append("file", file);
   form.append("category", meta.category);
@@ -214,6 +225,7 @@ export async function uploadClaimDocument(
 }
 
 export async function deleteClaimDocument(claimId: string, docId: string): Promise<void> {
+  if (isPlaygroundMode()) return playgroundClaims.deleteDocument(claimId, docId);
   await json(
     await apiFetch(`/api/agent/claims/${claimId}/documents/${docId}`, { method: "DELETE" })
   );
@@ -229,6 +241,11 @@ export async function openClaimDocument(
   docId: string,
   opts?: { download?: boolean }
 ): Promise<string> {
+  if (isPlaygroundMode()) {
+    // The demo never stored a real file, so there is nothing to sign. Say that
+    // rather than opening a broken tab.
+    throw new Error("Files are not stored in the demo — this is sample data.");
+  }
   const q = opts?.download ? "?download=1" : "";
   const { url } = await json<{ url: string }>(
     await apiFetch(`/api/agent/claims/${claimId}/documents/${docId}/url${q}`)
@@ -242,6 +259,7 @@ export async function renameClaimDocument(
   docId: string,
   docType: string
 ): Promise<ClaimDocument> {
+  if (isPlaygroundMode()) return playgroundClaims.rename(claimId, docId, docType);
   return json<ClaimDocument>(
     await apiFetch(`/api/agent/claims/${claimId}/documents/${docId}`, {
       method: "PATCH",
@@ -252,6 +270,7 @@ export async function renameClaimDocument(
 }
 
 export async function extendRetention(claimId: string): Promise<{ purge_at: string }> {
+  if (isPlaygroundMode()) return playgroundClaims.extend(claimId);
   return json<{ purge_at: string }>(
     await apiFetch(`/api/agent/claims/${claimId}/extend`, { method: "POST" })
   );

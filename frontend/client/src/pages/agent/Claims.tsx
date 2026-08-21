@@ -74,12 +74,20 @@ export default function Claims() {
     let claimed = 0;
     let settled = 0;
     let settledCount = 0;
+    // Denominator for the recovery rate: what was asked for on the claims that
+    // actually SETTLED. Dividing by every claim's total would drag the figure
+    // down with claims still in progress and report a recovery rate that is
+    // simply wrong — one settled claim among five open ones is not "9%".
+    let claimedOnSettled = 0;
     for (const c of claims) {
       if (c.claimed_amount != null) claimed += Number(c.claimed_amount) || 0;
       if (c.settled_amount != null) settled += Number(c.settled_amount) || 0;
-      if (c.status === "settled") settledCount += 1;
+      if (c.status === "settled") {
+        settledCount += 1;
+        if (c.claimed_amount != null) claimedOnSettled += Number(c.claimed_amount) || 0;
+      }
     }
-    return { claimed, settled, settledCount };
+    return { claimed, settled, settledCount, claimedOnSettled };
   }, [claims]);
 
   const visible = useMemo(() => {
@@ -129,8 +137,8 @@ export default function Claims() {
             value={formatAmount(totals.settled)}
             tone="text-emerald-700"
             hint={
-              totals.claimed > 0 && totals.settled > 0
-                ? `${Math.round((totals.settled / totals.claimed) * 100)}% of what was claimed`
+              totals.claimedOnSettled > 0
+                ? `${Math.round((totals.settled / totals.claimedOnSettled) * 100)}% recovered on settled claims`
                 : undefined
             }
           />
@@ -283,7 +291,9 @@ function ClaimCard({ claim, onOpen }: { claim: Claim; onOpen: () => void }) {
             <span className="font-bold text-slate-600">{formatAmount(Number(claim.claimed_amount))}</span>
           )}
           {claim.insurer && <span className="text-slate-500">{claim.insurer}</span>}
-          {days != null && (
+          {/* A countdown next to "documents deleted" reads as a contradiction —
+              the thing it was counting down to has already happened. */}
+          {days != null && !claim.documents_purged_at && (
             <span
               className={[
                 "ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 font-bold",
