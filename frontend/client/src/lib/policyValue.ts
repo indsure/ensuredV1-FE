@@ -35,6 +35,9 @@ export interface ValueRow {
   cover: number;
   /** null = payable straight away; otherwise the date the money is released. */
   deferredTo: string | null;
+  /** false when the document cannot tell us this year's value (a unit linked
+   *  statement gives today's fund value, never the history before it). */
+  known: boolean;
   note: string;
 }
 
@@ -170,6 +173,17 @@ export function computePolicyValue(
 
   // Unit linked needs the current fund value; without it we cannot project honestly.
   const fundValue = num(d.fund_value);
+  // The statement gives the fund value as at today, so anchor it to the policy
+  // year the policy is actually in and project forward from there. Earlier years
+  // are left blank rather than back-filled with numbers nobody can verify.
+  let anchorYear = 1;
+  if (shape === "unit_linked" && start) {
+    const began = new Date(start);
+    if (!Number.isNaN(began.getTime())) {
+      const elapsed = (Date.now() - began.getTime()) / (365.2425 * 24 * 3600 * 1000);
+      anchorYear = Math.min(Math.max(Math.floor(elapsed) + 1, 1), term!);
+    }
+  }
   if (shape === "unit_linked") {
     if (!fundValue) return { missing: ["Fund value (from the latest statement)"] };
     lockInYears = UNIT_LINKED_LOCK_IN;
@@ -240,7 +254,7 @@ export function computePolicyValue(
     }
 
     if (shape === "unit_linked") {
-      if (y > 1) fv = fv * (1 + UNIT_LINKED_GROSS - UNIT_LINKED_FMC) + (y <= ppt ? annualPremium : 0);
+      if (y > anchorYear) fv = fv * (1 + UNIT_LINKED_GROSS - UNIT_LINKED_FMC) + (y <= ppt ? annualPremium : 0);
       const inLock = y <= UNIT_LINKED_LOCK_IN;
       back = inLock ? fv * Math.pow(1.04, UNIT_LINKED_LOCK_IN - y) : fv;
       cover = Math.max(sumAssured, fv, 1.05 * paid);
@@ -250,7 +264,9 @@ export function computePolicyValue(
         : "Fund value on the day you surrender.";
     }
 
-    rows.push({ year: y, age: entryAge === null ? null : entryAge + y, paid, back, cover, deferredTo, note });
+    const known = shape !== "unit_linked" || y >= anchorYear;
+    if (!known) note = "The statement only gives today's fund value, not what it was back then.";
+    rows.push({ year: y, age: entryAge === null ? null : entryAge + y, paid, back, cover, deferredTo, known, note });
   }
 
   // Method notes that depend on the shape.

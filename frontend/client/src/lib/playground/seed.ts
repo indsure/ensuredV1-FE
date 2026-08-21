@@ -724,6 +724,11 @@ export function buildSeed(): Store {
       flaws: [], report_data: null,
       extracted_data: { premium: 18400, vehicle: "Hyundai Creta", reg_no: "MP09 CX 4521" },
     },
+    // Life/term policies carry the full EXTRACTION_FIELDS shape, because the
+    // value schedule on PolicyDetail is computed from exactly these keys.
+    // Three shapes, so the demo shows all three outcomes: an endowment that
+    // pays out, a term plan that pays nothing, and a unit linked plan whose
+    // money is locked in.
     {
       id: "pol-8", agent_id: DEMO_AGENT_ID, customer_id: "cust-1",
       policy_name: "Jeevan Anand", name: "Suresh Agarwal", policyholder_name: "Suresh Agarwal",
@@ -731,7 +736,57 @@ export function buildSeed(): Store {
       sum_insured: 2000000, expiry_date: dateAgo(-150), created_at: ago(40),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
       flaws: [], report_data: null,
-      extracted_data: { premium: 48000, term_years: 21, mode: "Yearly" },
+      extracted_data: {
+        policyholder_name: "Suresh Agarwal", life_assured_name: "Suresh Agarwal",
+        insurer: INSURERS.lic, policy_number: "SPEC-LIC-88214",
+        plan_name: "Jeevan Anand", sum_assured: 2000000,
+        premium: 96400, premium_frequency: "Annual",
+        policy_term_years: 21, premium_paying_term_years: 21,
+        start_date: "2018-03-15", next_premium_date: dateAgo(-60),
+        maturity_date: "2039-03-15",
+        plan_type: "Endowment / savings", bonus_per_1000: 47, fund_value: null,
+        nominee_name: "Kavita Agarwal",
+      },
+    },
+    {
+      id: "pol-12", agent_id: DEMO_AGENT_ID, customer_id: "cust-2",
+      policy_name: "Sample Smart Wealth Builder", name: "Rajesh Sharma", policyholder_name: "Rajesh Sharma",
+      insurer: "Sample Life Insurance Company Limited", insurance_type: "life", status: "done", score: null,
+      sum_insured: 1200000, expiry_date: "2043-07-10", created_at: ago(9),
+      share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
+      flaws: [], report_data: null,
+      extracted_data: {
+        policyholder_name: "Rajesh Sharma", life_assured_name: "Rajesh Sharma",
+        insurer: "Sample Life Insurance Company Limited",
+        policy_number: "SPEC/UL/2023/0000117",
+        plan_name: "Sample Smart Wealth Builder", sum_assured: 1200000,
+        premium: 120000, premium_frequency: "Annual",
+        policy_term_years: 20, premium_paying_term_years: 10,
+        start_date: "2023-07-10", next_premium_date: "2027-07-10",
+        maturity_date: "2043-07-10",
+        plan_type: "Unit linked", bonus_per_1000: null, fund_value: 493900,
+        nominee_name: "Priya Sharma",
+      },
+    },
+    {
+      id: "pol-13", agent_id: DEMO_AGENT_ID, customer_id: "cust-3",
+      policy_name: "Smart Protection Goal", name: "Aniket Bang", policyholder_name: "Aniket Bang",
+      insurer: "Bajaj Allianz Life Insurance Company Limited", insurance_type: "term", status: "done", score: null,
+      sum_insured: 10000000, expiry_date: "2099-06-20", created_at: ago(4),
+      share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
+      flaws: [], report_data: null,
+      extracted_data: {
+        policyholder_name: "Aniket Bang", life_assured_name: "Aniket Bang",
+        insurer: "Bajaj Allianz Life Insurance Company Limited",
+        policy_number: "0562704246",
+        plan_name: "Bajaj Allianz Life Smart Protection Goal",
+        sum_assured: 10000000, premium: 12302, premium_frequency: "Annual",
+        policy_term_years: 76, premium_paying_term_years: 37, cover_till_age: 99,
+        start_date: "2023-06-21", next_premium_date: "2027-06-21",
+        cover_end_date: "2099-06-20",
+        plan_type: "Term cover only",
+        death_benefit_payout: "Lump sum", nominee_name: "Rajesh Bang",
+      },
     },
     // In-flight + failed, so My Queue and the failures panel have content
     {

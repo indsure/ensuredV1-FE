@@ -4,9 +4,9 @@ import {
   CartesianGrid, ReferenceArea, ReferenceLine,
 } from "recharts";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
+import { isPlaygroundMode } from "@/lib/playground/mode";
 import { getApiBase } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -35,14 +35,24 @@ interface Props {
 }
 
 export default function PolicyValueChart({ clientId, insuranceType, data, onSaved }: Props) {
-  const result = useMemo(() => computePolicyValue(insuranceType, data ?? null), [insuranceType, data]);
   const [saving, setSaving] = useState(false);
+  // Applied immediately on click so the chart redraws without waiting for the
+  // round-trip — and so the chips still work in playground, which has no backend.
+  const [override, setOverride] = useState<PlanShape | null>(null);
+
+  const effective = useMemo(
+    () => (override ? { ...(data ?? {}), plan_type: PLAN_SHAPE_LABELS[override] } : data ?? null),
+    [data, override]
+  );
+  const result = useMemo(() => computePolicyValue(insuranceType, effective), [insuranceType, effective]);
 
   const term = !isValueGap(result) ? result.term : 1;
   const [year, setYear] = useState(1);
   const yr = Math.min(year, term);
 
   async function setPlanType(shape: PlanShape) {
+    setOverride(shape);
+    if (isPlaygroundMode()) return; // demo mode: nothing is persisted anywhere
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -104,8 +114,8 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
   const chartData = rows.map((r) => ({
     year: r.year,
     paid: Math.round(r.paid),
-    back: Math.round(r.back),
-    locked: r.deferredTo ? Math.round(r.back) : null,
+    back: r.known ? Math.round(r.back) : null,
+    locked: r.known && r.deferredTo ? Math.round(r.back) : null,
     cover: Math.round(r.cover),
   }));
 
@@ -213,10 +223,14 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                 )}
                 <ReferenceLine x={yr} stroke="#94a3b8" strokeWidth={1} />
                 <Line type="monotone" dataKey="paid" stroke={PAID} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="back" stroke={BACK} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="back" stroke={BACK} strokeWidth={2} dot={false}
+                  connectNulls={false} />
                 {lockInYears && (
+                  // isAnimationActive must stay off: recharts drives its line-draw
+                  // animation through stroke-dasharray and would overwrite ours.
                   <Line type="monotone" dataKey="locked" stroke={BACK} strokeWidth={2}
-                    strokeDasharray="5 5" dot={false} connectNulls={false} />
+                    strokeDasharray="5 5" dot={false} connectNulls={false}
+                    isAnimationActive={false} />
                 )}
               </LineChart>
             </ResponsiveContainer>
@@ -269,9 +283,9 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
           </div>
           <div className="rounded-xl border border-slate-100 p-4">
             <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Gets back if they stop</div>
-            <div className={"mt-1 text-2xl font-bold " + (row.back > 0 ? "" : "text-slate-400")}
-              style={row.back > 0 ? { color: BACK } : undefined}>
-              {row.back > 0 ? rupee(row.back) : "Nothing"}
+            <div className={"mt-1 text-2xl font-bold " + (row.known && row.back > 0 ? "" : "text-slate-400")}
+              style={row.known && row.back > 0 ? { color: BACK } : undefined}>
+              {!row.known ? "Not stated" : row.back > 0 ? rupee(row.back) : "Nothing"}
             </div>
             <div className="mt-1 text-xs text-slate-500">{row.note}</div>
           </div>
