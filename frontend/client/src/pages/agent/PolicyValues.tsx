@@ -178,12 +178,12 @@ export default function PolicyValues() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left">
-                {["Client", "Year", "Paid in", "Worth today", "At next anniversary", "Return", "What to do"].map((h, i) => (
+                {["Client", "Year", "Paid in", "Worth today", "At next anniversary", "Return now", "Return at maturity", "What to do"].map((h, i) => (
                   <th
                     key={h}
                     className={
                       "px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 " +
-                      (i >= 2 && i <= 5 ? "text-right" : "")
+                      (i >= 2 && i <= 6 ? "text-right" : "")
                     }
                   >
                     {h}
@@ -233,6 +233,15 @@ export default function PolicyValues() {
                     ) : (
                       <span className={r.irrToday < 0 ? "font-semibold text-amber-700" : "text-slate-700"}>
                         {pct(r.irrToday)}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    {r.irrAtMaturity === null ? (
+                      <span className="text-slate-300">—</span>
+                    ) : (
+                      <span className={r.irrAtMaturity < 0 ? "font-semibold text-amber-700" : "text-slate-700"}>
+                        {pct(r.irrAtMaturity)}
                       </span>
                     )}
                   </td>

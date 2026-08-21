@@ -48,6 +48,8 @@ export interface ValueRow {
   deferredTo: string | null;
   /** Annual return on the real cashflows if the policy is exited that year. */
   irr: number | null;
+  /** The same, discounted by actual dates. Preferred wherever it resolves. */
+  xirr: number | null;
   note: string;
 }
 
@@ -67,6 +69,7 @@ export interface ValueSchedule {
   steps: string[];
   /** Annual return if the policy is held to the end. */
   irrAtMaturity: number | null;
+  xirrAtMaturity: number | null;
   /** Value the document itself states at maturity, when it was extracted. */
   illustratedMaturity: number | null;
   /** How far our schedule sits from the document's own figure. */
@@ -168,6 +171,65 @@ function exitFlows(annualPremium: number, ppt: number, exitYear: number, payout:
   return flows;
 }
 
+/**
+ * XIRR — the annual return on cashflows that fall on real dates.
+ *
+ * Better than the period IRR above wherever the dates are not neat annual
+ * steps, which is most of the time: a monthly-mode premium is twelve payments
+ * a year, not one, and a unit linked surrender inside the lock-in is paid on
+ * the lock-in date rather than on a policy anniversary. Discounting by actual
+ * days is the only way those come out right, and it is what Excel's XIRR does.
+ */
+export function xirr(flows: { date: Date; amount: number }[]): number | null {
+  if (flows.length < 2) return null;
+  const t0 = flows[0].date.getTime();
+  const years = (d: Date) => (d.getTime() - t0) / (365 * 24 * 3600 * 1000);
+  const npv = (r: number) =>
+    flows.reduce((sum, f) => sum + f.amount / Math.pow(1 + r, years(f.date)), 0);
+  let lo = -0.9999, hi = 5;
+  let flo = npv(lo), fhi = npv(hi);
+  if (!Number.isFinite(flo) || !Number.isFinite(fhi) || flo * fhi > 0) return null;
+  for (let i = 0; i < 240; i++) {
+    const mid = (lo + hi) / 2;
+    const fm = npv(mid);
+    if (fm === 0) return mid;
+    if (flo * fm < 0) { hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
+  }
+  return (lo + hi) / 2;
+}
+
+function addMonths(d: Date, months: number): Date {
+  const out = new Date(d);
+  out.setMonth(out.getMonth() + months);
+  return out;
+}
+
+/**
+ * Dated cashflows for exiting at the end of policy year `exitYear`: one outflow
+ * per premium instalment on its real due date, one inflow on the day the money
+ * actually reaches the customer (which for a locked-in policy is not the
+ * anniversary but the date the lock-in lifts).
+ */
+function datedFlows(
+  start: string | null, instalment: number, perYear: number, ppt: number,
+  exitYear: number, payout: number, payoutDate: string | null
+): { date: Date; amount: number }[] | null {
+  if (!start) return null;
+  const begin = new Date(start);
+  if (Number.isNaN(begin.getTime())) return null;
+  const flows: { date: Date; amount: number }[] = [];
+  const monthsApart = 12 / perYear;
+  for (let y = 1; y <= Math.min(ppt, exitYear); y++) {
+    for (let j = 0; j < perYear; j++) {
+      flows.push({ date: addMonths(begin, (y - 1) * 12 + j * monthsApart), amount: -instalment });
+    }
+  }
+  const landed = payoutDate ? new Date(payoutDate) : addMonths(begin, exitYear * 12);
+  if (Number.isNaN(landed.getTime())) return null;
+  flows.push({ date: landed, amount: payout });
+  return flows;
+}
+
 function penaltyFor(year: number, ap: number, fv: number, params: PolicyParams): number {
   const row = params.penalties.value.find((p) => p.year === year);
   if (!row) return 0;
@@ -222,6 +284,13 @@ export function computePolicyValue(
     `Money paid by year n = premium × instalments per year × the smaller of n and the premium paying term` +
       (perYear > 1 ? ` — ${rawPremium} × ${perYear} × up to ${ppt}.` : ` — ${rawPremium} × up to ${ppt}.`)
   );
+
+  // One instalment is what actually leaves the customer's account each time.
+  const instalment = rawPremium!;
+  const datedIrr = (exitYear: number, payout: number, payoutDate: string | null) => {
+    const flows = datedFlows(start, instalment, perYear, ppt, exitYear, payout, payoutDate);
+    return flows ? xirr(flows) : null;
+  };
 
   const rows: ValueRow[] = [];
 
@@ -280,6 +349,7 @@ export function computePolicyValue(
         cover: Math.max(sumAssured, fv, floor * (annualPremium * Math.min(y, ppt))),
         deferredTo: inLock ? lockInEnds : null,
         irr: irr(exitFlows(annualPremium, ppt, y, back)),
+        xirr: datedIrr(y, back, inLock ? lockInEnds : null),
         note: inLock
           ? `Held in the discontinued fund until ${lockInEnds ?? "the end of the lock-in"}, earning ${params.discontinuedFundRatePct.value}% a year.`
           : "Fund value on the day you surrender.",
@@ -344,6 +414,7 @@ export function computePolicyValue(
         age: entryAge === null ? null : entryAge + y,
         paid, value, penalty: 0, back, cover, deferredTo: null, note,
         irr: irr(exitFlows(annualPremium, ppt, y, back)),
+        xirr: datedIrr(y, back, null),
       });
     }
 
@@ -379,6 +450,7 @@ export function computePolicyValue(
   return {
     shape, rows, params, annualPremium, totalPremiums, maturity,
     irrAtMaturity: rows[rows.length - 1]?.irr ?? null,
+    xirrAtMaturity: rows[rows.length - 1]?.xirr ?? null,
     term: term!, ppt, entryAge, lockInYears, lockInEnds, guaranteed, steps,
     illustratedMaturity, reconciliation,
   };

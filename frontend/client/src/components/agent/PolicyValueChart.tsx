@@ -134,9 +134,14 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
 
   const {
     shape, rows, params, totalPremiums, maturity, lockInYears, lockInEnds,
-    steps, illustratedMaturity, reconciliation, irrAtMaturity,
+    steps, illustratedMaturity, reconciliation, irrAtMaturity, xirrAtMaturity,
   } = result;
   const row = rows[yr - 1];
+  // XIRR wherever the dates resolve: it is the same measure, discounted by real
+  // dates rather than whole years, so monthly premiums and a payout deferred to
+  // a lock-in date come out right.
+  const returnHere = row.xirr ?? row.irr;
+  const returnAtMaturity = xirrAtMaturity ?? irrAtMaturity;
   const relevant = RELEVANT_PARAMS[shape] ?? [];
   const assumed = assumedCount(params, shape);
 
@@ -148,6 +153,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
     cover: Math.round(r.cover),
   }));
 
+  const returnAtMaturityTop = xirrAtMaturity ?? irrAtMaturity;
   const verdict = (() => {
     if (shape === "pure_term")
       return {
@@ -159,14 +165,14 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
     if (shape === "return_of_premium")
       return {
         title: `All ${rupee(totalPremiums)} of the premiums come back at the end` +
-          (irrAtMaturity !== null ? `, a return of ${pct(irrAtMaturity)} a year.` : "."),
+          (returnAtMaturityTop !== null ? `, a return of ${pct(returnAtMaturityTop)} a year.` : "."),
         body: `Stop earlier and only the guaranteed surrender value is paid, which stays below the premiums ` +
           `paid until close to the end of the term.`,
       };
     if (shape === "endowment")
       return {
         title: `About ${short(maturity)} at maturity, on ${rupee(totalPremiums)} of premiums` +
-          (irrAtMaturity !== null ? ` — a return of ${pct(irrAtMaturity)} a year.` : "."),
+          (returnAtMaturityTop !== null ? ` — a return of ${pct(returnAtMaturityTop)} a year.` : "."),
         body: `Surrender before the end pays the higher of the guaranteed value and the paid-up value, both ` +
           `well below the premiums paid for most of the term.`,
       };
@@ -345,15 +351,23 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
           </div>
           <div className="rounded-xl border border-slate-100 p-4">
             <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Return if they stop here</div>
-            <div className={"mt-1 text-2xl font-bold " + (row.irr === null ? "text-slate-400" : row.irr < 0 ? "text-amber-700" : "text-slate-900")}>
-              {row.irr === null ? "No return" : pct(row.irr)}
+            <div className={"mt-1 text-2xl font-bold " + (returnHere === null ? "text-slate-400" : returnHere < 0 ? "text-amber-700" : "text-slate-900")}>
+              {returnHere === null ? "No return" : pct(returnHere)}
             </div>
             <div className="mt-1 text-xs text-slate-500">
-              {row.irr === null
-                ? "Nothing comes back, so there is no return to measure."
-                : row.irr < 0
-                ? "A loss. They get back less than they put in."
-                : "A year, on the money actually paid in. Compare it with a fixed deposit."}
+              {returnHere === null && "Nothing comes back in this year. "}
+              {returnAtMaturity !== null
+                ? `Held to maturity: ${pct(returnAtMaturity)} a year.`
+                : returnHere !== null
+                ? "A year, on the money actually paid in."
+                : ""}
+            </div>
+            <div className="mt-1 text-[11px] text-slate-400">
+              {returnAtMaturity === null
+                ? ""
+                : row.xirr !== null || xirrAtMaturity !== null
+                ? "XIRR — dated cashflows. Compare with a fixed deposit."
+                : "Annual periods; no start date to date the cashflows."}
             </div>
           </div>
           <div className="rounded-xl border border-slate-100 p-4">
@@ -425,10 +439,10 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             estimated, and the same document always gives the same numbers.
           </p>
           <ul className="mt-3 space-y-1.5">
-            {irrAtMaturity !== null && (
+            {returnAtMaturity !== null && (
               <li className="text-xs text-slate-600">
                 · Return = the rate at which the premiums actually paid, year by year, grow into the payout
-                (internal rate of return). A plain average over total premiums would overstate it, because a
+                (XIRR, discounted by the real dates). A plain average over total premiums would overstate it, because a
                 premium paid late has not been invested for the whole term.
               </li>
             )}
