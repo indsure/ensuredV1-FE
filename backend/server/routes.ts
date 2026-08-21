@@ -373,20 +373,97 @@ setInterval(() => {
 
 /* ---------- PDF / TEXT EXTRACTION HELPERS ---------- */
 
-export async function extractTextFromPDF(filePath: string): Promise<string> {
+/**
+ * Why a PDF could not be read.
+ *
+ * The `message` on this error is written for the person who uploaded the file,
+ * not for us. It is stored in individual_policies.error_message /
+ * clients.error_message and rendered verbatim in the consumer portfolio, the
+ * agent upload list and the admin portal, so it has to name the actual problem
+ * ("password-protected", "a scan we couldn't read") and say what to do next.
+ * Internal detail — the pdf.js exception, the OCR failure — goes to the log and
+ * to analysis_jobs.error, never into this message.
+ *
+ * `reason` is the stable, machine-readable half. Nothing keys off it today; it
+ * exists so a caller can branch (or a dashboard can group) without parsing prose.
+ */
+export type PdfFailureReason =
+  | "password_protected"
+  | "scanned_unreadable"
+  | "corrupt"
+  | "too_large_to_ocr";
+
+export class PdfExtractionError extends Error {
+  constructor(readonly reason: PdfFailureReason, message: string) {
+    super(message);
+    this.name = "PdfExtractionError";
+  }
+}
+
+const PDF_FAILURE_MESSAGE: Record<PdfFailureReason, string> = {
+  password_protected:
+    "This PDF is locked with a password, so we could not open it. Please remove the password and upload it again, or send it to our team and we will do it for you.",
+  scanned_unreadable:
+    "This looks like a scanned or photographed copy, and we could not read any text from it. The original PDF from your insurer usually works. If you only have this copy, send it to our team and we will read it for you.",
+  corrupt:
+    "This file is damaged or is not a readable PDF. Please download a fresh copy from your insurer and upload it again, or send it to our team.",
+  too_large_to_ocr:
+    "This scanned file is too large for us to read automatically. Please upload a copy under 12 MB, or send it to our team and we will handle it.",
+};
+
+/**
+ * What to put in front of a person when their analysis dies.
+ *
+ * A PdfExtractionError already carries a message written for them, so it passes
+ * through. Everything else is ours — a Gemini 429, a timeout, a TypeError — and
+ * means nothing to someone who just uploaded a policy, so it is replaced. The
+ * raw error still goes to the log and to analysis_jobs.error, which is where we
+ * look when someone reports a failure.
+ *
+ * Used on the consumer lane only. The agent lane keeps raw errors in
+ * clients.error_message on purpose: agents and the admin portal triage from it,
+ * and a PdfExtractionError is already readable there without any mapping.
+ */
+function readableFailure(err: unknown): string {
+  if (err instanceof PdfExtractionError) return err.message;
+  const raw = typeof err === "string" ? err : (err as any)?.message ?? "";
+  if (/does not appear to be a readable/i.test(raw)) {
+    return (
+      "We could not find a policy in this file. Please check that you uploaded the policy document " +
+      "itself, not a receipt or a renewal notice. If it is the right file, send it to our team and " +
+      "we will look at it."
+    );
+  }
+  return (
+    "We could not read this policy. Please try uploading it again. If it keeps failing, send it to " +
+    "our team and we will check it for you."
+  );
+}
+
+/** Anything shorter than this is a header or a page number, not a policy. */
+const MIN_USABLE_TEXT_CHARS = 200;
+
+/**
+ * Ceiling for sending a PDF to Gemini as inline data. Base64 inflates by ~4/3,
+ * so 12 MB of PDF is ~16 MB on the wire, inside the ~20 MB request limit.
+ * Uploads themselves are capped higher (25 MB), hence the separate limit and
+ * its own message.
+ */
+const OCR_MAX_BYTES = 12 * 1024 * 1024;
+
+export async function extractTextFromPDF(
+  filePath: string,
+  ocr?: { apiKey: string; usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta> }
+): Promise<string> {
   const fileData = fs.readFileSync(filePath);
   const data = new Uint8Array(fileData);
 
+  // Pass 1: the text layer. Covers every insurer-issued PDF.
+  let text = "";
   try {
     const loadingTask = pdfjs.getDocument({ data, disableFontFace: true });
     const pdf = await loadingTask.promise;
 
-    if (pdf.numPages === 0) {
-      console.warn("[PDF Extraction] PDF has 0 pages — trying pdf-parse fallback");
-      return await extractTextWithPdfParse(fileData);
-    }
-
-    let text = "";
     for (let i = 1; i <= pdf.numPages; i++) {
       try {
         const page = await pdf.getPage(i);
@@ -397,29 +474,48 @@ export async function extractTextFromPDF(filePath: string): Promise<string> {
         console.warn(`[PDF Extraction] Page ${i} failed: ${pageErr.message} — skipping`);
       }
     }
-
-    if (!text.trim()) {
-      console.warn("[PDF Extraction] pdfjs returned empty text — trying pdf-parse fallback");
-      return await extractTextWithPdfParse(fileData);
-    }
-
-    return text;
   } catch (error: any) {
-    console.warn("[PDF Extraction] pdfjs error:", error.message?.substring(0, 150));
-    try {
-      return await extractTextWithPdfParse(fileData);
-    } catch (fallbackErr: any) {
-      console.error("[PDF Extraction] pdf-parse fallback also failed:", fallbackErr.message);
-      throw new Error(`PDF text extraction failed: ${error.message}`);
+    // Two failures are the file's own doing and no amount of OCR fixes them,
+    // so they are reported as-is rather than costing an OCR call first.
+    if (error?.name === "PasswordException") {
+      throw new PdfExtractionError("password_protected", PDF_FAILURE_MESSAGE.password_protected);
     }
+    if (error?.name === "InvalidPDFException") {
+      throw new PdfExtractionError("corrupt", PDF_FAILURE_MESSAGE.corrupt);
+    }
+    // Everything else falls through to OCR: some genuine policy bonds trip
+    // pdf.js on fonts or a malformed xref yet still render perfectly.
+    console.warn("[PDF Extraction] pdf.js could not read the text layer:", error?.message?.substring(0, 150));
   }
-}
 
-async function extractTextWithPdfParse(buffer: Buffer | Uint8Array): Promise<string> {
-  const pdfParseModule = await import("pdf-parse");
-  const pdfParse = (pdfParseModule as any).default ?? pdfParseModule;
-  const result = await (pdfParse as any)(Buffer.from(buffer));
-  return result.text;
+  if (text.trim().length >= MIN_USABLE_TEXT_CHARS) return text;
+
+  // Pass 2: no usable text layer, so this is a scan or a photo. OCR is the only
+  // way through — the old pdf-parse fallback that used to sit here could never
+  // have helped, because it reads the same (absent) text layer.
+  console.warn(
+    `[PDF Extraction] text layer yielded ${text.trim().length} chars — falling back to OCR`
+  );
+
+  if (!ocr?.apiKey) {
+    throw new PdfExtractionError("scanned_unreadable", PDF_FAILURE_MESSAGE.scanned_unreadable);
+  }
+  if (fileData.length > OCR_MAX_BYTES) {
+    throw new PdfExtractionError("too_large_to_ocr", PDF_FAILURE_MESSAGE.too_large_to_ocr);
+  }
+
+  let ocrText = "";
+  try {
+    ocrText = await ocrWithGemini(fileData, "application/pdf", ocr.apiKey, ocr.usageMeta);
+  } catch (ocrErr: any) {
+    console.error("[PDF Extraction] OCR failed:", ocrErr?.message);
+    throw new PdfExtractionError("scanned_unreadable", PDF_FAILURE_MESSAGE.scanned_unreadable);
+  }
+
+  if (ocrText.trim().length < MIN_USABLE_TEXT_CHARS) {
+    throw new PdfExtractionError("scanned_unreadable", PDF_FAILURE_MESSAGE.scanned_unreadable);
+  }
+  return ocrText;
 }
 
 async function extractTextFromPlain(filePath: string): Promise<string> {
@@ -434,12 +530,21 @@ async function extractTextFromPlain(filePath: string): Promise<string> {
 // unaffected.
 type PolicyFile = { path: string; originalname: string; size: number; mimetype: string };
 
-async function extractTextFromImage(
-  file: PolicyFile,
+/**
+ * Transcribe a document Gemini can see but we cannot parse — a photographed
+ * policy, or a scanned PDF with no text layer. Gemini takes application/pdf as
+ * inline data directly, so a scan needs no page rasterising on our side.
+ *
+ * Metered like every other call: one gemini_usage_log row per attempt, success
+ * or failure. Only ever reached from inside an analysis, which is behind the
+ * quota check, so OCR cannot be spent by an account without slots.
+ */
+async function ocrWithGemini(
+  buffer: Buffer,
+  mimeType: string,
   apiKey: string,
   usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta>
 ): Promise<string> {
-  const buffer = fs.readFileSync(file.path);
   const genAI = new GoogleGenerativeAI(apiKey);
   const modelName = process.env.GEMINI_MODEL || "gemini-3.5-flash";
   const model = genAI.getGenerativeModel({ model: modelName });
@@ -453,13 +558,13 @@ async function extractTextFromImage(
           parts: [
             {
               text:
-                "Transcribe all readable text from this insurance policy image. " +
+                "Transcribe all readable text from this insurance policy document. " +
                 "Return plain text only. No formatting. No summaries.",
             },
             {
               inlineData: {
                 data: buffer.toString("base64"),
-                mimeType: file.mimetype || "image/png",
+                mimeType,
               },
             },
           ],
@@ -482,6 +587,15 @@ async function extractTextFromImage(
   }
 }
 
+async function extractTextFromImage(
+  file: PolicyFile,
+  apiKey: string,
+  usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta>
+): Promise<string> {
+  const buffer = fs.readFileSync(file.path);
+  return ocrWithGemini(buffer, file.mimetype || "image/png", apiKey, usageMeta);
+}
+
 async function extractPolicyText(
   file: PolicyFile,
   usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta>
@@ -489,7 +603,7 @@ async function extractPolicyText(
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
-  if (file.mimetype.includes("pdf")) return extractTextFromPDF(file.path);
+  if (file.mimetype.includes("pdf")) return extractTextFromPDF(file.path, { apiKey, usageMeta });
   if (file.mimetype.startsWith("image/")) return extractTextFromImage(file, apiKey, usageMeta);
   if (file.mimetype === "text/plain") return extractTextFromPlain(file.path);
 
@@ -3194,7 +3308,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const p = prof.rows[0];
       const policies = await pool.query(
         `SELECT id, insurance_type, status, filename, insurer, policy_name, nickname, score,
-                expiry_date, renewal_date, sum_insured, flaws, created_at,
+                expiry_date, renewal_date, sum_insured, flaws, created_at, error_message,
                 (pdf_url IS NOT NULL) AS has_pdf
            FROM individual_policies
           WHERE user_id = $1
@@ -3610,7 +3724,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               } else {
                 job.status = "failed";
                 job.error = extraction.error;
-                await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [extraction.error, policyId]);
+                await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [readableFailure(extraction.error), policyId]);
               }
               job.completedAt = Date.now();
               await persistJob(job);
@@ -3651,16 +3765,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             } else {
               job.status = "failed";
               job.error = result.error;
-              await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [result.error, policyId]);
+              await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [readableFailure(result.error), policyId]);
             }
             job.completedAt = Date.now();
             await persistJob(job);
           } catch (err: any) {
             console.error(`[Job ${jobId}] Processing error:`, err);
             job.status = "failed";
+            // job.error keeps the raw message — analysis_jobs is our ledger, and
+            // it is what we read when someone reports a failure. Only the
+            // consumer-facing column gets the plain-language version.
             job.error = err.message || "Unknown error";
             await persistJob(job);
-            await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [err.message, policyId]);
+            await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [readableFailure(err), policyId]);
           } finally {
             try {
               if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);

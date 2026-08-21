@@ -15,6 +15,10 @@ export type Policy = {
   flaws: string[] | null;
   has_pdf: boolean;
   created_at: string;
+  // Only set when status === "error". Written in plain language by the backend
+  // (readableFailure in routes.ts) and safe to show as-is — internal errors are
+  // mapped away before they reach this column.
+  error_message: string | null;
 };
 
 export type Portfolio = {

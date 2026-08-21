@@ -130,3 +130,13 @@ export const advisorWa = (phone: string | null): string | null => {
   const d = (phone ?? "").replace(/\D/g, "");
   return d.length >= 10 ? `https://wa.me/91${d.slice(-10)}` : null;
 };
+
+/**
+ * IndSure's own WhatsApp — the escape hatch when we could not read someone's
+ * policy and telling them to try again would just waste their time. Same number
+ * the agent-facing pages use; change it here if support ever moves.
+ */
+export const TEAM_WHATSAPP = "919987148125";
+
+export const teamWaLink = (message: string): string =>
+  `https://wa.me/${TEAM_WHATSAPP}?text=${encodeURIComponent(message)}`;
