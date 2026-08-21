@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import {
   AlertTriangle, ArrowLeft, Check, CheckCircle2, Circle, Clock, Download, Eye, Loader2,
-  MessageCircle, Pencil, Phone, Plus, Trash2, Upload, X,
+  MessageCircle, Pencil, Phone, Plus, RotateCcw, Trash2, Upload, X,
 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
@@ -11,7 +11,8 @@ import { formatAmount } from "@/lib/customers";
 import {
   addQuery, CASE_DOCS, CLAIM_SPINE, CLAIM_STATUS_META, deleteClaimDocument, deleteQuery,
   extendRetention, fetchClaim, formatDate, formatDay, openClaimDocument, PERSONAL_DOCS,
-  renameClaimDocument, setClaimStatus, spineIndex, telLink, updateQuery, uploadClaimDocument, waLink,
+  renameClaimDocument, setClaimStatus, spineIndex, telLink, updateClaim, updateQuery,
+  uploadClaimDocument, waLink,
   type ClaimDetail as ClaimDetailType, type ClaimDocument, type ClaimQuery, type DocCategory,
 } from "@/lib/claims";
 
@@ -26,6 +27,7 @@ export default function ClaimDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<"settled" | "rejected" | null>(null);
+  const [editing, setEditing] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -82,9 +84,17 @@ export default function ClaimDetail() {
               {claim.claim_type === "cashless" ? "Cashless" : "Reimbursement"}
             </p>
           </div>
-          <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${meta.badge}`}>
-            <span className={`h-2 w-2 rounded-full ${meta.dot}`} /> {meta.label}
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setEditing(true)}
+              className="h-10 px-3.5 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
+            >
+              <Pencil size={14} /> Edit
+            </button>
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${meta.badge}`}>
+              <span className={`h-2 w-2 rounded-full ${meta.dot}`} /> {meta.label}
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-slate-100 pt-4">
@@ -154,6 +164,8 @@ export default function ClaimDetail() {
         </div>
       )}
 
+      {closed && <Reopen claim={claim} onChanged={load} />}
+
       <Timeline claim={claim} />
 
       {outcome && (
@@ -162,6 +174,14 @@ export default function ClaimDetail() {
           kind={outcome}
           onClose={() => setOutcome(null)}
           onDone={() => { setOutcome(null); void load(); }}
+        />
+      )}
+
+      {editing && (
+        <EditDialog
+          claim={claim}
+          onClose={() => setEditing(false)}
+          onSaved={() => { setEditing(false); void load(); }}
         />
       )}
     </div>
@@ -1110,6 +1130,17 @@ function OutcomeDialog({
           </button>
         </div>
 
+        {/* what closing destroys, said before the button rather than after */}
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3.5">
+          <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-800 leading-relaxed">
+            <span className="font-bold">Closing deletes the paperwork now.</span> The personal
+            documents and case files on this claim are destroyed as soon as you confirm — the
+            claim is over, so there is no reason to keep identity papers. Only the letter above
+            is kept. Download anything you still need first.
+          </p>
+        </div>
+
         {/* the consent carve-out */}
         <button
           onClick={() => setConsent((v) => !v)}
@@ -1123,9 +1154,8 @@ function OutcomeDialog({
               {claim.customer_name?.split(" ")[0] ?? "The customer"} has agreed I can keep this letter
             </span>
             <span className="text-xs text-teal-800 leading-relaxed">
-              Everything else on this claim is still deleted on {formatDate(claim.purge_at)}. Only this
-              letter stays, so you can show it to future customers. Leave this unticked and it is
-              deleted with the rest.
+              Ticked, the letter is kept for good and becomes part of your claims record. Left
+              unticked it is deleted too, on {formatDate(claim.purge_at)}.
             </span>
           </span>
         </button>
@@ -1142,6 +1172,147 @@ function OutcomeDialog({
           <button onClick={onClose} className="h-12 text-base font-bold text-slate-500 hover:underline">Cancel</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── edit the typed details ───────────────────────────────────────────────────
+ * Every saved change lands in the timeline in words. On a record whose
+ * documents are destroyed on a clock, the history of what was asserted and
+ * when is the audit trail, so a silent edit is not an option.
+ */
+
+function EditDialog({
+  claim, onClose, onSaved,
+}: { claim: ClaimDetailType; onClose: () => void; onSaved: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState({
+    ailment: claim.ailment ?? "",
+    hospital: claim.hospital ?? "",
+    insurer: claim.insurer ?? "",
+    tpa: claim.tpa ?? "",
+    policy_number: claim.policy_number ?? "",
+    claim_type: claim.claim_type,
+    claimed_amount: claim.claimed_amount != null ? String(claim.claimed_amount) : "",
+    settled_amount: claim.settled_amount != null ? String(claim.settled_amount) : "",
+    admitted_on: claim.admitted_on ?? "",
+    discharged_on: claim.discharged_on ?? "",
+  });
+  const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  async function save() {
+    setBusy(true);
+    try {
+      await updateClaim(claim.id, form);
+      onSaved();
+    } catch (e: unknown) {
+      toast({ variant: "destructive", title: "Could not save", description: e instanceof Error ? e.message : undefined });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const field = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/55 p-0 sm:p-4" role="dialog" aria-modal="true">
+      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
+        <div className="flex items-center gap-3">
+          <h2 className="flex-1 text-xl font-bold text-slate-900 font-['Playfair_Display']">Edit claim details</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={20} /></button>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="What happened"><input value={form.ailment} onChange={(e) => set("ailment", e.target.value)} className={field} /></Field>
+          <Field label="Hospital"><input value={form.hospital} onChange={(e) => set("hospital", e.target.value)} className={field} /></Field>
+          <Field label="Insurer"><input value={form.insurer} onChange={(e) => set("insurer", e.target.value)} className={field} /></Field>
+          <Field label="TPA"><input value={form.tpa} onChange={(e) => set("tpa", e.target.value)} className={field} /></Field>
+          <Field label="Policy number"><input value={form.policy_number} onChange={(e) => set("policy_number", e.target.value)} className={field} /></Field>
+          <Field label="Type of claim">
+            <select value={form.claim_type} onChange={(e) => set("claim_type", e.target.value)} className={field}>
+              <option value="cashless">Cashless</option>
+              <option value="reimbursement">Reimbursement</option>
+            </select>
+          </Field>
+          <Field label="Amount claimed">
+            <input value={form.claimed_amount} onChange={(e) => set("claimed_amount", e.target.value)} inputMode="numeric" placeholder="e.g. 185000" className={field} />
+          </Field>
+          <Field label="Amount settled">
+            <input value={form.settled_amount} onChange={(e) => set("settled_amount", e.target.value)} inputMode="numeric" placeholder="e.g. 171400" className={field} />
+          </Field>
+          <Field label="Admitted on"><input type="date" value={form.admitted_on} onChange={(e) => set("admitted_on", e.target.value)} className={field} /></Field>
+          <Field label="Discharged on"><input type="date" value={form.discharged_on} onChange={(e) => set("discharged_on", e.target.value)} className={field} /></Field>
+        </div>
+
+        <p className="text-xs text-slate-400">
+          Amounts in numbers only — commas and ₹ are fine, they are stripped. Every change is
+          recorded in the claim's history below.
+        </p>
+
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={save}
+            disabled={busy}
+            className="h-13 py-3.5 inline-flex items-center justify-center gap-2 rounded-xl bg-[#0D9488] text-base font-bold text-white hover:bg-[#0f766e] disabled:opacity-50"
+          >
+            {busy && <Loader2 size={17} className="animate-spin" />} Save changes
+          </button>
+          <button onClick={onClose} className="h-12 text-base font-bold text-slate-500 hover:underline">Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-bold text-slate-500">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+/* ── reopen ───────────────────────────────────────────────────────────────────
+ * Closing is a judgement read off a letter, and letters get misread — so it has
+ * to be reversible. What cannot be reversed is the purge that closing triggers,
+ * which is why the warning is stated plainly before the button rather than in a
+ * toast afterwards.
+ */
+
+function Reopen({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+
+  async function reopen() {
+    if (!window.confirm(
+      "Reopen this claim?\n\nThe personal documents and case files were deleted when it was closed and cannot be brought back — you would need to collect them from the customer again."
+    )) return;
+    setBusy(true);
+    try {
+      await setClaimStatus(claim.id, "under_process");
+      toast({ title: "Claim reopened" });
+      onChanged();
+    } catch (e: unknown) {
+      toast({ variant: "destructive", title: "Could not reopen", description: e instanceof Error ? e.message : undefined });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
+      <p className="text-xs font-black uppercase tracking-widest text-slate-400">Closed {formatDate(claim.closed_at)}</p>
+      <p className="text-sm text-slate-500 leading-relaxed">
+        If the insurer reverses this, or you closed it by mistake, you can put the claim back
+        under process. The documents deleted on closing cannot be recovered.
+      </p>
+      <button
+        onClick={reopen}
+        disabled={busy}
+        className="h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+      >
+        {busy ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />} Reopen this claim
+      </button>
     </div>
   );
 }

@@ -177,11 +177,21 @@ setInterval(sweepExpiredPendingUploads, 60 * 60 * 1000);
 async function incinerateExpiredClaimDocuments() {
   try {
     const { rows: claims } = await pool.query(
+      // Two kinds of candidate. The ordinary one is a claim past its deadline
+      // that has never been purged. The second exists because CLOSING a claim
+      // purges its working documents and stamps documents_purged_at while
+      // deliberately leaving the insurer's letter — so a claim closed WITHOUT
+      // consent still has a letter that must die at purge_at, and keying only
+      // on the stamp would let it live forever.
       `SELECT id, proof_consent_at
          FROM claims
         WHERE purge_at IS NOT NULL
           AND purge_at < now()
-          AND documents_purged_at IS NULL
+          AND (
+            documents_purged_at IS NULL
+            OR (proof_consent_at IS NULL
+                AND EXISTS (SELECT 1 FROM claim_documents d WHERE d.claim_id = claims.id))
+          )
         LIMIT 200`
     );
     if (claims.length === 0) return;
@@ -212,7 +222,10 @@ async function incinerateExpiredClaimDocuments() {
       }
 
       await pool.query(
-        "UPDATE claims SET documents_purged_at = now(), updated_at = now() WHERE id = $1",
+        `UPDATE claims
+            SET documents_purged_at = COALESCE(documents_purged_at, now()),
+                updated_at = now()
+          WHERE id = $1`,
         [claim.id]
       );
       await pool.query(
@@ -2020,6 +2033,89 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   }
 
+  // Amounts arrive as free text from a phone keyboard: "1,85,000", "₹185000",
+  // "185000 ". Number() returns NaN for the first two, and anything wider than
+  // the column used to reach Postgres and come back as "numeric field
+  // overflow" — which the advisor saw as a bare 500 mid-way through closing a
+  // claim. Parse defensively here and let the caller answer 400 in words.
+  const CLAIM_AMOUNT_MAX = 999999999999.99; // numeric(14,2)
+  function parseMoney(
+    raw: unknown
+  ): { ok: true; value: number | null } | { ok: false; message: string } {
+    if (raw == null || raw === "") return { ok: true, value: null };
+    const cleaned = String(raw).replace(/[₹,\s_]/g, "");
+    if (cleaned === "") return { ok: true, value: null };
+    const n = Number(cleaned);
+    if (!Number.isFinite(n)) return { ok: false, message: "Enter the amount in numbers only." };
+    if (n < 0) return { ok: false, message: "Amount cannot be negative." };
+    if (n > CLAIM_AMOUNT_MAX) return { ok: false, message: "That amount is too large. Check the figure." };
+    return { ok: true, value: Math.round(n * 100) / 100 };
+  }
+
+  // Closing a claim destroys its personal and case documents immediately —
+  // the purpose they were collected for has ended, so holding them to the
+  // 30-day mark would be keeping identity documents for no reason. The outcome
+  // letter is what survives; it is the proof the advisor closes claims.
+  //
+  // Same ordering as the sweeps: objects first, rows second.
+  async function purgeClaimWorkingDocuments(claimId: string, agentId: string) {
+    const { rows: docs } = await pool.query(
+      `SELECT id, storage_path FROM claim_documents
+        WHERE claim_id = $1 AND category IN ('personal','case')`,
+      [claimId]
+    );
+    if (docs.length > 0) {
+      const { error } = await supabaseAdmin.storage
+        .from(PDF_BUCKET)
+        .remove(docs.map((d: any) => d.storage_path));
+      if (error) {
+        console.error(`[claims ${claimId}] close-purge objects failed:`, error.message);
+        return 0; // leave the rows; the daily sweep retries the pair together
+      }
+      await pool.query("DELETE FROM claim_documents WHERE id = ANY($1::uuid[])", [
+        docs.map((d: any) => d.id),
+      ]);
+    }
+    // Only stamp when something was actually destroyed. Stamping a claim that
+    // never held a working document would make the UI announce a deletion that
+    // never happened, and would hide the piles on a claim that may be reopened.
+    if (docs.length > 0) {
+      await pool.query(
+        "UPDATE claims SET documents_purged_at = COALESCE(documents_purged_at, now()) WHERE id = $1",
+        [claimId]
+      );
+      await logClaimEvent(
+        claimId, agentId, "documents_purged",
+        `${docs.length} document(s) deleted on closing. The insurer's letter is kept.`
+      );
+    }
+    return docs.length;
+  }
+
+  // A claim ends one way or the other. If a settlement letter was uploaded and
+  // the claim is then rejected (or the advisor changes his mind mid-dialog),
+  // the losing letter is removed rather than left sitting alongside the winner
+  // — two contradictory outcomes on one claim is not a record anyone can show.
+  async function dropContradictingOutcomeDocs(claimId: string, keepKind: "settled" | "rejected") {
+    const losing = keepKind === "settled" ? "Rejection letter" : "Settlement letter";
+    const { rows } = await pool.query(
+      `SELECT id, storage_path FROM claim_documents
+        WHERE claim_id = $1 AND category = 'outcome' AND doc_type = $2`,
+      [claimId, losing]
+    );
+    if (rows.length === 0) return;
+    const { error } = await supabaseAdmin.storage
+      .from(PDF_BUCKET)
+      .remove(rows.map((r: any) => r.storage_path));
+    if (error) {
+      console.error(`[claims ${claimId}] contradicting outcome remove failed:`, error.message);
+      return;
+    }
+    await pool.query("DELETE FROM claim_documents WHERE id = ANY($1::uuid[])", [
+      rows.map((r: any) => r.id),
+    ]);
+  }
+
   async function openQueryCount(claimId: string): Promise<number> {
     const r = await pool.query(
       "SELECT count(*)::int AS c FROM claim_queries WHERE claim_id = $1 AND resolved_on IS NULL",
@@ -2101,6 +2197,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         return res.status(400).json({ error: "Pick a customer, or give a name for a new one" });
       }
 
+      const money = parseMoney(claimed_amount);
+      if (!money.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: money.message });
+
       const ins = await pool.query(
         `INSERT INTO claims
            (agent_id, customer_id, claim_type, insurer, tpa, policy_number,
@@ -2111,7 +2210,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           agentId, resolvedCustomerId, type,
           insurer || null, tpa || null, policy_number || null,
           hospital || null, ailment || null,
-          claimed_amount != null && claimed_amount !== "" ? Number(claimed_amount) : null,
+          money.value,
           admitted_on || null, discharged_on || null,
         ]
       );
@@ -2179,25 +2278,51 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   });
 
-  /* ── Agent: edit the typed fields ─────────────────────────────────────── */
+  /* ── Agent: edit the typed fields ─────────────────────────────────────────
+   * Every accepted change is written to the timeline in words — "Insurer: Tata
+   * → Tata AIG" — because on a record whose documents are destroyed on a clock,
+   * the history of what the advisor asserted and when IS the audit trail. A
+   * silent edit would leave the timeline claiming things the row no longer says.
+   */
   app.patch("/api/agent/claims/:id", async (req, res) => {
     const agentId = await verifyJwt(req, res);
     if (!agentId) return;
-    const EDITABLE = [
-      "insurer", "tpa", "policy_number", "hospital", "ailment",
-      "claimed_amount", "settled_amount", "admitted_on", "discharged_on", "claim_type",
-    ];
+
+    const LABELS: Record<string, string> = {
+      insurer: "Insurer", tpa: "TPA", policy_number: "Policy number",
+      hospital: "Hospital", ailment: "What happened",
+      claimed_amount: "Amount claimed", settled_amount: "Amount settled",
+      admitted_on: "Admitted on", discharged_on: "Discharged on",
+      claim_type: "Type of claim",
+    };
+    const MONEY = new Set(["claimed_amount", "settled_amount"]);
+
     const sets: string[] = [];
     const vals: any[] = [];
-    for (const key of EDITABLE) {
-      if (req.body?.[key] !== undefined) {
-        vals.push(req.body[key] === "" ? null : req.body[key]);
-        sets.push(`${key} = $${vals.length}`);
+    const wanted: Record<string, any> = {};
+
+    for (const key of Object.keys(LABELS)) {
+      if (req.body?.[key] === undefined) continue;
+      let value: any = req.body[key] === "" ? null : req.body[key];
+      if (MONEY.has(key)) {
+        const parsed = parseMoney(req.body[key]);
+        if (!parsed.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: parsed.message });
+        value = parsed.value;
       }
+      if (key === "claim_type" && value && !["cashless", "reimbursement"].includes(String(value))) {
+        return res.status(400).json({ error: "claim_type must be cashless or reimbursement" });
+      }
+      wanted[key] = value;
+      vals.push(value);
+      sets.push(`${key} = $${vals.length}`);
     }
     if (sets.length === 0) return res.status(400).json({ error: "Nothing to update" });
-    vals.push(req.params.id, agentId);
+
     try {
+      const before = await claimForAgent(req.params.id, agentId);
+      if (!before) return res.status(404).json({ error: "Claim not found" });
+
+      vals.push(req.params.id, agentId);
       const upd = await pool.query(
         `UPDATE claims SET ${sets.join(", ")}, updated_at = now()
           WHERE id = $${vals.length - 1} AND agent_id = $${vals.length}
@@ -2205,6 +2330,17 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         vals
       );
       if (upd.rows.length === 0) return res.status(404).json({ error: "Claim not found" });
+
+      // Compare loosely: numerics come back from pg as strings, and an
+      // unchanged field resubmitted by the form must not fake a change.
+      const show = (v: any) => (v == null || v === "" ? "—" : String(v));
+      const changes = Object.entries(wanted)
+        .filter(([k, v]) => show((before as any)[k]) !== show(v) && Number((before as any)[k]) !== Number(v as any))
+        .map(([k, v]) => `${LABELS[k]}: ${show((before as any)[k])} → ${show(v)}`);
+
+      if (changes.length > 0) {
+        await logClaimEvent(req.params.id, agentId, "details_edited", changes.join(" · "));
+      }
       return res.json(upd.rows[0]);
     } catch (err: any) {
       console.error("update claim error:", err);
@@ -2242,12 +2378,21 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const claim = await claimForAgent(req.params.id, agentId);
       if (!claim) return res.status(404).json({ error: "Claim not found" });
 
-      if (CLAIM_TERMINAL.includes(next)) {
-        // Enforced here, not just disabled in the UI: this record's whole value
-        // is that it is more than the advisor's word about himself.
+      const closing = CLAIM_TERMINAL.includes(next);
+      const reopening = CLAIM_TERMINAL.includes(claim.status) && !closing;
+
+      const money = parseMoney(settledAmount);
+      if (!money.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: money.message });
+
+      if (closing) {
+        // Count only proof that will still be here afterwards. Counting every
+        // outcome document would let a settlement letter satisfy a REJECTION
+        // and then be deleted as contradicting, closing the claim on nothing.
+        const losing = next === "settled" ? "Rejection letter" : "Settlement letter";
         const proof = await pool.query(
-          "SELECT count(*)::int AS c FROM claim_documents WHERE claim_id = $1 AND category = 'outcome'",
-          [claim.id]
+          `SELECT count(*)::int AS c FROM claim_documents
+            WHERE claim_id = $1 AND category = 'outcome' AND doc_type IS DISTINCT FROM $2`,
+          [claim.id, losing]
         );
         if ((proof.rows[0]?.c ?? 0) === 0) {
           return res.status(400).json({
@@ -2255,32 +2400,41 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             message: "Attach the insurer's letter before closing the claim.",
           });
         }
+        await dropContradictingOutcomeDocs(claim.id, next as "settled" | "rejected");
       }
 
-      const closing = CLAIM_TERMINAL.includes(next);
       const upd = await pool.query(
         `UPDATE claims
             SET status = $1,
-                settled_amount = COALESCE($2, settled_amount),
+                settled_amount = CASE WHEN $7 THEN NULL
+                                      ELSE COALESCE($2, settled_amount) END,
                 closed_at = CASE WHEN $3 THEN now() ELSE NULL END,
                 proof_consent_at = CASE WHEN $4 THEN COALESCE(proof_consent_at, now())
                                         ELSE proof_consent_at END,
                 updated_at = now()
           WHERE id = $5 AND agent_id = $6
           RETURNING *`,
-        [
-          next,
-          settledAmount != null && settledAmount !== "" ? Number(settledAmount) : null,
-          closing,
-          proofConsent,
-          claim.id,
-          agentId,
-        ]
+        [next, money.value, closing, proofConsent, claim.id, agentId, reopening]
       );
 
-      await logClaimEvent(claim.id, agentId, next, note);
+      if (reopening) {
+        await logClaimEvent(
+          claim.id, agentId, "reopened",
+          `Reopened from ${claim.status}. Working documents were already deleted and cannot be recovered.`
+        );
+      } else {
+        await logClaimEvent(claim.id, agentId, next, note);
+      }
+
+      // Closing ends the purpose the identity and case documents were collected
+      // for, so they go now rather than waiting out the 30-day clock. The
+      // insurer's letter is deliberately left standing.
+      let purged = 0;
+      if (closing) purged = await purgeClaimWorkingDocuments(claim.id, agentId);
+
       void recordAccess(req, agentId, claim.id, `claim_status_${next}`);
-      return res.json(upd.rows[0]);
+      const fresh = await claimForAgent(claim.id, agentId);
+      return res.json({ ...(fresh ?? upd.rows[0]), purged_on_close: purged });
     } catch (err: any) {
       console.error("claim status error:", err);
       return res.status(500).json({ error: "Could not update the claim" });
@@ -2439,10 +2593,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       try {
         const claim = await claimForAgent(req.params.id, agentId);
         if (!claim) return res.status(404).json({ error: "Claim not found" });
-        if (claim.documents_purged_at) {
+        // A purged claim still accepts OUTCOME proof — closing the claim is what
+        // triggered the purge, and the letter is the thing being kept. Only the
+        // working documents are refused, since re-collecting identity papers
+        // onto a finished claim is exactly what the purge exists to prevent.
+        if (claim.documents_purged_at && category !== "outcome") {
           return res.status(409).json({
             error: "PURGED",
-            message: "This claim's documents were deleted. It cannot take new files.",
+            message: "This claim's documents were deleted. Only the insurer's letter can be added now.",
           });
         }
 

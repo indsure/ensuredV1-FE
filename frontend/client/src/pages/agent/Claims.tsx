@@ -68,6 +68,20 @@ export default function Claims() {
   const openCount = useMemo(() => claims.filter((c) => !CLOSED.includes(c.status)).length, [claims]);
   const closedCount = claims.length - openCount;
 
+  // Money is summed from what survives a purge, so these totals keep growing
+  // as documents are destroyed — that is the point of the record.
+  const totals = useMemo(() => {
+    let claimed = 0;
+    let settled = 0;
+    let settledCount = 0;
+    for (const c of claims) {
+      if (c.claimed_amount != null) claimed += Number(c.claimed_amount) || 0;
+      if (c.settled_amount != null) settled += Number(c.settled_amount) || 0;
+      if (c.status === "settled") settledCount += 1;
+    }
+    return { claimed, settled, settledCount };
+  }, [claims]);
+
   const visible = useMemo(() => {
     if (tab === "attention") return claims.filter(needsAttention);
     if (tab === "closed") return claims.filter((c) => CLOSED.includes(c.status));
@@ -99,6 +113,29 @@ export default function Claims() {
           </button>
         </div>
       </div>
+
+      {/* SUMMARY */}
+      {!loading && claims.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Summary label="Claims opened" value={String(claims.length)} hint={`${openCount} still open`} />
+          <Summary
+            label="Closed"
+            value={String(closedCount)}
+            hint={closedCount > 0 ? `${totals.settledCount} settled` : "none yet"}
+          />
+          <Summary label="Amount claimed" value={formatAmount(totals.claimed)} />
+          <Summary
+            label="Amount settled"
+            value={formatAmount(totals.settled)}
+            tone="text-emerald-700"
+            hint={
+              totals.claimed > 0 && totals.settled > 0
+                ? `${Math.round((totals.settled / totals.claimed) * 100)}% of what was claimed`
+                : undefined
+            }
+          />
+        </div>
+      )}
 
       {/* TABS */}
       <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 w-fit">
@@ -190,6 +227,20 @@ export default function Claims() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function Summary({
+  label, value, hint, tone,
+}: { label: string; value: string; hint?: string; tone?: string }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-1">
+      <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">{label}</span>
+      <span className={`text-2xl font-bold ${tone ?? "text-slate-800"} font-['Playfair_Display'] leading-tight`}>
+        {value}
+      </span>
+      {hint && <span className="text-xs text-slate-400">{hint}</span>}
     </div>
   );
 }
