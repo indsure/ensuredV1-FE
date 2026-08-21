@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { BookOpen, Calculator, FileText, Globe, LayoutDashboard, Settings, ListChecks, LogOut, Scale, ShieldCheck, Target, Upload, User, Users, Menu, X } from "lucide-react"
+import { BookOpen, Calculator, FileText, Globe, LayoutDashboard, Settings, ListChecks, LogOut, Scale, ShieldCheck, Target, Upload, User, Users, Menu, X, TrendingUp } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -57,6 +57,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         label: t("layout.my_book") ?? "My Book",
         items: [
           { label: t("layout.my_policies") ?? "My Policies", href: "/agent/policies", icon: <FileText className="h-4 w-4" /> },
+          { label: t("layout.policy_values") ?? "Policy Values", href: "/agent/values", icon: <TrendingUp className="h-4 w-4" /> },
           { label: t("layout.customers") ?? "Customers", href: "/agent/customers", icon: <Users className="h-4 w-4" /> },
           { label: t("layout.claims") ?? "Claims", href: "/agent/claims", icon: <ShieldCheck className="h-4 w-4" /> },
         ],

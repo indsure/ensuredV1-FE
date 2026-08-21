@@ -765,6 +765,37 @@ export function buildSeed(): Store {
         start_date: "2023-07-10", next_premium_date: "2027-07-10",
         maturity_date: "2043-07-10",
         plan_type: "Unit linked", bonus_per_1000: null, fund_value: 493900,
+        age_at_entry: 35,
+        // Straight off Part E of the policy: what the document itself says the
+        // fund is worth at maturity. The card reconciles our schedule against it.
+        illustrated_maturity_value: 3166138,
+        // Part D of the same document, verbatim. With these the schedule
+        // reproduces the illustration exactly; without them it cannot.
+        policy_parameters: {
+          grossReturnPct: { value: 8, source: "document" },
+          fundChargePct: { value: 1.215, source: "document" },
+          allocationCharges: { value: [
+            { fromYear: 1, toYear: 1, pct: 6 }, { fromYear: 2, toYear: 3, pct: 4 },
+            { fromYear: 4, toYear: 5, pct: 3 }, { fromYear: 6, toYear: 99, pct: 0 },
+          ], source: "document" },
+          adminMonthly: { value: 300, source: "document" },
+          adminEscalationPct: { value: 5, source: "document" },
+          adminCapMonthly: { value: 500, source: "document" },
+          entryAge: { value: 35, source: "document" },
+          lockInYears: { value: 5, source: "document" },
+          discontinuedFundRatePct: { value: 4, source: "document" },
+          penalties: { value: [
+            { year: 1, pct: 6, cap: 6000 }, { year: 2, pct: 4, cap: 5000 },
+            { year: 3, pct: 3, cap: 4000 }, { year: 4, pct: 2, cap: 2000 },
+          ], source: "document" },
+          loyaltyPct: { value: 0.3, source: "document" },
+          loyaltyFromYear: { value: 11, source: "document" },
+          deathBenefitFloorPct: { value: 105, source: "document" },
+          mortalityPer1000: { value: {
+            35:1.05,36:1.14,37:1.24,38:1.36,39:1.50,40:1.66,41:1.85,42:2.07,43:2.32,44:2.61,
+            45:2.94,46:3.32,47:3.75,48:4.24,49:4.79,50:5.41,51:6.11,52:6.90,53:7.79,54:8.79,55:9.91,
+          }, source: "document" },
+        },
         nominee_name: "Priya Sharma",
       },
     },
@@ -784,7 +815,7 @@ export function buildSeed(): Store {
         policy_term_years: 76, premium_paying_term_years: 37, cover_till_age: 99,
         start_date: "2023-06-21", next_premium_date: "2027-06-21",
         cover_end_date: "2099-06-20",
-        plan_type: "Term cover only",
+        plan_type: "Term cover only", age_at_entry: 23,
         death_benefit_payout: "Lump sum", nominee_name: "Rajesh Bang",
       },
     },

@@ -33,6 +33,7 @@ const DashboardNew = lazy(() => import("@/pages/agent/DashboardNew"));
 const LeadRenewals = lazy(() => import("@/pages/agent/LeadRenewals"));
 const AgentUploads = lazy(() => import("@/pages/agent/AgentUploads"));
 const PoliciesNew = lazy(() => import("@/pages/agent/PoliciesNew"));
+const PolicyValues = lazy(() => import("@/pages/agent/PolicyValues"));
 const AgentCalculator = lazy(() => import("@/pages/agent/AgentCalculator"));
 const AgentCompare = lazy(() => import("@/pages/agent/Compare"));
 const AgentCatalogCompare = lazy(() => import("@/pages/agent/CatalogCompare"));
@@ -199,6 +200,9 @@ function App() {
                       </Route>
                       <Route path="/agent/policies">
                         {() => <AgentProtectedRoute><PoliciesNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/values">
+                        {() => <AgentProtectedRoute><PolicyValues /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/policies/:id">
                         {() => <AgentProtectedRoute><PolicyDetail /></AgentProtectedRoute>}

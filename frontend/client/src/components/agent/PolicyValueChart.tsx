@@ -5,6 +5,7 @@ import {
 } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { isPlaygroundMode } from "@/lib/playground/mode";
 import { getApiBase } from "@/lib/queryClient";
@@ -13,6 +14,10 @@ import {
   computePolicyValue, isValueGap, PLAN_SHAPE_LABELS, PLAN_SHAPE_OPTIONS,
   type PlanShape,
 } from "@/lib/policyValue";
+import {
+  PARAM_LABELS, RELEVANT_PARAMS, assumedCount,
+  type ParamSource, type PolicyParams,
+} from "@/lib/policyParams";
 
 const PAID = "#B45309";
 const BACK = "#0D9488";
@@ -27,6 +32,17 @@ const short = (n: number) => {
   return "₹" + Math.round(n);
 };
 
+const SOURCE_STYLE: Record<ParamSource, string> = {
+  document: "bg-[#0D9488]/10 text-[#0f766e] border-[#0D9488]/30",
+  entered: "bg-blue-50 text-blue-700 border-blue-200",
+  default: "bg-amber-50 text-amber-800 border-amber-200",
+};
+const SOURCE_LABEL: Record<ParamSource, string> = {
+  document: "From the document",
+  entered: "You entered",
+  default: "Assumed",
+};
+
 interface Props {
   clientId: string;
   insuranceType: string;
@@ -36,53 +52,59 @@ interface Props {
 
 export default function PolicyValueChart({ clientId, insuranceType, data, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
-  // Applied immediately on click so the chart redraws without waiting for the
-  // round-trip — and so the chips still work in playground, which has no backend.
-  const [override, setOverride] = useState<PlanShape | null>(null);
+  const [showParams, setShowParams] = useState(false);
+  // Applied locally first so the chart redraws immediately, and so the controls
+  // still work in playground, which has no backend to PATCH.
+  const [patch, setPatch] = useState<Record<string, any>>({});
 
-  const effective = useMemo(
-    () => (override ? { ...(data ?? {}), plan_type: PLAN_SHAPE_LABELS[override] } : data ?? null),
-    [data, override]
-  );
+  const effective = useMemo(() => ({ ...(data ?? {}), ...patch }), [data, patch]);
   const result = useMemo(() => computePolicyValue(insuranceType, effective), [insuranceType, effective]);
 
   const term = !isValueGap(result) ? result.term : 1;
   const [year, setYear] = useState(1);
   const yr = Math.min(year, term);
 
-  async function setPlanType(shape: PlanShape) {
-    setOverride(shape);
+  async function persist(next: Record<string, any>) {
+    setPatch((p) => ({ ...p, ...next }));
     if (isPlaygroundMode()) return; // demo mode: nothing is persisted anywhere
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
       // The endpoint replaces extracted_data, so send the whole object back.
-      const payload = { ...(data ?? {}), plan_type: PLAN_SHAPE_LABELS[shape] };
+      const payload = { ...(data ?? {}), ...patch, ...next };
       const res = await fetch(`${getApiBase()}/api/agent/clients/${clientId}/extracted-data`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ extracted_data: payload }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Save failed");
       }
-      toast({ variant: "success", title: "Plan type saved" });
+      toast({ variant: "success", title: "Saved" });
       onSaved?.();
     } catch (e: unknown) {
       toast({
         variant: "destructive",
         title: "Save failed",
-        description: e instanceof Error ? e.message : "Could not save the plan type.",
+        description: e instanceof Error ? e.message : "Could not save.",
       });
     } finally {
       setSaving(false);
     }
   }
+
+  const setPlanType = (shape: PlanShape) => void persist({ plan_type: PLAN_SHAPE_LABELS[shape] });
+
+  const setParam = (key: keyof PolicyParams, raw: string) => {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return;
+    const existing = (effective.policy_parameters ?? {}) as Record<string, any>;
+    void persist({
+      policy_parameters: { ...existing, [key]: { value: n, source: "entered" } },
+    });
+  };
 
   if (isValueGap(result)) {
     return (
@@ -108,14 +130,19 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
     );
   }
 
-  const { shape, rows, totalPremiums, maturity, lockInYears, lockInEnds, guaranteed, steps, assumptions } = result;
+  const {
+    shape, rows, params, totalPremiums, maturity, lockInYears, lockInEnds,
+    steps, illustratedMaturity, reconciliation,
+  } = result;
   const row = rows[yr - 1];
+  const relevant = RELEVANT_PARAMS[shape] ?? [];
+  const assumed = assumedCount(params, shape);
 
   const chartData = rows.map((r) => ({
     year: r.year,
     paid: Math.round(r.paid),
-    back: r.known ? Math.round(r.back) : null,
-    locked: r.known && r.deferredTo ? Math.round(r.back) : null,
+    back: Math.round(r.back),
+    locked: r.deferredTo ? Math.round(r.back) : null,
     cover: Math.round(r.cover),
   }));
 
@@ -142,7 +169,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
     return {
       title: lockInEnds ? `The money is locked until ${lockInEnds}.` : "The money is locked in.",
       body: `For the first ${lockInYears} policy years nothing can be paid out. On surrender the fund moves to ` +
-        `the discontinued fund, earns 4% a year and reaches the customer only after that date.`,
+        `the discontinued fund, earns ${params.discontinuedFundRatePct.value}% a year and reaches the customer only after that date.`,
     };
   })();
 
@@ -156,6 +183,28 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
       </CardHeader>
 
       <CardContent className="space-y-6 p-6">
+        {/* Reconciliation against the document's own illustration, when it stated one. */}
+        {reconciliation && (
+          <div
+            className={
+              "rounded-xl border p-3 text-xs " +
+              (Math.abs(reconciliation.pct) < 1
+                ? "border-[#0D9488]/30 bg-[#0D9488]/5 text-[#0f766e]"
+                : "border-amber-200 bg-amber-50 text-amber-900")
+            }
+          >
+            {Math.abs(reconciliation.pct) < 1 ? (
+              <>Matches the illustration in the policy document ({rupee(illustratedMaturity!)} at maturity).</>
+            ) : (
+              <>
+                The document's own illustration says {rupee(illustratedMaturity!)} at maturity — this works out
+                to {rupee(maturity)}, a difference of {reconciliation.pct > 0 ? "+" : ""}
+                {reconciliation.pct.toFixed(1)}%. Check the charges below against the policy wording.
+              </>
+            )}
+          </div>
+        )}
+
         {/* Plan type drives the whole calculation, so it is the first thing to confirm. */}
         <div>
           <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Plan type</div>
@@ -165,7 +214,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                 key={key}
                 type="button"
                 disabled={saving}
-                onClick={() => void setPlanType(key)}
+                onClick={() => setPlanType(key)}
                 className={
                   "rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 " +
                   (key === shape
@@ -197,12 +246,12 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             <span className="flex items-center gap-2">
               <span className="h-[3px] w-5 rounded" style={{ background: BACK }} />Money back if they stop
             </span>
-            {lockInYears && (
+            {lockInYears ? (
               <span className="flex items-center gap-2">
                 <span className="w-5 border-t-[3px] border-dashed" style={{ borderColor: BACK }} />
                 Not payable yet
               </span>
-            )}
+            ) : null}
           </div>
 
           <div className="h-[260px] w-full">
@@ -218,20 +267,19 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                   labelFormatter={(l) => `Policy year ${l}`}
                   contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }}
                 />
-                {lockInYears && (
+                {lockInYears ? (
                   <ReferenceArea x1={1} x2={lockInYears} fill="#0f172a" fillOpacity={0.04} />
-                )}
+                ) : null}
                 <ReferenceLine x={yr} stroke="#94a3b8" strokeWidth={1} />
                 <Line type="monotone" dataKey="paid" stroke={PAID} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="back" stroke={BACK} strokeWidth={2} dot={false}
-                  connectNulls={false} />
-                {lockInYears && (
+                <Line type="monotone" dataKey="back" stroke={BACK} strokeWidth={2} dot={false} />
+                {lockInYears ? (
                   // isAnimationActive must stay off: recharts drives its line-draw
                   // animation through stroke-dasharray and would overwrite ours.
                   <Line type="monotone" dataKey="locked" stroke={BACK} strokeWidth={2}
                     strokeDasharray="5 5" dot={false} connectNulls={false}
                     isAnimationActive={false} />
-                )}
+                ) : null}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -283,50 +331,87 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
           </div>
           <div className="rounded-xl border border-slate-100 p-4">
             <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Gets back if they stop</div>
-            <div className={"mt-1 text-2xl font-bold " + (row.known && row.back > 0 ? "" : "text-slate-400")}
-              style={row.known && row.back > 0 ? { color: BACK } : undefined}>
-              {!row.known ? "Not stated" : row.back > 0 ? rupee(row.back) : "Nothing"}
+            <div className={"mt-1 text-2xl font-bold " + (row.back > 0 ? "" : "text-slate-400")}
+              style={row.back > 0 ? { color: BACK } : undefined}>
+              {row.back > 0 ? rupee(row.back) : "Nothing"}
             </div>
-            <div className="mt-1 text-xs text-slate-500">{row.note}</div>
+            <div className="mt-1 text-xs text-slate-500">
+              {row.penalty > 0 ? `After a ${rupee(row.penalty)} discontinuance charge. ` : ""}{row.note}
+            </div>
           </div>
           <div className="rounded-xl border border-slate-100 p-4">
             <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Family gets on death</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: COVER }}>{rupee(row.cover)}</div>
             <div className="mt-1 text-xs text-slate-500">
-              {row.deferredTo ? `Cover stops if the policy is surrendered.` : `Cover while the policy is in force.`}
+              {row.deferredTo ? "Cover stops if the policy is surrendered." : "Cover while the policy is in force."}
             </div>
           </div>
         </div>
 
+        {/* The charge table and assumptions the whole schedule rests on. */}
+        {relevant.length > 0 && (
+          <div className="rounded-xl border border-slate-100">
+            <button
+              type="button"
+              onClick={() => setShowParams((s) => !s)}
+              className="flex w-full items-center justify-between p-4 text-left"
+            >
+              <span className="text-sm font-bold text-slate-900">Charges and assumptions</span>
+              <span className="text-xs text-slate-500">
+                {assumed === 0 ? "All read from the document" : `${assumed} still assumed — tap to set`}
+                <span className="ml-2 text-slate-400">{showParams ? "▲" : "▼"}</span>
+              </span>
+            </button>
+            {showParams && (
+              <div className="space-y-3 border-t border-slate-100 p-4">
+                <p className="text-xs text-slate-500">
+                  These come from the policy wording where it states them. Anything marked "assumed" is a
+                  standard value we applied so the schedule could be drawn — set it from the customer's
+                  document and the numbers become exact.
+                </p>
+                {relevant.map((key) => {
+                  const p = params[key];
+                  const scalar = typeof p.value === "number";
+                  return (
+                    <div key={String(key)} className="flex flex-wrap items-center gap-3">
+                      <div className="min-w-[220px] flex-1 text-xs text-slate-600">
+                        {PARAM_LABELS[key] ?? String(key)}
+                      </div>
+                      {scalar ? (
+                        <Input
+                          type="number"
+                          step="any"
+                          defaultValue={String(p.value)}
+                          onBlur={(e) => setParam(key, e.target.value)}
+                          className="h-9 w-32 border-slate-200 bg-slate-50 text-sm"
+                        />
+                      ) : (
+                        <span className="text-xs text-slate-400">
+                          {Array.isArray(p.value) ? `${p.value.length} rows` : "table"}
+                        </span>
+                      )}
+                      <span className={"rounded-full border px-2 py-0.5 text-[10px] font-semibold " + SOURCE_STYLE[p.source]}>
+                        {SOURCE_LABEL[p.source]}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="border-t border-slate-100 pt-4">
           <div className="text-sm font-bold text-slate-900">How this was worked out</div>
           <p className="mt-1 text-xs text-slate-500">
-            Every figure is arithmetic on the fields read from the document. Nothing is estimated, and the same
-            document always gives the same numbers.
+            Every figure is arithmetic on the fields read from the document and the charges above. Nothing is
+            estimated, and the same document always gives the same numbers.
           </p>
           <ul className="mt-3 space-y-1.5">
             {steps.map((s, i) => (
               <li key={i} className="text-xs text-slate-600">· {s}</li>
             ))}
           </ul>
-
-          {!guaranteed && assumptions.length > 0 && (
-            <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50/60 p-3">
-              <div className="text-xs font-bold text-amber-900">Not guaranteed</div>
-              <ul className="mt-1 space-y-1">
-                {assumptions.map((a, i) => (
-                  <li key={i} className="text-xs text-amber-800">· {a}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {guaranteed && assumptions.length > 0 && (
-            <ul className="mt-3 space-y-1">
-              {assumptions.map((a, i) => (
-                <li key={i} className="text-xs text-slate-400">· {a}</li>
-              ))}
-            </ul>
-          )}
         </div>
       </CardContent>
     </Card>

@@ -24,6 +24,8 @@ export interface ExtractionResult {
 function coerce(value: any, type: FieldType): any {
   if (value === null || value === undefined) return null;
   if (typeof value === "string" && value.trim() === "") return null;
+  // json fields carry a nested object (the charge table); pass it through as-is.
+  if (type === "json") return typeof value === "object" ? value : null;
   if (type === "number") {
     if (typeof value === "number") return value;
     const cleaned = String(value).replace(/[^0-9.\-]/g, "");
