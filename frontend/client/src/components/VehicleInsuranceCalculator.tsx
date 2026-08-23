@@ -604,7 +604,7 @@ export function VehicleInsuranceCalculator() {
             </Card>
 
             {/* Scenarios */}
-            <div className="grid md:grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
               {Object.entries(result.scenarios).map(([key, scenario]) => (
                 <Card key={key} className={scenario.shouldClaim ? "border-l-4 border-[#10B981]" : "border-l-4 border-[#EF4444]"}>
                   <CardContent className="p-5">
@@ -637,7 +637,7 @@ export function VehicleInsuranceCalculator() {
                 <h4 className="font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-4">
                   Decision Matrix
                 </h4>
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div className={`p-4 rounded-lg border-2 ${result.shouldClaim ? "border-[#10B981] bg-[#10B981]/5" : "border-[#EF4444] bg-[#EF4444]/5"}`}>
                     <h5 className="font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-2">
                       Option A: Claim the {formatCurrency(formData.accidentDamage || 0)}
@@ -697,7 +697,7 @@ export function VehicleInsuranceCalculator() {
             </Card>
 
             {/* Total Loss & Theft Scenarios */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <Card>
                 <CardContent className="p-5">
                   <h4 className="font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-3">

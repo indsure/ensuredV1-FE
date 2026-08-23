@@ -150,29 +150,29 @@ export default function SettingsNew() {
                     ) : (
                     <div className="space-y-4">
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
+                            <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
                             <Input value={profileName} onChange={e => setProfileName(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] font-semibold h-11" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Registered Email</label>
+                            <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Registered Email</label>
                             <Input value={agentProfile?.email ?? ''} readOnly className="bg-slate-50/50 border-slate-100 text-slate-400 cursor-not-allowed font-medium h-11" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Authorization Level</label>
+                                <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Authorization Level</label>
                                 <div className="h-11 flex items-center px-4 bg-slate-50/50 border border-slate-100 rounded-lg text-xs font-bold text-slate-500 uppercase">
                                     {agentProfile?.role}
                                 </div>
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Primary Location</label>
+                                <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Primary Location</label>
                                 <Input value={profileLocation} onChange={e => setProfileLocation(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] font-semibold h-11" />
                             </div>
                         </div>
                     </div>
                     )}
                     <div className="pt-4 flex items-center gap-4">
-                        <Button onClick={saveProfile} disabled={saveStatus === "saving" || loading} className="bg-[#0D9488] hover:bg-[#0f766e] text-white font-black uppercase text-[10px] tracking-widest px-8">
+                        <Button onClick={saveProfile} disabled={saveStatus === "saving" || loading} className="bg-[#0D9488] hover:bg-[#0f766e] text-white font-black uppercase text-[11px] sm:text-[10px] tracking-widest px-8">
                             {saveStatus === "saving" ? "Saving…" : "Save"}
                         </Button>
                     </div>
@@ -189,20 +189,20 @@ export default function SettingsNew() {
                 <CardContent className="p-6 space-y-4">
                     <div className="space-y-4">
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Vault Password</label>
+                            <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">New Vault Password</label>
                             <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] h-11" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm Credentials</label>
+                            <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm Credentials</label>
                             <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] h-11" />
                         </div>
                     </div>
                     <div className="pt-4 flex flex-col gap-3">
-                        <Button onClick={changePassword} disabled={passwordSaveStatus === "saving"} className="bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-[10px] tracking-widest w-full h-11">
+                        <Button onClick={changePassword} disabled={passwordSaveStatus === "saving"} className="bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-[11px] sm:text-[10px] tracking-widest w-full h-11">
                             {passwordSaveStatus === "saving" ? "Saving…" : "Update Password"}
                         </Button>
                         <div className="min-h-4 text-center">
-                          {passwordError && <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">{passwordError}</span>}
+                          {passwordError && <span className="text-[11px] sm:text-[10px] font-black text-red-600 uppercase tracking-widest">{passwordError}</span>}
                         </div>
                     </div>
                 </CardContent>

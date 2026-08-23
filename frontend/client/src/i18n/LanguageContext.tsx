@@ -38,7 +38,7 @@ export function LanguageToggle({ variant = "light" }: { variant?: "light" | "dar
         <button
           key={lang.code}
           onClick={() => setLocale(lang.code)}
-          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+          className={`min-h-11 sm:min-h-9 px-3 sm:px-3.5 py-2 rounded-full text-xs font-semibold transition-all ${
             locale === lang.code
               ? "bg-[#0D9488] text-white shadow"
               : variant === "dark"

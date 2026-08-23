@@ -166,7 +166,7 @@ export default function Blog() {
           <div className="mb-16 max-w-4xl mx-auto">
             <Link href={blogPath(topFeaturedPost.id)}>
               <Card className="bg-white border border-[var(--color-border-light)] rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-200 cursor-pointer shadow-sm">
-                <div className="grid md:grid-cols-[45%_55%] gap-0">
+                <div className="grid grid-cols-1 md:grid-cols-[45%_55%] gap-0">
                   {/* Left: typographic cover */}
                   <div className="relative h-full min-h-[280px] md:min-h-[320px] overflow-hidden">
                     <div className="absolute top-4 left-4 z-10">
@@ -208,7 +208,7 @@ export default function Blog() {
 
         {/* Browse by Category */}
         {selectedCategory === "All" && searchQuery === "" && (
-          <div className="mb-16 bg-[var(--color-white)] rounded-2xl p-12 md:p-16 border border-[var(--color-border-light)] shadow-sm">
+          <div className="mb-16 bg-[var(--color-white)] rounded-2xl p-6 sm:p-8 md:p-16 border border-[var(--color-border-light)] shadow-sm">
             <h2 className="text-2xl md:text-3xl font-bold text-center font-serif text-[var(--color-text-main)] mb-3">
               Browse by Insurance Type
             </h2>
@@ -252,7 +252,7 @@ export default function Blog() {
 
           {regularPosts.length > 0 ? (
             <>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {visiblePosts.map((post) => {
                   return (
                     <Link key={post.id} href={blogPath(post.id)}>

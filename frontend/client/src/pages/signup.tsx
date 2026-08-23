@@ -323,7 +323,7 @@ export default function SignupPublic() {
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
+                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -367,7 +367,7 @@ export default function SignupPublic() {
         <button
           type="button"
           onClick={viewSample}
-          className="w-full text-sm font-semibold text-[var(--color-teal-600)] hover:underline inline-flex items-center justify-center gap-2"
+          className="w-full min-h-11 text-sm font-semibold text-[var(--color-teal-600)] hover:underline inline-flex items-center justify-center gap-2"
         >
           <FileText className="w-4 h-4" />
           Just browsing? See a sample audit

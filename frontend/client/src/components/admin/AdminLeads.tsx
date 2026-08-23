@@ -196,7 +196,7 @@ export default function AdminLeads() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="table-cards w-full">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-3 px-4 font-medium text-sm text-gray-600">Name</th>
@@ -210,10 +210,10 @@ export default function AdminLeads() {
                 <tbody>
                   {leads.map((lead) => (
                     <tr key={lead.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4" data-label="Name" data-cell="title">
                         <div className="font-medium">{lead.name}</div>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4" data-label="Contact">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-sm">
                             <Phone className="h-3 w-3 text-gray-400" />
@@ -229,7 +229,7 @@ export default function AdminLeads() {
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4" data-label="City">
                         {lead.city ? (
                           <div className="flex items-center gap-1 text-sm">
                             <MapPin className="h-3 w-3 text-gray-400" />
@@ -239,15 +239,15 @@ export default function AdminLeads() {
                           <span className="text-gray-400 text-sm">—</span>
                         )}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4" data-label="Source">
                         <Badge variant="neutral" className="text-xs">
                           {lead.source}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4" data-label="Status">
                         {getStatusBadge(lead.status)}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4" data-label="Created">
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           <Calendar className="h-3 w-3" />
                           {formatDate(lead.created_at)}

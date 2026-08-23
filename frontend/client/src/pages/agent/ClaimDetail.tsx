@@ -135,7 +135,7 @@ export default function ClaimDetail() {
       <Retention claim={claim} onChanged={load} />
 
       {!claim.documents_purged_at && (
-        <div className="grid gap-5 lg:grid-cols-2 items-start">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 items-start">
           <Pile
             claim={claim}
             category="personal"
@@ -1152,7 +1152,7 @@ function OutcomeDialog({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-600">Proof from the insurer</span>
-            <span className="rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-black tracking-wide text-red-700">REQUIRED</span>
+            <span className="rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] sm:text-[10px] font-black tracking-wide text-red-700">REQUIRED</span>
           </div>
           {proof.map((d) => (
             <div key={d.id} className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3">
@@ -1284,7 +1284,7 @@ function EditDialog({
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={20} /></button>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="What happened"><input value={form.ailment} onChange={(e) => set("ailment", e.target.value)} className={field} /></Field>
           <Field label="Hospital"><input value={form.hospital} onChange={(e) => set("hospital", e.target.value)} className={field} /></Field>
           <Field label="Insurer"><input value={form.insurer} onChange={(e) => set("insurer", e.target.value)} className={field} /></Field>

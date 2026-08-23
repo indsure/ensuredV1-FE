@@ -63,7 +63,7 @@ export function RiskMeterSkeleton() {
             {[1, 2, 3].map((i) => (
               <div key={i} className="space-y-2">
                 <Skeleton variant="text" width="150px" height={20} />
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[1, 2, 3, 4].map((j) => (
                     <Skeleton key={j} variant="text" width="100%" height={16} />
                   ))}

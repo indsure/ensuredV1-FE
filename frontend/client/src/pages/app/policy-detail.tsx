@@ -109,7 +109,7 @@ export default function PolicyDetail({ id }: { id: string }) {
       <ConnectAgentDialog open={connectOpen} onOpenChange={setConnectOpen} defaultTopic="review" />
 
       {state === "loading" && (
-        <div className="max-w-5xl mx-auto px-6 py-24 flex flex-col items-center text-center">
+        <div className="max-w-5xl mx-auto px-6 py-14 sm:py-20 lg:py-24 flex flex-col items-center text-center">
           <Loader2 className="w-8 h-8 text-[var(--color-teal-600)] animate-spin" />
           <p className="mt-4 text-sm text-slate-500">Loading your report…</p>
         </div>
@@ -127,7 +127,7 @@ export default function PolicyDetail({ id }: { id: string }) {
       )}
 
       {((state === "ready" && !hasValidReport) || state === "error" || state === "notfound") && (
-        <div className="max-w-2xl mx-auto px-6 py-20 text-center">
+        <div className="max-w-2xl mx-auto px-6 py-12 sm:py-16 lg:py-20 text-center">
           <div className="inline-flex p-4 bg-amber-50 rounded-full mb-6 text-amber-600 border border-amber-100">
             <AlertCircle className="w-7 h-7" />
           </div>

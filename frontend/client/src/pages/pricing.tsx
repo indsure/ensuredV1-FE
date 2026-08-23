@@ -128,7 +128,7 @@ export default function Pricing() {
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
       <Header />
 
-      <main className="flex-grow pt-24 pb-20 px-6 w-full">
+      <main className="flex-grow pt-24 pb-12 sm:pb-16 lg:pb-20 px-6 w-full">
 
         {/* HERO */}
         <section className="max-w-4xl mx-auto text-center mb-10 animate-reveal">
@@ -152,7 +152,7 @@ export default function Pricing() {
           </span>
           <button
             onClick={() => setAnnual(!annual)}
-            className="relative w-14 h-8 rounded-full bg-[var(--color-cream-dark)] border border-[var(--color-border-main)] transition-colors"
+            className="relative before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-[''] w-14 h-8 rounded-full bg-[var(--color-cream-dark)] border border-[var(--color-border-main)] transition-colors"
             role="switch"
             aria-checked={annual}
             aria-label="Pay annually"
@@ -167,7 +167,7 @@ export default function Pricing() {
         </div>
 
         {/* TIER CARDS */}
-        <section className="max-w-4xl mx-auto mb-14 grid md:grid-cols-2 gap-8 items-start">
+        <section className="max-w-4xl mx-auto mb-14 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
           {tiers.map((tier) => (
             <div
               key={tier.name}
@@ -181,7 +181,7 @@ export default function Pricing() {
               <h2 className="text-2xl font-serif mb-2">{tier.name}</h2>
               <p className="text-sm text-[var(--color-text-secondary)] mb-6 min-h-[40px]">{tier.tagline}</p>
               <div className="mb-2">
-                <span className="text-4xl font-serif">{annual ? tier.priceAnnual : tier.price}</span>
+                <span className="text-3xl sm:text-4xl font-serif">{annual ? tier.priceAnnual : tier.price}</span>
                 <span className="text-sm text-[var(--color-text-secondary)] ml-1">
                   {annual ? tier.periodAnnual : tier.period}
                 </span>
@@ -215,7 +215,7 @@ export default function Pricing() {
         <section className="max-w-4xl mx-auto mb-14">
           <h2 className="text-2xl md:text-3xl font-serif text-center mb-8">What you get</h2>
           <div className="card-white overflow-x-auto">
-            <table className="w-full text-sm min-w-[520px]">
+            <table className="table-cards w-full text-sm md:min-w-[520px]">
               <thead>
                 <tr className="border-b border-[var(--color-border-light)]">
                   <th className="text-left font-semibold p-4 w-1/2">&nbsp;</th>
@@ -226,9 +226,9 @@ export default function Pricing() {
               <tbody>
                 {featureRows.map((row) => (
                   <tr key={row.label} className="border-b border-[var(--color-border-light)] last:border-0">
-                    <td className="p-4 text-[var(--color-text-main)]">{row.label}</td>
+                    <td className="p-4 text-[var(--color-text-main)]" data-label="Feature" data-cell="title">{row.label}</td>
                     {[row.free, row.paid].map((val, i) => (
-                      <td key={i} className="p-4 text-center text-[var(--color-text-secondary)]">
+                      <td key={i} className="p-4 text-center text-[var(--color-text-secondary)]" data-label={i === 0 ? "Free" : "Personal"}>
                         {val === true ? (
                           <Check className="w-4 h-4 text-[var(--color-green-primary)] mx-auto" aria-label="Included" />
                         ) : val === false ? (

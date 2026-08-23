@@ -114,16 +114,22 @@
   }
 
   h1 {
-    font-size: 4rem;
+    font-size: clamp(2rem, 1.2rem + 3.4vw, 4rem);
     letter-spacing: -0.03em;
   }
 
   h2 {
-    font-size: 2.5rem;
+    font-size: clamp(1.5rem, 1.05rem + 1.9vw, 2.5rem);
   }
 
   h3 {
-    font-size: 2rem;
+    font-size: clamp(1.25rem, 0.95rem + 1.28vw, 2rem);
+  }
+
+  /* Long unbroken strings (policy numbers, emails, URLs, IDs) must never
+     push a container wider than the phone screen. */
+  p, li, dd, dt, td, th, h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: break-word;
   }
 
   /* LINKS & BUTTONS */
@@ -153,6 +159,14 @@
   padding-left: var(--space-container);
 }
 
+/* Tighter gutters on phones so content gets the width it needs. */
+@media (max-width: 640px) {
+  .container-editorial {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+}
+
 .card-white {
   background-color: var(--color-white);
   border: 1px solid var(--color-border-light);
@@ -162,14 +176,182 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
-.card-white:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
-  border-color: var(--color-border-medium);
+@media (max-width: 640px) {
+  .card-white {
+    padding: 1.25rem;
+  }
+}
+
+/* Only lift on devices that genuinely hover - on touch the transform sticks
+   after a tap and leaves the card visually stuck mid-animation. */
+@media (hover: hover) and (pointer: fine) {
+  .card-white:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+    border-color: var(--color-border-medium);
+  }
 }
 
 .text-gradient-green {
   background: linear-gradient(135deg, var(--color-green-primary), var(--color-green-secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* =========================================
+   MOBILE USABILITY FLOORS
+   ========================================= */
+
+/* iOS Safari zooms the entire page whenever a focused field renders text under
+   16px. Plenty of raw <input>/<select>/<textarea> across the app use 14px, so
+   tapping almost any form yanked the layout sideways. Force 16px on phones; the
+   designed size is kept from `md` up where no zoom behaviour exists. */
+@media (max-width: 767px) {
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Media and embeds must never be the thing that widens a page. These live in
+   @layer base so Tailwind's utilities (h-9, max-w-none, ...) still win - an
+   unlayered rule here would outrank every utility class and resize real logos. */
+@layer base {
+
+  img,
+  svg,
+  video,
+  canvas,
+  iframe {
+    max-width: 100%;
+  }
+}
+
+/* Anything explicitly marked as a horizontal scroller should scroll smoothly on
+   touch and keep its momentum rather than feeling stuck. */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* =========================================
+   RESPONSIVE DATA TABLES
+   -----------------------------------------
+   The agent portal's list views are 700-1000px wide. Inside a 341px phone
+   column that meant pushing a table sideways to read a single row, which is
+   unusable for an audience that lives on mid-range Android phones.
+
+   Adding `table-cards` to a <table> restacks each row into a labelled card
+   under 768px and leaves the real table untouched from `md` up. Each <td>
+   carries `data-label` so the column heading travels with the value.
+   ========================================= */
+@media (max-width: 767px) {
+
+  .table-cards,
+  .table-cards tbody,
+  .table-cards tr,
+  .table-cards td {
+    display: block;
+    width: 100%;
+  }
+
+  /* Headings are re-emitted per cell, so hide the row visually but keep it for
+     screen readers that announce the table before the cards. */
+  .table-cards thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .table-cards tr {
+    margin-bottom: 0.75rem;
+    padding: 0.25rem 0;
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .table-cards tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .table-cards td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4375rem 0.875rem !important;
+    text-align: left !important;
+    border: 0;
+  }
+
+  .table-cards td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    max-width: 45%;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+  }
+
+  /* The lead cell reads as the card's title, so it gets the full width. */
+  .table-cards td[data-label][data-cell="title"] {
+    display: block;
+    padding-top: 0.75rem !important;
+    border-bottom: 1px solid var(--color-border-light);
+  }
+
+  .table-cards td[data-cell="title"]::before {
+    display: block;
+    margin-bottom: 0.125rem;
+  }
+
+  /* Sentence-length values read better stacked under their label than squeezed
+     into the right half of a split row. */
+  .table-cards td[data-cell="stack"] {
+    display: block;
+    padding-bottom: 0.75rem !important;
+  }
+
+  .table-cards td[data-cell="stack"]::before {
+    display: block;
+    max-width: none;
+    margin-bottom: 0.125rem;
+  }
+
+  /* Action bars need the whole row, not a right-hand sliver. */
+  .table-cards td[data-cell="actions"] {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    padding-top: 0.625rem !important;
+    padding-bottom: 0.75rem !important;
+    border-top: 1px solid var(--color-border-light);
+  }
+
+  /* Skeleton rows, empty states and colspan'd messages carry no label. */
+  .table-cards td:not([data-label]) {
+    display: block;
+    min-height: 0;
+  }
+
+  .table-cards td:not([data-label])::before {
+    content: none;
+  }
+
+  /* Values must be free to shrink and wrap rather than widen the card. */
+  .table-cards td > * {
+    min-width: 0;
+    max-width: 100%;
+  }
 }

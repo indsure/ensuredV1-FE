@@ -436,14 +436,14 @@ export default function PortfolioPage() {
             className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full blur-3xl"
             style={{ background: "radial-gradient(circle, rgba(45,212,191,0.22), transparent 70%)" }}
           />
-          <div className="relative grid gap-7 sm:gap-9 sm:grid-cols-[auto_1fr] items-center">
+          <div className="relative grid grid-cols-1 gap-7 sm:gap-9 sm:grid-cols-[auto_1fr] items-center">
             <div className="flex flex-col items-center sm:items-start gap-4">
               {d.avgScore != null ? (
                 <ScoreRing score={d.avgScore} color={ringColor(d.avgScore)} label="cover score" />
               ) : (
                 <div className="w-[168px] h-[168px] rounded-full border-[12px] border-white/10 flex flex-col items-center justify-center text-center px-6">
-                  <span className="font-serif text-4xl font-bold text-white/40">—</span>
-                  <span className="mt-1 text-[10px] font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
+                  <span className="font-serif text-3xl sm:text-4xl font-bold text-white/40">—</span>
+                  <span className="mt-1 text-[11px] sm:text-[10px] font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
                     no score yet
                   </span>
                 </div>
@@ -616,7 +616,7 @@ export default function PortfolioPage() {
               })}
             </div>
 
-            <div className="grid gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4">
               {visiblePolicies.map((p) => (
                 <PolicyCard
                   key={p.id}
@@ -648,7 +648,7 @@ export default function PortfolioPage() {
             <h2 className="font-serif text-xl font-bold text-[var(--color-navy-900)] flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-[var(--color-teal-600)]" /> Your next steps
             </h2>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* What you're missing */}
               <div className="bg-white rounded-2xl border border-[var(--color-border-light)] shadow-sm p-5 sm:p-6">
                 <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -967,7 +967,7 @@ export default function PortfolioPage() {
                 aria-checked={data.renewalRemindersEnabled}
                 aria-label="Renewal reminders"
                 onClick={() => toggleReminders(!data.renewalRemindersEnabled)}
-                className={`shrink-0 relative w-14 h-8 rounded-full transition-colors ${
+                className={`shrink-0 relative before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-[''] w-14 h-8 rounded-full transition-colors ${
                   data.renewalRemindersEnabled ? "bg-[var(--color-teal-600)]" : "bg-[var(--color-border-medium)]"
                 }`}
               >
@@ -1043,7 +1043,7 @@ function HeroStat({
 }) {
   const inner = (
     <>
-      <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
+      <span className="flex items-center gap-1.5 text-[11px] sm:text-[10px] font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
         {icon} <span className="truncate">{label}</span>
       </span>
       <span className="block mt-1.5 font-serif text-xl sm:text-2xl font-bold text-white leading-none">{value}</span>
@@ -1125,7 +1125,7 @@ function PortfolioSkeleton() {
             <div key={i} className="h-11 w-32 rounded-xl bg-[var(--color-cream-dark)]" />
           ))}
         </div>
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {[0, 1].map((i) => (
             <div key={i} className="h-28 rounded-2xl bg-[var(--color-cream-dark)]" />
           ))}

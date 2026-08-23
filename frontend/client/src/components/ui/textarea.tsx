@@ -43,7 +43,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={textareaId}
           className={cn(
             // Base styles
-            "flex min-h-[100px] w-full rounded-md border bg-transparent px-3 py-2.5 text-sm",
+            "flex min-h-[100px] w-full rounded-md border bg-transparent px-3 py-2.5 text-base md:text-sm",
             // Border and focus
             "border-gray-300 focus:border-primary-500 focus:outline-2 focus:outline-primary-500 focus:outline-offset-2",
             // Invalid state

@@ -39,7 +39,7 @@ export function CalculatorLanding({ onStart }: LandingProps) {
                     <Activity className="w-3 h-3" /> IndSure Intelligence Engine
                 </motion.div>
 
-                <motion.h1 custom={1} variants={fadeIn} className="text-5xl md:text-7xl font-serif text-[var(--color-navy-900)] leading-[1.1] tracking-tight">
+                <motion.h1 custom={1} variants={fadeIn} className="text-3xl sm:text-5xl md:text-7xl font-serif text-[var(--color-navy-900)] leading-[1.1] tracking-tight">
                     Exact coverage.<br />
                     <span className="italic text-[var(--color-teal-600)]">Zero sales.</span>
                 </motion.h1>
@@ -80,7 +80,7 @@ export function CalculatorLanding({ onStart }: LandingProps) {
 
 
             {/* 3. OUTCOME PREVIEW */}
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                     { icon: TrendingUp, title: "Ideal Cover Range", desc: "Based on real hospital costs in your specific city." },
                     { icon: Search, title: "Rider Forensics", desc: "Which add-ons actually matter vs marketing fluff." },
@@ -153,7 +153,7 @@ export function CalculatorLanding({ onStart }: LandingProps) {
                 <h3 className="font-serif text-2xl mb-8 flex items-center gap-3 text-white">
                     <AlertTriangle className="text-[var(--color-teal-400)]" /> Common Mistakes
                 </h3>
-                <div className="grid md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {[
                         { quote: "₹5L is enough, my office covers me.", risk: "Employer cover is temporary. You lose it when you switch jobs or retire." },
                         { quote: "I'll buy a higher base cover.", risk: "Wrong. A Base + Super Top-up structure is 50% cheaper for the same coverage." },

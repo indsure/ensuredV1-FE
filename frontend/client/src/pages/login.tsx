@@ -171,7 +171,7 @@ export default function LoginPublic() {
             <div className="flex items-center justify-between gap-3">
               <FieldLabel htmlFor="login-password" required>Password</FieldLabel>
               <Link href="/forgot-password">
-                <span className="text-xs font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">Forgot password?</span>
+                <span className="inline-flex min-h-11 items-center text-xs font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">Forgot password?</span>
               </Link>
             </div>
             <div className="relative">
@@ -192,7 +192,7 @@ export default function LoginPublic() {
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
+                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

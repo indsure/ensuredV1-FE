@@ -140,7 +140,7 @@ export function Header() {
 
         {/* ─── MOBILE TOGGLE ─── */}
         <button
-          className="lg:hidden text-[var(--color-text-main)] p-1"
+          className="lg:hidden -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >

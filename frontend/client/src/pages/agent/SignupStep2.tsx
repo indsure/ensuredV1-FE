@@ -368,14 +368,14 @@ export default function AgentSignupStep2() {
                 </div>
 
                 {/* Content */}
-                <div className="relative z-10 flex flex-col justify-center px-16 py-20 text-white">
+                <div className="relative z-10 flex flex-col justify-center px-6 sm:px-10 lg:px-16 py-12 sm:py-16 lg:py-20 text-white">
                     {/* Wordmark */}
                     <div className="mb-12">
                         <h2 className="font-['Playfair_Display'] text-2xl font-semibold">IndSure</h2>
                     </div>
 
                     {/* Hero Copy */}
-                    <h1 className="font-['Playfair_Display'] text-5xl font-bold leading-tight mb-6">
+                    <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
                         Almost there.
                         <br />
                         Let's personalize your experience.

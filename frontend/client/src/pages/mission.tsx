@@ -16,15 +16,15 @@ const InfiniteMarquee = () => {
       >
         {[...Array(4)].map((_, i) => (
           <div key={i} className="flex items-center gap-12 mx-6">
-            <span className="text-6xl font-serif font-bold text-[var(--color-text-main)] opacity-5 uppercase tracking-tighter">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-[var(--color-text-main)] opacity-5 uppercase tracking-tighter">
               Mission
             </span>
             <div className="w-3 h-3 rounded-full bg-[var(--color-green-primary)] opacity-20"></div>
-            <span className="text-6xl font-serif font-bold text-[var(--color-text-main)] opacity-5 uppercase tracking-tighter">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-[var(--color-text-main)] opacity-5 uppercase tracking-tighter">
               Vision
             </span>
             <div className="w-3 h-3 rounded-full bg-[var(--color-green-primary)] opacity-20"></div>
-            <span className="text-6xl font-serif font-bold text-[var(--color-text-main)] opacity-5 uppercase tracking-tighter">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-[var(--color-text-main)] opacity-5 uppercase tracking-tighter">
               Transparency
             </span>
             <div className="w-3 h-3 rounded-full bg-[var(--color-green-primary)] opacity-20"></div>
@@ -46,13 +46,13 @@ export default function Mission() {
       <main className="flex-grow pt-32">
 
         {/* 1. HERO - WHY INDSURE */}
-        <section className="pb-20 container-editorial text-center">
+        <section className="pb-12 sm:pb-16 lg:pb-20 container-editorial text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-6xl md:text-8xl font-serif font-bold mb-8 text-[var(--color-text-main)]">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-serif font-bold mb-8 text-[var(--color-text-main)]">
               Why IndSure?
             </h1>
             <p className="text-xl md:text-2xl text-[var(--color-text-secondary)] max-w-3xl mx-auto font-light leading-relaxed">
@@ -65,7 +65,7 @@ export default function Mission() {
         <InfiniteMarquee />
 
         {/* 2. THE MISSION */}
-        <section className="py-32 bg-[var(--color-white)] border-b border-[var(--color-border-light)]">
+        <section className="py-16 sm:py-24 lg:py-32 bg-[var(--color-white)] border-b border-[var(--color-border-light)]">
           <div className="container-editorial grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -100,7 +100,7 @@ export default function Mission() {
               style={{ y }}
             >
               <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                <span className="text-9xl font-serif font-bold text-[var(--color-green-primary)]">?</span>
+                <span className="text-3xl sm:text-7xl lg:text-9xl font-serif font-bold text-[var(--color-green-primary)]">?</span>
               </div>
               <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
                 <Users className="w-16 h-16 text-[var(--color-green-primary)] mb-6" />
@@ -112,7 +112,7 @@ export default function Mission() {
         </section>
 
         {/* 3. CORE VALUES (White Cards) */}
-        <section className="py-32 bg-[var(--color-cream-main)]">
+        <section className="py-16 sm:py-24 lg:py-32 bg-[var(--color-cream-main)]">
           <div className="container-editorial">
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-16 text-center">Core Values</h2>
 
@@ -143,7 +143,7 @@ export default function Mission() {
         </section>
 
         {/* 4. VISION */}
-        <section className="py-32 bg-[var(--color-green-primary)] text-white relative overflow-hidden">
+        <section className="py-16 sm:py-24 lg:py-32 bg-[var(--color-green-primary)] text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
           <div className="container-editorial relative z-10 text-center">

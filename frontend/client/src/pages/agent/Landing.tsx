@@ -114,21 +114,21 @@ export default function AgentLanding() {
           Pricing and Log in were missing entirely: pricing was unreachable from
           this page, and logging in meant scrolling to the hero. On a phone the
           Playground label collapses to its icon so the row still fits 375px. */}
-      <nav className="flex justify-between items-center gap-2 px-4 sm:px-6 pt-4" aria-label="Advisor">
-        <Link href="/agent" className="flex items-center gap-2 shrink-0">
+      <nav className="flex flex-wrap justify-between items-center gap-x-2 gap-y-3 px-3 sm:px-6 pt-4" aria-label="Advisor">
+        <Link href="/agent" className="flex min-h-11 items-center gap-2 shrink-0">
           <img src="/logo.png" alt="IndSure" className="h-9 w-auto object-contain" />
           <span className="hidden sm:inline font-bold text-lg text-slate-900">IndSure</span>
         </Link>
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Link
           href="/advisors/pricing"
-          className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 hover:text-[var(--color-green-primary)] transition-colors whitespace-nowrap"
+          className="inline-flex min-h-11 items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 hover:text-[var(--color-green-primary)] transition-colors whitespace-nowrap"
         >
           Pricing
         </Link>
         <Link
           href="/agent/playground"
-          className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-[var(--color-green-primary)] border border-[var(--color-green-primary)]/40 rounded-lg hover:bg-[var(--color-green-primary)] hover:text-white transition-all"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-[var(--color-green-primary)] border border-[var(--color-green-primary)]/40 rounded-lg hover:bg-[var(--color-green-primary)] hover:text-white transition-all"
           title="डेमो आज़माएँ — कोई अकाउंट नहीं"
         >
           <Sparkles className="h-4 w-4 shrink-0" />
@@ -136,7 +136,7 @@ export default function AgentLanding() {
         </Link>
         <Link
           href="/agent/login"
-          className="px-2.5 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold text-white bg-[var(--color-green-primary)] rounded-lg hover:bg-[#0F766E] transition-colors whitespace-nowrap"
+          className="inline-flex min-h-11 items-center px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold text-white bg-[var(--color-green-primary)] rounded-lg hover:bg-[#0F766E] transition-colors whitespace-nowrap"
         >
           Log in
         </Link>
@@ -229,7 +229,7 @@ export default function AgentLanding() {
           <p className="text-lg text-slate-600">{t("agent_landing.features_subheading")}</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-8">
           {topFeatures.map((feature, index) => {
             const Icon = feature.icon;
             return (
@@ -244,7 +244,7 @@ export default function AgentLanding() {
           })}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {additionalFeatures.map((feature, index) => {
             const Icon = feature.icon;
             return (
@@ -291,11 +291,11 @@ export default function AgentLanding() {
             <p className="text-lg text-slate-600">{t("agent_landing.testimonials_subheading")}</p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {testimonials.map((testimonial, index) => (
               <div key={index} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="mb-4 flex items-start gap-3">
-                  <div className="text-4xl">{testimonial.photo}</div>
+                  <div className="text-3xl sm:text-4xl">{testimonial.photo}</div>
                   <div>
                     <h4 className="font-semibold text-slate-900">{testimonial.name}</h4>
                     <p className="text-sm text-slate-500">{testimonial.city}</p>
@@ -314,7 +314,7 @@ export default function AgentLanding() {
         <h2 className="mb-3 text-3xl font-bold text-slate-900">{t("agent_landing.final_cta_heading")}</h2>
         <p className="mb-10 text-lg text-slate-600">{t("agent_landing.final_cta_subheading")}</p>
 
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-8">
           <div className="flex flex-col items-center">
             <Link href="/agent/login" className="w-full">
               <button className="w-full px-6 py-4 text-lg font-semibold bg-[var(--color-green-primary)] text-white rounded-xl hover:bg-[var(--color-teal-400)] transition-all shadow-lg shadow-teal-900/20 hover:shadow-xl">
@@ -354,13 +354,13 @@ export default function AgentLanding() {
               href="https://wa.me/919987148125?text=Hi%2C%20I%27d%20like%20to%20know%20more%20about%20IndSure%20and%20joining%20as%20an%20agent"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-[#25D366] font-semibold hover:underline"
+              className="inline-flex min-h-11 items-center gap-2 text-[#25D366] font-semibold hover:underline"
             >
               <MessageCircle className="h-4 w-4" />
               {t("agent_landing.whatsapp_contact")}
             </a>
             <span className="hidden sm:inline text-slate-300">|</span>
-            <a href="tel:+919987148125" className="inline-flex items-center gap-2 text-[var(--color-green-primary)] font-semibold hover:underline">
+            <a href="tel:+919987148125" className="inline-flex min-h-11 items-center gap-2 text-[var(--color-green-primary)] font-semibold hover:underline">
               <Phone className="h-4 w-4" />
               {t("agent_landing.call_contact")}
             </a>

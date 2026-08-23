@@ -13,6 +13,8 @@ import { rerunPolicy } from '@/lib/rerun';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { translateAll } from '@/i18n/translate';
 import { TYPE_META, typeLabel, getNextPremiumDate, type InsuranceType } from '@/lib/insuranceTypes';
+import { useIsMobile } from "@/hooks/use-mobile";
+import { DashboardMobile } from "@/components/agent/DashboardMobile";
 
 const INSURER_HI: Record<string, string> = {
   "Tata AIG General Insurance Company Limited": "टाटा AIG जनरल इन्श्योरेंस कंपनी लिमिटेड",
@@ -102,6 +104,11 @@ export default function DashboardNew() {
   const [funnel, setFunnel] = useState({ submitted: 0, inReview: 0, completed: 0, highRisk: 0, needsAction: 0 });
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [failedJobs, setFailedJobs] = useState<FailedJob[]>([]);
+
+  // Phones get an action-first view of the same data. Declared with the other
+  // hooks: this component returns early on `!agent` and on `error`, so a hook
+  // placed below those would not run on every render.
+  const isMobile = useIsMobile();
 
   async function fetchDashboard() {
     if (!agent?.agentId) return;
@@ -332,7 +339,7 @@ export default function DashboardNew() {
               ref={btnRef}
               onMouseEnter={handleEnter}
               onMouseLeave={() => setPos(null)}
-              className="text-slate-300 hover:text-slate-500 transition-colors"
+              className="-m-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-300 hover:text-slate-500 transition-colors"
             >
               <Info size={13} />
             </button>
@@ -347,7 +354,7 @@ export default function DashboardNew() {
                 )}
                 {!translating && failures.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">{t("dashboard.painpoints")}</p>
+                    <p className="text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">{t("dashboard.painpoints")}</p>
                     <ul className="space-y-1">
                       {txFailures.map((f, i) => (
                         <li key={i} className="text-xs text-slate-700 flex gap-1.5"><span className="text-red-400 mt-0.5">•</span>{f}</li>
@@ -357,7 +364,7 @@ export default function DashboardNew() {
                 )}
                 {!translating && criticals.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-1.5">{t("dashboard.critical_actions")}</p>
+                    <p className="text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-orange-400 mb-1.5">{t("dashboard.critical_actions")}</p>
                     <ul className="space-y-1">
                       {txCriticals.map((action, i) => (
                         <li key={i} className="text-xs text-slate-700 flex gap-1.5"><span className="text-orange-400 mt-0.5">⚡</span>{action}</li>
@@ -367,7 +374,7 @@ export default function DashboardNew() {
                 )}
                 {!translating && portRec && (
                   <div className="pt-2 border-t border-slate-50">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                    <p className="text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
                       {t("dashboard.port")} <span className={portRec === 'yes' ? 'text-red-500' : portRec === 'consider' ? 'text-amber-500' : 'text-green-500'}>{portRec.toUpperCase()}</span>
                     </p>
                     {txPortReason && <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{txPortReason}</p>}
@@ -406,10 +413,25 @@ export default function DashboardNew() {
   if (error) return <InlineErrorState onRetry={fetchDashboard} />;
 
   function StatusBadge({ status }: { status: string }) {
-    if (status === 'done') return <span className="text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-800 px-2 py-0.5 rounded-sm">Completed</span>;
-    if (status === 'error') return <span className="text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800 px-2 py-0.5 rounded-sm">Failed</span>;
-    if (status === 'pending') return <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-sm">Pending</span>;
-    return <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-800 px-2 flex items-center gap-1 py-0.5 rounded-sm"><div className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin"/> Processing</span>;
+    if (status === 'done') return <span className="text-[11px] sm:text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-800 px-2 py-0.5 rounded-sm">Completed</span>;
+    if (status === 'error') return <span className="text-[11px] sm:text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800 px-2 py-0.5 rounded-sm">Failed</span>;
+    if (status === 'pending') return <span className="text-[11px] sm:text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-sm">Pending</span>;
+    return <span className="text-[11px] sm:text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-800 px-2 flex items-center gap-1 py-0.5 rounded-sm"><div className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin"/> Processing</span>;
+  }
+
+  if (isMobile) {
+    const atRisk = recentActivity.filter(p => p.score !== null && p.score < 70);
+    return (
+      <DashboardMobile
+        agentName={agent.name.split(' ')[0] || 'Agent'}
+        loading={loading}
+        expiringSoon={expiringSoon}
+        atRisk={atRisk}
+        failedJobs={failedJobs}
+        onOpenPolicy={(id) => setLocation(`/agent/policies/${id}`)}
+        onOpenQueue={() => setLocation('/agent/my-queue')}
+      />
+    );
   }
 
   return (
@@ -539,9 +561,9 @@ export default function DashboardNew() {
                  {[1,2,3,4,5].map(i => <div key={i} className="h-10 bg-slate-50 animate-pulse rounded-md w-full" />)}
                </div>
             ) : recentActivity.length === 0 ? (
-               <div className="p-12 text-center text-slate-400 italic">{t("dashboard.no_analyses")}</div>
+               <div className="p-6 sm:p-8 lg:p-12 text-center text-slate-400 italic">{t("dashboard.no_analyses")}</div>
             ) : (
-               <table className="w-full text-sm min-w-[560px] lg:min-w-0">
+               <table className="table-cards w-full text-sm md:min-w-[560px] lg:min-w-0">
                  <thead className="bg-slate-50 border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wider font-semibold">
                    <tr>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_customer")}</th>
@@ -562,16 +584,16 @@ export default function DashboardNew() {
                      const isHealth = (p.insurance_type || 'health') === 'health';
                      return (
                        <tr key={p.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => setLocation(`/agent/policies/${p.id}`)}>
-                         <td className="px-6 py-4 font-semibold text-slate-800">
-                           <div className="flex items-center gap-2">
+                         <td className="px-6 py-4 font-semibold text-slate-800" data-label={t("dashboard.col_customer")} data-cell="title">
+                           <div className="flex flex-wrap items-center gap-2">
                              <span>{getDisplayName(p)}</span>
-                             <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+                             <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-[11px] sm:text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
                                {TYPE_META[(p.insurance_type || 'health') as InsuranceType]?.emoji} {typeLabel(p.insurance_type)}
                              </span>
                            </div>
                          </td>
-                         <td className="px-6 py-4 text-slate-600">{getDisplayInsurer(p)}</td>
-                         <td className="px-6 py-4">
+                         <td className="px-6 py-4 text-slate-600" data-label={t("dashboard.col_insured")}>{getDisplayInsurer(p)}</td>
+                         <td className="px-6 py-4" data-label="Next Premium">
                            {!npValid ? (
                              <span className="text-slate-400">—</span>
                            ) : (
@@ -587,20 +609,20 @@ export default function DashboardNew() {
                              </div>
                            )}
                          </td>
-                         <td className="px-6 py-4">
+                         <td className="px-6 py-4" data-label={t("dashboard.col_score")}>
                            {p.score !== null ? (
                              <span className={`inline-flex items-center justify-center w-10 h-7 rounded-md text-xs font-bold ${p.score >= 80 ? 'bg-green-100 text-green-700' : p.score >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                                {p.score}
                              </span>
                            ) : <span className="text-slate-400">—</span>}
                          </td>
-                         <td className="px-6 py-4">
+                         <td className="px-6 py-4" data-label={t("dashboard.col_switch")}>
                            {isHealth ? <PainpointCell shouldSwitch={shouldSwitch} reportData={p.report_data} /> : <span className="text-slate-400">—</span>}
                          </td>
-                         <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                         <td className="px-6 py-4" data-label={t("dashboard.col_report")} data-cell="actions" onClick={e => e.stopPropagation()}>
                            <button
                              onClick={() => setLocation(`/agent/policies/${p.id}`)}
-                             className="text-xs font-semibold text-[#0D9488] hover:underline"
+                             className="inline-flex min-h-10 items-center text-xs font-semibold text-[#0D9488] hover:underline"
                            >
                              {t("dashboard.open")}
                            </button>
@@ -662,7 +684,7 @@ export default function DashboardNew() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            <table className="w-full text-sm min-w-[560px] lg:min-w-0">
+            <table className="table-cards w-full text-sm md:min-w-[560px] lg:min-w-0">
               <thead className="bg-slate-50 border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wider font-semibold">
                 <tr>
                   <th className="px-6 py-4 text-left">{t("dashboard.col_customer")}</th>
@@ -677,20 +699,20 @@ export default function DashboardNew() {
                   .map(p => ({ ...p, days: p.expiry_date ? Math.ceil((new Date(p.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null }))
                   .map(p => (
                     <tr key={p.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => setLocation(`/agent/policies/${p.id}`)}>
-                      <td className="px-6 py-4 font-semibold text-slate-800">{getDisplayName(p)}</td>
-                      <td className="px-6 py-4 text-slate-600">{getDisplayInsurer(p)}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 font-semibold text-slate-800" data-label={t("dashboard.col_customer")} data-cell="title">{getDisplayName(p)}</td>
+                      <td className="px-6 py-4 text-slate-600" data-label={t("dashboard.col_insured")}>{getDisplayInsurer(p)}</td>
+                      <td className="px-6 py-4" data-label={t("dashboard.col_expiry")}>
                         {p.days !== null && p.days <= 15
                           ? <span className="font-bold text-red-500">{p.days} days</span>
                           : <span className="font-semibold text-amber-500">{p.days} days</span>}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4" data-label={t("dashboard.col_score")}>
                         {p.score !== null ? (
                           <span className={`inline-flex items-center justify-center w-10 h-7 rounded-md text-xs font-bold ${p.score >= 80 ? 'bg-green-100 text-green-700' : p.score >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{p.score}</span>
                         ) : <span className="text-slate-400">—</span>}
                       </td>
-                      <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setLocation(`/agent/policies/${p.id}`)} className="text-xs font-semibold text-[#0D9488] hover:underline">Open →</button>
+                      <td className="px-6 py-4" data-label={t("dashboard.col_report")} data-cell="actions" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setLocation(`/agent/policies/${p.id}`)} className="inline-flex min-h-10 items-center text-xs font-semibold text-[#0D9488] hover:underline">Open →</button>
                       </td>
                     </tr>
                   ))}
@@ -738,7 +760,7 @@ export default function DashboardNew() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            <table className="w-full text-sm min-w-[560px] lg:min-w-0">
+            <table className="table-cards w-full text-sm md:min-w-[560px] lg:min-w-0">
               <thead className="bg-slate-50 border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wider font-semibold">
                 <tr>
                   <th className="px-6 py-4 text-left">{t("dashboard.col_policy_id")}</th>
@@ -751,11 +773,11 @@ export default function DashboardNew() {
               <tbody className="divide-y divide-slate-50">
                 {failedJobs.map((job) => (
                   <tr key={job.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-700">{job.policy_name ?? job.id}</td>
-                    <td className="px-6 py-4 text-slate-700">{job.name ?? '—'}</td>
-                    <td className="px-6 py-4 text-[#F43F5E] font-medium">{job.error_message ?? t("dashboard.analysis_failed")}</td>
-                    <td className="px-6 py-4 text-slate-400">{job.created_at ? format(new Date(job.created_at), 'MMM d, h:mm a') : '—'}</td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 font-bold text-slate-700" data-label={t("dashboard.col_policy_id")} data-cell="title">{job.policy_name ?? job.id}</td>
+                    <td className="px-6 py-4 text-slate-700" data-label={t("dashboard.col_client")}>{job.name ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#F43F5E] font-medium" data-label={t("dashboard.col_failure")}>{job.error_message ?? t("dashboard.analysis_failed")}</td>
+                    <td className="px-6 py-4 text-slate-400" data-label={t("dashboard.col_time")}>{job.created_at ? format(new Date(job.created_at), 'MMM d, h:mm a') : '—'}</td>
+                    <td className="px-6 py-4 text-right" data-label={t("dashboard.col_action")} data-cell="actions">
                       <Button size="sm" variant="outline" className="border-[#F43F5E] text-[#F43F5E] hover:bg-[#F43F5E] hover:text-white" onClick={() => retryJob(job.id)}>
                         {t("dashboard.retry")}
                       </Button>

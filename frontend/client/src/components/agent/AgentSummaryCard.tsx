@@ -76,7 +76,7 @@ const AgentSummaryCard: React.FC<AgentSummaryCardProps> = ({ agentId, hasClients
             Portfolio Insights
           </h3>
           {generatedAt && (
-            <p className="text-slate-500 text-[10px] mt-1 uppercase tracking-wider">
+            <p className="text-slate-500 text-[11px] sm:text-[10px] mt-1 uppercase tracking-wider">
               Last updated {formatDistanceToNow(new Date(generatedAt), { addSuffix: true })}
             </p>
           )}
@@ -117,7 +117,7 @@ const AgentSummaryCard: React.FC<AgentSummaryCardProps> = ({ agentId, hasClients
       </div>
 
       <div className="mt-8 pt-6 border-t border-white/5 flex justify-between items-end">
-        <p className="text-slate-500 text-[10px] uppercase tracking-wider">Refreshes every 30 days</p>
+        <p className="text-slate-500 text-[11px] sm:text-[10px] uppercase tracking-wider">Refreshes every 30 days</p>
         
         {canRegenerate() && !loading && (
           <button 

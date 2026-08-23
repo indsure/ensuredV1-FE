@@ -35,11 +35,11 @@ const InfiniteMarquee = () => {
       >
         {[...Array(4)].map((_, i) => (
           <div key={i} className="flex items-center gap-12 mx-6">
-            <span className="text-8xl font-serif font-bold text-white opacity-10 uppercase tracking-tighter">
+            <span className="text-3xl sm:text-6xl lg:text-8xl font-serif font-bold text-white opacity-10 uppercase tracking-tighter">
               Insurance Clarity
             </span>
             <div className="w-4 h-4 rounded-full bg-[var(--color-teal-600)] opacity-20"></div>
-            <span className="text-8xl font-serif font-bold text-white opacity-10 uppercase tracking-tighter">
+            <span className="text-3xl sm:text-6xl lg:text-8xl font-serif font-bold text-white opacity-10 uppercase tracking-tighter">
               Finally
             </span>
             <div className="w-4 h-4 rounded-full bg-[var(--color-teal-600)] opacity-20"></div>
@@ -91,7 +91,7 @@ export default function Home() {
       <main className="flex-grow pt-32">
 
         {/* 1. HERO */}
-        <section className="relative pb-24 bg-[var(--color-navy-900)] overflow-hidden">
+        <section className="relative pb-14 sm:pb-20 lg:pb-24 bg-[var(--color-navy-900)] overflow-hidden">
           {/* Soft glow to ease the transition from the cream header into the navy hero */}
           <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[var(--color-teal-600)] opacity-[0.07] blur-[120px] rounded-full" />
           <div className="relative container-editorial mb-16 px-6">
@@ -99,7 +99,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="text-6xl md:text-8xl font-serif font-bold tracking-tight leading-[1] mb-8 text-white"
+              className="text-4xl sm:text-6xl md:text-8xl font-serif font-bold tracking-tight leading-[1] mb-8 text-white"
             >
               No hidden <span className="text-[var(--color-teal-400)]">clauses.</span><br />
               No surprises.
@@ -167,7 +167,7 @@ export default function Home() {
         </section>
 
         {/* 2. DASHBOARD PREVIEW */}
-        <section id="demo" className="scroll-mt-28 py-24 bg-[var(--color-cream-main)] text-[var(--color-text-main)] border-y border-[var(--color-border-light)]">
+        <section id="demo" className="scroll-mt-28 py-14 sm:py-20 lg:py-24 bg-[var(--color-cream-main)] text-[var(--color-text-main)] border-y border-[var(--color-border-light)]">
           <div className="container-editorial">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
               <div>
@@ -197,7 +197,7 @@ export default function Home() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                 <div className="col-span-1 border-r border-[var(--color-border-light)] pr-8">
                   <span className="text-sm font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Insurance Health Score</span>
-                  <div className="text-8xl font-serif font-bold text-[var(--color-teal-600)] mt-4 mb-2">
+                  <div className="text-3xl sm:text-6xl lg:text-8xl font-serif font-bold text-[var(--color-teal-600)] mt-4 mb-2">
                     <CountUp target={68} />
                   </div>
                   <p className="text-sm text-[var(--color-teal-600)] font-medium">Top 15% of policyholders</p>
@@ -253,7 +253,7 @@ export default function Home() {
         </section>
 
         {/* 3. PROBLEM CARDS */}
-        <section className="py-24 bg-[var(--color-navy-900)] text-white">
+        <section className="py-14 sm:py-20 lg:py-24 bg-[var(--color-navy-900)] text-white">
           <div className="container-editorial">
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-16 text-center text-white">Why traditional policies fail you</h2>
 
@@ -287,12 +287,12 @@ export default function Home() {
         </section>
 
         {/* 4. PROCESS */}
-        <section id="how-it-works" className="py-32 bg-[var(--color-cream-main)] text-[var(--color-text-main)] border-t border-[var(--color-border-light)] overflow-hidden scroll-mt-28">
+        <section id="how-it-works" className="py-16 sm:py-24 lg:py-32 bg-[var(--color-cream-main)] text-[var(--color-text-main)] border-t border-[var(--color-border-light)] overflow-hidden scroll-mt-28">
           <div className="container-editorial">
             <div className="flex flex-col md:flex-row justify-between items-end mb-20 scroll-mt-20">
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-[var(--color-navy-900)]">From chaos to clarity<br />in 4 steps.</h2>
               <Link href="/how-it-works">
-                <span className="text-[var(--color-teal-600)] font-medium hover:underline cursor-pointer">See the full walkthrough &rarr;</span>
+                <span className="inline-flex min-h-11 items-center text-[var(--color-teal-600)] font-medium hover:underline cursor-pointer">See the full walkthrough &rarr;</span>
               </Link>
             </div>
 
@@ -333,18 +333,18 @@ export default function Home() {
         </section>
 
         {/* 5. CLOSING CTA — second conversion point */}
-        <section className="py-32 bg-[var(--color-navy-900)] text-center text-white">
+        <section className="py-16 sm:py-24 lg:py-32 bg-[var(--color-navy-900)] text-center text-white">
           <div className="container-editorial">
-            <h2 className="text-5xl md:text-7xl font-serif font-bold mb-8 text-white">Know your coverage.<br />Once and for all.</h2>
+            <h2 className="text-3xl sm:text-5xl md:text-7xl font-serif font-bold mb-8 text-white">Know your coverage.<br />Once and for all.</h2>
             <p className="text-xl text-white/80 mb-12">Free to start. Your policies stay private — no calls, no spam, ever.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/signup">
-                <button className="w-full sm:w-auto justify-center bg-[var(--color-teal-600)] text-white px-12 py-5 rounded-lg font-bold text-xl hover:scale-105 transition-transform shadow-xl shadow-teal-900/20 flex items-center gap-2">
+                <button className="w-full sm:w-auto justify-center bg-[var(--color-teal-600)] text-white px-6 sm:px-8 lg:px-12 py-5 rounded-lg font-bold text-xl hover:scale-105 transition-transform shadow-xl shadow-teal-900/20 flex items-center gap-2">
                   Analyze My Policy — Free <ArrowRight className="w-5 h-5" />
                 </button>
               </Link>
               <a href="#demo">
-                <button className="w-full sm:w-auto px-12 py-5 rounded-lg font-bold text-xl border border-white/25 text-white/90 hover:bg-white/10 hover:text-white transition-colors">
+                <button className="w-full sm:w-auto px-6 sm:px-8 lg:px-12 py-5 rounded-lg font-bold text-xl border border-white/25 text-white/90 hover:bg-white/10 hover:text-white transition-colors">
                   See a Sample Analysis
                 </button>
               </a>

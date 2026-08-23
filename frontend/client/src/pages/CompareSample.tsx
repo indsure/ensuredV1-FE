@@ -50,7 +50,7 @@ export default function CompareSample() {
     <div className="min-h-screen bg-[#FAFAF8] font-['Inter']">
       <Header />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-36 pb-20">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-36 pb-12 sm:pb-16 lg:pb-20">
 
         {/* ── Hero ── */}
         <motion.div className="text-center mb-14" variants={container} initial="hidden" animate="show">
@@ -76,7 +76,7 @@ export default function CompareSample() {
             <motion.div key={p.name} variants={fadeUp} className="bg-white rounded-2xl shadow-[0_1px_12px_rgba(0,0,0,0.08)] border border-slate-100 p-6 flex items-center gap-5">
               <ScoreBadge score={p.score} color={p.color} />
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">{p.label}</p>
+                <p className="text-[11px] sm:text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">{p.label}</p>
                 <p className="font-['Playfair_Display'] text-xl font-bold text-[#0F172A] leading-tight">{p.name}</p>
                 <p className="text-sm text-slate-500 mt-1">{p.sum}</p>
               </div>
@@ -92,25 +92,27 @@ export default function CompareSample() {
           className="bg-white rounded-2xl shadow-[0_1px_12px_rgba(0,0,0,0.08)] border border-slate-100 overflow-hidden mb-10"
         >
           {/* Sticky header */}
-          <div className="grid grid-cols-3 sticky top-0 bg-[#0B1120] text-white z-10">
+          <div className="hidden md:grid grid-cols-3 sticky top-0 bg-[#0B1120] text-white z-10">
             <div className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Parameter</div>
             <div className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">Niva Bupa ReAssure 2.0</div>
             <div className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-amber-400">Star Health Comprehensive</div>
           </div>
 
           {rows.map((row, i) => (
-            <div key={row.param} className={`grid grid-cols-3 border-b border-slate-50 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
-              <div className="px-6 py-4 text-sm font-semibold text-[#0F172A]">{row.param}</div>
-              <div className={`px-6 py-4 text-sm flex items-center gap-2 ${row.winner === 'niva' ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold' : 'text-slate-600'}`}>
+            <div key={row.param} className={`grid grid-cols-1 md:grid-cols-3 border-b border-slate-100 md:border-slate-50 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'}`}>
+              <div className="px-4 md:px-6 pt-4 pb-2 md:py-4 text-sm font-semibold text-[#0F172A]">{row.param}</div>
+              <div className={`px-4 md:px-6 py-2 md:py-4 text-sm flex flex-wrap items-center gap-x-2 gap-y-1 ${row.winner === 'niva' ? 'bg-[#F0FDFA] text-[#0D9488] font-semibold' : 'text-slate-600'}`}>
+                <span className="md:hidden w-full text-[11px] font-bold uppercase tracking-widest text-slate-400">Niva Bupa ReAssure 2.0</span>
                 {row.nivaVal}
                 {row.winner === 'niva' && (
-                  <span className="text-[10px] font-bold bg-[#0D9488] text-white px-1.5 py-0.5 rounded-full whitespace-nowrap">✓ Better</span>
+                  <span className="text-[11px] sm:text-[10px] font-bold bg-[#0D9488] text-white px-1.5 py-0.5 rounded-full whitespace-nowrap">✓ Better</span>
                 )}
               </div>
-              <div className={`px-6 py-4 text-sm flex items-center gap-2 ${row.winner === 'star' ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-slate-600'}`}>
+              <div className={`px-4 md:px-6 py-2 pb-4 md:py-4 text-sm flex flex-wrap items-center gap-x-2 gap-y-1 ${row.winner === 'star' ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-slate-600'}`}>
+                <span className="md:hidden w-full text-[11px] font-bold uppercase tracking-widest text-slate-400">Star Health Comprehensive</span>
                 {row.starVal}
                 {row.winner === 'star' && (
-                  <span className="text-[10px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full whitespace-nowrap">✓ Better</span>
+                  <span className="text-[11px] sm:text-[10px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full whitespace-nowrap">✓ Better</span>
                 )}
               </div>
             </div>
@@ -159,7 +161,7 @@ export default function CompareSample() {
           <h2 className="font-['Playfair_Display'] text-3xl font-bold text-white mb-1">Our Verdict</h2>
           <p className="text-slate-400 text-sm mb-4">Based on coverage depth, value, and flexibility</p>
 
-          <p className="font-['Playfair_Display'] text-4xl font-bold text-[#2DD4BF] mb-6">
+          <p className="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold text-[#2DD4BF] mb-6">
             Niva Bupa ReAssure 2.0
           </p>
 

@@ -12,6 +12,7 @@ import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
 import { authorForId, displayName } from "@/data/team";
 import { TableOfContents } from "@/components/TableOfContents";
 import { ReadingProgress } from "@/components/ReadingProgress";
+import { useResponsiveTables } from "@/hooks/use-responsive-tables";
 import { ShareButtons } from "@/components/ShareButtons";
 import { BlogCover } from "@/components/BlogCover";
 import { BlogInlineCTA, BlogClosingCTA, BlogSidebarCTA } from "@/components/BlogCTA";
@@ -23,6 +24,10 @@ export default function BlogPost() {
   const post = postFromParam(params?.id);
   const contentRef = useRef<HTMLElement>(null!);
   const [activeFAQ, setActiveFAQ] = useState<number | null>(null);
+
+  // Authored article tables carry no styling hooks; label them so they restack
+  // into cards on phones instead of running off the page.
+  useResponsiveTables(contentRef, [post?.id]);
 
   // SEO — canonical always points at the slug URL, even on legacy /blog/4 hits.
   useSEO({
@@ -99,7 +104,7 @@ export default function BlogPost() {
       <Header />
 
       {/* Sticky Breadcrumb */}
-      <div className="sticky top-32 z-30 bg-[var(--color-cream-main)]/95 backdrop-blur-sm border-b border-[var(--color-border-light)]">
+      <div className="hidden md:block sticky top-[65px] z-30 bg-[var(--color-cream-main)]/95 backdrop-blur-sm border-b border-[var(--color-border-light)]">
         <div className="max-w-7xl mx-auto px-6 py-3">
           <Breadcrumbs items={[{ label: "Blog", href: "/blog" }, { label: post.category }, { label: post.title }]} />
         </div>
@@ -109,7 +114,7 @@ export default function BlogPost() {
       <TableOfContents contentRef={contentRef} />
 
       <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-8 md:pb-12 w-full">
-        <div className="grid lg:grid-cols-[280px_1fr_280px] gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-8">
           {/* Left spacer for TOC (desktop) */}
           <div className="hidden lg:block"></div>
 
@@ -200,7 +205,7 @@ export default function BlogPost() {
                         open={activeFAQ === index}
                         onToggle={(e) => setActiveFAQ(e.currentTarget.open ? index : null)}
                       >
-                        <summary className="py-4 px-0 cursor-pointer flex items-center justify-between text-sm font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] rounded-lg px-3 transition-colors">
+                        <summary className="min-h-11 py-4 cursor-pointer flex items-center justify-between gap-3 text-sm font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] rounded-lg px-3 transition-colors">
                           <span>{faq.question}</span>
                           <ChevronDown className={`w-4 h-4 transition-transform ${activeFAQ === index ? 'transform rotate-180' : ''}`} />
                         </summary>
@@ -289,7 +294,7 @@ export default function BlogPost() {
             <ShareButtons url={typeof window !== "undefined" ? window.location.href : ""} title={post.title} description={post.excerpt} />
             <div className="text-right">
               <p className="text-xs text-[var(--color-text-secondary)] mb-1">Not ready to leave?</p>
-              <Link href="/blog" className="text-xs text-[var(--color-green-primary)] hover:underline">
+              <Link href="/blog" className="inline-flex min-h-11 items-center text-xs text-[var(--color-green-primary)] hover:underline">
                 Read more on {post.category} →
               </Link>
             </div>
@@ -303,7 +308,7 @@ export default function BlogPost() {
         {relatedArticles.length > 0 && (
           <div className="max-w-4xl mx-auto px-6 mb-12">
             <h2 className="text-2xl md:text-3xl font-bold mb-8 font-serif text-[var(--color-text-main)]">Related Articles</h2>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedArticles.map((relatedPost) => {
                 const Icon = relatedPost.icon;
                 return (

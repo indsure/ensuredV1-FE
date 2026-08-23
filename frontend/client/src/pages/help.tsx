@@ -105,7 +105,7 @@ export default function Help() {
         </div>
 
         {/* Support Options */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {supportOptions.map((option, index) => {
             const Icon = option.icon;
             return (
@@ -121,7 +121,7 @@ export default function Help() {
                   {option.href.startsWith("mailto:") ? (
                     <a
                       href={option.href}
-                      className="text-[#1A3A52] dark:text-[#4A9B9E] hover:underline font-medium"
+                      className="inline-flex min-h-11 items-center text-[#1A3A52] dark:text-[#4A9B9E] hover:underline font-medium break-all"
                     >
                       {option.action}
                     </a>

@@ -115,7 +115,7 @@ export default function Claims() {
           <button
             onClick={load}
             disabled={loading}
-            className="flex items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50"
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
@@ -146,7 +146,7 @@ export default function Claims() {
       )}
 
       {/* TABS */}
-      <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 w-fit">
+      <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 w-fit">
         {([
           ["open", "Open", openCount],
           ["attention", "Needs you", attentionCount],
@@ -159,7 +159,7 @@ export default function Claims() {
               key={key}
               onClick={() => setTab(key as Tab)}
               className={[
-                "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-colors",
+                "flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-colors",
                 active ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-800",
               ].join(" ")}
             >
@@ -214,7 +214,7 @@ export default function Claims() {
 
       {/* LIST */}
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => <div key={i} className="h-52 rounded-2xl bg-slate-100 animate-pulse" />)}
         </div>
       ) : visible.length === 0 ? (
@@ -229,7 +229,7 @@ export default function Claims() {
           </span>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((c) => (
             <ClaimCard key={c.id} claim={c} onOpen={() => setLocation(`/agent/claims/${c.id}`)} />
           ))}
@@ -433,7 +433,7 @@ function NewClaimForm({
           </>
         ) : (
           <>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <input
                 value={draft.new_customer_name}
                 onChange={(e) => set("new_customer_name", e.target.value)}
@@ -461,7 +461,7 @@ function NewClaimForm({
       {/* type */}
       <div className="flex flex-col gap-2 mb-5">
         <span className="text-xs font-bold text-slate-500">Type of claim</span>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {([
             ["cashless", "Cashless", "Hospital bills the insurer"],
             ["reimbursement", "Reimbursement", "Customer paid, claims back"],
@@ -486,7 +486,7 @@ function NewClaimForm({
       </div>
 
       {/* the claim */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Labeled label="Insurer">
           <input value={draft.insurer} onChange={(e) => set("insurer", e.target.value)} placeholder="e.g. Niva Bupa" className={inputCls} />
         </Labeled>

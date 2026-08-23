@@ -47,7 +47,7 @@ export default function Account() {
     <div className="bg-[var(--color-navy-900)] text-white font-sans min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-grow pt-32 pb-24">
+      <main className="flex-grow pt-32 pb-14 sm:pb-20 lg:pb-24">
         <section className="pb-16">
           <div className="container-editorial px-6">
             <Link href="/">
@@ -59,7 +59,7 @@ export default function Account() {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="text-5xl md:text-7xl font-serif font-bold tracking-tight leading-[1.1] mb-4 text-white"
+              className="text-3xl sm:text-5xl md:text-7xl font-serif font-bold tracking-tight leading-[1.1] mb-4 text-white"
             >
               Your <span className="text-[var(--color-teal-400)]">profile.</span>
             </motion.h1>

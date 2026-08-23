@@ -691,7 +691,7 @@ export default function CoverCalculator({
                 Help us calculate risks precisely.
               </p>
 
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SectionDivider label="Your Details" />
 
                 <div className="space-y-2">

@@ -292,7 +292,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             {relevant.length > 0 && (
               <span
                 className={
-                  "rounded-full border px-2 py-0.5 text-[10px] font-semibold " +
+                  "rounded-full border px-2 py-0.5 text-[11px] sm:text-[10px] font-semibold " +
                   (assumed === 0 ? SOURCE_STYLE.document : SOURCE_STYLE.default)
                 }
               >
@@ -388,7 +388,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border border-slate-100 p-4">
             <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Paid by then</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: PAID }}>{rupee(row.paid)}</div>
@@ -478,7 +478,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                           {Array.isArray(p.value) ? `${p.value.length} rows` : "table"}
                         </span>
                       )}
-                      <span className={"rounded-full border px-2 py-0.5 text-[10px] font-semibold " + SOURCE_STYLE[p.source]}>
+                      <span className={"rounded-full border px-2 py-0.5 text-[11px] sm:text-[10px] font-semibold " + SOURCE_STYLE[p.source]}>
                         {SOURCE_LABEL[p.source]}
                       </span>
                     </div>

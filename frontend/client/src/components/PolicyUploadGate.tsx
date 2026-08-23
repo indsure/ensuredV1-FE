@@ -130,7 +130,7 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
             key={t.value}
             onClick={() => setType(t.value)}
             aria-pressed={type === t.value}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+            className={`inline-flex min-h-11 items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${
               type === t.value
                 ? "bg-[var(--color-green-primary)] text-white border-[var(--color-green-primary)]"
                 : "bg-white text-[var(--color-text-secondary)] border-[var(--color-border-main)] hover:border-[var(--color-green-primary)]"

@@ -146,7 +146,7 @@ const AdminPanel: React.FC = () => {
                 </div>
                 <div className="hidden sm:block">
                   <p className="text-xs font-bold text-white leading-none">{adminName}</p>
-                  <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-tighter">Super Admin</p>
+                  <p className="text-[11px] sm:text-[10px] text-slate-500 mt-1 uppercase tracking-tighter">Super Admin</p>
                 </div>
               </div>
             </div>

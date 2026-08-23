@@ -124,7 +124,7 @@ export default function GrievanceOfficer() {
       {/* Header */}
       <div className="border-b border-gray-100 bg-white sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+          <a href="/" className="inline-flex min-h-11 items-center text-sm text-gray-500 hover:text-gray-800 transition-colors">
             ← Back to IndSure
           </a>
           <span className="text-xs text-gray-400">DPDP Act 2023 — Section 13</span>
@@ -135,7 +135,7 @@ export default function GrievanceOfficer() {
         {/* Title */}
         <div className="mb-10">
           <p className="text-xs font-medium tracking-widest text-gray-400 uppercase mb-3">Legal</p>
-          <h1 className="text-4xl font-semibold text-gray-900 mb-4 leading-tight">Grievance Officer</h1>
+          <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-4 leading-tight">Grievance Officer</h1>
           <p className="text-gray-500 text-sm leading-relaxed">
             Under Section 13 of the Digital Personal Data Protection Act, 2023 (India), IndSure has
             designated a Grievance Officer to address data-related queries and complaints.
@@ -328,7 +328,7 @@ export default function GrievanceOfficer() {
         </div>
 
         {/* Footer nav */}
-        <div className="mt-12 pt-8 border-t border-gray-100 flex flex-wrap gap-4 text-sm">
+        <div className="mt-12 pt-8 border-t border-gray-100 flex flex-wrap gap-x-4 text-sm [&>a]:inline-flex [&>a]:min-h-11 [&>a]:items-center">
           <a href="/privacy-policy" className="text-blue-600 hover:underline">
             Privacy Policy
           </a>

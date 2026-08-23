@@ -100,7 +100,7 @@ function AddPlanPicker({
             ) : (
               filtered.map(([insurer, items]) => (
                 <div key={insurer}>
-                  <div className="px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-wider text-[var(--color-text-muted)]">{insurer}</div>
+                  <div className="px-3 pt-2 pb-1 text-[11px] sm:text-[10px] font-black uppercase tracking-wider text-[var(--color-text-muted)]">{insurer}</div>
                   {items.map((it) => (
                     <button
                       key={it.uin}
@@ -132,7 +132,7 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
   const pal = SIDE_PALETTE[index % SIDE_PALETTE.length];
   return (
     <div className="relative rounded-xl border-2 bg-white p-3.5 pr-9 w-full sm:w-56 flex-shrink-0" style={{ borderColor: pal.accent }}>
-      <span className="inline-block text-[10px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
+      <span className="inline-block text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
         {String.fromCharCode(65 + index)}
       </span>
       <p className="font-bold text-[var(--color-navy-900)] leading-tight truncate">{item.plan_name}</p>
@@ -248,7 +248,7 @@ function HealthCatalogCompare() {
     <div className="min-h-screen bg-[var(--color-cream-main)] flex flex-col font-sans text-[var(--color-navy-900)]">
       <Header />
 
-      <main className="flex-grow pt-24 pb-20 px-4 sm:px-6 max-w-5xl mx-auto w-full">
+      <main className="flex-grow pt-24 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 max-w-5xl mx-auto w-full">
         <Breadcrumbs items={[{ label: "Compare" }]} />
 
         {/* Hero */}
@@ -270,7 +270,7 @@ function HealthCatalogCompare() {
         </div>
 
         {loadingCatalog ? (
-          <div className="flex flex-col items-center py-24 text-[var(--color-text-muted)]">
+          <div className="flex flex-col items-center py-14 sm:py-20 lg:py-24 text-[var(--color-text-muted)]">
             <Loader2 className="h-7 w-7 animate-spin mb-2" /> Loading catalog…
           </div>
         ) : (

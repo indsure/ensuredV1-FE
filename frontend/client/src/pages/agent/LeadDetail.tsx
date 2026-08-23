@@ -159,7 +159,7 @@ export default function LeadDetail() {
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="font-['Playfair_Display'] text-4xl font-bold text-slate-900">{lead.name}</h1>
+                    <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold text-slate-900">{lead.name}</h1>
                     <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-bold ${LEAD_STATUS_META[lead.status].badge}`}>
                       <span className={`h-2 w-2 rounded-full ${LEAD_STATUS_META[lead.status].dot}`} /> {LEAD_STATUS_META[lead.status].label}
                     </span>
@@ -238,7 +238,7 @@ export default function LeadDetail() {
           <Card className="border-slate-100 shadow-sm">
             <CardContent className="p-6">
               <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Lead details</p>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Field label="Name *"><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={inputCls} /></Field>
                 <Field label="Phone / WhatsApp"><input value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} inputMode="tel" className={inputCls} /></Field>
                 <Field label="City"><input value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} className={inputCls} /></Field>

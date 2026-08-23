@@ -8,7 +8,7 @@ export function HospitalSkeleton() {
                 <div className="container-editorial">
                     <div className="mb-8">
                         <Skeleton className="h-4 w-48 mb-4 bg-[var(--color-blue-800)]" />
-                        <div className="grid md:grid-cols-2 gap-8 items-start">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                             <div>
                                 <Skeleton className="h-8 w-64 mb-2 bg-[var(--color-blue-800)]" />
                                 <Skeleton className="h-6 w-96 bg-[var(--color-blue-800)]" />

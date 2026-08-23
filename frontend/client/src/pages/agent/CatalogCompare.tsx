@@ -84,7 +84,7 @@ function AddPlanPicker({
             ) : (
               filtered.map(([insurer, items]) => (
                 <div key={insurer}>
-                  <div className="px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{insurer}</div>
+                  <div className="px-3 pt-2 pb-1 text-[11px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">{insurer}</div>
                   {items.map((it) => (
                     <button
                       key={it.uin}
@@ -116,7 +116,7 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
   const pal = SIDE_PALETTE[index % SIDE_PALETTE.length];
   return (
     <div className="relative rounded-xl border-2 bg-white p-3.5 pr-9 w-full sm:w-56 flex-shrink-0" style={{ borderColor: pal.accent }}>
-      <span className="inline-block text-[10px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
+      <span className="inline-block text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
         {String.fromCharCode(65 + index)}
       </span>
       <p className="font-bold text-slate-800 leading-tight truncate">{item.plan_name}</p>
@@ -222,7 +222,7 @@ export default function CatalogCompare() {
       </div>
 
       {loadingCatalog ? (
-        <div className="flex flex-col items-center py-24 text-slate-400">
+        <div className="flex flex-col items-center py-14 sm:py-20 lg:py-24 text-slate-400">
           <Loader2 className="h-7 w-7 animate-spin mb-2" /> Loading catalog…
         </div>
       ) : (
@@ -254,7 +254,7 @@ export default function CatalogCompare() {
           {!comparing && result && <div className="mt-6"><ComparisonView data={result} /></div>}
 
           {!comparing && !result && !error && (
-            <div className="text-center py-20 text-slate-400">
+            <div className="text-center py-12 sm:py-16 lg:py-20 text-slate-400">
               <Scale className="h-10 w-10 mx-auto mb-3 opacity-40" />
               Add two or more plans to see the head-to-head.
             </div>

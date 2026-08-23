@@ -496,7 +496,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                 </div>
 
                 {/* 2. SCORECARD + SCORE BREAKDOWN */}
-                <div className="grid md:grid-cols-12 gap-8 mb-16">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-16">
 
                     <div className="md:col-span-4 bg-white border border-[var(--color-border-light)] rounded-xl p-8 flex flex-col justify-center items-center text-center shadow-sm relative overflow-hidden">
                         <div className={cn(
@@ -504,7 +504,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             verdict === "SAFE" ? "bg-green-500" :
                                 verdict === "RISKY" ? "bg-red-500" : "bg-amber-500"
                         )} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Audit Score</span>
+                        <span className="text-[11px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Audit Score</span>
                         <div className={cn(
                             "text-8xl font-serif leading-none mb-2",
                             verdict === "SAFE" ? "text-[var(--color-green-primary)]" :
@@ -531,7 +531,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             <p>All scores are AI-computed from your policy text.</p>
                             <p>No manual overrides.</p>
                             {data.audit_score?.raw_score && data.audit_score.raw_score !== score && (
-                                <p className="text-[10px] text-slate-400 mt-2">
+                                <p className="text-[11px] sm:text-[10px] text-slate-400 mt-2">
                                     Raw score: {data.audit_score.raw_score} (rounded to {score})
                                 </p>
                             )}
@@ -648,7 +648,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">Coverage Overview</h3>
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-6 items-stretch">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                             <div className="border border-[var(--color-border-light)] bg-white p-8 rounded-xl shadow-sm flex flex-col h-full">
                                 <div className="text-sm font-bold uppercase tracking-wider text-green-700 mb-6 flex items-center gap-2">
                                     <CheckCircle2 className="w-5 h-5" /> What Actually Works
@@ -761,7 +761,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 )}
 
                                 {(coverStack.counted?.length || coverStack.excluded?.length) && (
-                                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                                         {coverStack.counted && coverStack.counted.length > 0 && (
                                             <div>
                                                 <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
@@ -804,7 +804,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             </div>
                         )}
 
-                        <div className="grid md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {otherCover.map((cover, i) => (
                                 <div key={i} className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
                                     <div className="flex justify-between items-start gap-3 mb-4">
@@ -889,7 +889,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">Claim Simulations</h3>
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {simulations.map((sim, i) => (
                                 <div key={i} className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
                                     <div className="flex justify-between items-center mb-4">
@@ -937,7 +937,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                         "border rounded-xl p-8 md:p-12 mb-16 shadow-lg relative overflow-hidden",
                         verdict === "SAFE" ? "bg-[#F0FDF4] border-green-100" : "bg-white border-slate-200"
                     )}>
-                        <div className="absolute top-0 right-0 p-12 opacity-5">
+                        <div className="absolute top-0 right-0 p-6 sm:p-8 lg:p-12 opacity-5">
                             {verdict === "SAFE"
                                 ? <Shield className="w-64 h-64 text-green-600" />
                                 : <Zap className="w-64 h-64 text-slate-900" />
@@ -972,7 +972,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">Financial Limits & Caps</span>
                                 <Shield className="w-4 h-4 text-[var(--color-text-muted)]" />
                             </div>
-                            <div className="p-6 grid md:grid-cols-2 gap-8">
+                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
                                     <div className="flex justify-between mb-1">
                                         <span className="text-sm font-medium">Room Rent Limit</span>
@@ -1018,7 +1018,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">Supplementary Benefits</span>
                                 <Pill className="w-4 h-4 text-[var(--color-text-muted)]" />
                             </div>
-                            <div className="p-6 grid md:grid-cols-3 gap-6">
+                            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {[
                                     { label: "OPD Cover", covered: data.supplementary_coverage?.opd?.covered },
                                     { label: "Modern Treatments", covered: data.supplementary_coverage?.modern_treatments?.covered },
@@ -1059,7 +1059,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_days} days</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    <span className={cn("text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
                                                     {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
@@ -1079,7 +1079,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                         <span className="text-xs text-[var(--color-text-secondary)]">Not specified in schedule</span>
                                                     </div>
                                                     <div className="flex items-center">
-                                                        <span className="text-[10px] font-bold px-2 py-1 rounded bg-amber-100 text-amber-700">⚠ Not stated — verify with insurer</span>
+                                                        <span className="text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded bg-amber-100 text-amber-700">⚠ Not stated — verify with insurer</span>
                                                         <span title="The uploaded document does not state a pre-existing disease waiting period. Confirm it with the insurer or full policy wording." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                                     </div>
                                                 </li>
@@ -1098,7 +1098,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months{estimated ? " (est. from specific-illness waiting)" : ""}</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", estimated ? "bg-amber-100 text-amber-700" : status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{estimated ? `≈ ${label}` : label}</span>
+                                                    <span className={cn("text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded", estimated ? "bg-amber-100 text-amber-700" : status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{estimated ? `≈ ${label}` : label}</span>
                                                     <span title={estimated ? "Estimated: the schedule does not separately state a pre-existing disease waiting period. This is derived from the specific-illness exclusion period — verify with the insurer." : (status !== "active" ? "This waiting period is complete." : "")} className={cn("ml-1 text-slate-400", (estimated || status !== "active") ? "cursor-help" : "hidden")}>ℹ</span>
                                                 </div>
                                             </li>
@@ -1121,7 +1121,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    <span className={cn("text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
                                                     {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
@@ -1139,7 +1139,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    <span className={cn("text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
                                                     {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
@@ -1158,7 +1158,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    <span className={cn("text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
                                                     {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
@@ -1175,7 +1175,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 <Hospital className="w-4 h-4 text-[var(--color-text-muted)]" />
                             </div>
                             <div className="p-6">
-                                <div className="grid md:grid-cols-2 gap-6 mb-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                                     <div>
                                         <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">
                                             Cashless Hospitals in {data.identity?.city || "Your City"}
@@ -1377,7 +1377,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                         {showDeductions && (
                             <div className="overflow-hidden">
                                 <div className="bg-white border border-[var(--color-border-light)] rounded-lg overflow-hidden">
-                                    <table className="w-full text-sm">
+                                    <table className="table-cards w-full text-sm">
                                         <thead>
                                             <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
                                                 <th className="px-4 py-3">Category</th>
@@ -1389,16 +1389,16 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                         <tbody>
                                             {data.audit_score.deductions.map((entry, i) => (
                                                 <tr key={i} className="border-t border-slate-100 hover:bg-slate-50/50">
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-4 py-3" data-label="Category" data-cell="title">
                                                         <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{entry.category}</span>
                                                     </td>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-4 py-3" data-label="Severity">
                                                         <span className={cn("text-xs font-bold uppercase px-2 py-0.5 rounded border", getRiskColor(entry.severity))}>
                                                             {entry.severity}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 font-mono font-bold text-red-600">{entry.points}</td>
-                                                    <td className="px-4 py-3 text-slate-600 text-xs leading-relaxed">{entry.reason}</td>
+                                                    <td className="px-4 py-3 font-mono font-bold text-red-600" data-label="Points">{entry.points}</td>
+                                                    <td className="px-4 py-3 text-slate-600 text-xs leading-relaxed" data-label="Reason" data-cell="stack">{entry.reason}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

@@ -117,7 +117,7 @@ export default function ExtractedDataForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fields.map((f) => (
             <div key={f.key} className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 {f.label}
               </label>
               <Input

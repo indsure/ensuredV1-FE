@@ -39,14 +39,14 @@ export default function WhyIndSure() {
         <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
             <Header />
 
-            <main className="flex-grow pt-32 pb-20 px-6 w-full">
+            <main className="flex-grow pt-32 pb-12 sm:pb-16 lg:pb-20 px-6 w-full">
 
                 {/* HERO SECTION */}
                 <section className="max-w-4xl mx-auto text-center mb-20 animate-reveal">
                     <div className="inline-block py-1 px-3 border border-[var(--color-border-main)] rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-text-secondary)] mb-6 bg-white">
                         Why IndSure
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-serif mb-8 tracking-tight text-[var(--color-text-main)] leading-tight">
+                    <h1 className="text-3xl sm:text-5xl md:text-7xl font-serif mb-8 tracking-tight text-[var(--color-text-main)] leading-tight">
                         Insurance, <br />
                         <span className="italic text-[var(--color-green-primary)]">Decoded.</span>
                     </h1>
@@ -57,7 +57,7 @@ export default function WhyIndSure() {
                 </section>
 
                 {/* STATS STRIP */}
-                <section className="max-w-5xl mx-auto mb-24 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+                <section className="max-w-5xl mx-auto mb-12 sm:mb-16 lg:mb-24 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
                     {stats.map((s) => (
                         <div key={s.label} className="text-center">
                             <div className="text-4xl md:text-5xl font-serif text-[var(--color-green-primary)] mb-1">{s.value}</div>
@@ -67,7 +67,7 @@ export default function WhyIndSure() {
                 </section>
 
                 {/* PILLARS GRID */}
-                <section className="max-w-6xl mx-auto mb-32 grid md:grid-cols-2 gap-8">
+                <section className="max-w-6xl mx-auto mb-16 sm:mb-24 lg:mb-32 grid grid-cols-1 md:grid-cols-2 gap-8">
                     {pillars.map((p) => {
                         const Icon = p.icon;
                         return (
@@ -85,8 +85,8 @@ export default function WhyIndSure() {
                 </section>
 
                 {/* MANIFESTO / STORY */}
-                <section className="max-w-4xl mx-auto mb-32">
-                    <h2 className="text-4xl font-serif mb-6 text-[var(--color-text-main)] text-center">The "Fine Print" Problem</h2>
+                <section className="max-w-4xl mx-auto mb-16 sm:mb-24 lg:mb-32">
+                    <h2 className="text-3xl sm:text-4xl font-serif mb-6 text-[var(--color-text-main)] text-center">The "Fine Print" Problem</h2>
                     <div className="w-20 h-1 bg-[var(--color-green-primary)] mb-8 mx-auto"></div>
                     <div className="space-y-6 text-lg text-[var(--color-text-secondary)] font-light leading-relaxed text-center max-w-2xl mx-auto">
                         <p>
@@ -102,7 +102,7 @@ export default function WhyIndSure() {
                 </section>
 
                 {/* CTA */}
-                <section className="bg-[var(--color-petrol-900)] text-white rounded-lg p-16 text-center max-w-5xl mx-auto shadow-2xl relative overflow-hidden">
+                <section className="bg-[var(--color-petrol-900)] text-white rounded-lg p-6 sm:p-10 lg:p-16 text-center max-w-5xl mx-auto shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
                         <div className="absolute top-[-50%] left-[-20%] w-[500px] h-[500px] bg-[var(--color-green-primary)] rounded-full blur-[100px]"></div>
                     </div>

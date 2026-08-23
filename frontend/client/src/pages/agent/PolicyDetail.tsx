@@ -397,7 +397,7 @@ export default function PolicyDetail() {
                     </span>
                   </div>
                   <div>
-                    <h1 className="font-['Playfair_Display'] text-4xl font-bold text-slate-900">{policy.client_name || "Pending policyholder"}</h1>
+                    <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold text-slate-900">{policy.client_name || "Pending policyholder"}</h1>
                     <p className="mt-2 text-sm text-slate-500">
                       {policy.insurer_name || "Pending insurer"} · {policy.product_name || "Pending plan"} · {policy.policy_number || policy.id}
                     </p>
@@ -511,14 +511,14 @@ export default function PolicyDetail() {
             </Card>
           )}
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div className="space-y-6">
               <Card className="border-slate-100 shadow-sm">
                 <CardHeader><CardTitle>Client details</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   {!editOpen ? (
                     <>
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Full name</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.client_name || "-"}</div></div>
                         <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Policy identifier</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.client_identifier || "-"}</div></div>
                         <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Email</div><div className="mt-1 text-sm font-semibold text-slate-900">{clientMeta.email || "-"}</div></div>
@@ -527,7 +527,7 @@ export default function PolicyDetail() {
                       <Button variant="outline" className="border-slate-200 bg-white" onClick={() => setEditOpen(true)}>Edit Client Details</Button>
                     </>
                   ) : (
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <Input value={draftName} onChange={(event) => setDraftName(event.target.value)} placeholder="Client name" />
                       <Input value={draftIdentifier} onChange={(event) => setDraftIdentifier(event.target.value)} placeholder="Identifier / relationship / reference" />
                       <Input value={draftClientMeta.email} onChange={(event) => setDraftClientMeta((current) => ({ ...current, email: event.target.value }))} placeholder="Email" />

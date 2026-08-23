@@ -114,7 +114,7 @@ export default function Vision() {
             <div className="absolute inset-0 bg-gradient-to-br from-[#1A3A52] via-[#4A9B9E] to-[#3CBBA0] rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
             <Eye className="w-10 h-10 text-white relative z-10 group-hover:scale-110 transition-transform" />
           </div>
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-black mb-6 bg-gradient-to-r from-[#1A3A52] via-[#4A9B9E] to-[#3CBBA0] bg-clip-text text-transparent leading-tight">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-6 bg-gradient-to-r from-[#1A3A52] via-[#4A9B9E] to-[#3CBBA0] bg-clip-text text-transparent leading-tight">
             Our Vision
           </h1>
           <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-200 max-w-4xl mx-auto leading-relaxed font-semibold mb-4">
@@ -128,7 +128,7 @@ export default function Vision() {
         {/* Vision Statement */}
         <div className="mb-16">
           <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-2 border-gray-200 dark:border-gray-700 shadow-xl">
-            <CardContent className="p-8 md:p-12">
+            <CardContent className="p-5 sm:p-8 md:p-12">
               <div className="space-y-8">
                 <div className="flex items-start gap-4">
                   <div className="p-3 rounded-xl bg-gradient-to-br from-[#1A3A52] to-[#4A9B9E] flex-shrink-0">
@@ -144,7 +144,7 @@ export default function Vision() {
                   </div>
                 </div>
                 
-                <div className="mt-8 p-6 bg-gradient-to-r from-[#1A3A52]/10 to-[#4A9B9E]/10 dark:from-[#1A3A52]/20 dark:to-[#4A9B9E]/20 rounded-xl border-l-4 border-[#4A9B9E]">
+                <div className="mt-8 p-4 sm:p-6 bg-gradient-to-r from-[#1A3A52]/10 to-[#4A9B9E]/10 dark:from-[#1A3A52]/20 dark:to-[#4A9B9E]/20 rounded-xl border-l-4 border-[#4A9B9E]">
                   <p className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">
                     Our vision extends beyond individual analysis. We see a future where:
                   </p>
@@ -184,7 +184,7 @@ export default function Vision() {
           <p className="text-center text-gray-600 dark:text-gray-400 mb-12 text-lg">
             Our roadmap to making this vision reality
           </p>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {visionGoals.map((goal, index) => {
               const Icon = goal.icon;
               return (

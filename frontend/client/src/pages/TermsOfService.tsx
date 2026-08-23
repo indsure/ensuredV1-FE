@@ -19,7 +19,7 @@ export default function TermsOfService() {
       {/* Header */}
       <div className="border-b border-gray-100 bg-white sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+          <a href="/" className="inline-flex min-h-11 items-center text-sm text-gray-500 hover:text-gray-800 transition-colors">
             ← Back to IndSure
           </a>
           <span className="text-xs text-gray-400">Last updated: {LAST_UPDATED}</span>
@@ -30,7 +30,7 @@ export default function TermsOfService() {
         {/* Title block */}
         <div className="mb-12">
           <p className="text-xs font-medium tracking-widest text-gray-400 uppercase mb-3">Legal</p>
-          <h1 className="text-4xl font-semibold text-gray-900 mb-4 leading-tight">Terms of Service</h1>
+          <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-4 leading-tight">Terms of Service</h1>
           <p className="text-gray-500 text-sm leading-relaxed">
             Effective date: {EFFECTIVE_DATE}. Please read these Terms carefully before using IndSure. By accessing
             or using our platform, you agree to be bound by these Terms.
@@ -185,7 +185,7 @@ export default function TermsOfService() {
         </div>
 
         {/* Footer nav */}
-        <div className="mt-16 pt-8 border-t border-gray-100 flex flex-wrap gap-4 text-sm">
+        <div className="mt-16 pt-8 border-t border-gray-100 flex flex-wrap gap-x-4 text-sm [&>a]:inline-flex [&>a]:min-h-11 [&>a]:items-center">
           <a href="/privacy-policy" className="text-blue-600 hover:underline">
             Privacy Policy
           </a>

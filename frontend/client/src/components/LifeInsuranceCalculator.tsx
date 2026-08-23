@@ -699,7 +699,7 @@ export function LifeInsuranceCalculator({ variant = "life" }: { variant?: "life"
           <div className="max-w-[900px] mx-auto">
             {/* Result Header */}
             <div className="text-center mb-12">
-              <div className="text-7xl font-bold text-[#00B4D8] mb-4">
+              <div className="text-4xl sm:text-5xl lg:text-7xl font-bold text-[#00B4D8] mb-4">
                 {formatCurrency(result.recommendedSumAssured)}
               </div>
               <div className="text-2xl font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-2">
@@ -712,7 +712,7 @@ export function LifeInsuranceCalculator({ variant = "life" }: { variant?: "life"
             </div>
 
             {/* Breakdown Cards */}
-            <div className="grid md:grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <Card className="border-l-4 border-[#EF4444]">
                 <CardContent className="p-5">
                   <div className="flex items-center gap-2 mb-3">
@@ -892,7 +892,7 @@ export function LifeInsuranceCalculator({ variant = "life" }: { variant?: "life"
             </Card>
 
             {/* Premium Estimates - Scenarios */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {/* Conservative */}
               <Card className={result.scenarios.recommended.sumAssured === result.scenarios.conservative.sumAssured ? "" : "border border-[#E5E7EB]"}>
                 <CardContent className="p-6">
@@ -1006,7 +1006,7 @@ export function LifeInsuranceCalculator({ variant = "life" }: { variant?: "life"
             <Card className="mb-8">
               <CardContent className="p-6">
                 <details className="group">
-                  <summary className="cursor-pointer list-none flex items-center justify-between">
+                  <summary className="min-h-11 cursor-pointer list-none flex items-center justify-between gap-3">
                     <h4 className="font-semibold text-[#0F1419] dark:text-[#FAFBFC]">
                       ADVANCED ASSUMPTIONS (EDITABLE)
                     </h4>

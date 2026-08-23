@@ -107,7 +107,7 @@ export default function LifePage() {
       {/* Hero Section with Upload on Right */}
       <section className="relative z-10 pt-32 sm:pt-36 md:pt-40 pb-10 md:pb-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
             {/* Left: Content */}
             <div className="flex flex-col justify-center">
               <h1 className="text-4xl md:text-5xl lg:text-[56px] font-bold text-black dark:text-[#FAFBFC] mb-5 leading-[1.1] tracking-[-0.02em]">
@@ -282,7 +282,7 @@ export default function LifePage() {
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); loadSampleReport(mockReportLife); setLocation("/report?sample=life"); }}
-                            className="mt-4 text-sm font-semibold text-[#00B4D8] hover:text-[#0099B4] hover:underline inline-flex items-center gap-2"
+                            className="mt-4 min-h-11 text-sm font-semibold text-[#00B4D8] hover:text-[#0099B4] hover:underline inline-flex items-center gap-2"
                           >
                             <FileText className="w-4 h-4" />
                             View sample life analysis directly
@@ -301,11 +301,11 @@ export default function LifePage() {
       {/* How IndSure Works Section */}
       <section className="relative z-10 py-8 md:py-12 px-6">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl md:text-[48px] font-semibold text-center text-black dark:text-[#FAFBFC] mb-12 md:mb-16 leading-[1.15] tracking-[-0.01em]">
+          <h2 className="text-3xl sm:text-4xl md:text-[48px] font-semibold text-center text-black dark:text-[#FAFBFC] mb-12 md:mb-16 leading-[1.15] tracking-[-0.01em]">
             Three steps to total clarity.
           </h2>
 
-          <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto relative">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto relative">
             {/* Connector Line 1-2 - Desktop only */}
             <div className="hidden md:block absolute top-[104px] left-[calc(16.666%+2rem)] w-[calc(33.333%-1rem)] h-0.5 bg-[#00B4D8] opacity-60" />
 
@@ -376,7 +376,7 @@ export default function LifePage() {
             What You'll Understand After Analysis
           </h2>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Sum Assured Adequacy */}
             <div className="relative group bg-gradient-to-br from-white via-blue-50/30 to-white dark:from-gray-800 dark:via-blue-950/20 dark:to-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1">
               {/* Glow effect on hover */}
@@ -440,7 +440,7 @@ export default function LifePage() {
 
           <div className="space-y-3">
             <details className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-              <summary className="flex items-center justify-between cursor-pointer list-none">
+              <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
                 <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">How do you analyze policies?</span>
                 <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
               </summary>
@@ -450,7 +450,7 @@ export default function LifePage() {
             </details>
 
             <details className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-              <summary className="flex items-center justify-between cursor-pointer list-none">
+              <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
                 <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Is my data safe?</span>
                 <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
               </summary>
@@ -460,7 +460,7 @@ export default function LifePage() {
             </details>
 
             <details className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-              <summary className="flex items-center justify-between cursor-pointer list-none">
+              <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
                 <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">What if my policy is unusual or custom?</span>
                 <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
               </summary>
@@ -470,7 +470,7 @@ export default function LifePage() {
             </details>
 
             <details className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-              <summary className="flex items-center justify-between cursor-pointer list-none">
+              <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
                 <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Can I download my analysis?</span>
                 <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
               </summary>
@@ -480,7 +480,7 @@ export default function LifePage() {
             </details>
 
             <details className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-              <summary className="flex items-center justify-between cursor-pointer list-none">
+              <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
                 <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">What if I disagree with the analysis?</span>
                 <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
               </summary>
@@ -499,7 +499,7 @@ export default function LifePage() {
             Now What?
           </h2>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Calculate Needs */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 text-center">
               <div className="w-12 h-12 rounded-xl bg-[#00B4D8]/10 flex items-center justify-center mx-auto mb-4">

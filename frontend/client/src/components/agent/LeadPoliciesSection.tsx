@@ -236,7 +236,7 @@ function AddPolicyForm({ leadId, agentId, onCancel, onAdded }: {
         <button onClick={onCancel} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-bold text-slate-500">Policy type</span>
           <select value={type} onChange={(e) => setType(e.target.value as LeadPolicyType)} className={inputCls}>
@@ -271,7 +271,7 @@ function AddPolicyForm({ leadId, agentId, onCancel, onAdded }: {
         </label>
       )}
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Insurer"><input value={insurer} onChange={(e) => setInsurer(e.target.value)} placeholder="e.g. Go Digit" className={inputCls} /></Field>
         <Field label="Premium (₹)"><input value={premium} onChange={(e) => setPremium(e.target.value)} inputMode="numeric" placeholder="e.g. 12000" className={inputCls} /></Field>
         <Field label="Due / renewal date"><input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputCls} /></Field>

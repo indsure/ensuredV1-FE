@@ -206,7 +206,7 @@ export default function CustomerDetail() {
             <CardContent className="p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h1 className="font-['Playfair_Display'] text-4xl font-bold text-slate-900">{customer.name}</h1>
+                  <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold text-slate-900">{customer.name}</h1>
                   <p className="mt-2 text-sm text-slate-500">
                     {[customer.phone, customer.email, customer.city].filter(Boolean).join(" · ") || "No contact details yet"}
                   </p>
@@ -230,7 +230,7 @@ export default function CustomerDetail() {
               </div>
 
               {editOpen && (
-                <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <Input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="Full name *" />
                   <Input value={draft.phone} onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))} placeholder="Phone" />
                   <Input value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} placeholder="Email" />
@@ -254,7 +254,7 @@ export default function CustomerDetail() {
               <p className="text-3xl font-extrabold text-slate-800">{stats.policyCount}</p>
               <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                 {Object.entries(stats.byType).map(([t, n]) => (
-                  <span key={t} className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[10px] font-bold">
+                  <span key={t} className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[11px] sm:text-[10px] font-bold">
                     {TYPE_META[t as InsuranceType]?.emoji ?? "📄"} {typeLabel(t)} × {n}
                   </span>
                 ))}
@@ -360,7 +360,7 @@ export default function CustomerDetail() {
             <CardHeader><CardTitle>Portfolio</CardTitle></CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="table-cards w-full text-sm">
                   <thead className="bg-slate-50/60 text-xs text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-100">
                     <tr>
                       <th className="px-6 py-3.5 text-left">Policy</th>
@@ -389,26 +389,26 @@ export default function CustomerDetail() {
                           className="hover:bg-slate-50/60 transition-colors cursor-pointer"
                           onClick={() => setLocation(`/agent/policies/${p.id}`)}
                         >
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4" data-label="Policy" data-cell="title">
                             <div className="font-semibold text-slate-800">{p.policy_name || p.policy_identifier || p.policyholder_name || p.name || "—"}</div>
                             {p.policy_identifier && p.policy_name && (
                               <div className="text-[11px] text-slate-400 font-medium mt-0.5">{p.policy_identifier}</div>
                             )}
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                          <td className="px-6 py-4" data-label="Type">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-[11px] sm:text-[10px] font-bold uppercase tracking-wider">
                               {TYPE_META[type]?.emoji} {typeLabel(type)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-slate-500">{p.insurer || "—"}</td>
-                          <td className="px-6 py-4 font-semibold text-slate-700">{formatAmount(parseAmount(p.sum_insured))}</td>
-                          <td className="px-6 py-4 text-slate-500">{np ? format(new Date(np), "d MMM yyyy") : "—"}</td>
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 text-slate-500" data-label="Insurer">{p.insurer || "—"}</td>
+                          <td className="px-6 py-4 font-semibold text-slate-700" data-label="Cover">{formatAmount(parseAmount(p.sum_insured))}</td>
+                          <td className="px-6 py-4 text-slate-500" data-label="Next Premium">{np ? format(new Date(np), "d MMM yyyy") : "—"}</td>
+                          <td className="px-6 py-4" data-label="Score">
                             {type === "health" && p.score != null
                               ? <span className={`font-black ${p.score >= 70 ? "text-emerald-600" : "text-red-500"}`}>{p.score}</span>
                               : <span className="text-slate-300">—</span>}
                           </td>
-                          <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
+                          <td className="px-6 py-4 text-right" data-label="Actions" data-cell="actions" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-end gap-1">
                               <button
                                 onClick={() => window.open(`/agent/policies/${p.id}`, "_blank")}

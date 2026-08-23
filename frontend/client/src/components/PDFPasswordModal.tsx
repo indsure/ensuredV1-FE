@@ -93,7 +93,7 @@ export function PDFPasswordModal({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] dark:text-[#9CA3AF] hover:text-[#0F1419] dark:hover:text-[#FAFBFC] transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-md text-[#6B7280] dark:text-[#9CA3AF] hover:text-[#0F1419] dark:hover:text-[#FAFBFC] transition-colors"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (

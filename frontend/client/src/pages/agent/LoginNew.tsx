@@ -115,7 +115,7 @@ export default function LoginNew() {
           </Link>
 
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-slate-900 font-['Playfair_Display']">{t('agent_login.welcome_title')}</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 font-['Playfair_Display']">{t('agent_login.welcome_title')}</h1>
             <p className="mt-3 text-slate-500 font-medium">{t('agent_login.welcome_subtitle')}</p>
           </div>
 
@@ -143,7 +143,7 @@ export default function LoginNew() {
                   <button
                     type="button"
                     onClick={() => setLocation('/agent/forgot-password')}
-                    className="text-sm font-semibold text-[#0D9488] hover:underline"
+                    className="inline-flex min-h-11 items-center text-sm font-semibold text-[#0D9488] hover:underline"
                   >
                     {t('agent_login.forgot')}
                   </button>
@@ -162,7 +162,7 @@ export default function LoginNew() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-11 items-center gap-1 rounded-md px-2 text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors"
                     aria-label={showPassword ? t('agent_login.hide') : t('agent_login.show')}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

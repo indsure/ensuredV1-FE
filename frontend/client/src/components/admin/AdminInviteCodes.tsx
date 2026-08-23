@@ -82,15 +82,15 @@ const AdminInviteCodes: React.FC = () => {
 
       {/* Codes Table */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-        <table className="w-full text-left">
+        <table className="table-cards w-full text-left">
           <thead>
             <tr className="bg-slate-50/50 border-b border-slate-100 font-serif">
-              <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Invite Code</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Used By</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Used At</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Created At</th>
-              <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Invite Code</th>
+              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
+              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Used By</th>
+              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Used At</th>
+              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Created At</th>
+              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -102,22 +102,22 @@ const AdminInviteCodes: React.FC = () => {
               ))
             ) : filteredCodes.map((code) => (
               <tr key={code.id} className="hover:bg-slate-50/50 transition-colors">
-                <td className="px-6 py-4">
+                <td className="px-6 py-4" data-label="Invite Code" data-cell="title">
                   <div className="flex items-center gap-2">
                     <Key size={16} className="text-[#0D9488]" />
                     <span className="font-['JetBrains_Mono'] text-sm font-bold text-[#0F172A] tracking-wider">{code.code}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-6 py-4" data-label="Status">
                    <div className="flex justify-center">
                     {code.used_by ? (
-                      <span className="px-3 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold uppercase rounded-full border border-amber-200">Used</span>
+                      <span className="px-3 py-1 bg-amber-100 text-amber-700 text-[11px] sm:text-[10px] font-bold uppercase rounded-full border border-amber-200">Used</span>
                     ) : (
-                      <span className="px-3 py-1 bg-teal-100 text-teal-700 text-[10px] font-bold uppercase rounded-full border border-teal-200">Active</span>
+                      <span className="px-3 py-1 bg-teal-100 text-teal-700 text-[11px] sm:text-[10px] font-bold uppercase rounded-full border border-teal-200">Active</span>
                     )}
                    </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-6 py-4" data-label="Used By">
                   {code.used_by_name ? (
                     <div className="flex items-center gap-2">
                        <User size={14} className="text-slate-400" />
@@ -127,13 +127,13 @@ const AdminInviteCodes: React.FC = () => {
                     <span className="text-xs text-slate-400 italic">Available</span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-xs text-slate-500 font-medium">
+                <td className="px-6 py-4 text-xs text-slate-500 font-medium" data-label="Used At">
                   {code.used_at ? format(new Date(code.used_at), 'MMM dd, HH:mm') : '—'}
                 </td>
-                <td className="px-6 py-4 text-xs text-slate-500 font-medium">
+                <td className="px-6 py-4 text-xs text-slate-500 font-medium" data-label="Created At">
                    {format(new Date(code.created_at), 'MMM dd, yyyy')}
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-6 py-4 text-right" data-label="Actions" data-cell="actions">
                   <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete Code">
                     <AlertCircle size={16} />
                   </button>

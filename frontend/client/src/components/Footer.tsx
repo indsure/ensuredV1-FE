@@ -19,7 +19,7 @@ export function Footer() {
 
   return (
     <footer className="border-t border-[var(--color-navy-900)] bg-[var(--color-navy-900)] text-[var(--color-white)]">
-      <div className="container-editorial py-24">
+      <div className="container-editorial py-14 sm:py-20 lg:py-24">
 
         {/* Constrain width further to standard 'editorial' limits (max-w-6xl) to fix "floating islands" */}
         <div className="max-w-6xl mx-auto">
@@ -30,7 +30,7 @@ export function Footer() {
             {/* COL 1: Brand (4 cols) */}
             <div className="lg:col-span-4 pr-4">
               <Link href="/">
-                <span className="font-serif text-4xl font-bold tracking-tighter block mb-6 cursor-pointer text-[var(--color-gold-500)] hover:text-white transition-colors">
+                <span className="font-serif text-3xl sm:text-4xl font-bold tracking-tighter inline-flex min-h-11 items-center mb-6 cursor-pointer text-[var(--color-gold-500)] hover:text-white transition-colors">
                   IndSure.
                 </span>
               </Link>
@@ -172,7 +172,7 @@ export function Footer() {
           <div className="pt-8 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row justify-between items-end gap-6 text-xs font-mono uppercase tracking-widest max-w-5xl mx-auto text-[var(--color-white-muted)]">
             <div className="flex flex-col gap-2">
               <p>© {currentYear} Indsuretech Intelligence Private Limited</p>
-              <p className="normal-case tracking-normal opacity-60 text-[10px]">CIN: U62099MR2026PTC473468</p>
+              <p className="normal-case tracking-normal opacity-60 text-[11px] sm:text-[10px]">CIN: U62099MR2026PTC473468</p>
               <p className="normal-case tracking-normal opacity-70">Built for Indian policy documents. Tested on real claim rejections.</p>
             </div>
             <p className="text-right max-w-xs leading-relaxed normal-case tracking-normal opacity-70">

@@ -167,7 +167,7 @@ export default function CalculatorReportPage() {
     return (
         <div className="min-h-screen bg-[var(--color-cream-main)] font-sans flex flex-col">
             <Header />
-            <main className="flex-grow pt-24 pb-20 px-6">
+            <main className="flex-grow pt-24 pb-12 sm:pb-16 lg:pb-20 px-6">
                 <div className="max-w-4xl mx-auto space-y-12">
 
                     {/* ── Regulatory Disclaimer ─────────────────────────────────────── */}
@@ -361,7 +361,7 @@ export default function CalculatorReportPage() {
                         <h3 className="font-serif text-2xl text-[var(--color-navy-900)] mb-6 flex items-center gap-3 ml-2">
                             <Shield className="text-[var(--color-teal-600)]" /> Recommended Riders
                         </h3>
-                        <div className="grid md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {result.riders.map((rider: any, i: number) => (
                                 <div
                                     key={i}
@@ -451,7 +451,7 @@ export default function CalculatorReportPage() {
                     )}
 
                     {/* ── Education & Mistakes ──────────────────────────────────────── */}
-                    <div className="grid md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-700">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-700">
                         <div className="bg-red-50 p-8 rounded-2xl border border-red-100">
                             <h3 className="font-serif text-xl text-red-800 mb-4 flex items-center gap-2">
                                 <AlertTriangle className="w-5 h-5" /> What Most People Get Wrong

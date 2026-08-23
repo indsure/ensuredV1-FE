@@ -218,7 +218,7 @@ function QueueTable({
   return (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="table-cards w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-100">
             <tr className="text-left text-xs text-slate-400 uppercase tracking-wider font-semibold">
               <th className="px-5 py-3.5">File</th>
@@ -250,15 +250,15 @@ function QueueTable({
                 className="group hover:bg-slate-50/50 transition-colors cursor-pointer"
                 onClick={() => onRowClick(p.id)}
               >
-                <td className="px-5 py-4 font-medium text-slate-600 text-xs">{p.filename || '—'}</td>
-                <td className="px-5 py-4 font-semibold text-slate-800">{p.client_name}</td>
+                <td className="px-5 py-4 font-medium text-slate-600 text-xs" data-label="File">{p.filename || '—'}</td>
+                <td className="px-5 py-4 font-semibold text-slate-800" data-label="Client" data-cell="title">{p.client_name}</td>
                 {showError && (
-                  <td className="px-5 py-4 text-xs text-red-500 max-w-xs truncate">
+                  <td className="px-5 py-4 text-xs text-red-500 max-w-xs md:truncate" data-label="Reason">
                     {p.error_message || 'Analysis failed'}
                   </td>
                 )}
-                <td className="px-5 py-4">
-                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest border ${statusColor(p.status)}`}>
+                <td className="px-5 py-4" data-label="Status">
+                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] sm:text-[10px] font-black uppercase tracking-widest border ${statusColor(p.status)}`}>
                     {showSpinner && (p.status === "processing" || p.status === "pending") ? (
                       <span className="inline-flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin" />
@@ -267,11 +267,11 @@ function QueueTable({
                     ) : p.status.replace(/_/g, " ")}
                   </span>
                 </td>
-                <td className="px-5 py-4 text-slate-400 text-xs">
+                <td className="px-5 py-4 text-slate-400 text-xs" data-label="Date">
                   {new Date(p.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                 </td>
-                <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                  <div className="inline-flex items-center gap-2">
+                <td className="px-5 py-4 text-right" data-label="Action" data-cell="actions" onClick={(e) => e.stopPropagation()}>
+                  <div className="inline-flex items-center gap-2 max-md:w-full">
                     <Button size="sm" variant="outline" className="border-slate-200" onClick={() => onAction(p.id)}>
                       {actionLabel}
                     </Button>
@@ -280,13 +280,13 @@ function QueueTable({
                         <button
                           onClick={() => onDismiss(p.id)}
                           disabled={dismissingId === p.id}
-                          className="text-[10px] font-black uppercase tracking-wider text-white bg-red-500 hover:bg-red-600 px-2 py-1.5 rounded transition-colors disabled:opacity-50"
+                          className="text-[11px] sm:text-[10px] font-black uppercase tracking-wider text-white bg-red-500 hover:bg-red-600 px-2 py-1.5 rounded transition-colors disabled:opacity-50"
                         >
                           {dismissingId === p.id ? "…" : "Remove"}
                         </button>
                         <button
                           onClick={() => setConfirmDismissId(null)}
-                          className="text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-slate-600 px-1.5 py-1.5"
+                          className="text-[11px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-slate-600 px-1.5 py-1.5"
                         >
                           Cancel
                         </button>

@@ -223,7 +223,7 @@ export default function AdvisorPage() {
         </section>
 
         {/* ── The two CTAs ────────────────────────────────────────────── */}
-        <section className="mt-6 grid gap-3">
+        <section className="mt-6 grid grid-cols-1 gap-3">
           <button
             onClick={() => startForm("policy")}
             className="group flex items-center gap-4 rounded-2xl bg-[var(--color-green-primary)] px-6 py-5 text-left text-white shadow-lg transition hover:brightness-110 active:scale-[0.99]"

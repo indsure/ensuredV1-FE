@@ -436,7 +436,7 @@ export function LifeInsuranceComparer() {
             </p>
 
             {/* 3-Column Layout */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <Card>
                 <CardContent className="p-6">
                   <h4 className="font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-3">

@@ -115,11 +115,11 @@ export default function RiderDirectory() {
 
       {/* LIST */}
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 text-center text-slate-400 italic">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-10 lg:p-16 text-center text-slate-400 italic">
           No riders match your filters.
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {filtered.map((r, i) => (
             <RiderCard key={`${r.company}-${r.riderName}-${i}`} rider={r} isPartner={partnerSet.has(r.company)} />
           ))}
@@ -141,7 +141,7 @@ function RiderCard({ rider, isPartner }: { rider: RiderEntry; isPartner: boolean
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-bold text-slate-800">{rider.riderName}</span>
             {rider.mustHave && (
-              <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider">
+              <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-100 px-1.5 py-0.5 text-[11px] sm:text-[9px] font-black uppercase tracking-wider">
                 ★ Must Have
               </span>
             )}
@@ -155,7 +155,7 @@ function RiderCard({ rider, isPartner }: { rider: RiderEntry; isPartner: boolean
               {isPartner && <Star className="h-3 w-3 fill-[#0D9488] text-[#0D9488]" />}
               {rider.company}
             </span>
-            <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+            <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[11px] sm:text-[10px] font-bold uppercase tracking-wider">
               {rider.riderType}
             </span>
           </div>

@@ -293,7 +293,7 @@ export default function TermPage() {
           <div className="space-y-3">
             {faqList.map((faq, index) => (
               <details key={index} className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-                <summary className="flex items-center justify-between cursor-pointer list-none">
+                <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
                   <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC] pr-4">
                     {faq.question}
                   </span>
@@ -315,7 +315,7 @@ export default function TermPage() {
             Use our tools to maximize coverage per rupee:
           </h3>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Calculator Card */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-[#E5E7EB] dark:border-gray-700 p-6 text-center">
               <div className="w-12 h-12 rounded-xl bg-[#00B4D8]/10 flex items-center justify-center mx-auto mb-4">

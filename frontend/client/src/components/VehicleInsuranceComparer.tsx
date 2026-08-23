@@ -270,7 +270,7 @@ export function VehicleInsuranceComparer() {
             </p>
             
             {/* Runner-up and Special Cases */}
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <Card className="border-l-4 border-[#10B981]">
                 <CardContent className="p-4">
                   <h4 className="font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-2">
@@ -298,7 +298,7 @@ export function VehicleInsuranceComparer() {
               </Card>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <Card>
                 <CardContent className="p-5">
                   <h4 className="font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-3">

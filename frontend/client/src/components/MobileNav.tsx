@@ -61,8 +61,16 @@ export function MobileNav() {
   }
 
   return (
+    <>
+      {/* The bar is fixed, so without a matching spacer the last 64px of every
+          page - on most pages the footer's closing links - sits permanently
+          underneath it with no way to scroll clear. */}
+      <div
+        aria-hidden="true"
+        className="md:hidden h-16 pb-[env(safe-area-inset-bottom)]"
+      />
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg pb-[env(safe-area-inset-bottom)]"
       role="navigation"
       aria-label="Mobile navigation"
     >
@@ -88,7 +96,7 @@ export function MobileNav() {
                   <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#3CBBA0] rounded-full" />
                 )}
               </div>
-              <span className="text-[10px] font-medium truncate w-full text-center">
+              <span className="text-[11px] sm:text-[10px] font-medium truncate w-full text-center">
                 {item.label}
               </span>
             </Link>
@@ -101,11 +109,12 @@ export function MobileNav() {
             aria-label="View analysis progress"
           >
             <Upload className="w-5 h-5 mb-1" />
-            <span className="text-[10px] font-medium">Analyzing</span>
+            <span className="text-[11px] sm:text-[10px] font-medium">Analyzing</span>
           </Link>
         )}
       </div>
     </nav>
+    </>
   );
 }
 

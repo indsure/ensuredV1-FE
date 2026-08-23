@@ -190,7 +190,7 @@ export default function PrivacyPolicy() {
       {/* Header */}
       <div className="border-b border-gray-100 bg-white sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+          <a href="/" className="inline-flex min-h-11 items-center text-sm text-gray-500 hover:text-gray-800 transition-colors">
             ← Back to IndSure
           </a>
           <span className="text-xs text-gray-400">Last updated: {LAST_UPDATED}</span>
@@ -201,7 +201,7 @@ export default function PrivacyPolicy() {
         {/* Title block */}
         <div className="mb-12">
           <p className="text-xs font-medium tracking-widest text-gray-400 uppercase mb-3">Legal</p>
-          <h1 className="text-4xl font-semibold text-gray-900 mb-4 leading-tight">Privacy Policy</h1>
+          <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-4 leading-tight">Privacy Policy</h1>
           <p className="text-gray-500 text-sm leading-relaxed">
             Effective date: {EFFECTIVE_DATE}. This policy describes how IndSure collects, uses, stores, and protects
             your personal data in accordance with the{" "}
@@ -246,7 +246,7 @@ export default function PrivacyPolicy() {
 
               {("table" in section && section.table && section.id === "how-we-use") && (
                 <div className="overflow-x-auto rounded-xl border border-gray-100">
-                  <table className="w-full text-sm">
+                  <table className="table-cards w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-100">
                         <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Purpose</th>
@@ -257,9 +257,9 @@ export default function PrivacyPolicy() {
                     <tbody>
                       {section.table.map((row: any, i: number) => (
                         <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                          <td className="px-4 py-3 text-gray-800 align-top">{row.purpose}</td>
-                          <td className="px-4 py-3 text-gray-600 align-top">{row.data}</td>
-                          <td className="px-4 py-3 text-gray-600 align-top">{row.basis}</td>
+                          <td className="px-4 py-3 text-gray-800 align-top" data-label="Purpose" data-cell="title">{row.purpose}</td>
+                          <td className="px-4 py-3 text-gray-600 align-top" data-label="Data used">{row.data}</td>
+                          <td className="px-4 py-3 text-gray-600 align-top" data-label="Legal basis">{row.basis}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -269,7 +269,7 @@ export default function PrivacyPolicy() {
 
               {("table" in section && section.table && section.id === "retention") && (
                 <div className="overflow-x-auto rounded-xl border border-gray-100">
-                  <table className="w-full text-sm">
+                  <table className="table-cards w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-100">
                         <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Data type</th>
@@ -280,9 +280,9 @@ export default function PrivacyPolicy() {
                     <tbody>
                       {section.table.map((row: any, i: number) => (
                         <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                          <td className="px-4 py-3 text-gray-800 align-top font-medium">{row.type}</td>
-                          <td className="px-4 py-3 text-gray-600 align-top">{row.period}</td>
-                          <td className="px-4 py-3 text-gray-500 align-top text-xs">{row.notes}</td>
+                          <td className="px-4 py-3 text-gray-800 align-top font-medium" data-label="Data type" data-cell="title">{row.type}</td>
+                          <td className="px-4 py-3 text-gray-600 align-top" data-label="Retention period">{row.period}</td>
+                          <td className="px-4 py-3 text-gray-500 align-top text-xs" data-label="Notes">{row.notes}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -314,7 +314,7 @@ export default function PrivacyPolicy() {
         </div>
 
         {/* Footer nav */}
-        <div className="mt-16 pt-8 border-t border-gray-100 flex flex-wrap gap-4 text-sm">
+        <div className="mt-16 pt-8 border-t border-gray-100 flex flex-wrap gap-x-4 text-sm [&>a]:inline-flex [&>a]:min-h-11 [&>a]:items-center">
           <a href="/terms" className="text-blue-600 hover:underline">
             Terms of Service
           </a>

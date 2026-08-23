@@ -159,7 +159,7 @@ export default function Pricing() {
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
       <Header />
 
-      <main className="flex-grow pt-24 pb-20 px-6 w-full">
+      <main className="flex-grow pt-24 pb-12 sm:pb-16 lg:pb-20 px-6 w-full">
 
         {/* HERO */}
         <section className="max-w-4xl mx-auto text-center mb-8 animate-reveal">
@@ -197,7 +197,7 @@ export default function Pricing() {
           <span className={`text-sm font-medium ${!annual ? "text-[var(--color-text-main)]" : "text-[var(--color-text-muted)]"}`}>Monthly</span>
           <button
             onClick={() => setAnnual(!annual)}
-            className="relative w-14 h-8 rounded-full bg-[var(--color-cream-dark)] border border-[var(--color-border-main)] transition-colors"
+            className="relative before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-[''] w-14 h-8 rounded-full bg-[var(--color-cream-dark)] border border-[var(--color-border-main)] transition-colors"
             aria-label="Toggle annual billing"
           >
             <span
@@ -210,7 +210,7 @@ export default function Pricing() {
         </div>
 
         {/* TIER CARDS */}
-        <section className="max-w-6xl mx-auto mb-6 grid md:grid-cols-3 gap-8 items-start">
+        <section className="max-w-6xl mx-auto mb-6 grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
           {tiers.map((tier) => (
             <div
               key={tier.name}
@@ -224,7 +224,7 @@ export default function Pricing() {
               <h3 className="text-2xl font-serif mb-2">{tier.name}</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-6 min-h-[40px]">{tier.tagline}</p>
               <div className="mb-2">
-                <span className="text-4xl font-serif">{annual ? tier.priceAnnual : tier.price}</span>
+                <span className="text-3xl sm:text-4xl font-serif">{annual ? tier.priceAnnual : tier.price}</span>
                 <span className="text-sm text-[var(--color-text-secondary)] ml-1">{annual ? tier.periodAnnual : tier.period}</span>
               </div>
               <p className="text-sm text-[var(--color-green-primary)] mb-6 min-h-[20px]">
@@ -237,7 +237,7 @@ export default function Pricing() {
                     <span>
                       {f.label}
                       {f.soon && (
-                        <span className="ml-1.5 align-middle inline-block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-green-primary)] border border-[var(--color-green-primary)] rounded-full px-1.5 leading-4">
+                        <span className="ml-1.5 align-middle inline-block text-[11px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-green-primary)] border border-[var(--color-green-primary)] rounded-full px-1.5 leading-4">
                           Soon
                         </span>
                       )}
@@ -265,7 +265,7 @@ export default function Pricing() {
         </p>
 
         {/* CREDIT EXPLAINER + TOP-UPS */}
-        <section className="max-w-4xl mx-auto mb-24">
+        <section className="max-w-4xl mx-auto mb-12 sm:mb-16 lg:mb-24">
           <div className="card-white p-8 md:p-10 text-center">
             <h2 className="text-2xl font-serif mb-3">How policy checks work</h2>
             <p className="text-[var(--color-text-secondary)] leading-relaxed max-w-2xl mx-auto mb-8">
@@ -289,9 +289,9 @@ export default function Pricing() {
         </section>
 
         {/* FEATURE COMPARISON TABLE */}
-        <section className="max-w-5xl mx-auto mb-24 overflow-x-auto">
+        <section className="max-w-5xl mx-auto mb-12 sm:mb-16 lg:mb-24 md:overflow-x-auto">
           <h2 className="text-3xl font-serif mb-8 text-center">What's included</h2>
-          <table className="w-full border-collapse min-w-[640px]">
+          <table className="table-cards w-full border-collapse md:min-w-[640px]">
             <thead>
               <tr className="border-b border-[var(--color-border-main)]">
                 <th className="text-left py-4 font-normal text-sm text-[var(--color-text-secondary)]">Feature</th>
@@ -303,10 +303,10 @@ export default function Pricing() {
             <tbody>
               {featureRows.map((row) => (
                 <tr key={row.label} className="border-b border-[var(--color-border-light)]">
-                  <td className="py-4 text-sm text-[var(--color-text-main)]">{row.label}</td>
-                  <td className="py-4 text-center px-2"><FeatureCell value={row.free} /></td>
-                  <td className="py-4 text-center px-2 bg-[var(--color-cream-dark)]/40"><FeatureCell value={row.agent} /></td>
-                  <td className="py-4 text-center px-2"><FeatureCell value={row.agency} /></td>
+                  <td className="py-4 text-sm text-[var(--color-text-main)]" data-label="Feature" data-cell="title">{row.label}</td>
+                  <td className="py-4 text-center px-2" data-label="Free"><FeatureCell value={row.free} /></td>
+                  <td className="py-4 text-center px-2 bg-[var(--color-cream-dark)]/40" data-label="Agent"><FeatureCell value={row.agent} /></td>
+                  <td className="py-4 text-center px-2" data-label="Agency"><FeatureCell value={row.agency} /></td>
                 </tr>
               ))}
             </tbody>
@@ -314,7 +314,7 @@ export default function Pricing() {
         </section>
 
         {/* FAQ */}
-        <section className="max-w-3xl mx-auto mb-24">
+        <section className="max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-24">
           <h2 className="text-3xl font-serif mb-10 text-center">Pricing questions</h2>
           <div className="space-y-6">
             {faqs.map((f) => (
@@ -327,7 +327,7 @@ export default function Pricing() {
         </section>
 
         {/* CTA */}
-        <section className="bg-[var(--color-petrol-900)] text-white rounded-lg p-16 text-center max-w-5xl mx-auto shadow-2xl relative overflow-hidden">
+        <section className="bg-[var(--color-petrol-900)] text-white rounded-lg p-6 sm:p-10 lg:p-16 text-center max-w-5xl mx-auto shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
             <div className="absolute top-[-50%] left-[-20%] w-[500px] h-[500px] bg-[var(--color-green-primary)] rounded-full blur-[100px]"></div>
           </div>

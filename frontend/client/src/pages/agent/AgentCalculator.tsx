@@ -227,7 +227,7 @@ export default function AgentCalculator() {
               </div>
             </div>
             <CardContent className="p-6 md:p-8 space-y-6">
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                   <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Base Cover</div>
                   <div className="mt-1 text-xl font-extrabold text-slate-800">{r.baseCover}</div>
@@ -256,7 +256,7 @@ export default function AgentCalculator() {
                     {r.riders.map((rider, i) => (
                       <div key={i} className="flex items-start gap-3 rounded-xl border border-slate-100 p-3">
                         <span
-                          className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                          className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[11px] sm:text-[10px] font-black uppercase tracking-wider ${
                             rider.priority === "High"
                               ? "bg-red-50 text-red-600 border border-red-100"
                               : rider.priority === "Medium"
@@ -270,12 +270,12 @@ export default function AgentCalculator() {
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-sm font-semibold text-slate-800">{rider.name}</span>
                             {rider.isPartner && (
-                              <span className="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-100 px-2 py-0.5 text-[10px] font-bold">
+                              <span className="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-100 px-2 py-0.5 text-[11px] sm:text-[10px] font-bold">
                                 {rider.provider}{rider.planHint ? ` · ${rider.planHint}` : ""}
                               </span>
                             )}
                             {rider.isGap && (
-                              <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-100 px-2 py-0.5 text-[10px] font-bold">
+                              <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-100 px-2 py-0.5 text-[11px] sm:text-[10px] font-bold">
                                 Gap — not in your lineup
                               </span>
                             )}

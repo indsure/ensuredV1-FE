@@ -23,7 +23,7 @@ export default function PolicyChecker() {
     <div className="min-h-screen bg-[var(--color-cream-main)] flex flex-col font-sans text-[var(--color-navy-900)]">
       <Header />
 
-      <main className="flex-grow pt-24 pb-20 px-6 max-w-7xl mx-auto w-full">
+      <main className="flex-grow pt-24 pb-12 sm:pb-16 lg:pb-20 px-6 max-w-7xl mx-auto w-full">
         <div className="max-w-2xl mx-auto mb-14">
           <PolicyUploadGate />
         </div>

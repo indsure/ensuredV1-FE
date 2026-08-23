@@ -99,7 +99,7 @@ export function CoverageDiagnostic({ report, effectiveCoverage }: CoverageDiagno
                                         <div className="flex justify-between items-end mb-2">
                                             <div>
                                                 <div className="font-bold text-sm text-[var(--color-navy-900)]">{scenario.name}</div>
-                                                <div className="text-[10px] text-[var(--color-text-secondary)] uppercase tracking-wider">Expected Cost</div>
+                                                <div className="text-[11px] sm:text-[10px] text-[var(--color-text-secondary)] uppercase tracking-wider">Expected Cost</div>
                                             </div>
                                             <div className="text-right">
                                                 <div className="font-mono font-bold text-sm">{formatINR(scenario.cost)}</div>
@@ -115,7 +115,7 @@ export function CoverageDiagnostic({ report, effectiveCoverage }: CoverageDiagno
 
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-2">
-                                                <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded border", status.color)}>
+                                                <span className={cn("text-[11px] sm:text-[10px] font-bold px-2 py-0.5 rounded border", status.color)}>
                                                     {status.label}
                                                 </span>
                                                 <span className="text-xs font-mono font-medium text-[var(--color-text-secondary)]">
@@ -124,12 +124,12 @@ export function CoverageDiagnostic({ report, effectiveCoverage }: CoverageDiagno
                                             </div>
 
                                             {gapAmount > 0 ? (
-                                                <div className="text-[10px] text-red-600 font-medium flex items-center gap-1">
+                                                <div className="text-[11px] sm:text-[10px] text-red-600 font-medium flex items-center gap-1">
                                                     <AlertTriangle className="w-3 h-3" />
                                                     Sum Insured Ceiling
                                                 </div>
                                             ) : (
-                                                <div className="text-[10px] text-green-700 font-medium flex items-center gap-1">
+                                                <div className="text-[11px] sm:text-[10px] text-green-700 font-medium flex items-center gap-1">
                                                     <CheckCircle2 className="w-3 h-3" />
                                                     Fully Covered
                                                 </div>
@@ -140,7 +140,7 @@ export function CoverageDiagnostic({ report, effectiveCoverage }: CoverageDiagno
                             })}
                         </div>
 
-                        <div className="p-4 bg-[var(--color-cream-light)] rounded border border-[var(--color-border-light)] text-[10px] text-[var(--color-text-muted)] leading-relaxed text-center">
+                        <div className="p-4 bg-[var(--color-cream-light)] rounded border border-[var(--color-border-light)] text-[11px] sm:text-[10px] text-[var(--color-text-muted)] leading-relaxed text-center">
                             Benchmark costs derived from metro city corporate hospital rates. <br />
                             Inflation adjusted.
                         </div>

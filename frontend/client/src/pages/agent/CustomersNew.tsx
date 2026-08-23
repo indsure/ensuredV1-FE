@@ -17,6 +17,8 @@ import {
   type PortfolioPolicy,
 } from "@/lib/customers";
 import { format } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { CustomersMobileList } from "@/components/agent/CustomersMobileList";
 
 type DraftState = { name: string; phone: string; email: string; city: string };
 const EMPTY_DRAFT: DraftState = { name: "", phone: "", email: "", city: "" };
@@ -75,6 +77,9 @@ export default function CustomersNew() {
     return out;
   }, [policies]);
 
+  // Phones get a scannable list instead of the six-column table.
+  const isMobile = useIsMobile();
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (!q) return customers;
@@ -115,14 +120,14 @@ export default function CustomersNew() {
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">Customers</h1>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <button
             onClick={() => setCreateOpen(v => !v)}
-            className="flex items-center gap-1.5 rounded-lg bg-[#0D9488] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#0f766e]"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg bg-[#0D9488] px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-[#0f766e]"
           >
             {createOpen ? <X size={14} /> : <Plus size={14} />} {createOpen ? "Cancel" : "Add Customer"}
           </button>
-          <button onClick={load} disabled={loading} className="flex items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
+          <button onClick={load} disabled={loading} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
@@ -132,7 +137,7 @@ export default function CustomersNew() {
       {createOpen && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
           <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">New customer</p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="Full name *" className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
             <input value={draft.phone} onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))} placeholder="Phone" className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
             <input value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} placeholder="Email" className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
@@ -154,20 +159,32 @@ export default function CustomersNew() {
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
 
           {/* TOOLBAR */}
-          <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-slate-50">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-slate-50">
             <p className="text-sm text-slate-500 font-medium">{customers.length} customer{customers.length !== 1 ? "s" : ""}</p>
             <input
               type="search"
               placeholder="Search name, phone, email, city…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-64 rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
+              className="min-w-0 w-full sm:w-64 rounded-lg border border-slate-200 px-3 py-2 sm:py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
             />
           </div>
 
-          {/* TABLE */}
+          {/* TABLE (md and up) / LIST (phones) */}
+          {isMobile ? (
+            <div className="p-3">
+              <CustomersMobileList
+                customers={filtered}
+                statsFor={(id) => statsByCustomer.get(id)}
+                formatAmount={formatAmount}
+                loading={loading}
+                emptyText={search ? `No results for "${search}"` : "No customers yet. Add one here, or tag a policy to a customer from its detail page."}
+                onOpen={(id) => setLocation(`/agent/customers/${id}`)}
+              />
+            </div>
+          ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="table-cards w-full text-sm">
               <thead className="bg-slate-50/60 text-xs text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-3.5 text-left">Customer</th>
@@ -204,19 +221,19 @@ export default function CustomersNew() {
                       className="hover:bg-slate-50/60 transition-colors cursor-pointer"
                       onClick={() => setLocation(`/agent/customers/${c.id}`)}
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4" data-label="Customer" data-cell="title">
                         <div className="font-semibold text-slate-800">{c.name}</div>
                         {c.city && <div className="text-[11px] text-slate-400 font-medium mt-0.5">{c.city}</div>}
                       </td>
-                      <td className="px-6 py-4 text-slate-500">
+                      <td className="px-6 py-4 text-slate-500" data-label="Contact">
                         <div>{c.phone || "—"}</div>
                         {c.email && <div className="text-[11px] text-slate-400 mt-0.5">{c.email}</div>}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4" data-label="Policies">
                         {stats ? (
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {Object.entries(stats.byType).map(([t, n]) => (
-                              <span key={t} className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[10px] font-bold">
+                              <span key={t} className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[11px] sm:text-[10px] font-bold">
                                 {TYPE_META[t as InsuranceType]?.emoji ?? "📄"} {n}
                               </span>
                             ))}
@@ -225,17 +242,18 @@ export default function CustomersNew() {
                           <span className="text-xs text-slate-300">No policies tagged</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 font-semibold text-slate-700">{formatAmount(stats?.totalSumInsured ?? null)}</td>
-                      <td className="px-6 py-4 text-slate-500">
+                      <td className="px-6 py-4 font-semibold text-slate-700" data-label="Total Cover">{formatAmount(stats?.totalSumInsured ?? null)}</td>
+                      <td className="px-6 py-4 text-slate-500" data-label="Next Premium">
                         {stats?.nextPremium ? format(new Date(stats.nextPremium.date), "d MMM yyyy") : "—"}
                       </td>
-                      <td className="px-6 py-4 text-slate-400 text-xs">{format(new Date(c.created_at), "d MMM yyyy")}</td>
+                      <td className="px-6 py-4 text-slate-400 text-xs" data-label="Added">{format(new Date(c.created_at), "d MMM yyyy")}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
+          )}
 
           {!loading && filtered.length > 0 && (
             <div className="px-6 py-3 border-t border-slate-50 text-xs text-slate-400">

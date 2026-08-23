@@ -60,7 +60,7 @@ const PublicReport: React.FC = () => {
   if (error || !report) {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-xl p-12 max-w-md text-center">
+        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 lg:p-12 max-w-md text-center">
           <AlertCircle className="text-red-500 mx-auto mb-4" size={48} />
           <h1 className="font-['Playfair_Display'] text-2xl font-bold text-[#0F172A] mb-2">Report Unavailable</h1>
           <p className="text-slate-500">This report is no longer available or the link is incorrect.</p>
@@ -170,7 +170,7 @@ const PublicReport: React.FC = () => {
                   <div className="mt-6 pt-4 border-t border-slate-50">
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Savings/Benefit</p>
+                        <p className="text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Savings/Benefit</p>
                         <p className="text-base font-bold text-[#B45309]">{rec.premium_delta}</p>
                       </div>
                       <Shield className="text-[#0D9488]/20" size={32} />

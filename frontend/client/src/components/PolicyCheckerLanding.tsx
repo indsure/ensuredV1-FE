@@ -24,7 +24,7 @@ export function PolicyCheckerLanding() {
         <div className="w-full max-w-7xl mx-auto space-y-24">
 
             {/* 1. HERO & SIGN-UP SECTION */}
-            <div className="grid lg:grid-cols-2 gap-16 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
 
                 {/* Left: Intelligence Copy */}
                 <motion.div
@@ -38,7 +38,7 @@ export function PolicyCheckerLanding() {
                         </span>
                     </motion.div>
 
-                    <motion.h1 custom={1} variants={fadeIn} className="text-5xl md:text-6xl font-serif leading-[1.1] text-[var(--color-navy-900)]">
+                    <motion.h1 custom={1} variants={fadeIn} className="text-3xl sm:text-5xl md:text-6xl font-serif leading-[1.1] text-[var(--color-navy-900)]">
                         The fine print, <br /> <span className="italic text-[var(--color-teal-600)]">translated.</span>
                     </motion.h1>
 
@@ -80,7 +80,7 @@ export function PolicyCheckerLanding() {
                             Create a free account to analyze your policy and keep it in your portfolio. One free policy each for Health, Term, Life &amp; Vehicle.
                         </p>
 
-                        <div className="flex items-center gap-6 text-xs font-medium text-[var(--color-text-muted)] bg-[var(--color-cream-main)] px-4 py-2 rounded-full border border-[var(--color-border-light)] w-fit mb-8">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 sm:gap-6 text-xs font-medium text-[var(--color-text-muted)] bg-[var(--color-cream-main)] px-4 py-2 rounded-full border border-[var(--color-border-light)] max-w-full w-fit mb-8">
                             <span className="flex items-center gap-1.5"><Lock className="w-3 h-3 text-[var(--color-teal-600)]" /> Private</span>
                             <span className="w-px h-3 bg-[var(--color-border-medium)]"></span>
                             <span className="flex items-center gap-1.5"><Clock className="w-3 h-3 text-[var(--color-teal-600)]" /> ~60 seconds</span>
@@ -104,7 +104,7 @@ export function PolicyCheckerLanding() {
                         <button
                             type="button"
                             onClick={() => { loadSampleReport(mockReportHealth); setLocation("/report?sample=health"); }}
-                            className="mt-6 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-700)] hover:underline inline-flex items-center justify-center gap-2 mx-auto"
+                            className="mt-6 min-h-11 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-700)] hover:underline inline-flex items-center justify-center gap-2 mx-auto"
                         >
                             <FileText className="w-4 h-4" />
                             View a sample analysis first
@@ -126,7 +126,7 @@ export function PolicyCheckerLanding() {
             <div className="border-t border-[var(--color-border-light)] pt-16">
                 <h3 className="font-serif text-2xl text-[var(--color-navy-900)] mb-10 text-center">What this analysis actually checks</h3>
 
-                <div className="grid md:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     {[
                         { title: "Coverage Reality", items: ["Base sum vs City costs", "Room rent caps", "Hidden co-pays"] },
                         { title: "Claim Failures", items: ["Specific Sub-limits", "Waiting periods", "Permanent exclusions"] },
@@ -152,7 +152,7 @@ export function PolicyCheckerLanding() {
 
 
             {/* 5. WHAT YOU'LL GET (Outcome Preview) */}
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-8 rounded-xl border border-[var(--color-border-light)] shadow-sm">
                     <div className="w-10 h-10 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center mb-4 text-[var(--color-navy-900)]">
                         <Search className="w-5 h-5" />

@@ -92,14 +92,14 @@ export default function HowItWorks() {
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
       <Header />
 
-      <main className="flex-grow pt-32 pb-20 px-6 w-full">
+      <main className="flex-grow pt-32 pb-12 sm:pb-16 lg:pb-20 px-6 w-full">
 
         {/* HERO */}
-        <section className="max-w-4xl mx-auto text-center mb-24 animate-reveal">
+        <section className="max-w-4xl mx-auto text-center mb-12 sm:mb-16 lg:mb-24 animate-reveal">
           <div className="inline-block py-1 px-3 border border-[var(--color-border-main)] rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-text-secondary)] mb-6 bg-white">
             How It Works
           </div>
-          <h1 className="text-5xl md:text-7xl font-serif mb-8 tracking-tight text-[var(--color-text-main)] leading-tight">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-serif mb-8 tracking-tight text-[var(--color-text-main)] leading-tight">
             From chaos <br />
             to <span className="italic text-[var(--color-green-primary)]">clarity.</span>
           </h1>
@@ -110,7 +110,7 @@ export default function HowItWorks() {
         </section>
 
         {/* STEPS */}
-        <section className="max-w-5xl mx-auto mb-32 space-y-6">
+        <section className="max-w-5xl mx-auto mb-16 sm:mb-24 lg:mb-32 space-y-6">
           {steps.map((item, i) => {
             const Icon = item.icon;
             return (
@@ -152,7 +152,7 @@ export default function HowItWorks() {
         </section>
 
         {/* TRUST BLOCK */}
-        <section className="max-w-5xl mx-auto mb-32 grid md:grid-cols-2 gap-6">
+        <section className="max-w-5xl mx-auto mb-16 sm:mb-24 lg:mb-32 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="card-white p-8 flex gap-5 items-start">
             <div className="w-12 h-12 bg-[var(--color-cream-dark)] rounded-full flex items-center justify-center shrink-0">
               <Lock className="w-5 h-5 text-[var(--color-green-primary)]" />
@@ -178,7 +178,7 @@ export default function HowItWorks() {
         </section>
 
         {/* FAQ */}
-        <section className="max-w-3xl mx-auto mb-32">
+        <section className="max-w-3xl mx-auto mb-16 sm:mb-24 lg:mb-32">
           <h2 className="text-3xl md:text-4xl font-serif mb-10 text-center">Questions people actually ask</h2>
           <div className="space-y-6">
             {faqs.map((f, i) => (
@@ -191,7 +191,7 @@ export default function HowItWorks() {
         </section>
 
         {/* CTA */}
-        <section className="bg-[var(--color-cream-dark)] border border-[var(--color-border-light)] text-[var(--color-text-main)] rounded-lg p-16 text-center max-w-5xl mx-auto shadow-lg relative overflow-hidden">
+        <section className="bg-[var(--color-cream-dark)] border border-[var(--color-border-light)] text-[var(--color-text-main)] rounded-lg p-6 sm:p-10 lg:p-16 text-center max-w-5xl mx-auto shadow-lg relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full opacity-[0.07] pointer-events-none">
             <div className="absolute top-[-50%] left-[-20%] w-[500px] h-[500px] bg-[var(--color-green-primary)] rounded-full blur-[100px]"></div>
           </div>

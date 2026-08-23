@@ -294,7 +294,7 @@ export default function SachAIChat() {
               </div>
               <div>
                 <h3 className="text-white font-serif font-bold text-lg leading-none tracking-wide">Sach AI</h3>
-                <p className="text-white/60 text-[10px] uppercase tracking-widest mt-1">
+                <p className="text-white/60 text-[11px] sm:text-[10px] uppercase tracking-widest mt-1">
                   Private Policy Analyst
                 </p>
               </div>
@@ -374,7 +374,7 @@ export default function SachAIChat() {
           {/* Input Area */}
           <div className="p-4 bg-white border-t border-[var(--color-border-light)] shrink-0">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-muted)]">
+              <span className="text-[11px] sm:text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-muted)]">
                 Language
               </span>
               <select
@@ -409,7 +409,7 @@ export default function SachAIChat() {
                 <Send className="w-3 h-3" />
               </button>
             </div>
-            <p className="text-[10px] text-center text-[var(--color-text-muted)] mt-2 font-mono uppercase tracking-wider">
+            <p className="text-[11px] sm:text-[10px] text-center text-[var(--color-text-muted)] mt-2 font-mono uppercase tracking-wider">
               AI generated • Verify with policy
             </p>
           </div>

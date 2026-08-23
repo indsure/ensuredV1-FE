@@ -247,7 +247,7 @@ export default function MyPage() {
 
       {/* ── Numbers ──────────────────────────────────────────────────── */}
       {page.published && (
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <StatCard icon={<Eye className="h-4 w-4" />} label="Page views (30 days)" value={totalViews} />
           <StatCard icon={<Target className="h-4 w-4" />} label="Leads from this page" value={leadCount ?? 0} />
           <StatCard
@@ -264,7 +264,7 @@ export default function MyPage() {
           <CardHeader>
             <CardTitle className="text-base">Where your visitors come from</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-6 sm:grid-cols-2">
+          <CardContent className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <BreakdownList title="App" rows={byApp} total={totalViews} />
             <BreakdownList title="Device" rows={byDevice} total={totalViews} />
           </CardContent>
@@ -308,7 +308,7 @@ export default function MyPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Your name" hint="This is what people see on the page.">
               <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} />
             </Field>
@@ -481,25 +481,27 @@ function ShareKit({ slug, name }: { slug: string; name: string }) {
           />
         </Field>
 
-        <div className="grid gap-2">
+        <div className="grid grid-cols-1 gap-2">
           {SHARE_CHANNELS.map((c) => (
             <div
               key={c.key}
-              className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3"
+              className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3"
             >
-              <span className="w-28 shrink-0 text-sm font-medium text-slate-700">{c.label}</span>
-              <code className="flex-1 truncate text-xs text-slate-500">
-                {pageUrl(slug, c.key, campaign)}
-              </code>
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => copy(c.key)}>
-                {copied === c.key ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                {copied === c.key ? "Copied" : "Copy"}
-              </Button>
+              <span className="sm:w-28 sm:shrink-0 text-sm font-medium text-slate-700">{c.label}</span>
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <code className="min-w-0 flex-1 truncate text-xs text-slate-500">
+                  {pageUrl(slug, c.key, campaign)}
+                </code>
+                <Button size="sm" variant="outline" className="shrink-0 gap-1.5" onClick={() => copy(c.key)}>
+                  {copied === c.key ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied === c.key ? "Copied" : "Copy"}
+                </Button>
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-[auto,1fr] sm:items-start">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-[auto,1fr] sm:items-start">
           <div className="text-center">
             <canvas
               ref={qrRef}

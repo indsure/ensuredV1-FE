@@ -61,7 +61,7 @@ export function ComparisonView({ items, onClose }: ComparisonViewProps) {
                                                 .sort((a, b) => b.hospital_count - a.hospital_count)
                                                 .slice(0, 3)
                                                 .map((insurer, idx) => (
-                                                    <div key={idx} className="text-[10px] text-[var(--color-text-secondary)] flex items-center justify-center gap-1">
+                                                    <div key={idx} className="text-[11px] sm:text-[10px] text-[var(--color-text-secondary)] flex items-center justify-center gap-1">
                                                         <span className="capitalize font-medium">{insurer.insurer_slug.replace(/_/g, " ")}</span>
                                                         <span className="text-[var(--color-teal-600)] font-bold">({insurer.hospital_count})</span>
                                                     </div>
@@ -94,7 +94,7 @@ export function ComparisonView({ items, onClose }: ComparisonViewProps) {
                                                         <span className="text-xl font-bold font-mono text-[var(--color-teal-600)]">
                                                             {count}
                                                         </span>
-                                                        <span className="text-[10px] text-[var(--color-text-muted)]">hospitals</span>
+                                                        <span className="text-[11px] sm:text-[10px] text-[var(--color-text-muted)]">hospitals</span>
                                                     </div>
                                                 ) : (
                                                     <span className="text-[var(--color-text-muted)] opacity-30 text-2xl font-mono">-</span>

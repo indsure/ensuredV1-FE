@@ -14,7 +14,7 @@ export const AMBER = SIDE_PALETTE[1].accent;
 
 function OptionalTag() {
   return (
-    <span className="inline-flex items-center text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+    <span className="inline-flex items-center text-[11px] sm:text-[9px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-full whitespace-nowrap">
       add-on
     </span>
   );
@@ -117,7 +117,7 @@ export default function ComparisonView({ data }: { data: ComparisonResult }) {
             {names.map((nm, i) => (
               <div key={i} className="px-4 py-4 text-sm font-bold leading-tight" style={{ color: SIDE_PALETTE[i % SIDE_PALETTE.length].light }}>
                 {nm}
-                <span className="block text-[10px] font-medium text-slate-400 mt-0.5">{data.sides[i].insurer}</span>
+                <span className="block text-[11px] sm:text-[10px] font-medium text-slate-400 mt-0.5">{data.sides[i].insurer}</span>
               </div>
             ))}
           </div>

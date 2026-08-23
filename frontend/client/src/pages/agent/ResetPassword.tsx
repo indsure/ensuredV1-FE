@@ -107,7 +107,7 @@ export default function ResetPassword() {
           </div>
 
           <div className="mt-20">
-            <h2 className="text-5xl font-bold leading-[1.1] font-['Playfair_Display']">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.1] font-['Playfair_Display']">
               Forge a new <br />
               <span className="text-white/90 drop-shadow-lg">Vault Key.</span>
             </h2>
@@ -117,16 +117,16 @@ export default function ResetPassword() {
           </div>
         </div>
 
-        <div className="relative z-10 text-white/60 text-[10px] font-black tracking-[0.2em] uppercase">
+        <div className="relative z-10 text-white/60 text-[11px] sm:text-[10px] font-black tracking-[0.2em] uppercase">
           Standardized by Leading Insurers · v4.1.0-VITE
         </div>
       </div>
 
       {/* RIGHT PANEL: SET NEW PASSWORD */}
-      <div className="flex-1 flex flex-col justify-center items-center py-20 px-8">
+      <div className="flex-1 flex flex-col justify-center items-center py-12 sm:py-16 lg:py-20 px-8">
         <div className="w-full max-w-md space-y-12">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-slate-900 font-['Playfair_Display']">New Vault Key</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 font-['Playfair_Display']">New Vault Key</h1>
             <p className="mt-3 text-slate-400 font-semibold uppercase text-[11px] tracking-widest">Set Your New Password</p>
           </div>
 
@@ -159,7 +159,7 @@ export default function ResetPassword() {
           {ready === true && !done && (
             <div className="space-y-6">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">New Vault Key</label>
+                <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">New Vault Key</label>
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
@@ -179,7 +179,7 @@ export default function ResetPassword() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Vault Key</label>
+                <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Vault Key</label>
                 <Input
                   type={showPassword ? 'text' : 'password'}
                   value={confirm}

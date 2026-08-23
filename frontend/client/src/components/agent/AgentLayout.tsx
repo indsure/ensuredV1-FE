@@ -8,6 +8,7 @@ import PlaygroundBanner from "@/components/agent/PlaygroundBanner"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext"
+import { AgentTabBar } from "@/components/agent/AgentTabBar"
 
 interface AgentLayoutProps {
   children: ReactNode;
@@ -127,7 +128,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
             {!sidebarCollapsed && (
               <div className="flex flex-col min-w-0">
                 <span className="text-lg font-bold text-white leading-tight">IndSure</span>
-                <span className="text-[10px] uppercase tracking-wider text-white/60 font-semibold">{t("layout.agent_portal")}</span>
+                <span className="text-[11px] sm:text-[10px] uppercase tracking-wider text-white/60 font-semibold">{t("layout.agent_portal")}</span>
               </div>
             )}
           </Link>
@@ -135,7 +136,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           {!sidebarCollapsed && (
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden lg:flex h-8 w-8 rounded-lg hover:bg-white/10 items-center justify-center transition-colors flex-shrink-0"
+              className="hidden lg:flex h-9 w-9 rounded-lg hover:bg-white/10 items-center justify-center transition-colors flex-shrink-0"
               aria-label="Collapse sidebar"
             >
               <Menu className="h-5 w-5 text-white" />
@@ -144,7 +145,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           {/* Mobile close button */}
           <button
             onClick={() => setMobileOpen(false)}
-            className="lg:hidden h-8 w-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
+            className="lg:hidden h-11 w-11 -mr-2 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
             aria-label="Close menu"
           >
             <X className="h-5 w-5 text-white" />
@@ -166,7 +167,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         <div className={`${sidebarCollapsed ? 'px-2' : 'px-4'} py-6 space-y-6 flex-1 transition-all duration-300`}>
           {navSections.map((section) => (
             <div key={section.key}>
-              {!sidebarCollapsed && <div className="px-2 text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">{section.label}</div>}
+              {!sidebarCollapsed && <div className="px-2 text-[11px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">{section.label}</div>}
               <nav className="space-y-1">
                 {section.items.map((item) => {
                   const active = location === item.href
@@ -186,12 +187,12 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                         {!sidebarCollapsed && item.label}
                       </span>
                       {!sidebarCollapsed && item.href === "/agent/my-queue" && (
-                        <span className="inline-flex items-center rounded-full bg-[#0D9488]/15 text-[#5eead4] border border-[#0D9488]/30 px-2 py-0.5 text-[10px] font-black tabular-nums">
+                        <span className="inline-flex items-center rounded-full bg-[#0D9488]/15 text-[#5eead4] border border-[#0D9488]/30 px-2 py-0.5 text-[11px] sm:text-[10px] font-black tabular-nums">
                           {queueCount}
                         </span>
                       )}
                       {sidebarCollapsed && item.href === "/agent/my-queue" && queueCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0D9488] text-white text-[10px] font-black flex items-center justify-center">
+                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0D9488] text-white text-[11px] sm:text-[10px] font-black flex items-center justify-center">
                           {queueCount}
                         </span>
                       )}
@@ -204,7 +205,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           ))}
 
           <div>
-            {!sidebarCollapsed && <div className="px-2 text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">{t("layout.account")}</div>}
+            {!sidebarCollapsed && <div className="px-2 text-[11px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">{t("layout.account")}</div>}
             <nav className="space-y-1">
               <Link
                 to="/agent/settings"
@@ -233,7 +234,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                 {!sidebarCollapsed && (
                   <div className="flex-1 min-w-0 text-left">
                     <div className="text-sm font-semibold truncate">{agent?.name ?? "Agent"}</div>
-                    <div className="text-[10px] uppercase tracking-widest text-white/60 font-black truncate">
+                    <div className="text-[11px] sm:text-[10px] uppercase tracking-widest text-white/60 font-black truncate">
                       {agent?.role ?? "agent"}
                     </div>
                   </div>
@@ -264,12 +265,12 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between bg-[#0B1120] text-white px-4 h-14">
           <button
             onClick={() => setMobileOpen(true)}
-            className="h-9 w-9 -ml-1 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
+            className="h-11 w-11 -ml-2 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
             aria-label="Open menu"
           >
             <Menu className="h-6 w-6" />
           </button>
-          <Link to="/agent/dashboard" className="flex items-center gap-2">
+          <Link to="/agent/dashboard" className="flex min-h-11 items-center gap-2 px-1">
             <img src="/logo-white.png" alt="IndSure" className="h-8 w-8 object-contain" />
             <span className="font-bold">IndSure</span>
           </Link>
@@ -280,7 +281,8 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         <div className="hidden lg:flex justify-end px-4 md:px-6 lg:px-8 pt-3 pb-1">
           <LanguageToggle />
         </div>
-        <div className="flex-1 p-4 md:p-6 lg:p-8 lg:pt-2">{children}</div>
+        <div className="flex-1 p-4 pb-24 md:p-6 md:pb-6 lg:p-8 lg:pt-2">{children}</div>
+        <AgentTabBar onMore={() => setMobileOpen(true)} />
       </main>
 
     </div>

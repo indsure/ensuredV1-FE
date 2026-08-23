@@ -187,7 +187,7 @@ export default function HospitalFilter() {
         <div className="bg-[var(--color-navy-900)] text-white font-sans min-h-screen flex flex-col">
             <Header />
 
-            <main className="flex-grow pt-32 pb-24">
+            <main className="flex-grow pt-32 pb-14 sm:pb-20 lg:pb-24">
                 {/* Pre-Search Leading Hero */}
                 {!results && (
                     <section className="min-h-[60vh] flex flex-col justify-center items-center pb-16 bg-[var(--color-navy-900)] px-4">
@@ -197,7 +197,7 @@ export default function HospitalFilter() {
                                 animate={{ opacity: 1, y: 0 }}
                                 className="text-center mb-12"
                             >
-                                <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 text-white leading-tight">
+                                <h1 className="text-3xl sm:text-5xl md:text-7xl font-serif font-bold mb-6 text-white leading-tight">
                                     Hospital <span className="text-[var(--color-teal-400)]">Network</span> Finder
                                 </h1>
                                 <p className="text-2xl text-[var(--color-white-muted)] font-serif mb-4">
@@ -336,7 +336,7 @@ export default function HospitalFilter() {
                                         {pincode && <><span>/</span><span>{pincode}</span></>}
                                     </div>
 
-                                    <div className="grid md:grid-cols-2 gap-8 items-start">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                                         <div>
                                             <h2 className="text-3xl font-serif font-bold text-white mb-2">
                                                 Network Coverage
@@ -503,7 +503,7 @@ export default function HospitalFilter() {
                     titleClassName="text-white"
                 >
                     <div className="container-editorial">
-                        <div className="grid md:grid-cols-2 gap-12 items-center">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                             <div>
                                 <p className="text-lg text-[var(--color-white-muted)] mb-4">
                                     Hospital network data in India is:
@@ -577,7 +577,7 @@ export default function HospitalFilter() {
 
                 <section className="py-16 bg-[var(--color-cream-main)] text-[var(--color-text-main)]">
                     <div className="container-editorial">
-                        <h2 className="text-4xl font-serif font-bold mb-8 text-[var(--color-navy-900)] text-center">
+                        <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 text-[var(--color-navy-900)] text-center">
                             Insurers Covered
                         </h2>
                         <p className="text-center text-[var(--color-text-secondary)] mb-12 max-w-2xl mx-auto">

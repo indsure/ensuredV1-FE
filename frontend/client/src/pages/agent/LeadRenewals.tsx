@@ -130,7 +130,7 @@ export default function LeadRenewals({ embedded = false }: { embedded?: boolean 
         buckets.map((b) => (
           <div key={b.key}>
             <p className={`text-xs font-black uppercase tracking-widest mb-2 ${b.tone}`}>{b.label} ({b.rows.length})</p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {b.rows.map((r) => (
                 <RenewalCard
                   key={r.id}
