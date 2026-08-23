@@ -12,9 +12,13 @@
  */
 
 import { supabase } from "./supabase";
-import { computePolicyValue, isValueGap, type PlanShape, type ValueRow } from "./policyValue";
+import {
+  computePolicyValue, isValueGap, isoDate, policyDate,
+  type PlanShape, type PremiumStatus, type ValueRow,
+} from "./policyValue";
 
 export type ValueAction =
+  | "overdue"       // premiums are not up to date — everything else is moot
   | "maturing"      // money is about to land — reinvestment conversation
   | "jumps"         // surrender value steps up materially at the next anniversary
   | "underwater"    // surrendering today returns less than has been paid in
@@ -39,6 +43,8 @@ export interface PolicyValueSummary {
   uplift: number;
   upliftPct: number;
   deferredTo: string | null;
+  premiumStatus: PremiumStatus;
+  premiumStatusNote: string | null;
   /** Annual return (XIRR where dates resolve) if exited today, and if held to the end. */
   irrToday: number | null;
   irrAtMaturity: number | null;
@@ -60,10 +66,10 @@ export function policyYearOn(startDate: string | null, asOf = new Date()): numbe
 
 export function anniversaryAfter(startDate: string | null, completedYears: number): string | null {
   if (!startDate) return null;
-  const d = new Date(startDate);
-  if (Number.isNaN(d.getTime())) return null;
+  const d = policyDate(startDate);
+  if (!d) return null;
   d.setFullYear(d.getFullYear() + completedYears);
-  return d.toISOString().slice(0, 10);
+  return isoDate(d);
 }
 
 const rupee = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
@@ -78,10 +84,14 @@ export function summarisePolicy(row: {
   extracted_data?: Record<string, any> | null;
 }): PolicyValueSummary | null {
   const data = row.extracted_data ?? null;
-  const result = computePolicyValue(row.insurance_type ?? "life", data);
-  if (isValueGap(result)) return null;
-
+  // The policy year comes off the start date alone, so we can ask for exactly
+  // the two returns this row shows in a single pass. Solving all twenty years
+  // for a book of a thousand policies is seconds of blocked main thread.
   const year = policyYearOn(data?.start_date ?? null) ?? 1;
+  const result = computePolicyValue(row.insurance_type ?? "life", data, {
+    returnYears: [year],
+  });
+  if (isValueGap(result)) return null;
   const clamped = Math.min(Math.max(year, 1), result.term);
   const today: ValueRow = result.rows[clamped - 1];
   const next: ValueRow | null = clamped < result.term ? result.rows[clamped] : null;
@@ -90,10 +100,11 @@ export function summarisePolicy(row: {
   const upliftPct = next && today.back > 0 ? (uplift / today.back) * 100 : 0;
 
   let action: ValueAction = "steady";
-  if (result.shape === "pure_term") action = "none";
+  if (result.premiumStatus === "overdue" || result.premiumStatus === "paid_up") action = "overdue";
+  else if (result.shape === "pure_term") action = "none";
   else if (clamped >= result.term - 1) action = "maturing";
   else if (today.deferredTo) action = "locked";
-  else if (today.back < today.paid) action = "underwater";
+  else if (today.back < today.paid && clamped >= result.term / 2) action = "underwater";
   else if (upliftPct >= 15) action = "jumps";
 
   const nextAnniversary = anniversaryAfter(data?.start_date ?? null, clamped);
@@ -104,8 +115,10 @@ export function summarisePolicy(row: {
         return "No surrender value — term cover.";
       case "locked":
         return `Locked in. Nothing payable before ${today.deferredTo}.`;
+      case "overdue":
+        return result.premiumStatusNote ?? "Premiums are not up to date.";
       case "underwater":
-        return `Surrendering now loses ${rupee(today.paid - today.back)} against premiums paid.`;
+        return `Still ${rupee(today.paid - today.back)} below the premiums paid, past halfway through the term.`;
       case "jumps":
         return `Goes up ${rupee(uplift)} on ${nextAnniversary ?? "the next anniversary"} — worth waiting.`;
       case "maturing":
@@ -130,6 +143,8 @@ export function summarisePolicy(row: {
     uplift,
     upliftPct,
     deferredTo: today.deferredTo,
+    premiumStatus: result.premiumStatus,
+    premiumStatusNote: result.premiumStatusNote,
     irrToday: today.xirr ?? today.irr,
     irrAtMaturity: result.xirrAtMaturity ?? result.irrAtMaturity,
     action,
@@ -138,9 +153,16 @@ export function summarisePolicy(row: {
 }
 
 /** Order the agent should work the list in. */
-export const ACTION_ORDER: ValueAction[] = ["maturing", "jumps", "underwater", "steady", "locked", "none"];
+export const ACTION_ORDER: ValueAction[] = ["overdue", "maturing", "jumps", "underwater", "steady", "locked", "none"];
 
 export const ACTION_META: Record<ValueAction, { label: string; tone: string; blurb: string }> = {
+  overdue: {
+    label: "Premiums overdue",
+    tone: "border-rose-200 bg-rose-50 text-rose-800",
+    blurb:
+      "The premium is past its grace period. Until it is paid these values do not hold, because they " +
+      "all assume the policy is fully paid up to date. Call before it lapses.",
+  },
   maturing: {
     label: "Maturing",
     tone: "border-[#0D9488]/40 bg-[#0D9488]/5 text-[#0f766e]",
@@ -152,9 +174,11 @@ export const ACTION_META: Record<ValueAction, { label: string; tone: string; blu
     blurb: "The surrender value rises materially at the next anniversary. Tell them to wait.",
   },
   underwater: {
-    label: "Would lose money",
+    label: "Below premiums paid",
     tone: "border-amber-200 bg-amber-50 text-amber-900",
-    blurb: "Surrendering today returns less than they have paid in. Worth a retention call.",
+    blurb:
+      "Past halfway and the surrender value is still under the premiums paid. Normal for these products " +
+      "early on, worth a conversation this late.",
   },
   steady: {
     label: "Has value",

@@ -64,6 +64,19 @@ export interface PolicyParams {
   bonusPer1000: Param<number>;
   /** Guaranteed surrender value factors, % of premiums paid, by year band. */
   gsvFactors: Param<YearBandPct[]>;
+  /**
+   * Special surrender value factors, % of (paid-up sum assured + accrued bonus),
+   * by year band, interpolated between. SSV is insurer-specific and filed with
+   * IRDAI; there is no universal table, so the default here is a placeholder
+   * shape and is always reported as an assumption until the real one is set.
+   */
+  ssvFactors: Param<YearBandPct[]>;
+  /**
+   * Policy years that must complete before any surrender value is acquired.
+   * Two under the pre-2024 convention, one under the IRDAI (Insurance
+   * Products) Regulations 2024 for most limited/regular premium savings plans.
+   */
+  surrenderAcquiresAfterYears: Param<number>;
   /** Age of the life assured when the policy started. */
   entryAge: Param<number>;
 }
@@ -106,6 +119,13 @@ export const DEFAULT_PARAMS: PolicyParams = {
   loyaltyFromYear: d(11),
   deathBenefitFloorPct: d(105),
   bonusPer1000: d(0),
+  ssvFactors: d([
+    { fromYear: 1, toYear: 1, pct: 0 },
+    { fromYear: 2, toYear: 2, pct: 35 },
+    { fromYear: 3, toYear: 7, pct: 50 },
+    { fromYear: 8, toYear: 99, pct: 95 },
+  ]),
+  surrenderAcquiresAfterYears: d(2),
   gsvFactors: d([
     { fromYear: 1, toYear: 1, pct: 0 },
     { fromYear: 2, toYear: 3, pct: 30 },
@@ -120,8 +140,8 @@ export const DEFAULT_PARAMS: PolicyParams = {
  *  asks for what matters and does not bury the agent in irrelevant fields. */
 export const RELEVANT_PARAMS: Record<string, (keyof PolicyParams)[]> = {
   pure_term: [],
-  return_of_premium: ["gsvFactors"],
-  endowment: ["bonusPer1000", "gsvFactors", "deathBenefitFloorPct"],
+  return_of_premium: ["gsvFactors", "surrenderAcquiresAfterYears"],
+  endowment: ["bonusPer1000", "gsvFactors", "ssvFactors", "surrenderAcquiresAfterYears", "deathBenefitFloorPct"],
   unit_linked: [
     "grossReturnPct", "fundChargePct", "allocationCharges", "adminMonthly",
     "adminEscalationPct", "adminCapMonthly", "mortalityPer1000", "entryAge",
@@ -147,6 +167,8 @@ export const PARAM_LABELS: Partial<Record<keyof PolicyParams, string>> = {
   deathBenefitFloorPct: "Death benefit floor (% of premiums paid)",
   bonusPer1000: "Declared bonus per ₹1,000 sum assured",
   gsvFactors: "Guaranteed surrender value factors",
+  ssvFactors: "Special surrender value factors",
+  surrenderAcquiresAfterYears: "Surrender value acquired after (years)",
 };
 
 /**

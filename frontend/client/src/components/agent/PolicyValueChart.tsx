@@ -60,7 +60,10 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
   const [patch, setPatch] = useState<Record<string, any>>({});
 
   const effective = useMemo(() => ({ ...(data ?? {}), ...patch }), [data, patch]);
-  const result = useMemo(() => computePolicyValue(insuranceType, effective), [insuranceType, effective]);
+  const result = useMemo(
+    () => computePolicyValue(insuranceType, effective, { allYearReturns: true }),
+    [insuranceType, effective]
+  );
 
   const term = !isValueGap(result) ? result.term : 1;
   const [year, setYear] = useState(1);
@@ -135,6 +138,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
   const {
     shape, rows, params, totalPremiums, maturity, lockInYears, lockInEnds,
     steps, illustratedMaturity, reconciliation, irrAtMaturity, xirrAtMaturity,
+    premiumStatus, premiumStatusNote, anchorYear, anchorValue,
   } = result;
   const row = rows[yr - 1];
   // XIRR wherever the dates resolve: it is the same measure, discounted by real
@@ -193,6 +197,47 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
       </CardHeader>
 
       <CardContent className="space-y-6 p-6">
+        {/* Nothing below is true if the premiums are not up to date, so it leads. */}
+        {(premiumStatus === "overdue" || premiumStatus === "paid_up" || premiumStatus === "grace") && (
+          <div
+            className={
+              "rounded-xl border p-3 text-xs " +
+              (premiumStatus === "grace"
+                ? "border-amber-200 bg-amber-50 text-amber-900"
+                : "border-rose-200 bg-rose-50 text-rose-800")
+            }
+          >
+            <span className="font-bold">
+              {premiumStatus === "grace" ? "Premium due" : "Premiums not up to date"}
+            </span>{" "}
+            {premiumStatusNote}
+          </div>
+        )}
+
+        {/* Whether the fund figure is the customer's or our reconstruction. */}
+        {shape === "unit_linked" && (
+          <div
+            className={
+              "rounded-xl border p-3 text-xs " +
+              (anchorYear !== null
+                ? "border-[#0D9488]/30 bg-[#0D9488]/5 text-[#0f766e]"
+                : "border-amber-200 bg-amber-50 text-amber-900")
+            }
+          >
+            {anchorYear !== null ? (
+              <>
+                Anchored to the statement: {rupee(anchorValue!)} at policy year {anchorYear}. Later years
+                are projected forward from that real figure.
+              </>
+            ) : (
+              <>
+                No fund value from a statement, so this whole curve is modelled from the charge table — it is
+                not the customer's actual fund. Add the fund value and the statement date above to fix that.
+              </>
+            )}
+          </div>
+        )}
+
         {/* Reconciliation against the document's own illustration, when it stated one. */}
         {reconciliation && (
           <div
@@ -242,7 +287,19 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
         </div>
 
         <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
-          <div className="text-base font-bold text-slate-900">{verdict.title}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-base font-bold text-slate-900">{verdict.title}</div>
+            {relevant.length > 0 && (
+              <span
+                className={
+                  "rounded-full border px-2 py-0.5 text-[10px] font-semibold " +
+                  (assumed === 0 ? SOURCE_STYLE.document : SOURCE_STYLE.default)
+                }
+              >
+                {assumed === 0 ? "All from the document" : `${assumed} figure${assumed > 1 ? "s" : ""} assumed`}
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-sm text-slate-600">{verdict.body}</p>
         </div>
 

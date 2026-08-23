@@ -765,7 +765,7 @@ export function buildSeed(): Store {
         start_date: "2023-07-10", next_premium_date: "2027-07-10",
         maturity_date: "2043-07-10",
         plan_type: "Unit linked", bonus_per_1000: null, fund_value: 493900,
-        age_at_entry: 35,
+        age_at_entry: 35, fund_value_as_on: "2026-07-31",
         // Straight off Part E of the policy: what the document itself says the
         // fund is worth at maturity. The card reconciles our schedule against it.
         illustrated_maturity_value: 3166138,
@@ -817,6 +817,28 @@ export function buildSeed(): Store {
         cover_end_date: "2099-06-20",
         plan_type: "Term cover only", age_at_entry: 23,
         death_benefit_payout: "Lump sum", nominee_name: "Rajesh Bang",
+      },
+    },
+    {
+      id: "pol-14", agent_id: DEMO_AGENT_ID, customer_id: "cust-4",
+      policy_name: "Sample Guaranteed Savings", name: "Anita Desai", policyholder_name: "Anita Desai",
+      insurer: INSURERS.lic, insurance_type: "life", status: "done", score: null,
+      sum_insured: 1500000, expiry_date: "2036-02-20", created_at: ago(21),
+      share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
+      flaws: [], report_data: null,
+      extracted_data: {
+        policyholder_name: "Anita Desai", life_assured_name: "Anita Desai",
+        insurer: INSURERS.lic, policy_number: "SPEC-LIC-44190",
+        plan_name: "Sample Guaranteed Savings", sum_assured: 1500000,
+        premium: 72000, premium_frequency: "Annual",
+        policy_term_years: 15, premium_paying_term_years: 15,
+        start_date: "2021-02-20",
+        // Overdue well past the grace period: every value below assumes the
+        // premiums were paid, so the card has to say so before quoting any.
+        next_premium_date: "2026-02-20",
+        maturity_date: "2036-02-20",
+        plan_type: "Endowment / savings", bonus_per_1000: 44,
+        nominee_name: "R Desai",
       },
     },
     // In-flight + failed, so My Queue and the failures panel have content

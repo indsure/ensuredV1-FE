@@ -81,6 +81,7 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "plan_type", label: "Plan type (term / return of premium / endowment / unit linked)", type: "text" },
     { key: "bonus_per_1000", label: "Declared bonus per ₹1,000 sum assured (if any)", type: "number" },
     { key: "fund_value", label: "Fund value (unit linked only)", type: "number" },
+    { key: "fund_value_as_on", label: "Fund value as on (statement date)", type: "date" },
     { key: "age_at_entry", label: "Age when the policy started", type: "number" },
     { key: "illustrated_maturity_value", label: "Maturity value stated in the document's illustration", type: "number" },
     { key: "policy_parameters", label: "Charges and assumptions", type: "json" },

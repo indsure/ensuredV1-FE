@@ -46,6 +46,9 @@ export interface ValueRow {
   cover: number;
   /** null = payable straight away; otherwise the date the money is released. */
   deferredTo: string | null;
+  /** True where the figure rests on the customer's actual statement rather
+   *  than purely on our projection. */
+  actual: boolean;
   /** Annual return on the real cashflows if the policy is exited that year. */
   irr: number | null;
   /** The same, discounted by actual dates. Preferred wherever it resolves. */
@@ -74,16 +77,49 @@ export interface ValueSchedule {
   illustratedMaturity: number | null;
   /** How far our schedule sits from the document's own figure. */
   reconciliation: { diff: number; pct: number } | null;
+  /** Premium payment state, derived from the next due date on the document. */
+  premiumStatus: PremiumStatus;
+  premiumStatusNote: string | null;
+  /** Policy year the actual fund value came from, when the statement gave one. */
+  anchorYear: number | null;
+  anchorValue: number | null;
 }
+
+/**
+ * Whether the premiums are actually up to date. Every figure below assumes
+ * they are; if the policy has lapsed or gone paid-up the real values are
+ * different, so this is surfaced rather than quietly ignored.
+ */
+export type PremiumStatus = "in_force" | "grace" | "overdue" | "paid_up" | "unknown";
 
 export interface ValueGap {
   missing: string[];
 }
 
+/**
+ * Parse a YYYY-MM-DD policy date as local midnight, not UTC.
+ *
+ * new Date("2023-07-10") is UTC midnight, which in IST is 05:30 on the 10th.
+ * This whole feature turns on anniversary boundaries, so that half-day skew
+ * would show the wrong policy year for the first 5.5 hours of every day.
+ */
+export function policyDate(iso: string | null | undefined): Date | null {
+  if (!iso) return null;
+  const parts = String(iso).slice(0, 10).split("-");
+  if (parts.length === 3) {
+    const [y, m, dd] = parts.map(Number);
+    if (Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(dd) && y > 1900) {
+      return new Date(y, m - 1, dd);
+    }
+  }
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 const num = (v: unknown): number | null => {
   if (v === null || v === undefined || v === "") return null;
   const n = typeof v === "number" ? v : Number(String(v).replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(n) && n !== 0 ? n : null;
+  return Number.isFinite(n) ? n : null;
 };
 
 export function frequencyMultiplier(raw: unknown): number {
@@ -129,12 +165,40 @@ export function gsvShare(year: number, term: number, params: PolicyParams): numb
   return mid + (top - mid) * ((year - 7) / (last - 7));
 }
 
+/**
+ * Special surrender value share, as a fraction of the paid-up sum assured plus
+ * accrued bonus. Banded and interpolated exactly like the guaranteed table.
+ *
+ * There is no universal SSV table — each insurer files its own — so the default
+ * bands are a placeholder and always report as an assumption. This used to be a
+ * curve hardcoded in the engine, which meant the document could not correct it.
+ */
+export function ssvShare(year: number, term: number, params: PolicyParams): number {
+  const bands = params.ssvFactors.value;
+  if (year <= 7) return bandPct(bands, year) / 100;
+  const top = bandPct(bands, 99) / 100;
+  const mid = bandPct(bands, 7) / 100;
+  const last = Math.max(term - 2, 8);
+  if (year >= last) return top;
+  return mid + (top - mid) * ((year - 7) / (last - 7));
+}
+
+/**
+ * Format a local Date back to YYYY-MM-DD.
+ *
+ * Not toISOString(): these Dates are local midnight, and converting them to UTC
+ * in any positive-offset zone lands on the previous day. That turned a lock-in
+ * ending 10 Jul into 09 Jul.
+ */
+export function isoDate(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
 function addYears(iso: string | null, years: number): string | null {
-  if (!iso) return null;
-  const dt = new Date(iso);
-  if (Number.isNaN(dt.getTime())) return null;
+  const dt = policyDate(iso);
+  if (!dt) return null;
   dt.setFullYear(dt.getFullYear() + years);
-  return dt.toISOString().slice(0, 10);
+  return isoDate(dt);
 }
 
 /**
@@ -150,10 +214,20 @@ function addYears(iso: string | null, years: number): string | null {
  */
 export function irr(flows: number[]): number | null {
   const npv = (r: number) => flows.reduce((sum, cf, t) => sum + cf / Math.pow(1 + r, t), 0);
+  return solve(npv);
+}
+
+/**
+ * Bisection on a bracketed root, to 1e-7 on the rate — a hundredth of a basis
+ * point, far tighter than anything we display. Exits on tolerance rather than
+ * grinding a fixed 240 iterations, which is what made a 1,000-policy book take
+ * seconds of blocking main-thread work.
+ */
+function solve(npv: (r: number) => number): number | null {
   let lo = -0.9999, hi = 5;
   let flo = npv(lo), fhi = npv(hi);
   if (!Number.isFinite(flo) || !Number.isFinite(fhi) || flo * fhi > 0) return null;
-  for (let i = 0; i < 240; i++) {
+  for (let i = 0; i < 100 && hi - lo > 1e-7; i++) {
     const mid = (lo + hi) / 2;
     const fm = npv(mid);
     if (fm === 0) return mid;
@@ -186,16 +260,7 @@ export function xirr(flows: { date: Date; amount: number }[]): number | null {
   const years = (d: Date) => (d.getTime() - t0) / (365 * 24 * 3600 * 1000);
   const npv = (r: number) =>
     flows.reduce((sum, f) => sum + f.amount / Math.pow(1 + r, years(f.date)), 0);
-  let lo = -0.9999, hi = 5;
-  let flo = npv(lo), fhi = npv(hi);
-  if (!Number.isFinite(flo) || !Number.isFinite(fhi) || flo * fhi > 0) return null;
-  for (let i = 0; i < 240; i++) {
-    const mid = (lo + hi) / 2;
-    const fm = npv(mid);
-    if (fm === 0) return mid;
-    if (flo * fm < 0) { hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
-  }
-  return (lo + hi) / 2;
+  return solve(npv);
 }
 
 function addMonths(d: Date, months: number): Date {
@@ -215,8 +280,8 @@ function datedFlows(
   exitYear: number, payout: number, payoutDate: string | null
 ): { date: Date; amount: number }[] | null {
   if (!start) return null;
-  const begin = new Date(start);
-  if (Number.isNaN(begin.getTime())) return null;
+  const begin = policyDate(start);
+  if (!begin) return null;
   const flows: { date: Date; amount: number }[] = [];
   const monthsApart = 12 / perYear;
   for (let y = 1; y <= Math.min(ppt, exitYear); y++) {
@@ -224,8 +289,8 @@ function datedFlows(
       flows.push({ date: addMonths(begin, (y - 1) * 12 + j * monthsApart), amount: -instalment });
     }
   }
-  const landed = payoutDate ? new Date(payoutDate) : addMonths(begin, exitYear * 12);
-  if (Number.isNaN(landed.getTime())) return null;
+  const landed = (payoutDate ? policyDate(payoutDate) : addMonths(begin, exitYear * 12));
+  if (!landed) return null;
   flows.push({ date: landed, amount: payout });
   return flows;
 }
@@ -237,9 +302,24 @@ function penaltyFor(year: number, ap: number, fv: number, params: PolicyParams):
   return row.cap > 0 ? Math.min(raw, row.cap) : raw;
 }
 
+export interface ComputeOptions {
+  /**
+   * Solve the return for every policy year. The detail card scrubs through
+   * years so it needs them all; the book view shows only today and maturity,
+   * and solving all 20 for a thousand policies is seconds of blocked main
+   * thread. Defaults to false — callers opt in to the expensive path.
+   */
+  allYearReturns?: boolean;
+  /** Policy years the caller does need a return for, when not doing all. */
+  returnYears?: number[];
+  /** Treat this as "now" — injected so the behaviour is testable. */
+  asOf?: Date;
+}
+
 export function computePolicyValue(
   insuranceType: string,
-  data: Record<string, any> | null
+  data: Record<string, any> | null,
+  options: ComputeOptions = {}
 ): ValueSchedule | ValueGap {
   const d = data ?? {};
   const sumAssured = num(d.sum_assured) ?? 0;
@@ -285,12 +365,65 @@ export function computePolicyValue(
       (perYear > 1 ? ` — ${rawPremium} × ${perYear} × up to ${ppt}.` : ` — ${rawPremium} × up to ${ppt}.`)
   );
 
+  const asOf = options.asOf ?? new Date();
+
+  // Are the premiums actually up to date? Everything below assumes they are.
+  const nextDue = policyDate(d.next_premium_date);
+  const graceDays = perYear >= 12 ? 15 : 30;
+  let premiumStatus: PremiumStatus = "unknown";
+  let premiumStatusNote: string | null = null;
+  if (!nextDue) {
+    premiumStatusNote = "No next premium date was read, so we cannot tell whether the premiums are up to date.";
+  } else {
+    const overdueDays = Math.floor((asOf.getTime() - nextDue.getTime()) / 86400000);
+    const pptEnd = addYears(start, ppt);
+    const pptDone = pptEnd ? asOf >= new Date(pptEnd) : false;
+    if (pptDone) {
+      premiumStatus = "in_force";
+    } else if (overdueDays <= 0) {
+      premiumStatus = "in_force";
+    } else if (overdueDays <= graceDays) {
+      premiumStatus = "grace";
+      premiumStatusNote = `Premium was due on ${d.next_premium_date} — inside the ${graceDays}-day grace period.`;
+    } else {
+      premiumStatus = overdueDays > 365 ? "paid_up" : "overdue";
+      premiumStatusNote =
+        `Premium due on ${d.next_premium_date} is ${overdueDays} days overdue. ` +
+        "These figures assume every premium was paid, so they are too high until the policy is revived.";
+    }
+  }
+
+  // Solving the return is the expensive part; only do the years asked for.
+  const wantReturn = (y: number) =>
+    options.allYearReturns === true ||
+    (options.returnYears ? options.returnYears.includes(y) : false) ||
+    y === term;
+
   // One instalment is what actually leaves the customer's account each time.
   const instalment = rawPremium!;
   const datedIrr = (exitYear: number, payout: number, payoutDate: string | null) => {
     const flows = datedFlows(start, instalment, perYear, ppt, exitYear, payout, payoutDate);
     return flows ? xirr(flows) : null;
   };
+
+  // The statement gives the fund value as at a real date. Where we have it, the
+  // projection is rebased onto it: the charge model decides the SHAPE of the
+  // curve, but the customer's own statement decides where it actually is. Without
+  // this the screen shows a modelled fund and calls it theirs.
+  const actualFund = num(d.fund_value);
+  const fundAsOn = policyDate(d.fund_value_as_on) ?? asOf;
+  const startDate = policyDate(start);
+  let anchorYear: number | null = null;
+  let anchorValue: number | null = null;
+  if (actualFund !== null && actualFund > 0 && startDate) {
+    const elapsed = (fundAsOn.getTime() - startDate.getTime()) / (365.2425 * 86400000);
+    anchorYear = Math.min(Math.max(Math.ceil(elapsed), 1), term!);
+    anchorValue = actualFund;
+  }
+
+  // Years that must complete before any surrender value exists. Two under the
+  // old convention, one under the 2024 regulations — a parameter, not a literal.
+  const acquired = (y: number) => y > params.surrenderAcquiresAfterYears.value - 1;
 
   const rows: ValueRow[] = [];
 
@@ -332,6 +465,9 @@ export function computePolicyValue(
       if (y >= params.loyaltyFromYear.value) {
         fv += (params.loyaltyPct.value / 100) * (sum12 / 12);
       }
+      // Rebase onto the statement. From here the projection carries the real
+      // number forward through the same charges instead of a modelled one.
+      if (anchorYear !== null && y === anchorYear) fv = anchorValue!;
 
       const penalty = penaltyFor(y, annualPremium, fv, params);
       const inLock = y <= lockInYears;
@@ -348,14 +484,27 @@ export function computePolicyValue(
         back,
         cover: Math.max(sumAssured, fv, floor * (annualPremium * Math.min(y, ppt))),
         deferredTo: inLock ? lockInEnds : null,
-        irr: irr(exitFlows(annualPremium, ppt, y, back)),
-        xirr: datedIrr(y, back, inLock ? lockInEnds : null),
+        actual: anchorYear !== null && y >= anchorYear,
+        irr: wantReturn(y) ? irr(exitFlows(annualPremium, ppt, y, back)) : null,
+        xirr: wantReturn(y) ? datedIrr(y, back, inLock ? lockInEnds : null) : null,
         note: inLock
           ? `Held in the discontinued fund until ${lockInEnds ?? "the end of the lock-in"}, earning ${params.discontinuedFundRatePct.value}% a year.`
           : "Fund value on the day you surrender.",
       });
     }
 
+    if (anchorYear !== null) {
+      steps.push(
+        `Fund value of ${Math.round(anchorValue!).toLocaleString("en-IN")} from the statement is taken as ` +
+          `fact at policy year ${anchorYear}; later years are projected forward from it, earlier years are ` +
+          "our reconstruction of how it got there."
+      );
+    } else {
+      steps.push(
+        "No fund value was read from a statement, so the whole curve is modelled from the charge table. " +
+          "Add the current fund value and everything from that year on becomes the customer's real position."
+      );
+    }
     steps.push(
       `Fund is rolled forward month by month: premium less the allocation charge goes in, then the ` +
         `₹${params.adminMonthly.value}/month administration charge and the mortality charge on the sum at ` +
@@ -384,10 +533,10 @@ export function computePolicyValue(
 
       if (shape === "return_of_premium") {
         value = paid;
-        back = y === term ? paid : gsvShare(y, term!, params) * paid;
+        back = y === term ? paid : acquired(y) ? gsvShare(y, term!, params) * paid : 0;
         note =
-          y < 2
-            ? "No surrender value in the first year."
+          !acquired(y)
+            ? `No surrender value until ${params.surrenderAcquiresAfterYears.value} policy years are complete.`
             : y === term
             ? "Every premium paid is returned at maturity."
             : `${Math.round(gsvShare(y, term!, params) * 100)}% of the premiums paid so far.`;
@@ -396,14 +545,14 @@ export function computePolicyValue(
       if (shape === "endowment") {
         const bonus = params.bonusPer1000.value * (sumAssured / 1000) * y;
         const paidUp = sumAssured * (Math.min(y, ppt) / ppt);
-        const ssv = (paidUp + bonus) * (0.3 + 0.65 * Math.pow(y / term!, 1.5));
+        const ssv = (paidUp + bonus) * ssvShare(y, term!, params);
         value = paidUp + bonus;
-        back = y === term ? sumAssured + bonus : Math.max(gsvShare(y, term!, params) * paid, y >= 2 ? ssv : 0);
+        back = y === term ? sumAssured + bonus : Math.max(gsvShare(y, term!, params) * paid, acquired(y) ? ssv : 0);
         cover = Math.max(sumAssured, floor * paid) + bonus;
         if (params.bonusPer1000.value > 0) guaranteed = false;
         note =
-          y < 2
-            ? "No surrender value in the first year."
+          !acquired(y)
+            ? `No surrender value until ${params.surrenderAcquiresAfterYears.value} policy years are complete.`
             : y === term
             ? "Sum assured plus the bonus accrued."
             : "Higher of the guaranteed value and the paid-up value with bonus.";
@@ -413,8 +562,9 @@ export function computePolicyValue(
         year: y,
         age: entryAge === null ? null : entryAge + y,
         paid, value, penalty: 0, back, cover, deferredTo: null, note,
-        irr: irr(exitFlows(annualPremium, ppt, y, back)),
-        xirr: datedIrr(y, back, null),
+        actual: false,
+        irr: wantReturn(y) ? irr(exitFlows(annualPremium, ppt, y, back)) : null,
+        xirr: wantReturn(y) ? datedIrr(y, back, null) : null,
       });
     }
 
@@ -453,6 +603,7 @@ export function computePolicyValue(
     xirrAtMaturity: rows[rows.length - 1]?.xirr ?? null,
     term: term!, ppt, entryAge, lockInYears, lockInEnds, guaranteed, steps,
     illustratedMaturity, reconciliation,
+    premiumStatus, premiumStatusNote, anchorYear, anchorValue,
   };
 }
 
