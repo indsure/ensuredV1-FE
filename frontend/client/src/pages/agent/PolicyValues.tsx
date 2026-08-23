@@ -90,9 +90,9 @@ export default function PolicyValues() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Policy values</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Surrender values</h1>
         <p className="mt-1 text-sm text-slate-500">
-          What every life policy in your book is worth if the customer stopped today — and what changes at
+          What every life policy in your book is worth if the customer stopped today, and what changes at
           their next anniversary. Worked out from the policy documents, not estimated.
         </p>
       </div>
