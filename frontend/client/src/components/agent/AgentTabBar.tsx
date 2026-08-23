@@ -16,11 +16,18 @@ export function AgentTabBar({ onMore }: { onMore: () => void }) {
   const [location] = useLocation()
   const { t } = useLanguage()
 
+  // `t` echoes the key back when a string is missing, so `t(k) ?? "Fallback"`
+  // never fires — it silently renders "layout.more". Compare against the key.
+  const label = (key: string, fallback: string) => {
+    const value = t(key)
+    return !value || value === key ? fallback : value
+  }
+
   const tabs = [
-    { href: "/agent/dashboard", label: t("layout.overview") ?? "Home", icon: Home },
-    { href: "/agent/policies", label: t("layout.my_policies") ?? "Policies", icon: FileText },
-    { href: "/agent/customers", label: t("layout.customers") ?? "Customers", icon: Users },
-    { href: "/agent/claims", label: t("layout.claims") ?? "Claims", icon: ShieldCheck },
+    { href: "/agent/dashboard", label: label("layout.tab_home", "Home"), icon: Home },
+    { href: "/agent/policies", label: label("layout.tab_policies", "Policies"), icon: FileText },
+    { href: "/agent/customers", label: label("layout.tab_customers", "Customers"), icon: Users },
+    { href: "/agent/claims", label: label("layout.tab_claims", "Claims"), icon: ShieldCheck },
   ]
 
   const isActive = (href: string) => location === href || location.startsWith(href + "/")
@@ -56,7 +63,7 @@ export function AgentTabBar({ onMore }: { onMore: () => void }) {
           className="flex flex-1 min-h-[58px] flex-col items-center justify-center gap-1 pt-2 text-slate-400 transition-colors"
         >
           <MoreHorizontal className="h-[22px] w-[22px]" strokeWidth={2} />
-          <span className="text-[11px] font-bold leading-none">{t("layout.more") ?? "More"}</span>
+          <span className="text-[11px] font-bold leading-none">{label("layout.tab_more", "More")}</span>
         </button>
       </div>
     </nav>
