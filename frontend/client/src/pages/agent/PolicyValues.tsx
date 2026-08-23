@@ -116,9 +116,9 @@ export default function PolicyValues() {
         </Card>
         <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-5">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Would lose money</div>
-            <div className="mt-1 text-2xl font-bold text-amber-700">{counts.underwater ?? 0}</div>
-            <div className="mt-1 text-xs text-slate-500">Worth a call before they surrender</div>
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Premiums overdue</div>
+            <div className="mt-1 text-2xl font-bold text-rose-700">{counts.overdue ?? 0}</div>
+            <div className="mt-1 text-xs text-slate-500">Values below do not hold until these are paid</div>
           </CardContent>
         </Card>
       </div>

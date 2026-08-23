@@ -54,9 +54,8 @@ export interface PolicyValueSummary {
 
 /** Which policy year a policy is in on a given date (1-based, in progress). */
 export function policyYearOn(startDate: string | null, asOf = new Date()): number | null {
-  if (!startDate) return null;
-  const start = new Date(startDate);
-  if (Number.isNaN(start.getTime())) return null;
+  const start = policyDate(startDate);
+  if (!start) return null;
   let years = asOf.getFullYear() - start.getFullYear();
   const anniversaryThisYear = new Date(start);
   anniversaryThisYear.setFullYear(start.getFullYear() + years);
