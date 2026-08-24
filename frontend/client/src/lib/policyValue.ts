@@ -22,12 +22,18 @@ import {
   bandPct, buildParams, type PolicyParams,
 } from "./policyParams";
 
-export type PlanShape = "pure_term" | "return_of_premium" | "endowment" | "unit_linked";
+export type PlanShape =
+  | "pure_term"
+  | "return_of_premium"
+  | "endowment"
+  | "money_back"
+  | "unit_linked";
 
 export const PLAN_SHAPE_LABELS: Record<PlanShape, string> = {
   pure_term: "Term cover only",
   return_of_premium: "Term with return of premium",
   endowment: "Endowment / savings",
+  money_back: "Money back / guaranteed income",
   unit_linked: "Unit linked",
 };
 
@@ -139,10 +145,16 @@ export function resolveShape(
   if (stored) {
     if (/unit|ulip|linked|market|fund/.test(stored)) return { shape: "unit_linked", inferred: false };
     if (/return of premium|\brop\b/.test(stored)) return { shape: "return_of_premium", inferred: false };
-    if (/endow|saving|money.?back|guaranteed/.test(stored)) return { shape: "endowment", inferred: false };
+    if (/money.?back|income/.test(stored)) return { shape: "money_back", inferred: false };
+    if (/endow|saving|guaranteed/.test(stored)) return { shape: "endowment", inferred: false };
     if (/term|pure|protect/.test(stored)) return { shape: "pure_term", inferred: false };
   }
+  // A payout amount on the schedule settles it: only a money-back or income
+  // plan pays the customer while the policy is still running.
+  if (Number(data?.payout_amount) > 0) return { shape: "money_back", inferred: !stored };
+
   const name = String(data?.plan_name ?? "").toLowerCase();
+  if (/money.?back|income|achiever|nivesh|sanchay/.test(name)) return { shape: "money_back", inferred: true };
   if (/unit linked|ulip|wealth|invest|market/.test(name)) return { shape: "unit_linked", inferred: true };
   if (/return of premium|\brop\b/.test(name)) return { shape: "return_of_premium", inferred: true };
   if (insuranceType === "term") return { shape: "pure_term", inferred: true };
@@ -275,6 +287,21 @@ function addMonths(d: Date, months: number): Date {
  * actually reaches the customer (which for a locked-in policy is not the
  * anniversary but the date the lock-in lifts).
  */
+/** Survival payouts falling inside a window, as dated cashflows. */
+function payoutFlows(
+  amount: number, perYear: number, from: Date | null, to: Date | null, until: Date
+): { date: Date; amount: number }[] {
+  if (!amount || !from) return [];
+  const out: { date: Date; amount: number }[] = [];
+  const stepMonths = Math.max(Math.round(12 / perYear), 1);
+  const last = to && to < until ? to : until;
+  for (let i = 0, d = new Date(from); d <= last && i < 1200; i++) {
+    out.push({ date: new Date(d), amount });
+    d = addMonths(from, stepMonths * (i + 1));
+  }
+  return out;
+}
+
 function datedFlows(
   start: string | null, instalment: number, perYear: number, ppt: number,
   exitYear: number, payout: number, payoutDate: string | null
@@ -352,6 +379,15 @@ export function computePolicyValue(
     num(d.age_at_entry) ?? (coverTillAge ? coverTillAge - term! : params.entryAge.value ?? null);
 
   const { shape } = resolveShape(insuranceType, d);
+  // "Sum assured" on these documents is the DEATH cover. The maturity amount is
+  // a different number and is stated separately — on the policy that exposed
+  // this, 20L against 14L. Never infer one from the other.
+  const statedMaturity = num(d.maturity_amount);
+  const payoutAmount = num(d.payout_amount) ?? 0;
+  const payoutsPerYear = frequencyMultiplier(d.payout_frequency);
+  const payoutStart = policyDate(d.payout_start_date);
+  const payoutEnd = policyDate(d.payout_end_date);
+  const payoutPerYear = payoutAmount * payoutsPerYear;
   const start: string | null = d.start_date ?? null;
   const floor = params.deathBenefitFloorPct.value / 100;
 
@@ -403,7 +439,16 @@ export function computePolicyValue(
   const instalment = rawPremium!;
   const datedIrr = (exitYear: number, payout: number, payoutDate: string | null) => {
     const flows = datedFlows(start, instalment, perYear, ppt, exitYear, payout, payoutDate);
-    return flows ? xirr(flows) : null;
+    if (!flows) return null;
+    // Money already received during the term is part of the return. Leaving the
+    // survival payouts out understates it and makes the plan look worse than it is.
+    const begin = policyDate(start);
+    if (begin && payoutAmount > 0) {
+      const exitOn = policyDate(payoutDate) ?? addMonths(begin, exitYear * 12);
+      flows.push(...payoutFlows(payoutAmount, payoutsPerYear, payoutStart, payoutEnd, exitOn));
+    }
+    flows.sort((a, b) => a.date.getTime() - b.date.getTime());
+    return xirr(flows);
   };
 
   // The statement gives the fund value as at a real date. Where we have it, the
@@ -542,12 +587,38 @@ export function computePolicyValue(
             : `${Math.round(gsvShare(y, term!, params) * 100)}% of the premiums paid so far.`;
       }
 
+      if (shape === "money_back") {
+        // Survival payouts already received by the end of this policy year.
+        const begin = policyDate(start);
+        const received = begin
+          ? payoutFlows(payoutAmount, payoutsPerYear, payoutStart, payoutEnd, addMonths(begin, y * 12))
+              .reduce((sum, p) => sum + p.amount, 0)
+          : payoutPerYear * y;
+        // The maturity amount is whatever the schedule states. We do not derive
+        // it from the sum assured, because they are different numbers.
+        const matAmount = statedMaturity ?? sumAssured;
+        // Surrender pays the guaranteed value on premiums, less what has already
+        // been handed over as survival benefit — the standard treatment.
+        const gsv = acquired(y) ? gsvShare(y, term!, params) * paid : 0;
+        value = received + (y === term ? matAmount : gsv);
+        back = y === term ? matAmount : Math.max(gsv - 0, 0);
+        cover = Math.max(sumAssured, floor * paid);
+        note =
+          y === term
+            ? `Maturity amount of ${Math.round(matAmount).toLocaleString("en-IN")} as stated on the schedule.`
+            : !acquired(y)
+            ? `No surrender value until ${params.surrenderAcquiresAfterYears.value} policy years are complete.`
+            : `Plus ${Math.round(received).toLocaleString("en-IN")} of payouts already received by then.`;
+      }
+
       if (shape === "endowment") {
         const bonus = params.bonusPer1000.value * (sumAssured / 1000) * y;
         const paidUp = sumAssured * (Math.min(y, ppt) / ppt);
         const ssv = (paidUp + bonus) * ssvShare(y, term!, params);
         value = paidUp + bonus;
-        back = y === term ? sumAssured + bonus : Math.max(gsvShare(y, term!, params) * paid, acquired(y) ? ssv : 0);
+        back = y === term
+          ? (statedMaturity ?? sumAssured + bonus)
+          : Math.max(gsvShare(y, term!, params) * paid, acquired(y) ? ssv : 0);
         cover = Math.max(sumAssured, floor * paid) + bonus;
         if (params.bonusPer1000.value > 0) guaranteed = false;
         note =
@@ -576,6 +647,18 @@ export function computePolicyValue(
     if (shape === "return_of_premium") {
       steps.push("Surrender value = the guaranteed factor for that year × premiums paid, from the factor table.");
       steps.push("Maturity benefit = every premium paid, returned at the end of the term.");
+    }
+    if (shape === "money_back") {
+      steps.push(
+        `The plan pays ${Math.round(payoutAmount).toLocaleString("en-IN")} ${String(d.payout_frequency ?? "").toLowerCase() || "each period"}` +
+          `${payoutStart ? ` from ${d.payout_start_date}` : ""}${payoutEnd ? ` to ${d.payout_end_date}` : ""}. ` +
+          "Those payouts are counted as money received, both in the total and in the return."
+      );
+      steps.push(
+        `Maturity amount is ${Math.round(statedMaturity ?? sumAssured).toLocaleString("en-IN")}, taken from the schedule. ` +
+          "It is a different figure from the death cover and is never derived from it."
+      );
+      steps.push("Surrender before the end pays the guaranteed surrender value on the premiums paid.");
     }
     if (shape === "endowment") {
       steps.push(`Accrued bonus = ₹${params.bonusPer1000.value} per ₹1,000 of sum assured, per completed year.`);

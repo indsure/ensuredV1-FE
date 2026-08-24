@@ -141,6 +141,7 @@ export const DEFAULT_PARAMS: PolicyParams = {
 export const RELEVANT_PARAMS: Record<string, (keyof PolicyParams)[]> = {
   pure_term: [],
   return_of_premium: ["gsvFactors", "surrenderAcquiresAfterYears"],
+  money_back: ["gsvFactors", "surrenderAcquiresAfterYears", "deathBenefitFloorPct"],
   endowment: ["bonusPer1000", "gsvFactors", "ssvFactors", "surrenderAcquiresAfterYears", "deathBenefitFloorPct"],
   unit_linked: [
     "grossReturnPct", "fundChargePct", "allocationCharges", "adminMonthly",

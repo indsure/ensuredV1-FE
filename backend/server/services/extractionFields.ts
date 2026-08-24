@@ -78,7 +78,15 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "start_date", label: "Commencement date", type: "date" },
     { key: "next_premium_date", label: "Next premium due date", type: "date" },
     { key: "maturity_date", label: "Maturity date", type: "date", shared: "expiry_date" },
-    { key: "plan_type", label: "Plan type (term / return of premium / endowment / unit linked)", type: "text" },
+    { key: "plan_type", label: "Plan type (term / return of premium / endowment / money back / unit linked)", type: "text" },
+    // A money-back or guaranteed-income plan pays the customer during the term
+    // and states its maturity amount separately from the death cover. Without
+    // these the schedule silently loses both.
+    { key: "maturity_amount", label: "Maturity amount stated on the schedule", type: "number" },
+    { key: "payout_amount", label: "Survival / income payout amount", type: "number" },
+    { key: "payout_frequency", label: "Payout frequency (monthly / yearly)", type: "text" },
+    { key: "payout_start_date", label: "First payout date", type: "date" },
+    { key: "payout_end_date", label: "Last payout date", type: "date" },
     { key: "bonus_per_1000", label: "Declared bonus per ₹1,000 sum assured (if any)", type: "number" },
     { key: "fund_value", label: "Fund value (unit linked only)", type: "number" },
     { key: "fund_value_as_on", label: "Fund value as on (statement date)", type: "date" },

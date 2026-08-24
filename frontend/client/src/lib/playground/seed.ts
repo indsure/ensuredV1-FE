@@ -841,6 +841,30 @@ export function buildSeed(): Store {
         nominee_name: "R Desai",
       },
     },
+    {
+      id: "pol-15", agent_id: DEMO_AGENT_ID, customer_id: "cust-5",
+      policy_name: "Sample Dream Achiever", name: "Vikram Rao", policyholder_name: "Vikram Rao",
+      insurer: INSURERS.hdfc, insurance_type: "life", status: "done", score: null,
+      sum_insured: 2000000, expiry_date: "2039-03-04", created_at: ago(6),
+      share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
+      flaws: [], report_data: null,
+      extracted_data: {
+        policyholder_name: "Vikram Rao", life_assured_name: "Vikram Rao",
+        insurer: INSURERS.hdfc, policy_number: "SPEC-HDFC-27290",
+        plan_name: "Sample Dream Achiever", 
+        // Death cover and maturity amount are DIFFERENT numbers on these plans.
+        sum_assured: 2000000, maturity_amount: 1400000,
+        premium: 200000, premium_frequency: "Annual",
+        policy_term_years: 15, premium_paying_term_years: 7,
+        start_date: "2024-03-04", next_premium_date: "2027-03-04",
+        maturity_date: "2039-03-04", age_at_entry: 52,
+        // Pays the customer monthly for the whole term, on top of maturity.
+        payout_amount: 3380, payout_frequency: "Monthly",
+        payout_start_date: "2024-04-04", payout_end_date: "2039-03-04",
+        plan_type: "Money back / guaranteed income",
+        nominee_name: "S Rao",
+      },
+    },
     // In-flight + failed, so My Queue and the failures panel have content
     {
       id: "pol-9", agent_id: DEMO_AGENT_ID, customer_id: null,

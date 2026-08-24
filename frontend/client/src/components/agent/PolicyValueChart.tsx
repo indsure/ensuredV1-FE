@@ -173,6 +173,18 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
         body: `Stop earlier and only the guaranteed surrender value is paid, which stays below the premiums ` +
           `paid until close to the end of the term.`,
       };
+    if (shape === "money_back") {
+      const payouts = rows[rows.length - 1].value - maturity;
+      return {
+        title:
+          `${short(payouts)} paid out along the way, plus ${short(maturity)} at maturity` +
+          (returnAtMaturityTop !== null ? ` — a return of ${pct(returnAtMaturityTop)} a year.` : "."),
+        body:
+          `On ${rupee(totalPremiums)} of premiums, the customer receives ${short(payouts + maturity)} in total. ` +
+          "The regular payouts are money already in their hands, so they count towards the return — but the " +
+          "cover and the maturity amount are separate figures, and neither is derived from the other.",
+      };
+    }
     if (shape === "endowment")
       return {
         title: `About ${short(maturity)} at maturity, on ${rupee(totalPremiums)} of premiums` +
