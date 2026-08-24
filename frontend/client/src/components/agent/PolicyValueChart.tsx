@@ -400,7 +400,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className={"grid grid-cols-1 gap-4 sm:grid-cols-2 " + (row.received > 0 ? "xl:grid-cols-5" : "xl:grid-cols-4")}>
           <div className="rounded-xl border border-slate-100 p-4">
             <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Paid by then</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: PAID }}>{rupee(row.paid)}</div>
@@ -408,6 +408,15 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
               {row.year >= result.ppt ? `All ${result.ppt} premiums paid.` : `${row.year} of ${result.ppt} premiums paid.`}
             </div>
           </div>
+          {row.received > 0 && (
+            <div className="rounded-xl border border-slate-100 p-4">
+              <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Already received</div>
+              <div className="mt-1 text-2xl font-bold text-[#0f766e]">{rupee(row.received)}</div>
+              <div className="mt-1 text-xs text-slate-500">
+                Paid out along the way. They keep this whatever they decide next.
+              </div>
+            </div>
+          )}
           <div className="rounded-xl border border-slate-100 p-4">
             <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Gets back if they stop</div>
             <div className={"mt-1 text-2xl font-bold " + (row.back > 0 ? "" : "text-slate-400")}
@@ -415,6 +424,11 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
               {row.back > 0 ? rupee(row.back) : "Nothing"}
             </div>
             <div className="mt-1 text-xs text-slate-500">
+              {row.received > 0 && (
+                <span className="font-semibold text-slate-700">
+                  {rupee(row.back + row.received)} in hand in total.{" "}
+                </span>
+              )}
               {row.penalty > 0 ? `After a ${rupee(row.penalty)} discontinuance charge. ` : ""}{row.note}
             </div>
           </div>

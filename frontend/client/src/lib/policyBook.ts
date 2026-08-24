@@ -37,6 +37,8 @@ export interface PolicyValueSummary {
   /** Anniversary that starts the next policy year. */
   nextAnniversary: string | null;
   paidSoFar: number;
+  /** Payouts already handed over — kept regardless of what happens next. */
+  receivedSoFar: number;
   valueToday: number;
   valueNextYear: number | null;
   /** valueNextYear - valueToday. */
@@ -137,6 +139,7 @@ export function summarisePolicy(row: {
     term: result.term,
     nextAnniversary,
     paidSoFar: today.paid,
+    receivedSoFar: today.received,
     valueToday: today.back,
     valueNextYear: next ? next.back : null,
     uplift,

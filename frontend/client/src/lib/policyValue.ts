@@ -47,6 +47,11 @@ export interface ValueRow {
   value: number;
   /** Penalty deducted if the policy is surrendered in that year. */
   penalty: number;
+  /**
+   * Payouts already handed over by the end of this year. The customer keeps
+   * these whatever they do next, so `back` alone understates what they hold.
+   */
+  received: number;
   /** What the customer actually receives, after penalty and after any deferral. */
   back: number;
   cover: number;
@@ -526,6 +531,7 @@ export function computePolicyValue(
         paid: annualPremium * Math.min(y, ppt),
         value: fv,
         penalty,
+        received: 0,
         back,
         cover: Math.max(sumAssured, fv, floor * (annualPremium * Math.min(y, ppt))),
         deferredTo: inLock ? lockInEnds : null,
@@ -567,6 +573,7 @@ export function computePolicyValue(
   } else {
     for (let y = 1; y <= term!; y++) {
       const paid = annualPremium * Math.min(y, ppt);
+      let receivedSoFar = 0;
       let value = 0;
       let back = 0;
       let cover = sumAssured;
@@ -602,6 +609,7 @@ export function computePolicyValue(
         const gsv = acquired(y) ? gsvShare(y, term!, params) * paid : 0;
         value = received + (y === term ? matAmount : gsv);
         back = y === term ? matAmount : Math.max(gsv - 0, 0);
+        receivedSoFar = received;
         cover = Math.max(sumAssured, floor * paid);
         note =
           y === term
@@ -632,7 +640,7 @@ export function computePolicyValue(
       rows.push({
         year: y,
         age: entryAge === null ? null : entryAge + y,
-        paid, value, penalty: 0, back, cover, deferredTo: null, note,
+        paid, value, penalty: 0, back, cover, received: receivedSoFar, deferredTo: null, note,
         actual: false,
         irr: wantReturn(y) ? irr(exitFlows(annualPremium, ppt, y, back)) : null,
         xirr: wantReturn(y) ? datedIrr(y, back, null) : null,
