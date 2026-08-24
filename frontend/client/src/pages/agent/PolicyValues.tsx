@@ -21,7 +21,6 @@ import {
 } from "@/lib/policyBook";
 
 const rupee = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
-const pct = (r: number | null) => (r === null ? "—" : (r * 100).toFixed(1) + "%");
 
 const short = (n: number) => {
   if (!n) return "₹0";
@@ -178,12 +177,12 @@ export default function PolicyValues() {
           <table className="table-cards w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left">
-                {["Client", "Year", "Paid in", "Worth today", "At next anniversary", "Return now", "Return at maturity", "What to do"].map((h, i) => (
+                {["Client", "Year", "Premiums paid", "Surrender value now", "Next anniversary", "At maturity", "What to do"].map((h, i) => (
                   <th
                     key={h}
                     className={
                       "px-4 py-3 text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 " +
-                      (i >= 2 && i <= 6 ? "text-right" : "")
+                      (i >= 2 && i <= 5 ? "text-right" : "")
                     }
                   >
                     {h}
@@ -205,8 +204,8 @@ export default function PolicyValues() {
                   <td className="px-4 py-3 text-slate-600" data-label="Year">
                     {r.policyYear}/{r.term}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-slate-600" data-label="Paid in">{rupee(r.paidSoFar)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums font-semibold text-slate-900" data-label="Worth today">
+                  <td className="px-4 py-3 text-right tabular-nums text-slate-600" data-label="Premiums paid">{rupee(r.paidSoFar)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums font-semibold text-slate-900" data-label="Surrender value now">
                     {r.action === "none" ? (
                       <span className="text-slate-400">Nothing</span>
                     ) : r.deferredTo ? (
@@ -214,8 +213,15 @@ export default function PolicyValues() {
                     ) : (
                       rupee(r.valueToday)
                     )}
+                    {/* Payouts already banked are money the customer holds. Showing
+                        the surrender value alone understates what they have. */}
+                    {r.receivedSoFar > 0 && (
+                      <div className="text-xs font-normal text-[#0f766e]">
+                        + {rupee(r.receivedSoFar)} received
+                      </div>
+                    )}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums" data-label="At next anniversary">
+                  <td className="px-4 py-3 text-right tabular-nums" data-label="Next anniversary">
                     {r.valueNextYear === null || r.action === "none" ? (
                       <span className="text-slate-300">—</span>
                     ) : (
@@ -227,22 +233,24 @@ export default function PolicyValues() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums" data-label="Return now">
-                    {r.irrToday === null ? (
+                  <td className="px-4 py-3 text-right tabular-nums" data-label="At maturity">
+                    {r.action === "none" || r.totalAtMaturity <= 0 ? (
                       <span className="text-slate-300">—</span>
                     ) : (
-                      <span className={r.irrToday < 0 ? "font-semibold text-amber-700" : "text-slate-700"}>
-                        {pct(r.irrToday)}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums" data-label="Return at maturity">
-                    {r.irrAtMaturity === null ? (
-                      <span className="text-slate-300">—</span>
-                    ) : (
-                      <span className={r.irrAtMaturity < 0 ? "font-semibold text-amber-700" : "text-slate-700"}>
-                        {pct(r.irrAtMaturity)}
-                      </span>
+                      <>
+                        <div className="font-semibold text-slate-900">{rupee(r.totalAtMaturity)}</div>
+                        {/* Against what goes in, so the row answers "ahead or behind" */}
+                        <div
+                          className={
+                            "text-xs font-normal " +
+                            (r.totalAtMaturity >= r.premiumsPayable ? "text-[#0f766e]" : "text-amber-700")
+                          }
+                        >
+                          {r.totalAtMaturity >= r.premiumsPayable ? "+" : "−"}
+                          {rupee(Math.abs(r.totalAtMaturity - r.premiumsPayable))} on
+                          {" "}{rupee(r.premiumsPayable)} paid
+                        </div>
+                      </>
                     )}
                   </td>
                   <td className="px-4 py-3" data-label="What to do" data-cell="actions">
@@ -265,7 +273,7 @@ export default function PolicyValues() {
 
       <p className="text-xs text-slate-400">
         * Held in the discontinued fund — the amount shown is what is released when the lock-in ends, not
-        what is payable now. Values are recomputed from each policy document every time this page loads, so
+        what is payable now. Every value is worked out from the policy document each time this page loads, so
         they move with the anniversary on their own.
       </p>
     </div>

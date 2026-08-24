@@ -41,6 +41,12 @@ export interface PolicyValueSummary {
   receivedSoFar: number;
   valueToday: number;
   valueNextYear: number | null;
+  /** Everything the customer ends up with by maturity: the maturity benefit
+   *  plus every payout the plan makes along the way. */
+  totalAtMaturity: number;
+  /** Every premium the policy will ever ask for — the figure the maturity
+   *  total has to be judged against, not just what has been paid so far. */
+  premiumsPayable: number;
   /** valueNextYear - valueToday. */
   uplift: number;
   upliftPct: number;
@@ -142,6 +148,11 @@ export function summarisePolicy(row: {
     receivedSoFar: today.received,
     valueToday: today.back,
     valueNextYear: next ? next.back : null,
+    premiumsPayable: result.totalPremiums,
+    totalAtMaturity: (() => {
+      const end = result.rows[result.term - 1];
+      return end.received + end.back;
+    })(),
     uplift,
     upliftPct,
     deferredTo: today.deferredTo,

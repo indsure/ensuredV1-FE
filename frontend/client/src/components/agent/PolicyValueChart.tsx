@@ -328,11 +328,11 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
         <div>
           <div className="mb-2 flex flex-wrap gap-4 text-xs text-slate-600">
             <span className="flex items-center gap-2">
-              <span className="h-[3px] w-5 rounded" style={{ background: PAID }} />Money paid
+              <span className="h-[3px] w-5 rounded" style={{ background: PAID }} />Premiums paid
             </span>
             {paysDuringTerm && (
               <span className="flex items-center gap-2">
-                <span className="h-3 w-5 rounded-sm" style={{ background: BACK }} />Already received
+                <span className="h-3 w-5 rounded-sm" style={{ background: BACK }} />Payouts received
               </span>
             )}
             <span className="flex items-center gap-2">
@@ -341,7 +341,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
               ) : (
                 <span className="h-[3px] w-5 rounded" style={{ background: BACK }} />
               )}
-              {paysDuringTerm ? "If they surrender on top" : "Money back if they stop"}
+              {paysDuringTerm ? "Surrender value on top" : "Surrender value"}
             </span>
             {lockInYears ? (
               <span className="flex items-center gap-2">
@@ -364,7 +364,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                     rupee(Number(v)),
                     n === "paid" ? "Money paid"
                       : n === "received" ? "Already received"
-                      : n === "inHand" ? "In hand in total"
+                      : n === "inHand" ? "Total in hand"
                       : "If they surrender",
                   ]}
                   labelFormatter={(l) => `Policy year ${l}`}
@@ -440,7 +440,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
 
         <div className={"grid grid-cols-1 gap-4 sm:grid-cols-2 " + (row.received > 0 ? "xl:grid-cols-5" : "xl:grid-cols-4")}>
           <div className="rounded-xl border border-slate-100 p-4">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Paid by then</div>
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Premiums paid</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: PAID }}>{rupee(row.paid)}</div>
             <div className="mt-1 text-xs text-slate-500">
               {row.year >= result.ppt ? `All ${result.ppt} premiums paid.` : `${row.year} of ${result.ppt} premiums paid.`}
@@ -448,7 +448,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
           </div>
           {row.received > 0 && (
             <div className="rounded-xl border border-slate-100 p-4">
-              <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Already received</div>
+              <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Payouts received</div>
               <div className="mt-1 text-2xl font-bold text-[#0f766e]">{rupee(row.received)}</div>
               <div className="mt-1 text-xs text-slate-500">
                 Paid out along the way. They keep this whatever they decide next.
@@ -456,7 +456,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             </div>
           )}
           <div className="rounded-xl border border-slate-100 p-4">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Gets back if they stop</div>
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Surrender value</div>
             <div className={"mt-1 text-2xl font-bold " + (row.back > 0 ? "" : "text-slate-400")}
               style={row.back > 0 ? { color: BACK } : undefined}>
               {row.back > 0 ? rupee(row.back) : "Nothing"}
@@ -471,7 +471,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             </div>
           </div>
           <div className="rounded-xl border border-slate-100 p-4">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Return if they stop here</div>
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Annual return</div>
             <div className={"mt-1 text-2xl font-bold " + (returnHere === null ? "text-slate-400" : returnHere < 0 ? "text-amber-700" : "text-slate-900")}>
               {returnHere === null ? "No return" : pct(returnHere)}
             </div>
@@ -492,7 +492,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             </div>
           </div>
           <div className="rounded-xl border border-slate-100 p-4">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Family gets on death</div>
+            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Death benefit</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: COVER }}>{rupee(row.cover)}</div>
             <div className="mt-1 text-xs text-slate-500">
               {row.deferredTo ? "Cover stops if the policy is surrendered." : "Cover while the policy is in force."}
