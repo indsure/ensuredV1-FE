@@ -5,7 +5,8 @@
 // that does not run JavaScript (GPTBot, PerplexityBot, ClaudeBot, and Google's
 // first pass). This script rewrites dist/<route>/index.html with per-page
 // title/description/canonical/OG tags, page-specific JSON-LD, and real body
-// content baked into #root. Because the app uses createRoot (not hydrateRoot),
+// content baked into #root inside a <noscript>, so a crawler reads it and a
+// browser never paints it. Because the app uses createRoot (not hydrateRoot),
 // React simply replaces #root on mount, so there is no hydration mismatch.
 //
 // It runs as `postbuild`, after `vite build`, and uses only Node + esbuild
@@ -146,10 +147,15 @@ function injectJsonLd(html, blocks) {
   return html.replace("</head>", `  ${scripts}\n</head>`);
 }
 
+// The seed is for crawlers that do not run JavaScript. Browsers do run it, but
+// not instantly: the markup carries no classes, so for the ~90ms between first
+// paint and createRoot replacing #root, a real visitor sees an unstyled <h1>
+// and paragraph fill the screen. <noscript> keeps the markup in the document
+// for the crawlers that need it and renders nothing for everyone else.
 function injectBody(html, bodyHtml) {
   return html.replace(
     /<div id="root">[\s\S]*?<\/div>/,
-    `<div id="root">${bodyHtml}</div>`,
+    `<div id="root"><noscript>${bodyHtml}</noscript></div>`,
   );
 }
 
