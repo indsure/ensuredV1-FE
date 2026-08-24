@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  ComposedChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, ReferenceArea, ReferenceLine,
 } from "recharts";
 
@@ -153,9 +153,17 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
     year: r.year,
     paid: Math.round(r.paid),
     back: Math.round(r.back),
+    received: Math.round(r.received),
+    inHand: Math.round(r.received + r.back),
     locked: r.deferredTo ? Math.round(r.back) : null,
     cover: Math.round(r.cover),
   }));
+
+  // A money-back plan hands money over during the term, so the question is not
+  // "what would I get" but "how much do I have, and is it past what I put in".
+  // Stacking what is banked under what surrender would add answers both at once,
+  // and the premium line becomes the bar the stack has to clear.
+  const paysDuringTerm = rows.some((r) => r.received > 0);
 
   const returnAtMaturityTop = xirrAtMaturity ?? irrAtMaturity;
   const verdict = (() => {
@@ -322,8 +330,18 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             <span className="flex items-center gap-2">
               <span className="h-[3px] w-5 rounded" style={{ background: PAID }} />Money paid
             </span>
+            {paysDuringTerm && (
+              <span className="flex items-center gap-2">
+                <span className="h-3 w-5 rounded-sm" style={{ background: BACK }} />Already received
+              </span>
+            )}
             <span className="flex items-center gap-2">
-              <span className="h-[3px] w-5 rounded" style={{ background: BACK }} />Money back if they stop
+              {paysDuringTerm ? (
+                <span className="h-3 w-5 rounded-sm" style={{ background: BACK, opacity: 0.32 }} />
+              ) : (
+                <span className="h-[3px] w-5 rounded" style={{ background: BACK }} />
+              )}
+              {paysDuringTerm ? "If they surrender on top" : "Money back if they stop"}
             </span>
             {lockInYears ? (
               <span className="flex items-center gap-2">
@@ -335,14 +353,20 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
 
           <div className="h-[260px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
+              <ComposedChart data={chartData} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis dataKey="year" axisLine={false} tickLine={false}
                   tick={{ fill: "#94a3b8", fontSize: 11 }} dy={6} />
                 <YAxis axisLine={false} tickLine={false} width={64}
                   tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={short} />
                 <Tooltip
-                  formatter={(v: any, n: any) => [rupee(Number(v)), n === "paid" ? "Money paid" : "Money back"]}
+                  formatter={(v: any, n: any) => [
+                    rupee(Number(v)),
+                    n === "paid" ? "Money paid"
+                      : n === "received" ? "Already received"
+                      : n === "inHand" ? "In hand in total"
+                      : "If they surrender",
+                  ]}
                   labelFormatter={(l) => `Policy year ${l}`}
                   contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }}
                 />
@@ -350,8 +374,22 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                   <ReferenceArea x1={1} x2={lockInYears} fill="#0f172a" fillOpacity={0.04} />
                 ) : null}
                 <ReferenceLine x={yr} stroke="#94a3b8" strokeWidth={1} />
+                {paysDuringTerm ? (
+                  <>
+                    {/* Banked money at the bottom because it is already theirs; what
+                        surrender would add sits on top. The top edge is the total. */}
+                    <Area type="monotone" dataKey="received" stackId="hand" stroke="none"
+                      fill={BACK} fillOpacity={0.85} isAnimationActive={false} />
+                    <Area type="monotone" dataKey="back" stackId="hand" stroke="none"
+                      fill={BACK} fillOpacity={0.28} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="inHand" stroke={BACK} strokeWidth={2}
+                      dot={false} isAnimationActive={false} />
+                  </>
+                ) : (
+                  <Line type="monotone" dataKey="back" stroke={BACK} strokeWidth={2} dot={false} />
+                )}
+                {/* Premiums paid drawn last so it reads as the bar to clear. */}
                 <Line type="monotone" dataKey="paid" stroke={PAID} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="back" stroke={BACK} strokeWidth={2} dot={false} />
                 {lockInYears ? (
                   // isAnimationActive must stay off: recharts drives its line-draw
                   // animation through stroke-dasharray and would overwrite ours.
@@ -359,7 +397,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                     strokeDasharray="5 5" dot={false} connectNulls={false}
                     isAnimationActive={false} />
                 ) : null}
-              </LineChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
 
