@@ -50,6 +50,27 @@ export default function AgentSignupStep2() {
     const [showCustomInput, setShowCustomInput] = useState(false)
     const [customInsurer, setCustomInsurer] = useState('')
 
+    // Set by step 1 when the account was created but the agency request was
+    // not stored. Read once on mount — it is a hand-off from the previous
+    // screen, not state that changes here.
+    const [agencyUnconfirmed] = useState(
+        () => new URLSearchParams(window.location.search).get('agency') === 'unconfirmed'
+    )
+
+    // Selections live in component state only. They are not written to web
+    // storage on purpose — but that means a refresh or an accidental close
+    // silently discards them, so warn first. (A real Back to step 1 is not
+    // offered here: the account is already created by this point.)
+    useEffect(() => {
+        if (selected.length === 0) return
+        const warn = (e: BeforeUnloadEvent) => {
+            e.preventDefault()
+            e.returnValue = ''
+        }
+        window.addEventListener('beforeunload', warn)
+        return () => window.removeEventListener('beforeunload', warn)
+    }, [selected])
+
     const toggleInsurer = (name: string) => {
         if (selected.includes(name)) {
             setSelected(prev => prev.filter(i => i !== name))
@@ -137,6 +158,33 @@ export default function AgentSignupStep2() {
                         </h1>
                         <p className="text-slate-500 text-sm font-medium">Advisor Portal</p>
                     </div>
+
+                    {/* Step 1 said "agency" but the server did not confirm it
+                        stored the request. Rather than let the promise on the
+                        previous screen stand unearned, say so and give them a
+                        way to reach us. Silence here would mean an agency that
+                        thinks a team is coming and never hears from anyone. */}
+                    {agencyUnconfirmed && (
+                        <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                            <p className="text-sm font-semibold text-amber-900">
+                                Your account is set up, but we could not record your agency details.
+                            </p>
+                            <p className="mt-1 text-sm text-amber-800 leading-relaxed">
+                                Nothing is lost on your side — carry on below and use IndSure normally.
+                                Message us and we will set your team up by hand.
+                            </p>
+                            {/* target and rel stay on ONE line: checks/guard.mjs
+                                matches them per line, so splitting them reads
+                                as an unprotected _blank. */}
+                            <a
+                                href="https://wa.me/919987148125?text=Hi%2C%20I%20signed%20up%20as%20an%20agency%20but%20my%20agency%20details%20were%20not%20saved."
+                                target="_blank" rel="noopener noreferrer"
+                                className="mt-3 inline-flex items-center min-h-[44px] px-4 rounded-full bg-amber-600 text-white text-sm font-semibold"
+                            >
+                                Message us on WhatsApp
+                            </a>
+                        </div>
+                    )}
 
                     {/* Progress Indicator */}
                     <div className="flex items-center gap-3 mb-10">

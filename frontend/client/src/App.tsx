@@ -49,6 +49,9 @@ const MyQueue = lazy(() => import("@/pages/agent/MyQueue"));
 const SettingsNew = lazy(() => import("@/pages/agent/SettingsNew"));
 const MyProfile = lazy(() => import("@/pages/agent/MyProfile"));
 const AgentMyPage = lazy(() => import("@/pages/agent/MyPage"));
+const AgentTeam = lazy(() => import("@/pages/agent/Team"));
+const AgentTeamMember = lazy(() => import("@/pages/agent/TeamMember"));
+const JoinTeam = lazy(() => import("@/pages/agent/JoinTeam"));
 import AgentProtectedRoute from "@/components/agent/ProtectedRoute";
 
 // --- Advisor landing pages (public, per-agent lead capture) ---
@@ -190,6 +193,10 @@ function App() {
                       <Route path="/agent/forgot-password" component={AgentForgotPassword} />
                       <Route path="/agent/reset-password" component={AgentResetPassword} />
                       <Route path="/agent/signup/:rest*" component={AgentSignupFlow} />
+                      {/* Reachable signed-out on purpose: an invited advisor
+                          usually has no IndSure account yet. The page itself
+                          decides what to ask for. */}
+                      <Route path="/agent/join/:token" component={JoinTeam} />
 
                       {/* --- Agent Protected App --- */}
                       <Route path="/agent/dashboard">
@@ -212,6 +219,12 @@ function App() {
                       </Route>
                       <Route path="/agent/customers/:id">
                         {() => <AgentProtectedRoute><CustomerDetail /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/team">
+                        {() => <AgentProtectedRoute><AgentTeam /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/team/:id">
+                        {() => <AgentProtectedRoute><AgentTeamMember /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/claims">
                         {() => <AgentProtectedRoute><Claims /></AgentProtectedRoute>}

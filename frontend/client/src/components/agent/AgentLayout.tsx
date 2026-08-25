@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { BookOpen, Calculator, FileText, Globe, LayoutDashboard, Settings, ListChecks, LogOut, Scale, ShieldCheck, Target, Upload, User, Users, Menu, X, TrendingUp } from "lucide-react"
+import { BookOpen, Calculator, FileText, Globe, LayoutDashboard, Settings, ListChecks, LogOut, Scale, ShieldCheck, Target, Upload, User, Users, Menu, X, TrendingUp, UsersRound } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -15,7 +15,7 @@ interface AgentLayoutProps {
 }
 
 export default function AgentLayout({ children }: AgentLayoutProps) {
-  const { agent } = useAgent()
+  const { agent, team, teamRequestPending } = useAgent()
   const [location, setLocation] = useLocation()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -63,8 +63,21 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           { label: t("layout.claims") ?? "Claims", href: "/agent/claims", icon: <ShieldCheck className="h-4 w-4" /> },
         ],
       },
+      // Agency: for the person who owns a team, and for someone whose team we
+      // have not provisioned yet — they asked for one at signup, and hiding the
+      // tab would look like the answer was thrown away. A plain MEMBER gets
+      // nothing here: they have nothing to manage.
+      ...(team?.isOwner || teamRequestPending
+        ? [{
+            key: "agency",
+            label: t("layout.agency") ?? "Agency",
+            items: [
+              { label: t("layout.team") ?? "Team", href: "/agent/team", icon: <UsersRound className="h-4 w-4" /> },
+            ],
+          }]
+        : []),
     ],
-    [locale]
+    [locale, team?.isOwner, teamRequestPending]
   )
 
   async function fetchQueueCount() {

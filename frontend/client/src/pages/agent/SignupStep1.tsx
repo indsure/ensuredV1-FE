@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'wouter'
 import { supabase } from '@/lib/supabase'
 import { apiFetch } from '@/lib/api';
@@ -28,11 +28,19 @@ export default function AgentSignupStep1() {
         try {
             const saved = sessionStorage.getItem('indsure_signup_draft')
             if (saved) {
-                return JSON.parse(saved)
+                // Merge over the defaults rather than returning the draft as-is:
+                // a draft saved before the Individual/Agency question existed has
+                // no accountType, and an undefined value there would render the
+                // choice with neither option selected and no way to submit.
+                return { ...emptyForm(), ...JSON.parse(saved) }
             }
         } catch (e) {
             console.error('Failed to load saved form data:', e)
         }
+        return emptyForm()
+    }
+
+    function emptyForm() {
         return {
             inviteCode: '',
             fullName: '',
@@ -40,10 +48,36 @@ export default function AgentSignupStep1() {
             phone: '',
             city: '',
             password: '',
+            // 'individual' = a solo advisor, which is what everyone signing up
+            // has been until now, so it stays the default. 'agency' opens the
+            // two fields below and records a request for a team.
+            accountType: 'individual',
+            agencyName: '',
+            seatsWanted: '',
         }
     }
 
     const [form, setForm] = useState(getSavedFormData())
+
+    // Arriving from a team invite (/agent/join/<token> → "Create my account").
+    // The invite already knows the address it is bound to and carries its own
+    // single-use signup code, so both are filled in rather than asked for — a
+    // typo in either is a dead end the person cannot diagnose.
+    //
+    // Read once, on mount, and only into EMPTY fields: a saved draft is the
+    // person's own half-finished work and must win over a URL.
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search)
+        const email = params.get('email')
+        const code = params.get('code')
+        if (!email && !code) return
+        setForm((prev: typeof form) => ({
+            ...prev,
+            email: prev.email || email || '',
+            inviteCode: prev.inviteCode || (code ? code.toUpperCase() : ''),
+        }))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
@@ -223,17 +257,36 @@ export default function AgentSignupStep1() {
                 experience_years: 0,
                 invite_code: form.inviteCode.trim().toUpperCase(),
                 marketing_consent: marketingConsent,
+                // Agency answers ride along with the profile rather than a
+                // second call: this endpoint already works without a session
+                // (the email-confirmation path), so there is exactly one moment
+                // that can fail instead of two. The backend records the ask; it
+                // does NOT create a team.
+                account_type: form.accountType,
+                agency_name: form.accountType === 'agency' ? form.agencyName.trim() : null,
+                seats_wanted: form.accountType === 'agency' && form.seatsWanted
+                    ? Number(form.seatsWanted)
+                    : null,
             }),
         })
+
+        // Read the body once, up front: it carries the enterprise-capture
+        // acknowledgement on success and the error message on failure.
+        let profileBody: any = null
+        try {
+            if ((profileRes.headers.get('content-type') || '').includes('application/json')) {
+                profileBody = await profileRes.json()
+            }
+        } catch {}
 
         if (!profileRes.ok) {
             let errMsg = 'Failed to create profile. Please try again.'
             const contentType = profileRes.headers.get('content-type') || ''
             if (contentType.includes('application/json')) {
-                try {
-                    const profileErr = await profileRes.json()
-                    errMsg = profileErr.error || errMsg
-                } catch {}
+                // Read from the body parsed above — a Response can only be
+                // consumed once, and re-reading it here would throw and lose
+                // the server's actual message.
+                errMsg = profileBody?.error || errMsg
             } else {
                 // Non-JSON response (e.g. the SPA host returned HTML/405 because
                 // the API base is misconfigured) — the request never reached the
@@ -271,7 +324,24 @@ export default function AgentSignupStep1() {
             console.error('Failed to clear saved data:', e)
         }
         
-        setLocation('/agent/signup/empanelment')
+        // The agency answer is only real if the server says it stored it. It
+        // can legitimately fail — an older backend that does not know the field
+        // yet, or the insert erroring — and in that case the form has already
+        // promised "we set the team up for you". Carry the truth forward rather
+        // than let that promise stand unearned.
+        //
+        // In the URL, not storage: it is a one-hop hint, and rules.md keeps
+        // signup data out of web storage.
+        let agencyUnconfirmed = false
+        if (form.accountType === 'agency') {
+            try {
+                agencyUnconfirmed = profileBody?.enterpriseCaptured !== true
+            } catch {
+                agencyUnconfirmed = true
+            }
+        }
+
+        setLocation(`/agent/signup/empanelment${agencyUnconfirmed ? '?agency=unconfirmed' : ''}`)
         } catch (err) {
             console.error('Signup error:', err)
             setError('Something went wrong. Please try again.')
@@ -283,8 +353,11 @@ export default function AgentSignupStep1() {
         city.toLowerCase().includes(citySearch.toLowerCase())
     ).slice(0, 10)
 
-    const isFormValid = 
+    const isFormValid =
         inviteCodeStatus === 'valid' &&
+        // An agency that has not named itself would create a request with
+        // nothing to act on, so the name is required on that branch only.
+        (form.accountType !== 'agency' || form.agencyName.trim() !== '') &&
         form.fullName.trim() !== '' &&
         form.email.trim() !== '' &&
         form.phone.trim() !== '' &&
@@ -341,6 +414,99 @@ export default function AgentSignupStep1() {
 
                     {/* Form */}
                     <form onSubmit={handleNext} className="space-y-6 flex-1">
+                        {/* Who is signing up.
+                            First question on the page because it changes what
+                            the rest of it means. Two real radios in a fieldset,
+                            not divs with onClick: this has to be reachable by
+                            keyboard and announced as one choice with two
+                            options. */}
+                        <fieldset>
+                            <legend className="block text-sm font-semibold text-slate-700 mb-2">
+                                Are you signing up on your own, or for an agency? <span className="text-red-500">*</span>
+                            </legend>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {([
+                                    {
+                                        value: 'individual',
+                                        title: 'Individual advisor',
+                                        blurb: 'Just you. Your own leads, customers and policy checks.',
+                                    },
+                                    {
+                                        value: 'agency',
+                                        title: 'Agency / Enterprise',
+                                        blurb: 'Advisors work under you, and you can see their book.',
+                                    },
+                                ] as const).map((opt) => {
+                                    const selected = form.accountType === opt.value
+                                    return (
+                                        <label
+                                            key={opt.value}
+                                            className={`relative flex gap-3 p-4 rounded-2xl border cursor-pointer transition-all min-h-[44px] ${
+                                                selected
+                                                    ? 'border-[#0D9488] bg-[#0D9488]/5 ring-2 ring-[#0D9488]/20'
+                                                    : 'border-slate-200 bg-white hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="accountType"
+                                                value={opt.value}
+                                                checked={selected}
+                                                onChange={() => update('accountType', opt.value)}
+                                                className="mt-0.5 h-4 w-4 accent-[#0D9488] flex-none"
+                                            />
+                                            <span className="min-w-0">
+                                                <span className="block text-sm font-semibold text-slate-900">{opt.title}</span>
+                                                <span className="block mt-0.5 text-sm text-slate-500 leading-relaxed">{opt.blurb}</span>
+                                            </span>
+                                        </label>
+                                    )
+                                })}
+                            </div>
+
+                            {/* Only the agency branch asks for more. Kept inside
+                                the fieldset so it reads as part of the answer,
+                                and the copy is careful not to sound like a
+                                quote — seats are agreed with us, not chosen here. */}
+                            {form.accountType === 'agency' && (
+                                <div className="mt-4 space-y-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                                    <div>
+                                        <label htmlFor="agency-name" className="block text-sm font-semibold text-slate-700 mb-2">
+                                            Agency name <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            id="agency-name"
+                                            type="text"
+                                            value={form.agencyName}
+                                            onChange={(e) => update('agencyName', e.target.value)}
+                                            placeholder="Shreyas Insurance Services"
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="seats-wanted" className="block text-sm font-semibold text-slate-700 mb-2">
+                                            How many advisors, roughly? <span className="font-normal text-slate-500">optional</span>
+                                        </label>
+                                        <input
+                                            id="seats-wanted"
+                                            type="number"
+                                            inputMode="numeric"
+                                            min={1}
+                                            value={form.seatsWanted}
+                                            onChange={(e) => update('seatsWanted', e.target.value)}
+                                            placeholder="6"
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                        Your account is created either way and works straight away. We set the team up
+                                        for you and confirm the seats before anything is charged — the Agency plan
+                                        starts at five seats.
+                                    </p>
+                                </div>
+                            )}
+                        </fieldset>
+
                         {/* Invite Code */}
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-2">
