@@ -44,8 +44,8 @@ const tiers: Tier[] = [
   {
     name: "Agent",
     tagline: "For the full-time advisor.",
-    price: "₹999",
-    priceAnnual: "₹9,999",
+    price: "₹1,499",
+    priceAnnual: "₹14,990",
     period: "/ month",
     periodAnnual: "/ year",
     subline: "12 policy checks every month",
@@ -140,7 +140,7 @@ const faqs = [
   },
   {
     q: "Do you offer a discount for annual billing?",
-    a: "Yes — annual is 2 months free (₹9,999 instead of ₹11,988). Unused checks on the annual plan also roll over until year-end, while monthly-plan checks expire each month.",
+    a: "Yes — annual is 2 months free (₹14,990 instead of ₹17,988). Unused checks on the annual plan also roll over until year-end, while monthly-plan checks expire each month.",
   },
   {
     q: "Can I switch plans later?",
@@ -174,7 +174,7 @@ export default function Pricing() {
             Simple pricing. <span className="italic text-[var(--color-green-primary)]">One policy covers it.</span>
           </h1>
           <p className="text-lg md:text-xl text-[var(--color-text-secondary)] font-light leading-relaxed max-w-2xl mx-auto">
-            Your daily tools are free forever. The full plan costs ₹999 a month —
+            Your daily tools are free forever. The full plan costs ₹1,499 a month —
             close one policy and it has paid for itself. We take no commission, ever.
           </p>
         </section>
@@ -186,8 +186,8 @@ export default function Pricing() {
             <div>
               <p className="text-sm md:text-base text-[var(--color-text-main)]">
                 <span className="font-semibold">Founding 50:</span> the first 50 advisors get a full year at{" "}
-                <span className="font-semibold">₹4,999</span>{" "}
-                <span className="line-through text-[var(--color-text-muted)]">₹9,999</span> — half price, locked in forever.
+                <span className="font-semibold">₹9,990</span>{" "}
+                <span className="line-through text-[var(--color-text-muted)]">₹14,990</span> — a third off, locked in forever.
               </p>
               <p className="text-xs text-[var(--color-text-secondary)] mt-1">
                 Prices rise when live quotes launch. Founding members keep their rate.
