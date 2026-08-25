@@ -121,6 +121,64 @@ function logAccess(
     });
 }
 
+/**
+ * Create a team and make `agentId` its owner, inside a caller-supplied
+ * transaction.
+ *
+ * Shared by the two ways a team can come into being — provisioning a signup
+ * request, and promoting an advisor who already had an account — because the
+ * rules that matter are the same both times, and a second copy is a second
+ * chance for them to drift apart:
+ *   • an agent owns at most one team and belongs to at most one,
+ *   • the owner occupies a seat and moves onto the plan being paid for,
+ *   • their check balance is seeded, never overwritten.
+ *
+ * Throws with a `code` the routes turn into a 409.
+ */
+async function createTeamForAgent(
+  client: any,
+  agentId: string,
+  teamName: string,
+  seats: number
+): Promise<{ id: string; name: string; seats: number }> {
+  const existing = await client.query(
+    `SELECT (SELECT count(*) FROM teams  WHERE owner_id = $1) AS owns,
+            (SELECT team_id FROM agents WHERE id = $1)        AS member_of,
+            (SELECT count(*) FROM agents WHERE id = $1)       AS exists_`,
+    [agentId]
+  );
+  if (Number(existing.rows[0].exists_) === 0) {
+    throw Object.assign(new Error("No such advisor."), { code: "NO_SUCH_AGENT" });
+  }
+  if (Number(existing.rows[0].owns) > 0) {
+    throw Object.assign(new Error("That advisor already owns a team."), { code: "ALREADY_OWNS_TEAM" });
+  }
+  if (existing.rows[0].member_of) {
+    throw Object.assign(
+      new Error("That advisor is already on a team. Remove them from it first."),
+      { code: "ALREADY_ON_TEAM" }
+    );
+  }
+
+  const team = await client.query(
+    "INSERT INTO teams (name, owner_id, seats) VALUES ($1, $2, $3) RETURNING id, name, seats",
+    [teamName, agentId, seats]
+  );
+
+  await client.query(
+    "UPDATE agents SET team_id = $1, plan = 'agency', updated_at = now() WHERE id = $2",
+    [team.rows[0].id, agentId]
+  );
+
+  await client.query(
+    `INSERT INTO agent_credits (agent_id, balance) VALUES ($1, $2)
+     ON CONFLICT (agent_id) DO NOTHING`,
+    [agentId, CHECKS_PER_SEAT]
+  );
+
+  return team.rows[0];
+}
+
 export function registerTeamRoutes(app: Express, verifyJwt: VerifyJwt, isAdmin: IsAdmin): void {
 
   /* ── Guards ───────────────────────────────────────────────────────────── */
@@ -973,45 +1031,17 @@ export function registerTeamRoutes(app: Express, verifyJwt: VerifyJwt, isAdmin: 
       }
       const request = r.rows[0];
 
-      // An agent owns at most one team and belongs to at most one. Both are
-      // checked rather than assumed: provisioning twice would silently split an
-      // advisor across two agencies.
-      const existing = await client.query(
-        `SELECT (SELECT count(*) FROM teams  WHERE owner_id = $1) AS owns,
-                (SELECT team_id FROM agents WHERE id = $1)        AS member_of`,
-        [request.agent_id]
-      );
-      if (Number(existing.rows[0].owns) > 0) {
+      let team;
+      try {
+        team = await createTeamForAgent(
+          client, request.agent_id, nameOverride || request.agency_name, seats
+        );
+      } catch (e: any) {
         await client.query("ROLLBACK");
-        return res.status(409).json({ error: "ALREADY_OWNS_TEAM", message: "That advisor already owns a team." });
+        if (e?.code) return res.status(409).json({ error: e.code, message: e.message });
+        throw e;
       }
-      if (existing.rows[0].member_of) {
-        await client.query("ROLLBACK");
-        return res.status(409).json({
-          error: "ALREADY_ON_TEAM",
-          message: "That advisor is already on a team. Remove them from it first.",
-        });
-      }
-
-      const team = await client.query(
-        "INSERT INTO teams (name, owner_id, seats) VALUES ($1, $2, $3) RETURNING id, name, seats",
-        [nameOverride || request.agency_name, request.agent_id, seats]
-      );
-      const teamId = team.rows[0].id;
-
-      // The owner occupies a seat and moves onto the plan being paid for.
-      await client.query(
-        "UPDATE agents SET team_id = $1, plan = 'agency', updated_at = now() WHERE id = $2",
-        [teamId, request.agent_id]
-      );
-
-      // Same rule as accepting an invite: seed, never overwrite a balance
-      // somebody already holds.
-      await client.query(
-        `INSERT INTO agent_credits (agent_id, balance) VALUES ($1, $2)
-         ON CONFLICT (agent_id) DO NOTHING`,
-        [request.agent_id, CHECKS_PER_SEAT]
-      );
+      const teamId = team.id;
 
       await client.query(
         `UPDATE team_requests
@@ -1023,12 +1053,80 @@ export function registerTeamRoutes(app: Express, verifyJwt: VerifyJwt, isAdmin: 
       await client.query("COMMIT");
       return res.json({
         teamId,
-        message: `${team.rows[0].name} is live with ${team.rows[0].seats} seats. They can invite their advisors now.`,
+        message: `${team.name} is live with ${team.seats} seats. They can invite their advisors now.`,
       });
     } catch (err: any) {
       await client.query("ROLLBACK").catch(() => {});
       log.error("team_request_provision_failed", { message: err?.message ?? String(err) });
       res.status(500).json({ error: "Failed to provision the team" });
+    } finally {
+      client.release();
+    }
+  });
+
+  // Advisors who could be made a team owner right now. Excludes anyone already
+  // on a team or already owning one, so the picker cannot offer a choice the
+  // create call would only reject.
+  app.get("/api/admin/team-eligible-agents", isAdmin, async (_req, res) => {
+    try {
+      const rows = await pool.query(
+        `SELECT a.id, COALESCE(a.full_name, a.name, '') AS name, a.email, a.city, a.plan
+           FROM agents a
+          WHERE a.team_id IS NULL
+            AND NOT EXISTS (SELECT 1 FROM teams t WHERE t.owner_id = a.id)
+          ORDER BY name ASC, a.email ASC
+          LIMIT 500`
+      );
+      return res.json({ agents: rows.rows });
+    } catch (err: any) {
+      log.error("team_eligible_agents_failed", { message: err?.message ?? String(err) });
+      res.status(500).json({ error: "Failed to load advisors" });
+    }
+  });
+
+  // Promote an EXISTING advisor to a team owner.
+  //
+  // The signup question only catches people signing up from today onwards.
+  // Every account that already exists — including the founder's own — never
+  // answered it, and would otherwise have no route to an agency account at all
+  // except hand-written SQL. This is that route.
+  app.post("/api/admin/teams", isAdmin, async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const agentId = String(req.body?.agentId ?? "");
+      const teamName = String(req.body?.teamName ?? "").trim();
+      const seats = Number(req.body?.seats);
+
+      if (!/^[0-9a-f-]{36}$/i.test(agentId)) {
+        return res.status(400).json({ error: "BAD_AGENT", message: "Pick an advisor to own the team." });
+      }
+      if (!teamName) {
+        return res.status(400).json({ error: "BAD_NAME", message: "Give the agency a name." });
+      }
+      if (!Number.isInteger(seats) || seats < 1) {
+        return res.status(400).json({ error: "BAD_SEATS", message: "Set how many seats this agency has paid for." });
+      }
+
+      await client.query("BEGIN");
+
+      let team;
+      try {
+        team = await createTeamForAgent(client, agentId, teamName, seats);
+      } catch (e: any) {
+        await client.query("ROLLBACK");
+        if (e?.code) return res.status(409).json({ error: e.code, message: e.message });
+        throw e;
+      }
+
+      await client.query("COMMIT");
+      return res.json({
+        teamId: team.id,
+        message: `${team.name} is live with ${team.seats} seats. They can invite their advisors now.`,
+      });
+    } catch (err: any) {
+      await client.query("ROLLBACK").catch(() => {});
+      log.error("team_create_for_agent_failed", { message: err?.message ?? String(err) });
+      res.status(500).json({ error: "Failed to create the team" });
     } finally {
       client.release();
     }

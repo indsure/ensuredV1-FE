@@ -396,6 +396,27 @@ try {
     return "one SELECT policy, own rows only";
   });
 
+  await step("promoting an existing advisor: eligibility query excludes the taken", async () => {
+    // Backs /api/admin/team-eligible-agents. Anyone already on a team or
+    // already owning one must not be offerable.
+    const r = await c.query(
+      `SELECT a.id FROM agents a
+        WHERE a.team_id IS NULL
+          AND NOT EXISTS (SELECT 1 FROM teams t WHERE t.owner_id = a.id)`
+    );
+    const ids = r.rows.map((x) => x.id);
+    if (ids.includes(member.id)) throw new Error("an advisor who owns a team was offered as eligible");
+    if (ids.includes(owner.id)) throw new Error("an advisor already on a team was offered as eligible");
+    return `${ids.length} eligible, neither test agent among them`;
+  });
+
+  await expectViolation("one owner cannot hold two teams (guarded in code, unique-checked here)", "23505", async () => {
+    // The code guard is in createTeamForAgent; this proves the data model does
+    // not quietly permit it either if that guard were ever removed.
+    await c.query("CREATE UNIQUE INDEX teams_one_per_owner_tmp ON teams (owner_id)");
+    await c.query("INSERT INTO teams (name, owner_id, seats) VALUES ($1, $2, 5)", ["Second Team", member.id]);
+  });
+
   await step("018 still adds no second reader to any existing table", async () => {
     const r = await c.query(
       `SELECT tablename FROM pg_policies

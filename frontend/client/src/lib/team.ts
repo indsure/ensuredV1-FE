@@ -59,6 +59,15 @@ export type TeamView =
   | TeamMemberView
   | { inTeam: false; request?: TeamRequest | null };
 
+/** An advisor who could be made a team owner today. */
+export type EligibleAgent = {
+  id: string;
+  name: string;
+  email: string;
+  city: string | null;
+  plan: string;
+};
+
 /** Admin-side view of an enterprise signup request. */
 export type AdminTeamRequest = {
   id: string;
@@ -246,6 +255,23 @@ export async function declineTeamRequest(id: string, note?: string) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ note }),
+    })
+  );
+}
+
+/** Advisors with no team, who can therefore be given one. */
+export async function fetchEligibleAgents(): Promise<{ agents: EligibleAgent[] }> {
+  return unwrap(await apiFetch("/api/admin/team-eligible-agents"));
+}
+
+/** Promote an advisor who already had an account. The signup question only
+ *  catches people signing up from now on; this covers everyone else. */
+export async function createTeamForAgent(agentId: string, teamName: string, seats: number) {
+  return unwrap<{ teamId: string; message: string }>(
+    await apiFetch("/api/admin/teams", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ agentId, teamName, seats }),
     })
   );
 }

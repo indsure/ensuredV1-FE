@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import {
-  declineTeamRequest, fetchTeamRequests, provisionTeam, type AdminTeamRequest,
+  createTeamForAgent, declineTeamRequest, fetchEligibleAgents, fetchTeamRequests, provisionTeam,
+  type AdminTeamRequest, type EligibleAgent,
 } from "@/lib/team";
 
 function fmtDate(iso: string | null): string {
@@ -106,9 +107,15 @@ export default function AdminTeamRequests() {
         </p>
       </div>
 
+      {/* Existing accounts never answered the signup question, so they will
+          never appear in the list below. Without this they would have no route
+          to an agency account at all short of hand-written SQL. */}
+      <PromoteExistingAdvisor onDone={() => void load()} />
+
       {requests.length === 0 && (
         <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-600">
-          Nobody has asked for an agency team yet.
+          Nobody has asked for an agency team at signup yet. Existing advisors can still be given a
+          team above.
         </div>
       )}
 
@@ -219,6 +226,149 @@ export default function AdminTeamRequests() {
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Promote an advisor who already had an account ────────────────────────── */
+
+// The Individual/Agency question on signup only catches people signing up from
+// now on. Everybody who already has an account — which on beta is everybody —
+// answered nothing, so they need a door of their own. Same server-side rules as
+// provisioning a request: one team per owner, seat count set here, credits
+// seeded not overwritten.
+function PromoteExistingAdvisor({ onDone }: { onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [agents, setAgents] = useState<EligibleAgent[] | null>(null);
+  const [agentId, setAgentId] = useState("");
+  const [teamName, setTeamName] = useState("");
+  const [seats, setSeats] = useState("5");
+  const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || agents !== null) return;
+    fetchEligibleAgents()
+      .then((r) => { setAgents(r.agents); setLoadError(null); })
+      .catch((e: unknown) => setLoadError(e instanceof Error ? e.message : "Could not load advisors."));
+  }, [open, agents]);
+
+  async function submit() {
+    setBusy(true);
+    try {
+      const r = await createTeamForAgent(agentId, teamName.trim(), Number(seats));
+      toast({ variant: "success", title: "Team created", description: r.message });
+      setOpen(false); setAgentId(""); setTeamName(""); setSeats("5"); setAgents(null);
+      onDone();
+    } catch (e: unknown) {
+      toast({ variant: "destructive", title: "Could not create the team", description: e instanceof Error ? e.message : undefined });
+    } finally { setBusy(false); }
+  }
+
+  const chosen = agents?.find((a) => a.id === agentId);
+
+  if (!open) {
+    return (
+      <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-bold text-slate-900">Give an existing advisor a team</div>
+          <div className="mt-0.5 text-sm text-slate-600">
+            For accounts created before the signup question, or anyone who picked Individual and has
+            since grown into an agency.
+          </div>
+        </div>
+        <Button className="min-h-[44px]" onClick={() => setOpen(true)}>Create a team</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-teal-200 ring-2 ring-teal-500/10 rounded-xl p-5 space-y-4">
+      <div className="text-sm font-bold text-slate-900">Give an existing advisor a team</div>
+
+      {loadError && <p className="text-sm text-red-600">{loadError}</p>}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2">
+          <label htmlFor="promote-agent" className="block text-sm font-semibold text-slate-700 mb-1">
+            Advisor
+          </label>
+          <select
+            id="promote-agent"
+            className="w-full min-h-[44px] px-3 rounded-lg border border-slate-200 bg-white text-base"
+            value={agentId}
+            onChange={(e) => {
+              setAgentId(e.target.value);
+              // Seed the agency name from whoever was picked, but never
+              // overwrite something already typed.
+              const a = agents?.find((x) => x.id === e.target.value);
+              if (a && !teamName.trim()) setTeamName(a.name ? `${a.name}'s agency` : "");
+            }}
+          >
+            <option value="">
+              {agents === null ? "Loading advisors…" : `Pick one of ${agents.length} advisors`}
+            </option>
+            {(agents ?? []).map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name || "(no name)"} — {a.email}{a.city ? ` · ${a.city}` : ""}
+              </option>
+            ))}
+          </select>
+          {agents !== null && agents.length === 0 && (
+            <p className="mt-1 text-sm text-slate-500">
+              Every advisor is already on a team.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="promote-seats" className="block text-sm font-semibold text-slate-700 mb-1">
+            Seats paid for
+          </label>
+          <Input
+            id="promote-seats"
+            type="number"
+            min={1}
+            value={seats}
+            onChange={(e) => setSeats(e.target.value)}
+            className="min-h-[44px]"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor="promote-name" className="block text-sm font-semibold text-slate-700 mb-1">
+          Agency name
+        </label>
+        <Input
+          id="promote-name"
+          value={teamName}
+          onChange={(e) => setTeamName(e.target.value)}
+          placeholder="Shreyas Insurance Services"
+          className="min-h-[44px]"
+        />
+      </div>
+
+      {chosen && (
+        <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-800 leading-relaxed">
+          <span className="font-semibold">{chosen.name || chosen.email}</span> becomes the owner of{" "}
+          <span className="font-semibold">{teamName.trim() || "this agency"}</span> with{" "}
+          <span className="font-semibold">{seats} seats</span>, moves from the{" "}
+          <span className="font-semibold">{chosen.plan}</span> plan onto agency, and can invite
+          advisors immediately. Their own customers and policies are untouched.
+        </div>
+      )}
+
+      <div className="flex items-center gap-2">
+        <Button
+          className="min-h-[44px]"
+          disabled={busy || !agentId || !teamName.trim() || !(Number(seats) >= 1)}
+          onClick={() => void submit()}
+        >
+          {busy ? "Creating…" : "Create the team"}
+        </Button>
+        <Button variant="outline" className="min-h-[44px]" onClick={() => setOpen(false)}>Cancel</Button>
+      </div>
     </div>
   );
 }
