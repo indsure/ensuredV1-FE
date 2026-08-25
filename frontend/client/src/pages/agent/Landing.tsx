@@ -55,14 +55,14 @@ export default function AgentLanding() {
   };
 
   const capabilities = [
-    { icon: Users, title: t("agent_landing.cap_leads_title"), desc: t("agent_landing.cap_leads_desc") },
-    { icon: CalendarClock, title: t("agent_landing.cap_renewals_title"), desc: t("agent_landing.cap_renewals_desc") },
-    { icon: ListChecks, title: t("agent_landing.cap_book_title"), desc: t("agent_landing.cap_book_desc") },
-    { icon: ShieldCheck, title: t("agent_landing.cap_checks_title"), desc: t("agent_landing.cap_checks_desc") },
-    { icon: Scale, title: t("agent_landing.cap_compare_title"), desc: t("agent_landing.cap_compare_desc") },
-    { icon: FileText, title: t("agent_landing.cap_claims_title"), desc: t("agent_landing.cap_claims_desc") },
-    { icon: IndianRupee, title: t("agent_landing.cap_calc_title"), desc: t("agent_landing.cap_calc_desc") },
-    { icon: UserCircle, title: t("agent_landing.cap_page_title"), desc: t("agent_landing.cap_page_desc") },
+    { icon: Users, tint: "bg-[#EFF6FF] text-[#1D4ED8]", title: t("agent_landing.cap_leads_title"), desc: t("agent_landing.cap_leads_desc") },
+    { icon: CalendarClock, tint: "bg-[#FFF1F2] text-[#BE123C]", title: t("agent_landing.cap_renewals_title"), desc: t("agent_landing.cap_renewals_desc") },
+    { icon: ListChecks, tint: "bg-[#F0FDFA] text-[#0F766E]", title: t("agent_landing.cap_book_title"), desc: t("agent_landing.cap_book_desc") },
+    { icon: ShieldCheck, tint: "bg-[#F5F3FF] text-[#6D28D9]", title: t("agent_landing.cap_checks_title"), desc: t("agent_landing.cap_checks_desc") },
+    { icon: Scale, tint: "bg-[#FFFBEB] text-[#B45309]", title: t("agent_landing.cap_compare_title"), desc: t("agent_landing.cap_compare_desc") },
+    { icon: FileText, tint: "bg-[#ECFDF5] text-[#047857]", title: t("agent_landing.cap_claims_title"), desc: t("agent_landing.cap_claims_desc") },
+    { icon: IndianRupee, tint: "bg-[#FEF3C7] text-[#92400E]", title: t("agent_landing.cap_calc_title"), desc: t("agent_landing.cap_calc_desc") },
+    { icon: UserCircle, tint: "bg-[#FDF2F8] text-[#BE185D]", title: t("agent_landing.cap_page_title"), desc: t("agent_landing.cap_page_desc") },
   ];
 
   return (
@@ -167,7 +167,7 @@ export default function AgentLanding() {
 
       {/* ─────────── HERO VISUAL ─────────── */}
       <section className="px-5 sm:px-10 lg:px-20 pt-10 lg:pt-14 max-w-[1280px] mx-auto">
-        <div className="rounded-3xl bg-[var(--color-cream-dark)] border border-[var(--color-border-light)] p-4 sm:p-8 lg:p-10">
+        <div className="rounded-3xl bg-gradient-to-br from-[#EAF3F1] via-[#F4F7F6] to-[#FDF6EC] border border-[var(--color-border-light)] p-4 sm:p-8 lg:p-10">
           <div className="grid lg:grid-cols-[1fr_300px] gap-5 items-start">
 
             <div className="rounded-xl bg-white overflow-hidden" style={{ boxShadow: panelShadow }}>
@@ -251,8 +251,8 @@ export default function AgentLanding() {
       </section>
 
       {/* ─────────── WHAT IT REPLACES ─────────── */}
-      <section className="px-5 sm:px-10 lg:px-20 py-10 lg:py-16 max-w-[1280px] mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center">
-        <span className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
+      <section className="bg-[#FDF6EC] border-y border-[#F5E3C8]"><div className="px-5 sm:px-10 lg:px-20 py-8 lg:py-10 max-w-[1280px] mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center">
+        <span className="text-sm font-bold uppercase tracking-[0.14em] text-[#92400E]">
           {t("agent_landing.replaces_label")}
         </span>
         {[t("agent_landing.replaces_1"), t("agent_landing.replaces_2"), t("agent_landing.replaces_3"), t("agent_landing.replaces_4")].map((s, i) => (
@@ -261,6 +261,7 @@ export default function AgentLanding() {
             <span className="text-base text-[var(--color-text-secondary)]">{s}</span>
           </span>
         ))}
+        </div>
       </section>
 
       {/* ─────────── CAPABILITIES ─────────── */}
@@ -286,7 +287,9 @@ export default function AgentLanding() {
               const Icon = c.icon;
               return (
                 <div key={c.title} className="rounded-xl bg-white p-5 flex flex-col gap-2.5" style={{ boxShadow: cardShadow }}>
-                  <Icon className="w-5 h-5 text-[var(--color-teal-600)]" />
+                  <span className={`w-10 h-10 rounded-xl flex items-center justify-center ${c.tint}`}>
+                    <Icon className="w-5 h-5" />
+                  </span>
                   <h3 className="text-lg font-bold tracking-tight text-[var(--color-navy-900)]">{c.title}</h3>
                   <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">{c.desc}</p>
                 </div>
@@ -351,7 +354,7 @@ export default function AgentLanding() {
       </section>
 
       {/* ─────────── BLOCK 2 · CHECKS ─────────── */}
-      <section className="bg-[var(--color-cream-main)] border-t border-[var(--color-border-light)]">
+      <section className="bg-[#F2F8F7] border-t border-[#DCEAE7]">
         <div className="px-5 sm:px-10 lg:px-20 py-14 lg:py-24 max-w-[1280px] mx-auto grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <div className="rounded-xl bg-white overflow-hidden order-2 lg:order-1" style={{ boxShadow: panelShadow }}>
             <div className="h-11 bg-[var(--color-cream-main)] border-b border-[var(--color-border-light)] flex items-center justify-between px-3.5">
@@ -485,7 +488,7 @@ export default function AgentLanding() {
             ].map((tier) => (
               <div
                 key={tier.name}
-                className={`rounded-xl bg-white p-5 flex flex-col gap-3 ${tier.hi ? "border-t-[3px] border-t-[var(--color-teal-600)]" : ""}`}
+                className={`rounded-xl p-5 flex flex-col gap-3 ${tier.hi ? "bg-gradient-to-b from-[#F0FDFA] to-white ring-2 ring-[var(--color-teal-600)]" : "bg-white"}`}
                 style={{ boxShadow: cardShadow }}
               >
                 <span className="text-base font-bold text-[var(--color-navy-900)]">{tier.name}</span>
