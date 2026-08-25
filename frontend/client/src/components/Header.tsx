@@ -55,7 +55,7 @@ export function Header() {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[var(--color-cream-main)] border-b border-[var(--color-border-light)] ${isScrolled ? "py-3 shadow-sm" : "py-5"}`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[var(--color-cream-main)] border-b ${isScrolled ? "py-3 border-[var(--color-border-light)]" : "py-5 border-transparent"}`}
     >
       <div className="container-editorial flex items-center justify-between">
 
@@ -75,10 +75,10 @@ export function Header() {
             {navLinks.map((item) => (
               <Link key={item.href} href={item.href}>
                 <span
-                  className={`text-xs font-semibold tracking-[0.15em] uppercase cursor-pointer hover:text-[var(--color-green-primary)] transition-colors ${
+                  className={`text-sm font-medium cursor-pointer hover:text-[var(--color-text-main)] transition-colors ${
                     location === item.href
                       ? "text-[var(--color-green-primary)]"
-                      : "text-[var(--color-text-main)]"
+                      : "text-[var(--color-text-secondary)]"
                   }`}
                 >
                   {item.label}
@@ -88,7 +88,7 @@ export function Header() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1 text-xs font-semibold tracking-[0.15em] uppercase text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer outline-none">
+                <button className="flex items-center gap-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer outline-none">
                   Tools
                   <ChevronDown className="w-3.5 h-3.5" />
                 </button>
@@ -115,14 +115,14 @@ export function Header() {
         {/* ─── RIGHT: CTAs + Log in + Advisor Login ─── */}
         <div className="hidden lg:flex items-center gap-4">
           <Link href="/login">
-            <span className="text-xs font-semibold tracking-[0.12em] uppercase text-[var(--color-text-main)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer">
-              Log In
+            <span className="text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
+              Log in
             </span>
           </Link>
 
           <Link href="/signup">
-            <button className="px-5 py-2.5 text-sm font-semibold bg-[var(--color-green-primary)] text-white rounded-lg hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer shadow-md shadow-teal-900/10">
-              Analyze My Policy — Free
+            <button className="h-9 px-3.5 text-sm font-semibold bg-[var(--color-green-primary)] text-white rounded-lg hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer">
+              Get started free
             </button>
           </Link>
 
@@ -130,10 +130,10 @@ export function Header() {
 
           <button
             onClick={() => setLocation("/agent")}
-            className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.12em] uppercase text-[var(--color-text-secondary)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer outline-none"
+            className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer outline-none"
           >
             <Building2 className="w-4 h-4" />
-            Advisor Login
+            For advisors
           </button>
 
         </div>
@@ -143,6 +143,8 @@ export function Header() {
           className="lg:hidden -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-nav"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -157,8 +159,9 @@ export function Header() {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
             className="lg:hidden overflow-hidden bg-[var(--color-cream-main)] border-t border-[var(--color-border-light)] shadow-xl"
+            id="mobile-nav"
           >
-            <div className="container-editorial py-6 space-y-1">
+            <div className="container-editorial py-6 space-y-1 max-h-[calc(100vh-5rem)] overflow-y-auto overscroll-contain">
               {navLinks.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <div
@@ -193,7 +196,7 @@ export function Header() {
                   className="py-3 px-3 text-center rounded-lg text-sm font-semibold border border-[var(--color-border-main)] text-[var(--color-text-main)] hover:border-[var(--color-green-primary)] hover:text-[var(--color-green-primary)] transition-colors cursor-pointer"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Log In
+                  Log in
                 </div>
               </Link>
 
@@ -202,7 +205,7 @@ export function Header() {
                   className="py-3 px-3 text-center rounded-lg text-sm font-semibold bg-[var(--color-green-primary)] text-white hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Analyze My Policy — Free
+                  Get started free
                 </div>
               </Link>
 
@@ -214,7 +217,7 @@ export function Header() {
                 }}
               >
                 <Building2 className="w-4 h-4" />
-                Advisor Login
+                For advisors
               </div>
             </div>
           </motion.div>
