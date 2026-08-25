@@ -18,6 +18,7 @@ import {
   DEMO_CATALOG, DEMO_COMPARE_RESPONSE, type Store,
 } from "./seed";
 import { DEMO_AGENT_ID, DEMO_EMAIL, exitPlayground } from "./mode";
+import { playgroundTeamApi } from "./teamSeed";
 
 let store: Store | null = null;
 function getStore(): Store {
@@ -292,6 +293,13 @@ function field(init: any, key: string): string | undefined {
 
 /** Route a simulated `/api/*` request to a canned response. */
 function playgroundApiResponse(url: string, init?: any): Response {
+  // Agency teams. Handled first because these are the only /api routes the
+  // portal has that never fall back to supabase-js — without a mock they would
+  // hit the generic "simulated" reply below, which reads as "you have no team"
+  // and hides the whole feature from the demo.
+  const team = playgroundTeamApi(url, init);
+  if (team) return team;
+
   // Analysis status poll — must be tested before /api/agent/analyze itself,
   // which is a prefix of this path.
   if (url.includes("/api/agent/analyze/status/")) {

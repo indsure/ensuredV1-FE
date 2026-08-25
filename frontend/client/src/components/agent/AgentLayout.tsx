@@ -248,7 +248,10 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                   <div className="flex-1 min-w-0 text-left">
                     <div className="text-sm font-semibold truncate">{agent?.name ?? "Agent"}</div>
                     <div className="text-[11px] sm:text-[10px] uppercase tracking-widest text-white/60 font-black truncate">
-                      {agent?.role ?? "agent"}
+                      {/* Ownership is not a role — it lives in teams.owner_id
+                          (migration 017), so `role` still reads "agent" for
+                          someone who runs an agency. Say the more useful thing. */}
+                      {team?.isOwner ? (t("layout.team_owner") ?? "Team owner") : (agent?.role ?? "agent")}
                     </div>
                   </div>
                 )}
