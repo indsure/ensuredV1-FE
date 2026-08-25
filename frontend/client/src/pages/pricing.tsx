@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Check, Minus, ShieldCheck } from "lucide-react";
 
-// Consumer pricing. The advisor plans (Free / ₹999 / ₹9,999) moved to
+// Consumer pricing. The advisor plans (Free / ₹1,499 / ₹799 a seat) moved to
 // /advisors/pricing — this URL is the one the portfolio's own upgrade CTAs
 // point at (see pages/app/portfolio.tsx), so it has to speak to a person
 // holding their own policies, not to someone selling them.

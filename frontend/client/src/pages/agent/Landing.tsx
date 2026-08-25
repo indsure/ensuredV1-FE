@@ -483,7 +483,7 @@ export default function AgentLanding() {
           <div className="grid md:grid-cols-3 gap-4">
             {[
               { name: t("agent_landing.tier_free"), price: "₹0", per: t("agent_landing.per_forever"), desc: t("agent_landing.tier_free_desc"), hi: false },
-              { name: t("agent_landing.tier_agent"), price: "₹999", per: t("agent_landing.per_month"), desc: t("agent_landing.tier_agent_desc"), hi: true },
+              { name: t("agent_landing.tier_agent"), price: "₹1,499", per: t("agent_landing.per_month"), desc: t("agent_landing.tier_agent_desc"), hi: true },
               { name: t("agent_landing.tier_agency"), price: "₹799", per: t("agent_landing.per_seat"), desc: t("agent_landing.tier_agency_desc"), hi: false },
             ].map((tier) => (
               <div
