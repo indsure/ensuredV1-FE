@@ -12,7 +12,9 @@
     "start": "tsx backend/server/index.ts",
     "check": "tsc --noEmit --project backend/tsconfig.json",
     "db:push": "drizzle-kit push",
-    "health-check": "ts-node backend/server/tests/engineHealthCheck.ts"
+    "health-check": "ts-node backend/server/tests/engineHealthCheck.ts",
+    "guard": "node checks/guard.mjs",
+    "check:teams": "node checks/teams-sql-smoke.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

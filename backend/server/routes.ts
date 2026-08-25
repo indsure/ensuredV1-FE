@@ -24,6 +24,8 @@ import nodemailer from "nodemailer";
 import { pool } from "./lib/db";
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
+import { registerTeamRoutes } from "./teamRoutes";
+import { log } from "./lib/logger";
 
 /* ---------- SUPABASE ADMIN CLIENT ---------- */
 
@@ -1441,8 +1443,16 @@ export async function registerRoutes(
 
   app.post("/api/agent/create-profile", async (req, res) => {
     try {
-      const { id, email, full_name, phone, city, experience_years, invite_code, marketing_consent } =
-        req.body;
+      const {
+        id, email, full_name, phone, city, experience_years, invite_code, marketing_consent,
+        // Agent signup asks "solo advisor or agency". An agency's answer rides
+        // in on THIS call rather than a second endpoint, because this is the
+        // one that already copes with having no session yet (the
+        // email-confirmation path) and already proves the id is a real auth
+        // user. A separate unauthenticated endpoint would be a second door to
+        // guard for no benefit.
+        account_type, agency_name, seats_wanted,
+      } = req.body;
 
       if (!id || !email || !full_name) {
         return res
@@ -1483,7 +1493,38 @@ export async function registerRoutes(
         ]
       );
 
-      return res.json({ success: true });
+      // Agency signup: record the ask. This does NOT create a team and does not
+      // grant a seat — the Agency tier has a five-seat minimum and no self-serve
+      // billing, so provisioning stays an admin action (migration 018).
+      //
+      // Deliberately non-fatal: the account is already created above, and
+      // losing the agency detail must never cost someone their signup. We log
+      // it loudly and let them through; the portal shows nothing is pending, so
+      // a dropped request surfaces as "not on a team" rather than a silent lie.
+      let enterpriseCaptured = false;
+      if (String(account_type || "").toLowerCase() === "agency" && String(agency_name || "").trim()) {
+        try {
+          const seats = Number(seats_wanted);
+          await pool.query(
+            `INSERT INTO team_requests (agent_id, agency_name, seats_wanted, contact_phone)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (agent_id) WHERE status = 'pending' DO NOTHING`,
+            [
+              id,
+              String(agency_name).trim().slice(0, 200),
+              Number.isInteger(seats) && seats >= 1 ? Math.min(seats, 500) : null,
+              phone || null,
+            ]
+          );
+          enterpriseCaptured = true;
+        } catch (e: any) {
+          log.error("team_request_capture_failed", {
+            agentId: id, message: e?.message ?? String(e),
+          });
+        }
+      }
+
+      return res.json({ success: true, enterpriseCaptured });
     } catch (err: any) {
       console.error("Create profile error:", err);
       res.status(500).json({ error: err.message || "Failed to create agent profile" });
@@ -5949,6 +5990,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       res.status(500).json({ error: "Failed to fetch leads" });
     }
   });
+
+  /* ── Agency teams ────────────────────────────────────────────────────────
+     Owner/member/invite surface. Kept in its own module because every route in
+     it writes a team_access_log row as it serves a member's data — the property
+     that makes "you see each time your owner opens your book" true. See the
+     header of teamRoutes.ts before adding any route that reads member data. */
+  registerTeamRoutes(app, verifyJwt, isAdmin);
 
   console.log("[ROUTES] All routes registered successfully");
   return _httpServer;
