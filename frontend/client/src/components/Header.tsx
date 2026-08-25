@@ -9,12 +9,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
 
-const navLinks = [
-  { label: "How It Works", href: "/how-it-works" },
+const navLinksLeft = [
+  { label: "How it works", href: "/how-it-works" },
   { label: "Why IndSure", href: "/why-indsure" },
+];
+
+const navLinksRight = [
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
 ];
+
+/* The mobile menu shows one flat list; only the desktop bar splits around Tools. */
+const navLinks = [...navLinksLeft, ...navLinksRight];
 
 const toolsItems = [
   { label: "What We Check", href: "/policychecker" },
@@ -57,10 +63,10 @@ export function Header() {
       transition={{ duration: 0.8, ease: "easeOut" }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-[var(--color-cream-main)] border-b ${isScrolled ? "py-3 border-[var(--color-border-light)]" : "py-5 border-transparent"}`}
     >
-      <div className="container-editorial flex items-center justify-between">
+      <div className="container-editorial relative flex items-center justify-between">
 
         {/* ─── LEFT: Logo + Nav ─── */}
-        <div className="flex items-center gap-8">
+        <div className="flex items-center">
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer group">
               <img
@@ -71,8 +77,8 @@ export function Header() {
             </div>
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-6">
-            {navLinks.map((item) => (
+          <nav className="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center gap-6">
+            {navLinksLeft.map((item) => (
               <Link key={item.href} href={item.href}>
                 <span
                   className={`text-sm font-medium cursor-pointer hover:text-[var(--color-text-main)] transition-colors ${
@@ -109,11 +115,32 @@ export function Header() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {navLinksRight.map((item) => (
+              <Link key={item.href} href={item.href}>
+                <span
+                  className={`text-sm font-medium cursor-pointer hover:text-[var(--color-text-main)] transition-colors ${
+                    location === item.href
+                      ? "text-[var(--color-green-primary)]"
+                      : "text-[var(--color-text-secondary)]"
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </Link>
+            ))}
           </nav>
         </div>
 
         {/* ─── RIGHT: CTAs + Log in + Advisor Login ─── */}
         <div className="hidden lg:flex items-center gap-4">
+          <button
+            onClick={() => setLocation("/agent")}
+            className="text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer outline-none"
+          >
+            For advisors
+          </button>
+
           <Link href="/login">
             <span className="text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
               Log in
@@ -125,17 +152,6 @@ export function Header() {
               Get started free
             </button>
           </Link>
-
-          <div className="h-6 w-px bg-[var(--color-border-main)]" />
-
-          <button
-            onClick={() => setLocation("/agent")}
-            className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer outline-none"
-          >
-            <Building2 className="w-4 h-4" />
-            For advisors
-          </button>
-
         </div>
 
         {/* ─── MOBILE TOGGLE ─── */}

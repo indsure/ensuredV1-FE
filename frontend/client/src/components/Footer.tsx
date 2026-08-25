@@ -1,183 +1,121 @@
 import { Link } from "wouter";
-import {
-  Facebook,
-  Twitter,
-  Linkedin,
-  Instagram,
-  Youtube,
-  Mail,
-} from "lucide-react";
+import { Twitter, Linkedin, Instagram } from "lucide-react";
+
+/* Rebuilt 2026-08-25: was ~900px tall, mostly because eight serif links sat in
+   one column at 18px with 24px gaps. Same links, four columns, 14px sans.
+   Also drops two claims nothing supports — "the only insurance audit engine"
+   and "tested on real claim rejections" — and fixes the social links, which
+   had no accessible name and opened cross-origin without rel. */
+
+const socialLinks = [
+  { name: "LinkedIn", icon: Linkedin, href: "https://www.linkedin.com/company/indsure" },
+  { name: "X", icon: Twitter, href: "https://x.com/IndSure_Ind" },
+  { name: "Instagram", icon: Instagram, href: "https://www.instagram.com/indsure.in/" },
+];
+
+const columns: { heading: string; links: { label: string; href: string }[] }[] = [
+  {
+    heading: "Product",
+    links: [
+      { label: "Check a policy", href: "/policychecker" },
+      { label: "Compare plans", href: "/compare" },
+      { label: "Cover Calculator", href: "/calculator" },
+      { label: "Clause library", href: "/learn" },
+      { label: "Find a network hospital", href: "/find-provider" },
+    ],
+  },
+  {
+    heading: "Company",
+    links: [
+      { label: "Why IndSure", href: "/why-indsure" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "For advisors", href: "/agent" },
+      { label: "Blog", href: "/blog" },
+      { label: "Meet the team", href: "/team" },
+      { label: "Help & support", href: "/help" },
+    ],
+  },
+  {
+    heading: "Legal",
+    links: [
+      { label: "Privacy Policy", href: "/privacy-policy" },
+      { label: "Terms of Service", href: "/terms" },
+      { label: "Cookie Policy", href: "/cookie-policy" },
+      { label: "Grievance Officer", href: "/grievance" },
+    ],
+  },
+];
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
-  const socialLinks = [
-    { name: "LinkedIn", icon: Linkedin, href: "https://www.linkedin.com/company/indsure" },
-    { name: "Twitter", icon: Twitter, href: "https://x.com/IndSure_Ind" },
-    { name: "Instagram", icon: Instagram, href: "https://www.instagram.com/indsure.in/" },
-  ];
-
   return (
-    <footer className="border-t border-[var(--color-navy-900)] bg-[var(--color-navy-900)] text-[var(--color-white)]">
-      <div className="container-editorial py-14 sm:py-20 lg:py-24">
-
-        {/* Constrain width further to standard 'editorial' limits (max-w-6xl) to fix "floating islands" */}
+    <footer className="bg-[var(--color-navy-900)] text-[var(--color-white)]">
+      <div className="container-editorial px-6 py-12 lg:py-14">
         <div className="max-w-6xl mx-auto">
 
-          {/* Reduce horizontal gap from 24 to 12/16 to tighten the system */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-12 gap-x-8 lg:gap-x-12 mb-20 items-start">
+          <div className="grid grid-cols-2 lg:grid-cols-12 gap-y-10 gap-x-8 mb-10">
 
-            {/* COL 1: Brand (4 cols) */}
-            <div className="lg:col-span-4 pr-4">
+            {/* Brand */}
+            <div className="col-span-2 lg:col-span-4 pr-4">
               <Link href="/">
-                <span className="font-serif text-3xl sm:text-4xl font-bold tracking-tighter inline-flex min-h-11 items-center mb-6 cursor-pointer text-[var(--color-gold-500)] hover:text-white transition-colors">
-                  IndSure.
-                </span>
+                <img
+                  src="/logo.png"
+                  alt="IndSure"
+                  className="h-8 w-auto mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+                />
               </Link>
-              <p className="text-xl text-[var(--color-white-muted)] leading-relaxed font-light mb-6">
-                We replace confusion with forensic intelligence.
-                <br />
-                The only insurance audit engine engineered for the modern Indian policyholder.
+              <p className="text-sm leading-relaxed text-[var(--color-white-muted)] max-w-xs mb-5">
+                We do not sell insurance and we earn zero commissions, so the report you get is the
+                one the policy deserves.
               </p>
-              <div className="flex gap-4">
+              <div className="flex gap-2.5">
                 {socialLinks.map((social) => {
                   const Icon = social.icon;
                   return (
                     <a
                       key={social.name}
                       href={social.href}
-                      className="w-10 h-10 rounded-full border border-[var(--color-border-subtle)] flex items-center justify-center text-[var(--color-white-muted)] hover:bg-[var(--color-gold-500)] hover:text-[var(--color-navy-900)] hover:border-[var(--color-gold-500)] transition-all"
+                      aria-label={social.name}
+                      target="_blank" rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-full border border-[var(--color-border-subtle)] flex items-center justify-center text-[var(--color-white-muted)] hover:bg-[var(--color-gold-500)] hover:text-[var(--color-navy-900)] hover:border-[var(--color-gold-500)] transition-colors"
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-4 h-4" />
                     </a>
                   );
                 })}
               </div>
             </div>
 
-            {/* COL 2: Trust Block (3 cols) - Aligned */}
-            <div className="lg:col-span-3">
-              <h4 className="font-mono text-xs uppercase tracking-widest text-[var(--color-gold-500)] mb-6 mt-2">Why IndSure Exists</h4>
-              <ul className="space-y-4 text-sm text-[var(--color-white-muted)]">
-                <li className="flex gap-3 items-start">
-                  <span className="text-[var(--color-gold-500)] font-bold">✓</span> <span>We do not sell insurance.</span>
-                </li>
-                <li className="flex gap-3 items-start">
-                  <span className="text-[var(--color-gold-500)] font-bold">✓</span> <span>We earn zero commissions.</span>
-                </li>
-                <li className="flex gap-3 items-start">
-                  <span className="text-[var(--color-gold-500)] font-bold">✓</span> <span>We audit objectively.</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* COL 3: Actions (3 cols) */}
-            <div className="lg:col-span-3 pl-2">
-              <h4 className="font-mono text-xs uppercase tracking-widest text-[var(--color-gold-500)] mb-6 mt-2">Start Here</h4>
-              <ul className="space-y-6">
-                <li>
-                  <Link href="/policychecker">
-                    <div className="group cursor-pointer">
-                      <span className="font-serif text-lg text-[var(--color-white)] group-hover:text-[var(--color-gold-500)] transition-colors flex items-center gap-2">
-                        Start an Audit <span className="text-[var(--color-gold-500)]">→</span>
-                      </span>
-                      <p className="text-sm text-[var(--color-white-muted)] mt-1 group-hover:text-white transition-colors">
-                        Upload your policy. Takes ~2 minutes.
-                      </p>
-                    </div>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/compare">
-                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
-                      Compare Plans
-                    </span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/why-indsure">
-                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
-                      Why IndSure
-                    </span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/learn">
-                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
-                      Clause Library
-                    </span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/blog">
-                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
-                      Blog
-                    </span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/team">
-                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
-                      Meet the Team
-                    </span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/pricing">
-                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
-                      Pricing
-                    </span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/advisors/pricing">
-                    <span className="font-serif text-lg text-[var(--color-white-muted)] hover:text-white cursor-pointer transition-colors block">
-                      Pricing (Advisors)
-                    </span>
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* COL 4: Legal Links (2 cols) - Recessed */}
-            <div className="lg:col-span-2">
-              <h4 className="font-mono text-xs uppercase tracking-widest text-[var(--color-gold-500)] mb-6 mt-2">Legal</h4>
-              <ul className="space-y-4 font-normal text-sm">
-                <li>
-                  <a href="/privacy-policy" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a href="/terms" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
-                    Terms of Service
-                  </a>
-                </li>
-                <li>
-                  <a href="/cookie-policy" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
-                    Cookie Policy
-                  </a>
-                </li>
-                <li>
-                  <a href="/grievance" className="text-[var(--color-gold-500)] hover:text-white transition-colors">
-                    Grievance Officer
-                  </a>
-                </li>
-              </ul>
-            </div>
-
+            {columns.map((col) => (
+              <div key={col.heading} className="lg:col-span-3 last:lg:col-span-2">
+                <h4 className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-gold-500)] mb-4">
+                  {col.heading}
+                </h4>
+                <ul className="space-y-2.5">
+                  {col.links.map((l) => (
+                    <li key={l.href}>
+                      <Link href={l.href}>
+                        <span className="text-sm text-[var(--color-white-muted)] hover:text-white transition-colors cursor-pointer">
+                          {l.label}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
 
-          {/* Bottom Bar - Constrained Width to bring text blocks inward */}
-          <div className="pt-8 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row justify-between items-end gap-6 text-xs font-mono uppercase tracking-widest max-w-5xl mx-auto text-[var(--color-white-muted)]">
-            <div className="flex flex-col gap-2">
+          {/* Bottom bar */}
+          <div className="pt-6 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row md:items-end justify-between gap-5 text-sm text-[var(--color-white-muted)]">
+            <div className="flex flex-col gap-1">
               <p>© {currentYear} Indsuretech Intelligence Private Limited</p>
-              <p className="normal-case tracking-normal opacity-60 text-[11px] sm:text-[10px]">CIN: U62099MR2026PTC473468</p>
-              <p className="normal-case tracking-normal opacity-70">Built for Indian policy documents. Tested on real claim rejections.</p>
+              <p className="opacity-60">CIN: U62099MR2026PTC473468</p>
             </div>
-            <p className="text-right max-w-xs leading-relaxed normal-case tracking-normal opacity-70">
-              <span className="font-bold text-white">Independent Forensic Analysis.</span><br />
-              We are not an IRDAI-registered broker or agent, which means we have no incentive to recommend or sell policies.
+            <p className="md:text-right max-w-sm leading-relaxed opacity-80">
+              <span className="font-bold text-white">Not an IRDAI-registered broker or agent.</span>{" "}
+              We have no incentive to recommend or sell any policy.
             </p>
           </div>
 

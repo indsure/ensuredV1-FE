@@ -72,16 +72,25 @@ export default function AgentLanding() {
       <nav className="sticky top-0 z-50 h-14 bg-white border-b border-[var(--color-border-light)] flex items-center justify-between px-5 sm:px-10 gap-4">
         <div className="flex items-center gap-5">
           <Link href="/agent">
-            <span className="font-serif text-xl font-bold tracking-tight text-[var(--color-gold-500)] cursor-pointer">
-              IndSure.
-            </span>
+            <img src="/logo.png" alt="IndSure" className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity" />
           </Link>
           <span className="hidden md:inline-flex px-2.5 py-1 rounded-lg bg-[#EAF3F1] text-sm font-semibold text-[#0F766E]">
             {t("agent_landing.pill_advisors")}
           </span>
+          <Link href="/advisors/pricing">
+            <span className="hidden md:inline-flex px-2.5 py-1 rounded-lg bg-[#FDF6EC] text-sm font-medium text-[#92400E] hover:bg-[#FBEBD5] transition-colors cursor-pointer">
+              {t("agent_landing.pill_agencies")}
+            </span>
+          </Link>
         </div>
 
         <div className="hidden lg:flex items-center gap-1">
+          <a
+            href="#what-you-get"
+            className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors"
+          >
+            {t("agent_landing.nav_what")}
+          </a>
           <Link href="/advisors/pricing">
             <span className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
               {t("agent_landing.nav_pricing")}
@@ -255,7 +264,7 @@ export default function AgentLanding() {
       </section>
 
       {/* ─────────── CAPABILITIES ─────────── */}
-      <section className="bg-[var(--color-cream-main)] border-y border-[var(--color-border-light)] py-14 lg:py-20">
+      <section id="what-you-get" className="scroll-mt-20 bg-[var(--color-cream-main)] border-y border-[var(--color-border-light)] py-14 lg:py-20">
         <div className="px-5 sm:px-10 lg:px-20 max-w-[1280px] mx-auto flex flex-col gap-10">
           <div className="flex flex-col gap-3 max-w-2xl">
             <span className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-teal-600)]">
