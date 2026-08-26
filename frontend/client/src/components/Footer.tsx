@@ -59,11 +59,9 @@ export function Footer() {
             {/* Brand */}
             <div className="col-span-2 lg:col-span-4 pr-4">
               <Link href="/">
-                <img
-                  src="/logo.png"
-                  alt="IndSure"
-                  className="h-8 w-auto mb-4 cursor-pointer hover:opacity-80 transition-opacity"
-                />
+                <span className="font-serif text-3xl font-bold tracking-tighter inline-flex items-center mb-4 cursor-pointer text-[var(--color-gold-500)] hover:text-white transition-colors">
+                  IndSure.
+                </span>
               </Link>
               <p className="text-sm leading-relaxed text-[var(--color-white-muted)] max-w-xs mb-5">
                 We do not sell insurance and we earn zero commissions, so the report you get is the
