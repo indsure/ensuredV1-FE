@@ -32,7 +32,11 @@ export default function AgentSignupStep1() {
                 // a draft saved before the Individual/Agency question existed has
                 // no accountType, and an undefined value there would render the
                 // choice with neither option selected and no way to submit.
-                return { ...emptyForm(), ...JSON.parse(saved) }
+                //
+                // password is forced back to empty: drafts written before it was
+                // excluded still have one, and restoring it would put the value
+                // back into storage on the next keystroke.
+                return { ...emptyForm(), ...JSON.parse(saved), password: '' }
             }
         } catch (e) {
             console.error('Failed to load saved form data:', e)
@@ -113,10 +117,21 @@ export default function AgentSignupStep1() {
         }
         const newForm = { ...form, [field]: value }
         setForm(newForm)
-        
-        // Save to sessionStorage
+
+        // guard-ok(pii-in-storage): the draft keeps a half-finished signup alive
+        // across a refresh, which is worth the trade for the person's OWN
+        // contact details in a tab-scoped store that dies when the tab closes.
+        // It is cleared on successful signup below.
+        //
+        // The PASSWORD is excluded, deliberately and non-negotiably. It used to
+        // be written here with everything else: `form` carries a password field,
+        // and this saved the whole object, so every keystroke put a plaintext
+        // password into web storage where any script on the page could read it.
+        // Nothing about draft recovery needs it, and a password is not the kind
+        // of thing a convenience feature gets to persist.
         try {
-            sessionStorage.setItem('indsure_signup_draft', JSON.stringify(newForm))
+            const { password: _password, ...draft } = newForm
+            sessionStorage.setItem('indsure_signup_draft', JSON.stringify(draft))
         } catch (e) {
             console.error('Failed to save form data:', e)
         }

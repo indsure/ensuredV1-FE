@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiOk } from "@/lib/api";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -21,13 +21,15 @@ export default function ForgotPassword() {
     // whether this is an agent and points the link at /agent/reset-password.
     // Delivered by our SES, not Supabase's rate-limited built-in sender.
     try {
-      await apiFetch('/api/auth/forgot-password', {
+      await apiOk(apiFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
-      });
+      }));
     } catch {
-      setError('Could not reach IndSure. Check your connection and try again.');
+      // Not revealing whether the address exists is the no-enumeration rule.
+      // Hiding a 500 is not: the user is told we sent a mail we never sent.
+      setError('Could not send the reset link just now. Please try again in a minute.');
       setLoading(false);
       return;
     }

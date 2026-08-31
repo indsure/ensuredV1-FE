@@ -106,6 +106,7 @@ export default function LoginPublic() {
     }
     // Idempotent — ensures the profile + trial clock exist.
     try {
+      // guard-ok(unchecked-apifetch): idempotent, and retried on /app entry. A failure here must not block sign-in.
       await apiFetch("/api/me/bootstrap", { method: "POST" });
     } catch { /* non-fatal — retried on /app entry */ }
 

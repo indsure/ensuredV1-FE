@@ -118,6 +118,13 @@ const STORAGE_RE = /(localStorage|sessionStorage)\.setItem\s*\(\s*[`'"]([^`'"]+)
 const SENSITIVE = /policy|password|pwd|token|aadha|pan\b|phone|mobile|email|customer|client|upload|draft|dob|nominee/i;
 for (const f of files) {
   lines(f).forEach((raw, i) => {
+    // A deliberate case states its reason beside the call, the way
+    // claim-source: discharges an unsourced claim. It is not a mute button:
+    // the signup draft carries this AND had its password removed first,
+    // because "keep it" was decided without knowing a plaintext password was
+    // in there.
+    const nearPii = lines(f).slice(Math.max(0, i - 14), i + 3).join("\n");
+    if (/guard-ok\(pii-in-storage\)/.test(nearPii)) return;
     for (const m of raw.matchAll(STORAGE_RE)) {
       if (SENSITIVE.test(m[2]))
         add("FAIL", "pii-in-storage", f.rel, i + 1,
@@ -196,6 +203,54 @@ for (const f of files.filter(isUI)) {
     if (!/rel\s*=/.test(tag))
       add("FAIL", "blank-without-rel", f.rel, i + 1,
         'target="_blank" without rel="noopener noreferrer"', raw.trim().slice(0, 80));
+  });
+}
+
+/* 9. apiFetch resolves for 4xx and 5xx, exactly like fetch. So wrapping it in
+      try/catch does NOT catch a server error: the catch cannot fire, and the
+      code after it runs as though the write succeeded. This shipped in seven
+      places, including a rename that reported success while saving nothing, an
+      admin limit that closed its editor on a rejected update, and a share link
+      that copied "/report/undefined" to the clipboard and said "Link copied".
+
+      apiOk() and apiJson() in lib/api throw instead.
+
+      Two shapes are judged differently, because a fixed line window gets both
+      wrong. When the call is assigned, the check often sits far below it, so
+      the whole file is searched for that variable being read. When it is not
+      assigned, there is no variable to check with and nothing downstream can
+      look at the result, so it is unchecked by construction. */
+const WRAPPED = /\bapi(Ok|Json)\s*(<[^>]*>)?\s*\(/;
+for (const f of files.filter(isUI)) {
+  if (f.rel.endsWith("lib/api.ts")) continue;
+  const ls = lines(f);
+  ls.forEach((raw, i) => {
+    if (!/\bapiFetch\s*\(/.test(raw)) return;
+    const t = raw.trim();
+    if (t.startsWith("//") || t.startsWith("*")) return;   // a mention, not a call
+
+    const near = ls.slice(Math.max(0, i - 3), i + 9).join("\n");
+    if (WRAPPED.test(near)) return;                        // apiOk/apiJson
+    // Generics matter here: unwrap<T>( and json<T>( are the correct pattern,
+    // and a regex demanding "name(" scores every one of them as a failure.
+    if (/\b(json|unwrap)\s*(<[^>]*>)?\s*\(/.test(near)) return;  // a checking helper
+    // A .then(r => { if (!r.ok) ... }) chain checks without assigning.
+    if (/\.ok\b/.test(near)) return;
+    // Deliberately unchecked, with the reason written down next to it.
+    if (/guard-ok\(unchecked-apifetch\)/.test(near)) return;
+
+    const assigned = raw.match(/(?:const|let|var)\s+(\w+)\s*=\s*await\s+apiFetch/);
+    if (assigned) {
+      // Assigned: the check can legitimately be anywhere below. Look for the
+      // variable's status being read at all.
+      const v = assigned[1];
+      const rest = ls.slice(i).join("\n");
+      const reads = new RegExp("\\b" + v + "\\.(ok|status)\\b");
+      if (reads.test(rest)) return;
+    }
+    add("FAIL", "unchecked-apifetch", f.rel, i + 1,
+      "apiFetch result never checked: a 4xx/5xx will look like success. Use apiOk()/apiJson()",
+      raw.trim().slice(0, 80));
   });
 }
 

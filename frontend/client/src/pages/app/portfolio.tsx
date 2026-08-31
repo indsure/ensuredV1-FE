@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useDropzone } from "react-dropzone";
 import { supabase } from "@/lib/supabase";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiOk } from "@/lib/api";
 import { getApiBase } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ConnectAgentDialog } from "@/components/app/ConnectAgentDialog";
@@ -82,11 +82,11 @@ export default function PortfolioPage() {
     setEditingName(false);
     setData((d) => (d ? { ...d, fullName: name || null } : d)); // optimistic
     try {
-      await apiFetch("/api/me/profile", {
+      await apiOk(apiFetch("/api/me/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ full_name: name }),
-      });
+      }));
     } catch { load(); /* re-sync on failure */ }
   }
 
@@ -95,11 +95,11 @@ export default function PortfolioPage() {
       d ? { ...d, policies: d.policies.map((p) => (p.id === id ? { ...p, nickname: nickname || null } : p)) } : d
     ); // optimistic
     try {
-      await apiFetch(`/api/me/policy/${id}`, {
+      await apiOk(apiFetch(`/api/me/policy/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nickname }),
-      });
+      }));
     } catch { load(); }
   }, [load]);
 
@@ -108,11 +108,11 @@ export default function PortfolioPage() {
       d ? { ...d, policies: d.policies.map((p) => (p.id === id ? { ...p, renewal_date: date || null } : p)) } : d
     ); // optimistic
     try {
-      await apiFetch(`/api/me/policy/${id}`, {
+      await apiOk(apiFetch(`/api/me/policy/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ renewal_date: date }),
-      });
+      }));
       if (date) toast({ title: "Renewal date saved", description: "We'll remind you 30 days before.", variant: "success" });
     } catch { load(); }
   }, [load, toast]);
@@ -154,11 +154,11 @@ export default function PortfolioPage() {
   async function toggleReminders(next: boolean) {
     setData((d) => (d ? { ...d, renewalRemindersEnabled: next } : d)); // optimistic
     try {
-      await apiFetch("/api/me/profile", {
+      await apiOk(apiFetch("/api/me/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ renewal_reminders_enabled: next }),
-      });
+      }));
       toast({
         title: next ? "Reminders on" : "Reminders off",
         description: next

@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, ArrowRight, Share2, Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiJson } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -43,14 +44,23 @@ const SwitchModal: React.FC<SwitchModalProps> = ({ isOpen, onClose, client }) =>
   const fetchRecommendation = async () => {
     setLoading(true);
     try {
-      const response = await apiFetch('/api/agent/switch-recommendation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: client.id }),
-      });
-      const data = await response.json();
+      // apiJson throws on a non-2xx. Previously a 500 resolved here, its error
+      // body was parsed, and the modal rendered {error: "..."} as a switch
+      // recommendation with an empty catch to hide it.
+      const data = await apiJson<SwitchRecommendation>(
+        apiFetch('/api/agent/switch-recommendation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ client_id: client.id }),
+        })
+      );
       setRecommendation(data);
-    } catch (err) {
+    } catch (err: unknown) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not build a recommendation',
+        description: err instanceof Error ? err.message : 'Please try again.',
+      });
     } finally {
       setLoading(false);
     }
@@ -60,25 +70,29 @@ const SwitchModal: React.FC<SwitchModalProps> = ({ isOpen, onClose, client }) =>
     if (!recommendation) return;
     setIsSharing(true);
     try {
-      const response = await apiFetch('/api/agent/public-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: client.id,
-          recommendation_data: recommendation,
-        }),
-      });
-      const { uuid } = await response.json();
-      const shareUrl = `${window.location.origin}/report/${uuid}`;
+      const { uuid } = await apiJson<{ uuid?: string }>(
+        apiFetch('/api/agent/public-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: client.id,
+            recommendation_data: recommendation,
+          }),
+        })
+      );
+      // A failed call used to reach here with uuid undefined, copy
+      // "/report/undefined" to the clipboard and report success.
+      if (!uuid) throw new Error('The server did not return a share link.');
 
+      const shareUrl = `${window.location.origin}/report/${uuid}`;
       await navigator.clipboard.writeText(shareUrl);
-      
-      // We assume toast is available via window or we'd need to pass it
-      // For now, we'll use a simple alert if toast isn't easily accessible here, 
-      // but the requirement says 'show a success toast'. 
-      // In Dashboard.tsx we have useToast, so we can trigger it there if we pass a callback.
-      alert('Link copied to clipboard!');
-    } catch (err) {
+      toast({ variant: 'success', title: 'Link copied', description: shareUrl });
+    } catch (err: unknown) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not create the share link',
+        description: err instanceof Error ? err.message : 'Please try again.',
+      });
     } finally {
       setIsSharing(false);
     }

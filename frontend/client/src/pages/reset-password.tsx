@@ -97,7 +97,8 @@ export default function ResetPasswordPublic() {
       return;
     }
     // Ensure the profile/trial clock exists, then head into the portfolio.
-    try { await apiFetch("/api/me/bootstrap", { method: "POST" }); } catch { /* non-fatal */ }
+    // guard-ok(unchecked-apifetch): idempotent, and retried on /app entry. A failure here must not block sign-in.
+      try { await apiFetch("/api/me/bootstrap", { method: "POST" }); } catch { /* non-fatal */ }
     setDone(true);
     setTimeout(() => setLocation("/app"), 1600);
   }

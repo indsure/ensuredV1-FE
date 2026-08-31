@@ -127,7 +127,17 @@ export function clearSessionStorage(): void {
 }
 
 /**
- * Save calculator progress (for resume functionality)
+ * Save calculator progress (for resume functionality).
+ *
+ * sessionStorage, NOT localStorage. These inputs are age, income, dependants
+ * and health: personal data, which rules.md keeps out of persistent web
+ * storage. localStorage survives the tab, the browser restart and the next
+ * person to use the machine, which for a shared family laptop is exactly the
+ * wrong lifetime. sessionStorage keeps resume working for the visit that
+ * needs it and forgets when the tab closes.
+ *
+ * The agent flow does not call this at all: there the same fields describe a
+ * customer, and CoverCalculator warns before losing work instead.
  */
 export function saveProgress(step: string, inputs: Partial<any>): void {
   try {
@@ -136,7 +146,7 @@ export function saveProgress(step: string, inputs: Partial<any>): void {
       inputs,
       savedAt: new Date().toISOString(),
     };
-    localStorage.setItem("calculator_progress", JSON.stringify(progress));
+    sessionStorage.setItem("calculator_progress", JSON.stringify(progress));
   } catch (error) {
     console.error("Failed to save progress:", error);
   }
@@ -151,7 +161,7 @@ export function loadProgress(): {
   savedAt: string;
 } | null {
   try {
-    const progress = localStorage.getItem("calculator_progress");
+    const progress = sessionStorage.getItem("calculator_progress");
     if (!progress) return null;
 
     const parsed = JSON.parse(progress);
@@ -178,7 +188,7 @@ export function loadProgress(): {
  */
 export function clearProgress(): void {
   try {
-    localStorage.removeItem("calculator_progress");
+    sessionStorage.removeItem("calculator_progress");
   } catch (error) {
     console.error("Failed to clear progress:", error);
   }

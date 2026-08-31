@@ -149,6 +149,7 @@ export default function SignupPublic() {
     });
 
     try {
+      // guard-ok(unchecked-apifetch): idempotent, and retried on /app entry. A failure here must not block signup.
       await apiFetch("/api/me/bootstrap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

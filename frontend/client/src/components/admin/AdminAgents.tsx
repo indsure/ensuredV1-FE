@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabase';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiOk } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
 
 interface Agent {
   id: string;
@@ -61,14 +62,22 @@ const AdminAgents: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await apiFetch(`/api/admin/agents/${agentId}`, {
+      // apiOk throws on a non-2xx. Before this, a rejected update still ran the
+      // two lines below, so the table showed the new limit, the editor closed,
+      // and the admin had no idea nothing had been saved until a refresh.
+      await apiOk(apiFetch(`/api/admin/agents/${agentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
         body: JSON.stringify({ upload_limit: editLimit }),
-      });
+      }));
       setAgents(prev => prev.map(a => a.id === agentId ? { ...a, upload_limit: editLimit } : a));
       setEditingId(null);
-    } catch (err) {
+    } catch (err: unknown) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not update the limit',
+        description: err instanceof Error ? err.message : 'Please try again.',
+      });
     }
   };
 
