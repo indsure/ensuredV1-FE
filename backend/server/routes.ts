@@ -24,6 +24,7 @@ import nodemailer from "nodemailer";
 import { pool } from "./lib/db";
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
+import { log } from "./lib/logger";
 
 /* ---------- SUPABASE ADMIN CLIENT ---------- */
 
@@ -3500,6 +3501,67 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       return res.send(buf);
     } catch (err: any) {
       console.error("Consumer policy download error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Consumer: delete one policy, and the file behind it ────────────────
+     /start tells the visitor they can delete their policies at any time. This
+     is the endpoint that makes that sentence true.
+
+     Order matters. The storage object goes first: if the row went first and the
+     object delete then failed, the file would be orphaned in the bucket with
+     nothing left pointing at it, which is the one outcome a deletion promise
+     cannot survive. Doing it this way, a failure after the object is gone
+     leaves a row whose download returns NO_PDF, which the UI already handles
+     and the user can retry.
+
+     A missing or unrecognised pdf_url is not an error. Older policies predate
+     file storage, and the user asked for the policy gone either way. */
+  app.delete("/api/me/policy/:id", async (req, res) => {
+    try {
+      const userId = await requireIndividual(req, res);
+      if (!userId) return;
+
+      const found = await pool.query(
+        "SELECT pdf_url FROM individual_policies WHERE id = $1 AND user_id = $2",
+        [req.params.id, userId]
+      );
+      const row = found.rows[0];
+      // Ownership-scoped: another user's id is indistinguishable from a
+      // non-existent one, so this leaks nothing about what exists.
+      if (!row) return res.status(404).json({ error: "Not found" });
+
+      let fileDeleted = false;
+      if (row.pdf_url) {
+        const pathMatch = String(row.pdf_url).match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/);
+        if (pathMatch) {
+          const [bucket, ...restPath] = pathMatch[1].split("/");
+          const storagePath = restPath.join("/");
+          const { error: rmErr } = await supabaseAdmin.storage.from(bucket).remove([storagePath]);
+          if (rmErr) {
+            // Stop here rather than delete the row. We promised the file goes.
+            log.error("consumer_policy_file_delete_failed", {
+              policyId: req.params.id, message: rmErr.message,
+            });
+            return res.status(502).json({
+              error: "FILE_DELETE_FAILED",
+              message: "Could not delete the stored document. Nothing was removed. Please try again.",
+            });
+          }
+          fileDeleted = true;
+        }
+      }
+
+      const del = await pool.query(
+        "DELETE FROM individual_policies WHERE id = $1 AND user_id = $2 RETURNING id",
+        [req.params.id, userId]
+      );
+      if (!del.rows[0]) return res.status(404).json({ error: "Not found" });
+
+      return res.json({ id: del.rows[0].id, fileDeleted });
+    } catch (err: any) {
+      console.error("Consumer policy delete error:", err);
       return res.status(500).json({ error: "Internal server error" });
     }
   });

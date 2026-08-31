@@ -38,21 +38,7 @@ export default function SharedReport({ token }: SharedReportProps) {
 
         const reportData = await res.json();
         
-        console.log("[SharedReport] Received report data:", {
-          hasReportData: !!reportData.report_data,
-          hasIdentity: !!reportData.report_data?.identity,
-          hasPolicyTimeline: !!reportData.report_data?.policy_timeline,
-          hasCoverageStructure: !!reportData.report_data?.coverage_structure,
-          zone: reportData.report_data?.identity?.assumed_zone,
-          verdict: reportData.report_data?.final_verdict?.label,
-          score: reportData.report_data?.audit_score?.score,
-          hasClaimSimulations: !!reportData.report_data?.claim_simulations,
-          claimSimulationsLength: reportData.report_data?.claim_simulations?.length,
-          hasCriticalActions: !!reportData.report_data?.recommendations?.critical_actions,
-        });
-        
         if (reportData.report_data && validateForensicAuditReport(reportData.report_data)) {
-          console.log("[SharedReport] Validation passed, setting data");
           setData(reportData.report_data);
         } else {
           console.error("[SharedReport] Validation failed");

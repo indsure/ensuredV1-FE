@@ -299,7 +299,7 @@ export default function Vision() {
               </div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Join Us on This Journey</h2>
               <p className="text-lg md:text-xl mb-8 text-white/90 font-medium max-w-2xl mx-auto">
-                Experience transparent insurance analysis today. No signup required. No BS.
+                See what your policy actually covers. A free account, no card, one policy of each type free forever. No BS.
               </p>
               <Link href="/">
                 <Button
