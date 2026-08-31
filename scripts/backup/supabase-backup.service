@@ -1,11 +1,11 @@
 [Unit]
-Description=IndSure Supabase logical backup to Cloudflare R2
+Description=IndSure nightly backup to Cloudflare R2 (database + documents)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/opt/indsure/backup/supabase-backup.sh
+ExecStart=/opt/indsure/backup/nightly-backup.sh
 Environment=BACKUP_ENV_FILE=/etc/indsure/backup.env
 # ProtectHome hides /root, so give gpg and the AWS CLI a writable home that
 # lives inside the one path this unit is allowed to write to.

@@ -28,10 +28,16 @@ Cloudflare R2.
 
 ## What is NOT covered
 
-- **Supabase Storage file blobs.** Only the `storage` schema metadata is dumped.
-  Uploaded documents living in Supabase Storage need their own sync.
 - **Project-level config**: RLS policies outside `public`, edge functions, auth
-  provider settings, secrets. Schema/RLS is reproducible from `migrations/`.
+  provider settings, secrets. Schema and RLS are reproducible from `migrations/`.
+
+Supabase Storage file blobs **are** covered, by `supabase-storage-backup.sh`. That runs
+as the second half of `nightly-backup.sh`, which is what the timer actually invokes.
+It mirrors each object into R2 once, encrypted, rather than re-uploading the whole set
+nightly: blobs are immutable, so a fresh copy every night would spend 6GB to hold 68MB.
+A nightly manifest records what the set looked like on each day, and a file deleted at
+source is kept for `REMOTE_KEEP_DAYS` before being purged, so a mistaken delete is
+recoverable.
 
 ## One-time setup
 
