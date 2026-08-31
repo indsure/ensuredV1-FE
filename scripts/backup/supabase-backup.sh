@@ -28,7 +28,7 @@ set +a
 
 LOCAL_DIR="${LOCAL_DIR:-/var/backups/supabase}"
 LOCAL_KEEP="${LOCAL_KEEP:-3}"
-REMOTE_KEEP_DAYS="${REMOTE_KEEP_DAYS:-30}"
+REMOTE_KEEP_DAYS="${REMOTE_KEEP_DAYS:-90}"
 PREFIX="${R2_PREFIX:-supabase}"
 
 # Supabase's transaction pooler (port 6543) cannot serve pg_dump. Fall back to

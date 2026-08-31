@@ -9,8 +9,8 @@ Cloudflare R2.
 | Runs on | the existing EC2 box (`api.indsure.in`) |
 | Schedule | nightly, 02:30 IST, via systemd timer |
 | Contents | `public` + `auth` schemas (+ `storage` metadata if permitted) |
-| Encryption | GPG AES256, client-side — R2 never sees readable data |
-| Retention | 30 days remote, last 3 locally |
+| Encryption | GPG AES256, client-side, so R2 never sees readable data |
+| Retention | 90 days remote, last 3 locally |
 | Cost | zero (R2 free tier is 10GB; dumps are far smaller) |
 
 ## Why these choices
@@ -35,7 +35,7 @@ Cloudflare R2.
 
 ## One-time setup
 
-Everything below is done by you — it involves creating accounts and handling
+Everything below is done by you, because it involves creating accounts and handling
 credentials.
 
 **1. Create the R2 bucket**
@@ -115,5 +115,5 @@ a backup from a directory of files you hope are valid.
 
 Set `HEALTHCHECK_URL` to a free healthchecks.io check pinged on success and
 `/fail` on error. Without it, a backup that silently stops running is
-indistinguishable from one that works — which is the usual way people discover
+indistinguishable from one that works, which is the usual way people discover
 they had no backups.
