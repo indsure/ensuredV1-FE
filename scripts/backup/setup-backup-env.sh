@@ -30,29 +30,61 @@ cat <<'INTRO'
 
   IndSure nightly backup setup
   ============================
-  Four questions. Paste each value and press Enter.
-  Nothing is saved until all four are answered, so Ctrl-C any time is safe.
+  Three questions. Paste each value and press Enter.
+  Nothing is saved until they are all answered, so Ctrl-C any time is safe.
   Get one wrong and it just asks again.
 
 INTRO
 
 # ── 1. Supabase session pooler ───────────────────────────────────────────────
-while :; do
-  say "1 of 4  Supabase connection string (SESSION pooler, port 5432)"
-  say "        Dashboard > Connect > Session pooler."
-  say "        The app's 6543 URL will NOT work: pg_dump cannot use it."
-  read -rsp "        Paste it: " raw; echo; echo
-  DB_URL="$(clean "$raw")"
-  [ -n "$DB_URL" ]                    || { oops "Nothing pasted.";                              continue; }
-  case "$DB_URL" in postgres*://*) ;; *) oops "That is not a postgres:// URL.";                 continue;; esac
-  case "$DB_URL" in *:6543*) oops "That is the 6543 transaction pooler, not the session one.";  continue;; esac
-  case "$DB_URL" in *:5432*) ;; *) oops "No port 5432 in that URL.";                            continue;; esac
-  break
+# The app on this box already holds working credentials. pg_dump cannot use the
+# 6543 transaction pooler they point at, but the session pooler on 5432 takes
+# the same user and password, so the URL is derivable. Offering that removes the
+# single most error-prone step in this setup: Supabase shows the connection
+# string with a [YOUR-PASSWORD] placeholder, and hand-filling it is where people
+# come unstuck. The typed path stays for anyone whose password has since changed.
+APP_ENV=/home/ubuntu/ensuredV1-FE/.env
+DERIVED=""
+if [ -r "$APP_ENV" ]; then
+  app_url="$(grep -aE '^[[:space:]]*DATABASE_URL[[:space:]]*=' "$APP_ENV" | head -1 | sed -E 's/^[^=]*=[[:space:]]*//; s/^"//; s/"$//' | tr -d '')"
+  case "$app_url" in
+    postgres*://*) DERIVED="$(printf '%s' "$app_url" | sed -E 's/:6543/:5432/' | sed -E 's/\?.*$//')" ;;
+  esac
+fi
+
+DB_URL=""
+if [ -n "$DERIVED" ]; then
+  say "1 of 3  Database connection"
+  say "        Found the app's credentials on this box. Testing them on port 5432..."
+  if psql "$DERIVED" -tAc "select 1" >/dev/null 2>&1; then
+    say "        They work. Using them, nothing for you to paste."
+    say ""
+    DB_URL="$DERIVED"
+  else
+    say "        They did not work, so it will have to be pasted after all."
+    say ""
+  fi
+fi
+
+while [ -z "$DB_URL" ]; do
+  say "1 of 3  Supabase connection string (SESSION pooler, port 5432)"
+  say "        Dashboard > Connect > Session pooler. Replace [YOUR-PASSWORD]"
+  say "        with the real database password."
+  read -rsp "        Paste it: " raw_in; echo; echo
+  cand="$(clean "$raw_in")"
+  [ -n "$cand" ]                    || { oops "Nothing pasted.";                                continue; }
+  case "$cand" in postgres*://*) ;; *) oops "That is not a postgres:// URL.";                   continue;; esac
+  case "$cand" in *:6543*) oops "That is the 6543 transaction pooler, not the session one.";    continue;; esac
+  case "$cand" in *:5432*) ;; *) oops "No port 5432 in that URL.";                              continue;; esac
+  case "$cand" in *YOUR-PASSWORD*) oops "The [YOUR-PASSWORD] placeholder is still in there.";   continue;; esac
+  say "        Testing it..."
+  if psql "$cand" -tAc "select 1" >/dev/null 2>&1; then DB_URL="$cand"; say "        Works."; echo
+  else oops "Could not connect. Usually the password is wrong."; fi
 done
 
 # ── 2. Account ID ────────────────────────────────────────────────────────────
 while :; do
-  say "2 of 4  Cloudflare account ID"
+  say "2 of 3  Cloudflare account ID"
   say "        The whole endpoint URL is fine, it will pull the ID out."
   read -rp  "        Paste it: " raw; echo
   ACCOUNT_ID="$(clean "$raw")"
@@ -66,7 +98,7 @@ done
 
 # ── 3. R2 API token ──────────────────────────────────────────────────────────
 while :; do
-  say "3 of 4  R2 Access Key ID  (32 characters)"
+  say "3 of 3  R2 Access Key ID  (32 characters)"
   read -rp "        Paste it: " raw; echo
   AKID="$(clean "$raw")"
   if printf '%s' "$AKID" | grep -qE '^[0-9a-f]{32}$'; then break; fi
@@ -86,23 +118,14 @@ done
 
 # ── 4. Healthcheck ───────────────────────────────────────────────────────────
 while :; do
-  say "4 of 4  healthchecks.io ping URL   (press Enter to skip)"
+  say "Optional  healthchecks.io ping URL   (press Enter to skip)"
   read -rp "        Paste it: " raw; echo
   HC_URL="$(clean "$raw")"
   [ -z "$HC_URL" ] && break
   case "$HC_URL" in http*) break ;; *) oops "That is not a URL." ;; esac
 done
 
-# ── Verify before writing, so a wrong value is caught here, not tomorrow ─────
-say "Checking the database connection..."
-if ! psql "$DB_URL" -tAc "select 1" >/dev/null 2>&1; then
-  say ""
-  say "  Could not connect with that connection string."
-  say "  Usually the password is wrong, or it is the pooler on the wrong port."
-  say "  Nothing was saved. Run this again when you have the right one."
-  exit 1
-fi
-say "  Database OK."
+say "Writing the config..."
 
 umask 077
 mkdir -p /etc/indsure

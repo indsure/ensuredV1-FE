@@ -106,7 +106,12 @@ chmod 700 "$GNUPGHOME"
 # storage = object metadata only. The file blobs themselves live in Supabase
 #           Storage and are NOT covered by this backup.
 dump_schema() {
-  local schema="$1" required="$2" out="$WORK/${schema}.dump"
+  # Separate statements on purpose. `local` is a builtin, so bash expands ALL
+  # its arguments before assigning any of them: writing this as one line meant
+  # ${schema} was expanded before `schema` existed, and `set -u` killed the run.
+  local schema="$1"
+  local required="$2"
+  local out="$WORK/${schema}.dump"
   log "dumping schema: $schema"
   if pg_dump "$SUPABASE_DB_URL" \
       --schema="$schema" \
