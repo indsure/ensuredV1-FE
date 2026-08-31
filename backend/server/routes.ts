@@ -5010,6 +5010,49 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   );
 
+  /* ── Associate a held upload with the address signing up for it ──────────
+     Called from the signup form, which is the last moment the browser has both
+     the token and the address. Unauthenticated by necessity: when email
+     confirmation is on there is no session yet, and that is exactly the case
+     this exists to survive.
+
+     Presenting the token IS the authority here. Whoever holds it can already
+     redeem the upload outright, so letting them name the address that may
+     redeem it later grants nothing extra. What it does NOT do is let anyone
+     claim by address alone: that path additionally requires a session whose
+     email is confirmed (see /api/me/claim-upload).
+
+     Only ever sets the address on an unclaimed, unexpired row, and never
+     overwrites one that is already set, so a token cannot be re-pointed at a
+     different address after the fact. */
+  app.post("/api/pending-upload/attach-email", analyzeRateLimiter, async (req, res) => {
+    try {
+      const token = String(req.body?.token || "").trim();
+      const email = String(req.body?.email || "").trim().toLowerCase();
+      if (!token || !email || !email.includes("@") || email.length > 254) {
+        return res.status(400).json({ error: "BAD_REQUEST" });
+      }
+
+      await pool.query(
+        `UPDATE pending_uploads
+            SET signup_email = $1
+          WHERE token = $2
+            AND claimed_by IS NULL
+            AND expires_at > now()
+            AND signup_email IS NULL`,
+        [email, token]
+      );
+
+      // Deliberately always 204, whatever happened. The caller cannot act on the
+      // difference, and distinguishing "no such token" from "already attached"
+      // would turn this into an oracle for probing tokens.
+      return res.status(204).end();
+    } catch (err: any) {
+      console.error("[pending upload] attach-email error:", err?.message);
+      return res.status(204).end();
+    }
+  });
+
   // Claim: the authenticated half. This is where the account, the quota and the
   // spend all enter. A token can only be claimed once — claimed_by is set at the
   // end and checked at the start.
@@ -5020,13 +5063,51 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (!userId) return;
 
       const token = String(req.body?.token || "");
-      if (!token) return res.status(400).json({ error: "NO_TOKEN", message: "No upload to claim." });
 
-      const found = await pool.query(
-        `SELECT id, storage_path, filename, file_size, mime_type, insurance_type, claimed_by, expires_at
-           FROM pending_uploads WHERE token = $1`,
-        [token]
-      );
+      // Two ways in, and the second is why this endpoint exists in this shape.
+      //
+      // By TOKEN: the browser still holds it, the normal same-tab path.
+      //
+      // By CONFIRMED EMAIL: the token is gone because the confirmation link was
+      // opened in another tab, another browser, or on a phone, and
+      // sessionStorage does not follow. Confirming the address is what proves
+      // ownership, so it is a sound key. The confirmation is checked here rather
+      // than assumed: a session can exist before confirmation depending on
+      // project settings, and an unconfirmed account claiming by address would
+      // let anyone who knows an address take that person's upload.
+      let found;
+      if (token) {
+        found = await pool.query(
+          `SELECT id, storage_path, filename, file_size, mime_type, insurance_type, claimed_by, expires_at
+             FROM pending_uploads WHERE token = $1`,
+          [token]
+        );
+      } else {
+        const who = await pool.query(
+          "SELECT email, email_confirmed_at FROM auth.users WHERE id = $1",
+          [userId]
+        );
+        const email = who.rows[0]?.email;
+        const confirmedAt = who.rows[0]?.email_confirmed_at;
+        if (!email || !confirmedAt) {
+          return res.status(404).json({ error: "UPLOAD_NOT_FOUND", message: "No upload to claim." });
+        }
+        // Newest first: someone who uploaded twice before finishing signup gets
+        // the one they most recently chose, which is the one they are expecting.
+        found = await pool.query(
+          `SELECT id, storage_path, filename, file_size, mime_type, insurance_type, claimed_by, expires_at
+             FROM pending_uploads
+            WHERE lower(signup_email) = lower($1)
+              AND claimed_by IS NULL
+              AND expires_at > now()
+            -- id breaks the tie. Two rows can share created_at (it defaults to
+            -- now(), which is transaction time), and without this the winner
+            -- between them is whatever the planner returns first.
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1`,
+          [email]
+        );
+      }
       const row = found.rows[0];
       if (!row) {
         return res.status(404).json({ error: "UPLOAD_NOT_FOUND", message: "That upload is no longer available. Please upload your policy again." });
@@ -5074,7 +5155,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       tempPath = null; // ownership passed to startIndividualAnalysis
 
       await pool.query(
-        "UPDATE pending_uploads SET claimed_by = $1, claimed_at = now() WHERE id = $2",
+        // signup_email is cleared here: it existed only to survive the round
+        // trip, and a claimed row has no further use for the address.
+        "UPDATE pending_uploads SET claimed_by = $1, claimed_at = now(), signup_email = NULL WHERE id = $2",
         [userId, row.id]
       );
 

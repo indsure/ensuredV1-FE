@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
-import { claimPendingUpload } from "@/lib/pendingUpload";
+import { claimPendingUpload, attachEmailToPendingUpload } from "@/lib/pendingUpload";
 import { isPersonalEmail } from "@/lib/emailDomains";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { FieldLabel, FieldError, RequiredLegend, inputStateClass } from "@/components/auth/field";
@@ -102,6 +102,14 @@ export default function SignupPublic() {
 
     setLoading(true);
     setError(null);
+
+    // Before the account exists, while this tab still holds the token: tell the
+    // server which address is signing up for the parked upload. If the
+    // confirmation link is then opened in another tab or on a phone, the token
+    // is gone but the address still finds the file. Awaited rather than fired
+    // and forgotten, because a fast confirmation could otherwise race it, and it
+    // never throws.
+    await attachEmailToPendingUpload(email);
 
     const { data, error } = await supabase.auth.signUp({
       email,

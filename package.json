@@ -15,6 +15,7 @@
     "health-check": "ts-node backend/server/tests/engineHealthCheck.ts",
     "guard": "node checks/guard.mjs",
     "check:teams": "node checks/teams-sql-smoke.mjs",
+    "check:pending-email": "node checks/pending-upload-email-smoke.mjs",
     "test": "tsx --test backend/server/tests/*.test.ts"
   },
   "dependencies": {

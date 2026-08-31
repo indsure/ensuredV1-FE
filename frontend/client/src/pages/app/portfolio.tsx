@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useDropzone } from "react-dropzone";
 import { supabase } from "@/lib/supabase";
 import { apiFetch, apiOk } from "@/lib/api";
+import { claimPendingUpload } from "@/lib/pendingUpload";
 import { getApiBase } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ConnectAgentDialog } from "@/components/app/ConnectAgentDialog";
@@ -65,6 +66,35 @@ export default function PortfolioPage() {
     load();
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [load]);
+
+  // Redeem an upload that was parked before signup and never claimed.
+  //
+  // /signup and /login already do this, but neither runs when the confirmation
+  // email is opened somewhere else, which is the case that loses the file: that
+  // link lands here, on /app. The token went with the tab that had it, so the
+  // server matches on the account's confirmed address instead.
+  //
+  // Only when the portfolio is empty, which is exactly the state of someone who
+  // just confirmed and has nothing yet, and only once per tab. Anyone with
+  // policies already has nothing to redeem and should not pay for the request.
+  useEffect(() => {
+    if (!data || data.policies.length > 0) return;
+    if (sessionStorage.getItem("indsure_claim_attempted")) return;
+    try { sessionStorage.setItem("indsure_claim_attempted", "1"); } catch { /* private mode */ }
+
+    let cancelled = false;
+    void (async () => {
+      const claimed = await claimPendingUpload();
+      if (cancelled || claimed.status !== "started") return;
+      toast({
+        variant: "success",
+        title: "We found the policy you uploaded",
+        description: "Reading it now. This usually takes under a minute.",
+      });
+      load();
+    })();
+    return () => { cancelled = true; };
+  }, [data, load, toast]);
 
   // Open the add panel automatically for a brand-new account — there's nothing
   // else to do on the page yet.
