@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   AlertCircle, ArrowRight, CalendarClock, Check, ChevronDown, Download, FileText,
-  IndianRupee, Loader2, MessageCircle, Pencil, ShieldCheck, X,
+  IndianRupee, Loader2, MessageCircle, Pencil, ShieldCheck, Trash2, X,
 } from "lucide-react";
 import type { Policy } from "./portfolio-types";
 import {
@@ -38,7 +38,9 @@ export function PolicyCard({
   onDownload,
   onOpenReport,
   onAskAdvisor,
+  onDelete,
   downloading,
+  deleting,
 }: {
   policy: Policy;
   expanded: boolean;
@@ -48,8 +50,11 @@ export function PolicyCard({
   onDownload: (p: Policy) => void;
   onOpenReport: (id: string) => void;
   onAskAdvisor: (topic: string) => void;
+  onDelete: (p: Policy) => void;
   downloading: boolean;
+  deleting: boolean;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [nickDraft, setNickDraft] = useState<string | null>(null);
   const [dateDraft, setDateDraft] = useState<string | null>(null);
 
@@ -254,6 +259,39 @@ export function PolicyCard({
               >
                 {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 Download
+              </button>
+            )}
+
+            {/* Deleting is what /start promises, so it has to be reachable, and
+                it is irreversible, so it asks first. Inline rather than a modal:
+                the confirm replaces the button in place, which keeps the policy
+                it refers to on screen while you decide. */}
+            {confirmDelete ? (
+              <span className="inline-flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-[var(--color-text-secondary)]">
+                  Delete this policy{p.has_pdf ? " and its file" : ""}?
+                </span>
+                <button
+                  onClick={() => onDelete(p)}
+                  disabled={deleting}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-sm font-bold text-white transition-colors disabled:opacity-50"
+                >
+                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  {deleting ? "Deleting…" : "Delete"}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-4 py-2 rounded-xl text-sm font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                >
+                  Keep
+                </button>
+              </span>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--color-border-medium)] bg-white text-sm font-semibold text-[var(--color-text-secondary)] hover:border-red-300 hover:text-red-600 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" /> Delete
               </button>
             )}
           </div>

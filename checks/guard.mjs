@@ -67,9 +67,13 @@ const stripComments = (s) =>
       Any hard number or absolute promise must carry a source annotation:
         {/* claim-source: SELECT count(*) FROM policy_analyses (2026-08-23) *␘/}
       or be marked TODO(claim). */
+/* A money amount is not a traction claim. "Rs 70k+ total cost" and
+   "Rs 2,00,000+ in premiums" are worked examples in explainer copy; scoring
+   them as unsourced claims buries the real ones. Only counts NOT preceded by
+   a currency marker are claims. */
 const CLAIM_PATTERNS = [
-  [/\b\d{1,3}(,\d{3})+\s*\+/g, "large number with +"],
-  [/\b\d+\s*[kK]\+/g, "abbreviated count (10K+)"],
+  [/(?<![₹$]\s?)(?<!Rs\.?\s?)\b\d{1,3}(,\d{3})+\s*\+/g, "large number with +"],
+  [/(?<![₹$]\s?)(?<!Rs\.?\s?)\b\d+\s*[kK]\+/g, "abbreviated count (10K+)"],
   [/\b(?:no|zero)\s+(?:signup|sign-up|account|registration)\s+(?:required|needed)/gi, "no-signup promise"],
   [/\bnever\s+(?:store|stored|storing|share|shared)\b/gi, "absolute retention promise"],
   [/\bcompletely\s+free\b/gi, "completely-free promise"],

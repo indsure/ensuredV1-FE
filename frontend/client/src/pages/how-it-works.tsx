@@ -22,7 +22,7 @@ const steps = [
     summary: "Drag in your policy PDF — or up to 4, if you want them compared side by side.",
     details: [
       "Works with scanned copies and photos, not just clean PDFs",
-      "No account needed to see your first result",
+      "A free account, no card, to see your result",
       "Encrypted in transit (HTTPS/TLS) the moment it leaves your device",
     ],
   },
@@ -71,7 +71,7 @@ const faqs = [
   },
   {
     q: "Is my data safe?",
-    a: "Your documents are processed securely and deleted after analysis. We never share your data with insurers, agents, or anyone else.",
+    a: "Your document is encrypted in transit and stored so you can open it again from your portfolio. We never share it with insurers, agents, or anyone else unless you ask us to, and you can delete it whenever you want.",
   },
   {
     q: "Do you sell insurance or earn commissions on my results?",
@@ -158,9 +158,9 @@ export default function HowItWorks() {
               <Lock className="w-5 h-5 text-[var(--color-green-primary)]" />
             </div>
             <div>
-              <h3 className="text-lg font-serif mb-2">Your data, deleted after use</h3>
+              <h3 className="text-lg font-serif mb-2">Your data, yours to delete</h3>
               <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                Documents are encrypted in transit and processed securely. Once your report is generated, we delete the source file — we're not building a database of your medical history.
+                Documents are encrypted in transit and processed securely. We keep your file so you can open it again later, and you can delete any policy and its file whenever you want. We are not building a database to sell.
               </p>
             </div>
           </div>

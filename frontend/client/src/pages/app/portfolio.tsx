@@ -40,6 +40,7 @@ export default function PortfolioPage() {
   const [sort, setSort] = useState<SortKey>("recent");
   const [addOpen, setAddOpen] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Profile name editing
   const [editingName, setEditingName] = useState(false);
@@ -114,6 +115,40 @@ export default function PortfolioPage() {
       });
       if (date) toast({ title: "Renewal date saved", description: "We'll remind you 30 days before.", variant: "success" });
     } catch { load(); }
+  }, [load, toast]);
+
+  // Deliberately NOT optimistic. The other mutations here update local state
+  // first because a failed rename is a cosmetic glitch. A policy vanishing from
+  // the list when the delete actually failed is the app lying about destroying
+  // something, so this waits for the server and only then drops the row.
+  const deletePolicy = useCallback(async (p: Policy) => {
+    setDeletingId(p.id);
+    try {
+      const res = await apiFetch(`/api/me/policy/${p.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || "Could not delete this policy.");
+      }
+      setData((d) => (d ? { ...d, policies: d.policies.filter((x) => x.id !== p.id) } : d));
+      toast({
+        variant: "success",
+        title: "Policy deleted",
+        description: p.has_pdf
+          ? "The policy and its document are gone. This cannot be undone."
+          : "The policy is gone. This cannot be undone.",
+      });
+    } catch (e: any) {
+      // Re-read rather than guess: the server may have deleted the file and
+      // failed on the row, and the user is owed the real state.
+      load();
+      toast({
+        variant: "destructive",
+        title: "Could not delete",
+        description: e.message || "Please try again.",
+      });
+    } finally {
+      setDeletingId(null);
+    }
   }, [load, toast]);
 
   async function toggleReminders(next: boolean) {
@@ -626,9 +661,11 @@ export default function PortfolioPage() {
                   onRename={saveNick}
                   onSetRenewal={saveRenewalDate}
                   onDownload={downloadPolicy}
+                  onDelete={deletePolicy}
                   onOpenReport={(id) => setLocation(`/app/policy/${id}`)}
                   onAskAdvisor={openConnect}
                   downloading={downloadingId === p.id}
+                  deleting={deletingId === p.id}
                 />
               ))}
 

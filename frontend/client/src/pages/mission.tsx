@@ -104,8 +104,8 @@ export default function Mission() {
               </div>
               <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
                 <Users className="w-16 h-16 text-[var(--color-green-primary)] mb-6" />
-                <h3 className="text-3xl font-serif font-bold mb-2">10,000+</h3>
-                <p className="text-[var(--color-text-secondary)]">Policies Decoded</p>
+                <h3 className="text-3xl font-serif font-bold mb-2">Every clause</h3>
+                <p className="text-[var(--color-text-secondary)]">Read against the insurer's own wording</p>
               </div>
             </motion.div>
           </div>

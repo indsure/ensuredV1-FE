@@ -49,7 +49,7 @@ export default function VehiclePage() {
     },
     {
       question: "Is my data safe?",
-      answer: "Yes. We delete your PDF after analysis. We don't store, log, or sell data. Compliant with IRDAI guidelines and RBI data residency requirements.",
+      answer: "Yes. Your document is stored so you can open and download it again from your portfolio, and it is encrypted in transit. We never sell it and never pass it to an insurer or an advisor unless you ask us to. You can delete any policy, and the file behind it, whenever you want.",
     },
     {
       question: "What if my policy is unusual or custom?",
@@ -120,7 +120,7 @@ export default function VehiclePage() {
                   <span>IRDAI-aligned</span>
                 </div>
                 <span className="text-[#9CA3AF]">•</span>
-                <span>10,000+ analyzed</span>
+                <span>Every clause read</span>
                 <span className="text-[#9CA3AF]">•</span>
                 <div className="flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#10B981]" />
@@ -455,7 +455,7 @@ export default function VehiclePage() {
                 <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
               </summary>
               <p className="mt-3 text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                Yes. We delete your PDF after analysis. We don't store, log, or sell data. Compliant with IRDAI guidelines and RBI data residency requirements.
+                Yes. Your document is stored so you can open and download it again from your portfolio, and it is encrypted in transit. We never sell it and never pass it to an insurer or an advisor unless you ask us to. You can delete any policy, and the file behind it, whenever you want.
               </p>
             </details>
 

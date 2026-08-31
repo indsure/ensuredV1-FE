@@ -33,7 +33,7 @@ export default function Help() {
     },
     {
       question: "Will I receive sales calls?",
-      answer: "Never. We don't collect your phone number or email address. There's no signup required, and we don't sell insurance products."
+      answer: "Only if you ask for one. Creating a free account needs your name, mobile number and email, and we use them to run your account and send renewal reminders. We do not sell insurance products, and we do not pass your details to an advisor unless you tap 'Talk to an advisor' yourself."
     },
     {
       question: "How accurate is the analysis?",
