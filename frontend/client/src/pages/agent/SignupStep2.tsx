@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
 import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
+import { partnersFromSignup } from '@/lib/data/signup-insurer-map'
 import { Search, X, Check, Plus, CheckCircle2 } from 'lucide-react'
 
 // Insurers grouped by category
@@ -114,6 +115,32 @@ export default function AgentSignupStep2() {
             setError('Failed to save empanelments. Please try again.')
             setLoading(false)
             return
+        }
+
+        // Mirror the HEALTH selections into agents.partnered_companies, which is
+        // what the cover calculator actually reads. Without this the answer
+        // above went nowhere: it was stored, shown to admins, and ignored by the
+        // one feature that needed it, until the agent typed the same insurers
+        // again in their profile.
+        //
+        // Health only, via an explicit map. Life and general have no true
+        // counterpart in the profile vocabulary, and guessing one turns
+        // "SBI Life" into "SBI Health Insurance", which is a different company.
+        // Those selections stay in empanelments; see signup-insurer-map.ts.
+        //
+        // Non-fatal on purpose. The empanelments row above is already saved and
+        // this is a convenience mirror; failing here must not strand someone at
+        // the end of signup with an account they cannot get into. They can still
+        // set partners in their profile, exactly as before.
+        const partners = partnersFromSignup(selected)
+        if (partners.length > 0) {
+            const { error: partnerError } = await supabase
+                .from('agents')
+                .update({ partnered_companies: partners })
+                .eq('id', user.id)
+            if (partnerError) {
+                console.error('partner mirror failed', partnerError.message)
+            }
         }
 
         setLocation('/agent/dashboard')

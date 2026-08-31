@@ -28,6 +28,7 @@ interface Agent {
   client_count: number;
   avg_score: string;
   empanelments: string[];
+  partnered_companies: string[];
 }
 
 const AdminAgents: React.FC = () => {
@@ -219,7 +220,14 @@ const AdminAgents: React.FC = () => {
                           >
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
-                                   <h5 className="text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Empanelled Insurers</h5>
+                                   {/* Two stores, two questions. Labelled so the
+                                       difference is visible: this is everything the
+                                       agent sells, across life, health and general.
+                                       The block beside it is the health-only subset
+                                       the cover calculator biases toward, which the
+                                       agent can edit in their profile. */}
+                                   <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Empanelled Insurers</h5>
+                                   <p className="text-xs text-slate-400 mb-4">Chosen at signup, all lines of business</p>
                                    <div className="flex flex-wrap gap-2">
                                       {agent.empanelments.length > 0 ? agent.empanelments.map((ins, i) => (
                                         <span key={i} className="px-3 py-1.5 bg-white border border-teal-100 text-[#0D9488] text-[11px] font-bold rounded-full shadow-sm">
@@ -227,6 +235,18 @@ const AdminAgents: React.FC = () => {
                                         </span>
                                       )) : (
                                         <p className="text-xs text-slate-400 italic">No empanelments listed</p>
+                                      )}
+                                   </div>
+
+                                   <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-6 mb-1">Health partners</h5>
+                                   <p className="text-xs text-slate-400 mb-4">What the cover calculator uses. Editable by the agent in their profile.</p>
+                                   <div className="flex flex-wrap gap-2">
+                                      {agent.partnered_companies.length > 0 ? agent.partnered_companies.map((ins, i) => (
+                                        <span key={i} className="px-3 py-1.5 bg-white border border-indigo-100 text-indigo-700 text-xs font-bold rounded-full shadow-sm">
+                                          {ins}
+                                        </span>
+                                      )) : (
+                                        <p className="text-xs text-slate-400 italic">None. The calculator gives neutral output for this agent.</p>
                                       )}
                                    </div>
                                 </div>

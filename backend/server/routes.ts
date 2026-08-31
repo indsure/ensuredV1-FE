@@ -3238,6 +3238,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const agentsRes = await pool.query(`
         SELECT
           a.id, a.full_name, a.email, a.city, a.created_at, a.upload_limit,
+          -- Both insurer stores, deliberately. They answer different questions
+          -- and they can legitimately diverge, so showing one and hiding the
+          -- other is how someone concludes they are duplicates and merges them.
+          --   empanelments        (below) everything this agent sells, all lines
+          --   partnered_companies (here)  health partners the calculator uses
+          a.partnered_companies,
           COUNT(c.id)  AS client_count,
           AVG(c.score) AS avg_score
         FROM agents a
@@ -3258,6 +3264,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const agents = agentsRes.rows.map((a) => ({
         ...a,
         empanelments: empanelMap[a.id] || [],
+        partnered_companies: a.partnered_companies || [],
         client_count: parseInt(a.client_count),
         avg_score: a.avg_score ? parseFloat(a.avg_score).toFixed(1) : "0",
       }));
