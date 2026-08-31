@@ -14,13 +14,11 @@ import {
 } from "@/lib/mock-data";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { validateForensicAuditReport } from "@/lib/policy-types";
-import { useAnalysis } from "@/hooks/use-analysis";
 import { apiFetch } from "@/lib/api";
 import { MpEvent, track } from "@/lib/mixpanel";
 
 export default function Report({ params }: { params?: { id?: string } }) {
   const [, setLocation] = useLocation();
-  const { clearAuditState } = useAnalysis();
   const [data, setData] = useState(null as any | null);
   const [loading, setLoading] = useState(true);
 
@@ -85,10 +83,24 @@ export default function Report({ params }: { params?: { id?: string } }) {
 
     setLoading(false);
 
-    // CLEANUP: Reset state on unmount
-    return () => {
-      clearAuditState();
-    };
+    // No unmount cleanup here, deliberately.
+    //
+    // There used to be a `return () => clearAuditState()`. Because every other
+    // branch above returns early, it only ever registered on THIS path — the
+    // one reached when there is no id and no valid stored report. That is
+    // exactly the state of an analysis that is still running: the job has
+    // started but no report exists yet.
+    //
+    // clearAuditState() removes IndSure_current_job as well as IndSure_report
+    // (use-analysis.tsx:70-71) and nulls currentJobId. So opening /report while
+    // an analysis was in flight and then navigating away deleted the browser's
+    // only handle on that job — both readers of it (use-analysis.tsx:161 and
+    // MobileNav.tsx:20) came up empty, polling never resumed, and the finished
+    // result was never written back. The job kept running server-side while the
+    // user watched their analysis disappear.
+    //
+    // If you need to clear stale report state, do it where a NEW analysis
+    // starts — not on unmount of the screen that displays one.
   }, [params?.id]);
 
   if (loading) {

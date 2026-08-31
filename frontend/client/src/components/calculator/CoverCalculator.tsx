@@ -326,6 +326,23 @@ export default function CoverCalculator({
     }
   }, [embedded, currentStepId, inputs]);
 
+  // The agent flow deliberately does NOT autosave: saveProgress() writes the
+  // wizard inputs to localStorage (calculator-storage.ts:139), and in the agent
+  // flow those inputs describe a *customer* — age, income, dependants, health.
+  // rules.md forbids putting that in web storage, so the answer is not to turn
+  // autosave on here. Warn before the work is lost instead.
+  useEffect(() => {
+    if (!embedded) return;
+    if (currentStepId === "intro" || Object.keys(inputs).length === 0) return;
+
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [embedded, currentStepId, inputs]);
+
   useEffect(() => {
     setSelectedOption(null);
     window.scrollTo({ top: 0, behavior: "smooth" });

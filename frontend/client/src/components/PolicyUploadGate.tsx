@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Upload, FileCheck, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getApiBase } from "@/lib/queryClient";
-import { savePendingUpload, readPendingUpload, type PendingUpload } from "@/lib/pendingUpload";
+import { savePendingUpload, readPendingUpload, clearPendingUpload, type PendingUpload } from "@/lib/pendingUpload";
 
 // Upload first, sign up second.
 //
@@ -102,6 +102,10 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
 
         <button
           onClick={() => {
+            // Clear the stored token too, not just the local state. Without
+            // this the discarded file is still the one redeemed at signup, and
+            // it burns the free slot for that line of business.
+            clearPendingUpload();
             setPending(null);
             setError(null);
           }}

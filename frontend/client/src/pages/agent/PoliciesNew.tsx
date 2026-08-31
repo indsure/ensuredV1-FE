@@ -15,6 +15,7 @@ import { fetchCustomers, type Customer } from "@/lib/customers"
 import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog"
 import type { DraftTarget } from "@/lib/draftMessage"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { toast } from "@/hooks/use-toast"
 import { PoliciesMobileList } from "@/components/agent/PoliciesMobileList"
 
 type ClientRow = {
@@ -199,12 +200,29 @@ export default function PoliciesNew() {
   useEffect(() => { fetchPolicies(); }, [fetchPolicies]);
 
   async function handleDelete(id: string) {
+    if (!agent?.agentId) return;
     setDeletingId(id);
     try {
-      await supabase.from("clients").delete().eq("id", id);
+      // supabase-js resolves with { error } instead of throwing, so a bare
+      // try/catch around this never fires. Read the error explicitly, or the
+      // row disappears from the table whether or not the delete succeeded and
+      // reappears on the next refresh.
+      const { error: dErr } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", id)
+        .eq("agent_id", agent.agentId);
+      if (dErr) throw new Error(dErr.message);
       setRows(prev => prev.filter(r => r.id !== id));
-    } catch {
-      alert("Delete failed. Please try again.");
+      toast({ variant: "success", title: "Policy deleted", description: "This cannot be undone." });
+    } catch (e: unknown) {
+      // Re-fetch so the table shows what the database actually holds.
+      void fetchPolicies();
+      toast({
+        variant: "destructive",
+        title: "Could not delete",
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
     } finally {
       setDeletingId(null);
       setConfirmId(null);
@@ -235,7 +253,11 @@ export default function PoliciesNew() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Could not download PDF.");
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: e instanceof Error ? e.message : "Could not download the PDF. Please try again.",
+      });
     } finally {
       setDownloadingId(null);
     }

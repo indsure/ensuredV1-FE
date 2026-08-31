@@ -171,6 +171,7 @@ export default function Compare() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<CompareResponse | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
 
   const canCompare = !!fileA && !!fileB && !loading;
 
@@ -195,7 +196,15 @@ export default function Compare() {
     }
   }
 
+  // The comparison lives in component state only. Clearing it throws away a
+  // 20-40 second run that cost a paid call, so ask first rather than losing it
+  // to a mis-tap on a small link.
   function reset() {
+    if (response && !confirmDiscard) {
+      setConfirmDiscard(true);
+      return;
+    }
+    setConfirmDiscard(false);
     setResponse(null);
     setFileA(null);
     setFileB(null);
@@ -207,10 +216,27 @@ export default function Compare() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl md:text-3xl font-black text-slate-900">Head-to-Head</h1>
-          <button onClick={reset} className="text-sm font-semibold text-slate-500 hover:text-slate-800">
-            ← Compare again
-          </button>
+          {confirmDiscard ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="text-sm text-slate-700">Discard this comparison?</span>
+              <button onClick={reset} className="text-sm font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded">
+                Discard
+              </button>
+              <button onClick={() => setConfirmDiscard(false)} className="text-sm font-bold text-slate-600 hover:text-slate-900 px-3 py-2">
+                Keep
+              </button>
+            </span>
+          ) : (
+            <button onClick={reset} className="text-sm font-semibold text-slate-500 hover:text-slate-800">
+              ← Compare again
+            </button>
+          )}
         </div>
+        {confirmDiscard && (
+          <p className="text-sm text-slate-600">
+            Save or share it first if you need it — it is not stored anywhere yet.
+          </p>
+        )}
         <ShareBar data={response.result} profiles={response.profiles} />
         <ComparisonView data={response.result} />
       </div>

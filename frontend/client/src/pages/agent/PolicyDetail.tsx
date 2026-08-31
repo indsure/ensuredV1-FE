@@ -339,14 +339,18 @@ export default function PolicyDetail() {
     }
   }
 
-  async function archivePolicy() {
+  // Named for what it does. This is a hard delete, not an archive — there is no
+  // recoverable copy. `public_reports.client_id` is ON DELETE CASCADE, so any
+  // live share link for this policy stops working as a side effect.
+  async function deletePolicy() {
     if (!policy?.id || !agent?.agentId) return;
     setBusy("delete");
     try {
       const update = await supabase
         .from("clients")
         .delete()
-        .eq("id", policy.id);
+        .eq("id", policy.id)
+        .eq("agent_id", agent.agentId);
       if (update.error) throw new Error(update.error.message);
 
       toast({ variant: "success", title: "Policy deleted" });
@@ -606,9 +610,9 @@ export default function PolicyDetail() {
       <ConfirmationDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        onConfirm={() => void archivePolicy()}
-        title="Delete this policy?"
-        description="This action archives the policy, revokes active share links, and removes it from the active upload flow."
+        onConfirm={() => void deletePolicy()}
+        title="Delete this policy permanently?"
+        description="The policy, its analysis and its uploaded file are deleted for good — this cannot be undone. Any share link you sent the customer will stop working immediately."
         confirmText={busy === "delete" ? "Deleting..." : "Delete policy"}
         variant="destructive"
       />
