@@ -671,7 +671,7 @@ function ProductSection() {
 
           {/* claim-source: Free tier on /pricing (pricing.tsx:46-50), verified 2026-08-25 */}
           <ul className="flex flex-col gap-3">
-            {["One policy of each type — health, term life, vehicle. Free.",
+            {["One policy of each type: health, term, life and vehicle. Free.",
               "Room rent, co-pay, sub-limits and waiting periods, explained.",
               "Renewal reminders 30 days before expiry."].map((f) => (
               <li key={f} className="flex items-start gap-2.5 text-base leading-relaxed text-[var(--color-text-main)]">

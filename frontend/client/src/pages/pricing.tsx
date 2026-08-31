@@ -51,7 +51,7 @@ const tiers: Tier[] = [
     subline: "No card needed",
     sublineAnnual: "No card needed",
     features: [
-      { label: "One policy of each type — health, term life, vehicle" },
+      { label: "One policy of each type: health, term, life and vehicle" },
       { label: "Full health policy check in plain language" },
       { label: "Room rent, co-pay, sub-limits and waiting periods explained" },
       { label: "Renewal reminders 30 days before expiry" },
@@ -72,7 +72,7 @@ const tiers: Tier[] = [
     sublineAnnual: "Under ₹84 a month · saves ₹189",
     features: [
       { label: "4 health policy checks a year" },
-      { label: "Room for 12 more policies — term life and vehicle, any mix" },
+      { label: "Room for 12 more policies across term, life and vehicle, any mix" },
       { label: "Renewal reminders on every policy you store" },
       { label: "Unlimited consultation with our team (fair use)" },
       { label: "Ask the Sach assistant any question about your cover" },
@@ -87,7 +87,7 @@ const tiers: Tier[] = [
 const featureRows: { label: string; free: string | boolean; paid: string | boolean }[] = [
   { label: "Health policy checks", free: "1", paid: "4 a year" },
   { label: "Policies stored and tracked", free: "1 of each type", paid: "16 total" },
-  { label: "Term life and vehicle policies", free: "1 each, stored", paid: "12 slots, any mix" },
+  { label: "Term, life and vehicle policies", free: "1 each, stored", paid: "12 slots, any mix" },
   { label: "Renewal reminders", free: true, paid: true },
   { label: "Plain-language report", free: true, paid: true },
   { label: "PDF download", free: true, paid: true },
@@ -102,8 +102,8 @@ const faqs = [
     a: "A full read of your health policy wording — room rent caps, co-pay, sub-limits, waiting periods and the gaps between what you assumed and what is written. You get four of these a year on the Personal plan.",
   },
   {
-    q: "What do the 12 term life and vehicle slots do?",
-    a: "They store the policy and watch its renewal date, so nothing lapses quietly. They are not full policy checks — those are for health policies today. You can split the 12 however you like between term life and vehicle.",
+    q: "What do the 12 term, life and vehicle slots do?",
+    a: "They store the policy and watch its renewal date, so nothing lapses quietly. They are not full policy checks — those are for health policies today. You can split the 12 however you like across term, life and vehicle.",
   },
   /* The time-based gate that used to return "trial_expired" on day 31 was
      deliberately removed from the server; trial_started_at is still written
@@ -113,7 +113,7 @@ const faqs = [
     /* claim-source: checkIndividualQuota, backend/server/routes.ts:772-798,
        verified 2026-08-31 — free is metered by FREE_SLOTS_PER_TYPE, not time. */
     q: "Is the free plan really free forever?",
-    a: "Yes. There is no trial clock and no card. You keep one policy of each type — health, term life and vehicle — with the full health check, renewal reminders and PDF reports, for as long as you want. You move to Personal only when you need more than one policy of a type, or more checks.",
+    a: "Yes. There is no trial clock and no card. You keep one policy of each type, health, term, life and vehicle, with the full health check, renewal reminders and PDF reports, for as long as you want. You move to Personal only when you need more than one policy of a type, or more checks.",
   },
   {
     q: "Can I pay monthly instead of yearly?",
