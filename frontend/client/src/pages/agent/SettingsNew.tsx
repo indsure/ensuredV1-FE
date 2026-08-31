@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import TeamAccessLog from "@/components/agent/TeamAccessLog"
 import { FormFieldSkeleton } from "@/components/ui/skeleton"
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -209,6 +210,9 @@ export default function SettingsNew() {
             </Card>
           </div>
       </div>
+
+      {/* Renders only for an advisor who is on someone's team. */}
+      <TeamAccessLog />
     </div>
   );
 }
