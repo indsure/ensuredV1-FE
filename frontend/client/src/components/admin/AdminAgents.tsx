@@ -122,13 +122,13 @@ const AdminAgents: React.FC = () => {
           <table className="table-cards w-full text-left">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Agent</th>
-                <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">City</th>
-                <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Signup Date</th>
-                <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Clients</th>
-                <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Avg Portfolio</th>
-                <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Upload Limit</th>
-                <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Agent</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">City</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Signup Date</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Clients</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Avg Portfolio</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Upload Limit</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -227,31 +227,31 @@ const AdminAgents: React.FC = () => {
                                        the cover calculator biases toward, which the
                                        agent can edit in their profile. */}
                                    <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Empanelled Insurers</h5>
-                                   <p className="text-xs text-slate-400 mb-4">Chosen at signup, all lines of business</p>
+                                   <p className="text-sm text-slate-500 mb-4">Chosen at signup, all lines of business</p>
                                    <div className="flex flex-wrap gap-2">
                                       {agent.empanelments.length > 0 ? agent.empanelments.map((ins, i) => (
                                         <span key={i} className="px-3 py-1.5 bg-white border border-teal-100 text-[#0D9488] text-[11px] font-bold rounded-full shadow-sm">
                                           {ins}
                                         </span>
                                       )) : (
-                                        <p className="text-xs text-slate-400 italic">No empanelments listed</p>
+                                        <p className="text-sm text-slate-500 italic">No empanelments listed</p>
                                       )}
                                    </div>
 
                                    <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-6 mb-1">Health partners</h5>
-                                   <p className="text-xs text-slate-400 mb-4">What the cover calculator uses. Editable by the agent in their profile.</p>
+                                   <p className="text-sm text-slate-500 mb-4">What the cover calculator uses. Editable by the agent in their profile.</p>
                                    <div className="flex flex-wrap gap-2">
                                       {agent.partnered_companies.length > 0 ? agent.partnered_companies.map((ins, i) => (
                                         <span key={i} className="px-3 py-1.5 bg-white border border-indigo-100 text-indigo-700 text-xs font-bold rounded-full shadow-sm">
                                           {ins}
                                         </span>
                                       )) : (
-                                        <p className="text-xs text-slate-400 italic">None. The calculator gives neutral output for this agent.</p>
+                                        <p className="text-sm text-slate-500 italic">None. The calculator gives neutral output for this agent.</p>
                                       )}
                                    </div>
                                 </div>
                                 <div className="space-y-4">
-                                   <h5 className="text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Quick Stats</h5>
+                                   <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Quick Stats</h5>
                                    <div className="grid grid-cols-2 gap-4">
                                       <div className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
                                          <Mail size={16} className="text-slate-400" />

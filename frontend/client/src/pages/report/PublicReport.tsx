@@ -170,7 +170,7 @@ const PublicReport: React.FC = () => {
                   <div className="mt-6 pt-4 border-t border-slate-50">
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Savings/Benefit</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Savings/Benefit</p>
                         <p className="text-base font-bold text-[#B45309]">{rec.premium_delta}</p>
                       </div>
                       <Shield className="text-[#0D9488]/20" size={32} />

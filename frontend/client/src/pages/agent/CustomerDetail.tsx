@@ -254,7 +254,7 @@ export default function CustomerDetail() {
               <p className="text-3xl font-extrabold text-slate-800">{stats.policyCount}</p>
               <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                 {Object.entries(stats.byType).map(([t, n]) => (
-                  <span key={t} className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[11px] sm:text-[10px] font-bold">
+                  <span key={t} className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-xs font-bold">
                     {TYPE_META[t as InsuranceType]?.emoji ?? "📄"} {typeLabel(t)} × {n}
                   </span>
                 ))}
@@ -396,7 +396,7 @@ export default function CustomerDetail() {
                             )}
                           </td>
                           <td className="px-6 py-4" data-label="Type">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-[11px] sm:text-[10px] font-bold uppercase tracking-wider">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider">
                               {TYPE_META[type]?.emoji} {typeLabel(type)}
                             </span>
                           </td>

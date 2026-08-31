@@ -181,7 +181,7 @@ export default function PolicyValues() {
                   <th
                     key={h}
                     className={
-                      "px-4 py-3 text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 " +
+                      "px-4 py-3 text-xs font-black uppercase tracking-widest text-slate-400 " +
                       (i >= 2 && i <= 5 ? "text-right" : "")
                     }
                   >
@@ -256,7 +256,7 @@ export default function PolicyValues() {
                   <td className="px-4 py-3" data-label="What to do" data-cell="actions">
                     <span
                       className={
-                        "inline-block rounded-full border px-2 py-0.5 text-[11px] sm:text-[10px] font-semibold " +
+                        "inline-block rounded-full border px-2 py-0.5 text-xs font-semibold " +
                         ACTION_META[r.action].tone
                       }
                     >

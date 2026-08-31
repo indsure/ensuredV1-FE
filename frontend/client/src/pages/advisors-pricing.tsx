@@ -241,7 +241,7 @@ export default function Pricing() {
                     <span>
                       {f.label}
                       {f.soon && (
-                        <span className="ml-1.5 align-middle inline-block text-[11px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--color-green-primary)] border border-[var(--color-green-primary)] rounded-full px-1.5 leading-4">
+                        <span className="ml-1.5 align-middle inline-block text-xs font-semibold uppercase tracking-wider text-[var(--color-green-primary)] border border-[var(--color-green-primary)] rounded-full px-1.5 leading-4">
                           Soon
                         </span>
                       )}

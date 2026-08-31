@@ -262,7 +262,7 @@ function QueueTable({
                   </td>
                 )}
                 <td className="px-5 py-4" data-label="Status">
-                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] sm:text-[10px] font-black uppercase tracking-widest border ${statusColor(p.status)}`}>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-black uppercase tracking-widest border ${statusColor(p.status)}`}>
                     {showSpinner && (p.status === "processing" || p.status === "pending") ? (
                       <span className="inline-flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin" />

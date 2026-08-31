@@ -312,7 +312,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             {relevant.length > 0 && (
               <span
                 className={
-                  "rounded-full border px-2 py-0.5 text-[11px] sm:text-[10px] font-semibold " +
+                  "rounded-full border px-2 py-0.5 text-xs font-semibold " +
                   (assumed === 0 ? SOURCE_STYLE.document : SOURCE_STYLE.default)
                 }
               >
@@ -542,7 +542,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                           {Array.isArray(p.value) ? `${p.value.length} rows` : "table"}
                         </span>
                       )}
-                      <span className={"rounded-full border px-2 py-0.5 text-[11px] sm:text-[10px] font-semibold " + SOURCE_STYLE[p.source]}>
+                      <span className={"rounded-full border px-2 py-0.5 text-xs font-semibold " + SOURCE_STYLE[p.source]}>
                         {SOURCE_LABEL[p.source]}
                       </span>
                     </div>

@@ -256,12 +256,17 @@ for (const f of files.filter(isUI)) {
 
 /* ================= WARN rules — budgeted, must not grow ================= */
 
-/* Budgets are the counts measured on 2026-08-23, the day the ratchet was installed.
-   Lower them as debt is paid; never raise them. A rise means new debt was added. */
+/* Budgets are the counts measured on 2026-08-23, the day the ratchet was installed,
+   lowered on 2026-08-31 to lock in what the type pass paid off. Lower them as debt
+   is paid; never raise them. A rise means new debt was added.
+
+   Reading them: sub-14px-type counts LINES with small type, not sites, so the type
+   pass shows as a small move even though it changed 147 places. It killed the
+   inversion (type that shrank as the screen grew) rather than the smallness. */
 const BUDGETS = {
-  "sub-14px-type": 980,
-  "low-contrast-token": 396,
-  "native-dialog": 8,
+  "sub-14px-type": 963,
+  "low-contrast-token": 389,
+  "native-dialog": 5,
   "placeholder-as-label": 2,
   // Weak detector: only catches `>...AI...<` on a single line, so it under-reports.
   // The audit found "AI" user-facing on at least six public pages. Treat a rise as

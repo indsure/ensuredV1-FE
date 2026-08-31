@@ -141,7 +141,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
             {!sidebarCollapsed && (
               <div className="flex flex-col min-w-0">
                 <span className="text-lg font-bold text-white leading-tight">IndSure</span>
-                <span className="text-[11px] sm:text-[10px] uppercase tracking-wider text-white/60 font-semibold">{t("layout.agent_portal")}</span>
+                <span className="text-xs uppercase tracking-wider text-white/60 font-semibold">{t("layout.agent_portal")}</span>
               </div>
             )}
           </Link>
@@ -180,7 +180,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         <div className={`${sidebarCollapsed ? 'px-2' : 'px-4'} py-6 space-y-6 flex-1 transition-all duration-300`}>
           {navSections.map((section) => (
             <div key={section.key}>
-              {!sidebarCollapsed && <div className="px-2 text-[11px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">{section.label}</div>}
+              {!sidebarCollapsed && <div className="px-2 text-xs font-black uppercase tracking-[0.25em] text-white/40 mb-3">{section.label}</div>}
               <nav className="space-y-1">
                 {section.items.map((item) => {
                   const active = location === item.href
@@ -200,12 +200,12 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                         {!sidebarCollapsed && item.label}
                       </span>
                       {!sidebarCollapsed && item.href === "/agent/my-queue" && (
-                        <span className="inline-flex items-center rounded-full bg-[#0D9488]/15 text-[#5eead4] border border-[#0D9488]/30 px-2 py-0.5 text-[11px] sm:text-[10px] font-black tabular-nums">
+                        <span className="inline-flex items-center rounded-full bg-[#0D9488]/15 text-[#5eead4] border border-[#0D9488]/30 px-2 py-0.5 text-xs font-black tabular-nums">
                           {queueCount}
                         </span>
                       )}
                       {sidebarCollapsed && item.href === "/agent/my-queue" && queueCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0D9488] text-white text-[11px] sm:text-[10px] font-black flex items-center justify-center">
+                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0D9488] text-white text-xs font-black flex items-center justify-center">
                           {queueCount}
                         </span>
                       )}
@@ -218,7 +218,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           ))}
 
           <div>
-            {!sidebarCollapsed && <div className="px-2 text-[11px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-3">{t("layout.account")}</div>}
+            {!sidebarCollapsed && <div className="px-2 text-xs font-black uppercase tracking-[0.25em] text-white/40 mb-3">{t("layout.account")}</div>}
             <nav className="space-y-1">
               <Link
                 to="/agent/settings"
@@ -247,7 +247,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                 {!sidebarCollapsed && (
                   <div className="flex-1 min-w-0 text-left">
                     <div className="text-sm font-semibold truncate">{agent?.name ?? "Agent"}</div>
-                    <div className="text-[11px] sm:text-[10px] uppercase tracking-widest text-white/60 font-black truncate">
+                    <div className="text-xs uppercase tracking-widest text-white/60 font-black truncate">
                       {/* Ownership is not a role — it lives in teams.owner_id
                           (migration 017), so `role` still reads "agent" for
                           someone who runs an agency. Say the more useful thing. */}

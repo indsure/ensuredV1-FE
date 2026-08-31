@@ -117,7 +117,7 @@ export default function ResetPassword() {
           </div>
         </div>
 
-        <div className="relative z-10 text-white/60 text-[11px] sm:text-[10px] font-black tracking-[0.2em] uppercase">
+        <div className="relative z-10 text-white/60 text-xs font-black tracking-[0.2em] uppercase">
           Standardized by Leading Insurers · v4.1.0-VITE
         </div>
       </div>
@@ -159,7 +159,7 @@ export default function ResetPassword() {
           {ready === true && !done && (
             <div className="space-y-6">
               <div className="space-y-1.5">
-                <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">New Vault Key</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">New Vault Key</label>
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
@@ -179,7 +179,7 @@ export default function ResetPassword() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Vault Key</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Vault Key</label>
                 <Input
                   type={showPassword ? 'text' : 'password'}
                   value={confirm}

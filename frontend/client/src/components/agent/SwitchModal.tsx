@@ -148,13 +148,13 @@ const SwitchModal: React.FC<SwitchModalProps> = ({ isOpen, onClose, client }) =>
                     {/* Current Policy */}
                     <div className="rounded-xl border border-red-100 overflow-hidden">
                       <div className="bg-red-50 p-3 border-b border-red-100">
-                        <p className="text-[11px] sm:text-[10px] font-bold text-red-600 uppercase tracking-widest">Current Policy</p>
+                        <p className="text-xs font-bold text-red-600 uppercase tracking-widest">Current Policy</p>
                         <h4 className="font-bold text-[#0F172A] text-sm mt-1 truncate">{client.insurer}</h4>
                       </div>
                       <div className="p-4 space-y-3">
                         <div className="flex items-center gap-2">
                           <span className={cn(
-                            "px-2 py-0.5 rounded text-[11px] sm:text-[10px] font-bold",
+                            "px-2 py-0.5 rounded text-xs font-bold",
                             client.score >= 70 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
                           )}>
                             Score: {client.score}
@@ -174,13 +174,13 @@ const SwitchModal: React.FC<SwitchModalProps> = ({ isOpen, onClose, client }) =>
                     {/* Recommended Switch */}
                     <div className="rounded-xl border border-teal-100 overflow-hidden shadow-sm">
                       <div className="bg-teal-50 p-3 border-b border-teal-100">
-                        <p className="text-[11px] sm:text-[10px] font-bold text-teal-600 uppercase tracking-widest">Recommended Switch</p>
+                        <p className="text-xs font-bold text-teal-600 uppercase tracking-widest">Recommended Switch</p>
                         <h4 className="font-bold text-[#0F172A] text-sm mt-1 truncate">{recommendation.recommended_insurer}</h4>
                       </div>
                       <div className="p-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <p className="text-[11px] font-semibold text-[#0D9488]">{recommendation.recommended_plan}</p>
-                          <span className="bg-teal-100 text-teal-700 px-2 py-0.5 rounded text-[11px] sm:text-[10px] font-bold">Score: 90+</span>
+                          <span className="bg-teal-100 text-teal-700 px-2 py-0.5 rounded text-xs font-bold">Score: 90+</span>
                         </div>
                         <ul className="space-y-2">
                           {recommendation.improvements.map((improvement, i) => (
@@ -191,7 +191,7 @@ const SwitchModal: React.FC<SwitchModalProps> = ({ isOpen, onClose, client }) =>
                           ))}
                         </ul>
                         <div className="pt-2 border-t border-slate-50">
-                          <p className="text-[11px] sm:text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Est. Premium Delta</p>
+                          <p className="text-xs text-slate-400 uppercase font-bold tracking-tighter">Est. Premium Delta</p>
                           <p className="text-sm font-bold text-[#B45309]">{recommendation.premium_delta}</p>
                         </div>
                       </div>

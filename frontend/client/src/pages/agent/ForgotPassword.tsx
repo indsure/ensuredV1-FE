@@ -67,7 +67,7 @@ export default function ForgotPassword() {
           </div>
         </div>
 
-        <div className="relative z-10 text-white/60 text-[11px] sm:text-[10px] font-black tracking-[0.2em] uppercase">
+        <div className="relative z-10 text-white/60 text-xs font-black tracking-[0.2em] uppercase">
           Standardized by Leading Insurers · v4.1.0-VITE
         </div>
       </div>
@@ -95,7 +95,7 @@ export default function ForgotPassword() {
           ) : (
             <div className="space-y-6">
               <div className="space-y-1.5">
-                <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Credential Email</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Credential Email</label>
                 <Input
                   type="email"
                   value={email}
@@ -122,7 +122,7 @@ export default function ForgotPassword() {
               </Button>
 
               <div className="text-center">
-                <Link href="/agent/login" className="inline-flex min-h-11 items-center text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-[#0D9488]">
+                <Link href="/agent/login" className="inline-flex min-h-11 items-center text-xs font-black text-slate-400 uppercase tracking-widest hover:text-[#0D9488]">
                   ← Back to Portal
                 </Link>
               </div>

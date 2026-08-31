@@ -504,7 +504,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             verdict === "SAFE" ? "bg-green-500" :
                                 verdict === "RISKY" ? "bg-red-500" : "bg-amber-500"
                         )} />
-                        <span className="text-[11px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Audit Score</span>
+                        <span className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Audit Score</span>
                         <div className={cn(
                             "text-8xl font-serif leading-none mb-2",
                             verdict === "SAFE" ? "text-[var(--color-green-primary)]" :
@@ -531,7 +531,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             <p>All scores are AI-computed from your policy text.</p>
                             <p>No manual overrides.</p>
                             {data.audit_score?.raw_score && data.audit_score.raw_score !== score && (
-                                <p className="text-[11px] sm:text-[10px] text-slate-400 mt-2">
+                                <p className="text-xs text-slate-400 mt-2">
                                     Raw score: {data.audit_score.raw_score} (rounded to {score})
                                 </p>
                             )}
@@ -1059,7 +1059,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_days} days</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn("text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    <span className={cn("text-xs font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
                                                     {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
@@ -1079,7 +1079,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                         <span className="text-xs text-[var(--color-text-secondary)]">Not specified in schedule</span>
                                                     </div>
                                                     <div className="flex items-center">
-                                                        <span className="text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded bg-amber-100 text-amber-700">⚠ Not stated — verify with insurer</span>
+                                                        <span className="text-xs font-bold px-2 py-1 rounded bg-amber-100 text-amber-700">⚠ Not stated — verify with insurer</span>
                                                         <span title="The uploaded document does not state a pre-existing disease waiting period. Confirm it with the insurer or full policy wording." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                                     </div>
                                                 </li>
@@ -1098,7 +1098,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months{estimated ? " (est. from specific-illness waiting)" : ""}</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn("text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded", estimated ? "bg-amber-100 text-amber-700" : status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{estimated ? `≈ ${label}` : label}</span>
+                                                    <span className={cn("text-xs font-bold px-2 py-1 rounded", estimated ? "bg-amber-100 text-amber-700" : status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{estimated ? `≈ ${label}` : label}</span>
                                                     <span title={estimated ? "Estimated: the schedule does not separately state a pre-existing disease waiting period. This is derived from the specific-illness exclusion period — verify with the insurer." : (status !== "active" ? "This waiting period is complete." : "")} className={cn("ml-1 text-slate-400", (estimated || status !== "active") ? "cursor-help" : "hidden")}>ℹ</span>
                                                 </div>
                                             </li>
@@ -1121,7 +1121,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn("text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    <span className={cn("text-xs font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
                                                     {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
@@ -1139,7 +1139,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn("text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    <span className={cn("text-xs font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
                                                     {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>
@@ -1158,7 +1158,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                                     <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
                                                 </div>
                                                 <div className="flex items-center">
-                                                    <span className={cn("text-[11px] sm:text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
+                                                    <span className={cn("text-xs font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
                                                     {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
                                                 </div>
                                             </li>

@@ -118,7 +118,7 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
             >
               {failures.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Painpoints</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Painpoints</p>
                   <ul className="space-y-1.5">
                     {failures.slice(0, 3).map((f, i) => (
                       <li key={i} className="text-xs text-slate-700 flex gap-2"><span className="text-red-400 shrink-0 mt-0.5">•</span>{f}</li>
@@ -128,7 +128,7 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
               )}
               {criticals.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Critical Actions</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-orange-400 mb-2">Critical Actions</p>
                   <ul className="space-y-1.5">
                     {criticals.slice(0, 2).map((c, i) => (
                       <li key={i} className="text-xs text-slate-700 flex gap-2"><span className="text-orange-400 shrink-0 mt-0.5">⚡</span>{c.action}</li>
@@ -138,7 +138,7 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
               )}
               {portRec && (
                 <div className="pt-2.5 border-t border-slate-100">
-                  <p className="text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
                     Port? <span className={portRec === 'yes' ? 'text-red-500' : portRec === 'consider' ? 'text-amber-500' : 'text-green-500'}>{portRec.toUpperCase()}</span>
                   </p>
                   {portReason && <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{portReason}</p>}
@@ -382,7 +382,7 @@ export default function PoliciesNew() {
                   }`}
                 >
                   {t.label}
-                  <span className={`rounded-full px-1.5 py-0.5 text-[11px] sm:text-[10px] font-black ${tab === t.key ? "bg-slate-100 text-slate-600" : "text-slate-400"}`}>
+                  <span className={`rounded-full px-1.5 py-0.5 text-xs font-black ${tab === t.key ? "bg-slate-100 text-slate-600" : "text-slate-400"}`}>
                     {t.count}
                   </span>
                 </button>
@@ -475,14 +475,14 @@ export default function PoliciesNew() {
                         {p.customer_id && customersById.has(p.customer_id) && (
                           <button
                             onClick={e => { e.stopPropagation(); setLocation(`/agent/customers/${p.customer_id}`); }}
-                            className="mt-1 inline-flex items-center gap-1 rounded-full bg-teal-50 border border-teal-100 px-2 py-0.5 text-[11px] sm:text-[10px] font-bold text-teal-700 hover:bg-teal-100 transition-colors"
+                            className="mt-1 inline-flex items-center gap-1 rounded-full bg-teal-50 border border-teal-100 px-2 py-0.5 text-xs font-bold text-teal-700 hover:bg-teal-100 transition-colors"
                           >
                             👤 {customersById.get(p.customer_id)!.name}
                           </button>
                         )}
                       </td>
                       <td className="px-6 py-4" data-label="Type">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-[11px] sm:text-[10px] font-bold uppercase tracking-wider">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider">
                           {TYPE_META[(p.insurance_type || "health") as InsuranceType]?.emoji} {typeLabel(p.insurance_type)}
                         </span>
                       </td>
@@ -499,7 +499,7 @@ export default function PoliciesNew() {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-0.5 text-[11px] sm:text-[10px] font-black uppercase tracking-widest cursor-default">
+                                <span className="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-0.5 text-xs font-black uppercase tracking-widest cursor-default">
                                   {views} views
                                 </span>
                               </TooltipTrigger>
@@ -533,9 +533,9 @@ export default function PoliciesNew() {
                                       weakPoint: weak,
                                     });
                                   }}
-                                  className="inline-flex h-10 w-10 md:h-auto md:w-auto items-center justify-center p-1.5 rounded text-slate-400 hover:text-[#0D9488] hover:bg-teal-50 transition-colors"
+                                  className="inline-flex h-10 w-10 md:h-9 md:w-9 items-center justify-center p-1.5 rounded text-slate-500 hover:text-[#0D9488] hover:bg-teal-50 transition-colors"
                                 >
-                                  <Sparkles className="w-3.5 h-3.5" />
+                                  <Sparkles className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent>Draft WhatsApp message</TooltipContent>
@@ -548,9 +548,9 @@ export default function PoliciesNew() {
                               <TooltipTrigger asChild>
                                 <button
                                   onClick={() => window.open(`/agent/policies/${p.id}`, "_blank")}
-                                  className="inline-flex h-10 w-10 md:h-auto md:w-auto items-center justify-center p-1.5 rounded text-slate-400 hover:text-[#0D9488] hover:bg-teal-50 transition-colors"
+                                  className="inline-flex h-10 w-10 md:h-9 md:w-9 items-center justify-center p-1.5 rounded text-slate-500 hover:text-[#0D9488] hover:bg-teal-50 transition-colors"
                                 >
-                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  <ExternalLink className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent>Open report</TooltipContent>
@@ -564,11 +564,11 @@ export default function PoliciesNew() {
                                 <button
                                   onClick={() => handleDownload(p)}
                                   disabled={!p.pdf_url || downloadingId === p.id}
-                                  className="inline-flex h-10 w-10 md:h-auto md:w-auto items-center justify-center p-1.5 rounded text-slate-400 hover:text-[#0D9488] hover:bg-teal-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                  className="inline-flex h-10 w-10 md:h-9 md:w-9 items-center justify-center p-1.5 rounded text-slate-500 hover:text-[#0D9488] hover:bg-teal-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                   {downloadingId === p.id
                                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    : <Download className="w-3.5 h-3.5" />
+                                    : <Download className="w-4 h-4" />
                                   }
                                 </button>
                               </TooltipTrigger>
@@ -603,13 +603,13 @@ export default function PoliciesNew() {
                               <button
                                 onClick={() => handleDelete(p.id)}
                                 disabled={deletingId === p.id}
-                                className="text-[11px] sm:text-[10px] font-black uppercase tracking-wider text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                                className="text-xs font-black uppercase tracking-wider text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded transition-colors disabled:opacity-50"
                               >
                                 {deletingId === p.id ? "…" : "Delete"}
                               </button>
                               <button
                                 onClick={() => setConfirmId(null)}
-                                className="text-[11px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-slate-600 px-1.5 py-1 rounded"
+                                className="text-xs font-black uppercase tracking-wider text-slate-400 hover:text-slate-600 px-1.5 py-1 rounded"
                               >
                                 Cancel
                               </button>
@@ -617,9 +617,9 @@ export default function PoliciesNew() {
                           ) : (
                             <button
                               onClick={() => setConfirmId(p.id)}
-                              className="inline-flex h-10 w-10 md:h-auto md:w-auto items-center justify-center p-1.5 rounded text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                              className="inline-flex h-10 w-10 md:h-9 md:w-9 items-center justify-center p-1.5 rounded text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           )}
                         </div>

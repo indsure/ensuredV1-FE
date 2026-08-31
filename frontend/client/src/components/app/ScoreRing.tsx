@@ -87,7 +87,7 @@ export function ScoreRing({
           {Math.round(shown)}
         </span>
         {label && (
-          <span className="mt-1.5 text-[11px] sm:text-[10px] font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
+          <span className="mt-1.5 text-xs font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
             {label}
           </span>
         )}

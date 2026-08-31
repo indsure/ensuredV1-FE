@@ -354,7 +354,7 @@ export default function DashboardNew() {
                 )}
                 {!translating && failures.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">{t("dashboard.painpoints")}</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">{t("dashboard.painpoints")}</p>
                     <ul className="space-y-1">
                       {txFailures.map((f, i) => (
                         <li key={i} className="text-xs text-slate-700 flex gap-1.5"><span className="text-red-400 mt-0.5">•</span>{f}</li>
@@ -364,7 +364,7 @@ export default function DashboardNew() {
                 )}
                 {!translating && criticals.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-orange-400 mb-1.5">{t("dashboard.critical_actions")}</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-orange-400 mb-1.5">{t("dashboard.critical_actions")}</p>
                     <ul className="space-y-1">
                       {txCriticals.map((action, i) => (
                         <li key={i} className="text-xs text-slate-700 flex gap-1.5"><span className="text-orange-400 mt-0.5">⚡</span>{action}</li>
@@ -374,7 +374,7 @@ export default function DashboardNew() {
                 )}
                 {!translating && portRec && (
                   <div className="pt-2 border-t border-slate-50">
-                    <p className="text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
                       {t("dashboard.port")} <span className={portRec === 'yes' ? 'text-red-500' : portRec === 'consider' ? 'text-amber-500' : 'text-green-500'}>{portRec.toUpperCase()}</span>
                     </p>
                     {txPortReason && <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{txPortReason}</p>}
@@ -413,10 +413,10 @@ export default function DashboardNew() {
   if (error) return <InlineErrorState onRetry={fetchDashboard} />;
 
   function StatusBadge({ status }: { status: string }) {
-    if (status === 'done') return <span className="text-[11px] sm:text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-800 px-2 py-0.5 rounded-sm">Completed</span>;
-    if (status === 'error') return <span className="text-[11px] sm:text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800 px-2 py-0.5 rounded-sm">Failed</span>;
-    if (status === 'pending') return <span className="text-[11px] sm:text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-sm">Pending</span>;
-    return <span className="text-[11px] sm:text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-800 px-2 flex items-center gap-1 py-0.5 rounded-sm"><div className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin"/> Processing</span>;
+    if (status === 'done') return <span className="text-xs font-bold uppercase tracking-wider bg-green-100 text-green-800 px-2 py-0.5 rounded-sm">Completed</span>;
+    if (status === 'error') return <span className="text-xs font-bold uppercase tracking-wider bg-red-100 text-red-800 px-2 py-0.5 rounded-sm">Failed</span>;
+    if (status === 'pending') return <span className="text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-sm">Pending</span>;
+    return <span className="text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800 px-2 flex items-center gap-1 py-0.5 rounded-sm"><div className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin"/> Processing</span>;
   }
 
   if (isMobile) {
@@ -587,7 +587,7 @@ export default function DashboardNew() {
                          <td className="px-6 py-4 font-semibold text-slate-800" data-label={t("dashboard.col_customer")} data-cell="title">
                            <div className="flex flex-wrap items-center gap-2">
                              <span>{getDisplayName(p)}</span>
-                             <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-[11px] sm:text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+                             <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-xs font-bold uppercase tracking-wider whitespace-nowrap">
                                {TYPE_META[(p.insurance_type || 'health') as InsuranceType]?.emoji} {typeLabel(p.insurance_type)}
                              </span>
                            </div>

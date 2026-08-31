@@ -98,7 +98,7 @@ type ChartPoint = { month: string; completed: number; failed: number };
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
     <Card className="border-none shadow-sm bg-white p-5">
-      <div className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</div>
+      <div className="text-xs font-black text-slate-400 uppercase tracking-widest">{label}</div>
       <div className="mt-1.5 text-3xl font-black text-slate-900 tabular-nums">{value}</div>
       {sub && <div className="mt-1 text-[11px] text-slate-400 font-medium">{sub}</div>}
     </Card>
@@ -288,12 +288,12 @@ export default function MyProfile() {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-2xl font-bold text-slate-900">{displayName}</h2>
-              <span className="inline-flex rounded-full px-3 py-0.5 text-[11px] sm:text-[10px] font-black uppercase tracking-widest border bg-indigo-50 text-indigo-700 border-indigo-100">
+              <span className="inline-flex rounded-full px-3 py-0.5 text-xs font-black uppercase tracking-widest border bg-indigo-50 text-indigo-700 border-indigo-100">
                 {profile?.role ?? agent?.role ?? "agent"}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
-                <span className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("my_profile.active")}</span>
+                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("my_profile.active")}</span>
               </span>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-500">
@@ -307,10 +307,10 @@ export default function MyProfile() {
           <div className="flex-shrink-0 rounded-2xl border border-teal-100 bg-teal-50 px-5 py-4 text-center min-w-[120px]">
             <div className="flex items-center justify-center gap-1.5 text-[#0D9488] mb-1">
               <Coins className="w-4 h-4" />
-              <span className="text-[11px] sm:text-[10px] font-black uppercase tracking-widest">{t("my_profile.credits")}</span>
+              <span className="text-xs font-black uppercase tracking-widest">{t("my_profile.credits")}</span>
             </div>
             <div className="text-3xl font-black text-[#0D9488] tabular-nums">{creditsRemaining}</div>
-            <div className="text-[11px] sm:text-[10px] text-teal-600 font-semibold mt-0.5">{t("my_profile.remaining")}</div>
+            <div className="text-xs text-teal-600 font-semibold mt-0.5">{t("my_profile.remaining")}</div>
           </div>
         </div>
       </div>
@@ -356,7 +356,7 @@ export default function MyProfile() {
             <Button
               onClick={savePartners}
               disabled={savingPartners}
-              className="bg-[#0D9488] hover:bg-[#0f766e] text-white font-black uppercase text-[11px] sm:text-[10px] tracking-widest px-6 h-10"
+              className="bg-[#0D9488] hover:bg-[#0f766e] text-white font-black uppercase text-xs tracking-widest px-6 h-10"
             >
               {savingPartners ? t("my_profile.saving") : t("my_profile.save_partnerships")}
             </Button>
@@ -367,10 +367,10 @@ export default function MyProfile() {
             return (
               <div key={type}>
                 <div className="flex items-center gap-3 mb-3">
-                  <span className={`inline-flex rounded-full px-3 py-0.5 text-[11px] sm:text-[10px] font-black uppercase tracking-widest border ${TYPE_COLORS[type]}`}>
+                  <span className={`inline-flex rounded-full px-3 py-0.5 text-xs font-black uppercase tracking-widest border ${TYPE_COLORS[type]}`}>
                     {TYPE_LABELS[type]}
                   </span>
-                  <span className="text-[11px] sm:text-[10px] text-slate-400 font-semibold">
+                  <span className="text-xs text-slate-400 font-semibold">
                     {companies.filter(c => partnered.has(c.name)).length}/{companies.length} {t("my_profile.partnered")}
                   </span>
                 </div>
@@ -397,7 +397,7 @@ export default function MyProfile() {
                             {company.name}
                           </div>
                           {company.founded && (
-                            <div className="text-[11px] sm:text-[10px] text-slate-400 font-medium mt-0.5">{t("my_profile.est")} {company.founded}</div>
+                            <div className="text-xs text-slate-400 font-medium mt-0.5">{t("my_profile.est")} {company.founded}</div>
                           )}
                         </div>
                       </button>
@@ -422,7 +422,7 @@ export default function MyProfile() {
             <CardContent className="p-6 space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("my_profile.full_name")}</label>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("my_profile.full_name")}</label>
                   <Input
                     value={name}
                     onChange={e => setName(e.target.value)}
@@ -431,7 +431,7 @@ export default function MyProfile() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("my_profile.phone")}</label>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("my_profile.phone")}</label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                     <Input
@@ -444,7 +444,7 @@ export default function MyProfile() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("my_profile.city")}</label>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("my_profile.city")}</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                     <Input
@@ -457,7 +457,7 @@ export default function MyProfile() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("my_profile.firm")}</label>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("my_profile.firm")}</label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                     <Input
@@ -474,13 +474,13 @@ export default function MyProfile() {
               {/* Read-only fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("my_profile.registered_email")}</label>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("my_profile.registered_email")}</label>
                   <div className="h-11 flex items-center px-3 bg-slate-50/50 border border-slate-100 rounded-lg text-sm font-semibold text-slate-400 cursor-not-allowed">
                     {profile?.email ?? "—"}
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("my_profile.auth_level")}</label>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("my_profile.auth_level")}</label>
                   <div className="h-11 flex items-center px-3 bg-slate-50/50 border border-slate-100 rounded-lg text-xs font-black text-slate-400 uppercase tracking-widest cursor-not-allowed">
                     {profile?.role ?? agent?.role ?? "agent"}
                   </div>
@@ -491,7 +491,7 @@ export default function MyProfile() {
                 <Button
                   onClick={saveProfile}
                   disabled={saving || loading}
-                  className="bg-[#0D9488] hover:bg-[#0f766e] text-white font-black uppercase text-[11px] sm:text-[10px] tracking-widest px-8 h-11"
+                  className="bg-[#0D9488] hover:bg-[#0f766e] text-white font-black uppercase text-xs tracking-widest px-8 h-11"
                 >
                   {saving ? t("my_profile.saving") : t("my_profile.save_changes")}
                 </Button>
@@ -507,7 +507,7 @@ export default function MyProfile() {
             <CardContent className="p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("my_profile.new_password")}</label>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("my_profile.new_password")}</label>
                   <Input
                     type="password"
                     value={newPass}
@@ -516,7 +516,7 @@ export default function MyProfile() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[11px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("my_profile.confirm_password")}</label>
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">{t("my_profile.confirm_password")}</label>
                   <Input
                     type="password"
                     value={confirmPass}
@@ -531,7 +531,7 @@ export default function MyProfile() {
               <Button
                 onClick={changePassword}
                 disabled={savingPass}
-                className="bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-[11px] sm:text-[10px] tracking-widest px-8 h-11"
+                className="bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-xs tracking-widest px-8 h-11"
               >
                 {savingPass ? t("my_profile.updating") : t("my_profile.update_password")}
               </Button>

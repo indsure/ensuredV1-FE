@@ -97,7 +97,7 @@ export function BlogSidebarCTA() {
           Analyze my policy <ArrowRight className="w-3.5 h-3.5" />
         </span>
       </Link>
-      <p className="text-[11px] sm:text-[10px] text-[var(--color-text-muted)] mt-2.5 flex items-center gap-1">
+      <p className="text-xs text-[var(--color-text-muted)] mt-2.5 flex items-center gap-1">
         <Lock className="w-3 h-3 text-[var(--color-teal-600)]" /> {PROMISE}
       </p>
     </div>

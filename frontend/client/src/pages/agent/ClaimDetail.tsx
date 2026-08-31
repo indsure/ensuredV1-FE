@@ -1152,7 +1152,7 @@ function OutcomeDialog({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-600">Proof from the insurer</span>
-            <span className="rounded-md bg-red-50 px-1.5 py-0.5 text-[11px] sm:text-[10px] font-black tracking-wide text-red-700">REQUIRED</span>
+            <span className="rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-black tracking-wide text-red-700">REQUIRED</span>
           </div>
           {proof.map((d) => (
             <div key={d.id} className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3">

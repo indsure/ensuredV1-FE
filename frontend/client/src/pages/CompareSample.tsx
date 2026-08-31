@@ -76,7 +76,7 @@ export default function CompareSample() {
             <motion.div key={p.name} variants={fadeUp} className="bg-white rounded-2xl shadow-[0_1px_12px_rgba(0,0,0,0.08)] border border-slate-100 p-6 flex items-center gap-5">
               <ScoreBadge score={p.score} color={p.color} />
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] sm:text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">{p.label}</p>
+                <p className="text-xs uppercase tracking-widest font-bold text-slate-400 mb-1">{p.label}</p>
                 <p className="font-['Playfair_Display'] text-xl font-bold text-[#0F172A] leading-tight">{p.name}</p>
                 <p className="text-sm text-slate-500 mt-1">{p.sum}</p>
               </div>
@@ -105,14 +105,14 @@ export default function CompareSample() {
                 <span className="md:hidden w-full text-[11px] font-bold uppercase tracking-widest text-slate-400">Niva Bupa ReAssure 2.0</span>
                 {row.nivaVal}
                 {row.winner === 'niva' && (
-                  <span className="text-[11px] sm:text-[10px] font-bold bg-[#0D9488] text-white px-1.5 py-0.5 rounded-full whitespace-nowrap">✓ Better</span>
+                  <span className="text-xs font-bold bg-[#0D9488] text-white px-1.5 py-0.5 rounded-full whitespace-nowrap">✓ Better</span>
                 )}
               </div>
               <div className={`px-4 md:px-6 py-2 pb-4 md:py-4 text-sm flex flex-wrap items-center gap-x-2 gap-y-1 ${row.winner === 'star' ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-slate-600'}`}>
                 <span className="md:hidden w-full text-[11px] font-bold uppercase tracking-widest text-slate-400">Star Health Comprehensive</span>
                 {row.starVal}
                 {row.winner === 'star' && (
-                  <span className="text-[11px] sm:text-[10px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full whitespace-nowrap">✓ Better</span>
+                  <span className="text-xs font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full whitespace-nowrap">✓ Better</span>
                 )}
               </div>
             </div>

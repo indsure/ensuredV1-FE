@@ -160,7 +160,7 @@ export default function CustomerTagCard({
           <>
             {suggestions.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
                   <Sparkles className="h-3 w-3 text-amber-400" /> Suggested match
                 </p>
                 {suggestions.map(({ customer, reason }) => (

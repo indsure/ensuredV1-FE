@@ -85,12 +85,12 @@ const AdminInviteCodes: React.FC = () => {
         <table className="table-cards w-full text-left">
           <thead>
             <tr className="bg-slate-50/50 border-b border-slate-100 font-serif">
-              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Invite Code</th>
-              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
-              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Used By</th>
-              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Used At</th>
-              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Created At</th>
-              <th className="px-6 py-4 text-[11px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Invite Code</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Used By</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Used At</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Created At</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -111,9 +111,9 @@ const AdminInviteCodes: React.FC = () => {
                 <td className="px-6 py-4" data-label="Status">
                    <div className="flex justify-center">
                     {code.used_by ? (
-                      <span className="px-3 py-1 bg-amber-100 text-amber-700 text-[11px] sm:text-[10px] font-bold uppercase rounded-full border border-amber-200">Used</span>
+                      <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold uppercase rounded-full border border-amber-200">Used</span>
                     ) : (
-                      <span className="px-3 py-1 bg-teal-100 text-teal-700 text-[11px] sm:text-[10px] font-bold uppercase rounded-full border border-teal-200">Active</span>
+                      <span className="px-3 py-1 bg-teal-100 text-teal-700 text-xs font-bold uppercase rounded-full border border-teal-200">Active</span>
                     )}
                    </div>
                 </td>

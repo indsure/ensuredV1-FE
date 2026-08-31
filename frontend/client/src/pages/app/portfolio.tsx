@@ -508,7 +508,7 @@ export default function PortfolioPage() {
               ) : (
                 <div className="w-[168px] h-[168px] rounded-full border-[12px] border-white/10 flex flex-col items-center justify-center text-center px-6">
                   <span className="font-serif text-3xl sm:text-4xl font-bold text-white/40">—</span>
-                  <span className="mt-1 text-[11px] sm:text-[10px] font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
+                  <span className="mt-1 text-xs font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
                     no score yet
                   </span>
                 </div>
@@ -1110,7 +1110,7 @@ function HeroStat({
 }) {
   const inner = (
     <>
-      <span className="flex items-center gap-1.5 text-[11px] sm:text-[10px] font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
+      <span className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
         {icon} <span className="truncate">{label}</span>
       </span>
       <span className="block mt-1.5 font-serif text-xl sm:text-2xl font-bold text-white leading-none">{value}</span>

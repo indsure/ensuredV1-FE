@@ -100,7 +100,7 @@ function AddPlanPicker({
             ) : (
               filtered.map(([insurer, items]) => (
                 <div key={insurer}>
-                  <div className="px-3 pt-2 pb-1 text-[11px] sm:text-[10px] font-black uppercase tracking-wider text-[var(--color-text-muted)]">{insurer}</div>
+                  <div className="px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-[var(--color-text-muted)]">{insurer}</div>
                   {items.map((it) => (
                     <button
                       key={it.uin}
@@ -132,7 +132,7 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
   const pal = SIDE_PALETTE[index % SIDE_PALETTE.length];
   return (
     <div className="relative rounded-xl border-2 bg-white p-3.5 pr-9 w-full sm:w-56 flex-shrink-0" style={{ borderColor: pal.accent }}>
-      <span className="inline-block text-[11px] sm:text-[10px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
+      <span className="inline-block text-xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
         {String.fromCharCode(65 + index)}
       </span>
       <p className="font-bold text-[var(--color-navy-900)] leading-tight truncate">{item.plan_name}</p>

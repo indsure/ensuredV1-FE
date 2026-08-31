@@ -138,7 +138,7 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                                     <div className="font-medium text-[var(--color-navy-900)] line-clamp-2 leading-tight mb-0.5">
                                         {hospital.hospital_name}
                                     </div>
-                                    <div className="text-[var(--color-text-muted)] text-[11px] sm:text-[10px] line-clamp-1">
+                                    <div className="text-[var(--color-text-muted)] text-xs line-clamp-1">
                                         {hospital.address}
                                     </div>
                                 </div>
@@ -147,7 +147,7 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                     ) : (
                         <div className="text-xs text-[var(--color-text-muted)] space-y-1">
                             <p className="italic">No hospital names available</p>
-                            <p className="text-[11px] sm:text-[10px]">Check browser console for details</p>
+                            <p className="text-xs">This insurer has not shared its hospital list with us yet.</p>
                         </div>
                     )}
                 </div>

@@ -114,13 +114,13 @@ const AdminOverview: React.FC = () => {
                 transition={{ delay: i * 0.05, duration: 1 }}
                 className="flex-1 bg-gradient-to-t from-[#0D9488] to-[#2DD4BF] rounded-t-sm relative group cursor-pointer"
               >
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#0F172A] text-white text-[11px] sm:text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#0F172A] text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                   {Math.round(height * 2.5)}
                 </div>
               </motion.div>
             ))}
           </div>
-          <div className="flex justify-between pt-4 border-t border-slate-50 text-[11px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+          <div className="flex justify-between pt-4 border-t border-slate-50 text-xs text-slate-400 font-bold uppercase tracking-wider">
             <span>Jan</span>
             <span>Jun</span>
             <span>Dec</span>
@@ -157,7 +157,7 @@ const AdminOverview: React.FC = () => {
               </div>
               
               <div className="mt-8 pt-6 border-t border-white/5 text-center">
-                 <p className="text-[11px] sm:text-[10px] text-slate-500 uppercase tracking-widest font-bold">Node Version v20.x • Production</p>
+                 <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Node Version v20.x • Production</p>
               </div>
            </div>
         </div>

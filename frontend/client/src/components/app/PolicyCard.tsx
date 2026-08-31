@@ -91,7 +91,7 @@ export function PolicyCard({
             <span className={`text-xl sm:text-2xl font-serif font-bold leading-none ${scoreClasses(p.score).text}`}>
               {p.score}
             </span>
-            <span className="text-[11px] sm:text-[8px] font-mono uppercase tracking-widest text-[var(--color-text-muted)] mt-0.5">
+            <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)] mt-0.5">
               score
             </span>
           </div>
@@ -107,7 +107,7 @@ export function PolicyCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] sm:text-[10px] font-mono font-bold uppercase tracking-widest text-[var(--color-teal-600)]">
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-[var(--color-teal-600)]">
               {labelFor(p.insurance_type)}
             </span>
             <StatusPill status={p.status} />
@@ -325,7 +325,7 @@ function InlineField({
 
   return (
     <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-cream-main)] px-3 py-2">
-      <p className="text-[11px] sm:text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{label}</p>
+      <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{label}</p>
       {editing ? (
         <div className="mt-1 flex items-center gap-1.5">
           <input
@@ -382,7 +382,7 @@ export function StatusPill({ status }: { status: string }) {
   const label =
     status === "done" ? "Ready" : status === "error" ? "Couldn't read" : status.charAt(0).toUpperCase() + status.slice(1);
   return (
-    <span className={`shrink-0 text-[11px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full border ${map[status] ?? map.pending}`}>
+    <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full border ${map[status] ?? map.pending}`}>
       {label}
     </span>
   );

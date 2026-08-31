@@ -91,7 +91,7 @@ export function BlogCover({
       />
 
       <span
-        className={`relative font-mono uppercase tracking-[0.2em] ${hero ? "text-xs" : "text-[11px] sm:text-[10px]"} font-bold`}
+        className={`relative font-mono uppercase tracking-[0.2em] ${hero ? "text-xs" : "text-xs"} font-bold`}
         style={{ color: tint.accent }}
       >
         {category}

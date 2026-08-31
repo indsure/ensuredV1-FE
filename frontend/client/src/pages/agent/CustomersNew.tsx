@@ -233,7 +233,7 @@ export default function CustomersNew() {
                         {stats ? (
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {Object.entries(stats.byType).map(([t, n]) => (
-                              <span key={t} className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[11px] sm:text-[10px] font-bold">
+                              <span key={t} className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-xs font-bold">
                                 {TYPE_META[t as InsuranceType]?.emoji ?? "📄"} {n}
                               </span>
                             ))}

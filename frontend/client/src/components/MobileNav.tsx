@@ -96,7 +96,7 @@ export function MobileNav() {
                   <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#3CBBA0] rounded-full" />
                 )}
               </div>
-              <span className="text-[11px] sm:text-[10px] font-medium truncate w-full text-center">
+              <span className="text-xs font-medium truncate w-full text-center">
                 {item.label}
               </span>
             </Link>
@@ -109,7 +109,7 @@ export function MobileNav() {
             aria-label="View analysis progress"
           >
             <Upload className="w-5 h-5 mb-1" />
-            <span className="text-[11px] sm:text-[10px] font-medium">Analyzing</span>
+            <span className="text-xs font-medium">Analyzing</span>
           </Link>
         )}
       </div>
