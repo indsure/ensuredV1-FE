@@ -3600,7 +3600,15 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           return res.status(403).json({ error: "WRONG_ACCOUNT_TYPE", message: "This endpoint is for agent accounts." });
         }
 
-        const insuranceType = (req.body.type || "health").toLowerCase();
+        // The client used to be trusted with this string verbatim, and it sent
+        // "vehicle" while the rest of the product uses "motor". Whatever lands
+        // here is stored on pending_uploads, meters the free quota per type in
+        // checkIndividualQuota, and is copied onto individual_policies, so an
+        // unrecognised value silently creates a line of business nothing else
+        // can read or count. Anything off the list falls back to health.
+        const CONSUMER_TYPES = new Set(["health", "term", "life", "motor"]);
+        const requestedType = String(req.body.type || "health").toLowerCase();
+        const insuranceType = CONSUMER_TYPES.has(requestedType) ? requestedType : "health";
         const isDataEntry = isDataEntryType(insuranceType);
 
         // Metering. Health forensic analysis draws from credits; the OCR /

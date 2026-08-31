@@ -4,6 +4,7 @@ import { Upload, FileCheck, Loader2, AlertCircle, ShieldCheck } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { getApiBase } from "@/lib/queryClient";
 import { savePendingUpload, readPendingUpload, clearPendingUpload, type PendingUpload } from "@/lib/pendingUpload";
+import { LOBS } from "@/components/app/portfolio-utils";
 
 // Upload first, sign up second.
 //
@@ -21,11 +22,13 @@ import { savePendingUpload, readPendingUpload, clearPendingUpload, type PendingU
 const MAX_BYTES = 10 * 1024 * 1024;
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.txt";
 
-const TYPES = [
-  { value: "health", label: "Health" },
-  { value: "term", label: "Term life" },
-  { value: "vehicle", label: "Vehicle" },
-];
+/* Derived from the canonical consumer registry rather than restated. The
+   local copy this replaces had drifted: it wrote "vehicle" where every other
+   part of the product (and every row in individual_policies) uses "motor",
+   and it left out "life" altogether so an endowment or ULIP policy could not
+   be uploaded here at all. Free slots are metered per insurance_type, so the
+   wrong value also split one allowance into two. */
+const TYPES = LOBS.map((l) => ({ value: l.type, label: l.label }));
 
 export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
   const [pending, setPending] = useState<PendingUpload | null>(() => readPendingUpload());
