@@ -79,3 +79,9 @@ playwright-report/
 # Custom project ignores
 tsc_output*.txt
 policyfiles/
+
+# Backup credentials — the live config and the encryption key must never be
+# committed. scripts/backup/backup.env.example is the tracked placeholder.
+backup.env
+**/backup.env
+*.passphrase

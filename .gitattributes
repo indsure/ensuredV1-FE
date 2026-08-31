@@ -5,3 +5,10 @@
 # shebang becomes "#!/usr/bin/env bash\r" and every hook run dies with
 # "bad interpreter: /usr/bin/env bash^M" -- silently disabling the check.
 .githooks/** text eol=lf
+
+# Same reasoning for the backup scripts and systemd units: they are copied to
+# the EC2 box and executed there, so CRLF would break the shebang and the
+# unit-file parser.
+scripts/backup/*.sh text eol=lf
+scripts/backup/*.service text eol=lf
+scripts/backup/*.timer text eol=lf

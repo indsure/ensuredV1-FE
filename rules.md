@@ -2,6 +2,26 @@
 
 > This is the most important file for an AI assistant. Read this before writing any code.
 
+**Process lives in [`WORKFLOW.md`](WORKFLOW.md) — Plan → Critique → Finalize → Execute.**
+Read it first to pick the tier for the change you are about to make. This file is *what* the
+code must do; that file is *how* work gets from idea to shipped, and where the critic sits.
+
+**Before claiming a task is done, run the guard:**
+
+```bash
+npm run guard
+```
+
+It machine-checks the subset of these rules that can be checked, and fails the build on
+unsourced public claims, `console.log`, personal data in web storage, unchecked `.delete()`,
+unmounted toast systems, inverted type scales and `target="_blank"` without `rel`. It also
+holds a **budget** on known debt (sub-14px type, low-contrast tokens): those numbers may fall,
+never rise.
+
+Two rules in this file — no `console.log` in production, no personal data in web storage —
+were written down and violated anyway, and shipped for months. That is why the guard exists.
+A rule nobody verifies is a preference.
+
 ---
 
 ## ALWAYS Do These Things
