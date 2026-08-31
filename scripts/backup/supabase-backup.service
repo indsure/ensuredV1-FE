@@ -19,5 +19,16 @@ IOSchedulingClass=idle
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ProtectHome=true
 ReadWritePaths=/var/backups/supabase
+
+# ProtectHome is read-only, not true, because the storage half reads the app's
+# Supabase service key from its .env under /home. With ProtectHome=true systemd
+# puts an empty tmpfs over /home and the run died with "cannot read ... for the
+# Supabase keys", even though both scripts work by hand as root.
+#
+# BindReadOnlyPaths= was tried first, to grant exactly that one file. It does not
+# work here: the bind cannot be established through the tmpfs ProtectHome=true
+# lays down. read-only is the honest trade. /home becomes readable to a unit that
+# already runs as root and already reads one secret from it, and writes to /home
+# are still blocked. Everything this unit creates goes to /var/backups/supabase.
+ProtectHome=read-only

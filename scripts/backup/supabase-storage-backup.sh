@@ -67,6 +67,11 @@ cleanup() { find "$WORK" -type f -exec shred -u {} + 2>/dev/null; rm -rf "$WORK"
 trap 'rc=$?; cleanup; if [ $rc -ne 0 ]; then ping_hc /fail; fi; exit $rc' EXIT
 
 aws_s3() { aws "$@" --endpoint-url "$R2_ENDPOINT" --only-show-errors; }
+# Listing needs its own wrapper. --only-show-errors suppresses the output of
+# `s3 ls`, so the first run saw an empty bucket, concluded nothing was backed
+# up, and re-uploaded all 127 objects. Harmless once; nightly it would spend
+# 68MB a day to store 68MB and the incremental design would be decorative.
+aws_ls() { aws "$@" --endpoint-url "$R2_ENDPOINT"; }
 
 # URL-encode a storage path for the REST call. Slashes stay as separators.
 urlenc() {
@@ -91,7 +96,7 @@ log "  $TOTAL objects"
 
 # 2. What is already backed up.
 log "listing what R2 already holds"
-aws_s3 s3 ls "s3://$R2_BUCKET/$PREFIX/blobs/" --recursive 2>/dev/null \
+aws_ls s3 ls "s3://$R2_BUCKET/$PREFIX/blobs/" --recursive 2>/dev/null \
   | awk '{ $1=""; $2=""; $3=""; sub(/^ +/,""); print }' | sort > "$WORK/have.txt" || true
 HAVE=$(wc -l < "$WORK/have.txt")
 log "  $HAVE already stored"
