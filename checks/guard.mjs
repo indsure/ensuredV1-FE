@@ -167,10 +167,29 @@ for (const f of files) {
     add("FAIL", "react-router-dom", f.rel, 1, "react-router-dom is banned — use wouter (rules.md)", "");
 }
 
-/* 8. Cross-origin links without rel — security + the audit's social-icon finding. */
+/* 8. Cross-origin links without rel — security + the audit's social-icon finding.
+
+   Scans the whole opening tag, not one line. The original single-line test
+   scored every prettier-formatted link as a failure, because `rel` sits on the
+   line after `target`. All 17 of its hits were false positives, and a rule that
+   cries wolf 17 times is a rule nobody reads. Same bug the unchecked-delete
+   rule had. */
 for (const f of files.filter(isUI)) {
-  lines(f).forEach((raw, i) => {
-    if (/target\s*=\s*["']_blank["']/.test(raw) && !/rel\s*=/.test(raw))
+  const ls = lines(f);
+  ls.forEach((raw, i) => {
+    if (!/target\s*=\s*["']_blank["']/.test(raw)) return;
+
+    // Walk back to the tag that opens this attribute list, and forward to the
+    // `>` that closes it, so a multi-line tag is judged as one unit.
+    let start = i;
+    for (let k = 0; k < 20 && start > 0; k++, start--)
+      if (/<\s*[A-Za-z]/.test(ls[start])) break;
+    let end = i;
+    for (let k = 0; k < 20 && end < ls.length - 1; k++, end++)
+      if (/\/?>\s*$/.test(ls[end])) break;
+
+    const tag = ls.slice(start, end + 1).join(" ");
+    if (!/rel\s*=/.test(tag))
       add("FAIL", "blank-without-rel", f.rel, i + 1,
         'target="_blank" without rel="noopener noreferrer"', raw.trim().slice(0, 80));
   });

@@ -42,8 +42,6 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
         if (type === "pincode") params.append("pincode", title);
         params.append("limit", "10");
 
-        console.log(`[InsurerCard] Fetching hospitals for ${type}: ${title}`);
-
         apiFetch(`/api/hospitals/samples?${params.toString()}`)
             .then(r => {
                 if (!r.ok) {
@@ -52,7 +50,6 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                 return r.json();
             })
             .then(data => {
-                console.log(`[InsurerCard] Received ${data.length} hospitals for ${title}`, data);
                 setHospitalSamples(data);
             })
             .catch(err => {

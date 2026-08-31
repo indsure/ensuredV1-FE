@@ -23,7 +23,6 @@ export async function getValidSession() {
   
   if (timeUntilExpiry < 300) {
     // Token expires soon, refresh it
-    console.log('[Auth] Token expiring soon, refreshing...');
     const { data: { session: newSession }, error: refreshError } = 
       await supabase.auth.refreshSession();
     
@@ -31,7 +30,6 @@ export async function getValidSession() {
       throw new Error('Session expired - please log in again');
     }
     
-    console.log('[Auth] Token refreshed successfully');
     return newSession;
   }
   

@@ -12,7 +12,7 @@ import { ComparisonTray } from "@/components/hospitals/ComparisonTray";
 import { HospitalSkeleton } from "@/components/hospitals/HospitalSkeleton";
 import { EmptyState } from "@/components/hospitals/EmptyState";
 import { getAllStates, getCitiesForState } from "@/lib/data/indian-cities-data";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Info } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
@@ -83,7 +83,7 @@ export default function HospitalFilter() {
             setSelectedItems(selectedItems.filter(i => i.id !== item.id));
         } else {
             if (selectedItems.length >= 4) {
-                toast.error("You can compare up to 4 locations at a time");
+                toast({ variant: "destructive", title: "You can compare up to 4 locations at a time" });
                 return;
             }
             setSelectedItems([...selectedItems, item]);
