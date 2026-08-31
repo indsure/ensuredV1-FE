@@ -20,7 +20,15 @@ CREATE TABLE IF NOT EXISTS gemini_usage_log (
   output_tokens  INTEGER,
   total_tokens   INTEGER,
   est_cost_usd   NUMERIC(12,6),
-  status         TEXT NOT NULL DEFAULT 'ok', -- ok | error
+  -- ok                : billed, response usable
+  -- degraded          : BILLED but response unusable (empty / cut short / failed schema).
+  --                     Real money spent, user saw an error. Previously mis-filed as 'ok'.
+  -- error             : SDK threw. May or may not have been billed.
+  -- rejected_oversize : blocked by the input ceiling BEFORE the call — zero spend.
+  --                     prompt_tokens holds an ESTIMATE of the input we refused to send
+  --                     (so oversized uploads are visible/sortable); est_cost_usd is 0
+  --                     and admin spend totals exclude this status.
+  status         TEXT NOT NULL DEFAULT 'ok',
   attempt        INTEGER DEFAULT 1,        -- retry attempt number (see AIService MAX_RETRIES)
   latency_ms     INTEGER,
   error_message  TEXT

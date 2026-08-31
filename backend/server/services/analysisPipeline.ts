@@ -11,6 +11,11 @@ import {
 } from "../utils/policyWordingsFetcher";
 import { applyScoreBucketing, getBucketingExplanation } from "../utils/scoreBucketing";
 import { AI_CONFIG } from "../config/ai_config";
+import {
+  applyPolicyInputBudget,
+  approximatePageCount,
+  InputTooLargeError,
+} from "../utils/inputBudget";
 import type { GeminiCallMeta } from "./geminiUsage";
 
 /**
@@ -194,6 +199,24 @@ export function validateParsedReport(parsed: any): { valid: boolean; reason?: st
   }
 
   return { valid: true };
+}
+
+/**
+ * Usability check handed to AIService so the usage ledger can tell a billed
+ * success from a billed failure. Mirrors what the pipeline does with the
+ * response below (strip fences → parse → schema check); returns null when the
+ * response is fine, or a reason string when it is not.
+ */
+export function validateAuditResponse(rawText: string): string | null {
+  const cleaned = rawText.replace(/```json|```/g, "").trim();
+  let parsed: any;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    return "JSON parse failed";
+  }
+  const validation = validateParsedReport(parsed);
+  return validation.valid ? null : (validation.reason ?? "schema validation failed");
 }
 
 function pushConfidenceNote(parsed: any, note: string) {
@@ -442,15 +465,49 @@ export async function runAnalysisPipeline(
       fetchTime = Date.now() - fetchStartTime;
     }
 
-    // Step 3: Merge texts. Companion covers are appended AFTER the base policy
-    // and its official wording, clearly fenced so the model never mistakes them
-    // for the document under audit. Metadata (step 1) deliberately ran on the
-    // base text alone, so insurer/product still identify the audited policy.
-    const mergedPolicyText =
-      mergePolicyTexts(policyText, wordingsText) + buildCompanionDocuments(companions);
+    // Step 3: Enforce the input budget, THEN merge.
+    //
+    // This is the cap that was missing: policy text used to go straight from
+    // the PDF extractor into the prompt with no size check, which is how one
+    // audit reached 542,778 input tokens and returned 23 unusable ones.
+    // Oversized-but-recoverable inputs are truncated (wordings first) and
+    // flagged; anything past the hard ceiling throws before any spend.
+    //
+    // Companion covers are folded into the evidence BEFORE budgeting rather
+    // than appended after it. Each companion is already capped individually by
+    // COMPANION_TEXT_CHAR_CAP, but N of them are not, and a budget that some of
+    // the payload walks around is not a budget. They sit at the tail, clearly
+    // fenced, so the model still never mistakes them for the document under
+    // audit. Metadata (step 1) deliberately ran on the base text alone, so
+    // insurer/product still identify the audited policy.
+    const evidenceText = policyText + buildCompanionDocuments(companions);
+
+    let budget;
+    try {
+      budget = applyPolicyInputBudget(evidenceText, wordingsText);
+    } catch (err: any) {
+      if (err instanceof InputTooLargeError) {
+        console.error(
+          `[Pipeline] Rejected oversized document before any Gemini spend: ` +
+          `~${err.estimatedTokens.toLocaleString("en-US")} tokens (~${err.approxPages} pages), ` +
+          `ceiling ${err.limitTokens.toLocaleString("en-US")}.`
+        );
+        return { status: "failed", error: err.message };
+      }
+      throw err;
+    }
+
+    if (budget.truncated) {
+      console.warn(
+        `[Pipeline] Input over budget — truncated ${budget.truncatedSections.join(", ")}: ` +
+        `~${budget.originalTokens.toLocaleString("en-US")} → ${budget.estimatedTokens.toLocaleString("en-US")} tokens.`
+      );
+    }
+
+    const mergedPolicyText = mergePolicyTexts(budget.evidence, budget.wordings);
 
     // Capture whether wording was matched
-    const wordingMatched = wordingsText !== null && wordingsText.trim().length > 0;
+    const wordingMatched = budget.wordings !== null && budget.wordings.trim().length > 0;
 
     // Step 4: Select prompt
     let promptToUse = MASTER_AUDIT_PROMPT;
@@ -476,7 +533,10 @@ export async function runAnalysisPipeline(
       promptToUse,
       mergedPolicyText,
       AI_CONFIG.model,
-      { feature: "policy_audit", ...usageMeta }
+      { feature: "policy_audit", ...usageMeta },
+      // Let the ledger know whether the billed response was actually usable.
+      // Without this, a response we cannot parse is still filed as status 'ok'.
+      { validateResponse: validateAuditResponse }
     );
     aiTime = Date.now() - aiStartTime;
 
@@ -500,6 +560,19 @@ export async function runAnalysisPipeline(
     // derive from it, so it has to be right before anything downstream runs.
     enforceRequiredCover(parsed);
     enforceBreakdownCaps(parsed);
+    // A truncated document must never yield a report that looks complete —
+    // the score is derived from clauses that may have been in the omitted
+    // region, so the user has to be told the audit saw only part of the file.
+    if (budget.truncated) {
+      pushConfidenceNote(
+        parsed,
+        `Document exceeded the analysis input budget (~${budget.originalTokens.toLocaleString("en-US")} tokens, ` +
+        `roughly ${approximatePageCount(budget.originalTokens)} pages). ` +
+        `${budget.truncatedSections.join(" and ")} were partially omitted, so this score may be incomplete — ` +
+        `clauses in the omitted section could not be assessed.`
+      );
+    }
+
     performScoreArithmeticCheck(parsed);
 
     // Lock the verdict label to the (raw) score + NCAR before bucketing
@@ -524,7 +597,15 @@ export async function runAnalysisPipeline(
           policyText: mergedPolicyText,
         },
       },
-      metadata: metadata,
+      metadata: {
+        ...metadata,
+        input_budget: {
+          original_tokens: budget.originalTokens,
+          sent_tokens: budget.estimatedTokens,
+          truncated: budget.truncated,
+          truncated_sections: budget.truncatedSections,
+        },
+      },
       duration: {
         extraction: extractionTime,
         fetch: fetchTime,

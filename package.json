@@ -14,7 +14,8 @@
     "db:push": "drizzle-kit push",
     "health-check": "ts-node backend/server/tests/engineHealthCheck.ts",
     "guard": "node checks/guard.mjs",
-    "check:teams": "node checks/teams-sql-smoke.mjs"
+    "check:teams": "node checks/teams-sql-smoke.mjs",
+    "test": "tsx --test backend/server/tests/*.test.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

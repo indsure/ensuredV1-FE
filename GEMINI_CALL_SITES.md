@@ -48,6 +48,39 @@ Ledger feature tags: `policy_audit` · `data_entry` · `wording_extract` · `ima
 - `server/lib/analyze-core.ts` — wraps the pipeline but is not imported by any route (Phase-2 refactor placeholder).
 - `server/tests/engineHealthCheck.ts:82` spends real tokens **only when run manually**.
 
+## Input ceiling (added 2026-08-07)
+
+Every call now passes an input-size guard — `server/utils/inputBudget.ts`.
+
+| Raw input (est. tokens) | Behaviour |
+|---|---|
+| ≤ `SOFT_MAX_INPUT_TOKENS` (154,500) | sent untouched — covers all historic successful runs (max 93,121) |
+| soft → `hard_max_input_tokens` (250,000) | truncated **head-and-tail** (wordings first, then evidence), flagged in `confidence_notes` + `metadata.input_budget` |
+| > 250,000 | **rejected before the call** — zero spend, logged as `rejected_oversize` |
+
+Applied in two layers: `analysisPipeline.ts` does the per-section budget (it is
+the only place that knows evidence from wordings); `AIService.generateContent`
+holds the hard ceiling so no feature can bypass it. Both limits are
+env-overridable (`GEMINI_SOFT_MAX_INPUT_TOKENS` / `GEMINI_HARD_MAX_INPUT_TOKENS`).
+
+Truncation keeps **both ends** of the document deliberately: a head-only slice
+would drop the exclusions and waiting-period clauses the audit scores on, and
+produce a confident wrong score rather than an obvious failure.
+
+`utils/contextAssembler.ts` reads `token_budget` but is **dead code** and never
+enforced anything — see the banner in that file.
+
+## Ledger statuses
+
+`ok` · `degraded` · `error` · `rejected_oversize` — see `create_gemini_usage_log.sql`.
+
+**`degraded` is the one that matters**: the call was billed in full but the
+response was unusable (empty, cut short by `finishReason`, prompt blocked, or it
+failed the caller's own schema check). These used to be recorded as `ok` —
+ledger row id=1 (542,778 in / 23 out, status `ok`) was a billed failure the
+admin page reported as a clean success. Degraded responses are **not cached and
+not retried**, so a bad answer is never re-served or re-billed.
+
 ## Cost multipliers to remember
 - **Image upload = 2 calls** (OCR then audit).
 - **Retries**: AIService retries 3× on *any* error — deterministic failures bill up to 3×. Known follow-up: restrict to 429/503.

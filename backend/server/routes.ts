@@ -3125,14 +3125,20 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const days = Math.min(Math.max(parseInt(String(req.query.days ?? "7"), 10) || 7, 1), 90);
       const since = `NOW() - interval '${days} days'`;
 
-      const [totals, byFeature, byDay, topActors, duplicates] = await Promise.all([
+      const [totals, byFeature, byDay, topActors, duplicates, largestInputs] = await Promise.all([
+        // Token/cost sums count BILLED statuses only. 'rejected_oversize' rows
+        // carry an estimate of input we refused to send — real money was never
+        // spent on them, so folding them into spend totals would be a lie.
         pool.query(
           `SELECT COUNT(*)::int AS calls,
                   COUNT(*) FILTER (WHERE status='error')::int AS errors,
-                  COALESCE(SUM(prompt_tokens),0)::bigint AS prompt_tokens,
-                  COALESCE(SUM(output_tokens),0)::bigint AS output_tokens,
-                  COALESCE(SUM(total_tokens),0)::bigint AS total_tokens,
-                  COALESCE(SUM(est_cost_usd),0)::numeric AS est_cost_usd
+                  COUNT(*) FILTER (WHERE status='degraded')::int AS degraded,
+                  COUNT(*) FILTER (WHERE status='rejected_oversize')::int AS blocked_oversize,
+                  COALESCE(SUM(prompt_tokens) FILTER (WHERE status <> 'rejected_oversize'),0)::bigint AS prompt_tokens,
+                  COALESCE(SUM(output_tokens) FILTER (WHERE status <> 'rejected_oversize'),0)::bigint AS output_tokens,
+                  COALESCE(SUM(total_tokens)  FILTER (WHERE status <> 'rejected_oversize'),0)::bigint AS total_tokens,
+                  COALESCE(SUM(est_cost_usd),0)::numeric AS est_cost_usd,
+                  COALESCE(SUM(est_cost_usd) FILTER (WHERE status='degraded'),0)::numeric AS degraded_cost_usd
              FROM gemini_usage_log WHERE created_at >= ${since}`
         ),
         pool.query(
@@ -3169,6 +3175,16 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
            HAVING COUNT(*) > 1
             ORDER BY times DESC LIMIT 50`
         ),
+        // Biggest inputs in range — the outlier watch. A single oversized
+        // document is the cheapest way to burn a day's budget, so it needs to
+        // be visible without anyone having to write a query.
+        pool.query(
+          `SELECT id, created_at, feature, route, status,
+                  prompt_tokens, output_tokens, est_cost_usd
+             FROM gemini_usage_log
+            WHERE created_at >= ${since} AND prompt_tokens IS NOT NULL
+            ORDER BY prompt_tokens DESC LIMIT 20`
+        ),
       ]);
 
       res.json({
@@ -3179,6 +3195,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         byDay: byDay.rows,
         topActors: topActors.rows,
         duplicates: duplicates.rows,
+        largestInputs: largestInputs.rows,
       });
     } catch (err: any) {
       console.error("Gemini usage summary error:", err?.message);

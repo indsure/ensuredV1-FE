@@ -9,6 +9,66 @@ import {
     isOverDailyCeiling,
     type GeminiCallMeta,
 } from './geminiUsage';
+import { assertWithinHardCeiling, InputTooLargeError } from '../utils/inputBudget';
+
+/**
+ * Options for a single generateContent call.
+ */
+export interface GenerateOptions {
+    /**
+     * Caller-supplied usability check on the returned text. Return a reason
+     * string when the response is unusable, or null when it is fine.
+     *
+     * This exists because "the SDK did not throw" is NOT the same as "we got
+     * something we can use". A call that returns a truncated or non-conforming
+     * response is billed in full, and without this the ledger recorded it as a
+     * clean success. Pass the caller's own parse/schema check here so the
+     * ledger reflects what actually happened.
+     *
+     * The response text is still RETURNED to the caller either way — this only
+     * affects how the call is recorded and whether it is cached.
+     */
+    validateResponse?: (text: string) => string | null;
+}
+
+/**
+ * Decide whether a billed response is actually usable.
+ * Kept deliberately conservative — only signals that are unambiguous, because a
+ * false 'degraded' would misreport a good call. Output-token count alone is NOT
+ * a signal: a data_entry extraction legitimately returns ~240 tokens and a Sach
+ * AI reply can be shorter still.
+ */
+export function classifyResponseQuality(
+    response: any,
+    responseText: string,
+    validateResponse?: (text: string) => string | null
+): { degraded: boolean; reason?: string } {
+    // 1. The model stopped for a reason other than finishing normally —
+    //    MAX_TOKENS, SAFETY, RECITATION, PROHIBITED_CONTENT etc.
+    const finishReason = response?.candidates?.[0]?.finishReason;
+    if (finishReason && finishReason !== "STOP" && finishReason !== "FINISH_REASON_STOP") {
+        return { degraded: true, reason: `Unusable response: finishReason=${finishReason}` };
+    }
+
+    // 2. The whole prompt was blocked before generation.
+    const blockReason = response?.promptFeedback?.blockReason;
+    if (blockReason) {
+        return { degraded: true, reason: `Unusable response: prompt blocked (${blockReason})` };
+    }
+
+    // 3. Billed, but nothing came back.
+    if (!responseText || !responseText.trim()) {
+        return { degraded: true, reason: "Unusable response: empty text" };
+    }
+
+    // 4. The caller's own contract (JSON shape / schema) rejected it.
+    if (validateResponse) {
+        const reason = validateResponse(responseText);
+        if (reason) return { degraded: true, reason: `Unusable response: ${reason}` };
+    }
+
+    return { degraded: false };
+}
 
 /**
  * Decide whether a caught error from the Gemini SDK is worth retrying.
@@ -107,7 +167,8 @@ export class AIService {
         systemPrompt: string,
         userContent: string,
         modelName: string = AI_CONFIG.model,
-        meta?: Partial<GeminiCallMeta>
+        meta?: Partial<GeminiCallMeta>,
+        options?: GenerateOptions
     ): Promise<string> {
 
         // 1. Assemble the payload with prompt-injection hardening.
@@ -160,6 +221,40 @@ export class AIService {
             return cached;
         }
 
+        // 2c. INPUT CEILING — the last gate before money is spent.
+        //
+        // Placed AFTER replay/cache (those are free, so blocking them buys
+        // nothing and would break golden tests) and BEFORE the live call.
+        // runAnalysisPipeline applies the richer per-section budget upstream;
+        // this is the backstop that no call site can bypass, covering
+        // data_entry / wording_extract / switch_reco / portfolio_insights too.
+        //
+        // The rejection is RECORDED rather than silently thrown, so an
+        // oversized upload shows up on the admin usage page as a blocked call
+        // instead of vanishing — you can see what tried, and how big it was.
+        try {
+            assertWithinHardCeiling(fullInput);
+        } catch (err) {
+            if (err instanceof InputTooLargeError) {
+                console.error(
+                    `[AIService] BLOCKED oversized input for feature=${usageMeta.feature}: ` +
+                    `~${err.estimatedTokens.toLocaleString("en-US")} tokens > ceiling ` +
+                    `${err.limitTokens.toLocaleString("en-US")}. No Gemini call made.`
+                );
+                void logGeminiUsage(usageMeta, {
+                    model: modelName,
+                    status: "rejected_oversize",
+                    tokens: {
+                        promptTokens: err.estimatedTokens,
+                        outputTokens: 0,
+                        totalTokens: err.estimatedTokens,
+                    },
+                    errorMessage: err.message,
+                });
+            }
+            throw err;
+        }
+
         // 3. AI EXECUTION GUARD
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
@@ -186,6 +281,16 @@ export class AIService {
                     generationConfig: {
                         temperature: 0, // Deterministic
                         topP: 1.0,      // Deterministic
+                        // AI_CONFIG.generation_config was declared but never
+                        // reached the SDK, so the output cap was the provider
+                        // default rather than ours. Wiring it makes output spend
+                        // bounded per call. No behaviour change at the current
+                        // value: the largest audit ever produced was 4,411
+                        // tokens, well under 8,192.
+                        // (top_k and seed are intentionally NOT passed —
+                        // temperature=0 already forces greedy decoding, and
+                        // sending them would alter requests for no gain.)
+                        maxOutputTokens: AI_CONFIG.generation_config.max_output_tokens,
                     }
                 });
 
@@ -199,16 +304,35 @@ export class AIService {
                 const response = result.response;
                 const responseText = response.text();
 
-                // Ledger: record the successful (billed) call with exact token counts.
+                // This call is BILLED from here on, whatever the response says.
+                // Decide whether we actually got something usable, so a
+                // failed-but-billed call is not filed away as a clean success.
+                const quality = classifyResponseQuality(response, responseText, options?.validateResponse);
+
+                // Ledger: record the billed call with exact token counts.
                 void logGeminiUsage(usageMeta, {
                     model: modelName,
                     tokens: extractUsage(response),
-                    status: "ok",
+                    status: quality.degraded ? "degraded" : "ok",
                     attempt,
                     latencyMs: Date.now() - startedAt,
+                    errorMessage: quality.reason ?? null,
                 });
 
+                if (quality.degraded) {
+                    console.error(
+                        `[AIService] BILLED BUT UNUSABLE (feature=${usageMeta.feature}): ${quality.reason}`
+                    );
+                    // Deliberately NOT retried: the call already cost money and
+                    // a deterministic prompt (temperature=0) would produce the
+                    // same unusable answer again. Return it and let the caller
+                    // fail as before — the ledger now shows why.
+                    return responseText;
+                }
+
                 // Cache the deterministic response for the duplicate-spend guard.
+                // Only usable responses are cached — caching a degraded one
+                // would serve the same broken answer for the next 10 minutes.
                 cacheSet(inputHash, responseText);
 
                 // (Optional) Auto-record for future replays?

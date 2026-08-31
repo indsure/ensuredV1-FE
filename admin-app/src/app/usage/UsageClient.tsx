@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
-import { Activity, Coins, AlertTriangle, Copy, Info } from "lucide-react";
+import { Activity, Coins, AlertTriangle, Copy, Info, FileWarning, ShieldBan } from "lucide-react";
 
 export type UsageRow = {
   created_at: string;
   feature: string;
+  route: string | null;
   model: string;
   source_type: string | null;
   actor_id: string | null;
@@ -16,7 +17,15 @@ export type UsageRow = {
   total_tokens: number | null;
   est_cost_usd: number | null;
   status: string;
+  error_message: string | null;
 };
+
+// Blocked by the input ceiling — never reached Gemini, so it costs nothing and
+// must be kept out of spend and token totals.
+const isBlocked = (r: UsageRow) => r.status === "rejected_oversize";
+// Billed in full but the response was unusable. This is the money leak that
+// used to be invisible: it was recorded as 'ok'.
+const isDegraded = (r: UsageRow) => r.status === "degraded";
 
 function fmtInt(n: number) {
   return n.toLocaleString("en-US");
@@ -41,6 +50,13 @@ const FEATURE_LABELS: Record<string, string> = {
   ai_generate: "Other AI call",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  ok: "OK",
+  degraded: "Billed, unusable",
+  error: "Error",
+  rejected_oversize: "Blocked (oversize)",
+};
+
 export function UsageClient({ rows, rangeDays }: { rows: UsageRow[]; rangeDays: number }) {
   // Live cost override: token counts are exact, so you can plug in Gemini's
   // current rate here to see spend immediately without a redeploy.
@@ -48,13 +64,27 @@ export function UsageClient({ rows, rangeDays }: { rows: UsageRow[]; rangeDays: 
   const [outRate, setOutRate] = useState<number>(0);
   const usePlugged = inRate > 0 || outRate > 0;
 
+  // Tokens actually billed at the OUTPUT rate = visible answer + reasoning.
+  // total - prompt recovers the thinking tokens, which are billed but are not
+  // part of output_tokens and have no column of their own. Falls back to
+  // output_tokens when the total does not account for more.
+  const billedOutputOf = (r: UsageRow) => {
+    const p = r.prompt_tokens ?? 0, o = r.output_tokens ?? 0, t = r.total_tokens ?? 0;
+    return Math.max(o, t - p);
+  };
+
   const costOf = (r: UsageRow) =>
-    usePlugged
-      ? ((r.prompt_tokens ?? 0) / 1e6) * inRate + ((r.output_tokens ?? 0) / 1e6) * outRate
-      : r.est_cost_usd ?? 0;
+    // A blocked call never reached Gemini. Its prompt_tokens is an estimate of
+    // what we refused to send, so charging for it would overstate spend.
+    isBlocked(r)
+      ? 0
+      : usePlugged
+        ? ((r.prompt_tokens ?? 0) / 1e6) * inRate + (billedOutputOf(r) / 1e6) * outRate
+        : r.est_cost_usd ?? 0;
 
   const agg = useMemo(() => {
     let calls = 0, errors = 0, promptTok = 0, outputTok = 0, totalTok = 0, cost = 0;
+    let degraded = 0, degradedCost = 0, blocked = 0, blockedTokens = 0;
     const byFeature = new Map<string, { calls: number; tokens: number; cost: number }>();
     const byDay = new Map<string, { calls: number; tokens: number; cost: number }>();
     const byActor = new Map<string, { source: string; calls: number; cost: number }>();
@@ -63,9 +93,19 @@ export function UsageClient({ rows, rangeDays }: { rows: UsageRow[]; rangeDays: 
     for (const r of rows) {
       calls++;
       if (r.status === "error") errors++;
+      const c = costOf(r); cost += c;
+
+      if (isBlocked(r)) {
+        // Counted and surfaced, but excluded from spend/token totals — nothing
+        // was sent, so nothing was billed.
+        blocked++;
+        blockedTokens += r.prompt_tokens ?? 0;
+        continue;
+      }
+      if (isDegraded(r)) { degraded++; degradedCost += c; }
+
       const p = r.prompt_tokens ?? 0, o = r.output_tokens ?? 0, t = r.total_tokens ?? p + o;
       promptTok += p; outputTok += o; totalTok += t;
-      const c = costOf(r); cost += c;
 
       const f = byFeature.get(r.feature) ?? { calls: 0, tokens: 0, cost: 0 };
       f.calls++; f.tokens += t; f.cost += c; byFeature.set(r.feature, f);
@@ -92,8 +132,16 @@ export function UsageClient({ rows, rangeDays }: { rows: UsageRow[]; rangeDays: 
 
     const wastedTotal = duplicates.reduce((s, d) => s + d.wasted, 0);
 
+    // Outlier watch: the biggest inputs in range, blocked or not. One oversized
+    // document is the cheapest way to burn a day's budget.
+    const largestInputs = [...rows]
+      .filter((r) => (r.prompt_tokens ?? 0) > 0)
+      .sort((a, b) => (b.prompt_tokens ?? 0) - (a.prompt_tokens ?? 0))
+      .slice(0, 10);
+
     return {
       calls, errors, promptTok, outputTok, totalTok, cost,
+      degraded, degradedCost, blocked, blockedTokens, largestInputs,
       byFeature: Array.from(byFeature.entries()).map(([k, v]) => ({ feature: k, ...v })).sort((a, b) => b.cost - a.cost || b.calls - a.calls),
       byDay: Array.from(byDay.entries()).map(([k, v]) => ({ day: k, ...v })).sort((a, b) => (a.day < b.day ? 1 : -1)),
       topActors: Array.from(byActor.entries()).map(([k, v]) => ({ key: k, actor: k.split("::")[1], ...v })).sort((a, b) => b.calls - a.calls).slice(0, 15),
@@ -139,11 +187,13 @@ export function UsageClient({ rows, rangeDays }: { rows: UsageRow[]; rangeDays: 
       )}
 
       {/* Headline cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
           { label: "Total calls", value: fmtInt(agg.calls), sub: `${agg.errors} errors`, icon: Activity, color: "text-blue-600", bg: "bg-blue-50" },
           { label: "Total tokens", value: fmtTokens(agg.totalTok), sub: `${fmtTokens(agg.promptTok)} in / ${fmtTokens(agg.outputTok)} out`, icon: Coins, color: "text-purple-600", bg: "bg-purple-50" },
           { label: "Est. cost", value: fmtUsd(agg.cost), sub: usePlugged ? "at your rate" : "at configured rate", icon: Coins, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Failed but billed", value: fmtInt(agg.degraded), sub: `${fmtUsd(agg.degradedCost)} spent on unusable replies`, icon: FileWarning, color: "text-rose-600", bg: "bg-rose-50" },
+          { label: "Blocked (oversize)", value: fmtInt(agg.blocked), sub: `${fmtTokens(agg.blockedTokens)} tokens refused — not billed`, icon: ShieldBan, color: "text-slate-600", bg: "bg-slate-100" },
           { label: "Duplicate calls", value: fmtInt(agg.duplicates.reduce((s, d) => s + (d.times - 1), 0)), sub: "same input re-sent", icon: Copy, color: "text-orange-600", bg: "bg-orange-50" },
           { label: "Wasted on dupes", value: fmtUsd(agg.wastedTotal), sub: "avoidable spend", icon: AlertTriangle, color: "text-red-600", bg: "bg-red-50" },
         ].map((s) => {
@@ -197,6 +247,29 @@ export function UsageClient({ rows, rangeDays }: { rows: UsageRow[]; rangeDays: 
             head={["Source", "Actor", "Calls", "Cost"]}
             rows={agg.topActors.map((a) => [a.source, a.actor, fmtInt(a.calls), fmtUsd(a.cost)])}
             empty="No callers in range."
+          />
+        </CardContent>
+      </Card>
+
+      {/* Largest inputs — the oversized-document money leak */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileWarning className="h-4 w-4 text-rose-500" /> Largest inputs (one big document can outspend a whole day)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <SimpleTable
+            head={["When", "Feature", "Input tokens", "Output", "Status", "Cost"]}
+            rows={agg.largestInputs.map((r) => [
+              r.created_at.slice(0, 16).replace("T", " "),
+              FEATURE_LABELS[r.feature] ?? r.feature,
+              fmtInt(r.prompt_tokens ?? 0),
+              fmtInt(r.output_tokens ?? 0),
+              STATUS_LABELS[r.status] ?? r.status,
+              isBlocked(r) ? "—" : fmtUsd(costOf(r)),
+            ])}
+            empty="No calls in range."
           />
         </CardContent>
       </Card>
