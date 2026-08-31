@@ -126,7 +126,14 @@ export default function AgentLanding() {
       </nav>
 
       {/* ─────────── HERO ─────────── */}
-      <section className="px-5 sm:px-10 lg:px-20 pt-12 lg:pt-20 max-w-[1280px] mx-auto flex flex-col gap-5">
+      <section className="relative px-5 sm:px-10 lg:px-20 pt-12 lg:pt-20 max-w-[1280px] mx-auto flex flex-col gap-5">
+        <div className="pointer-events-none absolute inset-x-0 -top-24 bottom-0 -z-10 overflow-hidden" aria-hidden="true">
+          <div className="absolute inset-0 bg-grid-faint mask-fade-edges" />
+          <div
+            className="absolute -top-24 right-0 h-[460px] w-[620px] rounded-full opacity-60 blur-3xl"
+            style={{ background: "radial-gradient(circle, rgba(45,212,191,0.18), transparent 68%)" }}
+          />
+        </div>
         {/* claim-source: Free tier on /advisors/pricing (advisors-pricing.tsx:26-43) — the
             daily tools carry no time limit and no card. Verified 2026-08-25. */}
         <span className="self-start inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EAF3F1] text-sm font-bold text-[#0F766E]">
@@ -484,7 +491,7 @@ export default function AgentLanding() {
             {[
               { name: t("agent_landing.tier_free"), price: "₹0", per: t("agent_landing.per_forever"), desc: t("agent_landing.tier_free_desc"), hi: false },
               { name: t("agent_landing.tier_agent"), price: "₹1,499", per: t("agent_landing.per_month"), desc: t("agent_landing.tier_agent_desc"), hi: true },
-              { name: t("agent_landing.tier_agency"), price: "₹799", per: t("agent_landing.per_seat"), desc: t("agent_landing.tier_agency_desc"), hi: false },
+              { name: t("agent_landing.tier_agency"), price: "₹1,199", per: t("agent_landing.per_seat"), desc: t("agent_landing.tier_agency_desc"), hi: false },
             ].map((tier) => (
               <div
                 key={tier.name}
@@ -510,8 +517,15 @@ export default function AgentLanding() {
       </section>
 
       {/* ─────────── FINAL CTA ─────────── */}
-      <section className="bg-[var(--color-navy-900)] py-16 lg:py-24 px-5 sm:px-10">
-        <div className="max-w-3xl mx-auto flex flex-col items-center gap-5 text-center">
+      <section className="on-ink relative overflow-hidden bg-[var(--color-navy-900)] py-16 lg:py-24 px-5 sm:px-10">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="absolute inset-0 bg-grid-faint-dark mask-fade-edges" />
+          <div
+            className="absolute left-1/2 top-0 h-[420px] w-[820px] -translate-x-1/2 -translate-y-1/3 rounded-full blur-3xl"
+            style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.22), transparent 70%)" }}
+          />
+        </div>
+        <div className="relative max-w-3xl mx-auto flex flex-col items-center gap-5 text-center">
           <h2 className="font-serif font-bold tracking-[-0.035em] leading-[1.1] text-3xl sm:text-5xl text-white">
             {t("agent_landing.final_heading")}
           </h2>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Building2, MapPin } from "lucide-react";
 import { clsx } from "clsx";
 import { apiFetch } from "@/lib/api";

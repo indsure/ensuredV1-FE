@@ -73,6 +73,82 @@
   /* SPACING */
   --space-container: 2rem;
 
+  /* =====================================================
+     RAMPS
+     -----------------------------------------------------
+     19 of these were referenced across the app but never
+     defined, so every rule using one was invalid at
+     computed-value time and silently did nothing. That is
+     why the eyebrow chips on /policychecker and
+     /calculator rendered with no background and no border.
+     Anchored on the existing teal-600 / teal-400 /
+     gold-500 / navy-900 so nothing already correct moves.
+     ===================================================== */
+  --color-teal-50: #F0FDFA;
+  --color-teal-100: #CCFBF1;
+  --color-teal-200: #99F6E4;
+  --color-teal-300: #5EEAD4;
+  --color-teal-500: #14B8A6;
+  --color-teal-700: #0F766E;
+  --color-teal-800: #115E59;
+  --color-teal-900: #134E4A;
+
+  --color-blue-50: #EFF6FF;
+  --color-blue-100: #DBEAFE;
+  --color-blue-700: #1D4ED8;
+
+  --color-gold-300: #FCD34D;
+  --color-gold-400: #FBBF24;
+  --color-gold-600: #92400E;
+
+  --color-cream-100: #F5F5F2;
+  --color-cream-light: #FCFCFB;
+
+  --color-navy-800: #1E293B;
+
+  /* Aliases for names the app already uses. Kept as aliases
+     rather than renamed at 40+ call sites. */
+  --color-text-primary: var(--color-text-main);
+  --color-border-main: var(--color-border-medium);
+
+  /* =====================================================
+     LINE-OF-BUSINESS ACCENTS
+     -----------------------------------------------------
+     Promoted from the blog's CATEGORY_TINTS, which was the
+     only place on the site that used colour to mean
+     something. Every accent is >=4.5:1 on cream so it can
+     carry text, and each has a wash for tinted surfaces.
+     ===================================================== */
+  --lob-health: #0D9488;
+  --lob-health-wash: #F0FDFA;
+  --lob-life: #0E7490;
+  --lob-life-wash: #ECFEFF;
+  --lob-motor: #B45309;
+  --lob-motor-wash: #FFFBEB;
+  --lob-home: #9D174D;
+  --lob-home-wash: #FDF2F8;
+  --lob-travel: #1D4ED8;
+  --lob-travel-wash: #EFF6FF;
+  --lob-business: #6D28D9;
+  --lob-business-wash: #F5F3FF;
+  --lob-general: #334155;
+  --lob-general-wash: #F1F5F9;
+
+  /* =====================================================
+     SECTION SURFACES
+     -----------------------------------------------------
+     Pacing. Every public page used to be one flat cream,
+     so nothing signalled where one idea ended and the next
+     began. These are the only backgrounds a section may
+     use, cycled to give a page rhythm.
+     ===================================================== */
+  --surface-cream: #FAFAF8;
+  --surface-white: #FFFFFF;
+  --surface-mint: #F2F8F7;
+  --surface-mint-deep: #EAF3F1;
+  --surface-sand: #FDF6EC;
+  --surface-ink: #0B1120;
+
   /* RADIUS */
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -355,3 +431,129 @@
     max-width: 100%;
   }
 }
+
+/* =========================================
+   MOTION FLOOR
+   -----------------------------------------
+   Everything animated on the public site goes through the
+   primitives in components/motion. They read this query too,
+   but plenty of decorative motion is pure CSS, so the floor
+   is enforced here as well: one rule, no exceptions.
+   ========================================= */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =========================================
+   EDITORIAL SECTION FURNITURE
+   ========================================= */
+
+/* The rule that sits under a section heading. Short, teal,
+   and the one piece of chrome every section header shares. */
+.rule-accent {
+  display: block;
+  width: 3rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-teal-600), var(--color-teal-400));
+}
+
+/* A faint grid, used behind hero art so a large empty area
+   reads as deliberate canvas rather than as a loading state.
+   Sits at 3% so it never competes with content. */
+.bg-grid-faint {
+  background-image:
+    linear-gradient(to right, rgba(15, 23, 42, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Same grid on the navy surfaces, where the ink is inverted. */
+.bg-grid-faint-dark {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Fades a decorative layer out towards the edges so it never
+   ends on a hard line. */
+.mask-fade-edges {
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 40%, transparent 100%);
+}
+
+/* =========================================
+   NUMERALS
+   -----------------------------------------
+   Rupee figures that animate or sit in a column must not
+   reflow as their digits change width.
+   ========================================= */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* =========================================
+   FOCUS
+   -----------------------------------------
+   The audit found option cards and icon links with no visible
+   focus state at all. One ring, applied to anything focusable
+   by keyboard, on every surface.
+   ========================================= */
+@layer base {
+
+  :where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-teal-600);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .on-ink :where(a, button, [role="button"], [tabindex]):focus-visible {
+    outline-color: var(--color-teal-400);
+  }
+}
+
+/* =========================================
+   FULL-BLEED SECTION BACKGROUNDS
+   -----------------------------------------
+   Some pages (both pricing pages) are built as one padded
+   <main> with sections separated by margins rather than by
+   background. Restructuring them into real sections would
+   touch every child; this paints an edge-to-edge background
+   behind a section that is still inside the padded column,
+   so those pages can get the same rhythm as the rest of the
+   site without being rebuilt.
+
+   The pseudo-element is 100vw wide and centred on the
+   viewport, sitting behind the content on its own layer.
+   ========================================= */
+.bleed {
+  position: relative;
+  isolation: isolate;
+}
+
+.bleed::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  z-index: -1;
+  width: 100vw;
+  transform: translateX(-50%);
+  background-color: var(--bleed-color, transparent);
+}
+
+/* The vertical padding has to come from the section itself so the
+   painted band extends past the content it sits behind. */
+.bleed-mint { --bleed-color: var(--surface-mint); }
+.bleed-white { --bleed-color: var(--surface-white); }
+.bleed-sand { --bleed-color: var(--surface-sand); }

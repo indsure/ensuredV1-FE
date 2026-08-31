@@ -1,14 +1,14 @@
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'motion/react';
 import { CheckCircle2, TrendingUp, Star } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' } }
 };
 
-const container = {
+const container: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08 } }
 };

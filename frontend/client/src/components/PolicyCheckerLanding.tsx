@@ -1,214 +1,301 @@
-
-import { motion } from "framer-motion";
-import {
-    Shield, Lock, Clock, FileText,
-    Search, Zap, FolderKanban, ArrowRight
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
+import {
+  Shield, Lock, Clock, FileText, Search, Zap, ArrowRight,
+  Ruler, Percent, CalendarClock, Ban, Layers, Building2, MapPin, RotateCcw,
+} from "lucide-react";
 import { loadSampleReport, mockReportHealth } from "@/lib/mock-data";
+import { Reveal, Stagger, RevealItem } from "@/components/motion";
+import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
+import { ClauseDecoder, ScoreDial, SpotlightCard } from "@/components/marketing/showcase";
+
+/* ============================================================
+   POLICY CHECKER — value page
+
+   The old version led with a sign-up card and then listed twelve
+   check names in four grey columns. It described the product
+   without ever showing it, on a page whose entire job is to make
+   someone believe a policy check is worth an account.
+
+   It now shows the decode first and asks for the account after.
+   ============================================================ */
+
+/* Every check below maps to a clause class the engine extracts.
+   Grouped the way a customer would ask about them, not the way the
+   pipeline is organised. */
+const CHECK_GROUPS = [
+  {
+    title: "What you get paid",
+    accent: "var(--lob-health)",
+    wash: "var(--lob-health-wash)",
+    icon: Ruler,
+    items: [
+      { icon: Ruler, label: "Room rent caps", note: "and the proportionate deduction they trigger" },
+      { icon: Percent, label: "Co-pay percentages", note: "including the ones that start at a birthday" },
+      { icon: Layers, label: "Disease sub-limits", note: "cataract, knee, maternity, and the rest" },
+    ],
+  },
+  {
+    title: "When you get paid",
+    accent: "var(--lob-life)",
+    wash: "var(--lob-life-wash)",
+    icon: CalendarClock,
+    items: [
+      { icon: CalendarClock, label: "Waiting periods", note: "pre-existing, specific surgeries, maternity" },
+      { icon: Ban, label: "Permanent exclusions", note: "the ones written into the annexure" },
+      { icon: RotateCcw, label: "Restoration terms", note: "whether it refills for the same illness" },
+    ],
+  },
+  {
+    title: "Where you stand",
+    accent: "var(--lob-motor)",
+    wash: "var(--lob-motor-wash)",
+    icon: MapPin,
+    items: [
+      { icon: MapPin, label: "Zone limitations", note: "what changes if you are treated in a metro" },
+      { icon: Building2, label: "Employer dependency", note: "what you lose the day you leave the job" },
+      { icon: Shield, label: "Rider effectiveness", note: "which add-ons change a claim, and which do not" },
+    ],
+  },
+];
+
+const OUTCOMES = [
+  {
+    icon: Search,
+    accent: "var(--lob-health)",
+    wash: "var(--lob-health-wash)",
+    title: "A clear verdict",
+    body: "Correctly insured, under-insured, or exposed. One score, and the sentence that explains it.",
+  },
+  {
+    icon: FileText,
+    accent: "var(--lob-life)",
+    wash: "var(--lob-life-wash)",
+    title: "Plain English throughout",
+    body: "\"Co-pay on Zone B treatment\" becomes \"you pay 20% of the bill in Mumbai\". Every clause, that treatment.",
+  },
+  {
+    icon: Zap,
+    accent: "var(--lob-motor)",
+    wash: "var(--lob-motor-wash)",
+    title: "Something to do about it",
+    body: "Specific next steps for the gaps we find. We never tell you which policy to buy, because we cannot earn on it.",
+  },
+];
 
 export function PolicyCheckerLanding() {
-    const [, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
 
-    const fadeIn = {
-        hidden: { opacity: 0, y: 10 },
-        visible: (i: number) => ({
-            opacity: 1,
-            y: 0,
-            transition: { delay: i * 0.1, duration: 0.6, ease: "easeOut" as any }
-        })
-    };
-
-    return (
-        <div className="w-full max-w-7xl mx-auto space-y-24">
-
-            {/* 1. HERO & SIGN-UP SECTION */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-
-                {/* Left: Intelligence Copy */}
-                <motion.div
-                    initial="hidden"
-                    animate="visible"
-                    className="space-y-8 pt-4"
-                >
-                    <motion.div custom={0} variants={fadeIn}>
-                        <span className="inline-block py-1 px-3 border border-[var(--color-teal-200)] bg-[var(--color-teal-50)] rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-teal-700)]">
-                            Policy Decoder
-                        </span>
-                    </motion.div>
-
-                    <motion.h1 custom={1} variants={fadeIn} className="text-3xl sm:text-5xl md:text-6xl font-serif leading-[1.1] text-[var(--color-navy-900)]">
-                        The fine print, <br /> <span className="italic text-[var(--color-teal-600)]">translated.</span>
-                    </motion.h1>
-
-                    <motion.div custom={2} variants={fadeIn} className="space-y-6">
-                        <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-lg">
-                            Create a free account, upload your health insurance policy, and our engine audits every clause, exclusion, and rider to tell you whether you are correctly insured — or exposed. Every policy you check is saved to your personal portfolio.
-                        </p>
-                        <p className="text-sm text-[var(--color-text-muted)] opacity-70 font-mono">
-                            Built for modern Indian policyholders. <br /> Independent. Product-agnostic.
-                        </p>
-                    </motion.div>
-
-                    {/* Trust guardrail (mobile) */}
-                    <motion.div custom={3} variants={fadeIn} className="lg:hidden pt-4 border-t border-[var(--color-border-medium)]">
-                        <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
-                            <Shield className="w-4 h-4 text-[var(--color-teal-600)]" />
-                            Your policies stay private to your account.
-                        </div>
-                    </motion.div>
-                </motion.div>
-
-
-                {/* Right: Sign-up CTA card */}
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                    className="relative"
-                >
-                    <div className="bg-white border border-[var(--color-border-light)] rounded-xl p-10 min-h-[400px] flex flex-col justify-center shadow-sm">
-                        <div className="w-16 h-16 mb-6 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center border border-[var(--color-border-light)]">
-                            <FolderKanban className="w-6 h-6 text-[var(--color-teal-600)]" />
-                        </div>
-
-                        <h3 className="font-serif text-2xl mb-2 text-[var(--color-navy-900)]">
-                            See your policy's verdict
-                        </h3>
-                        <p className="text-[var(--color-text-secondary)] mb-8 text-sm leading-relaxed max-w-sm">
-                            Create a free account to analyze your policy and keep it in your portfolio. One free policy each for Health, Term, Life &amp; Vehicle.
-                        </p>
-
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 sm:gap-6 text-xs font-medium text-[var(--color-text-muted)] bg-[var(--color-cream-main)] px-4 py-2 rounded-full border border-[var(--color-border-light)] max-w-full w-fit mb-8">
-                            <span className="flex items-center gap-1.5"><Lock className="w-3 h-3 text-[var(--color-teal-600)]" /> Private</span>
-                            <span className="w-px h-3 bg-[var(--color-border-medium)]"></span>
-                            <span className="flex items-center gap-1.5"><Clock className="w-3 h-3 text-[var(--color-teal-600)]" /> ~60 seconds</span>
-                            <span className="w-px h-3 bg-[var(--color-border-medium)]"></span>
-                            <span className="flex items-center gap-1.5"><FileText className="w-3 h-3 text-[var(--color-teal-600)]" /> PDF only</span>
-                        </div>
-
-                        <Link href="/signup">
-                            <Button className="w-full h-12 bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-700)] text-white rounded-lg text-base font-bold inline-flex items-center justify-center gap-2 cursor-pointer">
-                                Create a free account <ArrowRight className="w-4 h-4" />
-                            </Button>
-                        </Link>
-
-                        <p className="text-center text-sm text-[var(--color-text-secondary)] mt-4">
-                            Already have an account?{" "}
-                            <Link href="/login">
-                                <span className="font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">Log in</span>
-                            </Link>
-                        </p>
-
-                        <button
-                            type="button"
-                            onClick={() => { loadSampleReport(mockReportHealth); setLocation("/report?sample=health"); }}
-                            className="mt-6 min-h-11 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-700)] hover:underline inline-flex items-center justify-center gap-2 mx-auto"
-                        >
-                            <FileText className="w-4 h-4" />
-                            View a sample analysis first
-                        </button>
-                    </div>
-
-                    {/* Desktop Trust Bar */}
-                    <div className="hidden lg:flex mt-6 justify-center">
-                        <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] opacity-70">
-                            <Shield className="w-3 h-3" />
-                            Your policies stay private to your account.
-                        </div>
-                    </div>
-                </motion.div>
-            </div>
-
-
-            {/* 4. WHAT WE ANALYZE (Logic Transparency) */}
-            <div className="border-t border-[var(--color-border-light)] pt-16">
-                <h3 className="font-serif text-2xl text-[var(--color-navy-900)] mb-10 text-center">What this analysis actually checks</h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                    {[
-                        { title: "Coverage Reality", items: ["Base sum vs City costs", "Room rent caps", "Hidden co-pays"] },
-                        { title: "Claim Failures", items: ["Specific Sub-limits", "Waiting periods", "Permanent exclusions"] },
-                        { title: "Rider Effectiveness", items: ["Junk riders", "Missing critical add-ons", "Cost-benefit ratio"] },
-                        { title: "Structural Integrity", items: ["Restoration efficiency", "Employer dependency", "Zone limitations"] }
-                    ].map((cat, i) => (
-                        <div key={i} className="space-y-4">
-                            <h4 className="font-bold text-[var(--color-teal-700)] text-sm uppercase tracking-wide border-b border-[var(--color-border-light)] pb-2 mb-2">
-                                {cat.title}
-                            </h4>
-                            <ul className="space-y-2">
-                                {cat.items.map((item, j) => (
-                                    <li key={j} className="text-sm text-[var(--color-text-secondary)] flex items-start gap-2">
-                                        <span className="w-1 h-1 rounded-full bg-[var(--color-teal-400)] mt-2 shrink-0" />
-                                        {item}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-
-            {/* 5. WHAT YOU'LL GET (Outcome Preview) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-8 rounded-xl border border-[var(--color-border-light)] shadow-sm">
-                    <div className="w-10 h-10 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center mb-4 text-[var(--color-navy-900)]">
-                        <Search className="w-5 h-5" />
-                    </div>
-                    <h4 className="text-[var(--color-navy-900)] font-serif text-lg mb-2">A Clear Verdict</h4>
-                    <p className="text-sm text-[var(--color-text-secondary)]">
-                        Correctly insured, Under-insured, or Exposed. No vague scores.
-                    </p>
-                </div>
-
-                <div className="bg-white p-8 rounded-xl border border-[var(--color-border-light)] shadow-sm">
-                    <div className="w-10 h-10 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center mb-4 text-[var(--color-navy-900)]">
-                        <FileText className="w-5 h-5" />
-                    </div>
-                    <h4 className="text-[var(--color-navy-900)] font-serif text-lg mb-2">Plain English Breakdown</h4>
-                    <p className="text-sm text-[var(--color-text-secondary)]">
-                        We translate "Co-pay on Zone B treatment" into "You pay 20% in Mumbai".
-                    </p>
-                </div>
-
-                <div className="bg-white p-8 rounded-xl border border-[var(--color-border-light)] shadow-sm">
-                    <div className="w-10 h-10 rounded-full bg-[var(--color-cream-dark)] flex items-center justify-center mb-4 text-[var(--color-navy-900)]">
-                        <Zap className="w-5 h-5" />
-                    </div>
-                    <h4 className="text-[var(--color-navy-900)] font-serif text-lg mb-2">Actionable Guidance</h4>
-                    <p className="text-sm text-[var(--color-text-secondary)]">
-                        Specific steps to fix gaps. We never recommend specific policies to buy.
-                    </p>
-                </div>
-            </div>
-
-
-            {/* 6. SAMPLE REPORTS */}
-            <div className="text-center pt-8 border-t border-[var(--color-border-light)]">
-                <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)] mb-6">
-                    See what the analysis looks like
-                </p>
-                <div className="flex flex-wrap justify-center gap-4">
-                    <Link href="/report?sample=health">
-                        <Button variant="outline" className="cursor-pointer text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:border-[var(--color-navy-900)]">
-                            Sample Health Policy
-                        </Button>
-                    </Link>
-                    <Link href="/report?sample=life">
-                        <Button variant="outline" className="cursor-pointer text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:border-[var(--color-navy-900)]">
-                            Sample Term Life
-                        </Button>
-                    </Link>
-                    <Link href="/report?sample=vehicle">
-                        <Button variant="outline" className="cursor-pointer text-[var(--color-text-secondary)] border-[var(--color-border-medium)] hover:text-[var(--color-navy-900)] hover:border-[var(--color-navy-900)]">
-                            Sample Car Insurance
-                        </Button>
-                    </Link>
-                </div>
-            </div>
-
+  return (
+    <>
+      {/* ─────────── HERO ─────────── */}
+      <section className="relative overflow-hidden pb-14">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="absolute inset-0 bg-grid-faint mask-fade-edges" />
+          <div
+            className="absolute -top-32 right-0 h-[480px] w-[620px] rounded-full opacity-60 blur-3xl"
+            style={{ background: "radial-gradient(circle, rgba(45,212,191,0.20), transparent 68%)" }}
+          />
         </div>
-    );
+
+        <div className="container-editorial relative grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)] lg:items-center">
+          <Reveal className="flex flex-col items-start gap-6">
+            <Eyebrow>Policy decoder</Eyebrow>
+
+            <h1 className="font-serif font-bold tracking-[-0.035em] leading-[1.05] text-4xl sm:text-6xl text-[var(--color-navy-900)]">
+              The fine print,
+              <br />
+              <span className="italic text-[var(--color-teal-600)]">translated.</span>
+            </h1>
+
+            <p className="max-w-xl text-lg leading-relaxed text-[var(--color-text-secondary)]">
+              Upload the policy you already own. The engine reads every clause, exclusion and rider,
+              and tells you what you are actually covered for, in the words you would use yourself.
+            </p>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <CTA href="/signup" icon={ArrowRight}>Check my policy</CTA>
+              <CTA
+                variant="secondary"
+                onClick={() => { loadSampleReport(mockReportHealth); setLocation("/report?sample=health"); }}
+              >
+                See a finished report
+              </CTA>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[15px] text-[var(--color-text-secondary)]">
+              <span className="flex items-center gap-1.5">
+                <Lock className="h-4 w-4 shrink-0 text-[var(--color-teal-600)]" aria-hidden="true" />
+                Private to your account
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4 shrink-0 text-[var(--color-teal-600)]" aria-hidden="true" />
+                About a minute
+              </span>
+              <span className="flex items-center gap-1.5">
+                <FileText className="h-4 w-4 shrink-0 text-[var(--color-teal-600)]" aria-hidden="true" />
+                PDF or a photo of the printout
+              </span>
+            </div>
+          </Reveal>
+
+          {/* The score is what a customer actually reads across a desk, so it
+              stands in for the whole report here. */}
+          <Reveal from="right" className="flex justify-center lg:justify-end">
+            <div
+              className="w-full max-w-sm rounded-2xl bg-white p-7"
+              style={{ boxShadow: "0 0 0 1px rgba(15,23,42,0.07), 0 30px 60px -24px rgba(15,23,42,0.24)" }}
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+                  Insurance health score
+                </span>
+                <span className="rounded-md bg-[var(--color-cream-dark)] px-2 py-1 text-sm font-semibold text-[var(--color-text-secondary)]">
+                  Illustrative
+                </span>
+              </div>
+
+              <ScoreDial
+                score={63}
+                caption="A ₹10 L family floater with a room-rent cap and a co-pay after sixty."
+              />
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ─────────── THE DECODER ─────────── */}
+      <Section surface="mint">
+        <div className="container-editorial flex flex-col gap-10">
+          <SectionHeading
+            eyebrow="What a decode looks like"
+            title="One clause, both ways round"
+            sub="This is the whole product. On the left, the sentence exactly as your policy words it. On the right, what it does to you at the hospital counter. Pick a clause."
+          />
+
+          <Reveal>
+            <ClauseDecoder />
+          </Reveal>
+
+          <Reveal className="text-center">
+            <p className="text-[15px] text-[var(--color-text-secondary)]">
+              Your own report reads like this for every clause in the document, not just three.
+            </p>
+          </Reveal>
+        </div>
+      </Section>
+
+      {/* ─────────── WHAT WE CHECK ─────────── */}
+      <Section surface="white">
+        <div className="container-editorial flex flex-col gap-10">
+          <SectionHeading
+            eyebrow="The checks"
+            title="What the engine looks for"
+            sub="Grouped the way a customer asks about them rather than the way the pipeline runs."
+          />
+
+          <Stagger className="grid gap-6 md:grid-cols-3">
+            {CHECK_GROUPS.map((g) => (
+              <RevealItem key={g.title} className="h-full">
+                <SpotlightCard accent={g.accent} className="h-full">
+                  <div className="flex h-full flex-col gap-5 p-6">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                        style={{ backgroundColor: g.wash, color: g.accent }}
+                      >
+                        <g.icon className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <h3 className="font-serif text-xl font-bold text-[var(--color-navy-900)]">
+                        {g.title}
+                      </h3>
+                    </div>
+
+                    <ul className="flex flex-col gap-4">
+                      {g.items.map((it) => (
+                        <li key={it.label} className="flex items-start gap-3">
+                          <it.icon
+                            className="mt-0.5 h-[18px] w-[18px] shrink-0"
+                            style={{ color: g.accent }}
+                            aria-hidden="true"
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-[15px] font-semibold text-[var(--color-navy-900)]">
+                              {it.label}
+                            </span>
+                            <span className="block text-sm leading-snug text-[var(--color-text-secondary)]">
+                              {it.note}
+                            </span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </SpotlightCard>
+              </RevealItem>
+            ))}
+          </Stagger>
+        </div>
+      </Section>
+
+      {/* ─────────── WHAT YOU GET ─────────── */}
+      <Section surface="cream" bordered>
+        <div className="container-editorial flex flex-col gap-10">
+          <SectionHeading
+            eyebrow="What comes back"
+            title="Three things, and nothing to buy"
+            align="center"
+          />
+
+          <Stagger className="grid gap-6 md:grid-cols-3">
+            {OUTCOMES.map((o) => (
+              <RevealItem key={o.title} className="h-full">
+                <div
+                  className="flex h-full flex-col gap-3 rounded-2xl border border-[var(--color-border-light)] bg-white p-6"
+                  style={{ boxShadow: "0 1px 2px rgba(15,23,42,0.04)" }}
+                >
+                  <span
+                    className="flex h-11 w-11 items-center justify-center rounded-xl"
+                    style={{ backgroundColor: o.wash, color: o.accent }}
+                  >
+                    <o.icon className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <h3 className="font-serif text-xl font-bold text-[var(--color-navy-900)]">
+                    {o.title}
+                  </h3>
+                  <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
+                    {o.body}
+                  </p>
+                </div>
+              </RevealItem>
+            ))}
+          </Stagger>
+
+          {/* Samples run on mock data and are open to signed-out visitors. */}
+          <Reveal className="flex flex-col items-center gap-4 pt-4">
+            <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+              Read a finished one first
+            </span>
+
+            <div className="flex flex-wrap justify-center gap-3">
+              {[
+                { label: "Health policy", href: "/report?sample=health", accent: "var(--lob-health)" },
+                { label: "Term life", href: "/report?sample=life", accent: "var(--lob-life)" },
+                { label: "Car insurance", href: "/report?sample=vehicle", accent: "var(--lob-motor)" },
+              ].map((s) => (
+                <Link
+                  key={s.href}
+                  href={s.href}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg border bg-white px-4 text-[15px] font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                  style={{ borderColor: `${s.accent}44`, color: s.accent }}
+                >
+                  <FileText className="h-4 w-4" aria-hidden="true" />
+                  {s.label}
+                </Link>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </Section>
+    </>
+  );
 }

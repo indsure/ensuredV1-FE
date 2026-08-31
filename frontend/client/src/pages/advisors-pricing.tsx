@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Check, Minus, Sparkles } from "lucide-react";
+import { Check, Minus, Sparkles, ArrowRight } from "lucide-react";
 
 type TierFeature = { label: string; soon?: boolean };
 
@@ -66,8 +66,8 @@ const tiers: Tier[] = [
   {
     name: "Agency",
     tagline: "For agencies with a team of advisors.",
-    price: "₹799",
-    priceAnnual: "₹799",
+    price: "₹1,199",
+    priceAnnual: "₹1,199",
     period: "/ seat / month",
     periodAnnual: "/ seat / month",
     subline: "Minimum 5 seats",
@@ -166,9 +166,16 @@ export default function Pricing() {
       <main className="flex-grow pt-24 pb-12 sm:pb-16 lg:pb-20 px-6 w-full">
 
         {/* HERO */}
-        <section className="max-w-4xl mx-auto text-center mb-8 animate-reveal">
-          <div className="inline-block py-1 px-3 border border-[var(--color-border-main)] rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-text-secondary)] mb-4 bg-white">
-            For Advisors
+        <section className="relative max-w-4xl mx-auto text-center mb-8 animate-reveal">
+          <div className="pointer-events-none absolute -inset-x-24 -top-16 -bottom-8 -z-10 overflow-hidden" aria-hidden="true">
+            <div className="absolute inset-0 bg-grid-faint mask-fade-edges" />
+            <div
+              className="absolute -top-24 left-1/2 h-[380px] w-[760px] -translate-x-1/2 rounded-full opacity-70 blur-3xl"
+              style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.18), transparent 68%)" }}
+            />
+          </div>
+          <div className="inline-block py-1.5 px-3.5 border border-[var(--color-teal-600)]/25 bg-[var(--color-teal-50)] rounded-full text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)] mb-4">
+            For advisors
           </div>
           <h1 className="text-4xl md:text-5xl font-serif mb-4 tracking-tight text-[var(--color-text-main)] leading-tight">
             Simple pricing. <span className="italic text-[var(--color-green-primary)]">One policy covers it.</span>
@@ -181,15 +188,15 @@ export default function Pricing() {
 
         {/* FOUNDING 50 BANNER */}
         <section className="max-w-3xl mx-auto mb-8">
-          <div className="flex items-center justify-center gap-3 bg-[var(--color-green-primary)]/10 border border-[var(--color-green-primary)] rounded-lg px-6 py-3 text-center">
-            <Sparkles className="w-5 h-5 text-[var(--color-green-primary)] shrink-0" />
+          <div className="flex items-center justify-center gap-4 rounded-2xl border border-[var(--lob-motor)]/30 bg-[var(--lob-motor-wash)] px-6 py-5 text-center">
+            <Sparkles className="h-6 w-6 shrink-0 text-[var(--lob-motor)]" aria-hidden="true" />
             <div>
-              <p className="text-sm md:text-base text-[var(--color-text-main)]">
+              <p className="text-[15px] md:text-base text-[var(--color-text-main)]">
                 <span className="font-semibold">Founding 50:</span> the first 50 advisors get a full year at{" "}
                 <span className="font-semibold">₹9,990</span>{" "}
                 <span className="line-through text-[var(--color-text-muted)]">₹14,990</span> — a third off, locked in forever.
               </p>
-              <p className="text-xs text-[var(--color-text-secondary)] mt-1">
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
                 Prices rise when live quotes launch. Founding members keep their rate.
               </p>
             </div>
@@ -215,63 +222,104 @@ export default function Pricing() {
 
         {/* TIER CARDS */}
         <section className="max-w-6xl mx-auto mb-6 grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-          {tiers.map((tier) => (
-            <div
-              key={tier.name}
-              className={`card-white p-8 md:p-10 flex flex-col ${tier.highlighted ? "border-2 border-[var(--color-green-primary)] shadow-xl relative" : ""}`}
-            >
-              {tier.highlighted && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[var(--color-green-primary)] text-white text-xs font-semibold uppercase tracking-widest px-4 py-1 rounded-full">
-                  Most Popular
-                </div>
-              )}
-              <h3 className="text-2xl font-serif mb-2">{tier.name}</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] mb-6 min-h-[40px]">{tier.tagline}</p>
-              <div className="mb-2">
-                <span className="text-3xl sm:text-4xl font-serif">{annual ? tier.priceAnnual : tier.price}</span>
-                <span className="text-sm text-[var(--color-text-secondary)] ml-1">{annual ? tier.periodAnnual : tier.period}</span>
-              </div>
-              <p className="text-sm text-[var(--color-green-primary)] mb-6 min-h-[20px]">
-                {(annual ? tier.sublineAnnual : tier.subline) ?? ""}
-              </p>
-              <ul className="space-y-3 mb-8">
-                {tier.features.map((f) => (
-                  <li key={f.label} className="flex items-start gap-2 text-sm text-[var(--color-text-main)]">
-                    <Check className="w-4 h-4 text-[var(--color-green-primary)] mt-0.5 shrink-0" />
-                    <span>
-                      {f.label}
-                      {f.soon && (
-                        <span className="ml-1.5 align-middle inline-block text-xs font-semibold uppercase tracking-wider text-[var(--color-green-primary)] border border-[var(--color-green-primary)] rounded-full px-1.5 leading-4">
-                          Soon
-                        </span>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <Button
-                asChild
-                size="lg"
-                className={
-                  tier.highlighted
-                    ? "bg-[var(--color-green-primary)] hover:bg-[var(--color-green-secondary)] text-white rounded-full mt-auto"
-                    : "bg-transparent border border-[var(--color-border-main)] text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] rounded-full mt-auto"
-                }
+          {/* Three cards that used to differ only by a border colour. Each now
+              carries a coloured cap in its own line-of-business accent, so the
+              row has a shape before you read a word of it. */}
+          {tiers.map((tier, i) => {
+            const accent = ["var(--lob-life)", "var(--lob-health)", "var(--lob-motor)"][i] ?? "var(--lob-general)";
+            const wash = ["var(--lob-life-wash)", "var(--lob-health-wash)", "var(--lob-motor-wash)"][i] ?? "var(--lob-general-wash)";
+            const pick = !!tier.highlighted;
+            return (
+              <div
+                key={tier.name}
+                className={`relative flex flex-col overflow-hidden rounded-2xl bg-white transition-shadow duration-300 ${
+                  pick
+                    ? "shadow-[0_24px_60px_-22px_rgba(13,148,136,0.45)]"
+                    : "shadow-[0_1px_2px_rgba(15,23,42,0.05)] hover:shadow-[0_16px_40px_-16px_rgba(15,23,42,0.2)]"
+                }`}
+                style={{
+                  outline: pick ? "2px solid var(--color-teal-600)" : "1px solid var(--color-border-light)",
+                  outlineOffset: -1,
+                }}
               >
-                <Link href={tier.ctaHref}>{tier.cta}</Link>
-              </Button>
-            </div>
-          ))}
+                <div className="px-6 pt-7 pb-6" style={{ backgroundColor: wash }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="font-serif text-2xl font-bold text-[var(--color-navy-900)]">{tier.name}</h3>
+                    {/* Was "Most Popular". With the book this size that is a
+                        claim about other customers we cannot support, so the
+                        badge says what it actually is. */}
+                    {pick && (
+                      <span
+                        className="shrink-0 rounded-full px-3 py-1 text-[13px] font-bold uppercase tracking-[0.1em] text-white"
+                        style={{ backgroundColor: accent }}
+                      >
+                        Our pick
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="mt-2 min-h-[44px] text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
+                    {tier.tagline}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap items-baseline gap-2">
+                    <span className="font-serif text-4xl font-bold tracking-tight text-[var(--color-navy-900)] tabular">
+                      {annual ? tier.priceAnnual : tier.price}
+                    </span>
+                    <span className="text-[15px] text-[var(--color-text-secondary)]">
+                      {annual ? tier.periodAnnual : tier.period}
+                    </span>
+                  </div>
+
+                  <p className="mt-1 min-h-[22px] text-[15px] font-semibold" style={{ color: accent }}>
+                    {(annual ? tier.sublineAnnual : tier.subline) ?? ""}
+                  </p>
+                </div>
+
+                <div className="flex flex-1 flex-col gap-6 p-6">
+                  <ul className="flex flex-col gap-3">
+                    {tier.features.map((f) => (
+                      <li key={f.label} className="flex items-start gap-2.5 text-[15px] leading-relaxed text-[var(--color-text-main)]">
+                        <Check className="mt-1 h-4 w-4 shrink-0" style={{ color: accent }} aria-hidden="true" />
+                        <span>
+                          {f.label}
+                          {f.soon && (
+                            <span className="ml-1.5 inline-block rounded-full border px-1.5 align-middle text-[13px] font-semibold uppercase leading-5 tracking-wider"
+                              style={{ color: accent, borderColor: accent }}>
+                              Soon
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href={tier.ctaHref}
+                    className={`mt-auto inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-lg text-base font-semibold transition-all duration-200 ${
+                      pick
+                        ? "bg-[var(--color-teal-600)] text-white hover:bg-[#0F766E] hover:-translate-y-0.5"
+                        : "border border-[var(--color-border-medium)] bg-white text-[var(--color-text-main)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
+                    }`}
+                  >
+                    {tier.cta}
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
         </section>
 
-        <p className="text-center text-xs text-[var(--color-text-muted)] mb-16">
+        <p className="mb-16 text-center text-sm text-[var(--color-text-secondary)]">
           All prices in INR, inclusive of GST.
         </p>
 
         {/* CREDIT EXPLAINER + TOP-UPS */}
         <section className="max-w-4xl mx-auto mb-12 sm:mb-16 lg:mb-24">
           <div className="card-white p-8 md:p-10 text-center">
-            <h2 className="text-2xl font-serif mb-3">How policy checks work</h2>
+            <h2 className="mb-3 font-serif text-2xl font-bold text-[var(--color-navy-900)]">How policy checks work</h2>
+            <span className="rule-accent mx-auto mb-6" />
             <p className="text-[var(--color-text-secondary)] leading-relaxed max-w-2xl mx-auto mb-8">
               <span className="font-semibold text-[var(--color-text-main)]">One check is one full policy audit, or one side-by-side comparison.</span>{" "}
               That's less than ₹100 to walk into a client meeting with a complete audit in hand.
@@ -279,13 +327,18 @@ export default function Pricing() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               {topUpPacks.map((pack) => (
-                <div key={pack.credits} className="border border-[var(--color-border-main)] rounded-lg px-8 py-5 bg-[var(--color-cream-main)]">
-                  <div className="text-2xl font-serif">{pack.price}</div>
-                  <div className="text-sm text-[var(--color-text-main)] font-medium">{pack.credits} policy checks</div>
+                <div
+                  key={pack.credits}
+                  className="rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-cream-main)] px-8 py-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--color-teal-600)]/40"
+                >
+                  <div className="font-serif text-3xl font-bold text-[var(--color-navy-900)] tabular">{pack.price}</div>
+                  <div className="text-[15px] font-semibold text-[var(--color-text-secondary)]">
+                    {pack.credits} policy checks
+                  </div>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-[var(--color-text-muted)] mt-4">
+            <p className="mt-4 text-sm text-[var(--color-text-secondary)]">
               Purchased checks never expire while your plan is active.
               Live quotes (coming soon) won't use your checks — they'll have their own monthly allowance.
             </p>
@@ -293,8 +346,9 @@ export default function Pricing() {
         </section>
 
         {/* FEATURE COMPARISON TABLE */}
-        <section className="max-w-5xl mx-auto mb-12 sm:mb-16 lg:mb-24 md:overflow-x-auto">
-          <h2 className="text-3xl font-serif mb-8 text-center">What's included</h2>
+        <section className="bleed bleed-mint max-w-5xl mx-auto mb-12 sm:mb-16 lg:mb-24 py-14 md:overflow-x-auto">
+          <h2 className="text-3xl font-serif mb-3 text-center">What&apos;s included</h2>
+          <span className="rule-accent mx-auto mb-8" />
           <table className="table-cards w-full border-collapse md:min-w-[640px]">
             <thead>
               <tr className="border-b border-[var(--color-border-main)]">
@@ -318,8 +372,9 @@ export default function Pricing() {
         </section>
 
         {/* FAQ */}
-        <section className="max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-24">
-          <h2 className="text-3xl font-serif mb-10 text-center">Pricing questions</h2>
+        <section className="max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-24 pt-4">
+          <h2 className="text-3xl font-serif mb-3 text-center">Pricing questions</h2>
+          <span className="rule-accent mx-auto mb-10" />
           <div className="space-y-6">
             {faqs.map((f) => (
               <div key={f.q} className="border-b border-[var(--color-border-light)] pb-6">

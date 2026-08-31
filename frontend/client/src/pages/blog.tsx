@@ -43,14 +43,23 @@ const categories = [
   { id: "Guide", label: "Guide", icon: BookOpen },
 ];
 
+/* This grid used raw Tailwind colours (green/blue/amber/rose/cyan/purple)
+   while BlogCover coloured the same categories from CATEGORY_TINTS, so one
+   category was two different colours depending on where you met it — Life and
+   Travel were effectively swapped between the two. Both now read the site-wide
+   --lob-* tokens, which is where CATEGORY_TINTS was promoted from.
+
+   The old `color` string also carried a `bg-*-50` that never rendered: the
+   element it was spread into sets `bg-white` afterwards, so only the text
+   colour ever survived. */
 const insuranceCategories = [
-  { id: "Health Insurance", label: "Health Insurance", icon: Heart, color: "bg-green-50 text-green-700", count: blogPosts.filter(p => p.insuranceType === "Health" || p.category === "Health Insurance").length },
-  { id: "Life Insurance", label: "Life Insurance", icon: Shield, color: "bg-blue-50 text-blue-700", count: blogPosts.filter(p => p.insuranceType === "Life" || p.category === "Life Insurance").length },
-  { id: "Vehicle Insurance", label: "Vehicle Insurance", icon: Car, color: "bg-amber-50 text-amber-700", count: blogPosts.filter(p => p.insuranceType === "Vehicle" || p.category === "Vehicle Insurance").length },
-  { id: "Home Insurance", label: "Home Insurance", icon: Home, color: "bg-rose-50 text-rose-700", count: blogPosts.filter(p => p.insuranceType === "Home" || p.category === "Home Insurance").length },
-  { id: "Travel Insurance", label: "Travel Insurance", icon: Plane, color: "bg-cyan-50 text-cyan-700", count: blogPosts.filter(p => p.insuranceType === "Travel" || p.category === "Travel Insurance").length },
-  { id: "Business Insurance", label: "Business Insurance", icon: Briefcase, color: "bg-purple-50 text-purple-700", count: blogPosts.filter(p => p.insuranceType === "Business" || p.category === "Business Insurance").length },
-  { id: "General", label: "General", icon: BookOpen, color: "bg-gray-50 text-gray-700", count: blogPosts.filter(p => p.insuranceType === "General" || p.category === "General").length },
+  { id: "Health Insurance", label: "Health Insurance", icon: Heart, accent: "var(--lob-health)", wash: "var(--lob-health-wash)", count: blogPosts.filter(p => p.insuranceType === "Health" || p.category === "Health Insurance").length },
+  { id: "Life Insurance", label: "Life Insurance", icon: Shield, accent: "var(--lob-life)", wash: "var(--lob-life-wash)", count: blogPosts.filter(p => p.insuranceType === "Life" || p.category === "Life Insurance").length },
+  { id: "Vehicle Insurance", label: "Vehicle Insurance", icon: Car, accent: "var(--lob-motor)", wash: "var(--lob-motor-wash)", count: blogPosts.filter(p => p.insuranceType === "Vehicle" || p.category === "Vehicle Insurance").length },
+  { id: "Home Insurance", label: "Home Insurance", icon: Home, accent: "var(--lob-home)", wash: "var(--lob-home-wash)", count: blogPosts.filter(p => p.insuranceType === "Home" || p.category === "Home Insurance").length },
+  { id: "Travel Insurance", label: "Travel Insurance", icon: Plane, accent: "var(--lob-travel)", wash: "var(--lob-travel-wash)", count: blogPosts.filter(p => p.insuranceType === "Travel" || p.category === "Travel Insurance").length },
+  { id: "Business Insurance", label: "Business Insurance", icon: Briefcase, accent: "var(--lob-business)", wash: "var(--lob-business-wash)", count: blogPosts.filter(p => p.insuranceType === "Business" || p.category === "Business Insurance").length },
+  { id: "General", label: "General", icon: BookOpen, accent: "var(--lob-general)", wash: "var(--lob-general-wash)", count: blogPosts.filter(p => p.insuranceType === "General" || p.category === "General").length },
 ];
 
 const PAGE_SIZE = 12;
@@ -104,7 +113,19 @@ export default function Blog() {
       {/* Main Content */}
       <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-8 md:pb-12 w-full">
         {/* Hero Section */}
-        <div className="text-center mb-16 pt-8 md:pt-12">
+        <div className="relative text-center mb-16 pt-8 md:pt-12">
+          {/* Same ambient treatment as every other page hero, so the blog stops
+              being the one that starts on bare cream. */}
+          <div className="pointer-events-none absolute -inset-x-32 -top-24 -bottom-6 -z-10 overflow-hidden" aria-hidden="true">
+            <div className="absolute inset-0 bg-grid-faint mask-fade-edges" />
+            <div
+              className="absolute -top-28 left-1/2 h-[420px] w-[820px] -translate-x-1/2 rounded-full opacity-70 blur-3xl"
+              style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.18), transparent 68%)" }}
+            />
+          </div>
+          <span className="mb-5 inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)]">
+            The library
+          </span>
           <h1 className="text-4xl md:text-5xl lg:text-[52px] font-bold font-serif text-[var(--color-text-main)] mb-4 leading-[1.1]">
             The fine print, <span className="italic text-[var(--color-teal-600)]">explained.</span>
           </h1>
@@ -113,20 +134,21 @@ export default function Blog() {
           </p>
 
           {/* Search Bar */}
-          <div className="max-w-[500px] mx-auto mb-6">
+          <div className="mx-auto mb-6 max-w-[560px]">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--color-text-muted)]" />
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-teal-600)]" aria-hidden="true" />
               <Input
                 type="text"
                 placeholder="Search articles, terms, topics..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 pr-4 h-12 text-base bg-white border border-[var(--color-border-medium)] focus:border-[var(--color-green-primary)] focus:ring-0 rounded-xl shadow-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)]"
+                className="h-14 rounded-2xl border border-[var(--color-border-medium)] bg-white pl-12 pr-12 text-base text-[var(--color-text-main)] shadow-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-teal-600)] focus:ring-0"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+                  className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg transition-colors hover:bg-[var(--color-cream-dark)]"
+                  aria-label="Clear search"
                 >
                   <X className="w-4 h-4 text-[var(--color-text-secondary)]" />
                 </button>
@@ -143,19 +165,21 @@ export default function Blog() {
           <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto">
             {categories.map((category) => {
               const CategoryIcon = category.icon;
+              const on = selectedCategory === category.id;
               return (
-                <Button
+                <button
                   key={category.id}
-                  variant={selectedCategory === category.id ? "default" : "outline"}
                   onClick={() => handleCategoryFilter(category.id)}
-                  className={
-                    selectedCategory === category.id
-                      ? "bg-[var(--color-green-primary)] hover:bg-[var(--color-green-secondary)] text-white border-0 h-8 px-4 rounded-full text-xs font-medium"
-                      : "border-[var(--color-border-medium)] bg-white text-[var(--color-text-secondary)] h-8 px-4 rounded-full text-xs font-medium hover:bg-[var(--color-cream-dark)] hover:text-[var(--color-green-primary)]"
-                  }
+                  aria-pressed={on}
+                  className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-[15px] transition-all duration-200 ${
+                    on
+                      ? "bg-[var(--color-teal-600)] font-bold text-white shadow-[0_6px_16px_-6px_rgba(13,148,136,0.7)]"
+                      : "border border-[var(--color-border-medium)] bg-white font-medium text-[var(--color-text-secondary)] hover:-translate-y-0.5 hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-700)]"
+                  }`}
                 >
+                  <CategoryIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                   {category.label}
-                </Button>
+                </button>
               );
             })}
           </div>
@@ -222,15 +246,24 @@ export default function Blog() {
                   <button
                     key={cat.id}
                     onClick={() => handleCategoryFilter(cat.id)}
-                    className="bg-[var(--color-cream-main)] rounded-xl p-6 border border-[var(--color-border-light)] hover:shadow-lg transition-all duration-200 hover:scale-105 text-center cursor-pointer hover:border-[var(--color-green-secondary)]"
+                    className="group relative overflow-hidden rounded-xl bg-[var(--color-cream-main)] p-6 border border-[var(--color-border-light)] text-center cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_-14px_rgba(15,23,42,0.2)]"
+                    style={{ borderTopColor: cat.accent, borderTopWidth: 3 }}
                   >
-                    <div className={`w-12 h-12 rounded-lg ${cat.color} flex items-center justify-center mx-auto mb-3 bg-white border border-[var(--color-border-light)]`}>
-                      <Icon className="w-6 h-6" />
+                    <span
+                      className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                      style={{ backgroundColor: cat.wash }}
+                      aria-hidden="true"
+                    />
+                    <div
+                      className="relative w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-transform duration-300 group-hover:scale-110"
+                      style={{ backgroundColor: cat.wash, color: cat.accent }}
+                    >
+                      <Icon className="w-6 h-6" aria-hidden="true" />
                     </div>
-                    <div className="text-sm font-semibold text-[var(--color-text-main)] mb-1">
+                    <div className="relative text-[15px] font-semibold text-[var(--color-text-main)] mb-1">
                       {cat.label}
                     </div>
-                    <div className="text-xs text-[var(--color-text-muted)]">
+                    <div className="relative text-sm text-[var(--color-text-secondary)]">
                       {cat.count} article{cat.count !== 1 ? 's' : ''}
                     </div>
                   </button>
@@ -247,7 +280,15 @@ export default function Blog() {
               {searchQuery ? `Search Results (${regularPosts.length})` : `${selectedCategory} Articles`}
             </h2>
           ) : (
-            <h2 className="text-2xl md:text-3xl font-bold font-serif mb-8 text-[var(--color-text-main)]">All Articles</h2>
+            <div className="mb-8 flex flex-col gap-3">
+              <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)]">
+                Everything we have written
+              </span>
+              <h2 className="font-serif text-2xl font-bold text-[var(--color-navy-900)] md:text-3xl">
+                All articles
+              </h2>
+              <span className="rule-accent" />
+            </div>
           )}
 
           {regularPosts.length > 0 ? (

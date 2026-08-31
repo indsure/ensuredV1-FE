@@ -1,6 +1,6 @@
 import { X, Check } from "lucide-react";
 import { InsurerCount } from "./InsurerCard"; // Need to ensure this is shared
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 interface ComparisonItem {
     id: string; // Unique ID (e.g., city name or pincode)

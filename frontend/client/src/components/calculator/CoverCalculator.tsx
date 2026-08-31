@@ -607,9 +607,21 @@ export default function CoverCalculator({
     );
   }
 
+  /* The consumer landing runs full-bleed section backgrounds, so it cannot
+     sit inside the centred max-w-5xl column the wizard steps use. It is
+     returned before that wrapper rather than inside it. Never reached in
+     `embedded` mode, which opens on "location". */
+  if (isIntro) {
+    return (
+      <CalculatorErrorBoundary>
+        <CalculatorLanding onStart={() => setCurrentStepId("location")} />
+      </CalculatorErrorBoundary>
+    );
+  }
+
   return (
     <CalculatorErrorBoundary>
-      <div className="w-full flex flex-col items-center">
+      <div className="flex w-full flex-col items-center px-6 py-8">
         {!isIntro && currentStepId !== "review" && (
           <div className="mb-8 w-full max-w-2xl">
             <CalculatorProgressDots
@@ -622,17 +634,13 @@ export default function CoverCalculator({
           </div>
         )}
 
+        {/* The intro returns earlier, so every step reaching here is a wizard
+            step and takes the same narrow column. */}
         <div
           key={currentStepId}
-          className={cn(
-            "w-full transition-all duration-400 ease-in-out",
-            currentStepId === "intro" ? "max-w-5xl" : "max-w-2xl"
-          )}
+          className="w-full max-w-2xl transition-all duration-400 ease-in-out"
         >
-          {currentStepId === "intro" ? (
-            <CalculatorLanding onStart={() => setCurrentStepId("location")} />
-
-          ) : currentStepId === "location" ? (
+          {currentStepId === "location" ? (
             <div className="bg-white/50 backdrop-blur-sm border border-[var(--color-border-light)] p-8 md:p-12 rounded-3xl shadow-sm space-y-6">
               <div className="text-center">
                 <h2 className="text-3xl md:text-4xl font-serif text-[var(--color-navy-900)] mb-3">

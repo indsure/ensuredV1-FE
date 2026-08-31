@@ -1,23 +1,25 @@
 import { Link } from "wouter";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "motion/react";
 import {
   ArrowRight, Check, Lock, IndianRupee, ShieldCheck, ListChecks, Users,
   CalendarClock, Scale, FileText, MessageSquare, Bell, AlertTriangle,
+  HeartPulse, Umbrella, Car, Bike, Plane,
 } from "lucide-react";
 import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
+import { AnimatedNumber, GrowBar, Reveal } from "@/components/motion";
 
 /* Every rupee figure inside a product panel on this page is illustrative and is
    labelled as such inside the panel border. Nothing here is a product output. */
 
-const rise = {
+const rise: Variants = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } },
 };
 
-const wrap = {
+const wrap: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
 };
@@ -52,8 +54,23 @@ const panelShadow =
 
 function Hero() {
   return (
-    <section className="bg-[var(--color-cream-main)] pb-4">
-      <div className="container-editorial px-6">
+    <section className="relative bg-[var(--color-cream-main)] pb-4">
+      {/* The fold used to be flat cream from edge to edge, which read as an
+          unstyled page rather than as a canvas. A faint grid and two very soft
+          brand washes give it depth without putting anything behind the words. */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute inset-0 bg-grid-faint mask-fade-edges" />
+        <div
+          className="absolute -top-32 -right-24 h-[520px] w-[520px] rounded-full opacity-60 blur-3xl"
+          style={{ background: "radial-gradient(circle, rgba(45,212,191,0.20), transparent 68%)" }}
+        />
+        <div
+          className="absolute top-40 -left-40 h-[460px] w-[460px] rounded-full opacity-50 blur-3xl"
+          style={{ background: "radial-gradient(circle, rgba(180,83,9,0.10), transparent 68%)" }}
+        />
+      </div>
+
+      <div className="container-editorial relative px-6">
         <motion.div variants={wrap} initial="hidden" animate="visible" className="flex flex-col gap-6 pt-10 lg:pt-16">
           <motion.h1
             variants={rise}
@@ -129,18 +146,33 @@ function HeroPanels() {
                 </div>
               </div>
 
+              {/* Each kind of cover carries its own colour here and everywhere
+                  else on the site. Five identical grey boxes was the picture of
+                  the problem the product exists to solve, not of the solution. */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {[
-                  { k: "Health", v: "₹10 L", m: "Star Health · family" },
-                  { k: "Term life", v: "₹1 Cr", m: "HDFC Life · to 2049" },
-                  { k: "Car", v: "₹6.4 L", m: "ICICI · own damage" },
-                  { k: "Two-wheeler", v: "₹84 K", m: "Bajaj Allianz" },
-                  { k: "Travel", v: "₹42 L", m: "Expires 14 Sep" },
+                  { k: "Health", v: "₹10 L", m: "Star Health · family", c: "var(--lob-health)", w: "var(--lob-health-wash)", i: HeartPulse },
+                  { k: "Term life", v: "₹1 Cr", m: "HDFC Life · to 2049", c: "var(--lob-life)", w: "var(--lob-life-wash)", i: Umbrella },
+                  { k: "Car", v: "₹6.4 L", m: "ICICI · own damage", c: "var(--lob-motor)", w: "var(--lob-motor-wash)", i: Car },
+                  { k: "Two-wheeler", v: "₹84 K", m: "Bajaj Allianz", c: "var(--lob-motor)", w: "var(--lob-motor-wash)", i: Bike },
+                  { k: "Travel", v: "₹42 L", m: "Expires 14 Sep", c: "var(--lob-travel)", w: "var(--lob-travel-wash)", i: Plane },
                 ].map((p) => (
-                  <div key={p.k} className="rounded-xl border border-[var(--color-border-light)] p-3 flex flex-col gap-1.5">
-                    <span className="text-sm font-bold text-[var(--color-text-secondary)]">{p.k}</span>
-                    <span className="text-base font-extrabold tracking-tight text-[var(--color-navy-900)]">{p.v}</span>
-                    <span className="text-sm text-[var(--color-text-muted)] leading-snug">{p.m}</span>
+                  <div
+                    key={p.k}
+                    className="group relative overflow-hidden rounded-xl border border-[var(--color-border-light)] p-3 flex flex-col gap-1.5 transition-colors duration-300 hover:border-transparent"
+                    style={{ borderLeftWidth: 3, borderLeftColor: p.c }}
+                  >
+                    <span
+                      className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                      style={{ backgroundColor: p.w }}
+                      aria-hidden="true"
+                    />
+                    <span className="relative flex items-center gap-1.5 text-sm font-bold" style={{ color: p.c }}>
+                      <p.i className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      {p.k}
+                    </span>
+                    <span className="relative text-base font-extrabold tracking-tight text-[var(--color-navy-900)] tabular">{p.v}</span>
+                    <span className="relative text-sm text-[var(--color-text-secondary)] leading-snug">{p.m}</span>
                   </div>
                 ))}
                 <div className="rounded-xl border border-dashed border-[var(--color-border-medium)] bg-[var(--color-cream-main)] p-3 flex flex-col gap-1.5 justify-center">
@@ -188,9 +220,15 @@ function HeroPanels() {
                     <span className="text-[var(--color-text-secondary)] font-semibold">You have</span>
                     <span className="font-bold text-[var(--color-navy-900)]">₹1 Cr</span>
                   </div>
-                  <div className="h-2.5 rounded-full bg-[var(--color-cream-dark)] overflow-hidden flex">
-                    <span className="h-full bg-[var(--color-teal-600)]" style={{ width: "53%" }} />
-                    <span className="h-full flex-1 bg-[#FECACA]" />
+                  {/* The shortfall is the whole point of this panel, so the bar
+                      grows to it rather than arriving already drawn. */}
+                  <div className="relative h-2.5 overflow-hidden rounded-full bg-[#FECACA]">
+                    <GrowBar
+                      percent={53}
+                      height={10}
+                      track="transparent"
+                      label="Cover held: 53 percent of what is needed"
+                    />
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-bold text-[#B91C1C]">Short by ₹90 L</span>
@@ -501,19 +539,22 @@ function AdvisorPanel() {
 
 function ProductSection() {
   return (
-    <section id="product" className="scroll-mt-28 bg-[var(--color-cream-main)] py-14 sm:py-20 lg:py-24">
-      <div className="container-editorial px-6 flex flex-col items-center gap-3 text-center">
-        <span className="px-3 py-1 rounded-full bg-[var(--color-teal-600)]/10 border border-[var(--color-teal-600)]/20 text-sm font-bold uppercase tracking-[0.1em] text-[var(--color-teal-600)]">
+    /* Mint rather than cream. Every section on this page used to share one
+       background, so nothing marked where one idea ended and the next began. */
+    <section id="product" className="scroll-mt-28 bg-[var(--surface-mint)] py-14 sm:py-20 lg:py-24">
+      <Reveal className="container-editorial px-6 flex flex-col items-center gap-3 text-center">
+        <span className="px-3 py-1 rounded-full bg-[var(--color-teal-600)]/10 border border-[var(--color-teal-600)]/20 text-[13px] font-bold uppercase tracking-[0.14em] text-[#0F766E]">
           The product
         </span>
         <h2 className="font-serif font-bold tracking-[-0.03em] leading-tight text-3xl sm:text-4xl lg:text-5xl text-[var(--color-navy-900)]">
           One engine. Two ways in.
         </h2>
+        <span className="rule-accent" />
         <p className="text-lg leading-relaxed text-[var(--color-text-secondary)] max-w-xl">
           The same policy check runs underneath both. What changes is whose book it is — an
           advisor's, or your own.
         </p>
-      </div>
+      </Reveal>
 
       {/* Band 1 — Advisor Portal */}
       <div className="container-editorial px-6 mt-12 lg:mt-16 grid lg:grid-cols-[minmax(0,400px)_1fr] gap-10 lg:gap-14 items-start">
@@ -662,27 +703,51 @@ function ProductSection() {
 
 function HowItWorks() {
   return (
-    <section id="how-it-works" className="scroll-mt-28 bg-[var(--color-cream-main)] border-t border-[var(--color-border-light)] py-14 sm:py-20 lg:py-24">
+    <section id="how-it-works" className="scroll-mt-28 bg-white py-14 sm:py-20 lg:py-24">
       <div className="container-editorial px-6 flex flex-col gap-10">
-        <div className="flex flex-col gap-3.5">
-          <span className="self-start px-2.5 py-1 rounded-md bg-[var(--color-teal-600)]/10 text-sm font-bold text-[#0F766E]">
+        <Reveal className="flex flex-col gap-3.5">
+          <span className="self-start px-2.5 py-1 rounded-md bg-[var(--color-teal-600)]/10 text-[13px] font-bold uppercase tracking-[0.14em] text-[#0F766E]">
             How it works
           </span>
           <h2 className="font-serif font-bold tracking-[-0.03em] leading-tight text-3xl sm:text-4xl lg:text-5xl text-[var(--color-navy-900)]">
             From chaos to clarity, in three steps
           </h2>
-        </div>
+          <span className="rule-accent" />
+        </Reveal>
 
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="flex flex-col gap-4">
-            <div className="relative h-64 sm:h-72 rounded-xl bg-[var(--color-cream-dark)] overflow-hidden flex items-center justify-center">
-              <span className="absolute left-7 top-8 w-10 h-10 rounded-xl bg-white/60" />
-              <span className="absolute right-8 top-7 w-10 h-10 rounded-xl bg-white/50" />
-              <span className="absolute left-10 bottom-10 w-10 h-10 rounded-xl bg-white/50" />
-              <span className="absolute right-9 bottom-9 w-10 h-10 rounded-xl bg-white/60" />
+          <Reveal className="flex flex-col gap-4" delay={0}>
+            {/* The four floating tiles are the scattered policies; each carries
+                the colour of the cover it stands for, and they settle inward
+                towards the single figure. */}
+            <div
+              className="relative h-64 sm:h-72 overflow-hidden rounded-xl flex items-center justify-center"
+              style={{ background: "linear-gradient(150deg, var(--lob-health-wash), var(--color-cream-dark))" }}
+            >
+              {[
+                { cls: "left-7 top-8", c: "var(--lob-health)", i: HeartPulse, d: 0 },
+                { cls: "right-8 top-7", c: "var(--lob-life)", i: Umbrella, d: 0.1 },
+                { cls: "left-10 bottom-10", c: "var(--lob-motor)", i: Car, d: 0.2 },
+                { cls: "right-9 bottom-9", c: "var(--lob-travel)", i: Plane, d: 0.3 },
+              ].map((t) => (
+                <motion.span
+                  key={t.cls}
+                  className={`absolute ${t.cls} flex h-11 w-11 items-center justify-center rounded-xl bg-white/85 shadow-sm`}
+                  style={{ color: t.c }}
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true, margin: "0px 0px -12% 0px" }}
+                  transition={{ duration: 0.5, delay: 0.25 + t.d, ease: [0.22, 1, 0.36, 1] }}
+                  aria-hidden="true"
+                >
+                  <t.i className="h-5 w-5" />
+                </motion.span>
+              ))}
               <div className="relative rounded-xl bg-white px-5 py-4 flex flex-col items-center gap-1" style={{ boxShadow: panelShadow }}>
-                <span className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">One family</span>
-                <span className="font-serif text-3xl font-bold tracking-tight text-[var(--color-navy-900)]">₹1.6 Cr</span>
+                <span className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">One family</span>
+                <span className="font-serif text-3xl font-bold tracking-tight text-[var(--color-navy-900)]">
+                  ₹<AnimatedNumber value={1.6} decimals={1} /> Cr
+                </span>
                 <span className="text-sm text-[var(--color-text-secondary)]">5 policies · 3 insurers</span>
               </div>
             </div>
@@ -691,16 +756,33 @@ function HowItWorks() {
               Health, term life, car, two-wheeler, travel — whoever sold it, whenever it renews. One
               place instead of four apps and a drawer.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="flex flex-col gap-4">
-            <div className="relative h-64 sm:h-72 rounded-xl bg-[var(--color-cream-dark)] overflow-hidden flex items-center justify-center">
-              <span className="absolute w-52 h-52 rounded-full border border-dashed border-[var(--color-border-medium)]" />
-              <span className="absolute w-36 h-36 rounded-full border border-[var(--color-border-medium)]" />
+          <Reveal className="flex flex-col gap-4" delay={0.1}>
+            {/* This panel used to read "62 pp. in 41 seconds". Neither figure had
+                a source, and the audit flagged it as a benchmark presented as
+                product output, so the claim is now the thing the engine does
+                rather than a number nobody can stand behind. */}
+            <div
+              className="relative h-64 sm:h-72 overflow-hidden rounded-xl flex items-center justify-center"
+              style={{ background: "linear-gradient(150deg, var(--lob-life-wash), var(--color-cream-dark))" }}
+            >
+              {[208, 144].map((size, i) => (
+                <motion.span
+                  key={size}
+                  className={`absolute rounded-full ${i === 0 ? "border border-dashed" : "border"}`}
+                  style={{ width: size, height: size, borderColor: "var(--lob-life)", opacity: 0.35 }}
+                  initial={{ scale: 0.85, opacity: 0 }}
+                  whileInView={{ scale: 1, opacity: 0.35 }}
+                  viewport={{ once: true, margin: "0px 0px -12% 0px" }}
+                  transition={{ duration: 0.7, delay: 0.2 + i * 0.12, ease: [0.22, 1, 0.36, 1] }}
+                  aria-hidden="true"
+                />
+              ))}
               <div className="relative rounded-xl bg-white px-4 py-3.5 flex flex-col items-center gap-0.5" style={{ boxShadow: panelShadow }}>
-                <span className="text-sm font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">Checks run</span>
-                <span className="font-serif text-2xl font-bold tracking-tight text-[var(--color-navy-900)]">62 pp.</span>
-                <span className="text-sm font-bold text-[#0F766E]">in 41 seconds</span>
+                <span className="text-sm font-bold uppercase tracking-[0.1em] text-[var(--color-text-secondary)]">Every clause</span>
+                <span className="font-serif text-2xl font-bold tracking-tight text-[var(--color-navy-900)]">Read in full</span>
+                <span className="text-sm font-bold text-[var(--lob-life)]">annexures included</span>
               </div>
             </div>
             <p className="text-base leading-relaxed text-[var(--color-text-secondary)]">
@@ -708,12 +790,20 @@ function HowItWorks() {
               Limits, caps, co-pays, waiting periods and the gaps between policies — pulled out of
               the wording and written in plain language, for every kind of cover.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="flex flex-col gap-4">
-            <div className="relative h-64 sm:h-72 rounded-xl bg-[var(--color-cream-dark)] overflow-hidden">
-              <span className="absolute left-[62%] top-0 bottom-0 w-0.5 bg-[var(--color-teal-600)]/40" />
-              <span className="absolute left-[62%] top-20 -translate-x-1/2 w-3 h-3 rounded-full bg-[var(--color-teal-600)] border-2 border-white" />
+          <Reveal className="flex flex-col gap-4" delay={0.2}>
+            <div
+              className="relative h-64 sm:h-72 overflow-hidden rounded-xl"
+              style={{ background: "linear-gradient(150deg, var(--lob-motor-wash), var(--color-cream-dark))" }}
+            >
+              <span className="absolute left-[62%] top-0 bottom-0 w-0.5 bg-[var(--lob-motor)]/35" />
+              {/* A quiet pulse on the marker: this is the only thing on the page
+                  standing in for "a reminder arrives". */}
+              <span className="absolute left-[62%] top-20 -translate-x-1/2 flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--lob-motor)] opacity-60" />
+                <span className="relative inline-flex h-3 w-3 rounded-full border-2 border-white bg-[var(--lob-motor)]" />
+              </span>
               <div className="absolute left-5 top-24 right-14 rounded-xl bg-white p-3.5 flex flex-col gap-2" style={{ boxShadow: panelShadow }}>
                 <span className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.06em] text-[var(--color-gold-500)]">
                   <Bell className="w-4 h-4 shrink-0" /> Renewal
@@ -729,7 +819,7 @@ function HowItWorks() {
               Reminders before a policy lapses, a straight comparison before you buy the next one,
               and a person on your side when a claim gets stuck.
             </p>
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -755,8 +845,16 @@ export default function Home() {
         <ProductSection />
         <HowItWorks />
 
-        <section className="py-16 sm:py-24 lg:py-32 bg-[var(--color-navy-900)] text-center text-white">
-          <div className="container-editorial px-6">
+        <section className="on-ink relative overflow-hidden py-16 sm:py-24 lg:py-32 bg-[var(--color-navy-900)] text-center text-white">
+          <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+            <div className="absolute inset-0 bg-grid-faint-dark mask-fade-edges" />
+            <div
+              className="absolute left-1/2 top-0 h-[420px] w-[820px] -translate-x-1/2 -translate-y-1/3 rounded-full blur-3xl"
+              style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.22), transparent 70%)" }}
+            />
+          </div>
+
+          <div className="container-editorial relative px-6">
             <h2 className="text-3xl sm:text-5xl md:text-6xl font-serif font-bold tracking-[-0.035em] leading-[1.08] mb-6 text-white">
               Know your coverage.<br />Once and for all.
             </h2>

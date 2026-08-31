@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'motion/react'
 import { supabase } from '@/lib/supabase'
 import { partnersFromSignup } from '@/lib/data/signup-insurer-map'
 import { Search, X, Check, Plus, CheckCircle2 } from 'lucide-react'

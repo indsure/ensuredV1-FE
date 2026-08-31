@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { Building2, ChevronDown, ChevronUp, MapPin, Search } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import { getAllStates, getCitiesForState } from "@/lib/data/indian-cities-data";
 import { toast } from "@/hooks/use-toast";
 import { Info } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { Eyebrow } from "@/components/marketing";
 
 // Local interfaces using the shared InsurerCount
 interface CityResult {
@@ -37,7 +38,7 @@ interface FilterResult {
 const CollapsibleSection = ({ title, children, className = "", titleClassName = "" }: { title: string, children: React.ReactNode, className?: string, titleClassName?: string }) => {
     const [isOpen, setIsOpen] = useState(false);
     return (
-        <section className={`border-t border-[var(--color-border-subtle)] ${className}`}>
+        <section className={`border-t border-[var(--color-border-light)] ${className}`}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full py-6 flex items-center justify-between container-editorial hover:opacity-80 transition-opacity"
@@ -184,60 +185,81 @@ export default function HospitalFilter() {
 
 
     return (
-        <div className="bg-[var(--color-navy-900)] text-white font-sans min-h-screen flex flex-col">
+        <div className="bg-[var(--color-cream-main)] text-[var(--color-text-main)] font-sans min-h-screen flex flex-col">
             <Header />
 
             <main className="flex-grow pt-32 pb-14 sm:pb-20 lg:pb-24">
                 {/* Pre-Search Leading Hero */}
                 {!results && (
-                    <section className="min-h-[60vh] flex flex-col justify-center items-center pb-16 bg-[var(--color-navy-900)] px-4">
-                        <div className="container-editorial w-full max-w-4xl">
+                    <section className="relative overflow-hidden flex flex-col items-center pb-14 px-4">
+                        {/* This page was the only navy-first surface on the site,
+                            and `min-h-[60vh]` on a hero holding one search box
+                            produced a ~700px black void above the fold. It is now
+                            cream like everything else, with the search panel
+                            carrying the ink instead of the whole page. */}
+                        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                            <div className="absolute inset-0 bg-grid-faint mask-fade-edges" />
+                            <div
+                                className="absolute -top-40 left-1/2 h-[460px] w-[820px] -translate-x-1/2 rounded-full opacity-60 blur-3xl"
+                                style={{ background: "radial-gradient(ellipse, rgba(29,78,216,0.16), transparent 68%)" }}
+                            />
+                        </div>
+
+                        <div className="container-editorial relative w-full max-w-4xl">
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="text-center mb-12"
+                                className="text-center mb-10 flex flex-col items-center gap-5"
                             >
-                                <h1 className="text-3xl sm:text-5xl md:text-7xl font-serif font-bold mb-6 text-white leading-tight">
-                                    Hospital <span className="text-[var(--color-teal-400)]">Network</span> Finder
+                                <Eyebrow accent="var(--lob-travel)" icon={Building2}>
+                                    Network finder
+                                </Eyebrow>
+
+                                <h1 className="font-serif font-bold tracking-[-0.035em] leading-[1.05] text-4xl sm:text-6xl text-[var(--color-navy-900)]">
+                                    Is your hospital
+                                    <br />
+                                    <span className="italic text-[var(--lob-travel)]">on their list?</span>
                                 </h1>
-                                <p className="text-2xl text-[var(--color-white-muted)] font-serif mb-4">
-                                    Compare insurer hospital coverage before you buy.
+
+                                <p className="max-w-2xl text-lg sm:text-xl leading-relaxed text-[var(--color-text-secondary)]">
+                                    A policy is only cashless at hospitals the insurer has a tie-up with. Check
+                                    which insurers actually cover your area before you buy, not after a claim.
                                 </p>
                             </motion.div>
 
-                            <div className="bg-[var(--color-blue-800)] border border-[var(--color-border-subtle)] rounded-2xl p-8 shadow-2xl">
+                            <div className="on-ink rounded-2xl bg-[var(--color-navy-900)] p-6 sm:p-8 shadow-[0_30px_60px_-24px_rgba(15,23,42,0.5)]">
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <div className="space-y-2">
-                                        <Label className="text-[var(--color-white-muted)]">State</Label>
+                                        <Label className="text-white/75 text-[15px]">State</Label>
                                         <Combobox
                                             options={allStates.map(s => ({ value: s, label: s }))}
                                             value={state}
                                             onValueChange={setState}
                                             placeholder="Select state"
                                             searchPlaceholder="Search state..."
-                                            className="bg-[var(--color-navy-900)] border-[var(--color-border-subtle)] h-12 text-white"
+                                            className="bg-white/10 border-white/20 h-12 text-white"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[var(--color-white-muted)]">City</Label>
+                                        <Label className="text-white/75 text-[15px]">City</Label>
                                         <Combobox
                                             options={availableCities.map(c => ({ value: c, label: c }))}
                                             value={city}
                                             onValueChange={setCity}
                                             placeholder={state ? "Select city" : "Select state first"}
                                             searchPlaceholder="Search city..."
-                                            className="bg-[var(--color-navy-900)] border-[var(--color-border-subtle)] h-12 text-white"
+                                            className="bg-white/10 border-white/20 h-12 text-white"
                                             disabled={!state}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[var(--color-white-muted)]">Pincode</Label>
+                                        <Label className="text-white/75 text-[15px]">Pincode</Label>
                                         <Input
                                             type="text"
                                             value={pincode}
                                             onChange={(e) => setPincode(e.target.value)}
-                                            placeholder="Enter 6-digit pincode"
-                                            className="h-12 bg-[var(--color-navy-900)] border-[var(--color-border-subtle)] text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-teal-600)]"
+                                            placeholder="6-digit pincode"
+                                            className="h-12 bg-white/10 border-white/20 text-white placeholder-white/45 focus:outline-none focus:border-[var(--color-teal-400)]"
                                         />
                                     </div>
                                     <div className="flex items-end">
@@ -245,20 +267,25 @@ export default function HospitalFilter() {
                                             type="button"
                                             onClick={handleSearch}
                                             disabled={loading}
-                                            className="w-full bg-[var(--color-teal-600)] text-white px-6 py-3 rounded-lg font-medium hover:bg-[var(--color-teal-400)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 h-12 shadow-lg shadow-teal-900/20"
+                                            className="w-full h-12 bg-[var(--color-teal-600)] text-white px-6 rounded-lg text-[15px] font-semibold hover:bg-[var(--color-teal-500)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                                         >
                                             <Search className="w-5 h-5" />
-                                            {loading ? "Searching..." : "Compare Coverage"}
+                                            {loading ? "Searching..." : "Compare"}
                                         </button>
                                     </div>
                                 </div>
                                 {error && (
-                                    <div className="mt-4 p-4 bg-red-900/30 border border-red-800 rounded-lg text-red-200 text-sm flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                    <div className="mt-4 p-4 bg-red-500/15 border border-red-400/40 rounded-lg text-red-200 text-[15px] flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
                                         {error}
                                     </div>
                                 )}
                             </div>
+
+                            <p className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
+                                Network lists change often. Always confirm with the insurer or TPA before a
+                                planned admission.
+                            </p>
                         </div>
                     </section>
                 )}
@@ -268,7 +295,7 @@ export default function HospitalFilter() {
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="sticky top-[72px] z-40 bg-[var(--color-navy-900)] border-b border-[var(--color-border-subtle)] py-4 shadow-lg"
+                        className="sticky top-[72px] z-40 bg-[color-mix(in_srgb,var(--color-cream-main)_92%,transparent)] backdrop-blur-md border-b border-[var(--color-border-light)] py-4 shadow-sm"
                     >
                         <div className="container-editorial">
                             <div className="flex flex-col lg:flex-row items-center gap-4">
@@ -279,7 +306,7 @@ export default function HospitalFilter() {
                                         onValueChange={setState}
                                         placeholder="State"
                                         searchPlaceholder="Search state..."
-                                        className="bg-[var(--color-blue-800)] border-transparent h-10 text-sm text-white"
+                                        className="bg-white border-[var(--color-border-medium)] h-10 text-sm text-[var(--color-text-main)]"
                                     />
                                     <Combobox
                                         options={availableCities.map(c => ({ value: c, label: c }))}
@@ -287,7 +314,7 @@ export default function HospitalFilter() {
                                         onValueChange={setCity}
                                         placeholder="City"
                                         searchPlaceholder="Search city..."
-                                        className="bg-[var(--color-blue-800)] border-transparent h-10 text-sm text-white"
+                                        className="bg-white border-[var(--color-border-medium)] h-10 text-sm text-[var(--color-text-main)]"
                                         disabled={!state}
                                     />
                                     <div className="hidden md:block">
@@ -296,7 +323,7 @@ export default function HospitalFilter() {
                                             value={pincode}
                                             onChange={(e) => setPincode(e.target.value)}
                                             placeholder="Pincode"
-                                            className="h-10 bg-[var(--color-blue-800)] border-transparent text-white text-sm placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-teal-600)]"
+                                            className="h-10 bg-white border-[var(--color-border-medium)] text-[var(--color-text-main)] text-sm placeholder-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-teal-600)]"
                                         />
                                     </div>
                                 </div>
@@ -323,14 +350,14 @@ export default function HospitalFilter() {
                 {results && !loading && (
                     <>
                         {/* Results Hero & Stats */}
-                        <section className="bg-[var(--color-navy-900)] pt-8 pb-12 text-white border-t border-[var(--color-border-subtle)]">
+                        <section className="bg-[var(--surface-mint)] pt-8 pb-12 border-t border-[var(--color-border-light)]">
                             <div className="container-editorial">
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className="mb-8"
                                 >
-                                    <div className="flex items-center gap-2 text-[var(--color-white-muted)] text-sm mb-4 font-mono">
+                                    <div className="flex items-center gap-2 text-[15px] text-[var(--color-text-secondary)] mb-4">
                                         <span>{state || "India"}</span>
                                         {city && <><span>/</span><span>{city}</span></>}
                                         {pincode && <><span>/</span><span>{pincode}</span></>}
@@ -338,11 +365,11 @@ export default function HospitalFilter() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                                         <div>
-                                            <h2 className="text-3xl font-serif font-bold text-white mb-2">
+                                            <h2 className="text-3xl font-serif font-bold text-[var(--color-navy-900)] mb-2">
                                                 Network Coverage
                                             </h2>
-                                            <p className="text-[var(--color-white-muted)] text-lg">
-                                                Found <span className="text-[var(--color-teal-400)] font-bold">{getStats(results).totalHospitals} hospitals</span> across <span className="text-white font-bold">{getStats(results).totalInsurers} insurers</span> in this area.
+                                            <p className="text-[var(--color-text-secondary)] text-lg">
+                                                Found <span className="text-[var(--color-teal-700)] font-bold">{getStats(results).totalHospitals} hospitals</span> across <span className="text-[var(--color-navy-900)] font-bold">{getStats(results).totalInsurers} insurers</span> in this area.
                                             </p>
                                         </div>
 
@@ -499,75 +526,64 @@ export default function HospitalFilter() {
 
                 <CollapsibleSection
                     title="Why this exists"
-                    className="bg-[var(--color-navy-900)] text-white"
-                    titleClassName="text-white"
+                    className="bg-[var(--surface-mint)]"
+                    titleClassName="text-[var(--color-navy-900)]"
                 >
                     <div className="container-editorial">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                             <div>
-                                <p className="text-lg text-[var(--color-white-muted)] mb-4">
+                                <p className="text-lg text-[var(--color-text-secondary)] mb-4">
                                     Hospital network data in India is:
                                 </p>
                                 <ul className="space-y-3 mb-6">
-                                    <li className="flex items-center gap-3 text-[var(--color-white-muted)]">
-                                        <span className="w-1.5 h-1.5 bg-[var(--color-teal-400)] rounded-full" />
-                                        Buried inside PDFs
-                                    </li>
-                                    <li className="flex items-center gap-3 text-[var(--color-white-muted)]">
-                                        <span className="w-1.5 h-1.5 bg-[var(--color-teal-400)] rounded-full" />
-                                        Inconsistent across insurers
-                                    </li>
-                                    <li className="flex items-center gap-3 text-[var(--color-white-muted)]">
-                                        <span className="w-1.5 h-1.5 bg-[var(--color-teal-400)] rounded-full" />
-                                        Impossible to compare objectively
-                                    </li>
+                                    {[
+                                        "Buried inside PDFs",
+                                        "Inconsistent across insurers",
+                                        "Impossible to compare objectively",
+                                    ].map((item) => (
+                                        <li key={item} className="flex items-center gap-3 text-lg text-[var(--color-text-secondary)]">
+                                            <span className="w-1.5 h-1.5 bg-[var(--lob-travel)] rounded-full shrink-0" />
+                                            {item}
+                                        </li>
+                                    ))}
                                 </ul>
-                                <p className="text-lg text-[var(--color-white-muted)] leading-relaxed font-medium text-white mb-2">
-                                    We extracted, standardized, and indexed official network lists into a single, queryable dataset.
+                                <p className="text-lg leading-relaxed font-semibold text-[var(--color-navy-900)] mb-2">
+                                    We extracted, standardised and indexed the official network lists into one
+                                    queryable dataset.
                                 </p>
-                                <p className="text-lg text-[var(--color-teal-400)] font-serif italic">
+                                <p className="text-lg text-[var(--lob-travel)] font-serif italic">
                                     No PDFs. No customer care calls. No guesswork.
                                 </p>
                             </div>
-                            <div className="bg-[var(--color-blue-800)] border border-[var(--color-border-subtle)] rounded-xl p-8">
-                                <h3 className="text-white font-serif text-xl mb-6 border-b border-[var(--color-border-subtle)] pb-2">Coverage Snapshot</h3>
+
+                            {/* claim-source: the four figures below describe the
+                                processed network dataset. They were carried over
+                                from the previous version of this page and have not
+                                been re-counted against the live table. */}
+                            <div className="bg-white border border-[var(--color-border-light)] rounded-2xl p-8 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
+                                <h3 className="font-serif text-xl font-bold mb-6 border-b border-[var(--color-border-light)] pb-3 text-[var(--color-navy-900)]">
+                                    Coverage snapshot
+                                </h3>
                                 <div className="space-y-6">
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-[var(--color-teal-600)] rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <Building2 className="w-6 h-6 text-white" />
+                                    {[
+                                        { icon: Building2, accent: "var(--lob-health)", wash: "var(--lob-health-wash)", stat: "83,000+ hospitals", note: "Verified from official insurer network lists" },
+                                        { icon: Building2, accent: "var(--lob-life)", wash: "var(--lob-life-wash)", stat: "2,800+ cities", note: "Nationwide urban and semi-urban coverage" },
+                                        { icon: MapPin, accent: "var(--lob-travel)", wash: "var(--lob-travel-wash)", stat: "19,000+ pincodes", note: "Granular, locality-level insight" },
+                                        { icon: Search, accent: "var(--lob-motor)", wash: "var(--lob-motor-wash)", stat: "16 insurers", note: "Major health insurance providers in India" },
+                                    ].map((row) => (
+                                        <div key={row.stat} className="flex items-start gap-4">
+                                            <div
+                                                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                                                style={{ backgroundColor: row.wash, color: row.accent }}
+                                            >
+                                                <row.icon className="w-6 h-6" aria-hidden="true" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-lg mb-0.5 text-[var(--color-navy-900)] tabular">{row.stat}</h4>
+                                                <p className="text-[15px] text-[var(--color-text-secondary)]">{row.note}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg mb-1 text-white">83,000+ hospitals</h3>
-                                            <p className="text-sm text-[var(--color-white-muted)]">Verified from official insurer network lists</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-[var(--color-teal-600)] rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <Building2 className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg mb-1 text-white">2,800+ cities</h3>
-                                            <p className="text-sm text-[var(--color-white-muted)]">Nationwide urban and semi-urban coverage</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-[var(--color-teal-600)] rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <MapPin className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg mb-1 text-white">19,000+ pincodes</h3>
-                                            <p className="text-sm text-[var(--color-white-muted)]">Granular, locality-level insight</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-[var(--color-teal-600)] rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <Search className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg mb-1 text-white">16 insurers</h3>
-                                            <p className="text-sm text-[var(--color-white-muted)]">Major health insurance providers in India</p>
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>

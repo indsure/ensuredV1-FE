@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useParams } from 'wouter';
 import { Shield, Check, X, Info, Loader2, AlertCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';

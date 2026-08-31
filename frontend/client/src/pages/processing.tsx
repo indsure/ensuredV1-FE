@@ -5,7 +5,7 @@ import { CheckCircle2, AlertCircle, ShieldCheck, ChevronDown, FileText, Search, 
 import { useAnalysis } from "@/hooks/use-analysis";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 
 // Enhanced "Live Insight" Lines - Rotating
 const LIVE_INSIGHTS = [

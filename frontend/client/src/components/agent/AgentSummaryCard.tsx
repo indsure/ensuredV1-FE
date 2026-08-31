@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Sparkles, RefreshCw, AlertCircle, TrendingUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { apiFetch } from '@/lib/api';
