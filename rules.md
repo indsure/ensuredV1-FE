@@ -29,7 +29,7 @@ A rule nobody verifies is a preference.
 - **Always use `wouter`** for routing in the Vite frontend (`frontend/client/src/`). Import `Switch`, `Route`, `Redirect`, `useLocation`, `useParams` from `wouter`. Never use `react-router-dom` in the frontend.
 - **Always use `import`/`export`** (ESM). The root package is `"type": "module"`. Never use `require()` or `module.exports` in backend files.
 - **Always use the `@/` path alias** for importing within `frontend/client/src/`. Use `@shared/` for shared schemas. Never use relative paths like `../../`.
-- **Always use raw `pg.Pool` SQL** in `backend/server/routes.ts`. Do not introduce Drizzle query chains in route handlers — they are not used and the pool is already established.
+- **Always use raw `pg.Pool` SQL** in `backend/server/routes.ts`. There is no ORM in this project and the pool is already established.
 - **Always add the `Authorization: Bearer <token>` header** for any new frontend API calls to `/api/agent/*` or `/api/admin/*` endpoints. Get the token via `supabase.auth.getSession()`.
 - **Always return `{ error: string }` JSON** from backend routes on failure with the appropriate HTTP status code (`400`, `401`, `403`, `404`, `500`).
 - **Always scope agent DB queries to `agent_id`**. Any query touching `clients`, `policies`, or `public_reports` must include a `WHERE agent_id = $N` clause using the verified JWT user ID.
@@ -52,7 +52,7 @@ A rule nobody verifies is a preference.
 - **Never split `routes.ts`** into multiple files — it is intentionally a single large file to keep route registration and DB queries collocated and easy to audit. Do not refactor without explicit instruction.
 - **Never add rate limiting middleware** — it was explicitly disabled by the user. `express-rate-limit` is installed but must not be added to routes.
 - **Never add `console.log()` debug statements** to production code. API request logging is handled by the existing logger middleware in `index.ts`. Backend errors may use `console.error()`. Frontend errors may use `console.warn()` sparingly.
-- **Never use the Drizzle ORM query builder** (`.select()`, `.insert()`, etc.) in `routes.ts`. Use `pool.query()` with parameterized SQL only.
+- **Never introduce an ORM.** Use `pool.query()` with parameterised SQL only.
 - **Never modify old/legacy agent pages** (`Login.tsx`, `Settings.tsx`, `Clients.tsx`, `AgentProfile.tsx` — the ones WITHOUT `New` suffix) unless explicitly asked. These are being phased out but kept for reference.
 - **Never store personal policy data in localStorage or sessionStorage** — privacy concern and DPDP compliance risk.
 - **Never hardcode the `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY`** in source code. Always read from `process.env`.
@@ -93,7 +93,7 @@ A rule nobody verifies is a preference.
 | Issue | Workaround | Notes |
 |---|---|---|
 | `AuthProvider` in `App.tsx` is a no-op stub | `const AuthProvider = ({ children }) => <>{children}</>` | Public user auth was archived. Do not implement consumer auth without a clear spec. |
-| `shared/schema.ts` only has a stub `users` table | Real schema lives in Supabase raw SQL | Drizzle was bootstrapped but never fully adopted. Don't use Drizzle in new routes. |
+| `shared/policy.ts` is the only shared module | It is the ForensicAuditReport contract, imported by both trees | It used to exist twice, hand-copied, and had drifted. Add shared shapes here rather than copying them. |
 | `analysisJobs` Map is in-memory | DB-backed via `analysis_jobs` table with `persistJob()` | In-memory is cache only; DB is source of truth. On server restart, in-flight jobs are lost. |
 | Two PDF-parsing libraries (pdfjs-dist + pdf-parse) | Primary = pdfjs; pdf-parse = fallback | Some PDFs fail pdfjs; the two-stage fallback is intentional. |
 | `react-router-dom` is in package.json | But unused in frontend | It may be a transitive dependency or legacy. Do not use it. |

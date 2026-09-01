@@ -58,7 +58,7 @@ const supabaseAuth = SUPABASE_ANON_KEY
 /* ---------- DB POOL (shared, see ./lib/db) ---------- */
 
 pool.query("SELECT 1")
-  .then(() => console.log("✅ DB connected successfully"))
+  .then(() => log.info("db connected"))
   .catch((err) => console.error("❌ DB connection failed:", err.message));
 
 /* ---------- MULTER ---------- */
@@ -149,7 +149,7 @@ async function sweepExpiredPendingUploads() {
     await pool.query("DELETE FROM pending_uploads WHERE id = ANY($1::uuid[])", [
       rows.map((r: any) => r.id),
     ]);
-    console.log(`[pending uploads] swept ${paths.length} unclaimed upload(s).`);
+    log.info("pending uploads swept", { count: paths.length });
   } catch (err: any) {
     console.error("[pending uploads] sweep error:", err?.message || err);
   }
@@ -240,7 +240,7 @@ async function incinerateExpiredClaimDocuments() {
             : `${docs.length} document(s) deleted.`,
         ]
       );
-      console.log(`[claims] incinerated ${docs.length} document(s) on claim ${claim.id}.`);
+      log.info("claim documents incinerated", { claim: claim.id, count: docs.length });
     }
   } catch (err: any) {
     console.error("[claims] incineration sweep error:", err?.message || err);
@@ -1013,7 +1013,7 @@ export async function registerRoutes(
     try {
       const { city, pincode, limit = "10" } = req.query;
 
-      console.log(`[Hospital Samples] Request: city=${city}, pincode=${pincode}, limit=${limit}`);
+      log.debug("hospital samples request", { city, pincode, limit });
       
       const samples = getHospitalSamples({
         city: city as string | undefined,
@@ -1021,7 +1021,7 @@ export async function registerRoutes(
         limit: parseInt(limit as string, 10),
       });
 
-      console.log(`[Hospital Samples] Returning ${samples.length} samples`);
+      log.debug("hospital samples returned", { count: samples.length });
       res.json(samples);
     } catch (error: any) {
       console.error("[Hospital Samples] Error:", error);
@@ -1427,9 +1427,7 @@ export async function registerRoutes(
           });
         }
       } else {
-        console.log(
-          "⚠️ Skipping grievance acknowledgement email: SMTP env vars not configured."
-        );
+        log.warn("grievance acknowledgement email skipped: SMTP not configured");
       }
 
       return res.status(200).json({ success: true, id: insertRes.rows[0]?.id });
@@ -5677,7 +5675,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       const lead = result.rows[0];
 
-      console.log(`✅ New lead created: ${name} (${email}) - ID: ${lead.id}`);
+      log.info("lead created", { id: lead.id });
 
       // TODO: Send notification email to admin
       // TODO: Add to CRM system
@@ -6113,7 +6111,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           console.warn(`[advisor-lead ${leadId}] no email on agent ${agentId} — portal badge only`);
         }
 
-        console.log(`✅ Advisor-page lead for ${slug}: ${name} (${stored} file(s))`);
+        log.info("advisor page lead", { slug, files: stored });
 
         return res.status(201).json({ ok: true, files_saved: stored });
       } catch (err: any) {
@@ -6174,6 +6172,6 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      header of teamRoutes.ts before adding any route that reads member data. */
   registerTeamRoutes(app, verifyJwt, isAdmin);
 
-  console.log("[ROUTES] All routes registered successfully");
+  log.info("routes registered");
   return _httpServer;
 }

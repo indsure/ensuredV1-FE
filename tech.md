@@ -10,7 +10,7 @@
 |---|---|---|
 | Framework | React 19 | `react@^19.2.3` — uses new concurrent features |
 | Language | TypeScript 5.9 | Strict mode not enforced; loose config |
-| Bundler | Vite 7 | Config at root `vite.config.ts`; root is `frontend/client` |
+| Bundler | Vite 7 | Config at `frontend/vite.config.ts`; root is `frontend/client` |
 | Routing | **wouter 3.9** | **NOT react-router.** Use `Switch`, `Route`, `Redirect` from `wouter` |
 | State / Data | TanStack React Query 5 | `queryClient` from `@/lib/queryClient` |
 | UI components | Radix UI primitives | shadcn-style; all components in `frontend/client/src/components/ui/` |
@@ -22,11 +22,10 @@
 | Toast / notifications | Sonner 2 | Used alongside shadcn `Toaster` |
 | Date utilities | date-fns 3 | No moment.js anywhere |
 
-### Path Aliases (vite.config.ts)
+### Path Aliases (frontend/vite.config.ts)
 ```
 @        →  frontend/client/src
 @shared  →  shared/
-@assets  →  attached_assets/
 ```
 
 ### Dev Port
@@ -62,10 +61,10 @@
 | Layer | Technology | Notes |
 |---|---|---|
 | Database | PostgreSQL (Supabase-hosted) | AWS ap-south-1 region |
-| ORM / Query | **Raw `pg` Pool** (primary) + Drizzle ORM (secondary) | Most routes use `pg.Pool` directly with raw SQL. Drizzle is configured but lightly used |
+| ORM / Query | **Raw `pg` Pool** | All routes use `pg.Pool` with parameterised SQL. There is no ORM |
 | Supabase Admin | `@supabase/supabase-js` (service role) | Used for auth verification and Supabase RLS |
-| Schema | `shared/schema.ts` | Drizzle schema; only has a stub `users` table. **Real schema lives in Supabase/Postgres** |
-| Migration tool | drizzle-kit | `npm run db:push` to push schema changes |
+| Schema | `migrations/` | Numbered SQL, 001 onwards. **The live schema lives in Supabase/Postgres and `migrations/` is the record of it** |
+| Migration tool | `scripts/ops/apply_migration.mjs` | `--dry-run` first: it applies the file in a transaction and rolls back |
 
 ### Key Tables (in Supabase, raw SQL schema)
 - `agents` — insurance agent profiles; `id` matches Supabase Auth `user.id`
@@ -139,7 +138,6 @@ All loaded from `.env.local` at root (via `backend/server/loadEnv.ts`).
 | `build` | frontend build + `tsc` | Production build |
 | `start` | `node backend/dist/index.js` | Start compiled production server |
 | `check` | `tsc --noEmit` | Type check backend |
-| `db:push` | `drizzle-kit push` | Push Drizzle schema to DB |
 | `health-check` | `ts-node backend/server/tests/engineHealthCheck.ts` | Run engine health check test |
 
 ---
@@ -164,7 +162,7 @@ This is a **monorepo** with multiple independent applications:
 
 - **Use `wouter`, not `react-router-dom`** for the main Vite frontend. `react-router-dom` is installed (likely as a transitive dep) but is NOT used in `frontend/`.
 - **ESM only**: Root package is `"type": "module"`. All backend files must use `import/export`, not `require()`.
-- **No `drizzle-orm` in routes**: Most backend DB queries use raw `pg.Pool` SQL, not Drizzle ORM chainable queries.
+- **No ORM anywhere**: every backend query is raw `pg.Pool` SQL. Drizzle was removed on 2026-09-01.
 - **Rate limiting is disabled** on the Express server despite `express-rate-limit` being installed.
 - **Supabase service role key**: Used server-side only. Never expose to client.
 - **Gemini model**: Always use `gemini-3.1-pro-preview` (hardcoded in analysis pipeline and Sach AI).

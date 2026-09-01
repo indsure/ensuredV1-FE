@@ -14,18 +14,15 @@ ensuredV1-FE - Copy/
 ├── next-dashboard/           # Experimental Next.js dashboard (unused)
 ├── next-api/                 # Next.js API routes (legacy)
 ├── admin-app/                # Next.js admin panel (separate app)
-├── shared/                   # Shared schema; only schema.ts (Drizzle model stubs)
-├── attached_assets/          # Static asset files (images, PDFs referenced in code)
+├── shared/                   # Types shared by backend and frontend (policy.ts)
 ├── policyfiles/              # Sample policy PDFs for testing
 ├── test_policies/            # Test policy files
 ├── uploads/                  # Transient upload directory (auto-cleaned after 24h)
 ├── downloads/                # Transient download directory
 ├── .env.local                # Root environment variables (loaded by backend)
-├── vite.config.ts            # Vite config (root = frontend/client)
-├── drizzle.config.ts         # Drizzle ORM config (schema = shared/schema.ts)
 ├── package.json              # Root package with all deps + dev scripts
 ├── tsconfig.json             # Root TypeScript config
-└── components.json           # shadcn/ui config
+└── scripts/ops/              # Operational tools (migrations, invites, catalog)
 ```
 
 > **Root-level .mjs / .py / .js scripts** (`check_db.mjs`, `apply_rls.mjs`, etc.) are one-off admin/debugging scripts. They are NOT part of the application. Do not import from them.
@@ -262,6 +259,6 @@ const res = await fetch('/api/agent/me', {
 
 ## Where Database Schema and Queries Live
 
-- **Drizzle schema** (stub only): `shared/schema.ts` — only has a `users` table stub
+- **Shared types**: `shared/policy.ts` — the ForensicAuditReport contract, imported by both trees through the `@shared` alias
 - **Real database schema**: Lives in Supabase. SQL setup scripts are in root-level `.sql` files (`setup_notifications.sql`, `setup_public_reports.sql`, etc.)
 - **All queries**: Raw SQL via `pg.Pool` inside `backend/server/routes.ts`. No ORM query builder used in production routes.
