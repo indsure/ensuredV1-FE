@@ -20,12 +20,10 @@ import { cn } from "@/lib/utils";
 // Moved here from backend — keeps FE/BE decoupled
 export type ForensicAuditReport = any;
 
-export function formatINR(amount: number): string {
-  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
-  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-  if (amount >= 1000) return `₹${(amount / 1000).toFixed(0)}K`;
-  return `₹${amount}`;
-}
+// Was a fifth private copy of this. Re-exported rather than deleted so
+// existing importers of "./CoverageDiagnostic" keep resolving.
+import { formatINRCompact as formatINR } from "@/lib/format";
+export { formatINR };
 
 // --- STRICT EXTERNAL BENCHMARKS (PROMPT 3) ---
 const STRESS_TEST_SCENARIOS = [

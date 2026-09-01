@@ -9,6 +9,7 @@ import { LIFE_INSURANCE_PLANS, getRecommendedPlan, type LifeInsurancePlan } from
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
+import { formatINRCompact, formatINRFull } from "@/lib/format";
 
 // Indicator component
 function Indicator({ level }: { level: 1 | 2 | 3 | 4 | 5 }) {
@@ -92,19 +93,9 @@ export function LifeInsuranceComparer() {
     canonical: `/compare?type=${compareType}&scenario=${scenario}`,
   });
 
-  const formatCurrency = (amount: number): string => {
-    if (amount >= 10000000) {
-      return `₹${(amount / 10000000).toFixed(1)}Cr`;
-    }
-    if (amount >= 100000) {
-      return `₹${(amount / 100000).toFixed(1)}L`;
-    }
-    return `₹${amount.toLocaleString("en-IN")}`;
-  };
-
-  const formatCurrencyFull = (amount: number): string => {
-    return `₹${amount.toLocaleString("en-IN")}`;
-  };
+  // Magnitudes (sum assured, limits) abbreviate; prices spell out in full.
+  const formatCurrency = formatINRCompact;
+  const formatCurrencyFull = formatINRFull;
 
   const formatRange = (min: number, max: number): string => {
     return `${formatCurrency(min)} to ${formatCurrency(max)}`;

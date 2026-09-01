@@ -22,9 +22,8 @@ function formatLakhs(n: number): string {
     return `₹${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)} Lakhs`;
 }
 
-function formatINR(n: number): string {
-    return "₹" + n.toLocaleString("en-IN");
-}
+
+import { formatINRFull as formatINR } from "@/lib/format";
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 

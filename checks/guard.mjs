@@ -257,15 +257,20 @@ for (const f of files.filter(isUI)) {
 /* ================= WARN rules — budgeted, must not grow ================= */
 
 /* Budgets are the counts measured on 2026-08-23, the day the ratchet was installed,
-   lowered on 2026-08-31 to lock in what the type pass paid off. Lower them as debt
-   is paid; never raise them. A rise means new debt was added.
+   lowered on 2026-08-31 to lock in what the type pass paid off, and again on
+   2026-09-01. Lower them as debt is paid; never raise them. A rise means new debt
+   was added.
 
    Reading them: sub-14px-type counts LINES with small type, not sites, so the type
    pass shows as a small move even though it changed 147 places. It killed the
-   inversion (type that shrank as the screen grew) rather than the smallness. */
+   inversion (type that shrank as the screen grew) rather than the smallness.
+
+   The 2026-09-01 drop (954 -> 836, 389 -> 372) was not a design pass. It is what
+   fell out of deleting 114 files that no entry point could reach: 135 of these
+   findings were sitting in code nothing imported. Scanned files went 306 -> 233. */
 const BUDGETS = {
-  "sub-14px-type": 963,
-  "low-contrast-token": 389,
+  "sub-14px-type": 836,
+  "low-contrast-token": 372,
   "native-dialog": 5,
   "placeholder-as-label": 2,
   // Weak detector: only catches `>...AI...<` on a single line, so it under-reports.

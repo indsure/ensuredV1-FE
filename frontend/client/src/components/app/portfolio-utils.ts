@@ -109,15 +109,8 @@ export function parseSumInsured(raw: string | null): number | null {
   return num;
 }
 
-const trim = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, ""));
-
 // Indian short form: ₹1.5 Cr / ₹10 L / ₹50 K.
-export function formatINRShort(n: number): string {
-  if (n >= 1e7) return `₹${trim(n / 1e7)} Cr`;
-  if (n >= 1e5) return `₹${trim(n / 1e5)} L`;
-  if (n >= 1e3) return `₹${trim(n / 1e3)} K`;
-  return `₹${Math.round(n)}`;
-}
+export { formatINRShort } from "@/lib/format";
 
 /* ── Contact links (Indian mobiles: last 10 digits, +91) ──────────────── */
 

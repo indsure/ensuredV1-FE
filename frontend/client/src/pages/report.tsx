@@ -13,7 +13,7 @@ import {
   mockReportVehicle
 } from "@/lib/mock-data";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
-import { validateForensicAuditReport } from "@/lib/policy-types";
+import { validateForensicAuditReport } from "@shared/policy";
 import { apiFetch } from "@/lib/api";
 import { MpEvent, track } from "@/lib/mixpanel";
 

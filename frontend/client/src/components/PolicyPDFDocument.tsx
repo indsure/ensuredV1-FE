@@ -7,7 +7,7 @@ import {
     StyleSheet,
     Font
 } from '@react-pdf/renderer';
-import { ForensicAuditReport } from "../../../../backend/server/types/policy";
+import { ForensicAuditReport } from "@shared/policy";
 
 // Font.register for full Unicode support (fixes Rupee symbol rendering)
 Font.register({
@@ -54,6 +54,9 @@ const OTHER_COVER_LABEL_PDF: Record<string, string> = {
     ayushman: 'Ayushman Bharat (PM-JAY)'
 };
 
+// Deliberately not lib/format's formatINRFull: a PDF wants an em dash for
+// a missing figure, and never an abbreviation, because the document is the
+// record. Kept local so that intent survives the next consolidation pass.
 const formatCurrencyPDF = (val: number | null | undefined): string =>
     typeof val === 'number' ? `₹${val.toLocaleString('en-IN')}` : '—';
 
@@ -403,10 +406,10 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
         return style;
     };
 
-    const crR = getPillStyle('claim_rejection_risk', data.audit_score.breakdown.claim_rejection_risk);
-    const oop = getPillStyle('oop_exposure', data.audit_score.breakdown.oop_exposure);
-    const cqg = getPillStyle('coverage_quality_gap', data.audit_score.breakdown.coverage_quality_gap);
-    const ncp = getPillStyle('net_cover_penalty', data.audit_score.breakdown.net_cover_penalty);
+    const crR = getPillStyle('claim_rejection_risk', (data.audit_score.breakdown.claim_rejection_risk ?? 0));
+    const oop = getPillStyle('oop_exposure', (data.audit_score.breakdown.oop_exposure ?? 0));
+    const cqg = getPillStyle('coverage_quality_gap', (data.audit_score.breakdown.coverage_quality_gap ?? 0));
+    const ncp = getPillStyle('net_cover_penalty', (data.audit_score.breakdown.net_cover_penalty ?? 0));
 
     const renderWaitingPeriod = (title: string, wp: any, durationDays: number, keyIndex?: number) => {
         if (!wp || wp.relevant === false) return null;
@@ -504,19 +507,19 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
                 <View style={styles.pillRow} wrap={false}>
                     <View style={[styles.pill, { backgroundColor: crR.bg }]}>
                         <Text style={[styles.pillTitle, { color: crR.text }]}>Claim Rejection Risk</Text>
-                        <Text style={[styles.pillValue, { color: crR.text }]}>{data.audit_score.breakdown.claim_rejection_risk} / {crR.max}</Text>
+                        <Text style={[styles.pillValue, { color: crR.text }]}>{(data.audit_score.breakdown.claim_rejection_risk ?? 0)} / {crR.max}</Text>
                     </View>
                     <View style={[styles.pill, { backgroundColor: oop.bg }]}>
                         <Text style={[styles.pillTitle, { color: oop.text }]}>OOP Exposure</Text>
-                        <Text style={[styles.pillValue, { color: oop.text }]}>{data.audit_score.breakdown.oop_exposure} / {oop.max}</Text>
+                        <Text style={[styles.pillValue, { color: oop.text }]}>{(data.audit_score.breakdown.oop_exposure ?? 0)} / {oop.max}</Text>
                     </View>
                     <View style={[styles.pill, { backgroundColor: cqg.bg }]}>
                         <Text style={[styles.pillTitle, { color: cqg.text }]}>Coverage Gap</Text>
-                        <Text style={[styles.pillValue, { color: cqg.text }]}>{data.audit_score.breakdown.coverage_quality_gap} / {cqg.max}</Text>
+                        <Text style={[styles.pillValue, { color: cqg.text }]}>{(data.audit_score.breakdown.coverage_quality_gap ?? 0)} / {cqg.max}</Text>
                     </View>
                     <View style={[styles.pill, { backgroundColor: ncp.bg }]}>
                         <Text style={[styles.pillTitle, { color: ncp.text }]}>Net Cover Penalty</Text>
-                        <Text style={[styles.pillValue, { color: ncp.text }]}>{data.audit_score.breakdown.net_cover_penalty} / {ncp.max}</Text>
+                        <Text style={[styles.pillValue, { color: ncp.text }]}>{(data.audit_score.breakdown.net_cover_penalty ?? 0)} / {ncp.max}</Text>
                     </View>
                 </View>
 

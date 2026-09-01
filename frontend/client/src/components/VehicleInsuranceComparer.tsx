@@ -9,6 +9,7 @@ import { getAllVehiclePlans, getRecommendedVehiclePlan, type VehicleInsurancePla
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
+import { formatINRCompact, formatINRFull } from "@/lib/format";
 
 // Indicator component
 function Indicator({ level }: { level: 1 | 2 | 3 | 4 | 5 }) {
@@ -68,16 +69,9 @@ export function VehicleInsuranceComparer() {
     canonical: `/compare?type=vehicle&idv=${idv}&age=${vehicleAge}`,
   });
 
-  const formatCurrency = (amount: number): string => {
-    if (amount >= 100000) {
-      return `₹${(amount / 100000).toFixed(1)}L`;
-    }
-    return `₹${amount.toLocaleString("en-IN")}`;
-  };
-
-  const formatCurrencyFull = (amount: number): string => {
-    return `₹${amount.toLocaleString("en-IN")}`;
-  };
+  // This had no crore tier, so a 1.5Cr IDV rendered as "150.0L".
+  const formatCurrency = formatINRCompact;
+  const formatCurrencyFull = formatINRFull;
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0F1419] flex flex-col">

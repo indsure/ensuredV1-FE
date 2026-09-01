@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { getApiBase } from "@/lib/queryClient";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { ConnectAgentDialog } from "@/components/app/ConnectAgentDialog";
-import { validateForensicAuditReport } from "@/lib/policy-types";
+import { validateForensicAuditReport } from "@shared/policy";
 import { ArrowLeft, AlertCircle, Loader2, ShieldCheck, Download, PhoneCall } from "lucide-react";
 
 type PolicyRow = {

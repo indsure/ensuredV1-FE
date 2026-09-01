@@ -1,18 +1,36 @@
 /**
  * IndSure Forensic Policy Audit — TypeScript Types
- * Version: 3.0 (frontend copy)
- * Copied from backend/server/types/policy.ts so the frontend doesn't cross
- * the monorepo boundary via relative paths.
- * If the schema changes, update both files (or move to shared/).
+ * Version: 3.0
+ * Single source of truth. Matches ForensicAuditReport.schema.json v3.0
+ * Prompt computes all scoring. Server only validates shape.
+ *
+ * This file used to exist twice: backend/server/types/policy.ts and
+ * frontend/client/src/lib/policy-types.ts, hand-copied and already drifted.
+ * It now lives here and both sides import it through the @shared alias.
+ *
+ * Where the two copies disagreed, the rule applied was: take the backend's
+ * version wherever the difference was purely additive (helpers, new fields),
+ * and take the frontend's wherever it was widening a field that real stored
+ * reports are known to omit. The producer is always stricter than what a
+ * consumer may safely assume, because reports written by older versions of the
+ * pipeline are still in the database and still get rendered. Every such
+ * widening is marked LEGACY below with the reason.
  */
+
+// ─── Primitives ───────────────────────────────────────────────────────────────
 
 export type Zone = "A" | "B" | "C" | "D";
 export type Confidence = "high" | "medium" | "low";
 export type RiskLevel = "low" | "medium" | "high";
 export type Severity = "high" | "medium" | "low";
+/* EXCELLENT was added on the frontend when the vehicle report started
+   emitting it, and never made it back into the backend copy. Both sides need
+   it: without it, getVerdictColor returns undefined for a real verdict. */
 export type Verdict = "SAFE" | "BORDERLINE" | "RISKY" | "EXCELLENT";
 export type SimulationVerdict = "COVERED" | "PARTIAL" | "EXPOSED";
 export type DocumentQuality = "clear" | "acceptable" | "poor" | "unclear";
+
+// ─── Identity ─────────────────────────────────────────────────────────────────
 
 export interface Identity {
   insured_names: string[];
@@ -24,6 +42,8 @@ export interface Identity {
   confidence: Confidence;
 }
 
+// ─── Policy Timeline ──────────────────────────────────────────────────────────
+
 export interface PolicyTimeline {
   policy_inception_date: string | null;
   policy_expiry_date: string | null;
@@ -32,6 +52,8 @@ export interface PolicyTimeline {
   analysis_date: string;
   confidence: Confidence;
 }
+
+// ─── Coverage Structure ───────────────────────────────────────────────────────
 
 export interface TopUp {
   exists: boolean;
@@ -87,6 +109,8 @@ export interface CoverageStructure {
   confidence: Confidence;
 }
 
+// ─── Waiting Period Analysis ──────────────────────────────────────────────────
+
 export interface InitialWaitingPeriod {
   duration_days: number;
   end_date: string | null;
@@ -95,10 +119,12 @@ export interface InitialWaitingPeriod {
 }
 
 export interface PEDWaitingPeriod {
-  duration_months: number;
+  duration_months: number | null;
+  /** True only when the document explicitly states the PED waiting period. */
+  stated?: boolean;
   start_date: string | null;
   end_date: string | null;
-  is_active_today: boolean;
+  is_active_today: boolean | null;
   months_remaining: number | null;
   risk_commentary: string | null;
 }
@@ -127,18 +153,23 @@ export interface MaternityWaiting {
   is_active_today: boolean | null;
   months_remaining: number | null;
   risk_commentary: string | null;
-  relevant?: boolean; // optional — not all backends send this
+  /** LEGACY: absent on reports written before this field was introduced. */
+  relevant?: boolean;
 }
 
 export interface WaitingPeriodAnalysis {
   initial_waiting_period: InitialWaitingPeriod;
   pre_existing_disease: PEDWaitingPeriod;
   specific_diseases: SpecificDiseaseWaiting;
-  personal_waiting_periods?: PersonalWaitingPeriod[]; // optional — mocks use other_waiting_periods
+  /** LEGACY: older reports carry other_waiting_periods instead. */
+  personal_waiting_periods?: PersonalWaitingPeriod[];
   maternity: MaternityWaiting;
   policy_fully_active: boolean;
-  [key: string]: any; // allow extra fields from backend (other_waiting_periods, etc.)
+  /** LEGACY: tolerates the differently-named fields older reports carry. */
+  [key: string]: any;
 }
+
+// ─── Claim Risk Analysis ──────────────────────────────────────────────────────
 
 export interface RoomRentAnalysis {
   limit_type: "none" | "specific_amount" | "room_category" | "percentage_of_si" | "unclear";
@@ -189,6 +220,8 @@ export interface ClaimRiskAnalysis {
   deductibles: DeductibleAnalysis;
 }
 
+// ─── Claim Simulations ────────────────────────────────────────────────────────
+
 export interface ClaimSimulation {
   scenario: string;
   total_bill: number;
@@ -198,6 +231,8 @@ export interface ClaimSimulation {
   verdict: SimulationVerdict;
   explanation: string | null;
 }
+
+// ─── Supplementary Coverage ───────────────────────────────────────────────────
 
 export type CoverageUtility = "high" | "medium" | "low" | "none" | null;
 
@@ -261,6 +296,8 @@ export interface SupplementaryCoverage {
   [key: string]: any;
 }
 
+// ─── Network Limitations ──────────────────────────────────────────────────────
+
 export interface NetworkLimitations {
   network_type: "cashless_only" | "cashless_and_reimbursement" | "unclear";
   hospital_count_in_zone: number | string | null;
@@ -269,6 +306,8 @@ export interface NetworkLimitations {
   risk_level: RiskLevel;
   remarks: string | null;
 }
+
+// ─── Benefit Evaluation ───────────────────────────────────────────────────────
 
 export interface BenefitWorking {
   benefit: string;
@@ -294,23 +333,32 @@ export interface BenefitEvaluation {
   structural_red_flags: StructuralRedFlag[];
 }
 
+// ─── Audit Score ──────────────────────────────────────────────────────────────
+
 export interface ScoreBreakdown {
+  /* LEGACY: the breakdown keys have changed over time, so a stored report may
+     carry some, all, or differently-named ones. Readers must guard. */
   net_cover_penalty?: number;
   claim_rejection_risk?: number;
   oop_exposure?: number;
   coverage_quality_gap?: number;
-  [key: string]: number | undefined; // allow extra breakdown fields
+  [key: string]: number | undefined;
 }
 
 export interface ScoreDeduction {
   reason: string;
-  category: string;
+  category: "NET_COVER" | "CLAIM_REJECTION" | "OOP_EXPOSURE" | "COVERAGE_GAP";
   severity: Severity;
   points: number;
 }
 
 export interface AuditScore {
   score: number;
+  raw_score?: number;           // Original score before bucketing
+  bucket_label?: string;         // Human-readable label (e.g., "Below Average")
+  bucketing_method?: string;     // Method used for bucketing (e.g., "nearest_12.5")
+  /* LEGACY: reports predating the scoring rewrite have no ncar/nec/rct. The
+     PDF renderer already crashed once on this assumption. */
   ncar?: number;
   nec?: number;
   rct?: number;
@@ -319,12 +367,16 @@ export interface AuditScore {
   interpretation: string | null;
 }
 
+// ─── Final Verdict ────────────────────────────────────────────────────────────
+
 export interface FinalVerdict {
   label: Verdict;
   summary: string;
   key_failure_points: string[];
   will_this_policy_protect_in_real_claim: string;
 }
+
+// ─── Recommendations ──────────────────────────────────────────────────────────
 
 export interface CriticalAction {
   action: string;
@@ -352,12 +404,18 @@ export interface Recommendations {
   low_priority: PriorityAction[];
 }
 
+// ─── Data Quality ─────────────────────────────────────────────────────────────
+
 export interface DataQuality {
   overall: Confidence;
+  /** LEGACY: postdates the wording repository; older reports omit it. */
+  wording_source?: "repository_matched" | "schedule_only";
   missing_critical_fields: string[];
   ambiguous_clauses: string[];
   policy_document_quality: DocumentQuality;
 }
+
+// ─── Master Report Interface ──────────────────────────────────────────────────
 
 /** One other health cover the same insured holds, uploaded alongside the base
  *  policy. Optional everywhere: reports produced before this existed have none. */
@@ -379,7 +437,7 @@ export interface OtherCover {
 }
 
 /** Total protection across the base policy and every other cover supplied.
- *  Indicative only — it is read off schedules, not a second audit score. */
+ *  Indicative only — read off schedules, not a second audit score. */
 export interface CoverStack {
   combined_effective_cover?: number | null;
   required_cover?: number | null;
@@ -397,7 +455,8 @@ export interface ForensicAuditReport {
   coverage_structure: CoverageStructure;
   waiting_period_analysis: WaitingPeriodAnalysis;
   claim_risk_analysis: ClaimRiskAnalysis;
-  claim_simulations?: ClaimSimulation[]; // optional — not all mocks/legacy reports include this
+  /** LEGACY: absent on older reports and on playground mock data. */
+  claim_simulations?: ClaimSimulation[];
   supplementary_coverage: SupplementaryCoverage;
   network_limitations: NetworkLimitations;
   benefit_evaluation: BenefitEvaluation;
@@ -414,15 +473,30 @@ export interface ForensicAuditReport {
   };
 }
 
+// ─── Type Guards ──────────────────────────────────────────────────────────────
+
+export const isValidVerdict = (v: string): v is Verdict =>
+  ["SAFE", "BORDERLINE", "RISKY", "EXCELLENT"].includes(v);
+
+export const isValidZone = (z: string): z is Zone =>
+  ["A", "B", "C", "D"].includes(z);
+
+export const isValidConfidence = (c: string): c is Confidence =>
+  ["high", "medium", "low"].includes(c);
+
+export const isValidRiskLevel = (r: string): r is RiskLevel =>
+  ["low", "medium", "high"].includes(r);
+
+export const isValidSeverity = (s: string): s is Severity =>
+  ["high", "medium", "low"].includes(s);
+
 // ─── Validation ───────────────────────────────────────────────────────────────
 
 export const validateForensicAuditReport = (data: any): data is ForensicAuditReport => {
   try {
     if (!data?.identity || !data?.policy_timeline || !data?.coverage_structure) return false;
-    const zone = data.identity.assumed_zone;
-    if (!["A", "B", "C", "D"].includes(zone)) return false;
-    const verdict = data.final_verdict?.label;
-    if (!["SAFE", "BORDERLINE", "RISKY", "EXCELLENT"].includes(verdict)) return false;
+    if (!isValidZone(data.identity.assumed_zone)) return false;
+    if (!isValidVerdict(data.final_verdict?.label)) return false;
     if (typeof data.audit_score?.score !== "number") return false;
     if (data.audit_score.score < 0 || data.audit_score.score > 100) return false;
     // Make claim_simulations optional - allow empty array
@@ -437,13 +511,117 @@ export const validateForensicAuditReport = (data: any): data is ForensicAuditRep
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+export const calculateEffectiveCoverage = (report: ForensicAuditReport): number => {
+  const base = typeof report.coverage_structure.base_sum_insured === "number"
+    ? report.coverage_structure.base_sum_insured
+    : 0;
+
+  const topUp = report.coverage_structure.top_up?.exists
+    ? (report.coverage_structure.top_up.sum_insured ?? 0)
+    : 0;
+
+  const superTopUp = report.coverage_structure.super_top_up?.exists
+    ? (report.coverage_structure.super_top_up.sum_insured ?? 0)
+    : 0;
+
+  const promptTotal = typeof report.coverage_structure.total_effective_coverage === "number"
+    ? report.coverage_structure.total_effective_coverage
+    : null;
+
+  const computed = base + topUp + superTopUp;
+  return promptTotal && promptTotal > computed ? promptTotal : computed;
+};
+
+export const getVerdictColor = (verdict: Verdict): string => {
+  const colors: Record<Verdict, string> = {
+    EXCELLENT: "#059669",
+    SAFE: "#10B981",
+    BORDERLINE: "#F59E0B",
+    RISKY: "#EF4444",
+  };
+  return colors[verdict];
+};
+
 export const formatINR = (value: number | string | null | undefined): string => {
   if (value === null || value === undefined) return "N/A";
   const numeric = typeof value === "string"
     ? parseFloat(value.replace(/[₹,]/g, ""))
     : value;
+
   if (isNaN(numeric)) return "N/A";
+
+  if (numeric >= 10000000) return `₹${(numeric / 10000000).toFixed(1)}Cr`;
   if (numeric >= 100000) return `₹${(numeric / 100000).toFixed(1)}L`;
   if (numeric >= 1000) return `₹${Math.round(numeric / 1000)}K`;
-  return `₹${numeric.toLocaleString("en-IN")}`;
+  return `₹${numeric?.toLocaleString("en-IN")}`;
 };
+
+export const getNCARLabel = (ncar: number): string => {
+  if (ncar >= 1.0) return "Adequate";
+  if (ncar >= 0.75) return "Marginal";
+  if (ncar >= 0.50) return "Insufficient";
+  if (ncar >= 0.30) return "Severely Insufficient";
+  return "Critical";
+};
+
+export const computeUnlockDate = (
+  inceptionDate: string | null,
+  durationDays: number
+): string | null => {
+  if (!inceptionDate) return null;
+  const start = new Date(inceptionDate);
+  if (isNaN(start.getTime())) return null;
+  start.setUTCDate(start.getUTCDate() + durationDays);
+  return start.toISOString().split("T")[0];
+};
+
+/**
+ * Unlock date for a month-based waiting period, using true calendar months
+ * (not a 30-day approximation, which drifts ~10 days over 24 months).
+ */
+export const computeUnlockDateMonths = (
+  inceptionDate: string | null,
+  durationMonths: number | null
+): string | null => {
+  if (!inceptionDate || durationMonths == null) return null;
+  const start = new Date(inceptionDate);
+  if (isNaN(start.getTime())) return null;
+  const day = start.getUTCDate();
+  start.setUTCMonth(start.getUTCMonth() + durationMonths);
+  // Guard month overflow (e.g. 31 Jan + 1 month → 3 Mar): clamp back to month end
+  if (start.getUTCDate() < day) start.setUTCDate(0);
+  return start.toISOString().split("T")[0];
+};
+
+/** Whole calendar months from today until `endDate` (min 1 while active). */
+const monthsRemainingUntil = (endDate: string | null): number | null => {
+  if (!endDate) return null;
+  const end = new Date(endDate);
+  if (isNaN(end.getTime())) return null;
+  const now = new Date();
+  if (end <= now) return 0;
+  let months =
+    (end.getUTCFullYear() - now.getUTCFullYear()) * 12 +
+    (end.getUTCMonth() - now.getUTCMonth());
+  if (end.getUTCDate() < now.getUTCDate()) months -= 1;
+  return Math.max(1, months);
+};
+
+export const getWaitingPeriodStatus = (
+  isActive: boolean,
+  monthsRemaining: number | null,
+  endDate: string | null
+): { status: "active" | "served"; label: string } => {
+  if (!isActive) return { status: "served", label: "✅ Served" };
+  // Always prefer remaining derived from the unlock date so the label reflects
+  // time left from today, not the policy's full original duration. Fall back to
+  // the supplied value only when there is no usable end date.
+  const remaining = monthsRemainingUntil(endDate) ?? monthsRemaining;
+  if (remaining !== null && remaining > 0) {
+    return { status: "active", label: `⏳ ${remaining} months remaining` };
+  }
+  if (endDate) {
+    return { status: "active", label: `⏳ Unlocks ${endDate}` };
+  }
+  return { status: "active", label: "⏳ Active" };
+}

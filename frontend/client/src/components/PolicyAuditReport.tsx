@@ -18,7 +18,7 @@ import {
     RiskLevel,
     computeUnlockDate,
     computeUnlockDateMonths
-} from "../../../../backend/server/types/policy";
+} from "@shared/policy";
 import { cn } from "@/lib/utils";
 import { CoverageDiagnostic } from "./CoverageDiagnostic";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -550,12 +550,12 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                             <span title="Measures exposure to rule-based claim denials — room rent limits, co-payments, sub-limits, and network restrictions." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs(data.audit_score.breakdown.claim_rejection_risk)} / 30 pts
+                                            {Math.abs((data.audit_score.breakdown.claim_rejection_risk ?? 0))} / 30 pts
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['CLAIM_REJECTION'] && "rotate-180")} />
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-red-400 rounded-full transition-all" style={{ width: `${(data.audit_score.breakdown.claim_rejection_risk / 30) * 100}%` }} />
+                                        <div className="h-full bg-red-400 rounded-full transition-all" style={{ width: `${((data.audit_score.breakdown.claim_rejection_risk ?? 0) / 30) * 100}%` }} />
                                     </div>
                                     {openBreakdown['CLAIM_REJECTION'] && (
                                         <div className="overflow-hidden">
@@ -573,12 +573,12 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                             <span title="Measures personal expenses you bear even when a claim is approved — co-pays, consumable exclusions, and sub-limits." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs(data.audit_score.breakdown.oop_exposure)} / 30 pts
+                                            {Math.abs((data.audit_score.breakdown.oop_exposure ?? 0))} / 30 pts
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['OOP_EXPOSURE'] && "rotate-180")} />
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${(data.audit_score.breakdown.oop_exposure / 30) * 100}%` }} />
+                                        <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${((data.audit_score.breakdown.oop_exposure ?? 0) / 30) * 100}%` }} />
                                     </div>
                                     {openBreakdown['OOP_EXPOSURE'] && (
                                         <div className="overflow-hidden">
@@ -596,12 +596,12 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                             <span title="Measures structural exclusions — waiting periods, missing restoration, AYUSH limits, and maternity gaps." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs(data.audit_score.breakdown.coverage_quality_gap)} / 20 pts
+                                            {Math.abs((data.audit_score.breakdown.coverage_quality_gap ?? 0))} / 20 pts
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['COVERAGE_GAP'] && "rotate-180")} />
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${(data.audit_score.breakdown.coverage_quality_gap / 20) * 100}%` }} />
+                                        <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${((data.audit_score.breakdown.coverage_quality_gap ?? 0) / 20) * 100}%` }} />
                                     </div>
                                     {openBreakdown['COVERAGE_GAP'] && (
                                         <div className="overflow-hidden">
@@ -619,12 +619,12 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                             <span title="Applied when your effective cover is below the minimum recommended for your age and city. This penalty is uncapped and overrides all other scores." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs(data.audit_score.breakdown.net_cover_penalty)} pts
+                                            {Math.abs((data.audit_score.breakdown.net_cover_penalty ?? 0))} pts
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['NET_COVER'] && "rotate-180")} />
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-slate-400 rounded-full transition-all" style={{ width: `${Math.min(Math.abs(data.audit_score.breakdown.net_cover_penalty) / 20 * 100, 100)}%` }} />
+                                        <div className="h-full bg-slate-400 rounded-full transition-all" style={{ width: `${Math.min(Math.abs((data.audit_score.breakdown.net_cover_penalty ?? 0)) / 20 * 100, 100)}%` }} />
                                     </div>
                                     {openBreakdown['NET_COVER'] && (
                                         <div className="overflow-hidden">

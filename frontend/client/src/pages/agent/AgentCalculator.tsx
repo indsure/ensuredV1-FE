@@ -34,9 +34,8 @@ function ageFromDob(dob: string | null): number | undefined {
   return age >= 18 && age <= 100 ? age : undefined;
 }
 
-function formatINR(n: number): string {
-  return `₹${n.toLocaleString("en-IN")}`;
-}
+
+import { formatINRFull as formatINR } from "@/lib/format";
 
 export default function AgentCalculator() {
   const { agent } = useAgent();

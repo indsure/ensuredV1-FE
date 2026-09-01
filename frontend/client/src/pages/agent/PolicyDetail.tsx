@@ -18,7 +18,7 @@ import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
 import { rerunPolicy } from "@/lib/rerun";
 import { supabase } from "@/lib/supabase";
-import { validateForensicAuditReport, type ForensicAuditReport } from "@/lib/policy-types";
+import { validateForensicAuditReport, type ForensicAuditReport } from "@shared/policy";
 
 type PolicyRow = {
   id: string;
@@ -502,9 +502,10 @@ export default function PolicyDetail() {
               </Card>
             )
           ) : reportData ? (
-            // reportData is validated at runtime; the frontend policy-types and backend
-            // ForensicAuditReport definitions diverge only on optional modifiers, so cast.
-            <PolicyAuditReport data={reportData as unknown as React.ComponentProps<typeof PolicyAuditReport>["data"]} hideNav />
+            // reportData is validated at runtime by validateForensicAuditReport.
+            // The double cast this used to carry existed only because the frontend
+            // and backend each had their own ForensicAuditReport; there is now one.
+            <PolicyAuditReport data={reportData} hideNav />
           ) : (
             <Card className="border-slate-100 shadow-sm">
               <CardContent className="p-8 text-center text-slate-400 text-sm italic">

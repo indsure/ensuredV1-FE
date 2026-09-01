@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
-import { validateForensicAuditReport } from "@/lib/policy-types";
+import { validateForensicAuditReport } from "@shared/policy";
 import { getApiBase } from "@/lib/queryClient";
 
 interface SharedReportProps {
