@@ -487,7 +487,9 @@ export default function PortfolioPage() {
               onClick={() => setLocation("/pricing")}
               className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-teal-600)]/10 px-4 py-2.5 text-[11px] font-mono uppercase tracking-widest text-[var(--color-teal-600)] hover:bg-[var(--color-teal-600)]/20 transition-colors"
             >
-              {data.plan === "paid" ? "Paid · unlimited" : "Free · one policy per type"}
+              {/* claim-source: Personal is 4 health checks a year and 16 stored
+                  policies (pricing.tsx:91-93), not unlimited. */}
+              {data.plan === "paid" ? "Paid · 4 checks a year" : "Free · one policy per type"}
               {data.plan !== "paid" && <ArrowRight className="w-3 h-3" />}
             </button>
           )}
@@ -1057,7 +1059,8 @@ export default function PortfolioPage() {
                   </p>
                   <p className="text-xs text-[var(--color-text-muted)]">
                     {data.plan === "paid"
-                      ? "Unlimited policy audits."
+                      // claim-source: pricing.tsx:91-93. Not unlimited.
+                      ? "4 health checks a year, 16 policies stored."
                       : "One free policy per type. Does not expire."}
                   </p>
                 </div>

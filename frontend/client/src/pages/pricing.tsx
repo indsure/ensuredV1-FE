@@ -96,7 +96,9 @@ const featureRows: { label: string; free: string | boolean; paid: string | boole
   { label: "Plain-language report", free: true, paid: true },
   { label: "PDF download", free: true, paid: true },
   { label: "Sach assistant", free: false, paid: true },
-  { label: "Consultation with our team", free: false, paid: "Unlimited, fair use" },
+  // claim-source: founder decision 2026-09-07, same bound as the plan card
+  // above. "Unlimited, fair use" contradicted it once the card was reworded.
+  { label: "Consultation with our team", free: false, paid: "Replies in 2 working days" },
   { label: "Expires", free: "Never", paid: "Never" },
 ];
 
