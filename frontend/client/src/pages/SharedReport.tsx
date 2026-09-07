@@ -104,7 +104,7 @@ export default function SharedReport({ token }: SharedReportProps) {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-[var(--color-teal-600)] text-white rounded-lg hover:bg-[var(--color-teal-700)] transition-colors"
+            className="px-6 py-3 bg-[var(--color-cta)] text-white rounded-lg hover:bg-[var(--color-teal-700)] transition-colors"
           >
             Refresh Page
           </button>

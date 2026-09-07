@@ -173,7 +173,7 @@ export default function Blog() {
                   aria-pressed={on}
                   className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-[15px] transition-all duration-200 ${
                     on
-                      ? "bg-[var(--color-teal-600)] font-bold text-white shadow-[0_6px_16px_-6px_rgba(13,148,136,0.7)]"
+                      ? "bg-[var(--color-cta)] font-bold text-white shadow-[0_6px_16px_-6px_rgba(13,148,136,0.7)]"
                       : "border border-[var(--color-border-medium)] bg-white font-medium text-[var(--color-text-secondary)] hover:-translate-y-0.5 hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-700)]"
                   }`}
                 >
@@ -194,7 +194,7 @@ export default function Blog() {
                   {/* Left: typographic cover */}
                   <div className="relative h-full min-h-[280px] md:min-h-[320px] overflow-hidden">
                     <div className="absolute top-4 left-4 z-10">
-                      <span className="inline-block px-3 py-1 bg-[var(--color-teal-600)] text-white text-xs font-semibold rounded-full uppercase tracking-wider">
+                      <span className="inline-block px-3 py-1 bg-[var(--color-cta)] text-white text-xs font-semibold rounded-full uppercase tracking-wider">
                         FEATURED
                       </span>
                     </div>

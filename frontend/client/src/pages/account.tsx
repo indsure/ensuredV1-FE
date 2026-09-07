@@ -143,7 +143,7 @@ export default function Account() {
                     <button
                       type="button"
                       onClick={() => setLocation("/agent/login")}
-                      className="px-6 py-3 rounded-lg font-medium bg-[var(--color-teal-600)] text-white hover:bg-[var(--color-teal-400)] transition-colors"
+                      className="px-6 py-3 rounded-lg font-medium bg-[var(--color-cta)] text-white hover:bg-[var(--color-cta-hover)] transition-colors"
                     >
                       Agent Login
                     </button>
@@ -167,7 +167,7 @@ export default function Account() {
                 className="flex flex-col sm:flex-row gap-4 justify-between items-center"
               >
                 <Link href="/policychecker">
-                  <button className="bg-[var(--color-teal-600)] text-white px-8 py-4 rounded-lg font-medium hover:bg-[var(--color-teal-400)] transition-colors flex items-center gap-2 shadow-lg shadow-teal-900/20">
+                  <button className="bg-[var(--color-cta)] text-white px-8 py-4 rounded-lg font-medium hover:bg-[var(--color-cta-hover)] transition-colors flex items-center gap-2 shadow-lg shadow-teal-900/20">
                     Analyze a Policy <ArrowRight className="w-4 h-4" />
                   </button>
                 </Link>

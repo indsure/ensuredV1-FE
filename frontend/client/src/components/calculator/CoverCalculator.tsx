@@ -697,7 +697,7 @@ export default function CoverCalculator({
                 <Button
                   disabled={!selectedCity}
                   className={cn(
-                    "bg-[var(--color-teal-600)] text-white px-8",
+                    "bg-[var(--color-cta)] text-white px-8",
                     !selectedCity && "opacity-50"
                   )}
                   onClick={confirmLocation}
@@ -926,7 +926,7 @@ export default function CoverCalculator({
                   Back
                 </Button>
                 <Button
-                  className="bg-[var(--color-teal-600)] text-white px-8"
+                  className="bg-[var(--color-cta)] text-white px-8"
                   disabled={!inputs.exactAge || !inputs.annualIncome}
                   onClick={confirmDetailedProfile}
                 >
@@ -972,7 +972,7 @@ export default function CoverCalculator({
                   Back
                 </Button>
                 <Button
-                  className="bg-[var(--color-teal-600)] text-white px-8"
+                  className="bg-[var(--color-cta)] text-white px-8"
                   onClick={() => finishAnalysis(inputs as UserInputs)}
                 >
                   {embedded ? "Calculate Cover Need" : "See My Coverage Plan"}

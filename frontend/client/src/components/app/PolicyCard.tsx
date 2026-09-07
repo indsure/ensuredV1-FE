@@ -161,7 +161,7 @@ export function PolicyCard({
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-teal-600)] text-white text-sm font-bold hover:bg-[var(--color-teal-400)] transition-colors active:scale-[0.98]"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-cta)] text-white text-sm font-bold hover:bg-[var(--color-cta-hover)] transition-colors active:scale-[0.98]"
               >
                 <WhatsAppIcon className="w-4 h-4" /> Send it to our team
               </a>
@@ -240,7 +240,7 @@ export function PolicyCard({
             {hasReport && (
               <button
                 onClick={() => onOpenReport(p.id)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-teal-600)] text-white text-sm font-bold hover:bg-[var(--color-teal-400)] transition-colors active:scale-[0.98]"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-cta)] text-white text-sm font-bold hover:bg-[var(--color-cta-hover)] transition-colors active:scale-[0.98]"
               >
                 View full report <ArrowRight className="w-4 h-4" />
               </button>
@@ -346,7 +346,7 @@ function InlineField({
             onMouseDown={(e) => e.preventDefault()}
             onClick={save}
             aria-label={`Save ${label}`}
-            className="shrink-0 p-1.5 rounded-lg bg-[var(--color-teal-600)] text-white"
+            className="shrink-0 p-1.5 rounded-lg bg-[var(--color-cta)] text-white"
           >
             <Check className="w-3.5 h-3.5" />
           </button>

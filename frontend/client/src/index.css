@@ -93,6 +93,13 @@
   --color-teal-800: #115E59;
   --color-teal-900: #134E4A;
 
+  /* CTA surfaces. teal-600 (#0D9488) carries white at only 3.74:1, under the
+     4.5:1 AA floor, and the old hover went LIGHTER to teal-400 (~1.9:1). These
+     two tokens are the only teals allowed under white button text:
+     teal-700 = 5.47:1, teal-800 = 7.58:1. Hover now darkens. */
+  --color-cta: var(--color-teal-700);
+  --color-cta-hover: var(--color-teal-800);
+
   --color-blue-50: #EFF6FF;
   --color-blue-100: #DBEAFE;
   --color-blue-700: #1D4ED8;

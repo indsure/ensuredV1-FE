@@ -49,7 +49,7 @@ export function BlogInlineCTA({ post }: { post: Pick<BlogPost, "title" | "catego
           </p>
         </div>
         <Link href={target.href}>
-          <span className="inline-flex max-w-full items-center justify-center gap-2 bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white font-semibold min-h-11 py-2.5 px-5 sm:px-6 rounded-xl text-center transition-colors cursor-pointer">
+          <span className="inline-flex max-w-full items-center justify-center gap-2 bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white font-semibold min-h-11 py-2.5 px-5 sm:px-6 rounded-xl text-center transition-colors cursor-pointer">
             {target.label} <ArrowRight className="w-4 h-4" />
           </span>
         </Link>
@@ -68,7 +68,7 @@ export function BlogClosingCTA({ post }: { post: Pick<BlogPost, "title" | "categ
       </h3>
       <p className="text-sm text-white/70 max-w-md mx-auto mb-6">{target.blurb}</p>
       <Link href={target.href}>
-        <span className="inline-flex items-center gap-2 bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white font-bold h-12 px-8 rounded-xl transition-colors cursor-pointer">
+        <span className="inline-flex items-center gap-2 bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white font-bold h-12 px-8 rounded-xl transition-colors cursor-pointer">
           {target.label} <ArrowRight className="w-4 h-4" />
         </span>
       </Link>
@@ -93,7 +93,7 @@ export function BlogSidebarCTA() {
         Get a free 50-point audit of the policy you actually own.
       </p>
       <Link href="/signup">
-        <span className="inline-flex w-full items-center justify-center gap-1.5 bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white text-sm font-semibold min-h-11 py-2 px-4 rounded-lg transition-colors cursor-pointer">
+        <span className="inline-flex w-full items-center justify-center gap-1.5 bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white text-sm font-semibold min-h-11 py-2 px-4 rounded-lg transition-colors cursor-pointer">
           Analyze my policy <ArrowRight className="w-3.5 h-3.5" />
         </span>
       </Link>
@@ -116,7 +116,7 @@ export function BlogListingCTA() {
         A free account shows you yours in about a minute.
       </p>
       <Link href="/signup">
-        <span className="inline-flex items-center gap-2 bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white font-bold h-12 px-8 rounded-xl transition-colors cursor-pointer">
+        <span className="inline-flex items-center gap-2 bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white font-bold h-12 px-8 rounded-xl transition-colors cursor-pointer">
           Analyze my policy — free <ArrowRight className="w-4 h-4" />
         </span>
       </Link>

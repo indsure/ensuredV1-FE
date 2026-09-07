@@ -194,7 +194,7 @@ export default function Pricing() {
                       aria-pressed={active}
                       className={`flex min-h-11 items-center gap-2 rounded-full px-5 text-[15px] transition-colors ${
                         active
-                          ? "bg-[var(--color-teal-600)] font-bold text-white"
+                          ? "bg-[var(--color-cta)] font-bold text-white"
                           : "font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)]"
                       }`}
                     >
@@ -280,7 +280,7 @@ export default function Pricing() {
                           href={tier.ctaHref}
                           className={`mt-auto inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-lg text-base font-semibold transition-all duration-200 ${
                             paid
-                              ? "bg-[var(--color-teal-600)] text-white hover:bg-[#0F766E] hover:-translate-y-0.5"
+                              ? "bg-[var(--color-cta)] text-white hover:bg-[#0F766E] hover:-translate-y-0.5"
                               : "border border-[var(--color-border-medium)] bg-white text-[var(--color-text-main)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
                           }`}
                         >

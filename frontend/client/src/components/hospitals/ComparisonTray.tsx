@@ -57,7 +57,7 @@ export function ComparisonTray({ selectedItems, onRemoveItem, onClearAll }: Comp
                                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
                                     <DialogTrigger asChild>
                                         <button
-                                            className="bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-500)] text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-teal-900/40"
+                                            className="bg-[var(--color-cta)] hover:bg-[var(--color-teal-500)] text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-teal-900/40"
                                             disabled={selectedItems.length < 2}
                                         >
                                             Compare Now

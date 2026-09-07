@@ -202,7 +202,7 @@ export default function SignupPublic() {
             </p>
           </div>
           <Link href="/login">
-            <Button className="w-full h-[52px] bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl text-base font-bold">
+            <Button className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold">
               Go to sign in
             </Button>
           </Link>
@@ -367,7 +367,7 @@ export default function SignupPublic() {
         <Button
           onClick={handleSignUp}
           disabled={loading}
-          className="w-full h-[52px] bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
+          className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
         >
           {loading ? "Creating your account…" : <>Analyze my policy — free <ArrowRight className="w-4 h-4" /></>}
         </Button>

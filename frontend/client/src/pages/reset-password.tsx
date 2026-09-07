@@ -121,7 +121,7 @@ export default function ResetPasswordPublic() {
             This reset link is invalid or has expired. Please request a new one.
           </div>
           <Link href="/forgot-password">
-            <Button className="w-full h-[52px] bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98]">
+            <Button className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98]">
               Request a new link
             </Button>
           </Link>
@@ -203,7 +203,7 @@ export default function ResetPasswordPublic() {
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full h-[52px] bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
+            className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
           >
             {loading ? "Updating…" : <>Update password <ArrowRight className="w-4 h-4" /></>}
           </Button>

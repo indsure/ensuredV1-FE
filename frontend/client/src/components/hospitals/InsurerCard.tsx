@@ -89,7 +89,7 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                         className={clsx(
                             "w-6 h-6 rounded border flex items-center justify-center transition-colors",
                             isSelected
-                                ? "bg-[var(--color-teal-600)] border-[var(--color-teal-600)] text-white"
+                                ? "bg-[var(--color-cta)] border-[var(--color-teal-600)] text-white"
                                 : "border-[var(--color-border-subtle)] text-transparent hover:border-[var(--color-teal-400)]"
                         )}
                         aria-label={isSelected ? "Unselect for comparison" : "Select for comparison"}

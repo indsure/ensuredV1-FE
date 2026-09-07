@@ -136,7 +136,7 @@ export default function Processing() {
                         ${isCompleted
                       ? "bg-[var(--color-teal-100)] border-[var(--color-teal-200)] text-[var(--color-teal-700)]"
                       : isActive
-                        ? "bg-[var(--color-teal-600)] border-[var(--color-teal-600)] text-white shadow-[0_0_15px_rgba(20,184,166,0.2)]"
+                        ? "bg-[var(--color-cta)] border-[var(--color-teal-600)] text-white shadow-[0_0_15px_rgba(20,184,166,0.2)]"
                         : "border-[var(--color-border-light)] text-[var(--color-text-muted)]"
                     }
                       `}>

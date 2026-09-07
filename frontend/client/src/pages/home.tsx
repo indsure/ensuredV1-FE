@@ -87,7 +87,7 @@ function Hero() {
 
           <motion.div variants={rise} className="flex flex-col sm:flex-row gap-3">
             <Link href="/signup" className="w-full sm:w-auto">
-              <button className="w-full h-[52px] px-6 rounded-lg bg-[var(--color-teal-600)] text-white text-base font-semibold hover:bg-[var(--color-teal-400)] transition-colors flex items-center justify-center gap-2">
+              <button className="w-full h-[52px] px-6 rounded-lg bg-[var(--color-cta)] text-white text-base font-semibold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
                 Check my policy — free <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
@@ -389,7 +389,7 @@ function AdvisorPanel() {
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-sm font-bold text-[#0F766E]">Draft ready — English</span>
                   <span className="flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded-full bg-[var(--color-teal-600)] text-white text-sm font-bold">EN</span>
+                    <span className="px-2 py-0.5 rounded-full bg-[var(--color-cta)] text-white text-sm font-bold">EN</span>
                     <span className="px-2 py-0.5 rounded-full bg-[#CCFBF1] text-[#0F766E] text-sm font-bold">हिंदी</span>
                     <span className="px-2 py-0.5 rounded-full bg-[#CCFBF1] text-[#0F766E] text-sm font-bold">Hinglish</span>
                   </span>
@@ -574,7 +574,7 @@ function ProductSection() {
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Link href="/agent/signup/step1" className="w-full sm:w-auto">
-              <button className="w-full h-12 px-5 rounded-lg bg-[var(--color-teal-600)] text-white text-base font-semibold hover:bg-[var(--color-teal-400)] transition-colors">
+              <button className="w-full h-12 px-5 rounded-lg bg-[var(--color-cta)] text-white text-base font-semibold hover:bg-[var(--color-cta-hover)] transition-colors">
                 Start free — no card
               </button>
             </Link>
@@ -683,7 +683,7 @@ function ProductSection() {
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Link href="/signup" className="w-full sm:w-auto">
-              <button className="w-full h-12 px-5 rounded-lg bg-[var(--color-teal-600)] text-white text-base font-semibold hover:bg-[var(--color-teal-400)] transition-colors flex items-center justify-center gap-2">
+              <button className="w-full h-12 px-5 rounded-lg bg-[var(--color-cta)] text-white text-base font-semibold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
                 Check my policy — free <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
@@ -837,7 +837,7 @@ export default function Home() {
   });
 
   return (
-    <div className="bg-[var(--color-cream-main)] text-[var(--color-text-main)] font-sans selection:bg-[var(--color-teal-600)] selection:text-white min-h-screen flex flex-col overflow-x-hidden">
+    <div className="bg-[var(--color-cream-main)] text-[var(--color-text-main)] font-sans selection:bg-[var(--color-cta)] selection:text-white min-h-screen flex flex-col overflow-x-hidden">
       <Header />
 
       <main className="flex-grow pt-32">
@@ -863,7 +863,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/signup" className="w-full sm:w-auto">
-                <button className="w-full h-14 px-8 rounded-lg bg-[var(--color-teal-600)] text-white text-lg font-bold hover:bg-[var(--color-teal-400)] transition-colors flex items-center justify-center gap-2">
+                <button className="w-full h-14 px-8 rounded-lg bg-[var(--color-cta)] text-white text-lg font-bold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
                   Check my policy — free <ArrowRight className="w-5 h-5" />
                 </button>
               </Link>

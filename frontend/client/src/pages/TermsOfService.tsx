@@ -162,7 +162,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">14. Contact us</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">7. Contact us</h2>
             <p>For any queries regarding these Terms, please contact:</p>
             <div className="mt-3 bg-gray-50 rounded-xl p-5 border border-gray-100 space-y-1 text-sm">
               <p>

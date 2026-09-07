@@ -25,7 +25,13 @@ export default function Help() {
     },
     {
       question: "Is my data stored?",
-      answer: "No. We analyze your policy and delete it immediately after generating the report. We don't store your personal information, policy details, or any uploaded documents."
+      // Policies persist in individual_policies and are removed only by their
+      // owner. That handler deletes the storage object FIRST and refuses to
+      // drop the row if the file delete fails, which is what the "we leave the
+      // record alone" sentence describes. The 90 days is RETENTION_GRACE_DAYS.
+      // claim-source: backend/server/routes.ts:4565, :4584-4596;
+      // pages/app/portfolio.tsx:157; backend/server/index.ts:80.
+      answer: "Yes, and deliberately so — storing them is the product. A policy you save stays in your portfolio, with its document, so we can show your cover in one place and remind you before it renews. It stays until you delete it. Deleting a policy removes the stored document too, and if the document cannot be removed we leave the record alone rather than tell you it is gone. Reports left over from a check you never saved are cleared after 90 days."
     },
     {
       question: "What format should my policy be in?",
@@ -49,7 +55,11 @@ export default function Help() {
     },
     {
       question: "Is the service free?",
-      answer: "Yes, our policy analysis service is completely free. We don't charge for analysis, and we don't sell insurance products."
+      // Plan contents and the ₹999 price mirror the live /pricing table. "No
+      // expiry" is enforced server-side: the 30-day trial gate was removed and
+      // Free is now capped by slots, not by time.
+      // claim-source: pricing.tsx; backend/server/routes.ts:771, :784-789.
+      answer: "There is a free plan, not a free product. It covers one policy check of each type — health, term, life and vehicle — with no card and no expiry date. Beyond that, Personal is ₹999 a year. We do not sell insurance and earn no commission from insurers, which is why you pay us. See the pricing page for what each plan includes."
     }
   ];
 
@@ -58,8 +68,8 @@ export default function Help() {
       icon: Mail,
       title: "Email Support",
       description: "Get help via email",
-      action: "contact@ensured.in",
-      href: "mailto:contact@ensured.in"
+      action: "nikhil@indsure.in",
+      href: "mailto:nikhil@indsure.in"
     },
     {
       icon: MessageCircle,
@@ -163,7 +173,7 @@ export default function Help() {
             Our support team is here to assist you
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="mailto:contact@ensured.in">
+            <a href="mailto:nikhil@indsure.in">
               <Button className="bg-[#1A3A52] hover:bg-[#2d5a7b] text-white">
                 <Mail className="w-4 h-4 mr-2" />
                 Email Us

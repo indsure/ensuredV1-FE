@@ -131,7 +131,7 @@ export default function CalculatorReportPage() {
                 <AlertTriangle className="w-16 h-16 text-yellow-500 mb-4" />
                 <h1 className="text-3xl font-serif text-[var(--color-navy-900)] mb-2">Report Not Found</h1>
                 <p className="text-[var(--color-text-secondary)] text-center max-w-md mb-8">{error}</p>
-                <Button onClick={() => setLocation("/calculator")} className="bg-[var(--color-teal-600)] text-white px-8">
+                <Button onClick={() => setLocation("/calculator")} className="bg-[var(--color-cta)] text-white px-8">
                     Create New Report
                 </Button>
             </div>
@@ -146,7 +146,7 @@ export default function CalculatorReportPage() {
                 <p className="text-[var(--color-text-secondary)] max-w-md mb-8">
                     This report link doesn’t have the required calculator data in the current session. Start a new calculator run.
                 </p>
-                <Button onClick={() => setLocation("/calculator")} className="bg-[var(--color-teal-600)] text-white px-8">
+                <Button onClick={() => setLocation("/calculator")} className="bg-[var(--color-cta)] text-white px-8">
                     Back to Calculator
                 </Button>
             </div>
@@ -228,7 +228,7 @@ export default function CalculatorReportPage() {
                             </div>
                         </div>
 
-                        <div className="bg-[var(--color-teal-600)] text-white p-6 rounded-xl shadow-md col-span-1 md:transform md:-translate-y-3">
+                        <div className="bg-[var(--color-cta)] text-white p-6 rounded-xl shadow-md col-span-1 md:transform md:-translate-y-3">
                             <div className="text-xs font-bold text-white/80 uppercase tracking-wider mb-2 flex items-center">
                                 <Tooltip text="A Super Top-Up policy activates after your base cover is exhausted. It provides large coverage at a fraction of the cost of a base policy.">
                                     <span>Super Top-Up</span>
@@ -491,7 +491,7 @@ export default function CalculatorReportPage() {
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <Button
                                     size="lg"
-                                    className="bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-700)] text-white shadow-md px-8 py-5 text-base"
+                                    className="bg-[var(--color-cta)] hover:bg-[var(--color-teal-700)] text-white shadow-md px-8 py-5 text-base"
                                     onClick={() =>
                                         setLocation(minSI > 0 ? `/compare?minSI=${minSI}` : "/compare")
                                     }

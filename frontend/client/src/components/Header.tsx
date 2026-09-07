@@ -212,7 +212,7 @@ export function Header() {
 
           <Link
             href="/signup"
-            className="group inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--color-teal-600)] px-4 text-[15px] font-semibold text-white transition-all duration-200 hover:bg-[#0F766E] hover:shadow-[0_8px_20px_-6px_rgba(13,148,136,0.65)]"
+            className="group inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--color-cta)] px-4 text-[15px] font-semibold text-white transition-all duration-200 hover:bg-[#0F766E] hover:shadow-[0_8px_20px_-6px_rgba(13,148,136,0.65)]"
           >
             Get started free
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
@@ -292,7 +292,7 @@ export function Header() {
 
               <Link
                 href="/signup"
-                className="block rounded-lg bg-[var(--color-teal-600)] px-3 py-3.5 text-center text-base font-semibold text-white transition-colors hover:bg-[#0F766E]"
+                className="block rounded-lg bg-[var(--color-cta)] px-3 py-3.5 text-center text-base font-semibold text-white transition-colors hover:bg-[#0F766E]"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Get started free

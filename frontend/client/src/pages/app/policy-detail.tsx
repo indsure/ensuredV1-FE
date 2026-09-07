@@ -144,7 +144,7 @@ export default function PolicyDetail({ id }: { id: string }) {
                   : "The stored report for this policy is missing or in an old format."}
           </p>
           <Link href="/app">
-            <span className="inline-flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer">
+            <span className="inline-flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] transition-colors cursor-pointer">
               <ArrowLeft className="w-4 h-4" /> Back to portfolio
             </span>
           </Link>

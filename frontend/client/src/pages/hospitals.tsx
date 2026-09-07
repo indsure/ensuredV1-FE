@@ -267,7 +267,7 @@ export default function HospitalFilter() {
                                             type="button"
                                             onClick={handleSearch}
                                             disabled={loading}
-                                            className="w-full h-12 bg-[var(--color-teal-600)] text-white px-6 rounded-lg text-[15px] font-semibold hover:bg-[var(--color-teal-500)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                            className="w-full h-12 bg-[var(--color-cta)] text-white px-6 rounded-lg text-[15px] font-semibold hover:bg-[var(--color-teal-500)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                                         >
                                             <Search className="w-5 h-5" />
                                             {loading ? "Searching..." : "Compare"}
@@ -331,7 +331,7 @@ export default function HospitalFilter() {
                                     type="button"
                                     onClick={handleSearch}
                                     disabled={loading}
-                                    className="w-full lg:w-auto bg-[var(--color-teal-600)] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-[var(--color-teal-400)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 h-10 whitespace-nowrap"
+                                    className="w-full lg:w-auto bg-[var(--color-cta)] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 h-10 whitespace-nowrap"
                                 >
                                     <Search className="w-4 h-4" />
                                     {loading ? "..." : "Update Search"}

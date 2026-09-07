@@ -118,7 +118,7 @@ export default function AgentLanding() {
             {t("agent_landing.nav_talk")}
           </button>
           <Link href="/agent/signup/step1">
-            <button className="h-9 px-3.5 rounded-lg bg-[var(--color-teal-600)] text-white text-sm font-semibold hover:bg-[var(--color-teal-400)] transition-colors">
+            <button className="h-9 px-3.5 rounded-lg bg-[var(--color-cta)] text-white text-sm font-semibold hover:bg-[var(--color-cta-hover)] transition-colors">
               {t("agent_landing.nav_start")}
             </button>
           </Link>
@@ -151,7 +151,7 @@ export default function AgentLanding() {
 
         <div className="flex flex-col sm:flex-row gap-3 mt-1">
           <Link href="/agent/signup/step1" className="w-full sm:w-auto">
-            <button className="w-full h-[52px] px-6 rounded-lg bg-[var(--color-teal-600)] text-white text-base font-semibold hover:bg-[var(--color-teal-400)] transition-colors flex items-center justify-center gap-2">
+            <button className="w-full h-[52px] px-6 rounded-lg bg-[var(--color-cta)] text-white text-base font-semibold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
               {t("agent_landing.cta_start")} <ArrowRight className="w-4 h-4" />
             </button>
           </Link>
@@ -222,7 +222,7 @@ export default function AgentLanding() {
               <div className="h-12 bg-[var(--color-navy-900)] flex items-center justify-between px-4">
                 <span className="text-white text-base font-bold tracking-tight">IndSure</span>
                 <span className="flex items-center gap-1 bg-white/10 rounded-full p-0.5">
-                  <span className="px-2 py-0.5 rounded-full bg-[var(--color-teal-600)] text-white text-sm font-bold">EN</span>
+                  <span className="px-2 py-0.5 rounded-full bg-[var(--color-cta)] text-white text-sm font-bold">EN</span>
                   <span className="px-2 py-0.5 rounded-full text-white/60 text-sm font-bold">हिंदी</span>
                 </span>
               </div>
@@ -347,7 +347,7 @@ export default function AgentLanding() {
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="text-sm font-bold text-[#0F766E]">{t("agent_landing.draft_for")}</span>
               <span className="flex items-center gap-1.5">
-                <span className="px-2 py-0.5 rounded-full bg-[var(--color-teal-600)] text-white text-sm font-bold">EN</span>
+                <span className="px-2 py-0.5 rounded-full bg-[var(--color-cta)] text-white text-sm font-bold">EN</span>
                 <span className="px-2 py-0.5 rounded-full bg-[#CCFBF1] text-[#0F766E] text-sm font-bold">हिंदी</span>
                 <span className="px-2 py-0.5 rounded-full bg-[#CCFBF1] text-[#0F766E] text-sm font-bold">Hinglish</span>
               </span>
@@ -533,7 +533,7 @@ export default function AgentLanding() {
 
           <div className="flex flex-col sm:flex-row gap-3 mt-3 w-full sm:w-auto">
             <Link href="/agent/signup/step1" className="w-full sm:w-auto">
-              <button className="w-full h-14 px-7 rounded-lg bg-[var(--color-teal-600)] text-white text-lg font-bold hover:bg-[var(--color-teal-400)] transition-colors flex items-center justify-center gap-2">
+              <button className="w-full h-14 px-7 rounded-lg bg-[var(--color-cta)] text-white text-lg font-bold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
                 {t("agent_landing.cta_start")} <ArrowRight className="w-5 h-5" />
               </button>
             </Link>

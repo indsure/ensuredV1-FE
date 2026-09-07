@@ -364,7 +364,7 @@ export function CTA({
 
   const look =
     variant === "primary"
-      ? "bg-[var(--color-teal-600)] text-white hover:bg-[#0F766E] hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-8px_rgba(13,148,136,0.6)]"
+      ? "bg-[var(--color-cta)] text-white hover:bg-[#0F766E] hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-8px_rgba(13,148,136,0.6)]"
       : variant === "secondary"
         ? "bg-white border border-[var(--color-border-medium)] text-[var(--color-text-main)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
         : "border border-white/30 text-white hover:bg-white/10 hover:border-white/60";

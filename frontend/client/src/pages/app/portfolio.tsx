@@ -564,7 +564,7 @@ export default function PortfolioPage() {
               <div className="mt-6 flex flex-wrap gap-2.5">
                 <button
                   onClick={heroCta.onClick}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] hover:text-[var(--color-navy-900)] transition-colors active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] hover:text-[var(--color-navy-900)] transition-colors active:scale-[0.98]"
                 >
                   <heroCta.icon className="w-4 h-4" /> {heroCta.label}
                 </button>
@@ -885,7 +885,7 @@ export default function PortfolioPage() {
                         aria-pressed={active}
                         className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-[0.98] flex items-center gap-1.5 ${
                           active
-                            ? "bg-[var(--color-teal-600)] text-white border-[var(--color-teal-600)] shadow-sm"
+                            ? "bg-[var(--color-cta)] text-white border-[var(--color-teal-600)] shadow-sm"
                             : "bg-white text-[var(--color-text-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
                         }`}
                       >
@@ -976,7 +976,7 @@ export default function PortfolioPage() {
                     href={advisorWa(data.advisor.phone)!}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] hover:text-[var(--color-navy-900)] transition-colors"
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] hover:text-[var(--color-navy-900)] transition-colors"
                   >
                     <MessageCircle className="w-4 h-4" /> WhatsApp
                   </a>
@@ -1004,7 +1004,7 @@ export default function PortfolioPage() {
               {!data.hasOpenAgentRequest && (
                 <button
                   onClick={() => openConnect("review")}
-                  className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] hover:text-[var(--color-navy-900)] transition-colors active:scale-[0.98]"
+                  className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] hover:text-[var(--color-navy-900)] transition-colors active:scale-[0.98]"
                 >
                   <PhoneCall className="w-4 h-4" /> Connect me to an advisor
                 </button>

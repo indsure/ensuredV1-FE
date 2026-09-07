@@ -356,7 +356,7 @@ function HealthCatalogCompare() {
                   in about a minute, saved to your private portfolio.
                 </p>
                 <Link href="/signup">
-                  <button className="mt-6 inline-flex items-center gap-2 bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white px-8 py-4 rounded-xl font-bold text-lg transition-colors cursor-pointer">
+                  <button className="mt-6 inline-flex items-center gap-2 bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white px-8 py-4 rounded-xl font-bold text-lg transition-colors cursor-pointer">
                     Analyze my policy — free <ArrowRight className="w-5 h-5" />
                   </button>
                 </Link>
