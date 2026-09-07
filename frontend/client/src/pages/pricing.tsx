@@ -56,6 +56,7 @@ const tiers: Tier[] = [
       { label: "Room rent, co-pay, sub-limits and waiting periods explained" },
       { label: "Renewal reminders 30 days before expiry" },
       { label: "Download your report as a PDF" },
+      // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
       { label: "No expiry date. Stays free as long as you want it", muted: true },
     ],
     cta: "Create free account",
@@ -74,7 +75,10 @@ const tiers: Tier[] = [
       { label: "4 health policy checks a year" },
       { label: "Room for 12 more policies across term, life and vehicle, any mix" },
       { label: "Renewal reminders on every policy you store" },
-      { label: "Unlimited consultation with our team (fair use)" },
+      // claim-source: founder decision 2026-09-07. Bounded deliberately: an
+      // unbounded "unlimited consultation" is a human-time promise nobody had
+      // committed to staffing.
+      { label: "Ask our team about any policy you store, replies within 2 working days" },
       { label: "Ask the Sach assistant any question about your cover" },
       { label: "Download every report as a PDF" },
     ],
@@ -120,8 +124,8 @@ const faqs = [
     a: "Yes. Personal is ₹99 a month or ₹999 a year. Paying for the year costs ₹189 less than twelve monthly payments, and you can switch between the two whenever you like.",
   },
   {
-    q: "What does unlimited consultation mean?",
-    a: "You can talk to our team about anything in your portfolio — what a clause means, whether your cover is enough, what to ask your insurer. It is fair use: it is meant for your own policies, not for running someone else's advice practice.",
+    q: "What does asking our team cover?",
+    a: "Anything in your own portfolio: what a clause means, whether your cover is enough, what to ask your insurer. We reply within two working days. It is meant for your own policies, not for running someone else's advice practice.",
   },
   {
     q: "Do you sell insurance or earn commission?",

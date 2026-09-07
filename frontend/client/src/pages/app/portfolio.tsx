@@ -312,11 +312,11 @@ export default function PortfolioPage() {
         const body = await res.json().catch(() => ({}));
         setUploading(false);
         setUploadStage(null);
-        setPaywall(
-          body.reason === "trial_expired"
-            ? "Your 30-day free trial has ended. Upgrade to analyze more policies."
-            : `You've used your free ${labelFor(selectedType)} slot. Upgrade to add more.`
-        );
+        // checkIndividualQuota can only return "no_profile" or "slot_full"
+        // (backend/server/routes.ts:781, :796). The "trial_expired" branch that
+        // used to sit here was unreachable and asserted a 30-day trial the
+        // server stopped enforcing, contradicting /pricing.
+        setPaywall(`You've used your free ${labelFor(selectedType)} slot. Upgrade to add more.`);
         return;
       }
       if (!res.ok) {

@@ -25,6 +25,7 @@ type Tier = {
 const tiers: Tier[] = [
   {
     name: "Free",
+    // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
     tagline: "Everything for your daily work. Free forever.",
     price: "₹0",
     priceAnnual: "₹0",
@@ -123,6 +124,7 @@ const faqs = [
     a: "One check is one full policy audit, or one side-by-side comparison of two policies. Leads, renewals, calculator and WhatsApp drafts never use your checks. Data entry (motor / life / term / travel) has its own separate allowance — 20 in total on Free, 50 a month on paid plans — so it never touches your policy checks either.",
   },
   {
+    // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
     q: "Is there a free trial?",
     a: "The Free plan is free forever, not a trial. Your leads, renewals, calculator and WhatsApp drafts stay free for life, and you get 3 policy checks to see the reports for yourself. No card needed.",
   },
@@ -181,6 +183,7 @@ export default function Pricing() {
             Simple pricing. <span className="italic text-[var(--color-green-primary)]">One policy covers it.</span>
           </h1>
           <p className="text-lg md:text-xl text-[var(--color-text-secondary)] font-light leading-relaxed max-w-2xl mx-auto">
+            {/* claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07. */}
             Your daily tools are free forever. The full plan costs ₹1,499 a month —
             close one policy and it has paid for itself. We take no commission, ever.
           </p>

@@ -96,6 +96,9 @@ const faqs = [
   },
   {
     q: "Is my data safe?",
+    // No third-party sharing path exists in routes.ts; the only outbound
+    // route is the consented "Talk to an advisor" flow, which the user starts.
+    // claim-source: routes.ts:4565 (owner-initiated delete). Verified 2026-09-07.
     a: "Your document is encrypted in transit and stored so you can open it again from your portfolio. We never share it with insurers, agents or anyone else unless you ask us to, and you can delete it whenever you want.",
   },
   {

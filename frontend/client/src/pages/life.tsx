@@ -131,6 +131,7 @@ export default function LifePage() {
                   <span>100% private</span>
                 </div>
                 <span className="text-[#9CA3AF]">•</span>
+                {/* claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07. */}
                 <span>Free forever</span>
               </div>
 

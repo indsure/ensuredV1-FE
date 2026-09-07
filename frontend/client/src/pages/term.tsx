@@ -173,6 +173,8 @@ export default function TermPage() {
     },
     {
       question: "Can I cancel my term policy early? Will I get my money back?",
+      // claim-source: illustrative arithmetic inside the answer itself (10
+      // years of premium at the stated rate), not a claim about IndSure.
       answer: "YES, you can cancel anytime. But NO refund (unless policy has rider). Scenario: You bought 20-year term at age 30. At age 40, you want to cancel. You've paid 10 years of premiums: ₹2,00,000+. Insurer says: Policy is EXPIRED (no death benefit after cancellation). You get: ₹0 back (pure insurance, not savings). Options if you want to cancel: 1. Stop paying premium → policy lapses (after grace period). 2. Surrender policy formally. 3. Convert to lower sum assured (keep some protection, reduce premium). AVOID cancellation if: You have dependents (they lose protection). Your health has deteriorated (can't get new policy). You still have loans. Recommendation: Only cancel if you've upgraded to better policy elsewhere.",
     },
     {

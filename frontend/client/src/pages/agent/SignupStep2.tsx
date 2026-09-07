@@ -476,7 +476,10 @@ export default function AgentSignupStep2() {
                                 <Check className="w-4 h-4" />
                             </div>
                             <div>
-                                <div className="text-white/95 font-semibold mb-1">Commission tracking across all insurers in one place</div>
+                                {/* Not built. The word "commission" appears in no implementation file;
+    agent/Landing.tsx was rebuilt in 2026-08 specifically to drop this claim.
+    Kept as a labelled roadmap item by founder decision 2026-09-07. */}
+                                <div className="text-white/95 font-semibold mb-1">Commission tracking across all insurers in one place (coming soon)</div>
                                 <div className="text-white/70 text-sm">Unified view of earnings from all your partnerships</div>
                             </div>
                         </div>
@@ -485,7 +488,10 @@ export default function AgentSignupStep2() {
                                 <Check className="w-4 h-4" />
                             </div>
                             <div>
-                                <div className="text-white/95 font-semibold mb-1">Auto-filled forms for faster policy submissions</div>
+                                {/* Not built. There is no insurer submission path; insurer integrations
+    are mocked per rules.md. The shipped OCR autofill fills OUR records from
+    a PDF, which is a different thing. Founder decision 2026-09-07. */}
+                                <div className="text-white/95 font-semibold mb-1">Auto-filled forms for faster policy submissions (coming soon)</div>
                                 <div className="text-white/70 text-sm">Save time with pre-populated insurer-specific fields</div>
                             </div>
                         </div>
