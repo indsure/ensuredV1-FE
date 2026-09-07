@@ -1,0 +1,692 @@
+<title>IndSure Agent Navigation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap">
+<style>
+  :root {
+    --navy: #0B1120;
+    --canvas: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-2: #F2F2EF;
+    --ink: #0F172A;
+    --ink-2: #334155;
+    --ink-3: #64748B;
+    --line: #E2E8F0;
+    --line-strong: #CBD5E1;
+    --teal: #0F766E;
+    --teal-bright: #2DD4BF;
+    --teal-tint: #F0FDFA;
+    --gold: #B45309;
+    --gold-tint: #FEF6E7;
+    --red: #B91C1C;
+    --red-tint: #FEF2F2;
+    --chart: #0F766E;
+    --chart-soft: #99F6E4;
+    --grid: #E2E8F0;
+    --shadow: 0 1px 2px rgba(15,23,42,.05), 0 8px 24px -12px rgba(15,23,42,.18);
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --canvas: #0A0F1A; --surface: #131C2E; --surface-2: #1A2437;
+      --ink: #F1F5F9; --ink-2: #CBD5E1; --ink-3: #94A3B8;
+      --line: #24304A; --line-strong: #33415C;
+      --teal: #2DD4BF; --teal-tint: #10251F; --gold: #FBBF24; --gold-tint: #2A1F0B;
+      --red: #F87171; --red-tint: #2A1414;
+      --chart: #2DD4BF; --chart-soft: #17494A; --grid: #24304A;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --canvas: #0A0F1A; --surface: #131C2E; --surface-2: #1A2437;
+    --ink: #F1F5F9; --ink-2: #CBD5E1; --ink-3: #94A3B8;
+    --line: #24304A; --line-strong: #33415C;
+    --teal: #2DD4BF; --teal-tint: #10251F; --gold: #FBBF24; --gold-tint: #2A1F0B;
+    --red: #F87171; --red-tint: #2A1414;
+    --chart: #2DD4BF; --chart-soft: #17494A; --grid: #24304A;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--canvas); color: var(--ink);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 48px 24px 80px; display: flex; flex-direction: column; gap: 56px; }
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+  h1 { font-family: "Playfair Display", Georgia, serif; font-size: clamp(30px, 4.4vw, 42px); font-weight: 700; line-height: 1.12; margin: 10px 0 12px; text-wrap: balance; letter-spacing: -.01em; }
+  h2 { font-family: "Playfair Display", Georgia, serif; font-size: 23px; font-weight: 700; margin: 0 0 6px; letter-spacing: -.01em; }
+  .lede { color: var(--ink-2); max-width: 66ch; margin: 0; }
+  .sub { color: var(--ink-3); font-size: 14px; max-width: 72ch; margin: 0 0 20px; }
+  section { display: flex; flex-direction: column; }
+
+  .frame { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); background: var(--surface); }
+  .chrome { display: flex; align-items: center; gap: 8px; padding: 9px 13px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); }
+  .url { margin-left: 8px; font-size: 11.5px; color: var(--ink-3); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 3px 10px; }
+  .app { display: grid; grid-template-columns: 236px 1fr; min-height: 640px; }
+
+  /* sidebar */
+  .side { background: var(--navy); padding: 15px 11px; display: flex; flex-direction: column; gap: 13px; }
+  .brand { display: flex; align-items: center; gap: 9px; padding: 2px 4px 0; }
+  .mark { width: 26px; height: 26px; border-radius: 7px; background: var(--teal-bright); color: #06231F; font-weight: 800; font-size: 13px; display: grid; place-items: center; flex: none; }
+  .brand span { color: #fff; font-weight: 700; font-size: 15px; letter-spacing: -.01em; }
+  .cta { display: flex; align-items: center; gap: 8px; width: 100%; background: var(--teal-bright); color: #06231F; border: 0; cursor: pointer; font: inherit; font-weight: 700; font-size: 13.5px; border-radius: 9px; padding: 10px 12px; text-align: left; }
+  .cta .plus { font-size: 16px; line-height: 1; font-weight: 700; }
+  .searchbtn {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); cursor: pointer; font: inherit;
+    color: rgba(255,255,255,.5); font-size: 13px; border-radius: 9px; padding: 8px 11px; text-align: left;
+  }
+  .searchbtn:hover { background: rgba(255,255,255,.11); color: rgba(255,255,255,.75); }
+  .searchbtn kbd { margin-left: auto; font: inherit; font-size: 10.5px; color: rgba(255,255,255,.4); border: 1px solid rgba(255,255,255,.16); border-radius: 4px; padding: 0 4px; }
+  .navlist { display: flex; flex-direction: column; gap: 2px; }
+  .navbtn { display: flex; align-items: center; gap: 10px; width: 100%; background: transparent; border: 0; cursor: pointer; font: inherit; color: rgba(255,255,255,.68); font-size: 13.5px; font-weight: 600; border-radius: 9px; padding: 9px 10px; text-align: left; transition: background .15s, color .15s; }
+  .navbtn:hover { background: rgba(255,255,255,.07); color: #fff; }
+  .navbtn.open, .navbtn.current { color: #fff; }
+  .navbtn.current { background: rgba(45,212,191,.14); }
+  .navbtn .lbl { flex: 1; }
+  .navbtn .badge { background: var(--teal-bright); color: #06231F; font-size: 10.5px; font-weight: 800; border-radius: 20px; padding: 1px 7px; }
+  .chev { color: rgba(255,255,255,.4); transition: transform .18s ease; flex: 0 0 14px; }
+  .navbtn.open .chev { transform: rotate(90deg); color: rgba(255,255,255,.75); }
+  .children { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .2s ease; }
+  .children.open { grid-template-rows: 1fr; }
+  .children > div { overflow: hidden; }
+  .kids { display: flex; flex-direction: column; margin: 2px 0 6px; padding-left: 21px; position: relative; }
+  .kids::before { content: ""; position: absolute; left: 20px; top: 4px; bottom: 4px; width: 1px; background: rgba(255,255,255,.14); }
+  .kid { background: transparent; border: 0; cursor: pointer; font: inherit; text-align: left; color: rgba(255,255,255,.55); font-size: 13px; font-weight: 500; padding: 7px 10px 7px 13px; border-radius: 7px; position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; transition: color .15s, background .15s; }
+  .kid:hover { color: #fff; background: rgba(255,255,255,.06); }
+  .kid[aria-current="true"] { color: var(--teal-bright); font-weight: 700; background: rgba(45,212,191,.1); }
+  .kid[aria-current="true"]::before { content: ""; position: absolute; left: -1px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--teal-bright); }
+  .kid .count { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.35); font-variant-numeric: tabular-nums; }
+  .kid[aria-current="true"] .count { color: rgba(45,212,191,.75); }
+  .side-foot { margin-top: auto; border-top: 1px solid rgba(255,255,255,.1); padding-top: 11px; }
+  .who { display: flex; align-items: center; gap: 9px; padding: 4px 6px; }
+  .av { width: 27px; height: 27px; border-radius: 50%; background: rgba(255,255,255,.14); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; flex: none; }
+  .who b { color: #fff; font-size: 12.5px; font-weight: 600; display: block; line-height: 1.3; }
+  .who small { color: rgba(255,255,255,.45); font-size: 11px; }
+  .who .caret { margin-left: auto; color: rgba(255,255,255,.35); }
+
+  /* pane */
+  .pane { background: var(--canvas); display: flex; flex-direction: column; min-width: 0; }
+  .pane-head { padding: 18px 20px 15px; border-bottom: 1px solid var(--line); }
+  .crumb { font-size: 11.5px; color: var(--ink-3); margin-bottom: 2px; }
+  .pane-head h3 { font-size: 21px; font-weight: 700; margin: 0 0 3px; letter-spacing: -.015em; }
+  .pane-head p { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+  .pane-body { padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 13px; min-width: 0; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 11px 13px; }
+  .tile b { display: block; font-size: 21px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .tile span { font-size: 11.5px; color: var(--ink-3); }
+  .tile .delta { font-size: 11px; font-weight: 600; }
+  .tile .delta.up { color: var(--teal); }
+  .tile .delta.down { color: var(--gold); }
+
+  /* list workspace */
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .field { display: flex; align-items: center; gap: 7px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 12.5px; color: var(--ink-3); flex: 1; min-width: 160px; }
+  .btn-s { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+  .views { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .view { font-size: 11.5px; font-weight: 600; border: 1px solid var(--line); border-radius: 20px; padding: 3px 11px; color: var(--ink-3); background: var(--surface); white-space: nowrap; }
+  .view.on { background: var(--teal); border-color: var(--teal); color: #fff; }
+  :root[data-theme="dark"] .view.on { color: #06231F; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .view.on { color: #06231F; } }
+  .view.add { border-style: dashed; }
+
+  .bulk { display: flex; align-items: center; gap: 10px; background: var(--teal-tint); border: 1px solid var(--chart-soft); border-radius: 8px; padding: 7px 12px; font-size: 12.5px; color: var(--teal); font-weight: 600; }
+  .bulk .sp { margin-left: auto; display: flex; gap: 7px; }
+  .bulk .sp span { border: 1px solid currentColor; border-radius: 6px; padding: 1px 8px; font-size: 11.5px; }
+
+  .dense { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .dtable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .dtable th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); font-weight: 700; padding: 8px 11px; border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--surface-2); }
+  .dtable th .sort { color: var(--teal); }
+  .dtable td { padding: 7px 11px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dtable tr:last-child td { border-bottom: 0; }
+  .dtable td.num { font-variant-numeric: tabular-nums; text-align: right; }
+  .dtable td.name { font-weight: 600; max-width: 210px; }
+  .dtable td.muted { color: var(--ink-3); }
+  .cb { width: 13px; height: 13px; border: 1.5px solid var(--line-strong); border-radius: 3px; display: inline-block; vertical-align: -2px; }
+  .cb.on { background: var(--teal); border-color: var(--teal); position: relative; }
+  .cb.on::after { content: ""; position: absolute; left: 4px; top: 1px; width: 3px; height: 6px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+  .pager { display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--ink-3); padding: 8px 11px; border-top: 1px solid var(--line); background: var(--surface-2); }
+  .pager .pg { margin-left: auto; display: flex; gap: 4px; }
+  .pager .pg span { border: 1px solid var(--line); border-radius: 5px; padding: 1px 7px; background: var(--surface); }
+  .pager .pg span.on { background: var(--teal); border-color: var(--teal); color: #fff; font-weight: 700; }
+  :root[data-theme="dark"] .pager .pg span.on { color: #06231F; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pager .pg span.on { color: #06231F; } }
+
+  .pill { font-size: 10.5px; font-weight: 700; border-radius: 20px; padding: 2px 8px; white-space: nowrap; background: var(--surface-2); color: var(--ink-2); }
+  .pill.good { background: var(--teal-tint); color: var(--teal); }
+  .pill.warn { background: var(--gold-tint); color: var(--gold); }
+  .pill.crit { background: var(--red-tint); color: var(--red); }
+
+  .rows { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .row:last-child { border-bottom: 0; }
+  .row .who2 { display: flex; flex-direction: column; min-width: 0; }
+  .row .who2 b { font-weight: 600; }
+  .row .who2 small { color: var(--ink-3); font-size: 11.5px; }
+
+  /* charts */
+  .chartcard { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 13px 15px 11px; }
+  .chartcard h4 { margin: 0 0 1px; font-size: 13.5px; font-weight: 700; }
+  .chartcard .cap { margin: 0 0 12px; font-size: 11.5px; color: var(--ink-3); }
+  .bars { display: flex; align-items: flex-end; gap: 8px; height: 132px; }
+  .barcol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; position: relative; }
+  .barval { font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  .bar { width: 100%; background: var(--chart); border-radius: 4px 4px 0 0; min-height: 3px; transition: opacity .15s; }
+  .barcol.dim .bar { background: var(--chart-soft); }
+  .barcol:hover .bar { opacity: .78; }
+  .barlbl { font-size: 10.5px; color: var(--ink-3); font-weight: 600; }
+  .barcol .tip {
+    position: absolute; bottom: 100%; left: 50%; transform: translate(-50%, -6px);
+    background: var(--ink); color: var(--canvas); font-size: 11px; font-weight: 600;
+    border-radius: 6px; padding: 4px 8px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .12s;
+  }
+  .barcol:hover .tip { opacity: 1; }
+  .hbars { display: flex; flex-direction: column; gap: 7px; }
+  .hrow { display: grid; grid-template-columns: 56px 1fr 74px; gap: 10px; align-items: center; font-size: 12px; }
+  .hrow .hl { color: var(--ink-2); font-weight: 600; }
+  .hrow .track { background: var(--surface-2); border-radius: 4px; height: 14px; overflow: hidden; }
+  .hrow .fill { background: var(--chart); height: 100%; border-radius: 4px; }
+  .hrow .hv { text-align: right; color: var(--ink-3); font-variant-numeric: tabular-nums; font-size: 11.5px; }
+  .hrow .hv b { color: var(--ink); font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1.35fr 1fr; gap: 11px; }
+  @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .empty-note { font-size: 12.5px; color: var(--ink-3); font-style: italic; }
+
+  /* prose blocks */
+  .split { display: grid; grid-template-columns: 1fr 320px; gap: 32px; align-items: start; }
+  @media (max-width: 860px) { .split { grid-template-columns: 1fr; } .app { grid-template-columns: 1fr; } .side { display: none; } .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .calls { display: flex; flex-direction: column; gap: 12px; }
+  .call { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 0 var(--radius) var(--radius) 0; padding: 13px 16px; }
+  .call.tealed { border-left-color: var(--teal); }
+  .call b { display: block; font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+  .call p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+  .call p + p { margin-top: 8px; }
+  .hint { font-size: 12.5px; color: var(--ink-3); }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  table.map { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 540px; }
+  table.map th, table.map td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.map th { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); font-weight: 700; }
+  table.map tr:last-child td { border-bottom: 0; }
+  table.map td.old { color: var(--ink-3); }
+  .arrow { color: var(--ink-3); }
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12.5px; background: var(--surface-2); border-radius: 4px; padding: 1px 5px; }
+  :focus-visible { outline: 2px solid var(--teal-bright); outline-offset: 2px; border-radius: 4px; }
+  @media (prefers-reduced-motion: reduce) { *, .children { transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">IndSure Agent Portal</div>
+    <h1>Built for a book of 1,240</h1>
+    <p class="lede">Same expanding rail, rebuilt around the agency you are aiming at rather than the one you have today. Search sits above the tree, Insights becomes its own destination, Claims gets out of the tool drawer, and every list is a workspace with saved views and paging rather than a page you scroll.</p>
+  </header>
+
+  <section>
+    <h2>Click through it</h2>
+    <p class="sub">Every screen is populated at the scale of a three-agent agency: 1,240 policies, 994 people, 29 claims in flight. Start on Insights, then open Policies and Claims.</p>
+    <div class="frame">
+      <div class="chrome">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="url" id="url">beta.indsure.in/agent/insights</div>
+      </div>
+      <div class="app">
+        <nav class="side" aria-label="Agent navigation">
+          <div class="brand"><div class="mark">iS</div><span>IndSure</span></div>
+          <button class="cta" type="button"><span class="plus">+</span> Check a Policy</button>
+          <button class="searchbtn" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            Search anything <kbd>Ctrl K</kbd>
+          </button>
+          <div class="navlist" id="navlist"></div>
+          <div class="side-foot">
+            <div class="who">
+              <div class="av">VK</div>
+              <div><b>Vinay Kamath</b><small>Kamath Associates</small></div>
+              <svg class="caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>
+            </div>
+          </div>
+        </nav>
+        <div class="pane">
+          <div class="pane-head">
+            <div class="crumb" id="crumb"></div>
+            <h3 id="pane-title"></h3>
+            <p id="pane-desc"></p>
+          </div>
+          <div class="pane-body" id="pane-body"></div>
+        </div>
+      </div>
+    </div>
+    <p class="hint" style="margin-top:10px">Charts use one hue with direct labels rather than a colour per product type. The reason is in the last section, and it is not a style preference.</p>
+  </section>
+
+  <section>
+    <h2>What actually changed for scale</h2>
+    <div class="calls">
+      <div class="call tealed">
+        <b>Search above the tree, not inside a screen</b>
+        <p>At 1,240 policies the fastest route to a record is typing a name, a policy number or a vehicle number. This is the single highest-value addition in the whole restructure and the product has nothing like it today. It sits directly under the primary button, keyboard-reachable, and returns people, policies and claims in one list.</p>
+      </div>
+      <div class="call tealed">
+        <b>Insights is a destination, not a strip on every screen</b>
+        <p>An agency owner does not log in to browse policies, they log in to ask whether the book is growing and where the leaks are. Renewal forecast, premium under management, lapse rate and agent-wise performance belong together on one screen, which also removes the old My Agency, Reports overlap.</p>
+        <p>Home stays the daily worklist. Two different jobs, two different screens.</p>
+      </div>
+      <div class="call tealed">
+        <b>Fixed children get you started, saved views carry the work</b>
+        <p>Health, Life, Term, Motor, Others is one dimension, and at scale it is the least interesting one. The cuts that matter are time and status: renewing this month, lapsed, premium above a threshold, untouched since March. The type children stay as entry points, and each list lets the agent pin their own views beside them.</p>
+      </div>
+      <div class="call tealed">
+        <b>Every list is a workspace</b>
+        <p>Sticky search, sortable columns, checkbox selection with bulk actions, and paging with a real count. A 486-row Health list is exactly as unbrowsable as a 1,240-row All list, so the list screen has to do the work the nav cannot.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Claims moved out of Services</h2>
+    <div class="split">
+      <div>
+        <div class="calls">
+          <div class="call">
+            <b>I moved it, and you should overrule me if you disagree</b>
+            <p>You asked for Claims inside Services. At agency scale I think that breaks, so the mockup shows it top-level and I want to be explicit that this is the one place I did not follow the instruction.</p>
+            <p>An agency with 1,240 policies runs roughly 29 claims in flight at any time, each with documents, an insurer who has gone quiet, and a customer who is calling. That is a queue with ageing, not a tool you open and close next to the cover calculator. Sitting in Services it gets no ageing, no "nobody has touched this in six days", and no badge.</p>
+            <p>Moving it back is one line in the nav config. If you want it in Services, say so and I will put it there without further argument.</p>
+          </div>
+          <div class="call">
+            <b>Life and Term still overlap</b>
+            <p>A term plan is a life policy. Right now a record can match both children and the counts will not sum to 1,240. At this scale people will make decisions off those numbers, so the split has to be defined: Life for savings-linked plans (endowment, ULIP, money-back), Term for pure protection, filtering on plan type rather than line of business.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:8px">Rail at a glance</div>
+        <div class="chartcard" style="font-size:12.5px; line-height:1.9">
+          <div style="color:var(--teal); font-weight:700">+ Check a Policy</div>
+          <div style="color:var(--ink-3)">Search &nbsp;<code>Ctrl K</code></div>
+          <div style="height:8px"></div>
+          <div><b>Home</b> <span style="color:var(--ink-3)">today's work</span></div>
+          <div><b>Insights</b> <span style="color:var(--ink-3)">the book, analysed</span></div>
+          <div><b>People</b> <span style="color:var(--ink-3)">994</span></div>
+          <div><b>Policies</b> <span style="color:var(--ink-3)">1,240</span></div>
+          <div><b>Claims</b> <span style="color:var(--ink-3)">29 in flight</span></div>
+          <div><b>Services</b> <span style="color:var(--ink-3)">4 tools</span></div>
+          <div style="height:8px"></div>
+          <div style="color:var(--ink-3)">Profile menu: My Agency, Account, Settings</div>
+        </div>
+        <p class="hint" style="margin-top:10px">Six parents. My Agency and Team move into the profile menu, since managing staff is an admin job like Settings, not a place you work. Agent-wise performance lives in Insights instead.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The engineering half</h2>
+    <p class="sub">The nav is the cheap part of supporting 1,240 policies. These are the things that break first, roughly in the order they will break.</p>
+    <div class="tablewrap">
+      <table class="map">
+        <thead><tr><th>What breaks</th><th>Where</th><th>What it needs</th></tr></thead>
+        <tbody>
+          <tr><td><b>Overview counts</b></td><td class="old">Insights, every Overview child</td><td>Aggregates computed on a schedule rather than counted across the whole book on each page load</td></tr>
+          <tr><td><b>List rendering</b></td><td class="old">Policies, People, Claims</td><td>Server-side paging or virtualisation. A 486-row DOM is already slow on a mid-range Android</td></tr>
+          <tr><td><b>Sort and filter</b></td><td class="old">Every list</td><td>Indexes on agent_id, expiry date, product type, status. Sorting in the browser stops working past a few hundred rows</td></tr>
+          <tr><td><b>Search</b></td><td class="old">The new Ctrl K</td><td>Trigram or full-text index across customer name, policy number, vehicle number</td></tr>
+          <tr><td><b>Ownership</b></td><td class="old">Everything, once an agency has staff</td><td>A mine-versus-agency filter cutting across all lists, on top of the agency-teams work already deployed</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>One finding from your design system</h2>
+    <p class="sub">I ran your line-of-business colour tokens through a colourblind separation check before deciding how to colour the charts. Two pairs fail.</p>
+    <div class="tablewrap">
+      <table class="map">
+        <thead><tr><th>Pair</th><th>Separation</th><th>Reading</th></tr></thead>
+        <tbody>
+          <tr><td><code>--lob-health #0D9488</code> vs <code>--lob-life #0E7490</code></td><td class="old">10.4 normal vision</td><td>Below the 15 floor. Hard to tell apart even with full colour vision</td></tr>
+          <tr><td><code>--lob-life</code> vs <code>--lob-business #6D28D9</code></td><td class="old">0.3 deutan</td><td>Effectively the same colour to a red-green colourblind reader, which is roughly 1 in 12 men</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint" style="margin-top:12px">This does not matter much for the wash backgrounds they are used for today. It matters a lot the moment a chart encodes product type by colour, which is exactly what an Insights screen wants to do. So the charts here use a single hue with direct labels, and colour is reserved for status: good, warning, critical. A four-hue set that does pass in light mode is <code>#0D9488</code>, <code>#1D4ED8</code>, <code>#B45309</code>, <code>#9D174D</code>, and dark mode needs its own steps rather than a flip of those.</p>
+  </section>
+
+  <section>
+    <h2>Where everything went</h2>
+    <div class="tablewrap">
+      <table class="map">
+        <thead><tr><th>Today</th><th></th><th>New home</th><th>Route</th></tr></thead>
+        <tbody>
+          <tr><td class="old">Overview</td><td class="arrow">&rarr;</td><td><b>Home</b></td><td class="old">/agent/dashboard</td></tr>
+          <tr><td class="old">Analyze</td><td class="arrow">&rarr;</td><td><b>+ Check a Policy</b> button</td><td class="old">/agent/uploads</td></tr>
+          <tr><td class="old">My Queue</td><td class="arrow">&rarr;</td><td><b>Home</b>, Needs Attention panel</td><td class="old">/agent/my-queue</td></tr>
+          <tr><td class="old">(new)</td><td class="arrow">&rarr;</td><td><b>Insights</b></td><td class="old">/agent/insights</td></tr>
+          <tr><td class="old">Leads</td><td class="arrow">&rarr;</td><td><b>People</b> &rsaquo; Leads</td><td class="old">/agent/leads</td></tr>
+          <tr><td class="old">Customers</td><td class="arrow">&rarr;</td><td><b>People</b> &rsaquo; Customers</td><td class="old">/agent/customers</td></tr>
+          <tr><td class="old">My Policies</td><td class="arrow">&rarr;</td><td><b>Policies</b> &rsaquo; Overview, Health, Life, Term, Motor, Others</td><td class="old">/agent/policies</td></tr>
+          <tr><td class="old">Claims</td><td class="arrow">&rarr;</td><td><b>Claims</b> &rsaquo; Open, Awaiting insurer, Settled</td><td class="old">/agent/claims</td></tr>
+          <tr><td class="old">Compare</td><td class="arrow">&rarr;</td><td><b>Services</b> &rsaquo; Compare Policies</td><td class="old">/agent/compare</td></tr>
+          <tr><td class="old">Calculator</td><td class="arrow">&rarr;</td><td><b>Services</b> &rsaquo; Cover Calculator</td><td class="old">/agent/calculator</td></tr>
+          <tr><td class="old">Life Insurance</td><td class="arrow">&rarr;</td><td><b>Services</b> &rsaquo; Surrender Value</td><td class="old">/agent/values</td></tr>
+          <tr><td class="old">My Page</td><td class="arrow">&rarr;</td><td><b>Services</b> &rsaquo; My Website</td><td class="old">/agent/my-page</td></tr>
+          <tr><td class="old">Agency, Team</td><td class="arrow">&rarr;</td><td>Profile menu, plus agent-wise data in Insights</td><td class="old">/agent/team</td></tr>
+          <tr><td class="old">Account, Settings</td><td class="arrow">&rarr;</td><td>Profile menu</td><td class="old">/agent/settings</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+  var NAV = [
+    { id: "home", label: "Home", route: "/agent/dashboard", badge: "12",
+      desc: "What needs you today, across the whole agency.",
+      icon: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>', kids: [] },
+    { id: "insights", label: "Insights", route: "/agent/insights",
+      desc: "How the book is moving, and where it is leaking.",
+      icon: '<path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/>', kids: [] },
+    { id: "people", label: "People", route: "/agent/people",
+      desc: "Everyone the agency is talking to, whether or not they have bought.",
+      icon: '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 5.5a3 3 0 0 1 0 5.6"/><path d="M18.5 20a5.6 5.6 0 0 0-2-4"/>',
+      kids: [["Overview",""],["Leads","214"],["Customers","780"],["Renewals","96"]] },
+    { id: "policies", label: "Policies", route: "/agent/policies",
+      desc: "Every policy the agency holds or has checked.",
+      icon: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h4"/>',
+      kids: [["Overview",""],["Health","486"],["Life","214"],["Term","268"],["Motor","197"],["Others","75"]] },
+    { id: "claims", label: "Claims", route: "/agent/claims", badge: "29",
+      desc: "Claims in flight, oldest first.",
+      icon: '<path d="M12 3 4 6v6c0 4.5 3.3 8.2 8 9 4.7-.8 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+      kids: [["Open","12"],["Awaiting insurer","17"],["Settled","108"]] },
+    { id: "services", label: "Services", route: "/agent/services",
+      desc: "The things you open, use for a customer, and close.",
+      icon: '<path d="M14.7 6.3a4 4 0 0 1-5 5L4 17v3h3l5.7-5.7a4 4 0 0 0 5-5z"/>',
+      kids: [["Compare Policies",""],["Cover Calculator",""],["Surrender Value",""],["My Website",""]] }
+  ];
+
+  var HEALTH = [
+    ["Rajesh Kulkarni","Star Family Health Optima","10,00,000","04 Nov 26","24,180","Active","good"],
+    ["Mehul Shah","Niva Bupa ReAssure 2.0","25,00,000","19 Sep 26","41,900","Due","warn"],
+    ["Sunita Rao","Care Supreme","15,00,000","22 Dec 26","28,450","Active","good"],
+    ["Aarti Joshi","HDFC Ergo Optima Secure","20,00,000","07 Oct 26","33,720","Due","warn"],
+    ["Deepak Mane","Star Comprehensive","5,00,000","14 Aug 26","16,240","Lapsed","crit"],
+    ["Farhan Qureshi","ICICI Lombard Elevate","30,00,000","28 Feb 27","52,610","Active","good"],
+    ["Kavita Bhosale","Niva Bupa Aspire","10,00,000","11 Jan 27","22,900","Active","good"],
+    ["Ramesh Iyer","Care Advantage","50,00,000","03 Nov 26","74,300","Active","good"]
+  ];
+
+  var CLAIMS = [
+    ["Mehul Shah","Niva Bupa","Hospitalisation","2,40,000","41 days","Insurer silent","crit"],
+    ["Deepak Mane","Star Health","Day care","38,000","22 days","Query raised","warn"],
+    ["Aarti Joshi","HDFC Ergo","Hospitalisation","1,15,000","14 days","Documents sent","warn"],
+    ["Ramesh Iyer","Care Health","Pre and post","62,400","9 days","Documents sent","good"],
+    ["Kavita Bhosale","ICICI Lombard","Motor own damage","47,800","6 days","Surveyor assigned","good"],
+    ["Sunita Rao","Niva Bupa","Hospitalisation","3,80,000","4 days","Filed","good"]
+  ];
+
+  var PEOPLE = [
+    ["Priya Menon","Wants a family floater, last called 2 Sep","Leads",""],
+    ["Farhan Qureshi","Came from My Website, 4 Sep","Leads",""],
+    ["Rajesh Kulkarni","Pune, 3 policies, 1.2L premium","Customers","good"],
+    ["Mehul Shah","Ahmedabad, 2 policies, claim open","Customers","good"],
+    ["Sunita Rao","Nashik, renewal in 12 days","Renewals","warn"],
+    ["Deepak Mane","Health lapsed 14 Aug, not called","Renewals","crit"]
+  ];
+
+  var SERVICES = {
+    "Compare Policies": [["Star Family Health Optima vs Care Supreme","Built for Priya Menon, 2 Sep","Draft",""],
+                         ["Niva Bupa ReAssure vs HDFC Optima Secure","Built for Mehul Shah, 28 Aug","Sent","good"],
+                         ["Max Smart Secure vs HDFC Click 2 Protect","Built for Aarti Joshi, 26 Aug","Sent","good"]],
+    "Cover Calculator": [["Rajesh Kulkarni","Health gap 15L, term gap 80L","Shared","good"],
+                         ["Priya Menon","Term need 1.2Cr against 1Cr held","Draft",""]],
+    "Surrender Value": [["LIC Jeevan Anand","Sunita Rao, paid 8 of 21 years","Hold","warn"],
+                        ["HDFC Sanchay Plus","Priya Menon, paid 3 of 12 years","Hold","warn"]],
+    "My Website": [["indsure.in/a/vinay-kamath","412 views this month","Live","good"],
+                   ["Enquiries from the page","37 this month, 9 not called","Action","warn"]]
+  };
+
+  var TYPE_COUNTS = [["Health",486],["Term",268],["Life",214],["Motor",197],["Others",75]];
+  var FORECAST = [["Sep",96],["Oct",134],["Nov",118],["Dec",87],["Jan",152],["Feb",103]];
+
+  var state = { tab: "insights", kid: 0, open: "" };
+  var navlist = document.getElementById("navlist");
+  var paneBody = document.getElementById("pane-body");
+
+  function svg(p, s) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + "</svg>"; }
+  function chev() { return '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>'; }
+  function slug(s) { return s.toLowerCase().replace(/ /g, "-"); }
+  function el(tag, cls, html) { var d = document.createElement(tag); if (cls) d.className = cls; if (html != null) d.innerHTML = html; return d; }
+
+  function renderNav() {
+    navlist.innerHTML = "";
+    NAV.forEach(function (n) {
+      var isOpen = state.open === n.id && n.kids.length > 0;
+      var isCurrent = state.tab === n.id;
+      var b = el("button", "navbtn" + (isOpen ? " open" : "") + (isCurrent && !n.kids.length ? " current" : ""));
+      b.type = "button";
+      if (n.kids.length) b.setAttribute("aria-expanded", String(isOpen));
+      b.innerHTML = svg(n.icon, 16) + '<span class="lbl">' + n.label + "</span>" +
+        (n.badge ? '<span class="badge">' + n.badge + "</span>" : "") + (n.kids.length ? chev() : "");
+      b.addEventListener("click", function () {
+        if (n.kids.length) state.open = state.open === n.id ? "" : n.id;
+        state.tab = n.id; state.kid = 0; render();
+      });
+      navlist.appendChild(b);
+
+      if (n.kids.length) {
+        var box = el("div", "children" + (isOpen ? " open" : ""));
+        var inner = el("div"); var kids = el("div", "kids");
+        n.kids.forEach(function (k, i) {
+          var kb = el("button", "kid");
+          kb.type = "button";
+          kb.setAttribute("aria-current", String(isCurrent && state.kid === i));
+          kb.innerHTML = "<span>" + k[0] + "</span>" + (k[1] ? '<span class="count">' + k[1] + "</span>" : "");
+          kb.addEventListener("click", function (e) { e.stopPropagation(); state.tab = n.id; state.kid = i; state.open = n.id; render(); });
+          kids.appendChild(kb);
+        });
+        inner.appendChild(kids); box.appendChild(inner); navlist.appendChild(box);
+      }
+    });
+  }
+
+  function tilesEl(list) {
+    var g = el("div", "tiles");
+    list.forEach(function (t) {
+      g.innerHTML += '<div class="tile"><b>' + t[0] + "</b><span>" + t[1] + "</span>" +
+        (t[2] ? '<div class="delta ' + t[3] + '">' + t[2] + "</div>" : "") + "</div>";
+    });
+    return g;
+  }
+  function labelEl(t) { var d = el("div", "eyebrow"); d.textContent = t; return d; }
+  function rowsEl(list) {
+    var r = el("div", "rows");
+    list.forEach(function (row) {
+      r.innerHTML += '<div class="row"><div class="who2"><b>' + row[0] + "</b><small>" + row[1] +
+        '</small></div><span class="pill ' + row[3] + '">' + row[2] + "</span></div>";
+    });
+    return r;
+  }
+
+  function barChart(title, cap, data, unit) {
+    var max = Math.max.apply(null, data.map(function (d) { return d[1]; }));
+    var c = el("div", "chartcard");
+    c.innerHTML = "<h4>" + title + '</h4><p class="cap">' + cap + "</p>";
+    var bars = el("div", "bars");
+    data.forEach(function (d, i) {
+      var col = el("div", "barcol" + (i === 0 ? "" : ""));
+      var h = Math.round((d[1] / max) * 100);
+      col.innerHTML = '<div class="tip">' + d[0] + ": " + d[1] + " " + unit + "</div>" +
+        '<div class="barval">' + d[1] + '</div><div class="bar" style="height:' + h + '%"></div><div class="barlbl">' + d[0] + "</div>";
+      bars.appendChild(col);
+    });
+    c.appendChild(bars);
+    return c;
+  }
+
+  function hBarChart(title, cap, data, total) {
+    var max = Math.max.apply(null, data.map(function (d) { return d[1]; }));
+    var c = el("div", "chartcard");
+    c.innerHTML = "<h4>" + title + '</h4><p class="cap">' + cap + "</p>";
+    var w = el("div", "hbars");
+    data.forEach(function (d) {
+      var pct = Math.round((d[1] / total) * 100);
+      w.innerHTML += '<div class="hrow"><span class="hl">' + d[0] + '</span>' +
+        '<div class="track"><div class="fill" style="width:' + Math.round((d[1] / max) * 100) + '%"></div></div>' +
+        '<span class="hv"><b>' + d[1] + "</b> &nbsp;" + pct + "%</span></div>";
+    });
+    c.appendChild(w);
+    return c;
+  }
+
+  function denseTable(cols, rows, footLabel) {
+    var d = el("div", "dense");
+    var t = el("table", "dtable");
+    var head = "<tr><th style='width:26px'><span class='cb'></span></th>";
+    cols.forEach(function (c) { head += "<th" + (c[1] === "num" ? " style='text-align:right'" : "") + ">" + c[0] + (c[2] ? ' <span class="sort">&darr;</span>' : "") + "</th>"; });
+    head += "</tr>";
+    var body = "";
+    rows.forEach(function (r, i) {
+      body += "<tr><td><span class='cb" + (i < 2 ? " on" : "") + "'></span></td>";
+      r.cells.forEach(function (cell, j) {
+        var cl = cols[j][1] === "num" ? "num" : (j === 0 ? "name" : (cols[j][1] === "muted" ? "muted" : ""));
+        body += "<td class='" + cl + "'>" + cell + "</td>";
+      });
+      body += "</tr>";
+    });
+    t.innerHTML = "<thead>" + head + "</thead><tbody>" + body + "</tbody>";
+    d.appendChild(t);
+    var p = el("div", "pager");
+    p.innerHTML = "<span>" + footLabel + "</span><div class='pg'><span>&larr;</span><span class='on'>1</span><span>2</span><span>3</span><span>&hellip;</span><span>&rarr;</span></div>";
+    d.appendChild(p);
+    return d;
+  }
+
+  function toolbar(placeholder, views) {
+    var t = el("div", "toolbar");
+    t.innerHTML = '<div class="field"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' +
+      placeholder + '</div><span class="btn-s">Sort: Expiry &darr;</span><span class="btn-s">Export</span>';
+    var v = el("div", "views");
+    views.forEach(function (s, i) { v.innerHTML += '<span class="view' + (i === 0 ? " on" : "") + '">' + s + "</span>"; });
+    v.innerHTML += '<span class="view add">+ Save this view</span>';
+    var wrap2 = el("div");
+    wrap2.style.display = "flex"; wrap2.style.flexDirection = "column"; wrap2.style.gap = "9px";
+    wrap2.appendChild(t); wrap2.appendChild(v);
+    return wrap2;
+  }
+
+  function renderPane() {
+    var n = NAV.filter(function (x) { return x.id === state.tab; })[0];
+    var kid = n.kids.length ? n.kids[state.kid][0] : "";
+    document.getElementById("crumb").textContent = n.kids.length ? n.label : "";
+    document.getElementById("pane-title").textContent = kid || n.label;
+    document.getElementById("pane-desc").textContent = n.desc;
+    document.getElementById("url").textContent = "beta.indsure.in" + n.route + (kid ? "/" + slug(kid) : "");
+    paneBody.innerHTML = "";
+
+    if (n.id === "home") {
+      paneBody.appendChild(tilesEl([
+        ["12", "Need you today"], ["96", "Renewing in 30 days"], ["29", "Claims in flight"], ["41", "Lapsed, not called"]
+      ]));
+      paneBody.appendChild(labelEl("Oldest first"));
+      paneBody.appendChild(rowsEl([
+        ["Mehul Shah", "Niva Bupa claim, insurer silent 41 days", "Escalate", "crit"],
+        ["Deepak Mane", "Health lapsed 14 Aug, no contact since", "Call", "crit"],
+        ["Sunita Rao", "Health renewal due 19 Sep, not called", "Call", "warn"],
+        ["Aarti Joshi", "Renewal due 07 Oct, quote not sent", "Quote", "warn"]
+      ]));
+    }
+
+    else if (n.id === "insights") {
+      paneBody.appendChild(tilesEl([
+        ["1,240", "Policies in the book", "+64 this quarter", "up"],
+        ["₹4.82 Cr", "Premium under management", "+7.2%", "up"],
+        ["3.3%", "Lapse rate, 12 months", "+0.4 pts", "down"],
+        ["91%", "Claims settled, 12 months", "108 of 119", "up"]
+      ]));
+      var g = el("div", "grid2");
+      g.appendChild(barChart("Renewals due, next six months", "Policies reaching expiry. January is the pressure point at 152.", FORECAST, "policies"));
+      g.appendChild(hBarChart("Book by product type", "Share of 1,240 policies. One hue, because product type is not a status.", TYPE_COUNTS, 1240));
+      paneBody.appendChild(g);
+      paneBody.appendChild(labelEl("By agent, last 12 months"));
+      paneBody.appendChild(denseTable(
+        [["Agent", ""], ["Policies", "num"], ["Premium", "num"], ["Lapse rate", "num"], ["Claims open", "num"]],
+        [
+          { cells: ["Vinay Kamath", "612", "₹2.41 Cr", "2.6%", "11"] },
+          { cells: ["Sneha Patil", "394", "₹1.58 Cr", "3.1%", "9"] },
+          { cells: ["Imran Sayyed", "234", "₹0.83 Cr", "5.4%", "9"] }
+        ], "3 agents"));
+    }
+
+    else if (n.id === "policies") {
+      if (kid === "Overview") {
+        paneBody.appendChild(tilesEl([
+          ["1,240", "Policies in the book"], ["96", "Renewing in 30 days"], ["41", "Lapsed"], ["₹4.82 Cr", "Premium under management"]
+        ]));
+        var g2 = el("div", "grid2");
+        g2.appendChild(barChart("Renewals due, next six months", "Policies reaching expiry.", FORECAST, "policies"));
+        g2.appendChild(hBarChart("By product type", "Share of 1,240 policies.", TYPE_COUNTS, 1240));
+        paneBody.appendChild(g2);
+      } else if (kid === "Health") {
+        paneBody.appendChild(toolbar("Search 486 health policies by name, policy number", ["All health", "Renewing in 30 days", "Lapsed", "Above 10L cover"]));
+        paneBody.appendChild(el("div", "bulk", "<span class='cb on'></span> 2 selected <div class='sp'><span>Send renewal reminder</span><span>Assign</span><span>Export</span></div>"));
+        paneBody.appendChild(denseTable(
+          [["Customer", ""], ["Plan", "muted"], ["Cover", "num"], ["Expiry", "num", true], ["Premium", "num"], ["Status", ""]],
+          HEALTH.map(function (r) {
+            return { cells: [r[0], r[1], "₹" + r[2], r[3], "₹" + r[4], '<span class="pill ' + r[6] + '">' + r[5] + "</span>"] };
+          }), "Showing 1 to 8 of 486"));
+      } else {
+        var counts = { "Life": 214, "Term": 268, "Motor": 197, "Others": 75 };
+        paneBody.appendChild(toolbar("Search " + counts[kid] + " " + kid.toLowerCase() + " policies", ["All " + kid.toLowerCase(), "Renewing in 30 days", "Lapsed"]));
+        paneBody.appendChild(el("p", "empty-note", "Same workspace as Health: search, saved views, sortable columns, bulk actions and paging over " + counts[kid] + " rows. Only the columns change per product type, for example vehicle number and IDV on Motor."));
+      }
+    }
+
+    else if (n.id === "people") {
+      if (kid === "Overview") {
+        paneBody.appendChild(tilesEl([
+          ["994", "People in the book"], ["214", "Leads"], ["780", "Customers"], ["96", "Renewals due"]
+        ]));
+        paneBody.appendChild(labelEl("Not contacted in 30 days"));
+        paneBody.appendChild(rowsEl([
+          ["Priya Menon", "Wants a family floater, last called 2 Sep", "Lead", ""],
+          ["Deepak Mane", "Health lapsed 14 Aug", "Customer", "crit"],
+          ["Farhan Qureshi", "Came from My Website, 4 Sep", "Lead", ""]
+        ]));
+      } else {
+        var pl = PEOPLE.filter(function (p) { return p[2] === kid; });
+        paneBody.appendChild(toolbar("Search " + kid.toLowerCase() + " by name, phone, city", ["All " + kid.toLowerCase(), "Not contacted in 30 days", "High value"]));
+        paneBody.appendChild(rowsEl(pl));
+      }
+    }
+
+    else if (n.id === "claims") {
+      if (kid === "Settled") {
+        paneBody.appendChild(tilesEl([["108", "Settled in 12 months"], ["91%", "Settlement rate"], ["23 days", "Median time to settle"], ["₹1.94 Cr", "Total settled"]]));
+        paneBody.appendChild(el("p", "empty-note", "Settled claims are the evidence an agent shows a prospect. This screen is a record, not a queue."));
+      } else {
+        paneBody.appendChild(toolbar("Search claims by customer, insurer, claim number", ["Oldest first", "Insurer silent 14 days", "High value", "Mine"]));
+        paneBody.appendChild(denseTable(
+          [["Customer", ""], ["Insurer", "muted"], ["Type", "muted"], ["Amount", "num"], ["Age", "num", true], ["Stage", ""]],
+          CLAIMS.map(function (r) {
+            return { cells: [r[0], r[1], r[2], "₹" + r[3], r[4], '<span class="pill ' + r[6] + '">' + r[5] + "</span>"] };
+          }), "Showing 1 to 6 of " + (kid === "Open" ? "12" : "17")));
+        paneBody.appendChild(el("p", "empty-note", "Sorted by age, not by date filed. The oldest untouched claim is the one that loses you the customer, and that ordering is the whole reason Claims is not a tool in Services."));
+      }
+    }
+
+    else {
+      paneBody.appendChild(labelEl(kid));
+      paneBody.appendChild(rowsEl(SERVICES[kid] || []));
+    }
+  }
+
+  function render() { renderNav(); renderPane(); }
+  render();
+</script>
