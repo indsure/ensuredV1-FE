@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react"
-import { useLocation } from "wouter"
+import { useLocation, useSearch } from "wouter"
 import { Info, RefreshCw, ExternalLink, Download, Loader2, Trash2, FileSpreadsheet, Sparkles } from "lucide-react"
 import React from "react"
 import { formatDistanceToNow, format } from "date-fns"
@@ -155,6 +155,20 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
 type FilterTab = "all" | "expiring" | "switch" | "healthy";
 type SortKey = "expiry" | "score" | "name";
 
+/** "others" is the sidebar's catch-all: everything outside the four types it
+ *  names. It is not an `insurance_type` value, only a filter. */
+type TypeFilter = "all" | "others" | InsuranceType;
+
+const NAMED_TYPES = ["health", "life", "term", "motor"];
+
+/** The URL is the single source of truth for the type filter, so a refresh, a
+ *  Back press, or a deep link from the sidebar all land on the same list. */
+function normaliseType(raw: string | null): TypeFilter {
+  if (!raw || raw === "all") return "all";
+  if (raw === "others") return "others";
+  return raw in TYPE_META ? (raw as InsuranceType) : "all";
+}
+
 export default function PoliciesNew() {
   const [, setLocation] = useLocation();
   const [rows, setRows] = useState<ClientRow[]>([]);
@@ -162,7 +176,15 @@ export default function PoliciesNew() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<FilterTab>("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | InsuranceType>("all");
+  const search_ = useSearch();
+  const urlType = new URLSearchParams(search_).get("type");
+  const typeFilter = normaliseType(urlType);
+  /** Writing the filter to the URL rather than to state keeps the sidebar, the
+   *  chips and the address bar from disagreeing with each other. */
+  const setTypeFilter = useCallback(
+    (tk: TypeFilter) => setLocation(tk === "all" ? "/agent/policies" : `/agent/policies?type=${tk}`),
+    [setLocation]
+  );
   const [sort, setSort] = useState<SortKey>("expiry");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -283,7 +305,11 @@ export default function PoliciesNew() {
       (r.insurer || "").toLowerCase().includes(q) ||
       (r.policy_identifier || "").toLowerCase().includes(q)
     );
-    if (typeFilter !== "all") list = list.filter(r => (r.insurance_type || "health") === typeFilter);
+    if (typeFilter === "others") {
+      list = list.filter(r => !NAMED_TYPES.includes(r.insurance_type || "health"));
+    } else if (typeFilter !== "all") {
+      list = list.filter(r => (r.insurance_type || "health") === typeFilter);
+    }
     if (tab === "expiring") list = list.filter(r => { const d = getDays(r.expiry_date); return d !== null && d >= 0 && d <= 30; });
     if (tab === "switch") list = list.filter(r => r.score !== null && r.score < 70);
     if (tab === "healthy") list = list.filter(r => r.score !== null && r.score >= 70);
@@ -351,9 +377,12 @@ export default function PoliciesNew() {
 
           {/* TYPE FILTER */}
           <div className="flex flex-wrap items-center gap-2 px-6 pt-5">
-            {(["all", ...(Object.keys(TYPE_META) as InsuranceType[])] as ("all" | InsuranceType)[]).map(tk => {
+            {(["all", ...(Object.keys(TYPE_META) as InsuranceType[]), "others"] as TypeFilter[]).map(tk => {
               const active = typeFilter === tk;
-              const label = tk === "all" ? "All types" : `${TYPE_META[tk].emoji} ${TYPE_META[tk].label}`;
+              const label =
+                tk === "all" ? "All types"
+                : tk === "others" ? "Others"
+                : `${TYPE_META[tk].emoji} ${TYPE_META[tk].label}`;
               return (
                 <button
                   key={tk}

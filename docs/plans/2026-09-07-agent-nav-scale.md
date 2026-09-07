@@ -27,7 +27,7 @@ Every claim below was checked against source before it entered this plan.
 |---|---|---|---|
 | 1 | The Policies list fetches every row with no paging, including `report_data` | `PoliciesNew.tsx:180-185`, `.from("clients").select(...report_data...)` `.order("created_at")`, **no `.range()`, no `.limit()`** | **Confirmed.** Worst scaling bug in the portal |
 | 2 | Almost nothing paginates server-side | One `offset`/`limit` pair in 6,177 lines: `routes.ts:3207-3225`, the admin usage page | **Confirmed** |
-| 3 | There is no `term` in the data model | `insuranceTypes.ts:41`, `InsuranceType = "health" \| DataEntryType`; `leadPolicies.ts:15`, `["motor","health","life","travel","property"]` | **Confirmed.** A Term nav child cannot be populated today |
+| 3 | ~~There is no `term` in the data model~~ | `insuranceTypes.ts:30` `DATA_ENTRY_TYPES` includes `"term"`, and `TYPE_META.term` has a label and emoji | **WRONG, corrected 2026-09-07.** Term exists and is a first-class `insurance_type`. The original finding read the narrower `leadPolicies.ts:15` list (which covers lead policies only) plus the `InsuranceType` alias, and concluded the value did not exist. It does. A Term nav child is populated from real data |
 | 4 | No index on `clients` in the migration series | `grep "CREATE INDEX" migrations/*.sql` returns none for `clients`. Table predates migration 001 | **Unresolved.** Indexes may exist outside the series. **Verify against the live DB before adding any** |
 | 5 | Claims is already indexed for a queue | `015_claims.sql:193` `claims_agent_status_idx`, `:196` `claims_agent_created_idx` | **Confirmed.** Claims needs no new indexes |
 | 6 | The command palette is already installed and unused | `cmdk@1.1.1` in `frontend/package.json`; `components/ui/command.tsx` exists, imported only by `combobox.tsx` | **Confirmed** |
@@ -110,11 +110,11 @@ top-level, because at agency scale it is a queue with ageing rather than a tool.
 one place the plan does not follow the instruction, and it is flagged rather than silent.**
 One line in the nav array either way. **Founder decides.**
 
-**6.2 Life versus Term.** A term plan is a life policy, so the two children double-count and
-will not sum to the total. There is no `term` value in `insurance_type` (§2.3), so this is a
-schema decision, not a label decision. Options: add a plan-type column and backfill; derive
-from plan name, which will be unreliable; or drop Term and keep Life. **Until decided, the
-Policies children are Overview, Health, Life, Motor, Others.** **Founder decides.**
+**6.2 Life versus Term.** Downgraded after §2.3 was corrected. `term` and `life` are separate
+`insurance_type` values, so a policy carries one or the other and the counts do **not**
+double-count. What remains is a data-entry question, not a counting bug: a term plan is a kind
+of life insurance, so whoever enters a policy has to know which bucket to use. Worth a line of
+guidance at the point of entry. **Shipped as Overview, Health, Life, Term, Motor, Others.**
 
 **6.3 Premium under management.** Needs a premium column that is reliably populated. If it is
 sparse, the figure is misleading and should not be shown at all rather than shown partial.

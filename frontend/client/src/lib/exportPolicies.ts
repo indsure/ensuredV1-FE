@@ -38,7 +38,9 @@ function baseRow(p: ExportablePolicy): Record<string, any> {
  */
 export function exportPoliciesToExcel(
   rows: ExportablePolicy[],
-  typeFilter: "all" | InsuranceType
+  // "others" is the sidebar's catch-all filter, not an insurance type. It has no
+  // single field set, so it falls through to the base columns below.
+  typeFilter: "all" | "others" | InsuranceType
 ): void {
   let data: Record<string, any>[];
 

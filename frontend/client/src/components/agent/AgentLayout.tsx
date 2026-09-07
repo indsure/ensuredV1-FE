@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
-import { Link, useLocation } from "wouter"
-import { BookOpen, Calculator, FileText, Globe, LayoutDashboard, Settings, ListChecks, LogOut, Scale, ShieldCheck, Target, Upload, User, Users, Menu, X, TrendingUp, UsersRound } from "lucide-react"
+import { Link, useLocation, useSearch } from "wouter"
+import { BookOpen, ChevronRight, FileText, LayoutDashboard, Settings, LogOut, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -13,6 +13,22 @@ import { AgentTabBar } from "@/components/agent/AgentTabBar"
 interface AgentLayoutProps {
   children: ReactNode;
 }
+
+type NavChild = {
+  label: string;
+  href: string;
+  /** Only the queue child carries a live count. */
+  badge?: "queue";
+};
+
+type NavParent = {
+  key: string;
+  label: string;
+  /** Where clicking the parent lands. Always a real route in App.tsx. */
+  href: string;
+  icon: ReactNode;
+  children: NavChild[];
+};
 
 export default function AgentLayout({ children }: AgentLayoutProps) {
   const { agent, team, teamRequestPending } = useAgent()
@@ -28,39 +44,77 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
   }, [location])
 
   const { t, locale } = useLanguage()
+  const search = useSearch()
 
-  // Grouped by the agent's two real jobs (win business / service the book) so the
-  // sidebar reads as a few short clusters instead of one long flat list.
-  // Renewals lives as a tab inside Leads, not as its own nav item.
-  const navSections = useMemo(
+  // `t` echoes the key back when a string is missing, so `t(k) ?? "Fallback"`
+  // never fires — it renders "layout.grow" on screen. Compare against the key.
+  const label = (key: string, fallback: string) => {
+    const value = t(key)
+    return !value || value === key ? fallback : value
+  }
+
+  // One expanding rail instead of three flat groups of fifteen. Parents are the
+  // jobs an agent has; children are the cuts inside each job. Only one group is
+  // open at a time — five parents with up to six children each is twenty rows
+  // if they all stay open, which defeats the point of grouping.
+  //
+  // "Analyze" is deliberately absent: uploading a policy for a check is the most
+  // repeated thing in the product and it is an *action*, not a place, so it sits
+  // on the permanent button above the tree instead of costing a nav slot.
+  //
+  // Every href points at a route that exists in App.tsx. Nothing here is a
+  // placeholder for a screen we have not built.
+  const navTree = useMemo<NavParent[]>(
     () => [
       {
-        key: "main",
-        label: t("layout.main"),
-        items: [
-          { label: t("layout.overview"), href: "/agent/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-          { label: t("layout.analyze") ?? "Analyze", href: "/agent/uploads", icon: <Upload className="h-4 w-4" /> },
-          { label: t("layout.my_queue"), href: "/agent/my-queue", icon: <ListChecks className="h-4 w-4" /> },
+        key: "home",
+        label: label("layout.nav_home", "Home"),
+        href: "/agent/dashboard",
+        icon: <LayoutDashboard className="h-4 w-4" />,
+        children: [
+          { label: label("layout.nav_overview", "Overview"), href: "/agent/dashboard" },
+          { label: label("layout.nav_needs_attention", "Needs Attention"), href: "/agent/my-queue", badge: "queue" },
         ],
       },
       {
-        key: "grow",
-        label: t("layout.grow") ?? "Grow",
-        items: [
-          { label: t("layout.leads") ?? "Leads", href: "/agent/leads", icon: <Target className="h-4 w-4" /> },
-          { label: t("layout.my_page") ?? "My Page", href: "/agent/my-page", icon: <Globe className="h-4 w-4" /> },
-          { label: t("layout.calculator") ?? "Calculator", href: "/agent/calculator", icon: <Calculator className="h-4 w-4" /> },
-          { label: t("layout.compare") ?? "Compare", href: "/agent/compare", icon: <Scale className="h-4 w-4" /> },
+        key: "people",
+        label: label("layout.nav_people", "People"),
+        href: "/agent/customers",
+        icon: <Users className="h-4 w-4" />,
+        children: [
+          { label: label("layout.customers", "Customers"), href: "/agent/customers" },
+          { label: label("layout.leads", "Leads"), href: "/agent/leads" },
+          { label: label("layout.renewals", "Renewals"), href: "/agent/renewals" },
         ],
       },
       {
-        key: "book",
-        label: t("layout.my_book") ?? "My Book",
-        items: [
-          { label: t("layout.my_policies") ?? "My Policies", href: "/agent/policies", icon: <FileText className="h-4 w-4" /> },
-          { label: t("layout.policy_values") ?? "Surrender Values", href: "/agent/values", icon: <TrendingUp className="h-4 w-4" /> },
-          { label: t("layout.customers") ?? "Customers", href: "/agent/customers", icon: <Users className="h-4 w-4" /> },
-          { label: t("layout.claims") ?? "Claims", href: "/agent/claims", icon: <ShieldCheck className="h-4 w-4" /> },
+        key: "policies",
+        label: label("layout.nav_policies", "Policies"),
+        href: "/agent/policies",
+        icon: <FileText className="h-4 w-4" />,
+        // Type children map to `insurance_type` values that already exist in
+        // DATA_ENTRY_TYPES. "others" is the catch-all the Policies page resolves
+        // to everything outside health/life/term/motor.
+        children: [
+          { label: label("layout.nav_overview", "Overview"), href: "/agent/policies" },
+          { label: label("layout.type_health", "Health"), href: "/agent/policies?type=health" },
+          { label: label("layout.type_life", "Life"), href: "/agent/policies?type=life" },
+          { label: label("layout.type_term", "Term"), href: "/agent/policies?type=term" },
+          { label: label("layout.type_motor", "Motor"), href: "/agent/policies?type=motor" },
+          { label: label("layout.type_others", "Others"), href: "/agent/policies?type=others" },
+        ],
+      },
+      {
+        key: "services",
+        label: label("layout.nav_services", "Services"),
+        href: "/agent/compare",
+        icon: <Wrench className="h-4 w-4" />,
+        children: [
+          { label: label("layout.nav_compare", "Compare Policies"), href: "/agent/compare" },
+          { label: label("layout.nav_calculator", "Cover Calculator"), href: "/agent/calculator" },
+          { label: label("layout.policy_values", "Surrender Value"), href: "/agent/values" },
+          { label: label("layout.claims", "Claims"), href: "/agent/claims" },
+          { label: label("layout.nav_my_website", "My Website"), href: "/agent/my-page" },
         ],
       },
       // Agency: for the person who owns a team, and for someone whose team we
@@ -70,15 +124,39 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
       ...(team?.isOwner || teamRequestPending
         ? [{
             key: "agency",
-            label: t("layout.agency") ?? "Agency",
-            items: [
-              { label: t("layout.team") ?? "Team", href: "/agent/team", icon: <UsersRound className="h-4 w-4" /> },
+            label: label("layout.nav_agency", "My Agency"),
+            href: "/agent/team",
+            icon: <UsersRound className="h-4 w-4" />,
+            children: [
+              { label: label("layout.team", "Team"), href: "/agent/team" },
             ],
           }]
         : []),
     ],
     [locale, team?.isOwner, teamRequestPending]
   )
+
+  // A child is active on an exact match including the query string, so
+  // Policies > Overview does not stay lit while Health is selected.
+  const currentPath = search ? `${location}?${search}` : location
+  const isChildActive = (href: string) => currentPath === href
+
+  // Which group the current route lives in. Drives auto-open, so the rail always
+  // shows you where you are after a reload or a deep link.
+  const activeKey = useMemo(() => {
+    const hit = navTree.find(
+      (p) => p.href === location || p.children.some((c) => c.href.split("?")[0] === location)
+    )
+    return hit?.key ?? null
+  }, [navTree, location])
+
+  const [openGroup, setOpenGroup] = useState<string | null>(activeKey)
+
+  // Re-open on navigation only. Collapsing the group you are already in stays
+  // collapsed, because activeKey has not changed.
+  useEffect(() => {
+    if (activeKey) setOpenGroup(activeKey)
+  }, [activeKey])
 
   async function fetchQueueCount() {
     if (!agent?.agentId) return
@@ -178,44 +256,93 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         )}
 
         <div className={`${sidebarCollapsed ? 'px-2' : 'px-4'} py-6 space-y-6 flex-1 transition-all duration-300`}>
-          {navSections.map((section) => (
-            <div key={section.key}>
-              {!sidebarCollapsed && <div className="px-2 text-xs font-black uppercase tracking-[0.25em] text-white/40 mb-3">{section.label}</div>}
-              <nav className="space-y-1">
-                {section.items.map((item) => {
-                  const active = location === item.href
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      className={[
-                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors relative group",
-                        active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
-                        sidebarCollapsed ? "justify-center" : "justify-between"
-                      ].join(" ")}
-                      title={sidebarCollapsed ? item.label : undefined}
-                    >
-                      <span className={`flex items-center ${sidebarCollapsed ? '' : 'gap-3'}`}>
-                        {item.icon}
-                        {!sidebarCollapsed && item.label}
+          {/* The single most-repeated action in the product, always in reach. */}
+          <Link
+            to="/agent/uploads"
+            title={sidebarCollapsed ? label("layout.nav_check_policy", "Check a Policy") : undefined}
+            className={[
+              "flex min-h-11 items-center rounded-xl bg-[#0D9488] text-white text-sm font-bold transition-colors hover:bg-[#0f766e]",
+              sidebarCollapsed ? "w-full justify-center" : "gap-2 px-3 py-3",
+            ].join(" ")}
+          >
+            <Upload className="h-4 w-4 flex-shrink-0" />
+            {!sidebarCollapsed && label("layout.nav_check_policy", "Check a Policy")}
+          </Link>
+
+          <nav className="space-y-1">
+            {navTree.map((parent) => {
+              const open = !sidebarCollapsed && openGroup === parent.key
+              const parentActive = activeKey === parent.key
+              return (
+                <div key={parent.key}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Collapsed to icons: no room for children, so just go.
+                      if (sidebarCollapsed) { setLocation(parent.href); return }
+                      // Clicking the open group closes it without navigating away.
+                      if (openGroup === parent.key) { setOpenGroup(null); return }
+                      setOpenGroup(parent.key)
+                      setLocation(parent.href)
+                    }}
+                    aria-expanded={sidebarCollapsed ? undefined : open}
+                    title={sidebarCollapsed ? parent.label : undefined}
+                    className={[
+                      "relative flex w-full min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
+                      parentActive ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
+                      sidebarCollapsed ? "justify-center" : "justify-between",
+                    ].join(" ")}
+                  >
+                    <span className={`flex items-center ${sidebarCollapsed ? "" : "gap-3"}`}>
+                      {parent.icon}
+                      {!sidebarCollapsed && parent.label}
+                    </span>
+                    {!sidebarCollapsed && (
+                      <ChevronRight
+                        className={`h-4 w-4 flex-shrink-0 text-white/40 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+                      />
+                    )}
+                    {sidebarCollapsed && parent.key === "home" && queueCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0D9488] text-white text-xs font-black flex items-center justify-center">
+                        {queueCount}
                       </span>
-                      {!sidebarCollapsed && item.href === "/agent/my-queue" && (
-                        <span className="inline-flex items-center rounded-full bg-[#0D9488]/15 text-[#5eead4] border border-[#0D9488]/30 px-2 py-0.5 text-xs font-black tabular-nums">
-                          {queueCount}
-                        </span>
-                      )}
-                      {sidebarCollapsed && item.href === "/agent/my-queue" && queueCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#0D9488] text-white text-xs font-black flex items-center justify-center">
-                          {queueCount}
-                        </span>
-                      )}
-                    </Link>
-                  )
-                })}
-                {section.key === "main" && queueCountError && !sidebarCollapsed && <div className="text-xs text-white/50 px-2 mt-2">Queue badge unavailable</div>}
-              </nav>
-            </div>
-          ))}
+                    )}
+                  </button>
+
+                  {open && (
+                    <div className="mt-1 mb-2 ml-5 space-y-0.5 border-l border-white/10 pl-2">
+                      {parent.children.map((child) => {
+                        const active = isChildActive(child.href)
+                        return (
+                          <Link
+                            key={child.href}
+                            to={child.href}
+                            aria-current={active ? "page" : undefined}
+                            className={[
+                              "flex min-h-11 items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                              active
+                                ? "bg-[#0D9488]/15 font-bold text-[#5eead4]"
+                                : "font-medium text-white/60 hover:bg-white/5 hover:text-white",
+                            ].join(" ")}
+                          >
+                            <span>{child.label}</span>
+                            {child.badge === "queue" && (
+                              <span className="inline-flex items-center rounded-full border border-[#0D9488]/30 bg-[#0D9488]/15 px-2 py-0.5 text-xs font-black tabular-nums text-[#5eead4]">
+                                {queueCount}
+                              </span>
+                            )}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            {queueCountError && !sidebarCollapsed && (
+              <div className="px-2 mt-2 text-xs text-white/50">Queue badge unavailable</div>
+            )}
+          </nav>
 
           <div>
             {!sidebarCollapsed && <div className="px-2 text-xs font-black uppercase tracking-[0.25em] text-white/40 mb-3">{t("layout.account")}</div>}
