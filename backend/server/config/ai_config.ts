@@ -6,7 +6,29 @@ export const AI_CONFIG = {
         temperature: 0.0,      // Maximum determinism
         top_p: 1.0,           // No nucleus sampling randomness
         top_k: 1,             // Greedy decoding
-        max_output_tokens: 8192,
+        /**
+         * Output ceiling, in tokens.
+         *
+         * 2026-09-07: raised 8192 -> 32768. This model THINKS, and the
+         * reasoning trace is billed against this same ceiling while being
+         * reported separately (thoughtsTokenCount), so the visible report only
+         * ever gets what thinking leaves behind. When 8192 was first wired to
+         * the SDK (c4ad8c0, 2026-08-31) it was justified against the largest
+         * audit ever *emitted* — 4,411 tokens — but that figure counted
+         * candidatesTokenCount alone. It was never the number that mattered.
+         *
+         * Every health audit since that commit has died on it. From the ledger:
+         *   prompt 23,092 + visible 325 + thinking 7,863 = 8,188  -> MAX_TOKENS
+         * and the JSON was cut mid-object, which the pipeline then reports as
+         * "Invalid AI response format — JSON parse failed".
+         *
+         * 32,768 sits about 2.5x above the largest known-good total
+         * (~4,000 visible + ~8,500 thinking = ~12,500) and still bounds a
+         * runaway. Raising a ceiling cannot make a call cost more than the
+         * tokens it actually spends: a report that fit inside 8,192 bills
+         * exactly the same here.
+         */
+        max_output_tokens: Number(process.env.GEMINI_MAX_OUTPUT_TOKENS) || 32768,
         seed: 42              // Fixed seed for reproducibility
     },
     safety_settings: [

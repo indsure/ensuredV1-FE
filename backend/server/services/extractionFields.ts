@@ -46,6 +46,31 @@ export function isDataEntryType(type: string): type is DataEntryType {
   return (DATA_ENTRY_TYPES as readonly string[]).includes(type);
 }
 
+/**
+ * Every insurance type an upload endpoint accepts: `health` (the forensic
+ * audit lane) plus every data-entry lane above. Derived, never retyped.
+ *
+ * This exists because /api/agent/analyze carried its own hand-written set of
+ * four — health, term, life, motor — while the upload page offered all nine.
+ * The other five (travel, property, fire, marine, contractor_all_risk) missed
+ * the set and fell through a `has(x) ? x : "health"` fallback, so they were
+ * audited as health policies. A marine policy came back "Document does not
+ * appear to be a readable health insurance policy", drawn against a
+ * policy-check credit, on a screen that had just promised data entry and one
+ * data-entry entry. The two lists were never wired together, so the second one
+ * went stale the moment the first one grew.
+ *
+ * Keep in sync with the frontend registry at
+ *   frontend/client/src/lib/insuranceTypes.ts
+ * whose TYPE_META keys are exactly this list.
+ */
+export const SUPPORTED_INSURANCE_TYPES = ["health", ...DATA_ENTRY_TYPES] as const;
+export type SupportedInsuranceType = (typeof SUPPORTED_INSURANCE_TYPES)[number];
+
+export function isSupportedInsuranceType(type: string): type is SupportedInsuranceType {
+  return (SUPPORTED_INSURANCE_TYPES as readonly string[]).includes(type);
+}
+
 export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
   motor: [
     { key: "policyholder_name", label: "Policyholder name", type: "text", shared: "policyholder_name" },

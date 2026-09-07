@@ -284,9 +284,16 @@ export class AIService {
                         // AI_CONFIG.generation_config was declared but never
                         // reached the SDK, so the output cap was the provider
                         // default rather than ours. Wiring it makes output spend
-                        // bounded per call. No behaviour change at the current
-                        // value: the largest audit ever produced was 4,411
-                        // tokens, well under 8,192.
+                        // bounded per call.
+                        //
+                        // The wiring commit claimed "no behaviour change: the
+                        // largest audit ever produced was 4,411 tokens". That
+                        // was wrong, and it took the health lane down for a
+                        // week. On a thinking model this ceiling covers the
+                        // reasoning trace AND the answer, but only the answer
+                        // shows up in candidatesTokenCount — so the number the
+                        // comparison used was never the number being capped.
+                        // See the note on max_output_tokens in ai_config.ts.
                         // (top_k and seed are intentionally NOT passed —
                         // temperature=0 already forces greedy decoding, and
                         // sending them would alter requests for no gain.)

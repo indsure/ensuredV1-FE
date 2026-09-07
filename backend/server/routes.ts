@@ -14,7 +14,12 @@ import { POLICY_EXTRACTION_PROMPT } from "./policyExtractionPrompt";
 import { AIService } from "./services/aiService";
 import { runAnalysisPipeline, type CompanionDoc, type CompanionKind } from "./services/analysisPipeline";
 import { extractStructuredData } from "./services/dataExtraction";
-import { isDataEntryType, deriveSharedColumns } from "./services/extractionFields";
+import {
+  isDataEntryType,
+  deriveSharedColumns,
+  isSupportedInsuranceType,
+  SUPPORTED_INSURANCE_TYPES,
+} from "./services/extractionFields";
 import { extractWordingProfile, hashText } from "./services/wordingCompare";
 import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage";
 import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
@@ -3600,13 +3605,29 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
         // The client used to be trusted with this string verbatim, and it sent
         // "vehicle" while the rest of the product uses "motor". Whatever lands
-        // here is stored on pending_uploads, meters the free quota per type in
-        // checkIndividualQuota, and is copied onto individual_policies, so an
-        // unrecognised value silently creates a line of business nothing else
-        // can read or count. Anything off the list falls back to health.
-        const CONSUMER_TYPES = new Set(["health", "term", "life", "motor"]);
+        // here is stored on the policy row, meters the per-type allowance, and
+        // drives every later filter, so an unrecognised value silently creates
+        // a line of business nothing else can read or count.
+        //
+        // It used to be checked against a hand-written set of four while the
+        // upload page offered nine, and anything off that set fell back to
+        // health. That fallback is gone, for two reasons. It was wrong about
+        // which types exist (see SUPPORTED_INSURANCE_TYPES), and a fallback is
+        // the wrong shape for this decision either way: "health" is the
+        // expensive lane, so guessing it charges a policy-check credit and
+        // returns a forensic verdict on a document the agent never asked us to
+        // audit. An unknown type is now a 400 that names what we accept.
         const requestedType = String(req.body.type || "health").toLowerCase();
-        const insuranceType = CONSUMER_TYPES.has(requestedType) ? requestedType : "health";
+        if (!isSupportedInsuranceType(requestedType)) {
+          dropTempFiles();
+          return res.status(400).json({
+            error: "UNSUPPORTED_INSURANCE_TYPE",
+            message:
+              `We do not recognise the policy type "${requestedType}". ` +
+              `Please pick one of: ${SUPPORTED_INSURANCE_TYPES.join(", ")}.`,
+          });
+        }
+        const insuranceType = requestedType;
         const isDataEntry = isDataEntryType(insuranceType);
 
         // Metering. Health forensic analysis draws from credits; the OCR /
@@ -4890,7 +4911,21 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         const userId = await requireIndividual(req, res);
         if (!userId) return;
 
-        const insuranceType = (req.body.type || "health").toLowerCase();
+        // Same contract as the agent lane: an unrecognised type is refused
+        // rather than quietly treated as health. Here the stakes are the free
+        // per-type allowance — checkIndividualQuota meters by this string, so a
+        // guess spends the wrong lane's quota — and the type is copied onto
+        // individual_policies, where the portfolio filters read it back.
+        const requestedType = String(req.body.type || "health").toLowerCase();
+        if (!isSupportedInsuranceType(requestedType)) {
+          return res.status(400).json({
+            error: "UNSUPPORTED_INSURANCE_TYPE",
+            message:
+              `We do not recognise the policy type "${requestedType}". ` +
+              `Please pick one of: ${SUPPORTED_INSURANCE_TYPES.join(", ")}.`,
+          });
+        }
+        const insuranceType = requestedType;
 
         // ── THE quota choke point — before any Gemini spend ──
         const quota = await checkIndividualQuota(userId, insuranceType);
@@ -4964,7 +4999,20 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           });
         }
 
-        const insuranceType = (req.body.type || "health").toLowerCase();
+        // Validated here, at the anonymous half, so a bad type is refused
+        // while the visitor is still on the page and can pick again. The claim
+        // handler copies this string straight onto the real analysis, so
+        // letting it through would only surface the problem after signup.
+        // (The temp upload is cleaned up by the `finally` below.)
+        const insuranceType = String(req.body.type || "health").toLowerCase();
+        if (!isSupportedInsuranceType(insuranceType)) {
+          return res.status(400).json({
+            error: "UNSUPPORTED_INSURANCE_TYPE",
+            message:
+              `We do not recognise the policy type "${insuranceType}". ` +
+              `Please pick one of: ${SUPPORTED_INSURANCE_TYPES.join(", ")}.`,
+          });
+        }
         const token = crypto.randomBytes(32).toString("base64url");
         const ext = file.originalname.includes(".")
           ? file.originalname.split(".").pop()!.toLowerCase().replace(/[^a-z0-9]/g, "")
