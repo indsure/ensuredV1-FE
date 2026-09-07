@@ -30,6 +30,7 @@ const AgentSignupFlow = lazy(() => import("@/pages/agent/SignupFlow"));
 
 // --- Agent App ---
 const DashboardNew = lazy(() => import("@/pages/agent/DashboardNew"));
+const Insights = lazy(() => import("@/pages/agent/Insights"));
 const LeadRenewals = lazy(() => import("@/pages/agent/LeadRenewals"));
 const AgentUploads = lazy(() => import("@/pages/agent/AgentUploads"));
 const PoliciesNew = lazy(() => import("@/pages/agent/PoliciesNew"));
@@ -201,6 +202,9 @@ function App() {
                       {/* --- Agent Protected App --- */}
                       <Route path="/agent/dashboard">
                         {() => <AgentProtectedRoute><DashboardNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/insights">
+                        {() => <AgentProtectedRoute><Insights /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/uploads">
                         {() => <AgentProtectedRoute><AgentUploads /></AgentProtectedRoute>}

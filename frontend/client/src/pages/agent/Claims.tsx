@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import {
   AlertTriangle, Clock, FileText, Loader2, MessageCircle, Phone, Plus, RefreshCw, Shield, X,
 } from "lucide-react";
@@ -23,6 +23,12 @@ const inputCls =
 
 type Tab = "open" | "attention" | "closed";
 
+/** The URL owns the tab so the sidebar children can deep-link into it and a
+ *  refresh does not silently drop you back on Open. */
+function normaliseTab(raw: string | null): Tab {
+  return raw === "attention" || raw === "closed" ? raw : "open";
+}
+
 const CLOSED: Claim["status"][] = ["settled", "rejected"];
 
 /** Needs the advisor today: an insurer is waiting, or the files are about to go. */
@@ -40,7 +46,12 @@ export default function Claims() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("open");
+  const claimsSearch = useSearch();
+  const tab = normaliseTab(new URLSearchParams(claimsSearch).get("tab"));
+  const setTab = useCallback(
+    (next: Tab) => setLocation(next === "open" ? "/agent/claims" : `/agent/claims?tab=${next}`),
+    [setLocation]
+  );
   const [createOpen, setCreateOpen] = useState(false);
 
   const load = useCallback(async () => {

@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation, useSearch } from "wouter"
-import { BookOpen, ChevronRight, FileText, LayoutDashboard, Settings, LogOut, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
+import { BookOpen, ChevronRight, FileText, LayoutDashboard, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -75,6 +75,15 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           { label: label("layout.nav_overview", "Overview"), href: "/agent/dashboard" },
           { label: label("layout.nav_needs_attention", "Needs Attention"), href: "/agent/my-queue", badge: "queue" },
         ],
+      },
+      {
+        key: "insights",
+        label: label("layout.nav_insights", "Insights"),
+        href: "/agent/insights",
+        icon: <TrendingUp className="h-4 w-4" />,
+        // No children: it is one screen, and a parent that expands to a single
+        // child is a click that buys nothing.
+        children: [],
       },
       {
         key: "people",

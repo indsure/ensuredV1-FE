@@ -962,6 +962,91 @@ export function buildSeed(): Store {
   })();
 
   // ---- Misc tables read across the portal (kept light) ---------------------
+  // ---- Bulk book ----------------------------------------------------------
+  // The twelve hand-written policies above each carry a full forensic report,
+  // which is what PolicyDetail needs. They are the *depth* of the demo.
+  //
+  // They are not its *scale*: with twelve rows every type filter reads two or
+  // three and the portfolio screens have nothing to say. A working agent's book
+  // is hundreds. These rows supply that shape — spread across every
+  // insurance_type, with expiries either side of today so renewals and lapses
+  // are real — and carry no report_data, exactly like a data-entry policy that
+  // was never analysed. Anything opened from here lands on the same detail
+  // screen a real un-analysed policy does.
+  //
+  // Deterministic on purpose: index-driven, no Math.random. Every count on
+  // every screen has to be the same on reload, or the demo contradicts itself.
+  const BULK_NAMES = [
+    "Anil Deshpande", "Sunita Rao", "Farhan Qureshi", "Kavita Bhosale", "Ramesh Iyer",
+    "Deepak Mane", "Aarti Joshi", "Nikhil Wagh", "Pooja Shirke", "Sanjay Kulkarni",
+    "Rekha Nair", "Vijay Salunkhe", "Asha Pawar", "Mohan Gokhale", "Sneha Patil",
+    "Imran Sayyed", "Lata Chavan", "Girish Rane", "Madhuri Kale", "Prashant Jadhav",
+    "Nilima Sathe", "Ashok Bhide", "Shalini Karve", "Tushar Phadke", "Vandana Limaye",
+    "Yogesh Barve", "Chitra Dixit", "Harish Naik", "Jyoti Ghatge", "Kiran Marathe",
+  ];
+  const BULK_TYPES: { type: string; plan: string; insurer: string }[] = [
+    { type: "health", plan: "Family Health Optima", insurer: INSURERS.star },
+    { type: "health", plan: "ReAssure 2.0", insurer: INSURERS.niva },
+    { type: "health", plan: "Care Supreme", insurer: INSURERS.care },
+    { type: "health", plan: "Optima Secure", insurer: INSURERS.hdfc },
+    { type: "term", plan: "Click 2 Protect Super", insurer: INSURERS.hdfc },
+    { type: "term", plan: "Smart Protection Goal", insurer: INSURERS.icici },
+    { type: "life", plan: "Jeevan Anand", insurer: INSURERS.lic },
+    { type: "life", plan: "Sanchay Plus", insurer: INSURERS.hdfc },
+    { type: "motor", plan: "Private Car Package", insurer: INSURERS.digit },
+    { type: "motor", plan: "Two Wheeler Package", insurer: INSURERS.icici },
+    { type: "motor", plan: "Commercial Vehicle", insurer: INSURERS.tata },
+    { type: "travel", plan: "Travel Guard", insurer: INSURERS.tata },
+    { type: "property", plan: "Home Shield", insurer: INSURERS.icici },
+    { type: "fire", plan: "Standard Fire & Special Perils", insurer: INSURERS.digit },
+    { type: "marine", plan: "Marine Cargo Open", insurer: INSURERS.tata },
+  ];
+
+  const bulkCustomers: any[] = [];
+  const bulkClients: any[] = [];
+
+  for (let i = 0; i < 96; i++) {
+    const person = BULK_NAMES[i % BULK_NAMES.length];
+    const spec = BULK_TYPES[i % BULK_TYPES.length];
+    const isHealth = spec.type === "health";
+
+    // One customer per distinct person, reused by their other policies.
+    const custId = `bulk-cust-${i % BULK_NAMES.length}`;
+    if (i < BULK_NAMES.length) {
+      bulkCustomers.push({
+        id: custId, agent_id: DEMO_AGENT_ID, name: person,
+        phone: `+91 90${String(100000 + i * 137).slice(0, 6)}`,
+        email: null, dob: null,
+        city: ["Indore", "Bhopal", "Ujjain", "Dewas", "Gwalior"][i % 5],
+        notes: "", created_at: ago(360 - i * 3),
+      });
+    }
+
+    // Expiry walks from 47 days past to ~300 days out, so "expiring in 30 days"
+    // and "lapsed" are both genuinely populated rather than asserted.
+    const expiryOffset = 47 - i * 3.6;
+
+    bulkClients.push({
+      id: `bulk-pol-${i}`, agent_id: DEMO_AGENT_ID, customer_id: custId,
+      policy_name: spec.plan, name: person, policyholder_name: person,
+      insurer: spec.insurer, insurance_type: spec.type, status: "done",
+      // Only health policies get a check and therefore a score. Everything else
+      // is data entry, which is exactly how the real product behaves.
+      score: isHealth ? 44 + ((i * 7) % 49) : null,
+      sum_insured: [300000, 500000, 1000000, 1500000, 2500000, 5000000][i % 6],
+      expiry_date: dateAgo(Math.round(expiryOffset)),
+      created_at: ago(300 - i * 2),
+      share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
+      flaws: [], report_data: null,
+      extracted_data: spec.type === "motor"
+        ? { reg_no: `MP09 ${String.fromCharCode(65 + (i % 26))}${String.fromCharCode(65 + ((i + 7) % 26))} ${1000 + i}` }
+        : null,
+    });
+  }
+
+  customers.push(...bulkCustomers);
+  clients.push(...bulkClients);
+
   const agent_credits = [{ id: "cred-1", agent_id: DEMO_AGENT_ID, balance: 25 }];
   // Data-entry (OCR) allowance is metered separately from policy checks.
   const agent_ocr_credits = [{ id: "ocr-1", agent_id: DEMO_AGENT_ID, balance: 38 }];
