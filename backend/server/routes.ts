@@ -14,7 +14,12 @@ import { POLICY_EXTRACTION_PROMPT } from "./policyExtractionPrompt";
 import { AIService } from "./services/aiService";
 import { runAnalysisPipeline, type CompanionDoc, type CompanionKind } from "./services/analysisPipeline";
 import { extractStructuredData } from "./services/dataExtraction";
-import { isDataEntryType, deriveSharedColumns } from "./services/extractionFields";
+import {
+  isDataEntryType,
+  deriveSharedColumns,
+  isSupportedInsuranceType,
+  SUPPORTED_INSURANCE_TYPES,
+} from "./services/extractionFields";
 import { extractWordingProfile, hashText } from "./services/wordingCompare";
 import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage";
 import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
@@ -2562,7 +2567,23 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           return res.status(403).json({ error: "WRONG_ACCOUNT_TYPE", message: "This endpoint is for agent accounts." });
         }
 
-        const insuranceType = (req.body.type || "health").toLowerCase();
+        // An unrecognised type is refused rather than defaulted to health.
+        // Health is the expensive lane: guessing it charges a policy-check
+        // credit and returns a forensic verdict on a document the agent never
+        // asked us to audit. The value is also stored on the policy row and
+        // drives every later filter and per-type allowance, so a value nothing
+        // else can read must not get in.
+        const requestedType = String(req.body.type || "health").toLowerCase();
+        if (!isSupportedInsuranceType(requestedType)) {
+          dropTempFiles();
+          return res.status(400).json({
+            error: "UNSUPPORTED_INSURANCE_TYPE",
+            message:
+              `We do not recognise the policy type "${requestedType}". ` +
+              `Please pick one of: ${SUPPORTED_INSURANCE_TYPES.join(", ")}.`,
+          });
+        }
+        const insuranceType = requestedType;
         const isDataEntry = isDataEntryType(insuranceType);
 
         // Metering. Health forensic analysis draws from credits; the OCR /
@@ -3846,7 +3867,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         const userId = await requireIndividual(req, res);
         if (!userId) return;
 
-        const insuranceType = (req.body.type || "health").toLowerCase();
+        // Same contract as the agent lane. Here the stakes are the free
+        // per-type allowance, which checkIndividualQuota meters by this exact
+        // string, so an unrecognised value would spend the wrong lane's quota.
+        const requestedType = String(req.body.type || "health").toLowerCase();
+        if (!isSupportedInsuranceType(requestedType)) {
+          return res.status(400).json({
+            error: "UNSUPPORTED_INSURANCE_TYPE",
+            message:
+              `We do not recognise the policy type "${requestedType}". ` +
+              `Please pick one of: ${SUPPORTED_INSURANCE_TYPES.join(", ")}.`,
+          });
+        }
+        const insuranceType = requestedType;
 
         // ── THE quota choke point — before any Gemini spend ──
         const quota = await checkIndividualQuota(userId, insuranceType);
@@ -3920,7 +3953,20 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           });
         }
 
-        const insuranceType = (req.body.type || "health").toLowerCase();
+        // Validated at the anonymous half so a bad type is refused while the
+        // visitor is still on the page and can pick again. The claim handler
+        // copies this string straight onto the real analysis, so letting it
+        // through would only surface the problem after signup.
+        // (The temp upload is cleaned up by the `finally` below.)
+        const insuranceType = String(req.body.type || "health").toLowerCase();
+        if (!isSupportedInsuranceType(insuranceType)) {
+          return res.status(400).json({
+            error: "UNSUPPORTED_INSURANCE_TYPE",
+            message:
+              `We do not recognise the policy type "${insuranceType}". ` +
+              `Please pick one of: ${SUPPORTED_INSURANCE_TYPES.join(", ")}.`,
+          });
+        }
         const token = crypto.randomBytes(32).toString("base64url");
         const ext = file.originalname.includes(".")
           ? file.originalname.split(".").pop()!.toLowerCase().replace(/[^a-z0-9]/g, "")

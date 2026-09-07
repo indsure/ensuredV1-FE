@@ -46,6 +46,29 @@ export function isDataEntryType(type: string): type is DataEntryType {
   return (DATA_ENTRY_TYPES as readonly string[]).includes(type);
 }
 
+/**
+ * Every insurance type an upload endpoint accepts: `health` (the forensic
+ * audit lane) plus every data-entry lane above. Derived, never retyped.
+ *
+ * The upload routes used to read `req.body.type` with no check at all, so an
+ * unrecognised string became "health" by way of the `|| "health"` default.
+ * That is the wrong direction to fail in: health is the expensive lane, so a
+ * typo or a stale client charged a policy-check credit and returned a forensic
+ * verdict on a document nobody asked us to audit. It also wrote a line of
+ * business into the policy row that no filter or per-type quota could read
+ * back.
+ *
+ * Keep in sync with the frontend registry at
+ *   frontend/client/src/lib/insuranceTypes.ts
+ * whose TYPE_META keys are exactly this list. insuranceTypes.test.ts asserts it.
+ */
+export const SUPPORTED_INSURANCE_TYPES = ["health", ...DATA_ENTRY_TYPES] as const;
+export type SupportedInsuranceType = (typeof SUPPORTED_INSURANCE_TYPES)[number];
+
+export function isSupportedInsuranceType(type: string): type is SupportedInsuranceType {
+  return (SUPPORTED_INSURANCE_TYPES as readonly string[]).includes(type);
+}
+
 export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
   motor: [
     { key: "policyholder_name", label: "Policyholder name", type: "text", shared: "policyholder_name" },
