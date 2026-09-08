@@ -243,6 +243,20 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
     }
   }
 
+  // Priority 2b: the IRDAI Customer Information Sheet line. Every compliant
+  // policy carries it, and it is the document naming the product itself rather
+  // than us guessing from vocabulary. Without this, a Tata AIG MediCare Premier
+  // fell all the way through to the alias map and came out "Optima Restore".
+  if (!plan) {
+    const cisMatch = text.match(
+      /Name of the Insurance Product\s*\/?\s*(?:Policy)?\s*[:\-]?\s*([A-Za-z0-9][A-Za-z0-9\- ]{3,60}?)\s*(?:\d+\s*\.|\n|$)/i
+    );
+    if (cisMatch && cisMatch[1].trim()) {
+      plan = normalizePlanName(cisMatch[1].trim());
+      sourceField = 'CIS Product Name';
+    }
+  }
+
   // Priority 3: CIS string
   if (!plan) {
     if (textLower.includes("complete health insurance - health shield") || textLower.includes("complete health insurance plan - health shield")) {
@@ -262,10 +276,21 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
     }
   }
 
-  // Fallback to alias loop if priorities fail
+  // Fallback to alias loop if priorities fail.
+  //
+  // Whole-word matching, not `includes`. As a raw substring search over the
+  // entire document this matched "care" inside "daycare" and "plus" inside
+  // "surplus", and since the first entry in the map wins, an unrelated policy
+  // took whichever brand happened to be listed earliest. The generic aliases
+  // that made that likely are gone from plan_aliases.json too; this stops the
+  // remaining ones matching mid-word.
   if (!plan) {
+    const wordBoundaryHit = (alias: string) => {
+      const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(textLower);
+    };
     for (const [key, val] of Object.entries(planAliases)) {
-      if (val.aliases.some(alias => textLower.includes(alias))) {
+      if (val.aliases.some(wordBoundaryHit)) {
         plan = val.canonical;
         sourceField = 'Alias Map Fallback';
         break;

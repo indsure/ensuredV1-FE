@@ -4,43 +4,32 @@
         "aliases": [
             "reassure",
             "re assure",
-            "re-assure",
-            "platinum",
-            "titanium",
-            "bronze"
+            "re-assure"
         ]
     },
     "health_companion": {
         "canonical": "Health Companion",
         "aliases": [
-            "health companion",
-            "variant 1",
-            "variant 2",
-            "variant 3"
+            "health companion"
         ]
     },
     "optima_restore": {
         "canonical": "Optima Restore",
         "aliases": [
-            "optima restore",
-            "restore",
-            "optima"
+            "optima restore"
         ]
     },
     "mediclassic": {
         "canonical": "Medi Classic",
         "aliases": [
             "mediclassic",
-            "medi classic",
-            "individual"
+            "medi classic"
         ]
     },
     "care_advantage": {
         "canonical": "Care Advantage",
         "aliases": [
-            "advantage",
-            "care advantage",
-            "care"
+            "care advantage"
         ]
     },
     "activ_health": {
@@ -55,11 +44,7 @@
         "canonical": "ProHealth",
         "aliases": [
             "pro health",
-            "prohealth",
-            "protect",
-            "plus",
-            "preferred",
-            "premier"
+            "prohealth"
         ]
     }
 }

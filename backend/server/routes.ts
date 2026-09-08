@@ -77,6 +77,25 @@ const upload = multer({
 // so they can be downloaded later (and re-analyzed without re-uploading).
 const PDF_BUCKET = "policy-pdfs";
 
+/**
+ * Remove `__internal` before a stored report leaves the server.
+ *
+ * `__internal.policyText` is the entire source document — roughly 55k characters
+ * carrying the policyholder's phone, address, DOB, nominee details and medical
+ * declaration. It was persisted into report_data and handed out verbatim by the
+ * PUBLIC share endpoint, so any recipient of a share link could read all of it.
+ * The pipeline no longer attaches it, but every report analysed before that
+ * change still has it in the database, so strip on the way out as well.
+ *
+ * Nothing on the client reads `__internal`, so this is applied to authenticated
+ * responses too rather than only the public ones.
+ */
+function stripInternal<T>(reportData: T): T {
+  if (!reportData || typeof reportData !== "object") return reportData;
+  const { __internal, ...rest } = reportData as Record<string, unknown>;
+  return rest as T;
+}
+
 /* ---------- PDF RENDER CONCURRENCY CAP ---------- */
 
 // Headless Chromium is heavy. This unauthenticated endpoint must never be able
@@ -1085,7 +1104,11 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Report not found or inactive" });
       }
 
-      return res.json(reportRes.rows[0]);
+      const publicRow = reportRes.rows[0];
+      return res.json({
+        ...publicRow,
+        recommendation_data: stripInternal(publicRow.recommendation_data),
+      });
     } catch (err: any) {
       console.error("PUBLIC REPORT ERROR:", err.message, err.stack);
       res.status(500).json({ error: "Internal Server Error", details: err.message });
@@ -2985,7 +3008,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       }
 
       recordAccess(req, agentId, clientId, "view_report");
-      return res.json({ report_data: getClient.rows[0].report_data });
+      return res.json({ report_data: stripInternal(getClient.rows[0].report_data) });
     } catch (err: any) {
       console.error("Fetch client report error:", err);
       res.status(500).json({ error: "Failed to fetch report" });
@@ -4708,7 +4731,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const row = r.rows[0];
       if (!row) return res.status(404).json({ status: "not_found", error: "Job not found" });
       if (row.status === "done") {
-        return res.json({ status: "completed", policyId: row.id, result: row.report_data ?? row.extracted_data });
+        return res.json({ status: "completed", policyId: row.id, result: stripInternal(row.report_data) ?? row.extracted_data });
       }
       if (row.status === "error") {
         return res.json({ status: "error", policyId: row.id, error: row.error_message });
@@ -5674,7 +5697,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       // Return public-safe data
       res.json({
-        report_data: client.report_data,
+        report_data: stripInternal(client.report_data),
         score: client.score,
         insurer: client.insurer,
         policy_name: client.policy_name,

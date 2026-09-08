@@ -735,13 +735,19 @@ export async function runAnalysisPipeline(
       pushConfidenceNote(parsed, getBucketingExplanation());
     }
 
+    // The full policy text is deliberately NOT attached to the result.
+    //
+    // It used to ride along as `__internal.policyText` and got persisted into
+    // clients.report_data, which the PUBLIC share endpoint returns wholesale —
+    // so anyone holding a share link could read the entire source document,
+    // policyholder phone, address, DOB, nominees and medical declaration
+    // included. Nothing ever read it back: it is an input to this pipeline, not
+    // an output. See stripInternal() in routes.ts for the guard that protects
+    // reports already stored with it.
     return {
       status: "completed",
       result: {
         ...parsed,
-        __internal: {
-          policyText: mergedPolicyText,
-        },
       },
       metadata: {
         ...metadata,
