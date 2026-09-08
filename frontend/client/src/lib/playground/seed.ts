@@ -60,7 +60,7 @@ type ReportOpts = {
   expiryDays: number;
   tenureYears?: number;
   baseSI: number;
-  restoration?: { exists: boolean; type?: "full" | "partial"; useful?: boolean; remarks?: string };
+  restoration?: { exists: boolean; type?: "full" | "partial"; useful?: boolean; remarks?: string; sameIllness?: boolean; unlimited?: boolean };
   ncbCap?: number;
   ncbCurrent?: number;
   riders?: { name: string; coverage_amount: number | null; is_material: boolean; remarks: string | null }[];
@@ -170,6 +170,12 @@ function healthReport(o: ReportOpts) {
         exists: restore.exists,
         type: restore.exists ? restore.type ?? "full" : null,
         restore_amount: restore.exists ? o.baseSI : null,
+        // A demo restore is the common Indian shape: unrelated illnesses only.
+        // These drive the restoration line under Effective Cover, which stays
+        // silent rather than guessing when they are absent.
+        same_illness_covered: restore.exists ? restore.sameIllness ?? false : null,
+        unlimited: restore.exists ? restore.unlimited ?? false : null,
+        triggers_on_first_claim: null,
         trigger_conditions: restore.exists ? "After the base sum insured is exhausted in a policy year." : null,
         actually_useful: restore.exists ? restore.useful ?? true : null,
         remarks: restore.remarks ?? null,
@@ -178,7 +184,9 @@ function healthReport(o: ReportOpts) {
         exists: true,
         rate_per_year: 10,
         cap_percentage: o.ncbCap ?? 50,
-        current_bonus: o.ncbCurrent ?? 0,
+        // Rupees, not the percentage it is authored as: calculateEffectiveCoverage
+        // reads this field directly and discards values too small to be rupees.
+        current_bonus: Math.round((o.baseSI * (o.ncbCurrent ?? 0)) / 100),
         portability: "yes",
         clarity: "clear",
         remarks: "Accrued bonus is lost if the policy lapses beyond the grace period.",

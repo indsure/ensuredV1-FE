@@ -7,7 +7,7 @@ import {
     StyleSheet,
     Font
 } from '@react-pdf/renderer';
-import { ForensicAuditReport } from "@shared/policy";
+import { ForensicAuditReport, deriveCoverView, describeRestoration } from "@shared/policy";
 
 // Font.register for full Unicode support (fixes Rupee symbol rendering)
 Font.register({
@@ -383,6 +383,12 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
     const currentDate = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
     const policyAgeDays = data.policy_timeline?.policy_age_days ?? 0;
 
+    // Same derivation the on-screen report uses, so the downloadable artifact cannot
+    // state a different cover from the page it was generated from — including for
+    // reports stored before the single-event rule existed.
+    const coverView = deriveCoverView(data);
+    const restorationNote = describeRestoration(data);
+
     const getPillStyle = (key: string, value: number) => {
         let max = 0;
         let style = { bg: THEME.creamMain, text: THEME.navy, max: 0 };
@@ -492,8 +498,8 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
                                 {data.audit_score.bucket_label}
                             </Text>
                         )}
-                        {typeof data.audit_score.ncar === 'number' && (
-                            <Text style={{ fontSize: 7, marginTop: 4, color: '#94A3B8' }}>NCAR: {data.audit_score.ncar.toFixed(2)}x</Text>
+                        {typeof coverView.ncar === 'number' && (
+                            <Text style={{ fontSize: 7, marginTop: 4, color: '#94A3B8' }}>NCAR: {coverView.ncar.toFixed(2)}x</Text>
                         )}
                     </View>
                     <View style={styles.verdictSummaryBox}>
@@ -650,24 +656,27 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data }) => {
                     <View wrap={false}>
                         <Text style={styles.sectionTitle}>Other Cover Held</Text>
 
-                        {data.cover_stack && typeof data.cover_stack.combined_effective_cover === 'number' && (
+                        {coverView.stack && (
                             <View style={styles.wpRow}>
                                 <Text style={styles.cardTitle}>
-                                    Usable cover across all policies: {formatCurrencyPDF(data.cover_stack.combined_effective_cover)}
-                                    {typeof data.cover_stack.required_cover === 'number'
-                                        ? ` of ${formatCurrencyPDF(data.cover_stack.required_cover)} needed`
+                                    Usable cover across all policies: {formatCurrencyPDF(coverView.stack.combined)}
+                                    {typeof coverView.stack.required === 'number'
+                                        ? ` of ${formatCurrencyPDF(coverView.stack.required)} needed`
                                         : ''}
-                                    {data.cover_stack.verdict && data.cover_stack.verdict !== 'unclear'
-                                        ? ` — ${data.cover_stack.verdict}`
+                                    {coverView.stack.verdict !== 'unclear'
+                                        ? ` — ${coverView.stack.verdict}`
                                         : ''}
                                 </Text>
-                                {!!data.cover_stack.remarks && (
-                                    <Text style={styles.cardText}>{data.cover_stack.remarks}</Text>
+                                {!!restorationNote && (
+                                    <Text style={styles.cardText}>{restorationNote}</Text>
                                 )}
-                                {(data.cover_stack.excluded ?? []).map((e, i) => (
+                                {!!coverView.stack.remarks && (
+                                    <Text style={styles.cardText}>{coverView.stack.remarks}</Text>
+                                )}
+                                {(coverView.stack.excluded ?? []).map((e, i) => (
                                     <Text key={i} style={styles.cardText}>• Not counted: {e}</Text>
                                 ))}
-                                {(data.cover_stack.where_the_stack_still_breaks ?? []).map((e, i) => (
+                                {(data.cover_stack?.where_the_stack_still_breaks ?? []).map((e, i) => (
                                     <Text key={i} style={[styles.cardText, { color: THEME.redText }]}>
                                         • Still breaks: {e}
                                     </Text>

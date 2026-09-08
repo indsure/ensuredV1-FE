@@ -354,6 +354,134 @@ export function lookupRequiredCover(age: number, zone: string): number | null {
  * Recomputes RCT from identity, and if the model disagreed, corrects NCAR, the
  * net-cover penalty and the cover_stack denominator to match.
  */
+const positive = (v: any): number =>
+  typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 0;
+
+/**
+ * Single-event cover, computed from structured fields.
+ *
+ * MUST stay identical to calculateEffectiveCoverage in shared/policy.ts. It is
+ * duplicated rather than imported because the backend has no @shared alias and the
+ * EC2 box runs tsx over backend/server alone: a cross-directory import that resolves
+ * locally and not on the box would take the paid audit path down at boot, which is
+ * exactly how the last outage happened. effectiveCover.test.ts pins the two together.
+ */
+export function computeSingleEventCover(parsed: any): number {
+  const cs = parsed?.coverage_structure;
+  const base = positive(cs?.base_sum_insured);
+
+  // Without a base, a bonus and a top-up are both undefined quantities. 0 means
+  // "not extracted" and callers leave the report alone.
+  if (base <= 0) return 0;
+
+  // current_bonus is specified as absolute rupees but is populated as a percentage
+  // in places (motor NCB is a percentage by nature). A value too small to be rupees
+  // is discarded, never rescaled. A value above its own cap is a unit error and is
+  // also discarded, NOT clamped to base: clamping would turn a bad 5Cr bonus into a
+  // clean-looking 2Cr headline on a 1Cr policy.
+  const rawNcb = positive(cs?.no_claim_bonus?.exists ? cs.no_claim_bonus.current_bonus : 0);
+  const capPct = positive(cs?.no_claim_bonus?.cap_percentage);
+  const ceiling = capPct > 0 ? base * (capPct / 100) : base;
+  const ncb = rawNcb <= 100 || rawNcb > ceiling ? 0 : rawNcb;
+
+  const topUp = cs?.top_up?.exists && cs.top_up.deductible_achievable === true
+    ? positive(cs.top_up.sum_insured)
+    : 0;
+
+  const superTopUp = cs?.super_top_up?.exists && cs.super_top_up.deductible_achievable === true
+    ? positive(cs.super_top_up.sum_insured)
+    : 0;
+
+  return base + ncb + topUp + superTopUp;
+}
+
+/**
+ * Forces the three numbers that describe one quantity to agree.
+ *
+ * coverage_structure.total_effective_coverage (the report header),
+ * audit_score.nec (NCAR, the net-cover penalty, the verdict) and
+ * cover_stack.combined_effective_cover (the stack and the PDF) were each written
+ * independently by the model with nothing reconciling them. Report 1b520f0d showed
+ * 2.0Cr in its header against a 1Cr policy while scoring NCAR on 1.0Cr, in the same
+ * report, because the model added a restoration tranche to two of the three.
+ *
+ * Runs BEFORE enforceRequiredCover, which divides nec by the RCT.
+ */
+export function reconcileEffectiveCover(parsed: any) {
+  if (!parsed?.coverage_structure) return;
+
+  const computed = computeSingleEventCover(parsed);
+  if (computed <= 0) return; // nothing extracted; leave the model's view alone
+
+  const statedTotal = parsed.coverage_structure.total_effective_coverage;
+  const statedNec = parsed?.audit_score?.nec;
+  const drifted =
+    (typeof statedTotal === "number" && Math.abs(statedTotal - computed) >= 1) ||
+    (typeof statedNec === "number" && Math.abs(statedNec - computed) >= 1);
+
+  parsed.coverage_structure.total_effective_coverage = computed;
+  if (parsed.audit_score) parsed.audit_score.nec = computed;
+
+  // NCAR is derived from nec, so a changed nec with an unchanged ratio beside it is
+  // the same contradiction in a new place. enforceRequiredCover recomputes this too,
+  // but it early-returns when identity.ages is missing (ages is not a required
+  // field), which would strand the ratio here. Deriving it now means the two numbers
+  // can never be seen disagreeing, whichever path runs.
+  const rct = positive(parsed?.audit_score?.rct);
+  if (parsed.audit_score && rct > 0) {
+    parsed.audit_score.ncar = Number((computed / rct).toFixed(4));
+    if (parsed.audit_score.breakdown) {
+      parsed.audit_score.breakdown.net_cover_penalty = netCoverPenaltyFor(parsed.audit_score.ncar);
+    }
+  }
+
+  // The stack is this policy plus other covers the same insured holds. The companion
+  // portion is taken as whatever the stack held beyond this policy's own stated
+  // total, rather than re-summed from other_cover: usable_today is optional there,
+  // so a re-sum silently drops any companion policy that omitted it while the prose
+  // beside the total still lists that policy as counted.
+  if (parsed.cover_stack) {
+    const statedCombined = positive(parsed.cover_stack.combined_effective_cover);
+    const baseline = positive(statedTotal) || computed;
+    const others = Math.max(0, statedCombined - baseline);
+    const combined = computed + others;
+    parsed.cover_stack.combined_effective_cover = combined;
+
+    const stackRct = positive(parsed.cover_stack.required_cover) || rct;
+    if (stackRct > 0) {
+      const ratio = Number((combined / stackRct).toFixed(2));
+      parsed.cover_stack.required_cover = stackRct;
+      parsed.cover_stack.stack_ratio = ratio;
+      parsed.cover_stack.verdict = ratio >= 1.0 ? "ADEQUATE" : ratio >= 0.6 ? "THIN" : "INADEQUATE";
+    }
+
+    // A restore must not survive in the prose after being removed from the number,
+    // or the list contradicts the total it is supposed to explain.
+    if (Array.isArray(parsed.cover_stack.counted)) {
+      const kept = parsed.cover_stack.counted.filter((s: any) => !/restor/i.test(String(s)));
+      if (kept.length !== parsed.cover_stack.counted.length) {
+        parsed.cover_stack.counted = kept;
+        if (!Array.isArray(parsed.cover_stack.excluded)) parsed.cover_stack.excluded = [];
+        parsed.cover_stack.excluded.push(
+          "Restoration: refills the cover for a later claim, so it is not counted toward what this policy can pay for one event."
+        );
+      }
+    }
+
+    // Remarks were written against the total before it was restated.
+    if (drifted) parsed.cover_stack.remarks = null;
+  }
+
+  if (drifted) {
+    pushConfidenceNote(
+      parsed,
+      `Effective cover corrected server-side to ₹${computed.toLocaleString("en-IN")} ` +
+        `(single-event: base sum insured + accrued bonus + any bridged top-up). ` +
+        `Restoration is excluded from this figure and is scored separately.`
+    );
+  }
+}
+
 export function enforceRequiredCover(parsed: any) {
   const ages: number[] = (parsed?.identity?.ages ?? [])
     .map((a: any) => parseInt(String(a).replace(/[^0-9]/g, ""), 10))
@@ -364,17 +492,26 @@ export function enforceRequiredCover(parsed: any) {
   const expected = lookupRequiredCover(eldest, parsed?.identity?.assumed_zone);
   if (expected === null) return;
 
-  const stated = parsed?.audit_score?.rct;
-  if (typeof stated === "number" && Math.abs(stated - expected) < 1) return; // already right
-
   if (!parsed.audit_score) return;
-  parsed.audit_score.rct = expected;
-  pushConfidenceNote(
-    parsed,
-    `Required cover corrected server-side to ₹${expected.toLocaleString("en-IN")} for age ${eldest} in zone ${
-      parsed?.identity?.assumed_zone ?? "?"
-    } (stated: ${typeof stated === "number" ? "₹" + stated.toLocaleString("en-IN") : "none"}).`
-  );
+
+  // A correct RCT does NOT imply a correct NCAR. This used to return early here
+  // whenever the model happened to state the right threshold, which skipped the
+  // recomputation below and shipped whatever ratio the model had written. Report
+  // 1b520f0d stated rct 6L (right), nec 2Cr and ncar 16.67 — and 2Cr/6L is 33.3,
+  // so the ratio matched neither its own numerator nor anything else, and survived
+  // untouched. NCAR is now always derived, never accepted.
+  const stated = parsed.audit_score.rct;
+  const rctWasWrong = !(typeof stated === "number" && Math.abs(stated - expected) < 1);
+
+  if (rctWasWrong) {
+    parsed.audit_score.rct = expected;
+    pushConfidenceNote(
+      parsed,
+      `Required cover corrected server-side to ₹${expected.toLocaleString("en-IN")} for age ${eldest} in zone ${
+        parsed?.identity?.assumed_zone ?? "?"
+      } (stated: ${typeof stated === "number" ? "₹" + stated.toLocaleString("en-IN") : "none"}).`
+    );
+  }
 
   const nec = parsed.audit_score.nec;
   if (typeof nec !== "number" || expected <= 0) return;
@@ -556,7 +693,16 @@ export async function runAnalysisPipeline(
       return { status: "failed", error: `AI response validation failed: ${validation.reason}` };
     }
 
-    // RCT first: NCAR, the net-cover penalty, the score and the verdict all
+    // Cover first: enforceRequiredCover divides audit_score.nec by the RCT, so the
+    // nec it reads has to be the reconciled single-event figure, not the model's.
+    // HEALTH ONLY. "Single-event cover" is a health concept and the other lines of
+    // business mean different things by the same field: the motor prompt maps
+    // total_effective_coverage to the IDV (vehicleInsurancePrompt.ts) and states NCB
+    // as a percentage, and the life prompt lets riders carry their own sums that
+    // legitimately belong in the total. Running the health definition over either
+    // would rewrite a correct number into a wrong one.
+    if (insuranceType === "health") reconcileEffectiveCover(parsed);
+    // RCT next: NCAR, the net-cover penalty, the score and the verdict all
     // derive from it, so it has to be right before anything downstream runs.
     enforceRequiredCover(parsed);
     enforceBreakdownCaps(parsed);

@@ -17,7 +17,9 @@ import {
     getWaitingPeriodStatus,
     RiskLevel,
     computeUnlockDate,
-    computeUnlockDateMonths
+    computeUnlockDateMonths,
+    describeRestoration,
+    deriveCoverView
 } from "@shared/policy";
 import { cn } from "@/lib/utils";
 import { CoverageDiagnostic } from "./CoverageDiagnostic";
@@ -376,10 +378,16 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
 
     const verdict = data.final_verdict?.label ?? "RISKY";
     const score = data.audit_score?.score ?? 0;
-    const hasNcar = typeof data.audit_score?.ncar === "number";
-    const ncar = data.audit_score?.ncar ?? 0;
     const simulations = data.claim_simulations ?? [];
-    const effectiveCoverage = calculateEffectiveCoverage(data);
+
+    // Every cover figure on this page comes from one derivation, so a report stored
+    // under an older prompt version cannot render a recomputed headline beside its
+    // stored stack and NCAR. See deriveCoverView.
+    const coverView = deriveCoverView(data);
+    const hasNcar = typeof coverView.ncar === "number";
+    const ncar = coverView.ncar ?? 0;
+    const effectiveCoverage = coverView.effectiveCover;
+    const restorationNote = describeRestoration(data);
 
     const realTimePolicyAgeDays = (() => {
         if (!data.policy_timeline?.policy_inception_date) return 0;
@@ -493,6 +501,26 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             <div className="font-semibold text-lg capitalize">{data.data_quality?.overall ?? "N/A"}</div>
                         </div>
                     </div>
+
+                    {/* Effective Cover is single-event money, so a restore is not inside
+                        that number. It is real value and has to be visible somewhere, or
+                        removing it from the headline just loses the information. */}
+                    {(restorationNote || coverView.restated) && (
+                        <div className="mt-4 pt-4 border-t border-[var(--color-border-light)] space-y-1">
+                            {restorationNote && (
+                                <p className="text-sm text-[var(--color-text-secondary)]">{restorationNote}</p>
+                            )}
+                            {/* A number that changed under the reader's feet has to say so.
+                                Older reports counted a restoration tranche inside this
+                                figure; they are re-derived on read, not rewritten. */}
+                            {coverView.restated && (
+                                <p className="text-sm text-[var(--color-text-secondary)]">
+                                    This figure is what the policy pays for one hospitalisation. An earlier
+                                    version of this report added a restoration refill on top of it.
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* 2. SCORECARD + SCORE BREAKDOWN */}
@@ -727,7 +755,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
 
                         {/* Total across the stack — deliberately styled as a fact panel,
                             not a score, so it never reads as a competing verdict. */}
-                        {coverStack && typeof coverStack.combined_effective_cover === "number" && (
+                        {coverView.stack && (
                             <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm mb-6">
                                 <div className="flex flex-wrap items-end justify-between gap-4">
                                     <div>
@@ -735,52 +763,52 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                             Usable cover across all policies
                                         </div>
                                         <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
-                                            {formatINR(coverStack.combined_effective_cover)}
+                                            {formatINR(coverView.stack.combined)}
                                         </div>
-                                        {typeof coverStack.required_cover === "number" && (
+                                        {typeof coverView.stack.required === "number" && (
                                             <div className="mt-1 text-sm text-[var(--color-text-muted)]">
-                                                against {formatINR(coverStack.required_cover)} needed for this family
-                                                {typeof coverStack.stack_ratio === "number" && ` — ${Math.round(coverStack.stack_ratio * 100)}%`}
+                                                against {formatINR(coverView.stack.required)} needed for this family
+                                                {typeof coverView.stack.ratio === "number" && ` — ${Math.round(coverView.stack.ratio * 100)}%`}
                                             </div>
                                         )}
                                     </div>
-                                    {coverStack.verdict && coverStack.verdict !== "unclear" && (
+                                    {coverView.stack.verdict !== "unclear" && (
                                         <span className={cn(
                                             "text-xs font-bold uppercase px-3 py-1 rounded border",
-                                            coverStack.verdict === "ADEQUATE"
+                                            coverView.stack.verdict === "ADEQUATE"
                                                 ? "border-green-300 bg-green-50 text-green-700"
-                                                : coverStack.verdict === "THIN"
+                                                : coverView.stack.verdict === "THIN"
                                                 ? "border-amber-300 bg-amber-50 text-amber-700"
                                                 : "border-red-300 bg-red-50 text-red-700"
-                                        )}>{coverStack.verdict}</span>
+                                        )}>{coverView.stack.verdict}</span>
                                     )}
                                 </div>
 
-                                {coverStack.remarks && (
-                                    <p className="mt-4 text-sm text-[var(--color-navy-900)]">{coverStack.remarks}</p>
+                                {coverView.stack.remarks && (
+                                    <p className="mt-4 text-sm text-[var(--color-navy-900)]">{coverView.stack.remarks}</p>
                                 )}
 
-                                {(coverStack.counted?.length || coverStack.excluded?.length) && (
+                                {(coverView.stack.counted.length || coverView.stack.excluded.length) && (
                                     <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                                        {coverStack.counted && coverStack.counted.length > 0 && (
+                                        {coverView.stack.counted.length > 0 && (
                                             <div>
                                                 <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
                                                     Counted
                                                 </div>
                                                 <ul className="space-y-1">
-                                                    {coverStack.counted.map((c, i) => (
+                                                    {coverView.stack.counted.map((c, i) => (
                                                         <li key={i} className="text-sm text-[var(--color-navy-900)]">• {c}</li>
                                                     ))}
                                                 </ul>
                                             </div>
                                         )}
-                                        {coverStack.excluded && coverStack.excluded.length > 0 && (
+                                        {coverView.stack.excluded.length > 0 && (
                                             <div>
                                                 <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
                                                     Not counted
                                                 </div>
                                                 <ul className="space-y-1">
-                                                    {coverStack.excluded.map((c, i) => (
+                                                    {coverView.stack.excluded.map((c, i) => (
                                                         <li key={i} className="text-sm text-slate-600">• {c}</li>
                                                     ))}
                                                 </ul>
@@ -789,7 +817,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                     </div>
                                 )}
 
-                                {coverStack.where_the_stack_still_breaks && coverStack.where_the_stack_still_breaks.length > 0 && (
+                                {coverStack?.where_the_stack_still_breaks && coverStack.where_the_stack_still_breaks.length > 0 && (
                                     <div className="mt-4 border-t border-[var(--color-border-light)] pt-4">
                                         <div className="text-xs font-bold uppercase tracking-wider text-red-700 mb-1">
                                             Even with everything together, this still breaks

@@ -46,6 +46,10 @@ export const mockReportCareSupreme: ForensicAuditReport = {
       exists: true,
       type: "full",
       restore_amount: 1000000,
+      // Read off trigger_conditions below: unlimited, but unrelated illnesses only.
+      same_illness_covered: false,
+      unlimited: true,
+      triggers_on_first_claim: null,
       trigger_conditions: "Unlimited times for unrelated illnesses. Partial for related.",
       actually_useful: true,
       remarks: "Unlimited automatic recharge is a strong feature."

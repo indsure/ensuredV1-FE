@@ -76,6 +76,18 @@ export interface Restoration {
   exists: boolean;
   type: "full" | "partial" | "unclear" | null;
   restore_amount: number | string | null;
+  /**
+   * The three facts the scoring rule actually turns on. Before 1.3.0 none of
+   * these existed, so "does this restore fire for the same illness" lived only
+   * as prose in trigger_conditions and the model could express its answer only
+   * by inflating total_effective_coverage, where nothing could check it.
+   *
+   * Optional because reports stored under earlier prompt versions do not carry
+   * them. Absent must read as "not established", never as true.
+   */
+  same_illness_covered?: boolean | null;
+  unlimited?: boolean | null;
+  triggers_on_first_claim?: boolean | null;
   trigger_conditions: string | null;
   actually_useful: boolean | null;
   remarks: string | null;
@@ -511,25 +523,217 @@ export const validateForensicAuditReport = (data: any): data is ForensicAuditRep
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const num = (v: unknown): number =>
+  typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 0;
+
+/**
+ * current_bonus is specified as absolute rupees, but the field is populated as a
+ * PERCENTAGE in places (motor NCB is a percentage by nature, and reports written
+ * before the schema said otherwise vary). Guessing wrong in one direction adds ~20
+ * rupees to a crore; guessing wrong in the other multiplies the cover by 5,000.
+ *
+ * So: a value that cannot be rupees on a policy this size is discarded, not
+ * reinterpreted. This only ever LOWERS the stated cover, which is the safe way to
+ * be wrong about a number a customer relies on.
+ */
+export const accruedBonusRupees = (
+  ncb: { current_bonus?: number | null; cap_percentage?: number | null } | null | undefined,
+  base: number,
+): number => {
+  const raw = num(ncb?.current_bonus);
+  if (raw === 0 || base <= 0) return 0; // a bonus means nothing without a policy under it
+
+  // A percentage wearing a rupee label. Discarded, never rescaled: we do not know
+  // it IS a percentage, only that it cannot be the rupee figure it claims to be.
+  if (raw <= 100) return 0;
+
+  // An accrued bonus cannot exceed its own cap. Beyond it the value is a unit
+  // error, so it is DROPPED rather than clamped: clamping a 5Cr bonus down to a
+  // 1Cr base would double a 1Cr policy's headline, which is the exact failure
+  // this whole change exists to remove.
+  const capPct = num(ncb?.cap_percentage);
+  const ceiling = capPct > 0 ? base * (capPct / 100) : base;
+  return raw > ceiling ? 0 : raw;
+};
+
+/**
+ * Effective cover = what this policy can pay for ONE hospitalisation, today.
+ * Founder call, 2026-09-08: "effective cover, that it can pay in 1 event."
+ *
+ * This is the single definition. audit_score.nec, cover_stack.combined_effective_cover
+ * and coverage_structure.total_effective_coverage are all reconciled to it server-side
+ * (see reconcileEffectiveCover in analysisPipeline.ts). Before 1.3.0 each of those was
+ * written independently by the model and nothing forced them to agree, which is how
+ * report 1b520f0d came to show 2.0Cr in its header while scoring NCAR on 1.0Cr.
+ *
+ * Deliberately NOT counted:
+ *   - Restoration, of any kind. It refills the cover for a LATER claim and cannot
+ *     enlarge the one in front of you. It is scored in STEP 4 of the prompt instead.
+ *   - A top-up whose deductible the base cover cannot bridge. The old code added
+ *     top-ups on `exists` alone, which contradicted the prompt's own NEC rule.
+ *   - The model's own total. It reports components; the sum happens here.
+ */
 export const calculateEffectiveCoverage = (report: ForensicAuditReport): number => {
-  const base = typeof report.coverage_structure.base_sum_insured === "number"
-    ? report.coverage_structure.base_sum_insured
+  const cs = report.coverage_structure;
+  const base = num(cs?.base_sum_insured);
+
+  // Without a base sum insured nothing here is meaningful: a bonus and a top-up
+  // are both defined relative to it. Returning 0 marks "not extracted" so callers
+  // can leave the report alone, rather than publishing a cover figure built out of
+  // the leftovers (a percentage bonus of 50 rendering as "Effective Cover Rs 50").
+  if (base <= 0) return 0;
+
+  const ncb = cs?.no_claim_bonus?.exists ? accruedBonusRupees(cs.no_claim_bonus, base) : 0;
+
+  // A top-up only helps a single event if the base cover actually reaches its
+  // deductible. `deductible_achievable` must be explicitly true; null is "unknown",
+  // and unknown never adds cover.
+  const topUp = cs?.top_up?.exists && cs.top_up.deductible_achievable === true
+    ? num(cs.top_up.sum_insured)
     : 0;
 
-  const topUp = report.coverage_structure.top_up?.exists
-    ? (report.coverage_structure.top_up.sum_insured ?? 0)
+  const superTopUp = cs?.super_top_up?.exists && cs.super_top_up.deductible_achievable === true
+    ? num(cs.super_top_up.sum_insured)
     : 0;
 
-  const superTopUp = report.coverage_structure.super_top_up?.exists
-    ? (report.coverage_structure.super_top_up.sum_insured ?? 0)
-    : 0;
+  return base + ncb + topUp + superTopUp;
+};
 
-  const promptTotal = typeof report.coverage_structure.total_effective_coverage === "number"
-    ? report.coverage_structure.total_effective_coverage
-    : null;
+export interface CoverView {
+  effectiveCover: number;
+  rct: number | null;
+  ncar: number | null;
+  stack: {
+    combined: number;
+    required: number | null;
+    ratio: number | null;
+    verdict: "ADEQUATE" | "THIN" | "INADEQUATE" | "unclear";
+    counted: string[];
+    excluded: string[];
+    /** Suppressed when the stored prose was written about a different number. */
+    remarks: string | null;
+  } | null;
+  /** True when the stored report disagreed with this derivation. */
+  restated: boolean;
+}
 
-  const computed = base + topUp + superTopUp;
-  return promptTotal && promptTotal > computed ? promptTotal : computed;
+const stackVerdictFor = (ratio: number | null): "ADEQUATE" | "THIN" | "INADEQUATE" | "unclear" =>
+  ratio === null ? "unclear" : ratio >= 1.0 ? "ADEQUATE" : ratio >= 0.6 ? "THIN" : "INADEQUATE";
+
+/**
+ * Every cover figure on the page, derived together from one number.
+ *
+ * The renderer MUST use this rather than reading the stored fields directly.
+ * Reports written before 1.3.0 have a stored cover that includes a restoration
+ * tranche, a stored NCAR computed from something else again, and a stored stack
+ * verdict derived from the inflated total. Recomputing only the headline and
+ * leaving its neighbours stored is how one page came to show 1.0Cr beside 2.0Cr:
+ * exactly the defect this change exists to remove, reproduced across the archive.
+ *
+ * Deriving them together means an old report renders self-consistently under the
+ * current rule, without rewriting stored data or paying for a re-analysis.
+ */
+export const deriveCoverView = (report: ForensicAuditReport): CoverView => {
+  const computed = calculateEffectiveCoverage(report);
+  const storedTotal = num(report.coverage_structure?.total_effective_coverage);
+
+  // This renderer serves health, motor and life reports and the report object
+  // carries no type marker, so the derivation only LOWERS a stored figure when it
+  // can explain the gap. A restoration tranche folded into the total is the defect
+  // being corrected; anything else (a motor IDV, a life sum assured plus its rider
+  // amounts) is a number this function has no business overwriting from here.
+  // The server-side reconciler, which does know the line of business, is the
+  // authority for newly written reports.
+  const canExplainGap = report.coverage_structure?.restoration?.exists === true;
+  const effectiveCover =
+    computed <= 0 ? storedTotal                       // nothing extracted
+      : computed >= storedTotal ? computed            // never understates: safe
+        : canExplainGap ? computed                    // a restore accounts for it
+          : storedTotal;                              // unexplained: leave it alone
+
+  const rctRaw = num(report.audit_score?.rct);
+  const rct = rctRaw > 0 ? rctRaw : null;
+  const storedNcar = typeof report.audit_score?.ncar === "number" ? report.audit_score.ncar : null;
+  const ncar = rct && effectiveCover > 0
+    ? Number((effectiveCover / rct).toFixed(2))
+    : storedNcar;
+
+  const restated =
+    (storedTotal > 0 && Math.abs(storedTotal - effectiveCover) >= 1) ||
+    (storedNcar !== null && ncar !== null && Math.abs(storedNcar - ncar) >= 0.01);
+
+  const cs = report.cover_stack;
+  let stack: CoverView["stack"] = null;
+  if (cs && typeof cs.combined_effective_cover === "number") {
+    // The companion-cover portion is whatever the stack held beyond this policy's
+    // own stored total. Carrying that delta forward preserves real other cover
+    // without re-deriving it, and without silently dropping a policy the prose
+    // beside it still lists.
+    const others = Math.max(0, cs.combined_effective_cover - (storedTotal || effectiveCover));
+    const combined = effectiveCover + others;
+    const required = num(cs.required_cover) > 0 ? num(cs.required_cover) : rct;
+    const ratio = required ? Number((combined / required).toFixed(2)) : null;
+
+    // A restore is not in the total, so it must not survive in the list that
+    // explains the total. Older reports itemise one there ("Unlimited same-illness
+    // restoration of 1 Crore") and leaving it would contradict the figure above it.
+    const counted = (cs.counted ?? []).filter((s) => !/restor/i.test(String(s)));
+    const excluded = [...(cs.excluded ?? [])];
+    if (counted.length !== (cs.counted ?? []).length) {
+      excluded.push(
+        "Restoration: refills the cover for a later claim, so it is not counted toward what this policy can pay for one event."
+      );
+    }
+
+    stack = {
+      combined,
+      required,
+      ratio,
+      verdict: stackVerdictFor(ratio),
+      counted,
+      excluded,
+      // Prose written against a total that has since been restated cannot be
+      // trusted to describe the current one.
+      remarks: restated ? null : (cs.remarks ?? null),
+    };
+  }
+
+  return { effectiveCover, rct, ncar, stack, restated };
+};
+
+/**
+ * How the restoration line should be described to the user, or null when there is
+ * nothing honest to say. Kept beside the cover calculation so the two cannot drift:
+ * restoration is excluded from the number above, so it has to be visible here.
+ */
+export const describeRestoration = (report: ForensicAuditReport): string | null => {
+  const r = report.coverage_structure?.restoration;
+  if (!r?.exists) return null;
+
+  // Say nothing unless the structured facts are actually present. Reports written
+  // before 1.3.0 carry no restoration booleans at all, and a confident sentence
+  // built out of their absence is a fabricated claim: "refills without limit" and
+  // "refills once the cover is used up" are BOTH assertions, and neither is
+  // established by a null. Silence here is correct, not a gap.
+  const knowsCount = typeof r.unlimited === "boolean";
+  const knowsScope = typeof r.same_illness_covered === "boolean";
+  if (!knowsCount && !knowsScope) return null;
+
+  // A restore the audit itself judged useless does not get a positive line.
+  if (r.actually_useful === false) return null;
+
+  const count = knowsCount
+    ? (r.unlimited ? "without limit" : "a limited number of times")
+    : "";
+  const scope = knowsScope
+    ? (r.same_illness_covered ? "same illness included" : "unrelated illnesses only")
+    : "";
+  const first = r.triggers_on_first_claim === false
+    ? " The first claim is capped at the cover above."
+    : "";
+
+  const body = [count, scope].filter(Boolean).join(", ");
+  return `Cover refills ${body} for a later claim.${first}`;
 };
 
 export const getVerdictColor = (verdict: Verdict): string => {

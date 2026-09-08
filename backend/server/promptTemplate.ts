@@ -1,6 +1,31 @@
 /**
  * MASTER HEALTH AUDIT PROMPT
  *
+ * 1.3.0 — Net Effective Cover is now SINGLE-EVENT money, and the schema gained the
+ * fields that decision depends on. Founder call, 2026-09-08: "effective cover, that
+ * it can pay in 1 event."
+ *
+ *   - Restoration LEAVES NEC. It is a refill across claims, not a bigger single
+ *     claim, so folding it into an adequacy ratio measured against a single-event
+ *     threshold (RCT) was a category error. It was worst exactly where it mattered
+ *     most: a thin policy whose restore pushed NCAR over 1.0 scored as adequate for
+ *     the one event that would wipe it out.
+ *   - restoration gained same_illness_covered / unlimited / triggers_on_first_claim.
+ *     The 1.2.0 rule turned entirely on "same illness or not" while the schema had
+ *     no field for it, so the model could only express the answer by inflating
+ *     total_effective_coverage, where nothing could audit it. Report 1b520f0d
+ *     displayed 2.0Cr against a 1Cr policy while scoring NCAR on 1Cr, in the same
+ *     report, because three model-authored numbers described one quantity and
+ *     nothing forced them to agree.
+ *   - NEC is now computed in code (shared/policy.ts) from those fields, not summed
+ *     by the model. total_effective_coverage, audit_score.nec and
+ *     cover_stack.combined_effective_cover are forced to one value server-side.
+ *   - Restoration keeps exactly one scoring home under the anti-double-count rule:
+ *     it moved from STEP 1 to STEP 4.
+ *
+ * Scores from 1.3.0 are NOT comparable with 1.2.0 for any policy whose restore was
+ * being counted. Split on prompt_version, as at 1.1.0 -> 1.2.0.
+ *
  * 1.2.0 — scoring-logic revision. The document input and the JSON output schema
  * are UNCHANGED from 1.1.0; only the reasoning between them was rewritten:
  *   - {{ANALYSIS_DATE}} is now injected (1.1.0 never told the model today's
@@ -17,7 +42,7 @@
  * Because scores from 1.2.0 are NOT directly comparable with 1.1.0, every job
  * row stamps prompt_version — split any quality comparison on that column.
  */
-export const PROMPT_VERSION = "1.2.0";
+export const PROMPT_VERSION = "1.3.0";
 
 export const MASTER_AUDIT_PROMPT = `
 🔐 SYSTEM PROMPT — IndSure Forensic Policy Intelligence Engine
@@ -219,7 +244,8 @@ Apply the same method to any separate ICU cap, using the zone ICU reference rate
 All penalties deducted from this base. Score floored at 0.
 
 **ANTI-DOUBLE-COUNT RULE (NON-NEGOTIABLE):** Each distinct policy feature is penalised in EXACTLY ONE step:
-- Restoration and no-claim bonus quality → STEP 1 ONLY, through their effect on NEC. Never deduct separately for a weak or conditional restore.
+- No-claim bonus quality → STEP 1 ONLY, through its effect on NEC.
+- Restoration quality → STEP 4 ONLY. It is NOT in NEC (see STEP 1) and must never be added to any cover figure.
 - Room rent, ICU caps and network restriction → STEP 2 ONLY.
 - Co-payment, deductibles, sub-limits, consumables, modern-treatment caps → STEP 3 ONLY.
 - Waiting periods and missing benefit categories → STEP 4 ONLY.
@@ -234,12 +260,19 @@ Sum, round to the nearest whole number, then apply the step's cap.
 
 #### STEP 1: NET COVER ADEQUACY PENALTY (APPLIED FIRST, NOT CAPPED)
 
-**Net Effective Cover (NEC):**
-NEC = Base Sum Insured + Accrued NCB (current_bonus only) + Restoration usable in the SAME illness + an in-document top-up ONLY where its deductible is actually bridged by the base cover
+**Net Effective Cover (NEC) is SINGLE-EVENT money: what this policy can pay for ONE hospitalisation, today.**
 
-EXCLUDE: conditional restores (unrelated illness only), any top-up whose deductible the base cover cannot reach, marketing bonuses, and benefits not usable in a single hospitalisation.
+NEC = Base Sum Insured + Accrued NCB (current_bonus only) + an in-document top-up ONLY where its deductible is actually bridged by the base cover
 
-A restore that only fires for an UNRELATED illness is excluded from NEC — that exclusion IS its penalty. Do not also deduct for it in STEP 4.
+EXCLUDE, without exception:
+- **Restoration of every kind**, same-illness or unrelated, limited or unlimited. A restore refills the cover for a LATER claim; it does not enlarge the one in front of you. RCT below is a single-event threshold, so adding a multi-claim benefit to NEC compares two different quantities. Restoration is scored in STEP 4 instead.
+- Any top-up whose deductible the base cover cannot reach.
+- Marketing bonuses, and any benefit not usable in a single hospitalisation.
+
+Report the components as structured fields and set audit_score.nec to their sum as defined
+above, and nothing else: no restore, no unbridged top-up. The server recomputes this sum
+from the same fields and overwrites your value if it disagrees, so the components are what
+matter. Getting them right is the job; the total is a checksum.
 
 **Required Cover Threshold (RCT) by Scoring Age × Zone:**
 
@@ -350,7 +383,20 @@ Score NO PED penalty at all when pre_existing_disease.stated is false — an est
 | AYUSH capped < 100% SI | −3 | AYUSH sub-limited |
 | Maternity not covered | −5 | ONLY when maternity is relevant per AGE & GENDER RELEVANCE |
 
-Do NOT deduct here for restoration quality — that is already priced into NEC in STEP 1.
+**Restoration is scored HERE, and only here (it is excluded from NEC in STEP 1):**
+
+| Restoration state | Penalty |
+|---|---|
+| Restores for the SAME illness (same_illness_covered true) | 0 |
+| Restores for UNRELATED illnesses only (same_illness_covered false) | −2 |
+| Restoration exists but the wording does not say which (same_illness_covered null) | −2 |
+| No restoration at all (restoration.exists false) | −5 |
+
+An unclear restore is priced as the weaker one. A benefit whose scope the wording will not
+state is not a benefit the insured can rely on at claim time.
+
+Deliberately small. A restore is real value but it cannot help the single event that RCT
+measures, so it must not swing a verdict on its own.
 
 Apply the DIMINISHING-WEIGHT RULE, then Coverage_Quality_Gap = min(result, 20).
 
@@ -518,7 +564,10 @@ Output this exact structure:
       "exists": "boolean",
       "type": "full | partial | unclear | null",
       "restore_amount": "number | string | null",
-      "trigger_conditions": "string | null",
+      "same_illness_covered": "boolean | null (TRUE only where the wording says the restored amount is available for the SAME illness/condition already claimed. A restore silent on this, or restricted to unrelated/different illnesses, is FALSE. Use null ONLY when no restoration clause was found at all. Never guess true.)",
+      "unlimited": "boolean | null (true where restores are unlimited in a policy year; false where a fixed number applies; null if unstated)",
+      "triggers_on_first_claim": "boolean | null (false where the wording excludes the first claim from triggering a restore, which caps what the FIRST hospitalisation can draw at the base cover)",
+      "trigger_conditions": "string | null (quote the clause that decides same_illness_covered. This is the source of truth for that boolean and must not be left null when the boolean is set.)",
       "actually_useful": "boolean | null",
       "remarks": "string"
     },
@@ -526,7 +575,7 @@ Output this exact structure:
       "exists": "boolean",
       "rate_per_year": "number | null",
       "cap_percentage": "number | null",
-      "current_bonus": "number | null",
+      "current_bonus": "number | null (ABSOLUTE RUPEES already accrued on this policy, NOT a percentage. A fresh policy is 0. If the schedule states the bonus as a percentage, multiply it out against the base sum insured before reporting it here.)",
       "portability": "yes | no | unclear",
       "clarity": "clear | unclear",
       "remarks": "string"
@@ -539,7 +588,7 @@ Output this exact structure:
         "remarks": "string"
       }
     ],
-    "total_effective_coverage": "number | null",
+    "total_effective_coverage": "number | null (SINGLE-EVENT cover: base_sum_insured + no_claim_bonus.current_bonus + a top-up only where deductible_achievable is true. NEVER add restoration. The server recomputes this from those fields and overwrites whatever you put here, so a value that includes a restore will be discarded, not honoured.)",
     "confidence": "high | medium | low"
   },
   "waiting_period_analysis": {
@@ -715,7 +764,7 @@ Output this exact structure:
   "audit_score": {
     "score": "number (0-100)",
     "ncar": "number",
-    "nec": "number",
+    "nec": "number (single-event: base + current_bonus + bridged top-up. No restoration. Server-recomputed.)",
     "rct": "number",
     "breakdown": {
       "net_cover_penalty": "number",
@@ -784,7 +833,7 @@ Output this exact structure:
     }
   ],
   "cover_stack": {
-    "combined_effective_cover": "number | null (base NEC + other cover actually usable today, in rupees)",
+    "combined_effective_cover": "number | null (base NEC + other cover actually usable today, in rupees. Same single-event basis as NEC: never count a restoration tranche from this policy or from any companion policy.)",
     "required_cover": "number | null (same RCT used in the audit score)",
     "stack_ratio": "number | null (combined_effective_cover / required_cover, 2 decimals)",
     "verdict": "ADEQUATE | THIN | INADEQUATE | unclear",
