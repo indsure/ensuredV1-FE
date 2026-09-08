@@ -401,6 +401,19 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
     const otherCover = data.other_cover ?? [];
     const coverStack = data.cover_stack;
 
+    // hospital_count_in_zone is `number | string | null` in the schema, and the
+    // model does put prose in it — "unclear", "not specified". Rendered raw under
+    // the words "unique empanelled hospitals" that reads as a broken report, so
+    // anything that is not a real count becomes a dash.
+    const rawZoneCount = data.network_limitations?.hospital_count_in_zone;
+    const zoneCount =
+        typeof rawZoneCount === "number"
+            ? rawZoneCount
+            : typeof rawZoneCount === "string" && /\d/.test(rawZoneCount)
+                ? rawZoneCount.trim()   // keep useful shapes like "450+" or "200-300"
+                : null;
+    const countFallback = zoneCount ?? "—";
+
     useEffect(() => {
         const city = data.identity?.city;
         if (!city) return;
@@ -1210,8 +1223,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                         </div>
                                         <div className="text-2xl font-bold text-[var(--color-navy-900)]">
                                             {hospitalCount !== null
-                                                ? hospitalCount?.toLocaleString("en-IN")
-                                                : (data.network_limitations?.hospital_count_in_zone ?? "—")}
+                                                ? hospitalCount.toLocaleString("en-IN")
+                                                : countFallback}
                                         </div>
                                         <div className="text-xs text-slate-400 mt-0.5">unique empanelled hospitals</div>
                                     </div>

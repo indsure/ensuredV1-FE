@@ -50,6 +50,20 @@ let cachedIndexes: any = null;
 let cachedAggregates: any = null;
 let insurersByCityMap = new Map<string, InsurerCount[]>();
 let insurersByPincodeMap = new Map<string, InsurerCount[]>();
+/** lower-cased city -> the spelling actually used as a key in the maps above. */
+let cityCanonicalMap = new Map<string, string>();
+
+/**
+ * City names reach us from AI-extracted policy text, where they arrive however
+ * the PDF happened to print them: "NASHIK", "nashik", " Nashik ". The network
+ * data stores "Nashik", and every lookup here is an exact-key Map hit, so any
+ * other casing silently found nothing and the caller fell back to whatever the
+ * model had guessed. Resolve to the stored spelling before looking anything up.
+ */
+function canonicalCity(city: string | undefined): string | undefined {
+    if (!city) return city;
+    return cityCanonicalMap.get(city.trim().toLowerCase()) ?? city;
+}
 
 function ensureDataLoaded() {
     if (cachedHospitals && cachedIndexes && cachedAggregates && insurersByCityMap.size > 0) return;
@@ -72,6 +86,12 @@ function ensureDataLoaded() {
         }
         if (fs.existsSync(indexesPath)) {
             cachedIndexes = JSON.parse(fs.readFileSync(indexesPath, 'utf-8'));
+            // byCity drives the non-aggregate path, so its spellings need to be
+            // resolvable too.
+            Object.keys(cachedIndexes?.byCity || {}).forEach((city: string) => {
+                const lower = city.trim().toLowerCase();
+                if (!cityCanonicalMap.has(lower)) cityCanonicalMap.set(lower, city);
+            });
             log.info('filter engine indexes loaded', { states: Object.keys(cachedIndexes?.byState || {}).length });
         }
         if (fs.existsSync(aggregatesPath)) {
@@ -80,10 +100,12 @@ function ensureDataLoaded() {
             // Pre-index insurers for fast lookup (ONCE)
             if (cachedAggregates.insurerByCity) {
                 insurersByCityMap.clear();
+                cityCanonicalMap.clear();
                 Object.entries(cachedAggregates.insurerByCity).forEach(([key, count]) => {
                     const [insurer_slug, city] = key.split('|');
                     if (!insurersByCityMap.has(city)) insurersByCityMap.set(city, []);
                     insurersByCityMap.get(city)!.push({ insurer_slug, hospital_count: count as number });
+                    cityCanonicalMap.set(city.trim().toLowerCase(), city);
                 });
             }
 
@@ -144,6 +166,7 @@ function filterHospitalsOptimized(params: FilterParams): HospitalRecord[] {
  */
 export function filterHospitalNetwork(params: FilterParams): FilterEngineResult {
     ensureDataLoaded();
+    params = { ...params, city: canonicalCity(params.city) };
     
     if (!cachedIndexes || !cachedAggregates) {
         console.warn('Filter engine data not fully loaded. Falling back to manual filter.');
@@ -320,6 +343,7 @@ function aggregateByPincode(hospitals: HospitalRecord[]): PincodeLevelResult[] {
  */
 export function getHospitalSamples(params: { city?: string; pincode?: string; limit?: number }): { hospital_name: string; address: string; insurer_slug: string }[] {
     ensureDataLoaded();
+    params = { ...params, city: canonicalCity(params.city) };
     
     if (!cachedHospitals || !cachedIndexes) {
         console.warn('[getHospitalSamples] Data not loaded');
