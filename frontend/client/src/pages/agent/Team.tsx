@@ -242,12 +242,18 @@ export default function Team() {
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5">
+          {/* A balance, not a fraction. The per-seat figure is what a NEW seat is
+              granted, never a ceiling: an advisor who joined with an existing
+              balance keeps it, and checks can be moved between advisors. Writing
+              it "109 of 20" invited exactly the reading it deserved — that the
+              number is broken — when the only broken thing was the denominator. */}
           <div className="text-sm font-bold uppercase tracking-wider text-slate-500">Policy checks left</div>
           <div className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            {members.reduce((sum, m) => sum + Number(m.checks_left), 0)}{" "}
-            <span className="text-lg text-slate-500">of {members.length * view.checksPerSeat}</span>
+            {members.reduce((sum, m) => sum + Number(m.checks_left), 0)}
           </div>
-          <div className="mt-1 text-sm text-slate-600">{view.checksPerSeat} a seat, held by each advisor</div>
+          <div className="mt-1 text-sm text-slate-600">
+            Across {members.length} advisor{members.length === 1 ? "" : "s"} · a new seat starts with {view.checksPerSeat}
+          </div>
         </div>
 
         {outOfChecks.length > 0 ? (
@@ -261,11 +267,14 @@ export default function Team() {
         ) : (
           <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5">
             <div className="text-sm font-bold uppercase tracking-wider text-slate-500">Data entry left</div>
+            {/* Same reasoning as checks: unused data entry carries over, so a
+                balance above the monthly grant is correct, not an error. */}
             <div className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-              {members.reduce((sum, m) => sum + Number(m.entry_left), 0)}{" "}
-              <span className="text-lg text-slate-500">of {members.length * 50}</span>
+              {members.reduce((sum, m) => sum + Number(m.entry_left), 0)}
             </div>
-            <div className="mt-1 text-sm text-slate-600">50 policies a seat, every month</div>
+            <div className="mt-1 text-sm text-slate-600">
+              Across {members.length} advisor{members.length === 1 ? "" : "s"} · 50 a seat is added every month
+            </div>
           </div>
         )}
       </div>
@@ -309,7 +318,10 @@ export default function Team() {
                       {m.checks_left}
                     </span>
                   </td>
-                  <td className="px-3 py-3.5 text-slate-700" data-label="Data entry">{m.entry_left} of 50</td>
+                  {/* "68 of 50" is not a typo the reader forgives — it is the
+                      same false ceiling. Carryover means the balance can exceed
+                      the monthly grant, so show the balance. */}
+                  <td className="px-3 py-3.5 text-slate-700" data-label="Data entry">{m.entry_left} left</td>
                   <td className="px-3 py-3.5 text-slate-700" data-label="Customers">{m.customers}</td>
                   <td className="px-3 py-3.5 text-slate-500" data-label="Last activity">{whenLast(m.last_activity_at)}</td>
                   <td className="px-5 py-3.5" data-label="Actions">
