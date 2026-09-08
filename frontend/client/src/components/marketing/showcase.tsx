@@ -158,7 +158,7 @@ export function ClauseDecoder({ className = "" }: { className?: string }) {
         >
           {/* ── The document side ── */}
           <div className="border-b border-[var(--color-border-light)] bg-[#FCFCFB] p-5 md:border-b-0 md:border-r sm:p-6">
-            <span className="mb-3 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+            <span className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
               <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
               What the policy says
             </span>
@@ -190,7 +190,7 @@ export function ClauseDecoder({ className = "" }: { className?: string }) {
           {/* ── The plain-language side ── */}
           <div className="flex flex-col gap-4 p-5 sm:p-6">
             <span
-              className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.14em]"
+              className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em]"
               style={{ color: clause.accent }}
             >
               <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -221,7 +221,7 @@ export function ClauseDecoder({ className = "" }: { className?: string }) {
                     }
                   >
                     <span
-                      className="block text-[13px] font-bold uppercase tracking-[0.08em] leading-tight"
+                      className="block text-sm font-bold uppercase tracking-[0.08em] leading-tight"
                       style={{ color: f.tone === "bad" ? "#B91C1C" : "var(--color-text-secondary)" }}
                     >
                       {f.label}
@@ -451,7 +451,7 @@ export function DiffRows({
   return (
     <div className={`overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white ${className}`}>
       <div className="grid grid-cols-[1.1fr_1fr_1fr] gap-2 border-b border-[var(--color-border-light)] bg-[var(--color-cream-main)] px-4 py-3">
-        <span className="text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
+        <span className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
           What it does
         </span>
         <span className="text-[15px] font-bold text-[var(--color-navy-900)]">{left}</span>

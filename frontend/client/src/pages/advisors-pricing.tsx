@@ -176,7 +176,7 @@ export default function Pricing() {
               style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.18), transparent 68%)" }}
             />
           </div>
-          <div className="inline-block py-1.5 px-3.5 border border-[var(--color-teal-600)]/25 bg-[var(--color-teal-50)] rounded-full text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)] mb-4">
+          <div className="inline-block py-1.5 px-3.5 border border-[var(--color-teal-600)]/25 bg-[var(--color-teal-50)] rounded-full text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)] mb-4">
             For advisors
           </div>
           <h1 className="text-4xl md:text-5xl font-serif mb-4 tracking-tight text-[var(--color-text-main)] leading-tight">
@@ -253,7 +253,7 @@ export default function Pricing() {
                         badge says what it actually is. */}
                     {pick && (
                       <span
-                        className="shrink-0 rounded-full px-3 py-1 text-[13px] font-bold uppercase tracking-[0.1em] text-white"
+                        className="shrink-0 rounded-full px-3 py-1 text-sm font-bold uppercase tracking-[0.1em] text-white"
                         style={{ backgroundColor: accent }}
                       >
                         Our pick
@@ -287,7 +287,7 @@ export default function Pricing() {
                         <span>
                           {f.label}
                           {f.soon && (
-                            <span className="ml-1.5 inline-block rounded-full border px-1.5 align-middle text-[13px] font-semibold uppercase leading-5 tracking-wider"
+                            <span className="ml-1.5 inline-block rounded-full border px-1.5 align-middle text-sm font-semibold uppercase leading-5 tracking-wider"
                               style={{ color: accent, borderColor: accent }}>
                               Soon
                             </span>

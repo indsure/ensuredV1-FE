@@ -268,9 +268,15 @@ for (const f of files.filter(isUI)) {
    The 2026-09-01 drop (954 -> 836, 389 -> 372) was not a design pass. It is what
    fell out of deleting 114 files that no entry point could reach: 135 of these
    findings were sitting in code nothing imported. Scanned files went 306 -> 233. */
+/* 2026-09-08: 836 -> 811 and 372 -> 368. The type move is a real pass, not a
+   deletion: the shared marketing eyebrow, the showcase kit, the policy-checker
+   landing and five marketing pages went 13px -> 14px, and the upload consent
+   line went 12px -> 14px. Every public page now reports zero content nodes
+   under 14px when measured in the browser at 375px, which is the check the
+   line-counting rule below can only approximate. */
 const BUDGETS = {
-  "sub-14px-type": 836,
-  "low-contrast-token": 372,
+  "sub-14px-type": 811,
+  "low-contrast-token": 368,
   "native-dialog": 5,
   "placeholder-as-label": 2,
   // Weak detector: only catches `>...AI...<` on a single line, so it under-reports.

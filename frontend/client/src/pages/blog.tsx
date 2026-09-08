@@ -123,7 +123,7 @@ export default function Blog() {
               style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.18), transparent 68%)" }}
             />
           </div>
-          <span className="mb-5 inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)]">
+          <span className="mb-5 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)]">
             The library
           </span>
           <h1 className="text-4xl md:text-5xl lg:text-[52px] font-bold font-serif text-[var(--color-text-main)] mb-4 leading-[1.1]">
@@ -281,7 +281,7 @@ export default function Blog() {
             </h2>
           ) : (
             <div className="mb-8 flex flex-col gap-3">
-              <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)]">
+              <span className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)]">
                 Everything we have written
               </span>
               <h2 className="font-serif text-2xl font-bold text-[var(--color-navy-900)] md:text-3xl">

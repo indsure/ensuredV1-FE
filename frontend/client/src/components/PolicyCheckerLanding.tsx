@@ -146,7 +146,7 @@ export function PolicyCheckerLanding() {
               style={{ boxShadow: "0 0 0 1px rgba(15,23,42,0.07), 0 30px 60px -24px rgba(15,23,42,0.24)" }}
             >
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+                <span className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
                   Insurance health score
                 </span>
                 <span className="rounded-md bg-[var(--color-cream-dark)] px-2 py-1 text-sm font-semibold text-[var(--color-text-secondary)]">
@@ -272,7 +272,7 @@ export function PolicyCheckerLanding() {
 
           {/* Samples run on mock data and are open to signed-out visitors. */}
           <Reveal className="flex flex-col items-center gap-4 pt-4">
-            <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+            <span className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
               Read a finished one first
             </span>
 

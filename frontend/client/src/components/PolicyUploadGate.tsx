@@ -186,7 +186,11 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
       {/* The consent line. These are health documents from people without an
           account, so the holding period is stated before a file is chosen —
           not buried in terms. Keep this in step with PENDING_UPLOAD_TTL_HOURS. */}
-      <p className="mt-5 flex items-start gap-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
+      {/* Set at text-sm, not text-xs: the comment above says this is stated up
+          front rather than buried in terms, and 12px muted grey on a phone IS
+          burying it. A retention promise the reader cannot comfortably read is
+          not a promise that was made. */}
+      <p className="mt-5 flex items-start gap-2 text-sm text-[var(--color-text-muted)] leading-relaxed">
         <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           We hold your file for 24 hours so you can see your results after signing

@@ -196,7 +196,7 @@ export default function HowItWorks() {
 
                       <div className="flex flex-col gap-1">
                         <span
-                          className="text-[13px] font-bold uppercase tracking-[0.16em]"
+                          className="text-sm font-bold uppercase tracking-[0.16em]"
                           style={{ color: item.accent }}
                         >
                           Step {item.step}

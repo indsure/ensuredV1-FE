@@ -106,7 +106,10 @@ export function Eyebrow({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.14em] ${className}`}
+      // 14px, not 13. This eyebrow is the shared one, so a single pixel here is
+      // every section heading on every marketing page — six of them on
+      // /policychecker alone — sitting under the legibility floor at once.
+      className={`inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] ${className}`}
       style={{ color: accent }}
     >
       {Icon ? <Icon className="w-4 h-4 shrink-0" aria-hidden="true" /> : null}

@@ -243,7 +243,7 @@ export default function Pricing() {
                           </h2>
                           {paid ? (
                             <span
-                              className="rounded-full px-3 py-1 text-[13px] font-bold uppercase tracking-[0.1em] text-white"
+                              className="rounded-full px-3 py-1 text-sm font-bold uppercase tracking-[0.1em] text-white"
                               style={{ backgroundColor: accent }}
                             >
                               Best value
@@ -320,7 +320,7 @@ export default function Pricing() {
               <table className="table-cards w-full text-[15px] md:min-w-[520px]">
                 <thead>
                   <tr className="bg-[var(--color-cream-main)]">
-                    <th className="w-1/2 p-4 text-left text-[13px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
+                    <th className="w-1/2 p-4 text-left text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
                       Feature
                     </th>
                     <th className="p-4 text-center font-bold text-[var(--color-navy-900)]">Free</th>

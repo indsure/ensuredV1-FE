@@ -543,7 +543,7 @@ function ProductSection() {
        background, so nothing marked where one idea ended and the next began. */
     <section id="product" className="scroll-mt-28 bg-[var(--surface-mint)] py-14 sm:py-20 lg:py-24">
       <Reveal className="container-editorial px-6 flex flex-col items-center gap-3 text-center">
-        <span className="px-3 py-1 rounded-full bg-[var(--color-teal-600)]/10 border border-[var(--color-teal-600)]/20 text-[13px] font-bold uppercase tracking-[0.14em] text-[#0F766E]">
+        <span className="px-3 py-1 rounded-full bg-[var(--color-teal-600)]/10 border border-[var(--color-teal-600)]/20 text-sm font-bold uppercase tracking-[0.14em] text-[#0F766E]">
           The product
         </span>
         <h2 className="font-serif font-bold tracking-[-0.03em] leading-tight text-3xl sm:text-4xl lg:text-5xl text-[var(--color-navy-900)]">
@@ -706,7 +706,7 @@ function HowItWorks() {
     <section id="how-it-works" className="scroll-mt-28 bg-white py-14 sm:py-20 lg:py-24">
       <div className="container-editorial px-6 flex flex-col gap-10">
         <Reveal className="flex flex-col gap-3.5">
-          <span className="self-start px-2.5 py-1 rounded-md bg-[var(--color-teal-600)]/10 text-[13px] font-bold uppercase tracking-[0.14em] text-[#0F766E]">
+          <span className="self-start px-2.5 py-1 rounded-md bg-[var(--color-teal-600)]/10 text-sm font-bold uppercase tracking-[0.14em] text-[#0F766E]">
             How it works
           </span>
           <h2 className="font-serif font-bold tracking-[-0.03em] leading-tight text-3xl sm:text-4xl lg:text-5xl text-[var(--color-navy-900)]">
