@@ -45,7 +45,9 @@ function daysUntil(date: string | null): number | null {
 }
 
 function monthKey(d: Date): string {
-  return d.toLocaleDateString("en-IN", { month: "short" });
+  // en-IN renders September as "Sept", four characters against everything
+  // else's three, which makes one bar's label sit wider than its neighbours.
+  return d.toLocaleDateString("en-IN", { month: "short" }).replace(".", "").slice(0, 3);
 }
 
 export default function Insights() {
@@ -120,6 +122,11 @@ export default function Insights() {
       if (!r.expiry_date) continue;
       const e = new Date(r.expiry_date);
       if (Number.isNaN(e.getTime())) continue;
+      // A policy that expired earlier THIS month is month-offset 0, so bucketing
+      // on the month alone counted it as "due" while the tile above counted it
+      // as "expired" — the same policy in two places saying opposite things, and
+      // the current month's bar reading high for work already missed.
+      if ((daysUntil(r.expiry_date) ?? -1) < 0) continue;
       const months = (e.getFullYear() - now.getFullYear()) * 12 + (e.getMonth() - now.getMonth());
       if (months >= 0 && months < 6) buckets[months].count++;
     }

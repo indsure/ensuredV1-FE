@@ -287,14 +287,29 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                   <button
                     type="button"
                     onClick={() => {
-                      // Collapsed to icons: no room for children, so just go.
-                      if (sidebarCollapsed) { setLocation(parent.href); return }
+                      // Collapsed to icons there is nowhere to draw children, and
+                      // the old flat rail could reach every destination from its
+                      // icons. Navigating only to the parent would strand a
+                      // collapsed user with no route to Policies > Term, so open
+                      // the rail on the way and show them where they landed.
+                      if (sidebarCollapsed) {
+                        if (parent.children.length > 0) setSidebarCollapsed(false)
+                        setOpenGroup(parent.key)
+                        setLocation(parent.href)
+                        return
+                      }
+                      // Nothing to expand: it is a destination, always navigate.
+                      if (parent.children.length === 0) { setLocation(parent.href); return }
                       // Clicking the open group closes it without navigating away.
                       if (openGroup === parent.key) { setOpenGroup(null); return }
                       setOpenGroup(parent.key)
                       setLocation(parent.href)
                     }}
-                    aria-expanded={sidebarCollapsed ? undefined : open}
+                    // Only a control that expands something announces itself as
+                    // expandable. Hiding the chevron but keeping aria-expanded
+                    // would fix the sighted reading and leave the screen-reader
+                    // one wrong.
+                    aria-expanded={sidebarCollapsed || parent.children.length === 0 ? undefined : open}
                     title={sidebarCollapsed ? parent.label : undefined}
                     className={[
                       "relative flex w-full min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
@@ -306,7 +321,11 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                       {parent.icon}
                       {!sidebarCollapsed && parent.label}
                     </span>
-                    {!sidebarCollapsed && (
+                    {/* A chevron promises something to expand. Insights has no
+                        children, so drawing one there offered a click that did
+                        nothing — and rotated on arrival, which read as a group
+                        that had opened onto an empty list. */}
+                    {!sidebarCollapsed && parent.children.length > 0 && (
                       <ChevronRight
                         className={`h-4 w-4 flex-shrink-0 text-white/40 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
                       />
