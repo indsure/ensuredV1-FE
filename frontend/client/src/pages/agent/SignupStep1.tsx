@@ -164,7 +164,13 @@ export default function AgentSignupStep1() {
         number: /[0-9]/.test(form.password),
     }
     const passwordValid = passwordChecks.length && passwordChecks.uppercase && passwordChecks.number
-    const phoneValid = form.phone === '' || /^[6-9]\d{9}$/.test(form.phone.replace(/\D/g, ''))
+    // The placeholder asks for "+91 98765 43210", so people type the country
+    // code — and stripping only non-digits leaves 919876543210, twelve digits,
+    // which the ten-digit test then rejects. The field was refusing the exact
+    // format it advertised. Take the last ten digits so a leading +91 or 0 is
+    // discarded, matching what login.tsx, signup.tsx and advisor-page.tsx
+    // already do.
+    const phoneValid = form.phone === '' || /^[6-9]\d{9}$/.test(form.phone.replace(/\D/g, '').slice(-10))
 
     const validateInviteCode = async () => {
         if (!form.inviteCode) {
