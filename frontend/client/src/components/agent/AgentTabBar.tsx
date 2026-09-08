@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter"
 import { Home, FileText, Users, TrendingUp, MoreHorizontal } from "lucide-react"
 import { useLanguage } from "@/i18n/LanguageContext"
+import { preloadAgentRoute } from "@/pages/agent/lazyRoutes"
 
 /**
  * Bottom tab navigation for the agent portal on phones.
@@ -50,6 +51,9 @@ export function AgentTabBar({ onMore }: { onMore: () => void }) {
             <Link
               key={tab.href}
               href={tab.href}
+              // Head start on the chunk between finger-down and finger-up, for
+              // the case where the background warm-up has not reached this tab.
+              onTouchStart={() => preloadAgentRoute(tab.href)}
               aria-current={active ? "page" : undefined}
               className={`flex flex-1 min-h-[58px] flex-col items-center justify-center gap-1 pt-2 transition-colors ${
                 active ? "text-[#0D9488]" : "text-slate-400"

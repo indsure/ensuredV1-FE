@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import { getFields, typeLabel, isDataEntryType, type InsuranceType } from "./insuranceTypes";
 
 /** Minimal shape the exporter needs from a policy row. */
@@ -36,12 +35,18 @@ function baseRow(p: ExportablePolicy): Record<string, any> {
  * When the active filter is a single data-entry type, its extracted fields
  * are appended as extra columns so the sheet is genuinely useful for that type.
  */
-export function exportPoliciesToExcel(
+export async function exportPoliciesToExcel(
   rows: ExportablePolicy[],
   // "others" is the sidebar's catch-all filter, not an insurance type. It has no
   // single field set, so it falls through to the base columns below.
   typeFilter: "all" | "others" | InsuranceType
-): void {
+): Promise<void> {
+  // xlsx is ~280 kB and only ever runs on this one click, so it is pulled in
+  // here rather than at the top of the file. Statically imported it rode along
+  // in the Policies chunk, tripling the weight of the screen everyone opens for
+  // a feature almost nobody uses in a given session.
+  const XLSX = await import("xlsx");
+
   let data: Record<string, any>[];
 
   if (isDataEntryType(typeFilter)) {

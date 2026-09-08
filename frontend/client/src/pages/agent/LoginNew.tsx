@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useSearch, Link } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useLanguage, LanguageToggle } from '@/i18n/LanguageContext';
 import { ShieldCheck, Eye, EyeOff, FolderKanban, MessageCircle, Scale } from 'lucide-react';
+import { preloadAgentRoutes } from '@/pages/agent/lazyRoutes';
 
 /**
  * Where to land after a successful sign-in.
@@ -29,6 +30,17 @@ function safeNext(rawSearch: string): string {
 }
 
 export default function LoginNew() {
+  // Start pulling the workspace down while they are still typing. Waiting until
+  // after sign-in wastes the one dead window the flow gives us for free: by the
+  // time the password is submitted the portal is already in memory, so the
+  // dashboard and every screen in the rail are there on arrival rather than
+  // fetching a chunk each on first visit.
+  //
+  // Deliberately not gated on a successful login. Anyone on the advisor login
+  // screen is about to be an advisor, and paying for the odd bounce is worth a
+  // workspace that is ready the moment they land.
+  useEffect(() => { preloadAgentRoutes() }, []);
+
   const [, setLocation] = useLocation();
   const search = useSearch();
   const { t } = useLanguage();

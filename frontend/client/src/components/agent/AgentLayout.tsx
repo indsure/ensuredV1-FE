@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext"
 import { AgentTabBar } from "@/components/agent/AgentTabBar"
+import { preloadAgentRoute } from "@/pages/agent/lazyRoutes"
 
 interface AgentLayoutProps {
   children: ReactNode;
@@ -149,6 +150,16 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
   // Policies > Overview does not stay lit while Health is selected.
   const currentPath = search ? `${location}?${search}` : location
   const isChildActive = (href: string) => currentPath === href
+
+  // Hovering a nav item is a promise of a click. Fetching its chunk on hover
+  // covers the seconds right after login, before the background sweep in
+  // ProtectedRoute has finished warming everything. Cheap and idempotent, so
+  // it is spread onto every nav control rather than only the likely ones.
+  const warm = (href: string) => ({
+    onMouseEnter: () => preloadAgentRoute(href),
+    onFocus: () => preloadAgentRoute(href),
+    onTouchStart: () => preloadAgentRoute(href),
+  })
 
   // Which group the current route lives in. Drives auto-open, so the rail always
   // shows you where you are after a reload or a deep link.
@@ -291,6 +302,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                 <div key={parent.key}>
                   <button
                     type="button"
+                    {...warm(parent.href)}
                     onClick={() => {
                       // Collapsed to icons there is nowhere to draw children, and
                       // the old flat rail could reach every destination from its
@@ -350,6 +362,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                           <Link
                             key={child.href}
                             to={child.href}
+                            {...warm(child.href)}
                             aria-current={active ? "page" : undefined}
                             className={[
                               "flex min-h-11 items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
@@ -382,6 +395,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
             <nav className="space-y-1">
               <Link
                 to="/agent/settings"
+                {...warm("/agent/settings")}
                 className={[
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
                   location === "/agent/settings" ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",

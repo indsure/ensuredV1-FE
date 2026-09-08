@@ -173,6 +173,9 @@ export default function PoliciesNew() {
   const [, setLocation] = useLocation();
   const [rows, setRows] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // The spreadsheet writer is fetched on click now, so the button has to be
+  // able to say it is working instead of looking dead for a beat.
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<FilterTab>("all");
@@ -340,11 +343,21 @@ export default function PoliciesNew() {
         <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">My Policies</h1>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => exportPoliciesToExcel(filtered, typeFilter)}
-            disabled={loading || filtered.length === 0}
+            onClick={async () => {
+              setExporting(true)
+              try {
+                await exportPoliciesToExcel(filtered, typeFilter)
+              } catch {
+                toast({ title: "Export failed", description: "Could not build the spreadsheet. Please try again.", variant: "destructive" })
+              } finally {
+                setExporting(false)
+              }
+            }}
+            disabled={loading || exporting || filtered.length === 0}
             className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:border-[#0D9488] hover:text-[#0D9488] disabled:opacity-50"
           >
-            <FileSpreadsheet size={14} /> Export to Excel
+            {exporting ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
+            {exporting ? "Preparing..." : "Export to Excel"}
           </button>
           <button onClick={fetchPolicies} disabled={loading} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh

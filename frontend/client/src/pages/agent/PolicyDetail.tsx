@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { Copy, ExternalLink, FileText, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, FileText, RefreshCw, Trash2 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import CustomerTagCard from "@/components/agent/CustomerTagCard";
@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
+import { apiFetch, apiJson } from "@/lib/api";
 import { rerunPolicy } from "@/lib/rerun";
 import { supabase } from "@/lib/supabase";
 import { validateForensicAuditReport, type ForensicAuditReport } from "@shared/policy";
@@ -195,6 +196,16 @@ export default function PolicyDetail() {
   }
 
   const statusRef = useRef<string | null>(null);
+  const clientCardRef = useRef<HTMLDivElement | null>(null);
+
+  // The Client details card sits at the top of the left column; the Action bar
+  // button that opens it is in the right rail, ~750px below the fold on a
+  // laptop. Flipping the state alone opened the editor somewhere the agent
+  // could not see, so the button read as broken. Bring the editor to them.
+  function openClientEditor() {
+    setEditOpen(true);
+    clientCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
   useEffect(() => {
     statusRef.current = policy?.status ?? null;
   }, [policy?.status]);
@@ -271,27 +282,19 @@ export default function PolicyDetail() {
     if (!policy?.id || !agent?.agentId) return;
     setBusy("share");
     try {
-      // Get auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Not authenticated");
-      }
-
-      // Toggle share to enabled
-      const res = await fetch(`/api/agent/clients/${policy.id}/share/toggle`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ enabled: true })
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to generate share link");
-      }
-
-      const { shareUrl, shareToken: newToken } = await res.json();
+      // apiFetch, not bare fetch: the backend lives on api.indsure.in, and a
+      // relative /api path resolves against the Vercel origin, where the SPA
+      // fallback answers it with index.html and a 200. `res.ok` was therefore
+      // true for a request that never reached the server, and sharing failed on
+      // the JSON parse instead — with no clue as to why. apiFetch also carries
+      // the bearer token, so the hand-rolled session read is gone with it.
+      const { shareUrl, shareToken: newToken } = await apiJson<{ shareUrl: string; shareToken: string }>(
+        apiFetch(`/api/agent/clients/${policy.id}/share/toggle`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled: true }),
+        }),
+      );
       setShareToken(newToken);
 
       // Copy to clipboard
@@ -518,7 +521,7 @@ export default function PolicyDetail() {
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div className="space-y-6">
-              <Card className="border-slate-100 shadow-sm">
+              <Card ref={clientCardRef} className="border-slate-100 shadow-sm">
                 <CardHeader><CardTitle>Client details</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   {!editOpen ? (
@@ -581,7 +584,7 @@ export default function PolicyDetail() {
                     <RefreshCw className={`mr-2 h-4 w-4 ${busy === "rerun" || policy.status === "processing" ? "animate-spin" : ""}`} />
                     {isDataEntry ? "Re-read Document" : "Re-run Analysis"}
                   </Button>
-                  <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={() => setEditOpen(true)}>Edit Client Details</Button>
+                  <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={openClientEditor}>Edit Client Details</Button>
                   {!isDataEntry && (
                     <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!reportData || busy === "share"}>
                       <ExternalLink className="mr-2 h-4 w-4" />
@@ -592,15 +595,6 @@ export default function PolicyDetail() {
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete
                   </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="border-slate-100 shadow-sm">
-                <CardContent className="flex items-start gap-3 p-5">
-                  <ShieldCheck className="mt-0.5 h-5 w-5 text-[#0D9488]" />
-                  <div className="text-sm text-slate-600">
-                    Internal detail pages show the unabridged report and agent-only notes. Client shares still go through the public `/report/[token]` route.
-                  </div>
                 </CardContent>
               </Card>
             </div>

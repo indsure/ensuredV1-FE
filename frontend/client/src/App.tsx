@@ -29,29 +29,33 @@ const AgentResetPassword = lazy(() => import("@/pages/agent/ResetPassword"));
 const AgentSignupFlow = lazy(() => import("@/pages/agent/SignupFlow"));
 
 // --- Agent App ---
-const DashboardNew = lazy(() => import("@/pages/agent/DashboardNew"));
-const Insights = lazy(() => import("@/pages/agent/Insights"));
-const LeadRenewals = lazy(() => import("@/pages/agent/LeadRenewals"));
-const AgentUploads = lazy(() => import("@/pages/agent/AgentUploads"));
-const PoliciesNew = lazy(() => import("@/pages/agent/PoliciesNew"));
-const PolicyValues = lazy(() => import("@/pages/agent/PolicyValues"));
-const AgentCalculator = lazy(() => import("@/pages/agent/AgentCalculator"));
-const AgentCompare = lazy(() => import("@/pages/agent/Compare"));
-const AgentCatalogCompare = lazy(() => import("@/pages/agent/CatalogCompare"));
-const RiderDirectory = lazy(() => import("@/pages/agent/RiderDirectory"));
-const PolicyDetail = lazy(() => import("@/pages/agent/PolicyDetail"));
-const CustomersNew = lazy(() => import("@/pages/agent/CustomersNew"));
-const CustomerDetail = lazy(() => import("@/pages/agent/CustomerDetail"));
-const LeadsNew = lazy(() => import("@/pages/agent/LeadsNew"));
-const LeadDetail = lazy(() => import("@/pages/agent/LeadDetail"));
-const Claims = lazy(() => import("@/pages/agent/Claims"));
-const ClaimDetail = lazy(() => import("@/pages/agent/ClaimDetail"));
-const MyQueue = lazy(() => import("@/pages/agent/MyQueue"));
-const SettingsNew = lazy(() => import("@/pages/agent/SettingsNew"));
-const MyProfile = lazy(() => import("@/pages/agent/MyProfile"));
-const AgentMyPage = lazy(() => import("@/pages/agent/MyPage"));
-const AgentTeam = lazy(() => import("@/pages/agent/Team"));
-const AgentTeamMember = lazy(() => import("@/pages/agent/TeamMember"));
+// Declared in one module so the post-login preloader can warm the very same
+// chunks this Switch renders. See pages/agent/lazyRoutes.ts.
+import {
+  DashboardNew,
+  Insights,
+  LeadRenewals,
+  AgentUploads,
+  PoliciesNew,
+  PolicyValues,
+  AgentCalculator,
+  AgentCompare,
+  AgentCatalogCompare,
+  RiderDirectory,
+  PolicyDetail,
+  CustomersNew,
+  CustomerDetail,
+  LeadsNew,
+  LeadDetail,
+  Claims,
+  ClaimDetail,
+  MyQueue,
+  SettingsNew,
+  MyProfile,
+  AgentMyPage,
+  AgentTeam,
+  AgentTeamMember,
+} from "@/pages/agent/lazyRoutes";
 const JoinTeam = lazy(() => import("@/pages/agent/JoinTeam"));
 import AgentProtectedRoute from "@/components/agent/ProtectedRoute";
 
