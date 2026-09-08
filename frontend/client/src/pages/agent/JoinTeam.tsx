@@ -218,7 +218,28 @@ export default function JoinTeam() {
           </div>
         )}
 
-        {!signedInEmail && (
+        {/* Signed out, and the address already advises on IndSure. Signing up
+            again is impossible — Supabase refuses a duplicate address — so the
+            only real action is to sign in. Leading with "Create my account"
+            here sends people into a dead end that reads like a broken invite. */}
+        {!signedInEmail && invite.hasAccount && (
+          <>
+            <Link
+              href={`/agent/login?next=${encodeURIComponent(`/agent/join/${token}`)}&email=${encodeURIComponent(invite.email)}`}
+              className="w-full min-h-[52px] inline-flex items-center justify-center rounded-xl bg-teal-600 text-white text-base font-bold"
+            >
+              Sign in to join {invite.teamName}
+            </Link>
+            <p className="text-sm text-slate-600 leading-relaxed text-center">
+              You already advise on IndSure with {invite.email}. Sign in with that account and we
+              will bring you straight back here to finish joining.
+            </p>
+          </>
+        )}
+
+        {/* Signed out and genuinely new: signup, which ends in a confirmation
+            email, so the last step happens back on this page. */}
+        {!signedInEmail && !invite.hasAccount && (
           <>
             <Link
               // /agent/signup/step1, not /agent/signup: the bare path does not
@@ -236,7 +257,7 @@ export default function JoinTeam() {
               again to finish joining.
             </p>
             <Link
-              href="/agent/login"
+              href={`/agent/login?next=${encodeURIComponent(`/agent/join/${token}`)}`}
               className="w-full min-h-[48px] inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white text-base font-semibold text-slate-700"
             >
               Already on IndSure? Sign in to join

@@ -730,8 +730,23 @@ export function registerTeamRoutes(app: Express, verifyJwt: VerifyJwt, isAdmin: 
       }
 
       const state = row.status !== "pending" ? row.status : expired ? "expired" : "pending";
+
+      // Does the invited address already have an advisor account? The join page
+      // needs this to lead with the right action. Without it the page offers
+      // "Create my account" first, an existing advisor takes the obvious button,
+      // and Supabase answers "User already registered" — a dead end that reads
+      // like the invite is broken.
+      //
+      // Not a disclosure worth guarding: the holder of an email-bound invite was
+      // handed this address by us, on this very page, one line above.
+      const acct = await pool.query(
+        "SELECT 1 FROM agents WHERE lower(email) = lower($1) LIMIT 1",
+        [row.email]
+      );
+
       return res.json({
         state,
+        hasAccount: (acct.rowCount ?? 0) > 0,
         email: row.email,
         invitedName: row.invited_name,
         teamName: row.team_name,

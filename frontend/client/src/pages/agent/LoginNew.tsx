@@ -1,15 +1,40 @@
 import { useState } from 'react';
-import { useLocation, Link } from 'wouter';
+import { useLocation, useSearch, Link } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useLanguage, LanguageToggle } from '@/i18n/LanguageContext';
 import { ShieldCheck, Eye, EyeOff, FolderKanban, MessageCircle, Scale } from 'lucide-react';
 
+/**
+ * Where to land after a successful sign-in.
+ *
+ * A team invite sends people here mid-flow, and dropping them on the dashboard
+ * means re-opening the invite email to finish. `?next=` brings them back.
+ *
+ * Only same-site absolute paths are honoured. Anything else — a full URL, a
+ * protocol-relative `//evil.example`, a backslash variant — is discarded and the
+ * dashboard is used instead, so the parameter cannot be used to bounce someone
+ * off IndSure with a freshly minted session.
+ */
+function safeNext(rawSearch: string): string {
+  const raw = new URLSearchParams(rawSearch).get('next');
+  if (!raw) return '/agent/dashboard';
+  const decoded = (() => { try { return decodeURIComponent(raw); } catch { return raw; } })();
+  const ok = decoded.startsWith('/')
+    && !decoded.startsWith('//')
+    && !decoded.startsWith('/\\')
+    && !decoded.includes('://');
+  return ok ? decoded : '/agent/dashboard';
+}
+
 export default function LoginNew() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { t } = useLanguage();
-  const [email, setEmail] = useState('');
+  // Prefilled when an invite sent them here, so the address that has to match
+  // the invite is not something they have to remember and retype.
+  const [email, setEmail] = useState(() => new URLSearchParams(search).get('email') ?? '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -46,7 +71,7 @@ export default function LoginNew() {
       return;
     }
 
-    setLocation('/agent/dashboard');
+    setLocation(safeNext(search));
   }
 
   const benefits = [

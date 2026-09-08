@@ -102,6 +102,10 @@ export type MemberDetail = {
 
 export type InvitePreview = {
   state: "pending" | "accepted" | "revoked" | "expired";
+  /** True when the invited address already has an advisor account, so the join
+   *  page leads with "sign in" instead of sending them into a signup that will
+   *  be refused. Optional: an older backend does not send it. */
+  hasAccount?: boolean;
   email: string;
   invitedName: string | null;
   teamName: string;
