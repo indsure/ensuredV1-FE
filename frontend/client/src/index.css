@@ -564,3 +564,39 @@
 .bleed-mint { --bleed-color: var(--surface-mint); }
 .bleed-white { --bleed-color: var(--surface-white); }
 .bleed-sand { --bleed-color: var(--surface-sand); }
+
+/* =========================================
+   REAL-DEVICE MOBILE FIXES
+
+   Two faults that a desktop browser at a phone-sized viewport cannot
+   reproduce, which is why they survived a responsive pass that measured clean.
+   Both are deliberately OUTSIDE @layer base: they have to beat the Tailwind
+   utility already on the element, which is the whole point.
+   ========================================= */
+
+/* 1. iOS Safari zooms the page in whenever you focus a form control whose
+      font-size is under 16px, then leaves you scrolled sideways with the
+      layout apparently broken. Our shared input classes use text-sm (14px),
+      so every form in the product did this on an iPhone. 16px is the exact
+      threshold, not a preference — and it only applies where the zoom happens,
+      so desktop keeps its 14px fields. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* 2. On iOS Safari 100vh is the height WITHOUT the browser toolbar, so a
+      100vh element is taller than what you can see and its bottom sits under
+      the chrome — the classic "the button is off the screen" report. dvh is
+      the dynamic height that accounts for it. Redefining the two utilities
+      fixes all 82 uses at once instead of touching 82 files, and @supports
+      means a browser without dvh keeps today's behaviour. */
+@supports (height: 100dvh) {
+  @media (max-width: 767px) {
+    .min-h-screen { min-height: 100dvh; }
+    .h-screen { height: 100dvh; }
+  }
+}
