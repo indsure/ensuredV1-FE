@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter"
-import { Home, FileText, Users, ShieldCheck, MoreHorizontal } from "lucide-react"
+import { Home, FileText, Users, TrendingUp, MoreHorizontal } from "lucide-react"
 import { useLanguage } from "@/i18n/LanguageContext"
 
 /**
@@ -23,11 +23,16 @@ export function AgentTabBar({ onMore }: { onMore: () => void }) {
     return !value || value === key ? fallback : value
   }
 
+  // Mirrors the first four parents of the desktop rail, in the same order, so
+  // the product has ONE structure rather than two that disagree. Before this,
+  // the bar offered Customers and Claims as top-level while the rail filed them
+  // under People and Services — the same app teaching two different maps.
+  // Everything else, Services and My Agency included, is one tap away in More.
   const tabs = [
     { href: "/agent/dashboard", label: label("layout.tab_home", "Home"), icon: Home },
+    { href: "/agent/insights", label: label("layout.nav_insights", "Insights"), icon: TrendingUp },
+    { href: "/agent/customers", label: label("layout.nav_people", "People"), icon: Users },
     { href: "/agent/policies", label: label("layout.tab_policies", "Policies"), icon: FileText },
-    { href: "/agent/customers", label: label("layout.tab_customers", "Customers"), icon: Users },
-    { href: "/agent/claims", label: label("layout.tab_claims", "Claims"), icon: ShieldCheck },
   ]
 
   const isActive = (href: string) => location === href || location.startsWith(href + "/")

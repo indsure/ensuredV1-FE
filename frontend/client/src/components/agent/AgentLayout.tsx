@@ -153,8 +153,13 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
   // Which group the current route lives in. Drives auto-open, so the rail always
   // shows you where you are after a reload or a deep link.
   const activeKey = useMemo(() => {
+    // Prefix match, so a detail screen keeps its section lit. On an exact match
+    // /agent/policies/<id> belonged to nothing and the rail went blank the
+    // moment you opened a policy — the one place you most want to know where
+    // you are, because Back is the way out.
+    const inSection = (href: string) => location === href || location.startsWith(href + "/")
     const hit = navTree.find(
-      (p) => p.href === location || p.children.some((c) => c.href.split("?")[0] === location)
+      (p) => inSection(p.href) || p.children.some((c) => inSection(c.href.split("?")[0]))
     )
     return hit?.key ?? null
   }, [navTree, location])

@@ -234,7 +234,11 @@ export default function Insights() {
                   <button
                     key={type}
                     onClick={() => setLocation(`/agent/policies?type=${type}`)}
-                    className="grid w-full grid-cols-[92px_1fr_78px] items-center gap-3 rounded-lg py-0.5 text-left hover:bg-slate-50"
+                    // These rows are links into a filtered Policies list, so
+                    // they are tap targets and were 24px tall — half the 44px
+                    // floor this product sets itself, on a screen built for
+                    // people who are not aiming carefully.
+                    className="grid min-h-11 w-full grid-cols-[76px_1fr_74px] items-center gap-2 rounded-lg px-1 text-left hover:bg-slate-50 sm:grid-cols-[92px_1fr_78px] sm:gap-3"
                   >
                     <span className="truncate text-sm font-semibold text-slate-600">
                       {TYPE_META[type as InsuranceType]?.emoji} {typeLabel(type)}

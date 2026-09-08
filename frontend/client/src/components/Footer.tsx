@@ -76,7 +76,7 @@ export function Footer() {
                       href={social.href}
                       aria-label={social.name}
                       target="_blank" rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-full border border-[var(--color-border-subtle)] flex items-center justify-center text-[var(--color-white-muted)] hover:bg-[var(--color-gold-500)] hover:text-[var(--color-navy-900)] hover:border-[var(--color-gold-500)] transition-colors"
+                      className="w-11 h-11 md:w-9 md:h-9 rounded-full border border-[var(--color-border-subtle)] flex items-center justify-center text-[var(--color-white-muted)] hover:bg-[var(--color-gold-500)] hover:text-[var(--color-navy-900)] hover:border-[var(--color-gold-500)] transition-colors"
                     >
                       <Icon className="w-4 h-4" />
                     </a>
@@ -93,7 +93,13 @@ export function Footer() {
                 <ul className="space-y-2.5">
                   {col.links.map((l) => (
                     <li key={l.href}>
-                      <Link href={l.href}>
+                      {/* 19px tall was the real hit area on a phone: the text
+                          box and nothing else. On a 375px screen, for the 40+
+                          audience this product is built for, that is a link you
+                          miss and then mistrust. inline-flex + min-h-11 gives
+                          the 44px target the house rules already require,
+                          without moving anything on desktop. */}
+                      <Link href={l.href} className="inline-flex min-h-11 items-center md:min-h-0">
                         <span className="text-sm text-[var(--color-white-muted)] hover:text-white transition-colors cursor-pointer">
                           {l.label}
                         </span>
