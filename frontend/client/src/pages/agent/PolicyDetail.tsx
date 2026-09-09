@@ -6,6 +6,7 @@ import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import CustomerTagCard from "@/components/agent/CustomerTagCard";
 import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
 import PolicyValueChart from "@/components/agent/PolicyValueChart";
+import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
 import { Button } from "@/components/ui/button";
@@ -446,7 +447,14 @@ export default function PolicyDetail() {
                 </Button>
               </div>
 
-              {shareToken && (
+              {/* Gated on the report, not just the token. A policy can hold a
+                  share token with no report behind it - every data-entry type
+                  never produces one, and a health policy whose analysis failed
+                  does not either. Showing the link anyway invited the agent to
+                  copy an address that answers "report_not_ready" to their
+                  customer. The Share button above has always been gated this
+                  way; this block was not. */}
+              {shareToken && reportData && (
                 <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#0D9488]/10 bg-slate-50 p-4">
                   <div className="min-w-0 flex-1 truncate text-sm text-slate-700">{shareLink}</div>
                   <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={() => void copyText(shareLink, "Report link copied")}>
@@ -490,6 +498,10 @@ export default function PolicyDetail() {
           {isDataEntry ? (
             policy.status === "done" ? (
               <div className="space-y-6">
+                {/* Motor only, and it renders nothing unless the document was
+                    actually read. The summary sits above the fields it was
+                    read from. */}
+                <AddOnChecklist data={extractedData} />
                 <ExtractedDataForm
                   clientId={policy.id}
                   insuranceType={insuranceType}
