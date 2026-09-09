@@ -30,7 +30,8 @@ import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { supabase } from "@/lib/supabase";
 import {
   LINES_OF_BUSINESS, LOB_META, SPOKEN_LANGUAGES, SHARE_CHANNELS,
-  displayNameProblem, fetchMyPage, fetchPageViews, pageUrl, updateMyPage, uploadPhoto,
+  createMyPage, displayNameProblem, fetchMyPage, fetchPageViews, pageUrl, updateMyPage,
+  uploadPhoto,
   summariseByApp, summariseByDevice,
   type AdvisorPage, type LineOfBusiness, type PageLocale, type ShareChannel, type ViewStat,
 } from "@/lib/advisorPage";
@@ -55,6 +56,7 @@ export default function MyPage() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     if (!agentId) return;
@@ -139,6 +141,22 @@ export default function MyPage() {
     }
   }
 
+  async function onCreate() {
+    setCreating(true);
+    try {
+      await createMyPage();
+      await load();
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Could not create your page",
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
+    } finally {
+      setCreating(false);
+    }
+  }
+
   async function onPhoto(file: File) {
     if (!agentId) return;
     setUploadingPhoto(true);
@@ -167,9 +185,11 @@ export default function MyPage() {
 
   if (error) return <InlineErrorState message={error} onRetry={load} />;
 
-  // No row, or we haven't switched it on yet. Advisor pages are opened up a
-  // handful at a time rather than to every signup, because each one is a
-  // permanent public URL on the main domain.
+  // No row yet. Every agent can have a page, so this is a one-click create
+  // rather than a waiting list: the backend mints the slug (permanent, and on
+  // our main domain, so it is not the browser's to choose) and switches the
+  // page on. It still opens UNPUBLISHED, so nothing is public until the advisor
+  // fills this screen in and presses Publish.
   if (!page || !page.enabled) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
@@ -182,17 +202,27 @@ export default function MyPage() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-slate-600">
             <p>
-              An advisor page is your own public page — your photo, your city, the languages you
-              speak — that you can share on WhatsApp, put in your Instagram bio, or print as a QR
-              code on your visiting card. Anyone who fills it in lands straight in your Leads.
+              An advisor page is your own public page: your photo, your city, the languages you
+              speak. Share it on WhatsApp, put it in your Instagram bio, or print it as a QR code
+              on your visiting card. Anyone who fills it in lands straight in your Leads.
             </p>
             <p>
-              We're opening these up to a few advisors at a time. Write to us and we'll set yours
-              up with your own link.
+              Creating it takes a second and puts nothing online yet. You add your details here
+              first, then press Publish when you are ready.
             </p>
-            <a href="mailto:hello@indsure.in?subject=Advisor%20page%20request">
-              <Button className="bg-[#0D9488] hover:bg-[#0F766E]">Request my page</Button>
-            </a>
+            <Button
+              className="bg-[#0D9488] hover:bg-[#0F766E]"
+              disabled={creating}
+              onClick={onCreate}
+            >
+              {creating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating
+                </>
+              ) : (
+                "Create my page"
+              )}
+            </Button>
           </CardContent>
         </Card>
       </div>

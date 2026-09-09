@@ -16,6 +16,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { getApiBase } from "@/lib/queryClient";
+import { apiFetch } from "@/lib/api";
 
 /* ── Shape ─────────────────────────────────────────────────────────────── */
 
@@ -295,6 +296,27 @@ export type AdvisorPageDraft = {
 export async function updateMyPage(pageId: string, draft: AdvisorPageDraft): Promise<void> {
   const { error } = await supabase.from("agent_pages").update(draft).eq("id", pageId);
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Create this agent's page. Goes through the backend, not supabase-js, because
+ * the slug is a permanent public URL on the main domain: it is minted server
+ * side against the reserved-slug list, and `enabled` is pinned by a DB trigger
+ * for anyone presenting a JWT. The row comes back UNPUBLISHED, so the advisor
+ * fills in their details on this screen and presses Publish themselves.
+ *
+ * Safe to call when a row already exists: it re-enables that one and keeps the
+ * slug, rather than minting a second.
+ */
+export async function createMyPage(): Promise<{ slug: string; created: boolean }> {
+  const res = await apiFetch("/api/agent/my-page", { method: "POST" });
+  // apiFetch resolves for 4xx and 5xx exactly as fetch does, so this check is
+  // the only thing standing between a failed create and a success toast.
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error || `Could not create your page (${res.status})`);
+  }
+  return res.json();
 }
 
 export type ViewStat = {
