@@ -1,7 +1,7 @@
 /**
- * MOCKUP — not wired into the app. Redesign candidate for PolicyPDFDocument.tsx.
+ * The downloadable audit report. Replaced PolicyPDFDocument.tsx, which is gone.
  *
- * Three structural departures from v1:
+ * Three things here are load-bearing and easy to undo by accident:
  *
  *  1. Fonts are the FULL Noto Sans TTF, not the `latin` woff subset. The latin
  *     subset has no U+20B9, which is why every rupee sign in the shipped PDF
