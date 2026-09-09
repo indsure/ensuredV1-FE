@@ -6193,6 +6193,129 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   );
 
+  /* ── Agent: create my own advisor page ───────────────────────────────────
+   * Self-serve. Pages used to be minted one at a time by hand (see
+   * scripts/ops/advisor_page_admin.mjs) and /agent/my-page showed a "write to
+   * us and we'll set yours up" screen in the meantime. That waiting list is
+   * gone: any signed-in agent creates their own page here, in one click.
+   *
+   * Still server-side rather than an RLS insert from the browser, for the two
+   * reasons the original design gave: the slug becomes a permanent public URL
+   * on the main domain, so it is minted here where the reserved-slug list and
+   * the uniqueness retry live; and `enabled` is pinned by a DB trigger for any
+   * JWT-bearing caller, while this pool presents no JWT.
+   *
+   * The page is created UNPUBLISHED. Nothing is public until the advisor fills
+   * in their details and presses Publish themselves.
+   */
+
+  /** Best-effort slug stem from a display name. Returns "" when the name has no
+   *  usable ASCII in it at all (a purely Devanagari name, for instance), which
+   *  mintSlug turns into "advisor". */
+  const slugFromName = (name: string): string =>
+    name
+      .normalize("NFKD")
+      // Drop the combining marks NFKD just split off, rather than letting the
+      // next line turn each one into a hyphen: "Ambedkar" with an accent on the
+      // A would otherwise come out as "a-mbedkar".
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      // The CHECK constraint allows 40 characters; "-NNNNN" claims six of them.
+      .slice(0, 34)
+      .replace(/-+$/g, "");
+
+  /**
+   * rajesh-kumar-48213. Every self-serve slug carries five digits, for two
+   * reasons:
+   *
+   *  • The clean bare names stay OURS to hand out with `advisor_page_admin.mjs
+   *    grant`. A slug is permanent and can never be moved, so the first Rajesh
+   *    Kumar to sign up would otherwise take rajesh-kumar from every future one
+   *    — including anyone we might have wanted to give it to.
+   *  • The second Rajesh Kumar is not handed a "-2" that reads as second place.
+   *
+   * Random rather than sequential on purpose: a counter would print how many
+   * advisors we have onto every visiting card and society standee.
+   */
+  const mintSlug = (base: string) =>
+    `${base || "advisor"}-${crypto.randomInt(10000, 100000)}`;
+
+  app.post("/api/agent/my-page", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
+    try {
+      const { rows: agents } = await pool.query(
+        `SELECT name, full_name, city, location FROM agents WHERE id = $1`,
+        [agentId]
+      );
+      if (agents.length === 0) return res.status(404).json({ error: "Agent not found" });
+      const agent = agents[0];
+
+      // Already has a row: switch it back on rather than minting a second slug.
+      // A slug is never moved — advisors print it on visiting cards and society
+      // standees, so a changed slug is a dead standee.
+      const { rows: existing } = await pool.query(
+        `UPDATE agent_pages SET enabled = true WHERE agent_id = $1 RETURNING slug`,
+        [agentId]
+      );
+      if (existing.length) return res.json({ slug: existing[0].slug, created: false });
+
+      const display = String(agent.full_name || agent.name || "").trim() || "Insurance Advisor";
+      const base = slugFromName(display);
+
+      // Five digits on a name makes a clash rare rather than impossible, so it
+      // is still checked. reserved_slugs holds only bare words today and so can
+      // never match one of these, but it is cheap and stays correct if that
+      // changes.
+      let slug = "";
+      for (let n = 0; n < 5 && !slug; n++) {
+        const candidate = mintSlug(base);
+        const { rows: taken } = await pool.query(
+          `SELECT 1 FROM agent_pages WHERE slug = $1
+            UNION ALL
+           SELECT 1 FROM reserved_slugs WHERE slug = $1`,
+          [candidate]
+        );
+        if (taken.length === 0) slug = candidate;
+      }
+      if (!slug) slug = `advisor-${crypto.randomBytes(4).toString("hex")}`;
+
+      const insert = (s: string) =>
+        pool.query(
+          `INSERT INTO agent_pages (agent_id, slug, display_name, city, enabled, published)
+           VALUES ($1, $2, $3, $4, true, false)
+           RETURNING slug`,
+          [agentId, s, display, agent.city || agent.location || null]
+        );
+
+      let inserted;
+      try {
+        inserted = await insert(slug);
+      } catch (err: any) {
+        // Someone took the slug between the check above and this insert, or the
+        // agent opened two tabs. 23505 = unique_violation.
+        if (err?.code !== "23505") throw err;
+        if (String(err?.constraint || "").includes("agent_id")) {
+          const { rows } = await pool.query(
+            `UPDATE agent_pages SET enabled = true WHERE agent_id = $1 RETURNING slug`,
+            [agentId]
+          );
+          return res.json({ slug: rows[0]?.slug, created: false });
+        }
+        inserted = await insert(mintSlug(base));
+      }
+
+      log.info("advisor page created", { slug: inserted.rows[0].slug });
+      return res.status(201).json({ slug: inserted.rows[0].slug, created: true });
+    } catch (err: any) {
+      console.error("create advisor page error:", err?.message);
+      return res.status(500).json({ error: "Could not create your page. Please try again." });
+    }
+  });
+
   /* ── Admin: Get Leads ─────────────────────────────────────────── */
 
   app.get("/api/leads", isAdmin, async (req, res) => {

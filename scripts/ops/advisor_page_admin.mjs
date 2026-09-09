@@ -6,9 +6,12 @@
  *   node advisor_page_admin.mjs disable <slug>
  *   node advisor_page_admin.mjs enable  <slug>
  *
- * `grant` is how an advisor gets a page at all: it mints their agent_pages row
- * with the slug WE choose and enabled = true. The advisor then fills in their
- * details at /agent/my-page and presses Publish themselves.
+ * `grant` is no longer how an advisor GETS a page: /agent/my-page creates one
+ * on its own (POST /api/agent/my-page), with a slug derived from their name.
+ * Use `grant` when you want to choose the slug yourself, which is the reason
+ * left for it: it mints their agent_pages row with the slug WE pick and
+ * enabled = true. Either way the advisor fills in their details at
+ * /agent/my-page and presses Publish themselves.
  *
  * Slugs are permanent on purpose. Advisors print them as QR codes on visiting
  * cards and society standees, so a changed slug is a dead standee — `grant`
