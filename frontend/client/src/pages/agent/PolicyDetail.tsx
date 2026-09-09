@@ -6,6 +6,7 @@ import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import CustomerTagCard from "@/components/agent/CustomerTagCard";
 import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
 import PolicyValueChart from "@/components/agent/PolicyValueChart";
+import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
 import { Button } from "@/components/ui/button";
@@ -478,6 +479,10 @@ export default function PolicyDetail() {
           {isDataEntry ? (
             policy.status === "done" ? (
               <div className="space-y-6">
+                {/* Motor only, and it renders nothing unless the document was
+                    actually read. The summary sits above the fields it was
+                    read from. */}
+                <AddOnChecklist data={extractedData} />
                 <ExtractedDataForm
                   clientId={policy.id}
                   insuranceType={insuranceType}

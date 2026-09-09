@@ -13,6 +13,12 @@
  */
 
 import { DEMO_AGENT_ID, DEMO_EMAIL } from "./mode";
+import {
+  ADD_ON_CATALOG,
+  ADD_ON_FINDINGS_KEY,
+  type AddOnScan,
+  type VehicleClass,
+} from "@shared/motorAddOns";
 
 const now = new Date();
 const day = 24 * 60 * 60 * 1000;
@@ -24,6 +30,65 @@ function ago(days: number): string {
 /** `YYYY-MM-DD`, `n` days ago (negative = future). */
 function dateAgo(days: number): string {
   return new Date(now.getTime() - days * day).toISOString().slice(0, 10);
+}
+
+/**
+ * An add-on scan shaped exactly like the one the detector emits, for the two
+ * outcomes worth demonstrating: a car carrying three add-ons, and a two-wheeler
+ * carrying none where the arithmetic proves it.
+ *
+ * Built FROM the live catalog rather than hard-coded, so adding an add-on shows
+ * up in the demo instead of leaving it quietly a version behind. The rupee
+ * figures are internally consistent: basic plus named add-ons minus the
+ * no-claim bonus equals the total, so the "every rupee accounted for" seal in
+ * the card is earned here the same way it is earned on a real policy.
+ */
+function demoAddOnScan(vehicleClass: VehicleClass): AddOnScan {
+  const catalog = ADD_ON_CATALOG[vehicleClass];
+  const priced =
+    vehicleClass === "car"
+      ? [
+          { id: "zero_depreciation", name: "Depreciation Waiver", uin: "IRDAN000A0001V01202223", amount: 3850 },
+          { id: "consumables", name: "Consumables Cover", uin: "IRDAN000A0006V01202324", amount: 620 },
+          { id: "roadside_assistance", name: "Roadside Assistance Cover, Plan A", uin: "IRDAN000A0002V01202122", amount: 199 },
+        ]
+      : [];
+
+  const named = priced.reduce((t, p) => t + p.amount, 0);
+  const ncb = vehicleClass === "car" ? -1240 : 0;
+  const basicOd = vehicleClass === "car" ? 6200 : 720;
+  const totalOd = basicOd + named + ncb;
+  const headroom = totalOd - basicOd;
+
+  return {
+    version: 1,
+    vehicleClass,
+    scannedAt: dateAgo(vehicleClass === "car" ? 14 : 9),
+    declaredListFound: vehicleClass === "car",
+    pricedLines: priced.map(({ name, uin, amount }) => ({ name, uin, amount })),
+    arithmetic: { basicOd, totalOd, headroom },
+    reconciliation: headroom === 0 ? null : { named, ncb, unexplained: 0 },
+    findings: catalog.map((entry) => {
+      const hit = priced.find((p) => p.id === entry.id);
+      if (hit) {
+        return {
+          id: entry.id, label: entry.label, state: "present" as const,
+          evidence: `${hit.name} (${hit.uin})`, amount: hit.amount,
+        };
+      }
+      return {
+        id: entry.id, label: entry.label,
+        state: headroom === 0 ? ("absent_proven" as const) : ("not_found" as const),
+        evidence: headroom === 0
+          ? `Own damage premium is ${totalOd} against a basic of ${basicOd}, so no add-on premium was paid`
+          : null,
+        amount: null,
+      };
+    }),
+    present: priced.length,
+    applicable: catalog.length,
+    unrecognisedDeclared: [],
+  };
 }
 
 const INSURERS = {
@@ -730,7 +795,25 @@ export function buildSeed(): Store {
       sum_insured: 650000, expiry_date: dateAgo(-12), created_at: ago(14),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
       flaws: [], report_data: null,
-      extracted_data: { premium: 18400, vehicle: "Hyundai Creta", reg_no: "MP09 CX 4521" },
+      extracted_data: {
+        premium: 18400, vehicle: "Hyundai Creta", reg_no: "MP09 CX 4521",
+        [ADD_ON_FINDINGS_KEY]: demoAddOnScan("car"),
+      },
+    },
+    // The other half of the motor story: a policy carrying nothing, where the
+    // premium arithmetic proves it rather than a search failing to find it.
+    // Both states need to be walkable, or a demo only ever shows the happy one.
+    {
+      id: "pol-7b", agent_id: DEMO_AGENT_ID, customer_id: "cust-2",
+      policy_name: "Two Wheeler Package", name: "Sunita Rao", policyholder_name: "Sunita Rao",
+      insurer: INSURERS.icici, insurance_type: "motor", status: "done", score: null,
+      sum_insured: 85000, expiry_date: dateAgo(-40), created_at: ago(9),
+      share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
+      flaws: [], report_data: null,
+      extracted_data: {
+        premium: 5200, vehicle: "Honda Activa 125", reg_no: "MP09 DD 7781",
+        [ADD_ON_FINDINGS_KEY]: demoAddOnScan("bike"),
+      },
     },
     // Life/term policies carry the full EXTRACTION_FIELDS shape, because the
     // value schedule on PolicyDetail is computed from exactly these keys.

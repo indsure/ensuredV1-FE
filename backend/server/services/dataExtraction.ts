@@ -14,6 +14,7 @@ import {
   isDataEntryType,
   type FieldType,
 } from "./extractionFields";
+import { detectMotorAddOns, ADD_ON_FINDINGS_KEY } from "../../../shared/motorAddOns";
 
 export interface ExtractionResult {
   status: "completed" | "failed";
@@ -76,6 +77,23 @@ export async function extractStructuredData(
   const data: Record<string, any> = {};
   for (const f of fields) {
     data[f.key] = coerce(parsed[f.key], f.type);
+  }
+
+  /* The add-on checklist is read from the same text, in code, with no second
+     model call and no extra cost. It is deliberately NOT an extraction field:
+     the review form renders every field as a text input, and a text input
+     would stringify this object and destroy it on the next save.
+
+     Wrapped because a detector fault must never cost the agent their data
+     entry. A missing checklist is a missing card; a thrown error is a policy
+     that failed to import. */
+  if (type === "motor") {
+    try {
+      const scan = detectMotorAddOns(policyText);
+      if (scan) data[ADD_ON_FINDINGS_KEY] = scan;
+    } catch (err: any) {
+      console.warn("[add-ons] detection failed, continuing without it:", err?.message);
+    }
   }
 
   return { status: "completed", data };

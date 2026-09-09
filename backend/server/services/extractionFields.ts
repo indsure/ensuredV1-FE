@@ -272,6 +272,28 @@ Rules:
 }
 
 /**
+ * Merge an incoming edit into the stored `extracted_data` blob.
+ *
+ * The save endpoint used to write the request body over the column wholesale,
+ * and the review form builds its body from the non-`json` fields only
+ * (a text input would stringify an object and destroy it on the next save).
+ * Between the two, every `json` field was deleted the first time an agent
+ * corrected a typo: a life or term policy lost `policy_parameters`, which is
+ * the blob the policy-value chart reads, and the chart went blank with no
+ * error anywhere. The form never sent that key, so nothing looked wrong.
+ *
+ * Shallow by design. A key present in the patch wins, including an explicit
+ * null (that is how the form clears a field). A key absent from the patch
+ * survives. Keys are never removed.
+ */
+export function mergeExtractedData(
+  existing: Record<string, any> | null | undefined,
+  patch: Record<string, any>
+): Record<string, any> {
+  return { ...(existing ?? {}), ...patch };
+}
+
+/**
  * Map an extracted data object to the shared top-level `clients` columns,
  * so the unified policy list + filters work. Returns only the columns that
  * have a non-empty value.
