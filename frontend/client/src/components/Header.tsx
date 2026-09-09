@@ -158,7 +158,7 @@ export function Header() {
                 className="w-[340px] rounded-2xl border border-[var(--color-border-light)] bg-white p-2 shadow-[0_24px_60px_-20px_rgba(15,23,42,0.28)]"
               >
                 {toolsItems.map((item) => (
-                  <DropdownMenuItem key={item.href} asChild className="p-0 focus:bg-transparent">
+                  <DropdownMenuItem key={item.href} asChild className="p-0 focus:bg-transparent data-[highlighted]:bg-transparent">
                     <Link
                       href={item.href}
                       className="group flex w-full cursor-pointer items-start gap-3 rounded-xl p-3 transition-colors hover:bg-[var(--color-cream-main)]"

@@ -431,18 +431,25 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            {/* Icons are muted so the label is what the eye lands on. slate-500
+                and not slate-400: 400 is ~2.85:1 and fails AA. Sign Out is red
+                because it is the only item here that ends the session, and it
+                sits one row below two harmless ones. */}
+            <DropdownMenuContent align="end" sideOffset={8} className="w-60">
               <DropdownMenuItem onClick={() => setLocation("/agent/riders")}>
-                <BookOpen />
+                <BookOpen className="text-slate-500" />
                 {t("layout.rider_directory") ?? "Rider Directory"}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setLocation("/agent/profile")}>
-                <User />
+                <User className="text-slate-500" />
                 {t("layout.my_profile")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => void signOut()}>
-                <LogOut />
+              <DropdownMenuItem
+                onClick={() => void signOut()}
+                className="text-red-600 data-[highlighted]:bg-red-50 data-[highlighted]:text-red-700"
+              >
+                <LogOut className="text-red-500" />
                 {t("layout.sign_out")}
               </DropdownMenuItem>
             </DropdownMenuContent>
