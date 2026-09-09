@@ -26,7 +26,7 @@ import { CoverageDiagnostic } from "./CoverageDiagnostic";
 import { Tooltip } from "@/components/ui/tooltip";
 import { getZoneForCity } from "@/lib/data/zones";
 import { pdf } from '@react-pdf/renderer';
-import { PolicyPDFDocument } from './PolicyPDFDocument';
+import { PolicyPDFDocumentV2, registerPdfFonts, type PdfMeta } from './PolicyPDFDocumentV2';
 import { apiFetch } from "@/lib/api";
 import { LeadCollectionCTA } from "./LeadCollectionCTA";
 
@@ -43,6 +43,11 @@ interface PolicyAuditReportProps {
     /** Suppress the "Talk to an advisor" lead-capture CTA + its triggers.
      *  Set for signed-in consumers — we promised them zero lead selling/contact. */
     hideLeadCTA?: boolean;
+    /** Policy identity for the downloadable PDF. The audit payload carries no
+     *  insurer or plan name, so it has to come from the row that owns the report.
+     *  Every field is optional and an absent one is omitted from the document,
+     *  never printed as a placeholder. */
+    pdfMeta?: PdfMeta;
 }
 
 function getRiskColor(level: "low" | "medium" | "high") {
@@ -85,7 +90,7 @@ function getSimulationVerdictColor(verdict: "COVERED" | "PARTIAL" | "EXPOSED") {
     }
 }
 
-export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }: PolicyAuditReportProps) {
+export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, pdfMeta }: PolicyAuditReportProps) {
     const [showDeductions, setShowDeductions] = useState(false);
     const [showLeadForm, setShowLeadForm] = useState(false);
     const leadFormRef = useRef<HTMLDivElement>(null);
@@ -100,7 +105,10 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
         if (downloading) return;
         setDownloading(true);
         try {
-            const blob = await pdf(<PolicyPDFDocument data={data} />).toBlob();
+            // Fonts are self-hosted and registered lazily: the ~1.9MB of faces is
+            // only fetched when someone actually downloads.
+            registerPdfFonts();
+            const blob = await pdf(<PolicyPDFDocumentV2 data={data} meta={pdfMeta} />).toBlob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;

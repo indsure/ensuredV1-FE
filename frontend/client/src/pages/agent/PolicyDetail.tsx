@@ -532,7 +532,19 @@ export default function PolicyDetail() {
             // reportData is validated at runtime by validateForensicAuditReport.
             // The double cast this used to carry existed only because the frontend
             // and backend each had their own ForensicAuditReport; there is now one.
-            <PolicyAuditReport data={reportData} hideNav />
+            <PolicyAuditReport
+              data={reportData}
+              hideNav
+              pdfMeta={{
+                insurer: policy.insurer_name,
+                // product_name only: product_name_suggested is a guess, and a guess
+                // must not be printed as the policy's name in a downloadable record.
+                policyName: policy.product_name,
+                policyNumber: policy.policy_number,
+                policyholderName: policy.client_name,
+                generatedAt: policy.last_analyzed_at ?? policy.created_at,
+              }}
+            />
           ) : (
             <Card className="border-slate-100 shadow-sm">
               <CardContent className="p-8 text-center text-slate-400 text-sm italic">

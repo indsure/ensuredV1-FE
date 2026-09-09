@@ -10,6 +10,9 @@ interface SharedReportProps {
 
 export default function SharedReport({ token }: SharedReportProps) {
   const [data, setData] = useState<any | null>(null);
+  // Identity for the PDF. The report payload has no insurer or plan name; the
+  // row wrapping it does, and this page was already throwing those fields away.
+  const [meta, setMeta] = useState<{ insurer?: string; policyName?: string; policyholderName?: string; sourceFilename?: string; generatedAt?: string }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +43,13 @@ export default function SharedReport({ token }: SharedReportProps) {
         
         if (reportData.report_data && validateForensicAuditReport(reportData.report_data)) {
           setData(reportData.report_data);
+          setMeta({
+            insurer: reportData.insurer ?? undefined,
+            policyName: reportData.policy_name ?? undefined,
+            policyholderName: reportData.policyholder_name ?? undefined,
+            sourceFilename: reportData.filename ?? undefined,
+            generatedAt: reportData.created_at ?? undefined,
+          });
         } else {
           console.error("[SharedReport] Validation failed");
           setError("invalid_format");
@@ -175,7 +185,7 @@ export default function SharedReport({ token }: SharedReportProps) {
       </div>
 
       {/* Report content */}
-      <PolicyAuditReport data={data} hideNav={true} />
+      <PolicyAuditReport data={data} hideNav={true} pdfMeta={meta} />
 
       {/* Footer */}
       <div className="bg-white border-t border-[var(--color-border-light)] py-6 px-6 mt-12">
