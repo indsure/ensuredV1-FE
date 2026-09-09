@@ -200,7 +200,7 @@ export const policyFetcher = new PolicyWordingsFetcher();
 
 // --- Named Exports for Routes (Bridge) ---
 
-export async function extractPolicyMetadata(text: string): Promise<{ insurer: string | null, product: string | null, plan: string | null, year: string | number | null }> {
+export async function extractPolicyMetadata(text: string): Promise<{ insurer: string | null, product: string | null, plan: string | null, planSource: string | null, year: string | number | null }> {
   const textLower = text.toLowerCase();
 
   // 1. Extract Insurer
@@ -307,8 +307,32 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
     insurer,
     product: plan, // Mapping plan to product for route compatibility
     plan,
+    // Which rule produced the name. Callers need this to tell a value read off
+    // the document from one inferred by the alias map: only the former may be
+    // stored as fact. It was computed here all along and then discarded, which
+    // is why a guess could reach a customer-facing report indistinguishable
+    // from a reading.
+    planSource: sourceField,
     year
   };
+}
+
+/**
+ * Does this name actually appear in the policy document?
+ *
+ * The single test behind "we read it" vs "we guessed it". Punctuation, case and
+ * spacing are squashed on both sides first, because PDF text extraction breaks
+ * words apart: the Tata AIG document literally reads "T ata AIG Medicare
+ * Premier", so a plain substring check would reject the very name printed on
+ * the policy. Squashing keeps that working while still rejecting "Optima
+ * Restore", which appears nowhere in it.
+ */
+export function appearsInDocument(name: string | null | undefined, text: string): boolean {
+  if (!name || !text) return false;
+  const squash = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const needle = squash(name);
+  if (needle.length < 4) return false; // too short to be evidence of anything
+  return squash(text).includes(needle);
 }
 
 export async function fetchPolicyWordings(insurerName: string, product: string, planName: string, year: string | number): Promise<string | null> {

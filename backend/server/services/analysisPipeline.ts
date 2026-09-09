@@ -6,6 +6,7 @@ import { VEHICLE_INSURANCE_PROMPT } from "../vehicleInsurancePrompt";
 import { AIService } from "./aiService";
 import {
   extractPolicyMetadata,
+  appearsInDocument,
   fetchPolicyWordings,
   mergePolicyTexts
 } from "../utils/policyWordingsFetcher";
@@ -735,6 +736,13 @@ export async function runAnalysisPipeline(
       pushConfidenceNote(parsed, getBucketingExplanation());
     }
 
+    const planCandidate =
+      metadata.product ||
+      metadata.plan ||
+      (parsed as any)?.coverage_structure?.policy_name ||
+      null;
+    const planVerified = appearsInDocument(planCandidate, mergedPolicyText);
+
     // The full policy text is deliberately NOT attached to the result.
     //
     // It used to ride along as `__internal.policyText` and got persisted into
@@ -751,6 +759,17 @@ export async function runAnalysisPipeline(
       },
       metadata: {
         ...metadata,
+        // Resolve the plan name ONCE, here, where the document text is still in
+        // scope, and say plainly whether it was read from that document.
+        //
+        // The three callers used to each pick `product || plan ||
+        // coverage_structure.policy_name` and store the winner as fact. None of
+        // them could tell a reading from a guess, so an alias match on the word
+        // "restore" was written to clients.policy_name and printed to a customer
+        // as their plan. A name only counts as read if it is actually in the
+        // document; anything else is offered to the advisor as a suggestion.
+        planName: planCandidate,
+        planNameVerified: planVerified,
         input_budget: {
           original_tokens: budget.originalTokens,
           sent_tokens: budget.estimatedTokens,

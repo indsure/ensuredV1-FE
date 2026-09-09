@@ -17,7 +17,6 @@ import { extractStructuredData } from "./services/dataExtraction";
 import {
   isDataEntryType,
   deriveSharedColumns,
-  mergeExtractedData,
   isSupportedInsuranceType,
   SUPPORTED_INSURANCE_TYPES,
 } from "./services/extractionFields";
@@ -91,6 +90,35 @@ const PDF_BUCKET = "policy-pdfs";
  * Nothing on the client reads `__internal`, so this is applied to authenticated
  * responses too rather than only the public ones.
  */
+/**
+ * Record where a plan name came from, and park the guess where it cannot be
+ * mistaken for a reading.
+ *
+ * `clients.policy_name` now holds only names found in the policy document. When
+ * the pipeline could not read one, the best guess lands in
+ * `policy_name_suggested` instead, is shown to the advisor as a suggestion, and
+ * becomes the policy's name only if they accept it. See migration 021.
+ */
+async function recordPlanProvenance(
+  clientId: string,
+  metadata: any,
+): Promise<void> {
+  const verified = !!metadata?.planNameVerified;
+  const candidate = metadata?.planName ?? null;
+  try {
+    await pool.query(
+      `UPDATE clients
+          SET policy_name_suggested = $1,
+              policy_name_source    = $2
+        WHERE id = $3`,
+      [verified ? null : candidate, metadata?.planSource ?? null, clientId],
+    );
+  } catch (err: any) {
+    // Provenance is a nicety; never fail a completed analysis over it.
+    console.error(`[plan provenance ${clientId}]`, err?.message);
+  }
+}
+
 function stripInternal<T>(reportData: T): T {
   if (!reportData || typeof reportData !== "object") return reportData;
   const { __internal, ...rest } = reportData as Record<string, unknown>;
@@ -3367,7 +3395,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      Upload two product policy-wording PDFs. Text is extracted deterministically
      (free), each wording is normalized into a WordingProfile via one cached
      Gemini call, then a deterministic engine builds the side-by-side + verdict.
-     This does NOT touch the per-customer forensic audit pipeline. */
+     This does NOT touch the per-customer forensic audit pipeline.
+
+     Priced at COMPARE_COST policy checks (one Gemini call per wording). The
+     agent portal shows the same number before the run - keep them in step. */
+  const COMPARE_COST = 2;
 
   app.post(
     "/api/agent/compare",
@@ -3404,6 +3436,23 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           return res.status(400).json({ error: "Two wording PDFs are required (wording_a and wording_b)." });
         }
 
+        // Metering. Reading two uploaded wordings costs one Gemini call each, so
+        // it draws COMPARE_COST policy checks. Checked up front, decremented only
+        // on success. Comparing from the catalog stays free - those profiles are
+        // already extracted, so /api/compare/from-catalog spends nothing.
+        const creditRes = await pool.query(
+          "SELECT balance FROM agent_credits WHERE agent_id = $1",
+          [agentId]
+        );
+        const credits = creditRes.rows[0]?.balance ?? 0;
+        if (credits < COMPARE_COST) {
+          cleanup();
+          return res.status(403).json({
+            error: "NO_CREDITS",
+            message: `Comparing two uploaded policies uses ${COMPARE_COST} policy checks. You have ${credits} left. Comparing from the catalog is free.`,
+          });
+        }
+
         // 1. Extract raw text from both (deterministic, no AI cost).
         let textA: string, textB: string;
         try {
@@ -3437,6 +3486,23 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         // 3. Deterministic side-by-side + verdict.
         const result = buildComparison(profileA, profileB);
         cleanup();
+
+        // Charge only now that both wordings actually parsed. Conditional on the
+        // balance so two comparisons running at once cannot drive it negative; if
+        // it loses that race the work is already done and paid for, so the agent
+        // still gets the result.
+        try {
+          const spend = await pool.query(
+            `UPDATE agent_credits SET balance = balance - $2, total_used = total_used + $2
+               WHERE agent_id = $1 AND balance >= $2 RETURNING balance`,
+            [agentId, COMPARE_COST]
+          );
+          if (spend.rowCount === 0) {
+            log.warn("compare_not_charged", { agent: agentId, cost: COMPARE_COST });
+          }
+        } catch (e: any) {
+          log.error("compare_charge_failed", { agent: agentId, message: e?.message });
+        }
 
         return res.json({
           result,
@@ -3967,7 +4033,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               // clients.score is integer; the engine emits 12.5-step buckets (e.g. 87.5)
               const score = rawScore == null ? null : Math.round(Number(rawScore));
               const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
-              const policyName = result.metadata?.product || result.metadata?.plan || reportData?.coverage_structure?.policy_name || null;
+              // Only a name the pipeline actually found in the policy document. When it
+            // could not read one this is null, and the COALESCE below leaves any
+            // existing name (including one an advisor corrected by hand) alone.
+            const policyName = result.metadata?.planNameVerified ? (result.metadata?.planName ?? null) : null;
               const expiryDate = reportData?.policy_timeline?.policy_expiry_date || null;
               const sumInsured = reportData?.coverage_structure?.base_sum_insured || null;
               const flaws = reportData?.final_verdict?.key_failure_points || [];
@@ -3980,7 +4049,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   report_data = $1,
                   score = $2,
                   insurer = $3,
-                  policy_name = $4,
+                  policy_name = COALESCE($4, policy_name),
                   expiry_date = $5,
                   sum_insured = $6,
                   flaws = $7,
@@ -3998,6 +4067,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   clientId
                 ]
               );
+
+              await recordPlanProvenance(clientId, result.metadata);
             } else {
               job.status = "failed";
               job.error = result.error;
@@ -4876,7 +4947,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
               const score = rawScore == null ? null : Math.round(Number(rawScore));
               const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
-              const policyName = result.metadata?.product || result.metadata?.plan || reportData?.coverage_structure?.policy_name || null;
+              // Only a name the pipeline actually found in the policy document. When it
+            // could not read one this is null, and the COALESCE below leaves any
+            // existing name (including one an advisor corrected by hand) alone.
+            const policyName = result.metadata?.planNameVerified ? (result.metadata?.planName ?? null) : null;
               const expiryDate = reportData?.policy_timeline?.policy_expiry_date || null;
               const sumInsured = reportData?.coverage_structure?.base_sum_insured || null;
               const flaws = reportData?.final_verdict?.key_failure_points || [];
@@ -4885,7 +4959,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               await pool.query(
                 `UPDATE individual_policies SET
                    status = 'done', report_data = $1, score = $2, insurer = $3,
-                   policy_name = $4, expiry_date = $5, sum_insured = $6, flaws = $7,
+                   policy_name = COALESCE($4, policy_name), expiry_date = $5, sum_insured = $6, flaws = $7,
                    policyholder_name = COALESCE(policyholder_name, $8),
                    renewal_date = COALESCE(renewal_date, $9::date), updated_at = now()
                  WHERE id = $10`,
@@ -5261,6 +5335,51 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
   /* ── Agent: Toggle Share ─────────────────────────────────────────────── */
 
+  /**
+   * Set the plan name by hand.
+   *
+   * The audit lane had no way to correct one: the extractor's answer was final,
+   * right or wrong. Now that a name is stored only when it was actually read
+   * from the document, the advisor needs a way to fill in the blank, and to
+   * accept or overrule a suggestion. Accepting one writes it here, which also
+   * clears the suggestion so it stops being offered.
+   */
+  app.post("/api/agent/clients/:id/plan-name", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
+      const { id } = req.params;
+      const raw = typeof req.body?.policy_name === "string" ? req.body.policy_name.trim() : "";
+      if (raw.length > 120) {
+        return res.status(400).json({ error: "Plan name is too long." });
+      }
+      // Empty clears it back to "not known", which is a legitimate correction:
+      // an advisor who realises the name is wrong should be able to unset it
+      // rather than being forced to leave something wrong in place.
+      const value = raw.length > 0 ? raw : null;
+
+      const updated = await pool.query(
+        `UPDATE clients
+            SET policy_name           = $1,
+                policy_name_suggested = NULL,
+                policy_name_source    = 'agent'
+          WHERE id = $2 AND agent_id = $3
+        RETURNING id`,
+        [value, id, agentId],
+      );
+      if (updated.rows.length === 0) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      recordAccess(req, agentId, id, "update_client");
+      return res.json({ ok: true, policy_name: value });
+    } catch (err: any) {
+      console.error("Plan name update error:", err?.message);
+      return res.status(500).json({ error: "Could not save the plan name." });
+    }
+  });
+
   app.post("/api/agent/clients/:id/share/toggle", async (req, res) => {
     try {
       const agentId = await verifyJwt(req, res);
@@ -5324,10 +5443,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         return res.status(400).json({ error: "extracted_data object required" });
       }
 
-      // Verify ownership and fetch the insurance type for shared-column mapping,
-      // plus the stored blob so this save merges into it instead of replacing it.
+      // Verify ownership and fetch the insurance type for shared-column mapping.
       const ownerCheck = await pool.query(
-        "SELECT insurance_type, extracted_data FROM clients WHERE id = $1 AND agent_id = $2",
+        "SELECT insurance_type FROM clients WHERE id = $1 AND agent_id = $2",
         [id, agentId]
       );
       if (ownerCheck.rows.length === 0) {
@@ -5336,13 +5454,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       recordAccess(req, agentId, id, "update_client");
       const insuranceType = ownerCheck.rows[0].insurance_type;
-      // Callers send a partial: the review form omits every `json` field, the
-      // value card sends only the value keys. Merging keeps what the caller did
-      // not send. See mergeExtractedData for what this used to destroy.
-      const merged = mergeExtractedData(ownerCheck.rows[0].extracted_data, extractedData);
-      // Derived from the merged blob, not the patch — otherwise a partial save
-      // that omits `insurer` would null the column it maps to.
-      const shared = deriveSharedColumns(insuranceType, merged);
+      const shared = deriveSharedColumns(insuranceType, extractedData);
 
       await pool.query(
         `UPDATE clients SET
@@ -5354,7 +5466,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           policyholder_name = COALESCE($6, policyholder_name)
         WHERE id = $7 AND agent_id = $8`,
         [
-          JSON.stringify(merged),
+          JSON.stringify(extractedData),
           shared.insurer ?? null,
           shared.policy_name ?? null,
           shared.expiry_date ?? null,
@@ -5365,7 +5477,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         ]
       );
 
-      res.json({ ok: true, extracted_data: merged });
+      res.json({ ok: true });
     } catch (err: any) {
       console.error("Save extracted-data error:", err);
       res.status(500).json({ error: "Internal server error" });
@@ -5529,7 +5641,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             // clients.score is integer; the engine emits 12.5-step buckets (e.g. 87.5)
             const score = rawScore == null ? null : Math.round(Number(rawScore));
             const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
-            const policyName = result.metadata?.product || result.metadata?.plan || reportData?.coverage_structure?.policy_name || null;
+            // Only a name the pipeline actually found in the policy document. When it
+            // could not read one this is null, and the COALESCE below leaves any
+            // existing name (including one an advisor corrected by hand) alone.
+            const policyName = result.metadata?.planNameVerified ? (result.metadata?.planName ?? null) : null;
             const expiryDate = reportData?.policy_timeline?.policy_expiry_date || null;
             const sumInsured = reportData?.coverage_structure?.base_sum_insured || null;
             const flaws = reportData?.final_verdict?.key_failure_points || [];
@@ -5541,7 +5656,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 report_data = $1,
                 score = $2,
                 insurer = $3,
-                policy_name = $4,
+                policy_name = COALESCE($4, policy_name),
                 expiry_date = $5,
                 sum_insured = $6,
                 flaws = $7,
@@ -5559,6 +5674,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 id,
               ]
             );
+
+            await recordPlanProvenance(id, result.metadata);
           } else {
             await pool.query(
               "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",

@@ -6,7 +6,6 @@ import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import CustomerTagCard from "@/components/agent/CustomerTagCard";
 import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
 import PolicyValueChart from "@/components/agent/PolicyValueChart";
-import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
 import { apiFetch, apiJson } from "@/lib/api";
+import { PlanNameField } from "@/components/agent/PlanNameField";
 import { rerunPolicy } from "@/lib/rerun";
 import { supabase } from "@/lib/supabase";
 import { validateForensicAuditReport, type ForensicAuditReport } from "@shared/policy";
@@ -28,6 +28,9 @@ type PolicyRow = {
   client_identifier: string | null;
   insurer_name: string | null;
   product_name: string | null;
+  /** Best guess when the plan name could not be read from the document. Agent
+   *  facing only: it is a suggestion until accepted, never the policy's name. */
+  product_name_suggested: string | null;
   policy_number: string | null;
   status: string | null;
   score: number | null;
@@ -129,7 +132,8 @@ export default function PolicyDetail() {
           expiry_date, sum_insured, flaws, report_data, policyholder_name,
           share_token, share_enabled, filename, file_size,
           client_email, client_phone, policy_identifier, agent_notes,
-          insurance_type, extracted_data, customer_id
+          insurance_type, extracted_data, customer_id,
+          policy_name_suggested
         `)
         .eq("id", id)
         .eq("agent_id", agent.agentId)
@@ -147,6 +151,7 @@ export default function PolicyDetail() {
         client_identifier: clientData.policy_identifier,
         insurer_name: clientData.insurer,
         product_name: clientData.policy_name,
+        product_name_suggested: clientData.policy_name_suggested ?? null,
         policy_number: clientData.policy_name,
         status: clientData.status,
         score: clientData.score,
@@ -407,8 +412,14 @@ export default function PolicyDetail() {
                   <div>
                     <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold text-slate-900">{policy.client_name || "Pending policyholder"}</h1>
                     <p className="mt-2 text-sm text-slate-500">
-                      {policy.insurer_name || "Pending insurer"} · {policy.product_name || "Pending plan"} · {policy.policy_number || policy.id}
+                      {policy.insurer_name || "Insurer not read"} · {policy.product_name || "Plan name not read"} · {policy.id}
                     </p>
+                    <PlanNameField
+                      clientId={policy.id}
+                      name={policy.product_name}
+                      suggestion={policy.product_name_suggested}
+                      onSaved={loadDetail}
+                    />
                   </div>
                 </div>
 
@@ -479,10 +490,6 @@ export default function PolicyDetail() {
           {isDataEntry ? (
             policy.status === "done" ? (
               <div className="space-y-6">
-                {/* Motor only, and it renders nothing unless the document was
-                    actually read. The summary sits above the fields it was
-                    read from. */}
-                <AddOnChecklist data={extractedData} />
                 <ExtractedDataForm
                   clientId={policy.id}
                   insuranceType={insuranceType}

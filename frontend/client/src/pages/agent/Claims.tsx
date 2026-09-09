@@ -6,6 +6,7 @@ import {
 
 import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { InsurerSelect } from "@/components/agent/InsurerSelect";
 import { toast } from "@/hooks/use-toast";
 import { fetchCustomers, formatAmount, type Customer } from "@/lib/customers";
 import {
@@ -499,7 +500,14 @@ function NewClaimForm({
       {/* the claim */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Labeled label="Insurer">
-          <input value={draft.insurer} onChange={(e) => set("insurer", e.target.value)} placeholder="e.g. Niva Bupa" className={inputCls} />
+          {/* Was a free-text box whose placeholder ("e.g. Niva Bupa") was the
+              only hint at what belonged here, so every spelling of every insurer
+              got stored as written. Picking from the list keeps the column
+              answerable; "Other" still accepts anything, marked unverified. */}
+          <InsurerSelect
+            value={draft.insurer}
+            onChange={(next) => set("insurer", next)}
+          />
         </Labeled>
         <Labeled label="Hospital">
           <input value={draft.hospital} onChange={(e) => set("hospital", e.target.value)} placeholder="Hospital and city" className={inputCls} />
