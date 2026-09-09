@@ -1,5 +1,5 @@
 /**
- * The downloadable audit report. Replaced PolicyPDFDocument.tsx, which is gone.
+ * The downloadable audit report.
  *
  * Three things here are load-bearing and easy to undo by accident:
  *
@@ -406,7 +406,7 @@ interface Props {
 
 /* ------------------------------------------------------------------ doc */
 
-export const PolicyPDFDocumentV2: React.FC<Props> = ({ data, meta = {} }) => {
+export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
     const cover = deriveCoverView(data);
     const restoration = describeRestoration(data);
 
@@ -931,4 +931,4 @@ export const PolicyPDFDocumentV2: React.FC<Props> = ({ data, meta = {} }) => {
     );
 };
 
-export default PolicyPDFDocumentV2;
+export default PolicyPDFDocument;

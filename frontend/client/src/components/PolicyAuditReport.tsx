@@ -26,7 +26,7 @@ import { CoverageDiagnostic } from "./CoverageDiagnostic";
 import { Tooltip } from "@/components/ui/tooltip";
 import { getZoneForCity } from "@/lib/data/zones";
 import { pdf } from '@react-pdf/renderer';
-import { PolicyPDFDocumentV2, registerPdfFonts, type PdfMeta } from './PolicyPDFDocumentV2';
+import { PolicyPDFDocument, registerPdfFonts, type PdfMeta } from './PolicyPDFDocument';
 import { apiFetch } from "@/lib/api";
 import { LeadCollectionCTA } from "./LeadCollectionCTA";
 
@@ -108,7 +108,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
             // Fonts are self-hosted and registered lazily: the ~1.9MB of faces is
             // only fetched when someone actually downloads.
             registerPdfFonts();
-            const blob = await pdf(<PolicyPDFDocumentV2 data={data} meta={pdfMeta} />).toBlob();
+            const blob = await pdf(<PolicyPDFDocument data={data} meta={pdfMeta} />).toBlob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
