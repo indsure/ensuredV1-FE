@@ -24,6 +24,8 @@ import { extractWordingProfile, hashText } from "./services/wordingCompare";
 import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage";
 import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
+import { pickShareableFields, hasShareableContent } from "../../shared/dataEntryShare";
+import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { pool } from "./lib/db";
@@ -5773,10 +5775,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       // Fetch client record
       const clientRes = await pool.query(
-        `SELECT 
-          id, report_data, score, insurer, policy_name, policyholder_name, 
-          filename, created_at, status, share_enabled
-        FROM clients 
+        `SELECT
+          id, report_data, score, insurer, policy_name, policyholder_name,
+          filename, created_at, status, share_enabled,
+          insurance_type, extracted_data
+        FROM clients
         WHERE share_token = $1`,
         [shareToken]
       );
@@ -5791,7 +5794,20 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         return res.status(404).json({ error: "invalid_or_revoked" });
       }
 
-      if (!client.report_data || client.status !== 'done') {
+      /* Two lanes end up on this URL. Health produces `report_data` and always
+         has. Every data-entry type produces `extracted_data` and never a
+         report, so requiring report_data made those links permanently dead -
+         36 of 65 live links were in that state on 2026-09-09.
+
+         The readiness test is therefore per lane: a data-entry policy is ready
+         when it has finished AND has at least one publishable field. A row that
+         finished with nothing readable still answers report_not_ready rather
+         than rendering an empty page with the customer's name on it. */
+      const isDataEntryShare =
+        client.status === "done" &&
+        hasShareableContent(client.insurance_type, client.extracted_data);
+
+      if (!isDataEntryShare && (!client.report_data || client.status !== "done")) {
         return res.status(404).json({ error: "report_not_ready" });
       }
 
@@ -5820,8 +5836,34 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         );
       }
 
-      // Return public-safe data
+      /* Return public-safe data. `kind` tells the page which of the two views to
+         render; it is not inferred in the browser, because the browser must not
+         be the thing deciding what was safe to send.
+
+         For the data-entry lane the payload carries ONLY the allowlisted fields
+         (see shared/dataEntryShare.ts). Policy, engine, chassis and registration
+         numbers, nominees, life assured, travellers and site addresses never
+         leave this function. `filename` is withheld too: uploaded documents are
+         routinely named after the policy number or the customer. The motor
+         add-on scan rides along because it is the substance of a motor policy
+         and holds no personal data - it is a list of cover names with the
+         document line each was read from. */
+      if (isDataEntryShare) {
+        const addOns = (client.extracted_data as any)?.[ADD_ON_FINDINGS_KEY] ?? null;
+        return res.json({
+          kind: "data_entry",
+          insurance_type: client.insurance_type,
+          fields: pickShareableFields(client.insurance_type, client.extracted_data),
+          add_ons: addOns,
+          insurer: client.insurer,
+          policy_name: client.policy_name,
+          policyholder_name: client.policyholder_name,
+          created_at: client.created_at,
+        });
+      }
+
       res.json({
+        kind: "audit",
         report_data: stripInternal(client.report_data),
         score: client.score,
         insurer: client.insurer,

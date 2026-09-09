@@ -22,6 +22,7 @@ import { PlanNameField } from "@/components/agent/PlanNameField";
 import { rerunPolicy } from "@/lib/rerun";
 import { supabase } from "@/lib/supabase";
 import { validateForensicAuditReport, type ForensicAuditReport } from "@shared/policy";
+import { hasShareableContent } from "@shared/dataEntryShare";
 
 type PolicyRow = {
   id: string;
@@ -119,6 +120,11 @@ export default function PolicyDetail() {
   const scoreMeta = scoreTone(score);
   const expiry = expiryMeta(policy?.policy_end_date ?? null);
   const isDataEntry = isDataEntryType(insuranceType);
+  /* A policy may be shared once there is something at the other end of the
+     link. Health needs its audit; a data-entry policy needs at least one
+     publishable field. This mirrors the readiness test the server applies in
+     /api/shared/report/:token, so the button and the link agree with it. */
+  const canShare = Boolean(reportData) || hasShareableContent(insuranceType, extractedData);
 
   async function loadDetail() {
     if (!id || !agent?.agentId) return;
@@ -386,7 +392,7 @@ export default function PolicyDetail() {
             Refresh
           </Button>
           {!isDataEntry && (
-            <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={shareReport} disabled={!reportData || busy === "share"}>
+            <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={shareReport} disabled={!canShare || busy === "share"}>
               Share Report
             </Button>
           )}
@@ -436,7 +442,7 @@ export default function PolicyDetail() {
 
               <div className="mt-6 flex flex-wrap gap-3 items-center w-full">
                 {!isDataEntry && (
-                  <Button variant="outline" className="border-slate-200 bg-white shrink-0" onClick={shareReport} disabled={!reportData || busy === "share"}>
+                  <Button variant="outline" className="border-slate-200 bg-white shrink-0" onClick={shareReport} disabled={!canShare || busy === "share"}>
                     <Copy className="mr-2 h-4 w-4" />
                     Share Report
                   </Button>
@@ -454,7 +460,7 @@ export default function PolicyDetail() {
                   copy an address that answers "report_not_ready" to their
                   customer. The Share button above has always been gated this
                   way; this block was not. */}
-              {shareToken && reportData && (
+              {shareToken && canShare && (
                 <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#0D9488]/10 bg-slate-50 p-4">
                   <div className="min-w-0 flex-1 truncate text-sm text-slate-700">{shareLink}</div>
                   <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={() => void copyText(shareLink, "Report link copied")}>
@@ -622,7 +628,7 @@ export default function PolicyDetail() {
                   </Button>
                   <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={openClientEditor}>Edit Client Details</Button>
                   {!isDataEntry && (
-                    <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!reportData || busy === "share"}>
+                    <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!canShare || busy === "share"}>
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Share Link
                     </Button>

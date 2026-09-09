@@ -1,15 +1,59 @@
 import { useEffect, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
+import SharedPolicySummary from "@/components/SharedPolicySummary";
 import { validateForensicAuditReport } from "@shared/policy";
 import { getApiBase } from "@/lib/queryClient";
+
+/** The data-entry lane's payload. `kind` comes from the server, which is the
+ *  only side that knows which lane produced the row. */
+type DataEntryPayload = {
+  kind: "data_entry";
+  insurance_type: string;
+  fields: Record<string, unknown>;
+  add_ons?: unknown;
+  insurer?: string | null;
+  policy_name?: string | null;
+  policyholder_name?: string | null;
+  created_at?: string | null;
+};
 
 interface SharedReportProps {
   token: string;
 }
 
+/** Header and footer shared by both lanes. Extracted rather than copied: the
+ *  two views differ in their body and in one label, and nothing else. */
+function PageChrome({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-[var(--color-cream-main)]">
+      <div className="bg-white border-b border-[var(--color-border-light)] py-4 px-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="IndSure" className="h-8" />
+            <span className="text-lg font-semibold text-[var(--color-navy-900)]">IndSure</span>
+          </div>
+          <div className="text-sm text-[var(--color-text-muted)]">{label}</div>
+        </div>
+      </div>
+
+      {children}
+
+      <div className="bg-white border-t border-[var(--color-border-light)] py-6 px-6 mt-12">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Powered by <span className="font-semibold text-[var(--color-teal-600)]">IndSure</span> ·
+            Policy Analysis Platform
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SharedReport({ token }: SharedReportProps) {
   const [data, setData] = useState<any | null>(null);
+  const [dataEntry, setDataEntry] = useState<DataEntryPayload | null>(null);
   // Identity for the PDF. The report payload has no insurer or plan name; the
   // row wrapping it does, and this page was already throwing those fields away.
   const [meta, setMeta] = useState<{ insurer?: string; policyName?: string; policyholderName?: string; sourceFilename?: string; generatedAt?: string }>({});
@@ -40,7 +84,15 @@ export default function SharedReport({ token }: SharedReportProps) {
         }
 
         const reportData = await res.json();
-        
+
+        /* The data-entry lane has no forensic report to validate: the server
+           already reduced it to the publishable fields, so there is nothing
+           left for the browser to check or strip. */
+        if (reportData.kind === "data_entry") {
+          setDataEntry(reportData as DataEntryPayload);
+          return;
+        }
+
         if (reportData.report_data && validateForensicAuditReport(reportData.report_data)) {
           setData(reportData.report_data);
           setMeta({
@@ -147,6 +199,24 @@ export default function SharedReport({ token }: SharedReportProps) {
     );
   }
 
+  /* Data-entry lane. Placed before the "no data" guard below, which tests the
+     audit payload and would otherwise reject a perfectly good summary. */
+  if (dataEntry) {
+    return (
+      <PageChrome label="Shared Policy Summary">
+        <SharedPolicySummary
+          insuranceType={dataEntry.insurance_type}
+          fields={dataEntry.fields}
+          addOns={dataEntry.add_ons}
+          insurer={dataEntry.insurer}
+          policyName={dataEntry.policy_name}
+          policyholderName={dataEntry.policyholder_name}
+          createdAt={dataEntry.created_at}
+        />
+      </PageChrome>
+    );
+  }
+
   if (error || !data) {
     return (
       <div className="min-h-screen bg-[var(--color-cream-main)] flex items-center justify-center px-6">
@@ -170,32 +240,8 @@ export default function SharedReport({ token }: SharedReportProps) {
 
   // Render the report with hideNav=true to hide agent-only controls
   return (
-    <div className="min-h-screen bg-[var(--color-cream-main)]">
-      {/* Minimal header with IndSure logo */}
-      <div className="bg-white border-b border-[var(--color-border-light)] py-4 px-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="IndSure" className="h-8" />
-            <span className="text-lg font-semibold text-[var(--color-navy-900)]">IndSure</span>
-          </div>
-          <div className="text-xs text-[var(--color-text-muted)]">
-            Shared Policy Report
-          </div>
-        </div>
-      </div>
-
-      {/* Report content */}
+    <PageChrome label="Shared Policy Report">
       <PolicyAuditReport data={data} hideNav={true} pdfMeta={meta} />
-
-      {/* Footer */}
-      <div className="bg-white border-t border-[var(--color-border-light)] py-6 px-6 mt-12">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-xs text-[var(--color-text-muted)]">
-            Powered by <span className="font-semibold text-[var(--color-teal-600)]">IndSure</span> • 
-            Policy Analysis Platform
-          </p>
-        </div>
-      </div>
-    </div>
+    </PageChrome>
   );
 }
