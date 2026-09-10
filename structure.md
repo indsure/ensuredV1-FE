@@ -60,7 +60,9 @@ backend/server/
 ├── schemas/                  # (Mostly empty) Schema stubs
 ├── types/                    # TypeScript type declarations
 ├── tests/                    # Engine health check tests
-├── prompts/                  # Prompt file stubs
+│                             # NOTE: a prompts/MASTER_AUDIT_PROMPT.txt used to sit here,
+│                             # imported by nothing, holding superseded rules that contradicted
+│                             # the live one. Deleted 2026-09-10. Every prompt is a .ts file below.
 │
 ├── promptTemplate.ts         # MASTER_AUDIT_PROMPT (health insurance) + PROMPT_VERSION
 ├── lifeInsurancePrompt.ts    # LIFE_INSURANCE_PROMPT
