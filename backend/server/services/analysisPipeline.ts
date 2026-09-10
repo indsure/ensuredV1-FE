@@ -294,6 +294,17 @@ const BREAKDOWN_CAPS: Record<string, number> = {
   coverage_quality_gap: 20,
 };
 
+/** Every field the score is rebuilt from. net_cover_penalty carries no cap here
+ *  (STEP 1 is explicitly "NOT CAPPED"; its ladder tops out at 60 on its own) but
+ *  it still has to be sign-normalised, because enforceRequiredCover only rewrites
+ *  it on the health path and returns early when ages or zone are unusable. */
+const BREAKDOWN_FIELDS = [
+  "claim_rejection_risk",
+  "oop_exposure",
+  "coverage_quality_gap",
+  "net_cover_penalty",
+] as const;
+
 /**
  * The score is rebuilt from `breakdown`, so a breakdown value that exceeds its
  * cap silently corrupts the score. Clamp before the arithmetic runs.
@@ -301,16 +312,56 @@ const BREAKDOWN_CAPS: Record<string, number> = {
 export function enforceBreakdownCaps(parsed: any) {
   const breakdown = parsed?.audit_score?.breakdown;
   if (!breakdown) return;
-  for (const [key, cap] of Object.entries(BREAKDOWN_CAPS)) {
+
+  for (const key of BREAKDOWN_FIELDS) {
     const value = breakdown[key];
-    if (typeof value === "number" && value > cap) {
-      console.warn(`[Pipeline] breakdown.${key}=${value} exceeds cap ${cap}; clamping.`);
-      breakdown[key] = cap;
+    if (typeof value !== "number") continue;
+
+    // NaN/Infinity would flow into performScoreArithmeticCheck and poison the
+    // sum, where every comparison against NaN is false and the bad score is
+    // therefore never corrected. Zero it and say so.
+    if (!Number.isFinite(value)) {
+      breakdown[key] = 0;
+      pushConfidenceNote(
+        parsed,
+        `Scoring ledger corrected server-side: ${key} was not a finite number and was treated as 0.`
+      );
+      continue;
+    }
+
+    let next = value;
+
+    // SIGN. The prompt writes every penalty as "-15", so the model sometimes
+    // emits the minus with it. None of these fields can ever be a bonus, so the
+    // sign carries no information — but performScoreArithmeticCheck sums them
+    // raw, so a breakdown of -25/-30/-8/-10 became `100 - (-73)` = 173, which
+    // bucketed to a displayed 100 and reconciled the verdict from RISKY to SAFE.
+    // A policy the model itself scored 27 shipped as "Excellent". Three of the
+    // first thirty stored reports carry negative penalties, so this is a live
+    // input, not a hypothetical. Magnitude is what the model meant: on that
+    // report it wrote score 27, which is 100 minus the absolute sum.
+    if (next < 0) {
+      next = Math.abs(next);
+      console.warn(`[Pipeline] breakdown.${key}=${value} is negative; using magnitude ${next}.`);
+      pushConfidenceNote(
+        parsed,
+        `Scoring ledger corrected server-side: ${key} was returned as a negative number and was read as a deduction of ${next}.`
+      );
+    }
+
+    // CAP. Applied after the sign fix, so a "-45" is capped at 30 rather than
+    // sailing through because it was below the ceiling as a negative.
+    const cap = BREAKDOWN_CAPS[key];
+    if (cap !== undefined && next > cap) {
+      console.warn(`[Pipeline] breakdown.${key}=${next} exceeds cap ${cap}; clamping.`);
+      next = cap;
       pushConfidenceNote(
         parsed,
         `Scoring ledger corrected server-side: ${key} exceeded its maximum of ${cap}.`
       );
     }
+
+    breakdown[key] = next;
   }
 }
 
