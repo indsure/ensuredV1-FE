@@ -197,7 +197,7 @@ function CoverageOptions({ result, cityTier }: { result: EngineResult; cityTier?
                     {result.coverCap.global
                         ? " for someone who travels abroad"
                         : " for cover that only has to work in India"}.
-                    The uncapped calculation came to {formatLakhs(result.coverCap.uncapped)}.
+                    The uncapped calculation came to {formatINR(result.coverCap.uncapped)}.
                 </p>
             )}
 

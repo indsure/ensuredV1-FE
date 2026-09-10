@@ -30,6 +30,12 @@ export const CALCULATOR_CONFIG = {
     // pay outside India are only written at large sums insured.
     coverCapStandard: 5000000,   // ₹50L — cover that only has to work in India
     coverCapGlobal: 10000000,    // ₹1 Cr — cover that has to work abroad too
+    // Flat addition for someone who leaves the country. An overseas admission
+    // is not a percentage more expensive than an Indian one, it is a different
+    // order of bill, so this is added in rupees rather than as a multiplier.
+    // Applied AFTER inflation and posture, so it means what it says: ₹50L more
+    // cover, not ₹50L compounded into something else.
+    globalTravelAddition: 5000000, // ₹50L
 
     // Calibration 8
     baseSICap: 2000000,               // ₹20L preferred base-policy cap (raised in ₹5L slabs only when the 3× top-up rule demands it)
@@ -837,18 +843,24 @@ export function calculateHealthCover(inputs: UserInputs, opts?: CoverCalcOptions
     // Step 7: Income adjustment (Calibration 5)
     const incomeAdjusted = applyIncomeAdjustment(riskAdjusted, inputs.annualIncome);
 
+    // Step 7a: Travelling abroad (Calibration 10). Added here, after every
+    // multiplier, so it is exactly the stated ₹50L of extra cover rather than
+    // ₹50L put through inflation and posture and coming out as something else.
+    const travelsAbroad = inputs.globalTravel === "Yes, I travel abroad";
+    const globalAddition = travelsAbroad ? CALCULATOR_CONFIG.globalTravelAddition : 0;
+    const withGlobal = incomeAdjusted + globalAddition;
+
     // Step 7b: Cover ceiling (Calibration 10). Applied before the structure so
     // the ₹5L slab rounding cannot push the recommendation back over the line.
-    const travelsAbroad = inputs.globalTravel === "Yes, I travel abroad";
     const capLimit = travelsAbroad
         ? CALCULATOR_CONFIG.coverCapGlobal
         : CALCULATOR_CONFIG.coverCapStandard;
-    const finalOptimal = Math.min(incomeAdjusted, capLimit);
+    const finalOptimal = Math.min(withGlobal, capLimit);
     const coverCap = {
         limit: capLimit,
-        applied: incomeAdjusted > capLimit,
+        applied: withGlobal > capLimit,
         global: travelsAbroad,
-        uncapped: Math.round(incomeAdjusted),
+        uncapped: Math.round(withGlobal),
     };
 
     // Step 8: Structure (Calibration 8) — ₹5L slabs, top-up ≤ 3× base.
@@ -916,11 +928,12 @@ export function calculateHealthCover(inputs: UserInputs, opts?: CoverCalcOptions
         { label: 'Buffer for a second illness in the same year', amount: multiIncidentBuffer },
         { label: `"${inputs.riskPosture}" posture (${pct(riskMult)})`, amount: riskAdjusted - rawOptimal },
         { label: 'Adjusted for your income', amount: incomeAdjusted - riskAdjusted },
+        { label: 'Cover that also has to work outside India', amount: globalAddition },
         {
-            label: `Capped at ${Math.round(capLimit / 100000)} lakhs, the most we recommend${
+            label: `Capped at ${formatLakhs(capLimit)}, the most we recommend${
                 travelsAbroad ? ' for someone who travels abroad' : ' for cover that only has to work in India'
             }`,
-            amount: finalOptimal - incomeAdjusted,
+            amount: finalOptimal - withGlobal,
         },
     ]
         .map((r) => ({ ...r, amount: Math.round(r.amount) }))
