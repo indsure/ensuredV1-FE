@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Lock, Clock, Activity, AlertTriangle, ChevronDown, ArrowRight,
@@ -7,6 +7,7 @@ import {
 import { Reveal, Stagger, RevealItem, EASE } from "@/components/motion";
 import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
 import { CoverGap, SpotlightCard } from "@/components/marketing/showcase";
+import { calculatorIllustration } from "@/lib/calculator-illustration";
 
 interface LandingProps {
   onStart: () => void;
@@ -90,6 +91,9 @@ const MISTAKES = [
 ];
 
 export function CalculatorLanding({ onStart }: LandingProps) {
+  // Shared with the homepage panel so the two cannot quote different figures
+  // for the same household. See calculator-illustration.
+  const sample = useMemo(() => calculatorIllustration(), []);
   const [openLogic, setOpenLogic] = useState(false);
 
   return (
@@ -150,7 +154,7 @@ export function CalculatorLanding({ onStart }: LandingProps) {
                     Your result
                   </span>
                   <span className="mt-1 text-[15px] text-[var(--color-text-secondary)]">
-                    38, two children, home loan, Pune
+                    {sample.profileLabel}
                   </span>
                 </div>
                 <span className="shrink-0 rounded-md bg-[var(--color-cream-dark)] px-2 py-1 text-sm font-semibold text-[var(--color-text-secondary)]">
@@ -160,12 +164,12 @@ export function CalculatorLanding({ onStart }: LandingProps) {
 
               <div className="mb-5 flex items-baseline gap-2">
                 <span className="font-serif text-5xl font-bold tracking-tight text-[var(--color-navy-900)]">
-                  ₹1.9 Cr
+                  {sample.needLabel}
                 </span>
                 <span className="text-[15px] text-[var(--color-text-secondary)]">is what you need</span>
               </div>
 
-              <CoverGap have={10000000} need={19000000} monthly={1100} />
+              <CoverGap have={sample.haveSI} need={sample.needSI} monthly={sample.monthly} />
             </div>
           </Reveal>
         </div>

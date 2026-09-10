@@ -10,6 +10,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { AnimatedNumber, GrowBar, Reveal } from "@/components/motion";
+import { calculatorIllustration } from "@/lib/calculator-illustration";
 
 /* Every rupee figure inside a product panel on this page is illustrative and is
    labelled as such inside the panel border. Nothing here is a product output. */
@@ -120,6 +121,10 @@ function Hero() {
    picture of the product at all. This is the product: everything you own, a
    second tool answering a question analysis cannot, and Sach. */
 function HeroPanels() {
+  // The cover panel quotes the real engine, and the same illustration the
+  // calculator landing page uses, so the two can never disagree.
+  const illustration = calculatorIllustration();
+
   return (
     <div className="container-editorial px-6 pt-10 lg:pt-14">
       <div className="rounded-3xl bg-[var(--color-cream-dark)] border border-[var(--color-border-light)] p-4 sm:p-8 lg:p-12">
@@ -208,31 +213,33 @@ function HeroPanels() {
               <div className="p-4 flex flex-col gap-3.5">
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-bold text-[var(--color-text-secondary)]">
-                    For a 38-year-old, two children, home loan
+                    For a {illustration.profileLabel.replace(/^(\d+),/, "$1-year-old,")}
                   </span>
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="font-serif text-3xl font-bold tracking-tight text-[var(--color-navy-900)]">₹1.9 Cr</span>
+                    <span className="font-serif text-3xl font-bold tracking-tight text-[var(--color-navy-900)]">{illustration.needLabel}</span>
                     <span className="text-sm text-[var(--color-text-secondary)]">is what you need</span>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-[var(--color-text-secondary)] font-semibold">You have</span>
-                    <span className="font-bold text-[var(--color-navy-900)]">₹1 Cr</span>
+                    <span className="font-bold text-[var(--color-navy-900)]">{illustration.haveLabel}</span>
                   </div>
                   {/* The shortfall is the whole point of this panel, so the bar
                       grows to it rather than arriving already drawn. */}
                   <div className="relative h-2.5 overflow-hidden rounded-full bg-[#FECACA]">
                     <GrowBar
-                      percent={53}
+                      percent={illustration.heldPercent}
                       height={10}
                       track="transparent"
-                      label="Cover held: 53 percent of what is needed"
+                      label={`Cover held: ${illustration.heldPercent} percent of what is needed`}
                     />
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-bold text-[#B91C1C]">Short by ₹90 L</span>
-                    <span className="text-[var(--color-text-muted)]">about ₹1,100 a month</span>
+                    <span className="font-bold text-[#B91C1C]">Short by {illustration.shortLabel}</span>
+                    <span className="text-[var(--color-text-muted)]">
+                      about ₹{illustration.monthly.toLocaleString("en-IN")} a month
+                    </span>
                   </div>
                 </div>
               </div>
@@ -281,7 +288,7 @@ const ADVISOR_TABS = [
     blurb: "New, contacted, interested, won, lost — and who you promised to call back today." },
   { id: "renewals", label: "Renewals", icon: CalendarClock, title: "Renewals", route: "/agent/renewals", chip: "6 in 30 days",
     blurb: "Every policy coming up in the next 30 days, with the draft already written." },
-  { id: "compare", label: "Compare", icon: Scale, title: "Compare", route: "/agent/compare", chip: "Uses 1 check",
+  { id: "compare", label: "Compare", icon: Scale, title: "Compare", route: "/agent/compare", chip: "Free from catalog",
     blurb: "Two policies side by side, in the words a customer actually asks about." },
   { id: "claims", label: "Claims", icon: FileText, title: "Claims desk", route: "/agent/claims", chip: "3 open",
     blurb: "Where a claim is stuck, what the insurer asked for, and who is waiting on you." },

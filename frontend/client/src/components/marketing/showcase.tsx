@@ -512,7 +512,7 @@ export function CoverGap({
 }: {
   have: number;
   need: number;
-  /** Rupees per month to close the gap, if known. */
+  /** Rupees per month for the recommended cover, if known. */
   monthly?: number;
   className?: string;
 }) {
@@ -552,7 +552,7 @@ export function CoverGap({
         {monthly ? (
           <span className="flex items-center gap-1 text-[15px] text-[var(--color-text-secondary)]">
             <IndianRupee className="h-4 w-4 shrink-0" aria-hidden="true" />
-            about <AnimatedNumber value={monthly} className="font-bold text-[var(--color-navy-900)]" /> a month to close it
+            about <AnimatedNumber value={monthly} className="font-bold text-[var(--color-navy-900)]" /> a month for the cover you need
           </span>
         ) : null}
       </div>
