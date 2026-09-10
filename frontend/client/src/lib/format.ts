@@ -54,3 +54,18 @@ export function formatINRFull(
   if (!Number.isFinite(numeric)) return fallback;
   return `₹${numeric.toLocaleString("en-IN")}`;
 }
+
+/**
+ * Lakhs and crore, the way a sum insured is actually said out loud.
+ * Shared so the calculator report, the agent portal and the marketing panels
+ * cannot render the same figure three different ways.
+ */
+export function formatLakhs(n: number): string {
+    if (!Number.isFinite(n)) return "—";
+    if (n >= 10000000) {
+        const cr = n / 10000000;
+        return `₹${cr % 1 === 0 ? cr.toFixed(0) : cr.toFixed(1)} Cr`;
+    }
+    const lakhs = Math.round((n / 100000) * 2) / 2;
+    return `₹${lakhs % 1 === 0 ? lakhs.toFixed(0) : lakhs.toFixed(1)} Lakhs`;
+}
