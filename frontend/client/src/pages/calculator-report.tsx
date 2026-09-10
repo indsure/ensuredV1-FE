@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import {
-    Check, Shield, AlertTriangle, Activity, RefreshCcw, Info,
+    Check, Shield, AlertTriangle, Activity, RefreshCcw, Info, Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
@@ -9,6 +9,10 @@ import { Footer } from "@/components/Footer";
 import { EngineResult, UserInputs } from "@/lib/health-engine-logic";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
+import { pdf } from "@react-pdf/renderer";
+import { CalculatorPDFDocument } from "@/components/CalculatorPDFDocument";
+import { registerPdfFonts } from "@/components/PolicyPDFDocument";
+import { showError } from "@/lib/calculator-notifications";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,6 +60,168 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
     );
 }
 
+/** One row of headline tiles. Shared by both cover options and by reports
+ *  stored before the split existed, so the two paths cannot drift apart. */
+function CoverageTiles({
+    baseLabel, baseNote, topUpLabel, topUpNote, totalLabel, totalNote, premium,
+}: {
+    baseLabel: string;
+    baseNote: string;
+    topUpLabel: string | null;
+    topUpNote: string;
+    totalLabel: string;
+    totalNote: string;
+    premium?: EngineResult["premiumEstimate"];
+}) {
+    return (
+        <div
+            className={cn(
+                "grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200",
+                topUpLabel ? "md:grid-cols-4" : "md:grid-cols-3",
+            )}
+        >
+            <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
+                <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
+                    Base Policy
+                </div>
+                <div className="text-3xl font-serif text-[var(--color-navy-900)]">{baseLabel}</div>
+                <div className="text-xs text-[var(--color-text-muted)] mt-2">{baseNote}</div>
+            </div>
+
+            {topUpLabel && (
+                <div className="bg-[var(--color-cta)] text-white p-6 rounded-xl shadow-md col-span-1 md:transform md:-translate-y-3">
+                    <div className="text-xs font-bold text-white/80 uppercase tracking-wider mb-2 flex items-center">
+                        <Tooltip text="A super top-up policy pays only after your base cover is used up in a year. Because it starts high, it costs a fraction of a base policy of the same size.">
+                            <span>Super Top-Up</span>
+                        </Tooltip>
+                    </div>
+                    <div className="text-3xl font-serif">{topUpLabel}</div>
+                    <div className="text-xs text-white/80 mt-2">{topUpNote}</div>
+                </div>
+            )}
+
+            <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
+                <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
+                    Total Shield
+                </div>
+                <div className="text-3xl font-serif text-[var(--color-navy-900)]">{totalLabel}</div>
+                <div className="text-xs text-[var(--color-text-muted)] mt-2">{totalNote}</div>
+            </div>
+
+            {premium && (
+                <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
+                    <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
+                        Est. Monthly Premium
+                    </div>
+                    <div className="text-2xl font-serif text-[var(--color-navy-900)] leading-tight">
+                        {formatINR(premium.monthly.min)}
+                        {" – "}
+                        {formatINR(premium.monthly.max)}
+                        <span className="text-base font-sans font-normal text-[var(--color-text-muted)]">/mo</span>
+                    </div>
+                    <div className="text-xs text-[var(--color-text-muted)] mt-2">
+                        Annual: {formatINR(premium.annual.min)} – {formatINR(premium.annual.max)}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/** The same cover, offered two ways. Reports stored before the engine emitted
+ *  `plans` have no second option, so they render exactly as they were computed
+ *  instead of being given an invented split. */
+function CoverageOptions({ result, cityTier }: { result: EngineResult; cityTier?: string }) {
+    const plans = result.plans;
+    const [view, setView] = useState<"optimal" | "efficient">("optimal");
+
+    const costNote = `Covers the worst-case scenario the engine derived for ${cityTier ?? "your city"} costs.`;
+
+    if (!plans) {
+        return (
+            <CoverageTiles
+                baseLabel={result.baseCover}
+                baseNote="Primary layer for standard hospitalisations."
+                topUpLabel={result.superTopUp !== "None" ? result.superTopUp : null}
+                topUpNote="Pays after the base cover is used up."
+                totalLabel={result.totalProtection}
+                totalNote={costNote}
+                premium={result.premiumEstimate}
+            />
+        );
+    }
+
+    const active = plans[view];
+    const saving = plans.efficientSavingPct;
+
+    return (
+        <div className="space-y-5">
+            {plans.hasSplit && (
+                <>
+                    <div className="flex justify-center">
+                        <div role="tablist" aria-label="How to structure the cover" className="inline-flex p-1 bg-slate-100 rounded-full">
+                            {(["optimal", "efficient"] as const).map((key) => (
+                                <button
+                                    key={key}
+                                    role="tab"
+                                    type="button"
+                                    aria-selected={view === key}
+                                    onClick={() => setView(key)}
+                                    className={cn(
+                                        "px-5 py-2 rounded-full text-sm font-bold transition-colors",
+                                        view === key
+                                            ? "bg-white text-[var(--color-navy-900)] shadow-sm"
+                                            : "text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)]",
+                                    )}
+                                >
+                                    {key === "optimal" ? "Optimal" : "Cost efficient"}
+                                    {key === "efficient" && saving > 0 && (
+                                        <span className="ml-2 text-[var(--color-teal-600)]">save {saving}%</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <p className="text-center text-sm text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+                        {view === "optimal"
+                            ? `One policy of ${formatLakhs(active.baseSI)}, plus the riders below. One insurer, one claim, nothing to co-ordinate.`
+                            : `The same ${formatLakhs(active.totalSI)} of cover, split into ${formatLakhs(active.baseSI)} of base and ${formatLakhs(active.topUpSI)} of super top-up, plus the riders below. Two policies to manage, ${saving}% less premium.`}
+                    </p>
+                </>
+            )}
+
+            {result.coverCap?.applied && (
+                <p className="text-center text-sm text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+                    Capped at {formatLakhs(result.coverCap.limit)}, the most we recommend
+                    {result.coverCap.global
+                        ? " for someone who travels abroad"
+                        : " for cover that only has to work in India"}.
+                    The uncapped calculation came to {formatLakhs(result.coverCap.uncapped)}.
+                </p>
+            )}
+
+            <CoverageTiles
+                baseLabel={formatLakhs(active.baseSI)}
+                baseNote={
+                    active.topUpSI > 0
+                        ? "Primary layer for standard hospitalisations."
+                        : "A single policy covering the whole amount."
+                }
+                topUpLabel={active.topUpSI > 0 ? formatLakhs(active.topUpSI) : null}
+                topUpNote={
+                    saving > 0
+                        ? `Carries most of the cover for ${saving}% less total premium.`
+                        : "Pays after the base cover is used up."
+                }
+                totalLabel={formatLakhs(active.totalSI)}
+                totalNote={costNote}
+                premium={active.premiumEstimate}
+            />
+        </div>
+    );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function CalculatorReportPage() {
@@ -73,6 +239,42 @@ export default function CalculatorReportPage() {
     const [inputs, setInputs] = useState<UserInputs | null>(null);
     const [loading, setLoading] = useState(isUuidRoute);
     const [error, setError] = useState<string | null>(null);
+    const [downloading, setDownloading] = useState(false);
+
+    const handleDownload = async () => {
+        if (downloading || !result || !inputs) return;
+        setDownloading(true);
+        try {
+            // The faces are ~1.9MB and self-hosted, so they are registered lazily:
+            // nothing is fetched until someone actually asks for the document.
+            registerPdfFonts();
+            const blob = await pdf(
+                <CalculatorPDFDocument result={result} inputs={inputs} />,
+            ).toBlob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            const slug = [inputs.city, inputs.exactAge ? String(inputs.exactAge) : inputs.ageBand]
+                .filter(Boolean)
+                .join("_")
+                .replace(/\s+/g, "_")
+                .toLowerCase();
+            a.href = url;
+            a.download = `indsure_cover_calculation${slug ? `_${slug}` : ""}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            // Give the browser a tick to start the download before revoking.
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+            console.error("Cover calculation download failed:", err);
+            showError(
+                "Could not build the PDF",
+                "The report is still on screen. Please try the download again.",
+            );
+        } finally {
+            setDownloading(false);
+        }
+    };
     const [showSavedBanner, setShowSavedBanner] = useState(false);
 
     useEffect(() => {
@@ -156,6 +358,20 @@ export default function CalculatorReportPage() {
     const hasPremium = !!result.premiumEstimate;
     const hasBreakdown = !!result.coverageBreakdown;
     const hasProjection = result.fiveYearProjection && result.fiveYearProjection.length > 0;
+
+    // Reports stored before the engine emitted a full ledger only carry the three
+    // legacy figures, which never summed to the total they sat under. Show those
+    // as they were computed; new reports get every step.
+    const ledger =
+        result.coverageBreakdown?.ledger ??
+        [
+            {
+                label: `Worst-case medical scenario${inputs?.exactAge ? ` (age ${inputs.exactAge})` : ""}`,
+                amount: result.coverageBreakdown?.worstCase ?? 0,
+            },
+            { label: "Medical inflation buffer", amount: result.coverageBreakdown?.inflationBuffer ?? 0 },
+            { label: "Multi-incident buffer", amount: result.coverageBreakdown?.multiIncidentBuffer ?? 0 },
+        ].filter((r) => r.amount !== 0);
     const hasCorporateGap =
         !!result.corporateGap && result.corporateGap.personalNeeded > 0;
 
@@ -214,61 +430,19 @@ export default function CalculatorReportPage() {
                         </p>
                     </div>
 
-                    {/* ── Coverage Tiles ────────────────────────────────────────────── */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-                        <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
-                            <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
-                                Base Policy
-                            </div>
-                            <div className="text-3xl font-serif text-[var(--color-navy-900)]">
-                                {result.baseCover}
-                            </div>
-                            <div className="text-xs text-[var(--color-text-muted)] mt-2">
-                                Primary layer for standard hospitalisations.
-                            </div>
-                        </div>
+                    {/* ── Coverage options ──────────────────────────────────────────── */}
+                    <CoverageOptions result={result} cityTier={inputs.cityTier} />
 
-                        <div className="bg-[var(--color-cta)] text-white p-6 rounded-xl shadow-md col-span-1 md:transform md:-translate-y-3">
-                            <div className="text-xs font-bold text-white/80 uppercase tracking-wider mb-2 flex items-center">
-                                <Tooltip text="A Super Top-Up policy activates after your base cover is exhausted. It provides large coverage at a fraction of the cost of a base policy.">
-                                    <span>Super Top-Up</span>
-                                </Tooltip>
-                            </div>
-                            <div className="text-3xl font-serif">{result.superTopUp}</div>
-                            <div className="text-xs text-white/80 mt-2">
-                                High-value protection at ~60% lower cost than base cover.
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
-                            <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
-                                Total Shield
-                            </div>
-                            <div className="text-3xl font-serif text-[var(--color-navy-900)]">
-                                {result.totalProtection}
-                            </div>
-                            <div className="text-xs text-[var(--color-text-muted)] mt-2">
-                                Covers your actuarially-derived worst-case scenario for {inputs.cityTier} costs.
-                            </div>
-                        </div>
-
-                        {hasPremium && (
-                            <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
-                                <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
-                                    Est. Monthly Premium
-                                </div>
-                                <div className="text-2xl font-serif text-[var(--color-navy-900)] leading-tight">
-                                    {formatINR(result.premiumEstimate!.monthly.min)}
-                                    {" – "}
-                                    {formatINR(result.premiumEstimate!.monthly.max)}
-                                    <span className="text-base font-sans font-normal text-[var(--color-text-muted)]">/mo</span>
-                                </div>
-                                <div className="text-xs text-[var(--color-text-muted)] mt-2">
-                                    Annual: {formatINR(result.premiumEstimate!.annual.min)} –{" "}
-                                    {formatINR(result.premiumEstimate!.annual.max)}
-                                </div>
-                            </div>
-                        )}
+                    <div className="flex justify-center">
+                        <Button
+                            variant="outline"
+                            onClick={handleDownload}
+                            disabled={downloading}
+                            className="border-[var(--color-border-medium)] text-[var(--color-navy-900)] hover:bg-[var(--color-cream-dark)]"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            {downloading ? "Preparing…" : "Download report"}
+                        </Button>
                     </div>
 
                     {/* ── Corporate Gap banner ─────────────────────────────────────── */}
@@ -300,38 +474,30 @@ export default function CalculatorReportPage() {
                                 <Activity className="text-[var(--color-teal-600)]" /> How We Calculated This
                             </h3>
                             <div className="space-y-0 divide-y divide-[var(--color-border-light)]">
-                                <div className="flex justify-between items-center py-3">
-                                    <span className="text-sm text-[var(--color-text-secondary)]">
-                                        Worst-Case Medical Scenario (age {inputs.exactAge ?? "–"})
-                                    </span>
-                                    <span className="font-mono text-sm text-[var(--color-text-main)]">
-                                        {formatLakhs(result.coverageBreakdown!.worstCase)}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center py-3">
-                                    <span className="text-sm text-[var(--color-text-secondary)]">
-                                        Medical Inflation Buffer{" "}
-                                        <span className="text-xs text-[var(--color-text-muted)]">(14% compounded × 3 yrs)</span>
-                                    </span>
-                                    <span className="font-mono text-sm text-[var(--color-teal-700)]">
-                                        + {formatLakhs(result.coverageBreakdown!.inflationBuffer)}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center py-3">
-                                    <span className="text-sm text-[var(--color-text-secondary)]">
-                                        Multi-Incident Buffer{" "}
-                                        <span className="text-xs text-[var(--color-text-muted)]">(10% with restoration)</span>
-                                    </span>
-                                    <span className="font-mono text-sm text-[var(--color-teal-700)]">
-                                        + {formatLakhs(result.coverageBreakdown!.multiIncidentBuffer)}
-                                    </span>
-                                </div>
+                                {ledger.map((row, i) => (
+                                    <div key={i} className="flex justify-between items-baseline gap-6 py-3">
+                                        <span className="text-sm text-[var(--color-text-secondary)]">{row.label}</span>
+                                        <span
+                                            className={cn(
+                                                "font-mono text-sm whitespace-nowrap",
+                                                i === 0
+                                                    ? "text-[var(--color-text-main)]"
+                                                    : row.amount < 0
+                                                        ? "text-[var(--color-text-muted)]"
+                                                        : "text-[var(--color-teal-700)]",
+                                            )}
+                                        >
+                                            {i === 0 ? "" : row.amount < 0 ? "\u2212 " : "+ "}
+                                            {formatINR(Math.abs(row.amount))}
+                                        </span>
+                                    </div>
+                                ))}
                                 <div className="flex justify-between items-center py-4 bg-[var(--color-cream-dark)] -mx-8 px-8 rounded-b-2xl">
-                                    <span className="font-bold text-[var(--color-navy-900)]">
-                                        Your Optimal Coverage
-                                    </span>
+                                    <span className="font-bold text-[var(--color-navy-900)]">What you need</span>
+                                    {/* Full rupees, like the PDF. Rounded to lakhs, this column
+                                        visibly summed to half a lakh less than its own total. */}
                                     <span className="font-bold font-mono text-lg text-[var(--color-navy-900)]">
-                                        = {formatLakhs(result.coverageBreakdown!.finalOptimal)}
+                                        = {formatINR(result.coverageBreakdown!.finalOptimal)}
                                     </span>
                                 </div>
                             </div>

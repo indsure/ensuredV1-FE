@@ -43,6 +43,11 @@ export const PDF_FONT_SOURCES = {
 /** The wordmark, served from the same origin as the page generating the PDF. */
 export const PDF_LOGO_SRC = '/logo.png';
 
+/** The wordmark actually in force, including any override passed to
+ *  registerPdfFonts. Read this rather than the constant, or a document rendered
+ *  outside the browser silently loses its logo. */
+export const getPdfLogoSrc = () => logoSrc;
+
 let registered = false;
 let logoSrc = PDF_LOGO_SRC;
 
@@ -79,7 +84,8 @@ export function registerPdfFonts(
 
 /* ------------------------------------------------------------------ palette */
 
-const C = {
+/** Exported so the calculator document cannot drift from this one. */
+export const C = {
     ink: '#101828',
     inkSoft: '#3F4654',
     muted: '#8A8272',
@@ -370,7 +376,7 @@ const Cross = ({ colour = C.faint }: { colour?: string }) => (
  * is split so the symbol alone falls back to the sans, rather than dropping out
  * of the document the way it did in v1.
  */
-const Display: React.FC<{ style?: any; children?: string | null }> = ({ style, children }) => {
+export const Display: React.FC<{ style?: any; children?: string | null }> = ({ style, children }) => {
     const text = (children ?? '').replace(/\s+/g, ' ').trim();
     if (!text.includes('₹')) return <Text style={style}>{text}</Text>;
     const nodes: React.ReactNode[] = [];
@@ -432,10 +438,11 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
 
     const bd = data.audit_score?.breakdown ?? ({} as Record<string, number>);
     const meters = [
-        { key: 'claim_rejection_risk', label: 'Claim rejection risk', max: 30 },
+        { key: 'claim_rejection_risk', label: 'Rules that cut your payout', max: 30 },
         { key: 'oop_exposure', label: 'Out-of-pocket exposure', max: 30 },
         { key: 'coverage_quality_gap', label: 'Coverage quality gap', max: 20 },
-        { key: 'net_cover_penalty', label: 'Net cover penalty', max: 20 },
+        // the net cover ladder runs to 60, not 20; at max 20 this printed "40 / 20"
+        { key: 'net_cover_penalty', label: 'Net cover penalty', max: 60 },
     ].map((m) => {
         const v = (bd as any)[m.key] ?? 0;
         const colour = v === 0 ? C.teal : v / m.max >= 0.5 ? C.red : C.amber;
@@ -445,7 +452,9 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
     const works = data.benefit_evaluation?.what_actually_works ?? [];
     const fails = data.benefit_evaluation?.where_policy_fails ?? [];
     const sims = data.claim_simulations ?? [];
-    const deductions = data.audit_score?.deductions ?? [];
+    const deductions = Array.from(
+        new Map((data.audit_score?.deductions ?? []).map((d: any) => [d?.reason, d])).values(),
+    );
     const riders = (data.coverage_structure?.riders ?? []).filter((r: any) => r?.name);
     const supp = (data.supplementary_coverage ?? {}) as Record<string, any>;
     const risk = data.claim_risk_analysis ?? ({} as any);
@@ -550,7 +559,7 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                         return (
                             <>
                                 <Text style={s.micro}>
-                                    All scoring is computed from your policy document. No manual overrides.
+                                    Read automatically from your policy document, then checked against our scoring rules on our servers.
                                 </Text>
                                 <Text style={s.micro}>
                                     {pageNumber} / {totalPages}
@@ -632,7 +641,7 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                                         style={[
                                             s.meterFill,
                                             {
-                                                width: `${Math.max(1.5, (m.value / m.max) * 100)}%`,
+                                                width: `${Math.min(100, Math.max(1.5, (m.value / m.max) * 100))}%`,
                                                 backgroundColor: m.colour,
                                             },
                                         ]}

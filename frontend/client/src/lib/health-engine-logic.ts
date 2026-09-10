@@ -23,6 +23,14 @@ export const CALCULATOR_CONFIG = {
     multiIncidentBufferWithRestoration: 0.08,    // 8% — modern unlimited-restoration policies
     multiIncidentBufferWithoutRestoration: 0.20, // 20% — no restoration cover
 
+    // Calibration 10 — hard ceilings on what we will recommend. Cover beyond
+    // these is not a recommendation this product makes, whatever the model
+    // produces. Someone who travels abroad needs the higher ceiling: a hospital
+    // stay overseas runs to a multiple of the Indian bill, and the plans that
+    // pay outside India are only written at large sums insured.
+    coverCapStandard: 5000000,   // ₹50L — cover that only has to work in India
+    coverCapGlobal: 10000000,    // ₹1 Cr — cover that has to work abroad too
+
     // Calibration 8
     baseSICap: 2000000,               // ₹20L preferred base-policy cap (raised in ₹5L slabs only when the 3× top-up rule demands it)
     topUpMinimumThreshold: 1000000,   // ₹10L — don't recommend top-up for smaller gaps
@@ -79,8 +87,11 @@ export const CALCULATOR_CONFIG = {
     // a ₹10L one, NOT 5×. Anchored to real quotes (54+50, ₹50L ≈ ₹35–65k).
     siScalingExponent: 0.32,
     // Super top-up premium = band × (topUpSI/₹10L)^exponent × this rate.
-    // A high-deductible super top-up is cheap (the old 0.55 over-priced it ~3×).
-    topUpPremiumRate: 0.20,
+    // Anchored to a real quote: healthy 26-year-old in Mumbai, ₹15L super top-up
+    // over a ₹10L base = ₹480/yr, against ₹7,866 for the base policy itself. At
+    // 0.20 this leg came out near ₹2,000, four times its real cost, which erased
+    // the entire reason to buy the structure.
+    topUpPremiumRate: 0.05,
     // A shared family floater is cheaper than N separate policies on the same lives.
     floaterEfficiency: 0.85,
     pedPremiumLoading: 0.25,          // +25% for pre-existing conditions
@@ -102,6 +113,10 @@ export type HospitalPreference =
     | "Any good hospital"
     | "Large private hospitals"
     | "Premium corporate hospitals";
+/** Whether this person leaves the country. Someone who takes holidays or work
+ *  trips abroad can be hospitalised there, where the bill is a multiple of the
+ *  Indian one, so they get the higher cover ceiling. */
+export type GlobalTravel = "Rarely or never" | "Yes, I travel abroad";
 export type RecurringExpenses = "None" | "Minor (tests/OPD/meds)" | "Chronic but stable";
 export type ParentsAge = "< 60" | "60-70" | "70+";
 
@@ -114,6 +129,8 @@ export interface UserInputs {
     riskPosture: RiskPosture;
 
     // Level 2 (Optional / Conditional)
+    /** Absent is treated as "Rarely or never", the stricter ceiling. */
+    globalTravel?: GlobalTravel;
     hospitalPreference?: HospitalPreference;
     recurringExpenses?: RecurringExpenses;
     parentsAge?: ParentsAge;
@@ -164,6 +181,34 @@ export interface RiderRecommendation {
     isGap?: boolean;
 }
 
+export interface PremiumEstimate {
+    monthly: { min: number; max: number };
+    annual: { min: number; max: number };
+}
+
+/** One way of buying the same amount of cover. */
+export interface CoverPlanOption {
+    /** Total cover delivered. Identical across both options by design, so the
+     *  premium is the only thing that differs and the comparison stays honest. */
+    totalSI: number;
+    baseSI: number;
+    /** Zero on the optimal option, which is a single base policy. */
+    topUpSI: number;
+    premiumEstimate: PremiumEstimate;
+}
+
+export interface CoverPlanSet {
+    /** One base policy for the whole amount. Simplest to claim on. */
+    optimal: CoverPlanOption;
+    /** Base policy plus a super top-up. Same cover, lower premium. */
+    efficient: CoverPlanOption;
+    /** False when the gap was too small to justify a separate top-up, in which
+     *  case both options are the same policy and the UI should not offer a choice. */
+    hasSplit: boolean;
+    /** How much cheaper the efficient option is, as whole percent. */
+    efficientSavingPct: number;
+}
+
 export interface EngineResult {
     // String display fields (backward compatible)
     baseCover: string;
@@ -175,15 +220,31 @@ export interface EngineResult {
     sensitivityAnalysis: string[];
 
     // Numeric extension fields
-    premiumEstimate: {
-        monthly: { min: number; max: number };
-        annual: { min: number; max: number };
+    /** The efficient structure's premium, kept as the default for callers that
+     *  predate the two-option split. */
+    premiumEstimate: PremiumEstimate;
+    /** The same cover priced two ways. See CoverPlanSet. */
+    plans: CoverPlanSet;
+    /** The ceiling that applied, and whether it actually bit. */
+    coverCap: {
+        limit: number;
+        applied: boolean;
+        /** True when the higher, travel-abroad ceiling was used. */
+        global: boolean;
+        /** What the model wanted before the ceiling. */
+        uncapped: number;
     };
     coverageBreakdown: {
         worstCase: number;
         inflationBuffer: number;
         multiIncidentBuffer: number;
         finalOptimal: number;
+        /** Every step from the anchor to the recommendation, in order, with the
+         *  rupee effect of each. These amounts sum EXACTLY to finalOptimal: the
+         *  three-line version this replaced showed a subtotal under a different
+         *  total and simply did not add up on screen. Render these, not a
+         *  hand-picked subset. */
+        ledger: Array<{ label: string; amount: number }>;
     };
     corporateGap?: {
         corporateSI: number;
@@ -195,6 +256,11 @@ export interface EngineResult {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatLakhs(amount: number): string {
+    // Past a crore, "₹100 Lakhs" is not how anyone says it.
+    if (amount >= 10000000) {
+        const cr = amount / 10000000;
+        return `₹${cr % 1 === 0 ? cr.toFixed(0) : cr.toFixed(1)} Cr`;
+    }
     const inLakhs = amount / 100000;
     const rounded = Math.round(inLakhs * 2) / 2;
     return `₹${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)} Lakhs`;
@@ -212,15 +278,20 @@ function resolveAge(inputs: UserInputs): number {
 }
 
 // ─── Calibration 1: Age-based worst-case cost anchors ────────────────────────
-// Source: IRDAI claims data + insurer guidance for serious hospitalisation events
-
+// These are roughly 70% of the ladder this engine shipped with, cut on the
+// founder's call in September 2026. The old ladder cited IRDAI claims data, but
+// it put a serious event for a 54-year-old at ₹35L while this product's own
+// claim simulations price cancer first-year at ₹12L and angioplasty at ₹4.5L on
+// the same profile. One number had to move and it was this one. Treat these as
+// a product judgement about what we are willing to recommend, not as a sourced
+// medical statistic, and do not re-cite IRDAI against them.
 function getWorstCaseScenario(age: number): number {
-    if (age < 35) return 2000000;  // ₹20L — trauma, accident (young adults)
-    if (age < 45) return 2500000;  // ₹25L — early cardiac, cancer detection
-    if (age < 55) return 3500000;  // ₹35L — cardiac surgery + ICU
-    if (age < 65) return 5000000;  // ₹50L — cancer treatment + multi-day ICU
-    if (age < 75) return 6500000;  // ₹65L — multi-morbidity, joint/renal
-    return 7500000;                // ₹75L — hard market cap (eligibility-constrained)
+    if (age < 35) return 1400000;  // ₹14L, trauma and accident (young adults)
+    if (age < 45) return 1750000;  // ₹17.5L, early cardiac, cancer detection
+    if (age < 55) return 2500000;  // ₹25L, cardiac surgery plus ICU
+    if (age < 65) return 3500000;  // ₹35L, cancer treatment plus multi-day ICU
+    if (age < 75) return 4500000;  // ₹45L, multi-morbidity, joint or renal
+    return 5000000;                // ₹50L, eligibility-constrained at this age
 }
 
 // ─── Calibration 2: City multipliers ─────────────────────────────────────────
@@ -739,10 +810,12 @@ export function calculateHealthCover(inputs: UserInputs, opts?: CoverCalcOptions
     // Step 1: Worst-case scenario (Calibration 1)
     const worstCase = getWorstCaseScenario(age);
 
-    // Step 2: City + condition multipliers (Calibrations 2 & 7)
+    // Step 2: City + condition multipliers (Calibrations 2 & 7). Kept as separate
+    // stages so each one can state its own rupee effect in the ledger.
     const cityMult = getCityMultiplier(inputs.cityTier);
     const condMult = getConditionMultiplier(inputs);
-    const adjusted = worstCase * cityMult * condMult;
+    const afterCity = worstCase * cityMult;
+    const adjusted = afterCity * condMult;
 
     // Step 3: Compound inflation (Calibration 3)
     const inflated = applyMedicalInflation(adjusted);
@@ -751,15 +824,32 @@ export function calculateHealthCover(inputs: UserInputs, opts?: CoverCalcOptions
     // Step 4: Multi-incident buffer (Calibration 4)
     const multiIncidentBuffer = getMultiIncidentBuffer(inflated, true);
 
-    // Step 5: Raw optimal — ₹1 Cr ceiling
-    const rawOptimal = Math.min(inflated + multiIncidentBuffer, 100000000);
+    // Step 5: Raw optimal. The ceiling used to live here as a literal
+    // 100000000, which is ₹10 Cr and not the ₹1 Cr its comment claimed, so it
+    // never bound anything. The real ceiling is applied at step 7b, after the
+    // posture and income adjustments, where it can actually hold.
+    const rawOptimal = inflated + multiIncidentBuffer;
 
     // Step 6: Risk posture (Calibration 6)
     const riskMult = getRiskPostureMultiplier(inputs.riskPosture);
     const riskAdjusted = Math.round(rawOptimal * riskMult);
 
     // Step 7: Income adjustment (Calibration 5)
-    const finalOptimal = applyIncomeAdjustment(riskAdjusted, inputs.annualIncome);
+    const incomeAdjusted = applyIncomeAdjustment(riskAdjusted, inputs.annualIncome);
+
+    // Step 7b: Cover ceiling (Calibration 10). Applied before the structure so
+    // the ₹5L slab rounding cannot push the recommendation back over the line.
+    const travelsAbroad = inputs.globalTravel === "Yes, I travel abroad";
+    const capLimit = travelsAbroad
+        ? CALCULATOR_CONFIG.coverCapGlobal
+        : CALCULATOR_CONFIG.coverCapStandard;
+    const finalOptimal = Math.min(incomeAdjusted, capLimit);
+    const coverCap = {
+        limit: capLimit,
+        applied: incomeAdjusted > capLimit,
+        global: travelsAbroad,
+        uncapped: Math.round(incomeAdjusted),
+    };
 
     // Step 8: Structure (Calibration 8) — ₹5L slabs, top-up ≤ 3× base.
     // The recommended total is the structured base + top-up (≥ the actuarial
@@ -774,8 +864,34 @@ export function calculateHealthCover(inputs: UserInputs, opts?: CoverCalcOptions
             ? { corporateSI, personalNeeded: Math.max(0, recommendedTotal - corporateSI) }
             : undefined;
 
-    // Step 10: Premium estimate (Calibration 9)
+    // Step 10: Premium estimate (Calibration 9). Both options deliver exactly
+    // recommendedTotal, so premium is the only variable between them and the
+    // saving we show is a like-for-like number.
     const premiumEstimate = estimatePremium(age, baseSI, topUpSI, inputs);
+    const optimalPremium =
+        topUpSI > 0 ? estimatePremium(age, recommendedTotal, 0, inputs) : premiumEstimate;
+
+    const midpoint = (p: PremiumEstimate) => (p.annual.min + p.annual.max) / 2;
+    const optimalMid = midpoint(optimalPremium);
+    const plans: CoverPlanSet = {
+        optimal: {
+            totalSI: recommendedTotal,
+            baseSI: recommendedTotal,
+            topUpSI: 0,
+            premiumEstimate: optimalPremium,
+        },
+        efficient: {
+            totalSI: recommendedTotal,
+            baseSI,
+            topUpSI,
+            premiumEstimate,
+        },
+        hasSplit: topUpSI > 0,
+        efficientSavingPct:
+            optimalMid > 0
+                ? Math.max(0, Math.round((1 - midpoint(premiumEstimate) / optimalMid) * 100))
+                : 0,
+    };
 
     // Step 11: 5-year projection
     const projection = fiveYearProjection(premiumEstimate.annual.max);
@@ -783,11 +899,46 @@ export function calculateHealthCover(inputs: UserInputs, opts?: CoverCalcOptions
     // Step 12: Coverage breakdown — finalOptimal carries the structured
     // recommendation (what we actually tell the user to buy) so the report,
     // portfolio cover-gap, and product matching all agree with the cards.
+    // Every stage that moved the number, in the order it moved it. Zero-effect
+    // stages are dropped so a reader is not shown "+ ₹0" rows.
+    const pct = (m: number) => `${m >= 1 ? '+' : ''}${Math.round((m - 1) * 100)}%`;
+    const steps: Array<{ label: string; amount: number }> = [
+        {
+            label: `Worst realistic hospitalisation${age ? ` at ${age}` : ''}, at today's prices`,
+            amount: worstCase,
+        },
+        { label: `${inputs.cityTier} hospital costs (${pct(cityMult)})`, amount: afterCity - worstCase },
+        { label: `Declared health conditions (${pct(condMult)})`, amount: adjusted - afterCity },
+        {
+            label: `Medical inflation, ${Math.round(MEDICAL_INFLATION_RATE * 100)}% compounded over ${MEDICAL_INFLATION_HORIZON} years`,
+            amount: inflated - adjusted,
+        },
+        { label: 'Buffer for a second illness in the same year', amount: multiIncidentBuffer },
+        { label: `"${inputs.riskPosture}" posture (${pct(riskMult)})`, amount: riskAdjusted - rawOptimal },
+        { label: 'Adjusted for your income', amount: incomeAdjusted - riskAdjusted },
+        {
+            label: `Capped at ${Math.round(capLimit / 100000)} lakhs, the most we recommend${
+                travelsAbroad ? ' for someone who travels abroad' : ' for cover that only has to work in India'
+            }`,
+            amount: finalOptimal - incomeAdjusted,
+        },
+    ]
+        .map((r) => ({ ...r, amount: Math.round(r.amount) }))
+        .filter((r) => r.amount !== 0);
+
+    // The last line absorbs both the ₹5L slab rounding and any rupee left over
+    // from rounding the lines above, so the column always sums to the total.
+    const rounding = recommendedTotal - steps.reduce((t, r) => t + r.amount, 0);
+    if (rounding !== 0) {
+        steps.push({ label: 'Rounded to the ₹5 Lakh steps policies are sold in', amount: rounding });
+    }
+
     const coverageBreakdown = {
         worstCase,
         inflationBuffer: Math.round(inflationBuffer),
         multiIncidentBuffer: Math.round(multiIncidentBuffer),
         finalOptimal: recommendedTotal,
+        ledger: steps,
     };
 
     const structure = { baseSI, topUpSI };
@@ -811,6 +962,8 @@ export function calculateHealthCover(inputs: UserInputs, opts?: CoverCalcOptions
 
         // Numeric extension fields
         premiumEstimate,
+        plans,
+        coverCap,
         coverageBreakdown,
         corporateGap,
         fiveYearProjection: projection,

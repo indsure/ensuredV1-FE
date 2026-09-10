@@ -37,6 +37,15 @@ const OTHER_COVER_LABEL: Record<string, string> = {
     ayushman: "Ayushman Bharat (PM-JAY)",
 };
 
+/** The breakdown categories carry enum names in the JSON; these are the words a
+ *  policyholder actually reads. Keys match audit_score.deductions[].category. */
+const DEDUCTION_CATEGORY_LABELS: Record<string, string> = {
+    CLAIM_REJECTION: "Rules that cut your payout",
+    OOP_EXPOSURE: "Out-of-pocket exposure",
+    COVERAGE_GAP: "Coverage quality gap",
+    NET_COVER: "Net cover penalty",
+};
+
 interface PolicyAuditReportProps {
     data: ForensicAuditReport;
     hideNav?: boolean;
@@ -375,10 +384,14 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
         if (deductions?.length === 0) {
             return <div className="text-sm italic text-slate-500">No deductions. This category is clean.</div>;
         }
+        // The model can emit the same clause twice inside one category, which reads
+        // as a bug even though the points were counted once. Same dedupe key as
+        // getRiskItems above.
+        const unique = Array.from(new Map(deductions.map(d => [d.reason, d])).values());
         return (
             <ul className="list-disc space-y-1 ml-4 text-sm text-gray-600">
-                {deductions.map((d, i) => (
-                    <li key={i}>{d.reason} — {Math.abs(d.points)} pts</li>
+                {unique.map((d, i) => (
+                    <li key={i}>{d.reason}, {Math.abs(d.points)} pts</li>
                 ))}
             </ul>
         );
@@ -559,7 +572,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             verdict === "SAFE" ? "text-[var(--color-green-primary)]" :
                                 verdict === "RISKY" ? "text-red-600" : "text-amber-600"
                         )}>
-                            {score}
+                            {score}<span className="text-3xl text-slate-400"> / 100</span>
                         </div>
                         {data.audit_score?.bucket_label && (
                             <div className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">
@@ -576,9 +589,9 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         </div>
                         )}
                         <div className="text-xs text-[var(--color-text-secondary)] max-w-[220px] leading-relaxed mx-auto space-y-1">
-                            <p>Computed from {data.audit_score?.deductions?.length ?? 0} deduction {(data.audit_score?.deductions?.length ?? 0) === 1 ? 'rule' : 'rules'}.</p>
-                            <p>All scores are AI-computed from your policy text.</p>
-                            <p>No manual overrides.</p>
+                            <p>{data.audit_score?.deductions?.length ?? 0} {(data.audit_score?.deductions?.length ?? 0) === 1 ? 'clause' : 'clauses'} in your policy pushed this score down.</p>
+                            <p>Clauses are read automatically from your policy text, then checked against our scoring rules on our servers.</p>
+                            <p>Where the two disagree, the server's number is the one shown here.</p>
                             {data.audit_score?.raw_score && data.audit_score.raw_score !== score && (
                                 <p className="text-xs text-slate-400 mt-2">
                                     Raw score: {data.audit_score.raw_score} (rounded to {score})
@@ -595,8 +608,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 <div className="group cursor-pointer" onClick={() => toggleBreakdown('CLAIM_REJECTION')}>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="font-medium">
-                                            Claim Rejection Risk
-                                            <span title="Measures exposure to rule-based claim denials — room rent limits, co-payments, sub-limits, and network restrictions." className="ml-1 text-slate-400 cursor-help">ℹ</span>
+                                            Rules That Cut Your Payout
+                                            <span title="Clauses that reduce what the insurer pays out: room rent limits, co-payments, disease sub-limits and network restrictions." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
                                             {Math.abs((data.audit_score.breakdown.claim_rejection_risk ?? 0))} / 30 pts
@@ -668,12 +681,12 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             <span title="Applied when your effective cover is below the minimum recommended for your age and city. This penalty is uncapped and overrides all other scores." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs((data.audit_score.breakdown.net_cover_penalty ?? 0))} pts
+                                            {Math.abs((data.audit_score.breakdown.net_cover_penalty ?? 0))} / 60 pts
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['NET_COVER'] && "rotate-180")} />
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-slate-400 rounded-full transition-all" style={{ width: `${Math.min(Math.abs((data.audit_score.breakdown.net_cover_penalty ?? 0)) / 20 * 100, 100)}%` }} />
+                                        <div className="h-full bg-slate-400 rounded-full transition-all" style={{ width: `${Math.min(Math.abs((data.audit_score.breakdown.net_cover_penalty ?? 0)) / 60 * 100, 100)}%` }} />
                                     </div>
                                     {openBreakdown['NET_COVER'] && (
                                         <div className="overflow-hidden">
@@ -685,6 +698,9 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 </div>
 
                             </div>
+                            <p className="mt-6 pt-4 border-t border-[var(--color-border-light)] text-xs text-[var(--color-text-muted)] leading-relaxed">
+                                One clause can appear in more than one row. A co-payment, for example, both cuts what the insurer pays and adds to what you pay yourself, so it counts against both.
+                            </p>
                         </div>
                     )}
                 </div>
@@ -1439,7 +1455,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             {data.audit_score.deductions.map((entry, i) => (
                                                 <tr key={i} className="border-t border-slate-100 hover:bg-slate-50/50">
                                                     <td className="px-4 py-3" data-label="Category" data-cell="title">
-                                                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{entry.category}</span>
+                                                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{DEDUCTION_CATEGORY_LABELS[entry.category] ?? entry.category}</span>
                                                     </td>
                                                     <td className="px-4 py-3" data-label="Severity">
                                                         <span className={cn("text-xs font-bold uppercase px-2 py-0.5 rounded border", getRiskColor(entry.severity))}>
