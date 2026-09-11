@@ -33,6 +33,7 @@ import { pool } from "./lib/db";
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
 import { registerTeamRoutes } from "./teamRoutes";
+import { registerAccountDeletionRoutes } from "./services/accountDeletion";
 import { log } from "./lib/logger";
 
 /* ---------- SUPABASE ADMIN CLIENT ---------- */
@@ -6654,6 +6655,32 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      that makes "you see each time your owner opens your book" true. See the
      header of teamRoutes.ts before adding any route that reads member data. */
   registerTeamRoutes(app, verifyJwt, isAdmin);
+
+  /* ── Account deletion ────────────────────────────────────────────────────
+     DELETE /api/me/account and DELETE /api/agent/account. The mirror of the
+     export above: same table list, walked to destroy rather than to read.
+
+     Kept in its own module because the ORDER of its five steps is the whole
+     safety argument (preconditions, collect storage keys, rows in one
+     transaction, objects best-effort, auth user LAST) and that argument has to
+     be readable in one place. Read the header of services/accountDeletion.ts
+     before changing anything about it.
+
+     Only the pieces it cannot reach on its own are passed in. `forgetTokens`
+     exists because a verified token stays cached here for up to a minute, and a
+     deleted account must stop authenticating the moment it is deleted. */
+  registerAccountDeletionRoutes(app, {
+    verifyJwt,
+    requireIndividual,
+    supabaseAdmin,
+    analysisJobs,
+    pdfBucket: PDF_BUCKET,
+    forgetTokens: (userId: string) => {
+      for (const [token, entry] of tokenCache) {
+        if (entry.userId === userId) tokenCache.delete(token);
+      }
+    },
+  });
 
   log.info("routes registered");
   return _httpServer;
