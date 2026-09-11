@@ -15,6 +15,7 @@
  */
 
 import { DEMO_AGENT_ID } from "./mode";
+import { DEMO_BOOK_CUSTOMER_NAMES } from "./seed";
 
 const now = new Date();
 const day = 24 * 60 * 60 * 1000;
@@ -59,7 +60,7 @@ function build(): TeamState {
     members: [
       {
         id: DEMO_AGENT_ID, name: "Rajesh Kumar", email: "rajesh@shreyasinsure.in",
-        phone: "+91 98200 10001", city: "Indore", created_at: ago(420),
+        phone: "+91 98765 43210", city: "Indore", created_at: ago(420),
         is_owner: true, checks_left: 4, entry_left: 31, last_activity_at: ago(0),
       },
       {
@@ -70,7 +71,7 @@ function build(): TeamState {
         is_owner: false, checks_left: 0, entry_left: 12, last_activity_at: ago(0),
       },
       {
-        id: "demo-member-0000-0000-000000000003", name: "Imran Qureshi", email: "imran@shreyasinsure.in",
+        id: "demo-member-0000-0000-000000000003", name: "Salim Merchant", email: "salim@shreyasinsure.in",
         phone: "+91 98200 10003", city: "Bhopal", created_at: ago(51),
         is_owner: false, checks_left: 8, entry_left: 44, last_activity_at: ago(2),
       },
@@ -83,8 +84,8 @@ function build(): TeamState {
     invites: [
       {
         id: "demo-invite-0000-0000-000000000001",
-        email: "sneha.iyer@gmail.com",
-        invited_name: "Sneha Iyer",
+        email: "neeta.kelkar@gmail.com",
+        invited_name: "Neeta Kelkar",
         expires_at: ago(-5),
         created_at: ago(2),
       },
@@ -105,13 +106,13 @@ function getTeam(): TeamState {
 
 const BOOKS: Record<string, { customers: string[]; insurers: string[]; cities: string[] }> = {
   "demo-member-0000-0000-000000000002": {
-    customers: ["Kavita Joshi", "Deepak Shetty", "Farida Merchant", "Ramesh Iyer", "Sunita Bhosale", "Arjun Kulkarni", "Nandini Rao", "Vivek Pandit"],
-    insurers: ["Niva Bupa Health Insurance", "Star Health and Allied Insurance", "ICICI Lombard", "HDFC Life", "Care Health Insurance"],
+    customers: ["Kavita Joshi", "Deepak Shetty", "Farida Contractor", "Suresh Tandon", "Sunita Bhosale", "Arjun Kulkarni", "Nandini Rao", "Vivek Pandit"],
+    insurers: ["Niva Bupa Health Insurance", "Star Health and Allied Insurance", "ICICI Lombard General Insurance", "HDFC Life Insurance", "Care Health Insurance"],
     cities: ["Indore", "Dewas", "Indore", "Ujjain", "Indore"],
   },
   "demo-member-0000-0000-000000000003": {
-    customers: ["Salim Ansari", "Rekha Verma", "Yusuf Shaikh", "Pooja Mandloi"],
-    insurers: ["Bajaj Allianz General", "Tata AIG General Insurance", "Care Health Insurance"],
+    customers: ["Zubin Irani", "Rekha Verma", "Yusuf Shaikh", "Pooja Mandloi"],
+    insurers: ["Bajaj Allianz General Insurance", "Tata AIG General Insurance", "Care Health Insurance"],
     cities: ["Bhopal", "Bhopal", "Sehore"],
   },
   "demo-member-0000-0000-000000000004": {
@@ -119,14 +120,21 @@ const BOOKS: Record<string, { customers: string[]; insurers: string[]; cities: s
     insurers: ["HDFC Ergo General Insurance", "Star Health and Allied Insurance", "Go Digit General Insurance"],
     cities: ["Ujjain", "Indore", "Ujjain"],
   },
+  // The owner's own book is not a roster invented here: it is the book in
+  // ./seed, which is what every other screen shows him. Listing five names
+  // meant the Team tab told him he had five customers and My Customers told
+  // him thirty-six, on the same screen refresh.
   [DEMO_AGENT_ID]: {
-    customers: ["Suresh Agarwal", "Meena Joshi", "Vikram Singh", "Anita Desai", "Prakash Mehta"],
+    customers: DEMO_BOOK_CUSTOMER_NAMES,
     insurers: ["Star Health and Allied Insurance", "HDFC ERGO General Insurance", "Care Health Insurance"],
-    cities: ["Indore", "Bhopal", "Ujjain"],
+    cities: ["Indore", "Bhopal", "Ujjain", "Dewas", "Gwalior"],
   },
 };
 
-const TYPES = ["Health", "Health", "Motor", "Term", "Health", "Motor"];
+// Lowercase, because that is what the real API returns and what
+// isDataEntryType() matches on. Capitalised, every motor and term policy on
+// the member page failed that test and was given a health score badge.
+const TYPES = ["health", "health", "motor", "term", "health", "motor"];
 const SCORES = [58, 74, 81, 90, 63, 47, 88, 71];
 const REC = ["Switch at renewal", "Review clauses", "Keep", "Keep", "Review add-ons", "Switch at renewal"];
 
@@ -145,7 +153,9 @@ function policiesFor(memberId: string) {
     policy_name: null,
     sum_insured: [500000, 1000000, 300000, 2500000][i % 4],
     expiry_date: dateAgo(-(8 + i * 11)),
-    score: SCORES[i % SCORES.length],
+    // Only a health policy is scored. Everything else is the data-entry lane,
+    // which produces no score and never will.
+    score: TYPES[i % TYPES.length] === "health" ? SCORES[i % SCORES.length] : null,
     status: "done",
     created_at: ago(30 + i * 9),
     recommendation: REC[i % REC.length],

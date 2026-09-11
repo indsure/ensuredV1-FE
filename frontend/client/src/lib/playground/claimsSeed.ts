@@ -95,14 +95,14 @@ function buildClaims(): Seeded[] {
 
   /* 1 ── ordinary claim, under process, nothing wrong ─────────────────────── */
   const c1 = base({
-    customer_name: "Deep Shah",
-    customer_phone: "+91 99000 12121",
+    customer_name: "Suresh Agarwal",
+    customer_phone: "+91 98200 11111",
     claim_type: "cashless",
     status: "under_process",
-    insurer: "Niva Bupa",
+    insurer: "Star Health",
     tpa: "Medi Assist",
-    policy_number: "NB/2024/8891234",
-    hospital: "Lilavati Hospital, Mumbai",
+    policy_number: "SH/2024/8891234",
+    hospital: "Bombay Hospital, Indore",
     ailment: "Fracture, left radius",
     claimed_amount: 185000,
     admitted_on: dateAgo(17),
@@ -112,9 +112,9 @@ function buildClaims(): Seeded[] {
     created_at: ago(16),
   });
   c1.documents = [
-    doc(c1.id, "personal", "Aadhaar — patient", "aadhaar-deep.pdf", 420, 13),
-    doc(c1.id, "personal", "PAN card", "pan-deep.jpg", 180, 13),
-    doc(c1.id, "personal", "Policy copy or e-card", "nivabupa-ecard.pdf", 96, 13),
+    doc(c1.id, "personal", "Aadhaar — patient", "aadhaar-suresh.pdf", 420, 13),
+    doc(c1.id, "personal", "PAN card", "pan-suresh.jpg", 180, 13),
+    doc(c1.id, "personal", "Policy copy or e-card", "starhealth-ecard.pdf", 96, 13),
     doc(c1.id, "case", "Pre-authorisation form", "preauth-signed.pdf", 1240, 13),
     doc(c1.id, "case", "TPA or insurer health card", "tpa-card.jpg", 240, 13),
     doc(c1.id, "case", "Doctor's advice for admission", "advice-note.pdf", 310, 12),
@@ -122,20 +122,20 @@ function buildClaims(): Seeded[] {
   ];
   c1.events = [
     ev(c1.id, "opened", "Claim opened", 16),
-    ev(c1.id, "docs_received", "Collected X-ray and advice note from Deep", 13),
+    ev(c1.id, "docs_received", "Collected X-ray and advice note from Suresh", 13),
     ev(c1.id, "submitted", "Submitted on the Medi Assist portal", 12),
   ];
 
   /* 2 ── one open query ───────────────────────────────────────────────────── */
   const c2 = base({
-    customer_name: "Ramesh Iyer",
-    customer_phone: "+91 99000 34343",
+    customer_name: "Meena Joshi",
+    customer_phone: "+91 98200 22222",
     claim_type: "reimbursement",
     status: "query_raised",
-    insurer: "Care Health",
+    insurer: "Niva Bupa",
     tpa: "Vidal Health",
-    policy_number: "CH/2023/5567120",
-    hospital: "Fortis, Bengaluru",
+    policy_number: "NB/2023/5567120",
+    hospital: "Chirayu Hospital, Bhopal",
     ailment: "Dengue with thrombocytopenia",
     claimed_amount: 62000,
     admitted_on: dateAgo(26),
@@ -152,9 +152,9 @@ function buildClaims(): Seeded[] {
   } as ClaimQuery;
   c2.queries = [q2];
   c2.documents = [
-    doc(c2.id, "personal", "Aadhaar — patient", "aadhaar-ramesh.pdf", 388, 19),
+    doc(c2.id, "personal", "Aadhaar — patient", "aadhaar-meena.pdf", 388, 19),
     doc(c2.id, "personal", "Cancelled cheque", "cheque-hdfc.jpg", 210, 19),
-    doc(c2.id, "case", "Discharge summary", "discharge-fortis.pdf", 640, 19),
+    doc(c2.id, "case", "Discharge summary", "discharge-chirayu.pdf", 640, 19),
     doc(c2.id, "case", "Itemised final bill", "final-bill.pdf", 880, 19),
     doc(c2.id, "case", "Platelet trend report", "platelet-chart.pdf", 300, 3, q2.id),
   ];
@@ -167,14 +167,14 @@ function buildClaims(): Seeded[] {
 
   /* 3 ── three rounds, one still open — the messy claim ───────────────────── */
   const c3 = base({
-    customer_name: "Meena Patel",
-    customer_phone: "+91 99000 56565",
+    customer_name: "Prakash Mehta",
+    customer_phone: "+91 98200 55555",
     claim_type: "cashless",
     status: "query_raised",
-    insurer: "HDFC Ergo",
+    insurer: "Care Health",
     tpa: "Medi Assist",
-    policy_number: "HE/2022/3312890",
-    hospital: "Sterling Hospital, Ahmedabad",
+    policy_number: "CH/2022/3312890",
+    hospital: "CHL Hospitals, Indore",
     ailment: "Angioplasty, single stent",
     claimed_amount: 340000,
     admitted_on: dateAgo(40),
@@ -199,16 +199,16 @@ function buildClaims(): Seeded[] {
   const q3c = {
     id: uid("cq"), claim_id: c3.id, seq: 3,
     question: "Stent invoice with the batch number, and Part B of the claim form stamped by the hospital.",
-    raised_on: dateAgo(4), raised_by: "HDFC Ergo", resolved_on: null, resolution_note: null,
+    raised_on: dateAgo(4), raised_by: "Care Health", resolved_on: null, resolution_note: null,
     created_at: ago(4),
   } as ClaimQuery;
   c3.queries = [q3a, q3b, q3c];
   c3.documents = [
-    doc(c3.id, "personal", "Aadhaar — patient", "aadhaar-meena.pdf", 402, 34),
-    doc(c3.id, "personal", "PAN card", "pan-meena.jpg", 165, 34),
-    doc(c3.id, "personal", "Policy copy or e-card", "hdfc-ergo-ecard.pdf", 120, 34),
-    doc(c3.id, "case", "Pre-authorisation form", "preauth-sterling.pdf", 980, 34),
-    doc(c3.id, "case", "Final bill", "final-bill-sterling.pdf", 1120, 33),
+    doc(c3.id, "personal", "Aadhaar — patient", "aadhaar-prakash.pdf", 402, 34),
+    doc(c3.id, "personal", "PAN card", "pan-prakash.jpg", 165, 34),
+    doc(c3.id, "personal", "Policy copy or e-card", "care-ecard.pdf", 120, 34),
+    doc(c3.id, "case", "Pre-authorisation form", "preauth-chl.pdf", 980, 34),
+    doc(c3.id, "case", "Final bill", "final-bill-chl.pdf", 1120, 33),
     doc(c3.id, "case", "Discharge summary", "discharge-signed.pdf", 720, 19, q3b.id),
     doc(c3.id, "case", "Stent invoice", "stent-invoice-batch.pdf", 640, 2, q3c.id),
   ];
@@ -226,14 +226,14 @@ function buildClaims(): Seeded[] {
 
   /* 4 ── the retention clock about to fire ────────────────────────────────── */
   const c4 = base({
-    customer_name: "Imran Qureshi",
-    customer_phone: "+91 99000 78787",
+    customer_name: "Anita Desai",
+    customer_phone: "+91 98200 44444",
     claim_type: "reimbursement",
     status: "submitted",
-    insurer: "Star Health",
+    insurer: "HDFC Ergo",
     tpa: null,
-    policy_number: "SH/2024/1129045",
-    hospital: "Apollo, Chennai",
+    policy_number: "HE/2024/1129045",
+    hospital: "Apollo Hospitals, Indore",
     ailment: "Appendectomy",
     claimed_amount: 120000,
     admitted_on: dateAgo(33),
@@ -243,7 +243,7 @@ function buildClaims(): Seeded[] {
     created_at: ago(34),
   });
   c4.documents = [
-    doc(c4.id, "personal", "Aadhaar — patient", "aadhaar-imran.pdf", 396, 26),
+    doc(c4.id, "personal", "Aadhaar — patient", "aadhaar-anita.pdf", 396, 26),
     doc(c4.id, "personal", "NEFT mandate", "neft-form.pdf", 140, 26),
     doc(c4.id, "case", "Claim form Part A", "part-a.pdf", 420, 26),
     doc(c4.id, "case", "Discharge summary", "discharge-apollo.pdf", 610, 26),
@@ -252,22 +252,22 @@ function buildClaims(): Seeded[] {
   c4.events = [
     ev(c4.id, "opened", "Claim opened", 34),
     ev(c4.id, "docs_received", null, 27),
-    ev(c4.id, "submitted", "Couriered to Star Health, Chennai branch", 26),
+    ev(c4.id, "submitted", "Couriered to the HDFC ERGO Indore branch", 26),
   ];
 
   /* 5 ── settled, consented, files gone ───────────────────────────────────── */
   const c5 = base({
-    customer_name: "Sunita Rao",
-    customer_phone: "+91 99000 90909",
+    customer_name: "Vikram Singh",
+    customer_phone: "+91 98200 33333",
     claim_type: "reimbursement",
     status: "settled",
-    insurer: "Bajaj Allianz",
+    insurer: "Star Health",
     tpa: null,
-    policy_number: "BA/2021/7781002",
-    hospital: "Sankara Eye Hospital, Pune",
+    policy_number: "SH/2021/7781002",
+    hospital: "Shri Mahakal Eye Hospital, Ujjain",
     ailment: "Cataract, both eyes",
     claimed_amount: 95000,
-    settled_amount: 88500,
+    settled_amount: 25000,
     admitted_on: dateAgo(72),
     discharged_on: dateAgo(71),
     retention_started_at: ago(68),
@@ -280,31 +280,31 @@ function buildClaims(): Seeded[] {
   const q5 = {
     id: uid("cq"), claim_id: c5.id, seq: 1,
     question: "Invoice for the intraocular lens used in the second eye.",
-    raised_on: dateAgo(60), raised_by: "Bajaj Allianz", resolved_on: dateAgo(58),
+    raised_on: dateAgo(60), raised_by: "Star Health", resolved_on: dateAgo(58),
     resolution_note: "Hospital emailed the IOL invoice.", created_at: ago(60),
   } as ClaimQuery;
   c5.queries = [q5];
-  c5.documents = [doc(c5.id, "outcome", "Settlement letter", "bajaj-settlement.pdf", 310, 14)];
+  c5.documents = [doc(c5.id, "outcome", "Settlement letter", "star-settlement.pdf", 310, 14)];
   c5.events = [
     ev(c5.id, "opened", "Claim opened", 73),
     ev(c5.id, "docs_received", null, 69),
     ev(c5.id, "submitted", null, 68),
     ev(c5.id, "query_raised", "Round 1: IOL invoice for the second eye", 60),
     ev(c5.id, "query_resolved", "Round 1 resolved", 58),
-    ev(c5.id, "settled", "Credited to Sunita's HDFC account", 14),
+    ev(c5.id, "settled", "Settled at ₹25,000 against ₹95,000 claimed: the cataract sub-limit capped it at ₹25,000 an eye, then the 50% co-pay halved what was left. Exactly what the policy check flagged.", 14),
     ev(c5.id, "documents_purged", "11 document(s) deleted on closing. The insurer's letter is kept.", 14),
   ];
 
   /* 6 ── rejected, files gone ─────────────────────────────────────────────── */
   const c6 = base({
-    customer_name: "Aniket Bang",
-    customer_phone: "+91 99000 23232",
+    customer_name: "Anil Deshpande",
+    customer_phone: "+91 98100 00000",
     claim_type: "cashless",
     status: "rejected",
-    insurer: "Tata AIG",
+    insurer: "Star Health",
     tpa: "Paramount",
-    policy_number: "TA/2024/4420117",
-    hospital: "Sahyadri, Nashik",
+    policy_number: "SH/2024/4420117",
+    hospital: "Medanta, Indore",
     ailment: "Hernia repair",
     claimed_amount: 145000,
     admitted_on: dateAgo(95),
@@ -315,7 +315,7 @@ function buildClaims(): Seeded[] {
     closed_at: ago(30),
     created_at: ago(96),
   });
-  c6.documents = [doc(c6.id, "outcome", "Rejection letter", "tata-repudiation.pdf", 288, 30)];
+  c6.documents = [doc(c6.id, "outcome", "Rejection letter", "star-repudiation.pdf", 288, 30)];
   c6.events = [
     ev(c6.id, "opened", "Claim opened", 96),
     ev(c6.id, "docs_received", null, 91),

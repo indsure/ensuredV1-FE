@@ -332,6 +332,28 @@ function playgroundApiResponse(url: string, init?: any): Response {
     return json({ clientId, jobId, success: true });
   }
 
+  /* Saving the reviewed data-entry fields. Without this the PATCH fell through
+     to the generic "simulated" reply below: the form said "Details saved", then
+     reloaded from a store nothing had written to and every field the user had
+     just corrected reverted in front of them. */
+  const extracted = url.match(/\/api\/agent\/clients\/([^/]+)\/extracted-data/);
+  if (extracted) {
+    const clientId = decodeURIComponent(extracted[1]);
+    let patch: Record<string, any> = {};
+    try {
+      patch = JSON.parse(init?.body ?? "{}").extracted_data ?? {};
+    } catch {
+      /* ignore */
+    }
+    const row = getStore().clients.find((c) => c.id === clientId);
+    if (row) {
+      // Merge, so the keys the form does not render (the add-on scan, the
+      // charge table) survive a save of the ones it does.
+      row.extracted_data = { ...(row.extracted_data ?? {}), ...patch };
+    }
+    return json({ success: true, extracted_data: row?.extracted_data ?? patch });
+  }
+
   if (url.includes("/api/compare/catalog")) return json({ policies: DEMO_CATALOG });
   if (url.includes("/api/compare/from-catalog")) {
     let uins: string[] = [];

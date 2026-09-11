@@ -13,6 +13,7 @@
  */
 
 import { DEMO_AGENT_ID, DEMO_EMAIL } from "./mode";
+import { CURRENT_SCORING_VERSION } from "@shared/policy";
 import {
   ADD_ON_CATALOG,
   ADD_ON_FINDINGS_KEY,
@@ -22,6 +23,11 @@ import {
 
 const now = new Date();
 const day = 24 * 60 * 60 * 1000;
+
+/** The audit prompt these demo reports are shaped against. Mirrors
+ *  PROMPT_VERSION in backend/server/promptTemplate.ts, which the frontend
+ *  cannot import; the scoring version comes from @shared/policy directly. */
+const DEMO_PROMPT_VERSION = "1.5.0";
 
 /** ISO timestamp `n` days ago (negative = future). */
 function ago(days: number): string {
@@ -91,16 +97,66 @@ function demoAddOnScan(vehicleClass: VehicleClass): AddOnScan {
   };
 }
 
+/**
+ * The insurers the demo book is written against.
+ *
+ * Split by licence, not by brand. HDFC ERGO and HDFC Life are two different
+ * companies and only one of them may sell a term plan; ICICI Lombard is general
+ * insurance and cannot carry a life policy at all. The seed used to hang life
+ * and term products off the general arms of both, which is the first thing an
+ * insurance person notices and the last thing a sales demo can afford.
+ */
 const INSURERS = {
   star: "Star Health and Allied Insurance Co Ltd",
   hdfc: "HDFC ERGO General Insurance Company Limited",
   care: "Care Health Insurance Limited",
   niva: "Niva Bupa Health Insurance Company Limited",
+  abhi: "Aditya Birla Health Insurance Co Limited",
   icici: "ICICI Lombard General Insurance Company Limited",
   tata: "Tata AIG General Insurance Company Limited",
   digit: "Go Digit General Insurance Limited",
   lic: "Life Insurance Corporation of India",
+  hdfcLife: "HDFC Life Insurance Company Limited",
+  bajajLife: "Bajaj Allianz Life Insurance Company Limited",
+  iciciLife: "ICICI Prudential Life Insurance Company Limited",
 };
+
+/**
+ * What one bad admission costs this insured today — the denominator the score is
+ * measured against (RCT).
+ *
+ * Mirrors lookupRequiredCover in backend/server/services/analysisPipeline.ts,
+ * which the frontend cannot import. It is duplicated here rather than invented
+ * because the report renderer DIVIDES the cover by this number to print NCAR:
+ * the seed used to put an out-of-pocket percentage in the field, so every demo
+ * report announced "your cover is 13333.33× the minimum recommended" directly
+ * underneath a RISKY verdict.
+ */
+const WORST_CASE_BY_AGE: { maxAge: number; cost: number }[] = [
+  { maxAge: 34, cost: 1400000 },
+  { maxAge: 44, cost: 1750000 },
+  { maxAge: 54, cost: 2500000 },
+  { maxAge: 64, cost: 3500000 },
+  { maxAge: 74, cost: 4500000 },
+  { maxAge: Infinity, cost: 5000000 },
+];
+const ZONE_COST_MULTIPLIER: Record<string, number> = { A: 1.15, B: 1.05, C: 1.0, D: 1.05 };
+
+function requiredCover(ages: number[], zone: string): number {
+  const eldest = Math.max(...ages);
+  const row = WORST_CASE_BY_AGE.find((r) => eldest <= r.maxAge)!;
+  const mult = ZONE_COST_MULTIPLIER[zone.toUpperCase()] ?? 1;
+  return Math.round((row.cost * mult) / 50000) * 50000;
+}
+
+/** The net-cover penalty curve, mirroring netCoverPenaltyFor on the server. */
+function netCoverPenaltyFor(ncar: number): number {
+  if (ncar >= 1.0) return 0;
+  if (ncar >= 0.75) return Math.round((10 * (1.0 - ncar)) / 0.25);
+  if (ncar >= 0.5) return Math.round(10 + (15 * (0.75 - ncar)) / 0.25);
+  if (ncar >= 0.3) return Math.round(25 + (15 * (0.5 - ncar)) / 0.2);
+  return Math.min(60, Math.round(40 + (20 * (0.3 - ncar)) / 0.3));
+}
 
 /**
  * A complete, schema-valid ForensicAuditReport for a demo health policy.
@@ -114,6 +170,8 @@ const INSURERS = {
  * Everything a caller doesn't specify defaults to a clean, unremarkable value,
  * so each call site only states what makes that policy interesting.
  */
+type DeductionCategory = "NET_COVER" | "CLAIM_REJECTION" | "OOP_EXPOSURE" | "COVERAGE_GAP";
+
 type ReportOpts = {
   insured: string[];
   ages: number[];
@@ -153,15 +211,18 @@ type ReportOpts = {
   ambulanceLimit?: number;
   networkCount?: number;
   networkHospitals?: string[];
-  /** Scoring + narrative. */
-  score: number;
-  ncar: number;
+  /** Scoring + narrative. The score itself is NOT stated here: it is 100 minus
+   *  the deductions below, so the headline and the list that explains it cannot
+   *  disagree on screen. NCAR is derived from cover ÷ required cover. */
   label: "SAFE" | "BORDERLINE" | "RISKY" | "EXCELLENT";
   bucketLabel?: string;
   summary: string;
   realClaim: string;
   failures: string[];
-  deductions?: { reason: string; category: string; severity: "high" | "medium" | "low"; points: number }[];
+  /** Category must be one of the four the renderer knows: it groups the
+   *  deductions under the matching bar, and an unknown one leaves the bar
+   *  reading "No deductions. This category is clean." beside a non-zero score. */
+  deductions?: { reason: string; category: DeductionCategory; severity: "high" | "medium" | "low"; points: number }[];
   works?: { benefit: string; why_it_matters_in_claim: string; quantified_value: string | null }[];
   fails?: { issue: string; real_world_claim_impact: string; quantified_oop_risk: string | null }[];
   redFlags?: { flag: string; why_it_is_dangerous: string; severity: "high" | "medium" | "low" }[];
@@ -208,6 +269,26 @@ function healthReport(o: ReportOpts) {
   const pedMonths = o.pedMonths ?? 36;
   const specificMonths = o.specificMonths ?? 24;
   const restore = o.restoration ?? { exists: true, type: "full" as const, useful: true, remarks: "Restores the full sum insured once a year." };
+  const zone = o.zone ?? "B";
+
+  /* One cover figure, and everything else derived from it. Effective cover is
+     the base sum insured plus the accrued bonus in rupees — the same definition
+     calculateEffectiveCoverage applies in shared/policy.ts. Stating it once and
+     deriving nec / total_effective_coverage / NCAR from it is what stops the
+     renderer flagging the report as "restated" and printing a correction notice
+     over a demo policy that was never wrong. */
+  const bonusRupees = Math.round((o.baseSI * (o.ncbCurrent ?? 0)) / 100);
+  const effectiveCover = o.baseSI + bonusRupees;
+  const rct = requiredCover(o.ages, zone);
+  const ncar = Number((effectiveCover / rct).toFixed(2));
+
+  /* The score IS the deductions. Authoring the two separately is how the demo
+     came to show a 58 above a list of clauses that added up to something else. */
+  const deductions = o.deductions ?? [];
+  const totalDeducted = deductions.reduce((t, d) => t + d.points, 0);
+  const score = Math.max(0, Math.min(100, 100 - totalDeducted));
+  const pointsIn = (category: DeductionCategory) =>
+    deductions.filter((d) => d.category === category).reduce((t, d) => t + d.points, 0);
 
   return {
     identity: {
@@ -215,7 +296,7 @@ function healthReport(o: ReportOpts) {
       ages: o.ages,
       genders: o.genders ?? o.insured.map(() => null),
       city: o.city,
-      assumed_zone: o.zone ?? "B",
+      assumed_zone: zone,
       health_flags: o.healthFlags ?? [],
       confidence: "high",
     },
@@ -251,13 +332,13 @@ function healthReport(o: ReportOpts) {
         cap_percentage: o.ncbCap ?? 50,
         // Rupees, not the percentage it is authored as: calculateEffectiveCoverage
         // reads this field directly and discards values too small to be rupees.
-        current_bonus: Math.round((o.baseSI * (o.ncbCurrent ?? 0)) / 100),
+        current_bonus: bonusRupees,
         portability: "yes",
         clarity: "clear",
         remarks: "Accrued bonus is lost if the policy lapses beyond the grace period.",
       },
       riders: o.riders ?? [],
-      total_effective_coverage: o.baseSI + Math.round((o.baseSI * (o.ncbCurrent ?? 0)) / 100),
+      total_effective_coverage: effectiveCover,
       confidence: "high",
     },
     waiting_period_analysis: {
@@ -406,19 +487,23 @@ function healthReport(o: ReportOpts) {
       structural_red_flags: o.redFlags ?? [],
     },
     audit_score: {
-      score: o.score,
-      raw_score: o.score,
-      ncar: o.ncar,
-      nec: o.baseSI + Math.round((o.baseSI * (o.ncbCurrent ?? 0)) / 100),
-      rct: penaltyPct + copayPct,
+      score,
+      raw_score: score,
+      ncar,
+      nec: effectiveCover,
+      // RUPEES. This is the denominator of NCAR, not a percentage — see
+      // requiredCover above for what went wrong when it held one.
+      rct,
       bucket_label: o.bucketLabel ?? null,
+      // Each bar is the sum of the deductions filed under it, so the bar and the
+      // clauses the reader can expand underneath it are the same number.
       breakdown: {
-        net_cover_penalty: Math.max(0, Math.round((1 - Math.min(o.ncar, 1)) * 30)),
-        claim_rejection_risk: copayPct > 0 ? 12 : 4,
-        oop_exposure: Math.round((penaltyPct + copayPct) / 2),
-        coverage_quality_gap: (o.subLimits?.length ?? 0) * 5,
+        net_cover_penalty: pointsIn("NET_COVER"),
+        claim_rejection_risk: pointsIn("CLAIM_REJECTION"),
+        oop_exposure: pointsIn("OOP_EXPOSURE"),
+        coverage_quality_gap: pointsIn("COVERAGE_GAP"),
       },
-      deductions: o.deductions ?? [],
+      deductions,
       interpretation: o.summary,
     },
     final_verdict: {
@@ -447,6 +532,15 @@ function healthReport(o: ReportOpts) {
       "Read from the policy schedule and the wording supplied with it.",
       "Hospital costs are typical ranges for the city on the schedule, not quotes.",
     ],
+    /* Without this every demo report carried a banner reading "Scored under
+       earlier rules … Re-run this policy", because an absent stamp means
+       "predates the current rules" (isScoredUnderOldRules). Stamping the live
+       version says what is true: this report was produced by today's engine. */
+    engine: {
+      prompt_version: DEMO_PROMPT_VERSION,
+      scoring_version: CURRENT_SCORING_VERSION,
+      scored_at: dateAgo(0),
+    },
     data_quality: {
       overall: "high",
       missing_critical_fields: [],
@@ -455,6 +549,398 @@ function healthReport(o: ReportOpts) {
     },
   };
 }
+
+/**
+ * A finished health policy for the bulk book.
+ *
+ * Four profiles, picked by index, so the book holds a real spread of outcomes
+ * rather than one report repeated ninety-six times. Each profile's structural
+ * facts and its deductions describe the same policy: a profile that deducts for
+ * a co-pay carries the co-pay, and one that deducts for a room cap carries the
+ * cap. The score falls out of the deductions, so nothing can disagree.
+ */
+function bulkHealthReport(o: {
+  i: number;
+  person: string;
+  spouse: string;
+  city: string;
+  zone: "A" | "B" | "C" | "D";
+  baseSI: number;
+  inceptionDays: number;
+  expiryDays: number;
+}) {
+  const profile = o.i % 4;
+  const si = (n: number) => `₹${(n / 100000).toFixed(0)}L`;
+  /* Four profiles alone gave the whole book four scores, repeated. Real policies
+     of the same shape still differ, so each row moves its largest deduction by a
+     few points — deterministic, and the score follows it because the score is
+     the deductions. */
+  const nudge = (points: number) => Math.max(1, points + ((o.i % 7) - 3));
+  const common = {
+    city: o.city,
+    zone: o.zone,
+    inceptionDays: o.inceptionDays,
+    expiryDays: o.expiryDays,
+    baseSI: o.baseSI,
+  };
+
+  if (profile === 0) {
+    return healthReport({
+      ...common,
+      insured: [o.person, o.spouse], ages: [38, 35], genders: ["male", "female"],
+      ncbCurrent: 20, pedMonths: 36, specificMonths: 24,
+      consumables: { covered: true, coverage_type: "full", remarks: "Consumables are paid in full." },
+      label: "SAFE", bucketLabel: "Well covered",
+      summary: `Clean claim terms: no room-rent cap and no co-pay, so a bill on this plan is settled close to as presented. What is left is the waiting periods.`,
+      realClaim: "Yes. An ordinary admission settles in full apart from a small non-payable share.",
+      failures: ["Pre-existing conditions wait until the 36-month period ends", "No OPD cover for routine consultations and tests"],
+      deductions: [
+        { reason: "Pre-existing wait still running", category: "CLAIM_REJECTION", severity: "medium", points: nudge(8) },
+        { reason: "No OPD cover", category: "COVERAGE_GAP", severity: "low", points: 4 },
+      ],
+      works: [
+        { benefit: "No room-rent cap and no co-pay", why_it_matters_in_claim: "The bill is settled as presented, with no proportionate deduction.", quantified_value: null },
+        { benefit: "Consumables covered in full", why_it_matters_in_claim: "Removes the item most often deducted from a settled claim.", quantified_value: "₹15,000–₹40,000 per admission" },
+      ],
+      fails: [
+        { issue: "Pre-existing conditions not yet payable", real_world_claim_impact: "Anything traced to a declared condition is declined until the wait ends.", quantified_oop_risk: "Full cost of such an admission" },
+      ],
+      actions: [],
+      mediumPriority: [{ action: "Do not let the policy lapse before the pre-existing wait ends", reason: "A lapse restarts the 36-month clock." }],
+      port: "no",
+      portReason: "The terms are already good and the waiting period is part-served. Moving would restart it.",
+    });
+  }
+
+  if (profile === 1) {
+    return healthReport({
+      ...common,
+      insured: [o.person], ages: [46], genders: ["female"],
+      ncbCurrent: 10, pedMonths: 36, specificMonths: 24,
+      subLimits: [
+        { procedure: "Cataract (per eye)", limit: 35000, typical_cost_in_zone: 55000, severity: "medium" },
+        { procedure: "Hernia repair", limit: 60000, typical_cost_in_zone: 95000, severity: "low" },
+      ],
+      restoration: { exists: false, remarks: `No restoration — once ${si(o.baseSI)} is used in a policy year there is nothing left until renewal.` },
+      label: "BORDERLINE", bucketLabel: "Partly covered",
+      summary: `The claim terms are clean. The weakness is size and shape: named procedures pay only up to their cap, and there is no refill once ${si(o.baseSI)} is used.`,
+      realClaim: "Mostly. One ordinary admission settles well; a second in the same year would not.",
+      failures: ["Disease-wise caps on two common procedures", "No restoration once the sum insured is used", "Cover is below what one serious admission costs at this age"],
+      deductions: [
+        { reason: "Disease-wise sub-limits on common procedures", category: "COVERAGE_GAP", severity: "medium", points: 11 },
+        { reason: "Sum insured below the recommended cover for this age and city", category: "NET_COVER", severity: "medium", points: nudge(12) },
+        { reason: "Pre-existing wait not fully served", category: "CLAIM_REJECTION", severity: "low", points: 6 },
+      ],
+      works: [
+        { benefit: "No co-pay and no room-rent cap", why_it_matters_in_claim: "Straightforward settlement on an ordinary admission.", quantified_value: null },
+      ],
+      fails: [
+        { issue: "Sub-limit on cataract", real_world_claim_impact: "A routine procedure at this age is only two-thirds covered.", quantified_oop_risk: "≈ ₹20,000 per eye" },
+        { issue: "No restoration", real_world_claim_impact: "A second hospitalisation in the same policy year is entirely out of pocket.", quantified_oop_risk: "Full cost of the second claim" },
+      ],
+      actions: [
+        {
+          action: "Add a super top-up above the current sum insured",
+          reason: "Cheapest way to raise the cover without disturbing terms that are already good.",
+          oop_risk_if_ignored: `Everything above ${si(o.baseSI)} in a bad year`,
+          suggested_riders_or_topups: ["₹20L super top-up"],
+          estimated_cost: "₹5,000–₹7,000 a year",
+        },
+      ],
+      port: "consider",
+      portReason: "The terms are worth keeping; the size is not. A top-up fixes it more cheaply than porting does.",
+      portLookFor: ["No disease-wise sub-limits", "Unlimited restoration", "₹15L+ base cover"],
+    });
+  }
+
+  if (profile === 2) {
+    return healthReport({
+      ...common,
+      insured: [o.person, o.spouse], ages: [52, 49], genders: ["male", "female"],
+      ncbCurrent: 20, pedMonths: 36, specificMonths: 24,
+      roomRent: {
+        limit_type: "specific_amount", limit_value: "₹5,000 per day",
+        limit_amount_per_day: 5000, penaltyPct: 20, risk_level: "high", zone_adequacy: "marginal",
+        explanation: `₹5,000 a day buys a shared room in most ${o.city} hospitals. Take a private room and every line of the bill is cut in the same proportion.`,
+      },
+      copayPct: 10, copayConditions: "Applies to every claim.",
+      subLimits: [{ procedure: "Cataract (per eye)", limit: 30000, typical_cost_in_zone: 55000, severity: "medium" }],
+      label: "BORDERLINE", bucketLabel: "Under-covered",
+      summary: "A room-rent cap and a co-pay apply one after the other, so the family's share of a large bill compounds rather than adding up.",
+      realClaim: "Partly. A large admission would leave roughly a quarter of the bill with the family.",
+      failures: ["Room rent capped at ₹5,000 a day, with proportionate deduction on the whole bill", "10% co-pay on every claim", "Cataract capped below local cost"],
+      deductions: [
+        { reason: "Room rent capped at ₹5,000 a day", category: "CLAIM_REJECTION", severity: "high", points: nudge(12) },
+        { reason: "10% co-pay on all claims", category: "OOP_EXPOSURE", severity: "high", points: 14 },
+        { reason: "Sum insured below the recommended cover for this age and city", category: "NET_COVER", severity: "medium", points: 11 },
+        { reason: "Cataract sub-limit below typical local cost", category: "COVERAGE_GAP", severity: "low", points: 6 },
+      ],
+      works: [
+        { benefit: "No-claim bonus already at 20%", why_it_matters_in_claim: "Adds cover at no extra premium.", quantified_value: si(Math.round(o.baseSI * 0.2)) },
+      ],
+      fails: [
+        { issue: "Room-rent cap with proportionate deduction", real_world_claim_impact: "Choosing a private room cuts every line of the bill, not just the room charge.", quantified_oop_risk: "≈ 20% of any admission" },
+        { issue: "10% co-pay", real_world_claim_impact: "A tenth of every approved claim stays with the family.", quantified_oop_risk: "₹45,000 on a ₹4.5L claim" },
+      ],
+      redFlags: [
+        { flag: "Cap and co-pay stack on the same claim", why_it_is_dangerous: "The two deductions are applied one after the other, so the family's share compounds.", severity: "high" },
+      ],
+      actions: [
+        {
+          action: "Port to a plan with no room-rent cap at renewal",
+          reason: "The room cap is the single largest source of out-of-pocket cost on this policy.",
+          oop_risk_if_ignored: "₹1L–₹2L on one major hospitalisation",
+          suggested_riders_or_topups: ["No-cap base plan", "Super top-up above the current cover"],
+          estimated_cost: "₹4,000–₹6,000 more a year",
+        },
+      ],
+      port: "yes",
+      portReason: "Plans at a similar premium drop both the cap and the co-pay, which is where this family's money is going.",
+      portLookFor: ["No room-rent cap", "No co-pay", "Waiting periods already served, carried over"],
+    });
+  }
+
+  return healthReport({
+    ...common,
+    insured: [o.person], ages: [61], genders: ["male"],
+    ncbCurrent: 0, pedMonths: 48, specificMonths: 24,
+    roomRent: {
+      limit_type: "specific_amount", limit_value: "₹4,000 per day",
+      limit_amount_per_day: 4000, penaltyPct: 25, risk_level: "high", zone_adequacy: "inadequate",
+      explanation: `₹4,000 a day is workable in ${o.city} but not on a referral to a larger city, which is what happens with anything serious.`,
+    },
+    copayPct: 20, copayAppliesTo: "seniors_only", copayConditions: "20% of every claim, because the policy was bought after age 60.",
+    subLimits: [
+      { procedure: "Cataract (per eye)", limit: 25000, typical_cost_in_zone: 60000, severity: "high" },
+      { procedure: "Knee replacement", limit: 150000, typical_cost_in_zone: 320000, severity: "high" },
+    ],
+    restoration: { exists: false, remarks: "No restoration on this plan." },
+    label: "RISKY", bucketLabel: "Seriously under-covered",
+    summary: "A room cap, a 20% co-pay and hard caps on the two most likely procedures. Each one is survivable; together they are why this policy pays for less than half of a serious year.",
+    realClaim: "No. On a large admission the family would be finding a substantial share themselves.",
+    failures: [
+      "20% co-pay on every claim",
+      "Room rent capped at ₹4,000 a day, with proportionate deduction",
+      "Cataract and knee replacement capped well below local cost",
+      "No restoration once the sum insured is used",
+    ],
+    deductions: [
+      { reason: "20% co-pay on all claims", category: "OOP_EXPOSURE", severity: "high", points: 20 },
+      { reason: "Sum insured far below the recommended cover at this age", category: "NET_COVER", severity: "high", points: nudge(18) },
+      { reason: "Room rent capped with proportionate deduction", category: "CLAIM_REJECTION", severity: "high", points: 10 },
+      { reason: "Hard sub-limits on the two most likely procedures", category: "COVERAGE_GAP", severity: "high", points: 6 },
+    ],
+    works: [
+      { benefit: "Guaranteed lifelong renewal", why_it_matters_in_claim: "Renewal cannot be refused at this age, which matters more each year.", quantified_value: null },
+    ],
+    fails: [
+      { issue: "20% co-pay", real_world_claim_impact: "A fifth of every approved claim is the customer's.", quantified_oop_risk: "₹90,000 on a ₹4.5L claim" },
+      { issue: "Knee replacement capped at ₹1.5L", real_world_claim_impact: "The single most likely procedure at this age is half covered.", quantified_oop_risk: "≈ ₹1,70,000" },
+    ],
+    redFlags: [
+      { flag: "Cover is smaller than one likely admission", why_it_is_dangerous: "The family will be arranging money in a hospital corridor regardless of this policy.", severity: "high" },
+    ],
+    actions: [
+      {
+        action: "Move to a senior plan with a lower co-pay and no room cap",
+        reason: "The co-pay and the cap are the reason this policy does not work, and neither improves with time.",
+        oop_risk_if_ignored: "₹2L+ on a single serious admission",
+        suggested_riders_or_topups: ["₹10L super top-up above the current cover"],
+        estimated_cost: "₹9,000–₹14,000 more a year",
+      },
+    ],
+    port: "yes",
+    portReason: "The co-pay and the sum insured both need to change, and neither can be fixed inside this plan.",
+    portLookFor: ["Co-pay of 10% or lower", "No room-rent cap", "No sub-limit on knee replacement"],
+  });
+}
+
+/**
+ * The extracted fields a finished data-entry policy carries.
+ *
+ * Keyed strictly to EXTRACTION_FIELDS in lib/insuranceTypes.ts — that registry
+ * is what the review form, the Excel export and the shared data-entry view all
+ * read. A bulk motor row used to carry a single `reg_no`, which is not a key in
+ * it, so every field on every one of these policies rendered blank.
+ */
+function bulkExtractedData(
+  type: string,
+  i: number,
+  person: string,
+  spec: { plan: string; insurer: string },
+  sumInsured: number,
+  inceptionDays: number,
+  expiryDays: number,
+  city: string,
+) {
+  const start = dateAgo(inceptionDays);
+  const end = dateAgo(expiryDays);
+  const seq = 100000 + i * 1373;
+  const base = {
+    policyholder_name: person,
+    insurer: spec.insurer,
+    plan_name: spec.plan,
+    policy_number: `${spec.insurer.slice(0, 3).toUpperCase()}/${2000 + (i % 9)}/${seq}`,
+  };
+
+  if (type === "motor") {
+    const twoWheeler = spec.plan.startsWith("Two Wheeler");
+    const commercial = spec.plan.startsWith("Commercial");
+    const model = twoWheeler
+      ? ["Honda Activa 125", "TVS Jupiter", "Bajaj Pulsar 150"][i % 3]
+      : commercial
+        ? ["Tata Ace Gold", "Mahindra Bolero Pickup", "Ashok Leyland Dost"][i % 3]
+        : ["Maruti Suzuki Baleno", "Hyundai i20", "Tata Nexon"][i % 3];
+    const letters = `${String.fromCharCode(65 + (i % 26))}${String.fromCharCode(65 + ((i + 7) % 26))}`;
+    return {
+      ...base,
+      vehicle_registration_no: `MP09 ${letters} ${1000 + i}`,
+      make_and_model: model,
+      manufacturing_year: String(2018 + (i % 6)),
+      engine_number: `EN${seq}${letters}`,
+      chassis_number: `MA${letters}${seq}${1000 + i}`,
+      idv: sumInsured,
+      ncb_percent: [0, 20, 25, 35, 45, 50][i % 6],
+      premium: twoWheeler ? 1900 + (i % 5) * 160 : commercial ? 24000 + (i % 5) * 1500 : 12000 + (i % 5) * 900,
+      coverage_type: "Package (own damage + third party)",
+      policy_start_date: start,
+      policy_expiry_date: end,
+      // Bundled cover: own damage runs a year, third party longer. The advisor
+      // chases the own-damage date, which is why it matches expiry_date.
+      od_expiry_date: end,
+      tp_expiry_date: dateAgo(expiryDays - (twoWheeler ? 4 * 365 : 2 * 365)),
+    };
+  }
+
+  if (type === "travel") {
+    return {
+      ...base,
+      traveller_names: person,
+      destination: ["Singapore", "Dubai", "Bangkok", "London"][i % 4],
+      geographical_scope: i % 2 === 0 ? "Worldwide excluding USA and Canada" : "Asia",
+      trip_start_date: dateAgo(expiryDays + 21),
+      trip_end_date: end,
+      sum_insured: sumInsured,
+      premium: 2400 + (i % 5) * 380,
+    };
+  }
+
+  if (type === "property") {
+    const structure = Math.round(sumInsured * 0.7);
+    return {
+      ...base,
+      property_address: `${100 + i}, Scheme ${50 + (i % 20)}, ${city}`,
+      coverage_type: "Structure and contents",
+      sum_insured: sumInsured,
+      structure_sum_insured: structure,
+      contents_sum_insured: sumInsured - structure,
+      premium: 3200 + (i % 5) * 450,
+      policy_start_date: start,
+      policy_expiry_date: end,
+    };
+  }
+
+  if (type === "fire") {
+    const building = Math.round(sumInsured * 0.4);
+    const plant = Math.round(sumInsured * 0.35);
+    return {
+      ...base,
+      risk_location: `Plot ${20 + (i % 40)}, Sector ${1 + (i % 7)}, Industrial Area, ${city}`,
+      occupancy: ["Textile processing unit", "Plastic moulding unit", "Godown — packaged goods"][i % 3],
+      building_sum_insured: building,
+      plant_machinery_sum_insured: plant,
+      stock_sum_insured: sumInsured - building - plant,
+      sum_insured: sumInsured,
+      valuation_basis: "Reinstatement value",
+      add_on_covers: "Earthquake, terrorism",
+      premium: 18000 + (i % 5) * 2600,
+      policy_start_date: start,
+      policy_expiry_date: end,
+    };
+  }
+
+  if (type === "marine") {
+    return {
+      ...base,
+      cover_clauses: ["ICC (A)", "ICC (B)", "ICC (C)"][i % 3],
+      goods_description: ["Cotton yarn in bales", "Pharmaceutical formulations", "Auto components"][i % 3],
+      transit_mode: ["Road", "Sea", "Rail"][i % 3],
+      transit_from: city,
+      transit_to: ["Nhava Sheva", "Chennai Port", "Delhi"][i % 3],
+      sum_insured: sumInsured,
+      per_sending_limit: Math.round(sumInsured / 4),
+      valuation_basis: "Invoice value plus 10%",
+      premium: 9500 + (i % 5) * 1200,
+      policy_start_date: start,
+      policy_expiry_date: end,
+    };
+  }
+
+  // life and term
+  const isTerm = type === "term";
+  const entryAge = 30 + (i % 20);
+  const termYears = isTerm ? 30 : 20;
+  return {
+    ...base,
+    life_assured_name: person,
+    sum_assured: sumInsured,
+    // Priced off the cover, not a flat number. A flat premium beside a rotating
+    // sum assured put ₹57,000 a year against ₹3L of cover on the value screen,
+    // which is a policy nobody has ever been sold.
+    premium: isTerm
+      // Roughly ₹12,600 a year per ₹1 crore at 30, rising with entry age, which
+      // is where the Indian online term market actually sits.
+      ? Math.round((sumInsured / 10000000) * (9000 + entryAge * 120) / 100) * 100
+      : Math.round((sumInsured / termYears) * 1.05 / 100) * 100,
+    premium_frequency: "Annual",
+    policy_term_years: termYears,
+    premium_paying_term_years: isTerm ? termYears : 12,
+    start_date: start,
+    next_premium_date: dateAgo(expiryDays),
+    ...(isTerm
+      ? { cover_till_age: entryAge + termYears, cover_end_date: dateAgo(expiryDays - (termYears - 1) * 365), plan_type: "Term cover only", death_benefit_payout: "Lump sum" }
+      : { maturity_date: dateAgo(expiryDays - (termYears - 1) * 365), plan_type: "Endowment / savings", bonus_per_1000: 42 + (i % 6) }),
+    age_at_entry: entryAge,
+    nominee_name: `${["Smita", "Rajeev", "Nazia", "Suhas", "Lakshmi"][i % 5]} ${person.split(" ").slice(-1)[0]}`,
+  };
+}
+
+/** Which extracted date owns `clients.expiry_date` for a given type. Mirrors
+ *  deriveSharedColumns in backend/server/services/extractionFields.ts. */
+function sharedExpiryDate(type: string, data: Record<string, any> | null): string | null {
+  if (!data) return null;
+  const key =
+    type === "motor" ? "od_expiry_date"
+      : type === "life" ? "maturity_date"
+        : type === "term" ? "cover_end_date"
+          : type === "travel" ? "trip_end_date"
+            : "policy_expiry_date";
+  const v = data[key];
+  return typeof v === "string" && v ? v : null;
+}
+
+/** The five (now six) people the hand-written policies belong to. */
+const CAST_NAMES = [
+  "Suresh Agarwal", "Meena Joshi", "Vikram Singh", "Anita Desai", "Prakash Mehta", "Nitin Bhargava",
+];
+
+const BULK_NAMES = [
+  "Anil Deshpande", "Bhavna Sule", "Farhan Qureshi", "Kavita Bhosale", "Ramesh Iyer",
+  "Deepak Mane", "Aarti Joshi", "Nikhil Wagh", "Pooja Shirke", "Sanjay Kulkarni",
+  "Rekha Nair", "Vijay Salunkhe", "Asha Pawar", "Mohan Gokhale", "Sneha Patil",
+  "Imran Sayyed", "Lata Chavan", "Girish Rane", "Madhuri Kale", "Prashant Jadhav",
+  "Nilima Sathe", "Ashok Bhide", "Shalini Karve", "Tushar Phadke", "Vandana Limaye",
+  "Yogesh Barve", "Chitra Dixit", "Harish Naik", "Jyoti Ghatge", "Kiran Marathe",
+];
+
+/**
+ * Every customer in the demo agent's own book, in order.
+ *
+ * Exported because the Team tab counts an advisor's customers from its own
+ * roster (teamSeed) rather than from this store, and the owner's row was
+ * therefore telling him he had five customers while his book listed thirty-six.
+ */
+export const DEMO_BOOK_CUSTOMER_NAMES: string[] = [...CAST_NAMES, ...BULK_NAMES];
 
 export type Store = Record<string, any[]>;
 
@@ -484,6 +970,9 @@ export function buildSeed(): Store {
     { id: "cust-3", agent_id: DEMO_AGENT_ID, name: "Vikram Singh", phone: "+91 98200 33333", email: null, dob: "1968-01-25", city: "Ujjain", notes: "Senior citizen plan. Call, don't text.", created_at: ago(180) },
     { id: "cust-4", agent_id: DEMO_AGENT_ID, name: "Anita Desai", phone: "+91 98200 44444", email: "anita@example.com", dob: "1985-07-09", city: "Indore", notes: "Young family, first policy.", created_at: ago(95) },
     { id: "cust-5", agent_id: DEMO_AGENT_ID, name: "Prakash Mehta", phone: "+91 98200 55555", email: "prakash@example.com", dob: "1976-03-30", city: "Dewas", notes: "Has car + health. Cross-sell life.", created_at: ago(60) },
+    // Owns the unit linked policy. He used to be missing entirely and it was
+    // filed against Meena Joshi, so her portfolio listed a stranger's plan.
+    { id: "cust-6", agent_id: DEMO_AGENT_ID, name: "Nitin Bhargava", phone: "+91 98200 66666", email: "nitin@example.com", dob: "1988-06-14", city: "Indore", notes: "Unit linked plan bought in 2023. Wants to know what it will actually pay.", created_at: ago(40) },
   ];
 
   // ---- Clients (analysed policies = the agent's book) ----------------------
@@ -508,7 +997,7 @@ export function buildSeed(): Store {
         subLimits: [{ procedure: "Cataract (per eye)", limit: 40000, typical_cost_in_zone: 65000, severity: "medium" }],
         pedMonths: 36, specificMonths: 24, ncbCurrent: 20,
         restoration: { exists: true, type: "partial", useful: false, remarks: "Restores only for an unrelated illness — the common case, a second claim for the same condition, is not covered." },
-        score: 58, ncar: 0.42, label: "RISKY", bucketLabel: "Under-covered",
+        label: "RISKY", bucketLabel: "Under-covered",
         summary: "The cover amount is only part of the problem. A room-rent cap and a 20% co-pay together mean this family pays a quarter of any large bill themselves.",
         realClaim: "Partly. A ₹4.5L cardiac admission would leave roughly ₹1.9L with the family after the room deduction and co-pay.",
         failures: [
@@ -518,10 +1007,10 @@ export function buildSeed(): Store {
           "Restoration does not apply to a repeat claim for the same illness",
         ],
         deductions: [
-          { reason: "Room rent capped at 1% of SI", category: "Claim payout", severity: "high", points: 14 },
-          { reason: "20% co-pay on all claims", category: "Out of pocket", severity: "high", points: 12 },
-          { reason: "Sum insured below the recommended cover for this age and city", category: "Net cover", severity: "medium", points: 10 },
-          { reason: "Cataract sub-limit below typical local cost", category: "Sub-limits", severity: "low", points: 6 },
+          { reason: "Room rent capped at 1% of SI", category: "CLAIM_REJECTION", severity: "high", points: 14 },
+          { reason: "20% co-pay on all claims", category: "OOP_EXPOSURE", severity: "high", points: 12 },
+          { reason: "Sum insured below the recommended cover for this age and city", category: "NET_COVER", severity: "medium", points: 10 },
+          { reason: "Cataract sub-limit below typical local cost", category: "COVERAGE_GAP", severity: "low", points: 6 },
         ],
         works: [
           { benefit: "No-claim bonus already at 20%", why_it_matters_in_claim: "Adds ₹1L of cover at no extra premium.", quantified_value: "₹1,00,000" },
@@ -539,14 +1028,14 @@ export function buildSeed(): Store {
             action: "Port to a plan with no room-rent cap before the renewal date",
             reason: "The room cap is the single largest source of out-of-pocket cost on this policy.",
             oop_risk_if_ignored: "₹1.5L–₹2L on one major hospitalisation",
-            suggested_riders_or_topups: ["No-cap base plan at ₹10L", "Super top-up above a ₹5L deductible"],
+            suggested_riders_or_topups: ["No-cap base plan at ₹15L", "Super top-up above a ₹5L deductible"],
             estimated_cost: "₹4,000–₹6,000 more a year",
           },
           {
-            action: "Raise total cover to at least ₹10L",
-            reason: "₹5L for two adults in their fifties in a tier-1 city is roughly 0.42× of what a single cardiac or cancer episode costs.",
+            action: "Raise total cover to at least ₹25L",
+            reason: "₹6L of effective cover is under a quarter of the ₹26.5L a single cardiac or cancer episode costs at 54 in this city.",
             oop_risk_if_ignored: "Full exposure above ₹5L",
-            suggested_riders_or_topups: ["₹15L super top-up"],
+            suggested_riders_or_topups: ["₹25L super top-up above a ₹5L deductible"],
             estimated_cost: "₹6,000–₹9,000 a year",
           },
         ],
@@ -560,23 +1049,23 @@ export function buildSeed(): Store {
       id: "pol-2", agent_id: DEMO_AGENT_ID, customer_id: "cust-2",
       policy_name: "ReAssure 2.0", name: "Meena Joshi", policyholder_name: "Meena Joshi",
       insurer: INSURERS.niva, insurance_type: "health", status: "done", score: 82,
-      sum_insured: 1000000, expiry_date: dateAgo(-120), created_at: ago(9),
+      sum_insured: 2500000, expiry_date: dateAgo(-120), created_at: ago(9),
       share_token: "demo-share-2", share_enabled: true, pdf_url: "#", error_message: null,
       flaws: [], extracted_data: null,
       report_data: healthReport({
         insured: ["Meena Joshi", "Rohan Joshi"], ages: [45, 47], genders: ["female", "male"],
         city: "Bhopal", zone: "B", healthFlags: ["Type 2 diabetes declared"],
-        inceptionDays: 245, expiryDays: -120, baseSI: 1000000, ncbCurrent: 20,
+        inceptionDays: 245, expiryDays: -120, baseSI: 2500000, ncbCurrent: 20,
         pedMonths: 36, specificMonths: 24,
         maternity: { months: 36, relevant: false, covered: true, limit: 50000 },
         consumables: { covered: true, coverage_type: "full", remarks: "Consumables are paid in full — unusual and worth keeping." },
-        score: 82, ncar: 0.95, label: "SAFE", bucketLabel: "Well covered",
+        label: "SAFE", bucketLabel: "Well covered",
         summary: "A strong base plan. No room-rent cap, no co-pay, and consumables are paid — the gaps left are timing gaps, not structural ones.",
         realClaim: "Yes. A ₹4.5L admission would be settled in full apart from a small non-payable share.",
         failures: ["Diabetes claims wait until the 36-month pre-existing period ends", "No OPD cover for routine consultations and tests"],
         deductions: [
-          { reason: "Pre-existing wait still running for the declared diabetes", category: "Waiting periods", severity: "medium", points: 11 },
-          { reason: "No OPD cover", category: "Coverage gaps", severity: "low", points: 5 },
+          { reason: "Pre-existing wait still running for the declared diabetes", category: "CLAIM_REJECTION", severity: "medium", points: 13 },
+          { reason: "No OPD cover", category: "COVERAGE_GAP", severity: "low", points: 5 },
         ],
         works: [
           { benefit: "No room-rent cap", why_it_matters_in_claim: "Any room category is payable, so no proportionate deduction on the bill.", quantified_value: "Avoids ≈25% deduction" },
@@ -623,7 +1112,7 @@ export function buildSeed(): Store {
         ],
         pedMonths: 24, specificMonths: 24,
         restoration: { exists: false, remarks: "No restoration on this plan." },
-        score: 49, ncar: 0.21, label: "RISKY", bucketLabel: "Seriously under-covered",
+        label: "RISKY", bucketLabel: "Seriously under-covered",
         summary: "A 50% co-pay on a ₹3L cover means this policy pays for roughly a fifth of a serious hospitalisation. It is a discount, not a cover.",
         realClaim: "No. On a ₹4.5L admission the insurer would pay about ₹1.8L and Mr Singh would find ₹2.7L himself.",
         failures: [
@@ -633,10 +1122,10 @@ export function buildSeed(): Store {
           "No restoration once the ₹3L is used",
         ],
         deductions: [
-          { reason: "50% co-pay on all claims", category: "Out of pocket", severity: "high", points: 22 },
-          { reason: "Sum insured far below recommended cover at 66", category: "Net cover", severity: "high", points: 18 },
-          { reason: "Hard sub-limits on the two most likely procedures", category: "Sub-limits", severity: "high", points: 8 },
-          { reason: "No restoration benefit", category: "Coverage gaps", severity: "medium", points: 5 },
+          { reason: "50% co-pay on all claims", category: "OOP_EXPOSURE", severity: "high", points: 22 },
+          { reason: "Sum insured far below recommended cover at 66", category: "NET_COVER", severity: "high", points: 16 },
+          { reason: "Hard sub-limits on the two most likely procedures", category: "COVERAGE_GAP", severity: "high", points: 8 },
+          { reason: "No restoration benefit", category: "COVERAGE_GAP", severity: "medium", points: 5 },
         ],
         works: [
           { benefit: "Guaranteed lifelong renewal", why_it_matters_in_claim: "He cannot be refused renewal at this age, which matters more each year.", quantified_value: null },
@@ -673,27 +1162,27 @@ export function buildSeed(): Store {
       id: "pol-4", agent_id: DEMO_AGENT_ID, customer_id: "cust-4",
       policy_name: "Optima Secure", name: "Anita Desai", policyholder_name: "Anita Desai",
       insurer: INSURERS.hdfc, insurance_type: "health", status: "done", score: 91,
-      sum_insured: 1500000, expiry_date: dateAgo(-200), created_at: ago(18),
+      sum_insured: 2000000, expiry_date: dateAgo(-200), created_at: ago(18),
       share_token: "demo-share-4", share_enabled: true, pdf_url: "#", error_message: null,
       flaws: [], extracted_data: null,
       report_data: healthReport({
         insured: ["Anita Desai", "Kunal Desai", "Ira Desai"], ages: [40, 42, 8], genders: ["female", "male", "female"],
         city: "Indore", zone: "B",
-        inceptionDays: 165, expiryDays: -200, baseSI: 1500000, ncbCurrent: 0,
+        inceptionDays: 165, expiryDays: -200, baseSI: 2000000, ncbCurrent: 0,
         pedMonths: 36, specificMonths: 24,
         maternity: { months: 48, relevant: false, covered: true, limit: 100000 },
         consumables: { covered: true, coverage_type: "full", remarks: "Consumables paid in full." },
         opd: { covered: true, limit: 10000, remarks: "₹10,000 a year for consultations, tests and pharmacy." },
-        riders: [{ name: "Secure Benefit (cover doubles from year one)", coverage_amount: 1500000, is_material: true, remarks: "Effective cover is ₹30L from the first year." }],
+        riders: [{ name: "Secure Benefit (cover doubles from year one)", coverage_amount: 2000000, is_material: true, remarks: "Effective cover is ₹40L from the first year." }],
         ambulanceLimit: 5000, networkCount: 13000,
-        score: 91, ncar: 1.35, label: "EXCELLENT", bucketLabel: "Fully covered",
+        label: "EXCELLENT", bucketLabel: "Fully covered",
         summary: "Nothing here needs fixing. No room cap, no co-pay, consumables paid, and the effective cover is well ahead of what this family would need.",
         realClaim: "Yes. A ₹4.5L admission settles in full, and the cover would absorb a ₹12L cancer year without exhausting.",
         failures: [],
-        deductions: [{ reason: "Standard 36-month pre-existing wait still running", category: "Waiting periods", severity: "low", points: 6 }],
+        deductions: [{ reason: "Standard 36-month pre-existing wait still running", category: "CLAIM_REJECTION", severity: "low", points: 9 }],
         works: [
           { benefit: "No room-rent cap and no co-pay", why_it_matters_in_claim: "The bill is settled as presented.", quantified_value: null },
-          { benefit: "Cover effectively ₹30L from year one", why_it_matters_in_claim: "Absorbs a full cancer or transplant year without a top-up.", quantified_value: "₹30,00,000" },
+          { benefit: "Cover effectively ₹40L from year one", why_it_matters_in_claim: "Absorbs a full cancer or transplant year without a top-up.", quantified_value: "₹40,00,000" },
           { benefit: "Consumables and OPD both covered", why_it_matters_in_claim: "Removes the two costs families usually end up paying in cash.", quantified_value: "₹25,000+ a year" },
         ],
         fails: [],
@@ -708,24 +1197,24 @@ export function buildSeed(): Store {
       id: "pol-5", agent_id: DEMO_AGENT_ID, customer_id: "cust-5",
       policy_name: "Care Supreme", name: "Prakash Mehta", policyholder_name: "Prakash Mehta",
       insurer: INSURERS.care, insurance_type: "health", status: "done", score: 67,
-      sum_insured: 700000, expiry_date: dateAgo(-25), created_at: ago(22),
+      sum_insured: 1500000, expiry_date: dateAgo(-25), created_at: ago(22),
       share_token: "demo-share-5", share_enabled: true, pdf_url: "#", error_message: null,
       flaws: [], extracted_data: null,
       report_data: healthReport({
         insured: ["Prakash Mehta", "Sunita Mehta"], ages: [50, 46], genders: ["male", "female"],
         city: "Dewas", zone: "C",
-        inceptionDays: 340, expiryDays: -25, baseSI: 700000, ncbCurrent: 10,
+        inceptionDays: 340, expiryDays: -25, baseSI: 1500000, ncbCurrent: 10,
         subLimits: [{ procedure: "Cataract (per eye)", limit: 30000, typical_cost_in_zone: 55000, severity: "medium" }],
         pedMonths: 36, specificMonths: 24,
-        restoration: { exists: false, remarks: "No restoration — once ₹7L is used in a policy year, there is nothing left until renewal." },
-        score: 67, ncar: 0.68, label: "BORDERLINE", bucketLabel: "Partly covered",
+        restoration: { exists: false, remarks: "No restoration — once ₹15L is used in a policy year, there is nothing left until renewal." },
+        label: "BORDERLINE", bucketLabel: "Partly covered",
         summary: "The claim terms are clean — no room cap, no co-pay. The weakness is size: one long year of treatment can empty the cover with nothing to fall back on.",
         realClaim: "Mostly. A single ₹4.5L admission settles well; a second claim in the same year would not.",
-        failures: ["No restoration once the sum insured is used", "Cataract capped below local cost", "₹7L is thin for two adults if a serious year runs long"],
+        failures: ["No restoration once the sum insured is used", "Cataract capped below local cost", "₹15L runs out quickly if a serious year runs long"],
         deductions: [
-          { reason: "No restoration benefit", category: "Coverage gaps", severity: "high", points: 13 },
-          { reason: "Sum insured below recommended cover for this age", category: "Net cover", severity: "medium", points: 12 },
-          { reason: "Cataract sub-limit", category: "Sub-limits", severity: "low", points: 5 },
+          { reason: "No restoration benefit", category: "COVERAGE_GAP", severity: "high", points: 13 },
+          { reason: "Sum insured below recommended cover for this age", category: "NET_COVER", severity: "medium", points: 15 },
+          { reason: "Cataract sub-limit", category: "COVERAGE_GAP", severity: "low", points: 5 },
         ],
         works: [
           { benefit: "No room-rent cap and no co-pay", why_it_matters_in_claim: "Bills are settled as presented, which is the expensive part on most plans.", quantified_value: null },
@@ -735,46 +1224,48 @@ export function buildSeed(): Store {
         ],
         actions: [
           {
-            action: "Add a super top-up above a ₹5L deductible",
-            reason: "Cheapest way to turn ₹7L of cover into ₹25L+ without disturbing a plan whose terms are already good.",
-            oop_risk_if_ignored: "Everything above ₹7L in a bad year",
-            suggested_riders_or_topups: ["₹20L super top-up above ₹5L deductible"],
+            action: "Add a super top-up above a ₹15L deductible",
+            reason: "Cheapest way to turn ₹15L of cover into ₹40L+ without disturbing a plan whose terms are already good.",
+            oop_risk_if_ignored: "Everything above ₹15L in a bad year",
+            suggested_riders_or_topups: ["₹25L super top-up above ₹15L deductible"],
             estimated_cost: "₹5,000–₹7,000 a year",
           },
         ],
         mediumPriority: [{ action: "Ask the insurer about a restoration add-on at renewal", reason: "Some variants of this plan offer it for a small loading." }],
         port: "consider",
         portReason: "The terms are worth keeping; the size is not. A top-up fixes it more cheaply than porting does.",
-        portLookFor: ["Unlimited restoration", "₹15L+ base cover", "No cataract sub-limit"],
+        portLookFor: ["Unlimited restoration", "₹25L+ base cover", "No cataract sub-limit"],
       }),
     },
     {
       id: "pol-6", agent_id: DEMO_AGENT_ID, customer_id: "cust-2",
+      // Activ One MAX is an Aditya Birla Health product. It used to sit under
+      // ICICI Lombard here, which is a different company selling a different plan.
       policy_name: "Activ One MAX", name: "Meena Joshi", policyholder_name: "Meena Joshi",
-      insurer: INSURERS.icici, insurance_type: "health", status: "done", score: 74,
-      sum_insured: 1000000, expiry_date: dateAgo(-300), created_at: ago(30),
+      insurer: INSURERS.abhi, insurance_type: "health", status: "done", score: 74,
+      sum_insured: 2000000, expiry_date: dateAgo(-300), created_at: ago(30),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
       flaws: [], extracted_data: null,
       report_data: healthReport({
         insured: ["Meena Joshi"], ages: [45], genders: ["female"],
         city: "Bhopal", zone: "B",
-        inceptionDays: 430, expiryDays: -300, baseSI: 1000000, ncbCurrent: 20, tenureYears: 2,
+        inceptionDays: 430, expiryDays: -300, baseSI: 2000000, ncbCurrent: 20, tenureYears: 2,
         subLimits: [
           { procedure: "Cataract (per eye)", limit: 35000, typical_cost_in_zone: 55000, severity: "medium" },
           { procedure: "Hernia repair", limit: 60000, typical_cost_in_zone: 95000, severity: "low" },
         ],
         pedMonths: 36, specificMonths: 24,
-        score: 74, ncar: 0.88, label: "SAFE", bucketLabel: "Adequately covered",
+        label: "SAFE", bucketLabel: "Adequately covered",
         summary: "A solid second cover for the same person. Clean claim terms; the only friction is disease-wise caps on a few common procedures.",
         realClaim: "Yes, for a normal admission. Named procedures pay only up to their cap.",
         failures: ["Disease-wise caps on cataract and hernia", "Overlaps with the ReAssure policy on the same life"],
         deductions: [
-          { reason: "Disease-wise sub-limits on common procedures", category: "Sub-limits", severity: "medium", points: 10 },
-          { reason: "Pre-existing wait not fully served", category: "Waiting periods", severity: "low", points: 8 },
+          { reason: "Disease-wise sub-limits on common procedures", category: "COVERAGE_GAP", severity: "medium", points: 16 },
+          { reason: "Pre-existing wait not fully served", category: "CLAIM_REJECTION", severity: "low", points: 10 },
         ],
         works: [
           { benefit: "No co-pay and no room-rent cap", why_it_matters_in_claim: "Straightforward settlement on an ordinary admission.", quantified_value: null },
-          { benefit: "20% accrued no-claim bonus", why_it_matters_in_claim: "₹2L of extra cover at no cost.", quantified_value: "₹2,00,000" },
+          { benefit: "20% accrued no-claim bonus", why_it_matters_in_claim: "₹4L of extra cover at no cost.", quantified_value: "₹4,00,000" },
         ],
         fails: [
           { issue: "Sub-limit on cataract", real_world_claim_impact: "A routine procedure at her age is only two-thirds covered.", quantified_oop_risk: "≈ ₹20,000 per eye" },
@@ -787,16 +1278,32 @@ export function buildSeed(): Store {
         portReason: "Nothing wrong with the plan itself. The question is whether it is needed alongside the ReAssure policy.",
       }),
     },
-    // A couple of data-entry (non-health) policies to show multi-LoB
+    // A couple of data-entry (non-health) policies to show multi-LoB.
+    //
+    // Every key below is a key from EXTRACTION_FIELDS.motor in
+    // lib/insuranceTypes.ts. The review form reads that registry and nothing
+    // else, so the old ad-hoc `vehicle` / `reg_no` pair rendered as a wall of
+    // empty inputs: the fields existed, the data was filed under names the form
+    // does not look for.
     {
       id: "pol-7", agent_id: DEMO_AGENT_ID, customer_id: "cust-5",
       policy_name: "Private Car Package", name: "Prakash Mehta", policyholder_name: "Prakash Mehta",
       insurer: INSURERS.digit, insurance_type: "motor", status: "done", score: null,
+      // Bundled cover: OD runs a year, TP three. clients.expiry_date tracks the
+      // OD date, because that is the renewal the advisor actually sells.
       sum_insured: 650000, expiry_date: dateAgo(-12), created_at: ago(14),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
       flaws: [], report_data: null,
       extracted_data: {
-        premium: 18400, vehicle: "Hyundai Creta", reg_no: "MP09 CX 4521",
+        policyholder_name: "Prakash Mehta", insurer: INSURERS.digit,
+        policy_number: "D-091-2025-4417820", plan_name: "Private Car Package",
+        vehicle_registration_no: "MP09 CX 4521", make_and_model: "Hyundai Creta 1.5 SX",
+        manufacturing_year: "2021", engine_number: "G4FGKM821447",
+        chassis_number: "MALC381CLMM214470",
+        idv: 650000, ncb_percent: 20, premium: 18400,
+        coverage_type: "Package (own damage + third party)",
+        policy_start_date: dateAgo(353), policy_expiry_date: dateAgo(-12),
+        od_expiry_date: dateAgo(-12), tp_expiry_date: dateAgo(-742),
         [ADD_ON_FINDINGS_KEY]: demoAddOnScan("car"),
       },
     },
@@ -805,13 +1312,23 @@ export function buildSeed(): Store {
     // Both states need to be walkable, or a demo only ever shows the happy one.
     {
       id: "pol-7b", agent_id: DEMO_AGENT_ID, customer_id: "cust-2",
-      policy_name: "Two Wheeler Package", name: "Sunita Rao", policyholder_name: "Sunita Rao",
+      policy_name: "Two Wheeler Package", name: "Rohan Joshi", policyholder_name: "Rohan Joshi",
       insurer: INSURERS.icici, insurance_type: "motor", status: "done", score: null,
       sum_insured: 85000, expiry_date: dateAgo(-40), created_at: ago(9),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
       flaws: [], report_data: null,
       extracted_data: {
-        premium: 5200, vehicle: "Honda Activa 125", reg_no: "MP09 DD 7781",
+        policyholder_name: "Rohan Joshi", insurer: INSURERS.icici,
+        policy_number: "3005/M-2247180/00/000", plan_name: "Two Wheeler Package",
+        vehicle_registration_no: "MP04 DD 7781", make_and_model: "Honda Activa 125",
+        manufacturing_year: "2022", engine_number: "JF50E71229104",
+        chassis_number: "ME4JF50CKN7229104",
+        idv: 85000, ncb_percent: 25, premium: 5200,
+        coverage_type: "Package (own damage + third party)",
+        policy_start_date: dateAgo(325), policy_expiry_date: dateAgo(-40),
+        // Two-wheeler third-party cover is sold for five years at first sale, so
+        // the two dates are years apart on a bike in a way they rarely are on a car.
+        od_expiry_date: dateAgo(-40), tp_expiry_date: dateAgo(-1500),
         [ADD_ON_FINDINGS_KEY]: demoAddOnScan("bike"),
       },
     },
@@ -829,25 +1346,32 @@ export function buildSeed(): Store {
       flaws: [], report_data: null,
       extracted_data: {
         policyholder_name: "Suresh Agarwal", life_assured_name: "Suresh Agarwal",
-        insurer: INSURERS.lic, policy_number: "SPEC-LIC-88214",
+        insurer: INSURERS.lic, policy_number: "884471209",
         plan_name: "Jeevan Anand", sum_assured: 2000000,
         premium: 96400, premium_frequency: "Annual",
         policy_term_years: 21, premium_paying_term_years: 21,
         start_date: "2018-03-15", next_premium_date: dateAgo(-60),
         maturity_date: "2039-03-15",
         plan_type: "Endowment / savings", bonus_per_1000: 47, fund_value: null,
+        // 46 at commencement in 2018, which is the 54 on his health policy.
+        age_at_entry: 46,
         nominee_name: "Kavita Agarwal",
       },
     },
     {
-      id: "pol-12", agent_id: DEMO_AGENT_ID, customer_id: "cust-2",
-      policy_name: "Sample Smart Wealth Builder", name: "Rajesh Sharma", policyholder_name: "Rajesh Sharma",
+      // The specimen unit linked policy: a real anonymised document, and the
+      // fixture the value schedule is reconciled against. Its insurer and plan
+      // names stay redacted and its figures stay untouched — the charge table
+      // below is that document's, so putting another company's name on it would
+      // be attributing one insurer's charges to another.
+      id: "pol-12", agent_id: DEMO_AGENT_ID, customer_id: "cust-6",
+      policy_name: "Sample Smart Wealth Builder", name: "Nitin Bhargava", policyholder_name: "Nitin Bhargava",
       insurer: "Sample Life Insurance Company Limited", insurance_type: "life", status: "done", score: null,
       sum_insured: 1200000, expiry_date: "2043-07-10", created_at: ago(9),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
       flaws: [], report_data: null,
       extracted_data: {
-        policyholder_name: "Rajesh Sharma", life_assured_name: "Rajesh Sharma",
+        policyholder_name: "Nitin Bhargava", life_assured_name: "Nitin Bhargava",
         insurer: "Sample Life Insurance Company Limited",
         policy_number: "SPEC/UL/2023/0000117",
         plan_name: "Sample Smart Wealth Builder", sum_assured: 1200000,
@@ -887,40 +1411,44 @@ export function buildSeed(): Store {
             45:2.94,46:3.32,47:3.75,48:4.24,49:4.79,50:5.41,51:6.11,52:6.90,53:7.79,54:8.79,55:9.91,
           }, source: "document" },
         },
-        nominee_name: "Priya Sharma",
+        nominee_name: "Shruti Bhargava",
       },
     },
     {
-      id: "pol-13", agent_id: DEMO_AGENT_ID, customer_id: "cust-3",
-      policy_name: "Smart Protection Goal", name: "Aniket Bang", policyholder_name: "Aniket Bang",
-      insurer: "Bajaj Allianz Life Insurance Company Limited", insurance_type: "term", status: "done", score: null,
-      sum_insured: 10000000, expiry_date: "2099-06-20", created_at: ago(4),
+      // Anita's term cover. It used to be a 23-year-old's whole-life plan filed
+      // against Vikram Singh, who is 66 on the health policy two rows up — the
+      // demo's own screens contradicted each other on the same person's age.
+      id: "pol-13", agent_id: DEMO_AGENT_ID, customer_id: "cust-4",
+      policy_name: "Smart Protection Goal", name: "Anita Desai", policyholder_name: "Anita Desai",
+      insurer: INSURERS.bajajLife, insurance_type: "term", status: "done", score: null,
+      sum_insured: 10000000, expiry_date: "2061-06-20", created_at: ago(4),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
       flaws: [], report_data: null,
       extracted_data: {
-        policyholder_name: "Aniket Bang", life_assured_name: "Aniket Bang",
-        insurer: "Bajaj Allianz Life Insurance Company Limited",
-        policy_number: "0562704246",
+        policyholder_name: "Anita Desai", life_assured_name: "Anita Desai",
+        insurer: INSURERS.bajajLife,
+        policy_number: "0574118903",
         plan_name: "Bajaj Allianz Life Smart Protection Goal",
-        sum_assured: 10000000, premium: 12302, premium_frequency: "Annual",
-        policy_term_years: 76, premium_paying_term_years: 37, cover_till_age: 99,
+        sum_assured: 10000000, premium: 14800, premium_frequency: "Annual",
+        policy_term_years: 38, premium_paying_term_years: 38, cover_till_age: 75,
         start_date: "2023-06-21", next_premium_date: "2027-06-21",
-        cover_end_date: "2099-06-20",
-        plan_type: "Term cover only", age_at_entry: 23,
-        death_benefit_payout: "Lump sum", nominee_name: "Rajesh Bang",
+        cover_end_date: "2061-06-20",
+        // 37 at commencement in 2023, which is the 40 on her health policy.
+        plan_type: "Term cover only", age_at_entry: 37,
+        death_benefit_payout: "Lump sum", nominee_name: "Kunal Desai",
       },
     },
     {
       id: "pol-14", agent_id: DEMO_AGENT_ID, customer_id: "cust-4",
-      policy_name: "Sample Guaranteed Savings", name: "Anita Desai", policyholder_name: "Anita Desai",
+      policy_name: "New Endowment Plan", name: "Anita Desai", policyholder_name: "Anita Desai",
       insurer: INSURERS.lic, insurance_type: "life", status: "done", score: null,
       sum_insured: 1500000, expiry_date: "2036-02-20", created_at: ago(21),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
       flaws: [], report_data: null,
       extracted_data: {
         policyholder_name: "Anita Desai", life_assured_name: "Anita Desai",
-        insurer: INSURERS.lic, policy_number: "SPEC-LIC-44190",
-        plan_name: "Sample Guaranteed Savings", sum_assured: 1500000,
+        insurer: INSURERS.lic, policy_number: "441907288",
+        plan_name: "LIC New Endowment Plan", sum_assured: 1500000,
         premium: 72000, premium_frequency: "Annual",
         policy_term_years: 15, premium_paying_term_years: 15,
         start_date: "2021-02-20",
@@ -929,37 +1457,47 @@ export function buildSeed(): Store {
         next_premium_date: "2026-02-20",
         maturity_date: "2036-02-20",
         plan_type: "Endowment / savings", bonus_per_1000: 44,
-        nominee_name: "R Desai",
+        // 35 at commencement in 2021, which is the 40 on her health policy.
+        age_at_entry: 35,
+        nominee_name: "Kunal Desai",
       },
     },
     {
+      // The guaranteed-income fixture, taken from a real HDFC Life Click 2
+      // Achieve schedule. It was filed under HDFC ERGO, which is the group's
+      // GENERAL insurer and cannot issue a life policy at all.
       id: "pol-15", agent_id: DEMO_AGENT_ID, customer_id: "cust-5",
-      policy_name: "Sample Dream Achiever", name: "Vikram Rao", policyholder_name: "Vikram Rao",
-      insurer: INSURERS.hdfc, insurance_type: "life", status: "done", score: null,
+      policy_name: "Click 2 Achieve", name: "Prakash Mehta", policyholder_name: "Prakash Mehta",
+      insurer: INSURERS.hdfcLife, insurance_type: "life", status: "done", score: null,
       sum_insured: 2000000, expiry_date: "2039-03-04", created_at: ago(6),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
       flaws: [], report_data: null,
       extracted_data: {
-        policyholder_name: "Vikram Rao", life_assured_name: "Vikram Rao",
-        insurer: INSURERS.hdfc, policy_number: "SPEC-HDFC-27290",
-        plan_name: "Sample Dream Achiever", 
+        policyholder_name: "Prakash Mehta", life_assured_name: "Prakash Mehta",
+        insurer: INSURERS.hdfcLife, policy_number: "27290118",
+        plan_name: "HDFC Life Click 2 Achieve",
         // Death cover and maturity amount are DIFFERENT numbers on these plans.
         sum_assured: 2000000, maturity_amount: 1400000,
         premium: 200000, premium_frequency: "Annual",
         policy_term_years: 15, premium_paying_term_years: 7,
         start_date: "2024-03-04", next_premium_date: "2027-03-04",
-        maturity_date: "2039-03-04", age_at_entry: 52,
+        // 48 at commencement in 2024, which is the 50 on his health policy.
+        maturity_date: "2039-03-04", age_at_entry: 48,
         // Pays the customer monthly for the whole term, on top of maturity.
         payout_amount: 3380, payout_frequency: "Monthly",
         payout_start_date: "2024-04-04", payout_end_date: "2039-03-04",
         plan_type: "Money back / guaranteed income",
-        nominee_name: "S Rao",
+        nominee_name: "Sunita Mehta",
       },
     },
-    // In-flight + failed, so My Queue and the failures panel have content
+    // In-flight + failed, so My Queue and the failures panel have content.
+    // These four are fresh uploads, not customers yet, so their names are
+    // deliberately outside both the tagged cast above and the bulk book below:
+    // a prospect who shares a name with an existing customer is a demo that
+    // looks like it has duplicate records.
     {
       id: "pol-9", agent_id: DEMO_AGENT_ID, customer_id: null,
-      policy_name: "Health Companion", name: "Deepak Verma", policyholder_name: "Deepak Verma",
+      policy_name: "Health Companion", name: "Sandeep Ahuja", policyholder_name: "Sandeep Ahuja",
       insurer: INSURERS.niva, insurance_type: "health", status: "processing", score: null,
       sum_insured: null, expiry_date: null, created_at: ago(0.05),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
@@ -967,25 +1505,31 @@ export function buildSeed(): Store {
     },
     {
       id: "pol-10", agent_id: DEMO_AGENT_ID, customer_id: null,
-      policy_name: "Young Star", name: "Pooja Nair", policyholder_name: "Pooja Nair",
+      policy_name: "Young Star", name: "Ritu Malhotra", policyholder_name: "Ritu Malhotra",
       insurer: INSURERS.star, insurance_type: "health", status: "pending", score: null,
       sum_insured: null, expiry_date: null, created_at: ago(0.2),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
       flaws: [], report_data: null, extracted_data: null,
     },
     {
+      // Nothing was read, so nothing is claimed: a failed upload that still
+      // names an insurer and a plan is asserting what it just said it could
+      // not see. The name is the one thing the advisor typed at upload.
       id: "pol-11", agent_id: DEMO_AGENT_ID, customer_id: null,
-      policy_name: "Scanned upload", name: "Rohit Sharma", policyholder_name: "Rohit Sharma",
-      insurer: INSURERS.hdfc, insurance_type: "health", status: "error", score: null,
+      policy_name: null, name: "Basant Chaturvedi", policyholder_name: "Basant Chaturvedi",
+      insurer: null, insurance_type: "health", status: "error", score: null,
       sum_insured: null, expiry_date: null, created_at: ago(2),
       share_token: null, share_enabled: false, pdf_url: "#",
       error_message: "Document was blurry — couldn't read the policy schedule.",
       flaws: [], report_data: null, extracted_data: null,
     },
     {
-      id: "pol-12", agent_id: DEMO_AGENT_ID, customer_id: null,
-      policy_name: "Old policy", name: "Sunita Rao", policyholder_name: "Sunita Rao",
-      insurer: INSURERS.tata, insurance_type: "health", status: "error", score: null,
+      // Was "pol-12", the same id as the unit linked specimen above. Two rows
+      // sharing one id means the detail route serves whichever the filter hits
+      // first, so one of the two policies could not be opened at all.
+      id: "pol-16", agent_id: DEMO_AGENT_ID, customer_id: null,
+      policy_name: null, name: "Leela Mundhra", policyholder_name: "Leela Mundhra",
+      insurer: null, insurance_type: "health", status: "error", score: null,
       sum_insured: null, expiry_date: null, created_at: ago(20),
       share_token: null, share_enabled: false, pdf_url: "#",
       error_message: "Password-protected PDF.",
@@ -1008,9 +1552,11 @@ export function buildSeed(): Store {
 
   // ---- Lead policies (prospect's existing cover → renewal hit-list) --------
   const lead_policies = [
-    { id: "lp-1", lead_id: "lead-2", agent_id: DEMO_AGENT_ID, insurance_type: "motor", insurer: INSURERS.digit, policy_name: "Two-wheeler package", policyholder_name: "Manoj Tiwari", premium: 1850, due_date: dateAgo(-8), file_url: "#", file_name: "manoj-bike.pdf", extracted_data: { reg_no: "MP04 AB 1234" }, spoken_to: false, notes: "", created_at: ago(6), updated_at: ago(6) },
-    { id: "lp-2", lead_id: "lead-4", agent_id: DEMO_AGENT_ID, insurance_type: "health", insurer: INSURERS.care, policy_name: "Existing senior plan", policyholder_name: "Imran Khan (parents)", premium: 31000, due_date: dateAgo(-22), file_url: "#", file_name: "parents-health.pdf", extracted_data: null, spoken_to: true, notes: "Current cover only ₹3L.", created_at: ago(14), updated_at: ago(5) },
-    { id: "lp-3", lead_id: "lead-3", agent_id: DEMO_AGENT_ID, insurance_type: "life", insurer: INSURERS.lic, policy_name: "Old endowment", policyholder_name: "Shilpa Reddy", premium: 22000, due_date: dateAgo(-3), file_url: "#", file_name: "shilpa-lic.pdf", extracted_data: null, spoken_to: false, notes: "", created_at: ago(10), updated_at: ago(10) },
+    // extracted_data here is keyed to EXTRACTION_FIELDS too — `reg_no` was not a
+    // key in it, so the one field this card had to show was the one it dropped.
+    { id: "lp-1", lead_id: "lead-2", agent_id: DEMO_AGENT_ID, insurance_type: "motor", insurer: INSURERS.digit, policy_name: "Two Wheeler Package", policyholder_name: "Manoj Tiwari", premium: 1850, due_date: dateAgo(-8), file_url: "#", file_name: "manoj-bike.pdf", extracted_data: { policyholder_name: "Manoj Tiwari", insurer: INSURERS.digit, plan_name: "Two Wheeler Package", vehicle_registration_no: "MP04 AB 1234", make_and_model: "Hero Splendor Plus", manufacturing_year: "2019", idv: 41000, ncb_percent: 35, premium: 1850, coverage_type: "Package (own damage + third party)", policy_expiry_date: dateAgo(-8), od_expiry_date: dateAgo(-8), tp_expiry_date: dateAgo(-1100) }, spoken_to: false, notes: "", created_at: ago(6), updated_at: ago(6) },
+    { id: "lp-2", lead_id: "lead-4", agent_id: DEMO_AGENT_ID, insurance_type: "health", insurer: INSURERS.care, policy_name: "Care Senior", policyholder_name: "Imran Khan (parents)", premium: 31000, due_date: dateAgo(-22), file_url: "#", file_name: "parents-health.pdf", extracted_data: null, spoken_to: true, notes: "Current cover only ₹3L.", created_at: ago(14), updated_at: ago(5) },
+    { id: "lp-3", lead_id: "lead-3", agent_id: DEMO_AGENT_ID, insurance_type: "life", insurer: INSURERS.lic, policy_name: "Jeevan Labh", policyholder_name: "Shilpa Reddy", premium: 22000, due_date: dateAgo(-3), file_url: "#", file_name: "shilpa-lic.pdf", extracted_data: { policyholder_name: "Shilpa Reddy", life_assured_name: "Shilpa Reddy", insurer: INSURERS.lic, plan_name: "Jeevan Labh", sum_assured: 800000, premium: 22000, premium_frequency: "Annual", policy_term_years: 16, premium_paying_term_years: 10, start_date: "2019-03-12", next_premium_date: dateAgo(-3), maturity_date: "2035-03-12", plan_type: "Endowment / savings", bonus_per_1000: 47, age_at_entry: 31, nominee_name: "Vinay Reddy" }, spoken_to: false, notes: "", created_at: ago(10), updated_at: ago(10) },
   ];
 
   // ---- Advisor page (/agent/my-page) --------------------------------------
@@ -1054,89 +1600,148 @@ export function buildSeed(): Store {
 
   // ---- Misc tables read across the portal (kept light) ---------------------
   // ---- Bulk book ----------------------------------------------------------
-  // The twelve hand-written policies above each carry a full forensic report,
-  // which is what PolicyDetail needs. They are the *depth* of the demo.
+  // The hand-written policies above each carry a full forensic report or a full
+  // set of extracted fields. They are the *depth* of the demo.
   //
-  // They are not its *scale*: with twelve rows every type filter reads two or
+  // They are not its *scale*: with a dozen rows every type filter reads two or
   // three and the portfolio screens have nothing to say. A working agent's book
   // is hundreds. These rows supply that shape — spread across every
   // insurance_type, with expiries either side of today so renewals and lapses
-  // are real — and carry no report_data, exactly like a data-entry policy that
-  // was never analysed. Anything opened from here lands on the same detail
-  // screen a real un-analysed policy does.
+  // are real.
+  //
+  // A row here is a FINISHED policy: status "done". That means a health row
+  // must carry a report and a data-entry row must carry its fields, because
+  // that is the only thing "done" can mean on each. The bulk rows used to carry
+  // a score with no report behind it, so the first policy in the default list
+  // opened on "Analysis data is in an unexpected format. Try re-running
+  // analysis." — the demo's own headline feature, broken on the first click.
   //
   // Deterministic on purpose: index-driven, no Math.random. Every count on
   // every screen has to be the same on reload, or the demo contradicts itself.
-  const BULK_NAMES = [
-    "Anil Deshpande", "Sunita Rao", "Farhan Qureshi", "Kavita Bhosale", "Ramesh Iyer",
-    "Deepak Mane", "Aarti Joshi", "Nikhil Wagh", "Pooja Shirke", "Sanjay Kulkarni",
-    "Rekha Nair", "Vijay Salunkhe", "Asha Pawar", "Mohan Gokhale", "Sneha Patil",
-    "Imran Sayyed", "Lata Chavan", "Girish Rane", "Madhuri Kale", "Prashant Jadhav",
-    "Nilima Sathe", "Ashok Bhide", "Shalini Karve", "Tushar Phadke", "Vandana Limaye",
-    "Yogesh Barve", "Chitra Dixit", "Harish Naik", "Jyoti Ghatge", "Kiran Marathe",
+  /** Spouse first names, so a floater has two lives on it without inventing a
+   *  second surname. Paired by index with BULK_NAMES. */
+  const BULK_SPOUSES = [
+    "Smita", "Rajeev", "Nazia", "Suhas", "Lakshmi", "Manisha", "Vinod", "Shruti", "Amol", "Vaishali",
+    "Sandeep", "Pallavi", "Dattatray", "Ujwala", "Abhay", "Ruksana", "Bhaskar", "Manda", "Sachin", "Trupti",
+    "Milind", "Suchitra", "Ravindra", "Aparna", "Dilip", "Swati", "Umesh", "Vidya", "Prakash", "Anuja",
   ];
+
+  // Plan and insurer must belong to the same company AND the same licence. A
+  // life or term plan cannot sit under a general insurer: HDFC ERGO and ICICI
+  // Lombard used to carry "Click 2 Protect Super", "Sanchay Plus" and "Smart
+  // Protection Goal" here, all three of which are life products.
   const BULK_TYPES: { type: string; plan: string; insurer: string }[] = [
     { type: "health", plan: "Family Health Optima", insurer: INSURERS.star },
     { type: "health", plan: "ReAssure 2.0", insurer: INSURERS.niva },
     { type: "health", plan: "Care Supreme", insurer: INSURERS.care },
     { type: "health", plan: "Optima Secure", insurer: INSURERS.hdfc },
-    { type: "term", plan: "Click 2 Protect Super", insurer: INSURERS.hdfc },
-    { type: "term", plan: "Smart Protection Goal", insurer: INSURERS.icici },
+    { type: "term", plan: "Click 2 Protect Super", insurer: INSURERS.hdfcLife },
+    { type: "term", plan: "Smart Protection Goal", insurer: INSURERS.bajajLife },
     { type: "life", plan: "Jeevan Anand", insurer: INSURERS.lic },
-    { type: "life", plan: "Sanchay Plus", insurer: INSURERS.hdfc },
+    { type: "life", plan: "Sanchay Plus", insurer: INSURERS.hdfcLife },
     { type: "motor", plan: "Private Car Package", insurer: INSURERS.digit },
     { type: "motor", plan: "Two Wheeler Package", insurer: INSURERS.icici },
-    { type: "motor", plan: "Commercial Vehicle", insurer: INSURERS.tata },
+    { type: "motor", plan: "Commercial Vehicle Package", insurer: INSURERS.tata },
     { type: "travel", plan: "Travel Guard", insurer: INSURERS.tata },
     { type: "property", plan: "Home Shield", insurer: INSURERS.icici },
     { type: "fire", plan: "Standard Fire & Special Perils", insurer: INSURERS.digit },
     { type: "marine", plan: "Marine Cargo Open", insurer: INSURERS.tata },
   ];
 
+  const BULK_CITIES = ["Indore", "Bhopal", "Ujjain", "Dewas", "Gwalior"];
+  const BULK_ZONES: ("A" | "B" | "C" | "D")[] = ["B", "B", "C", "C", "C"];
+
+  /** Sum insured by health profile (see bulkHealthReport), so the cover on the
+   *  row supports the verdict in the report: a "well covered" profile carries
+   *  roughly what one admission costs at its age, a "seriously under-covered"
+   *  one carries a fraction of it. */
+  const HEALTH_SUMS_BY_PROFILE = [
+    [1500000, 2000000, 2500000], // 0 — clean terms, adequate cover
+    [1500000, 2000000],          // 1 — clean terms, sub-limits, thin cover
+    [1500000, 1250000],          // 2 — cap + co-pay, under-covered
+    [500000, 300000],            // 3 — senior, seriously under-covered
+  ];
+
   const bulkCustomers: any[] = [];
   const bulkClients: any[] = [];
 
   for (let i = 0; i < 96; i++) {
-    const person = BULK_NAMES[i % BULK_NAMES.length];
+    const nameIdx = i % BULK_NAMES.length;
+    const person = BULK_NAMES[nameIdx];
+    const surname = person.split(" ").slice(-1)[0];
     const spec = BULK_TYPES[i % BULK_TYPES.length];
-    const isHealth = spec.type === "health";
+    const city = BULK_CITIES[nameIdx % BULK_CITIES.length];
+    const zone = BULK_ZONES[nameIdx % BULK_ZONES.length];
 
     // One customer per distinct person, reused by their other policies.
-    const custId = `bulk-cust-${i % BULK_NAMES.length}`;
+    const custId = `bulk-cust-${nameIdx}`;
     if (i < BULK_NAMES.length) {
+      // Ten digits, which is what an Indian mobile number has. The old formula
+      // produced "+91 90100000" — eight — on every row.
+      const mobile = String(9810000000 + i * 137137);
       bulkCustomers.push({
         id: custId, agent_id: DEMO_AGENT_ID, name: person,
-        phone: `+91 90${String(100000 + i * 137).slice(0, 6)}`,
+        phone: `+91 ${mobile.slice(0, 5)} ${mobile.slice(5)}`,
         email: null, dob: null,
-        city: ["Indore", "Bhopal", "Ujjain", "Dewas", "Gwalior"][i % 5],
-        notes: "", created_at: ago(360 - i * 3),
+        city, notes: "", created_at: ago(360 - i * 3),
       });
     }
 
     // Expiry walks from 47 days past to ~300 days out, so "expiring in 30 days"
     // and "lapsed" are both genuinely populated rather than asserted.
-    const expiryOffset = 47 - i * 3.6;
+    const expiryDays = Math.round(47 - i * 3.6);
+    const inceptionDays = expiryDays + 365;
+    // A health policy's cover has to fit the verdict written about it. Rotating
+    // the sum insured independently of the profile is how the book came to hold
+    // a "well covered" 38-year-old on ₹3L, whose own report then said the cover
+    // was 0.19× of what one admission costs.
+    const sumInsured = spec.type === "health"
+      ? HEALTH_SUMS_BY_PROFILE[i % 4][Math.floor(i / 4) % HEALTH_SUMS_BY_PROFILE[i % 4].length]
+      // Cover is sold in different sizes by line: nobody buys ₹3L of term cover,
+      // and the flat rotation was putting exactly that on the value screen.
+      : spec.type === "term"
+        ? [2500000, 5000000, 10000000][i % 3]
+        : spec.type === "life"
+          ? [500000, 1000000, 1500000, 2500000][i % 4]
+          : [300000, 500000, 1000000, 1500000, 2500000, 5000000][i % 6];
+
+    const report = spec.type === "health"
+      ? bulkHealthReport({ i, person, spouse: `${BULK_SPOUSES[nameIdx]} ${surname}`, city, zone, baseSI: sumInsured, inceptionDays, expiryDays })
+      : null;
+    const extracted = report
+      ? null
+      : bulkExtractedData(spec.type, i, person, spec, sumInsured, inceptionDays, expiryDays, city);
 
     bulkClients.push({
       id: `bulk-pol-${i}`, agent_id: DEMO_AGENT_ID, customer_id: custId,
       policy_name: spec.plan, name: person, policyholder_name: person,
       insurer: spec.insurer, insurance_type: spec.type, status: "done",
       // Only health policies get a check and therefore a score. Everything else
-      // is data entry, which is exactly how the real product behaves.
-      score: isHealth ? 44 + ((i * 7) % 49) : null,
-      sum_insured: [300000, 500000, 1000000, 1500000, 2500000, 5000000][i % 6],
-      expiry_date: dateAgo(Math.round(expiryOffset)),
+      // is data entry, which is exactly how the real product behaves. The score
+      // is the report's own, never a second number authored beside it.
+      score: report ? report.audit_score.score : null,
+      sum_insured: sumInsured,
+      // The same rule deriveSharedColumns applies server-side: the date in this
+      // column is the one that type actually renews or matures on — own-damage
+      // for motor, maturity for life, cover end for term, trip end for travel.
+      expiry_date: sharedExpiryDate(spec.type, extracted) ?? dateAgo(expiryDays),
       created_at: ago(300 - i * 2),
       share_token: null, share_enabled: false, pdf_url: "#", error_message: null,
-      flaws: [], report_data: null,
-      extracted_data: spec.type === "motor"
-        ? { reg_no: `MP09 ${String.fromCharCode(65 + (i % 26))}${String.fromCharCode(65 + ((i + 7) % 26))} ${1000 + i}` }
-        : null,
+      flaws: [], report_data: report,
+      extracted_data: extracted,
     });
   }
 
   customers.push(...bulkCustomers);
   clients.push(...bulkClients);
+
+  /* One number, in one place. The row's `score` column and the report's own
+     audit_score.score are the same value on every policy, so the list, the
+     dashboard and the report header can never disagree about a policy's mark. */
+  for (const row of clients as any[]) {
+    const fromReport = row.report_data?.audit_score?.score;
+    if (typeof fromReport === "number") row.score = fromReport;
+  }
 
   const agent_credits = [{ id: "cred-1", agent_id: DEMO_AGENT_ID, balance: 25 }];
   // Data-entry (OCR) allowance is metered separately from policy checks.
@@ -1188,77 +1793,105 @@ export function buildUploadedPolicy(
   const name = opts.policyholder_name || "Ramesh Chauhan";
   const type = opts.insurance_type || "health";
   const isHealth = type === "health";
+  const UPLOAD_PLAN: Record<string, string> = {
+    health: "Medicare Premier",
+    motor: "Private Car Package",
+    life: "Sanchay Plus",
+    term: "Click 2 Protect Super",
+    travel: "Travel Guard",
+    property: "Home Shield",
+    fire: "Standard Fire & Special Perils",
+    marine: "Marine Cargo Open",
+    contractor_all_risk: "Contractor's All Risk",
+  };
+  const plan = UPLOAD_PLAN[type] ?? "Uploaded policy";
+  // Life and term are written by life companies; everything else here is general.
+  const insurer = type === "life" || type === "term" ? INSURERS.hdfcLife : INSURERS.tata;
+
+  const report = isHealth
+    ? uploadedHealthReport(name)
+    : null;
+  // A finished data-entry upload arrives with its fields read, not with a lone
+  // premium: an empty review form is what a FAILED read looks like.
+  const extracted = isHealth
+    ? null
+    : bulkExtractedData(type, 7, name, { plan, insurer }, 500000, 365, -64, "Indore");
 
   return {
     id: clientId,
     agent_id: DEMO_AGENT_ID,
     customer_id: null,
-    policy_name: isHealth ? "Health Guard Plus" : "Uploaded policy",
+    policy_name: plan,
     name,
     policyholder_name: name,
     filename: opts.filename ?? "policy.pdf",
-    insurer: INSURERS.tata,
+    insurer,
     insurance_type: type,
     status: "done",
-    score: isHealth ? 61 : null,
+    score: report ? report.audit_score.score : null,
     sum_insured: 500000,
-    expiry_date: dateAgo(-64),
+    expiry_date: sharedExpiryDate(type, extracted) ?? dateAgo(-64),
     created_at: new Date().toISOString(),
     share_token: null,
     share_enabled: false,
     pdf_url: "#",
     error_message: null,
     flaws: [],
-    extracted_data: isHealth ? null : { premium: 14200 },
-    report_data: isHealth
-      ? healthReport({
-          insured: [name, "Sarita Chauhan"], ages: [47, 44], genders: ["male", "female"],
-          city: "Indore", zone: "B",
-          inceptionDays: 301, expiryDays: -64, baseSI: 500000, ncbCurrent: 10,
-          roomRent: {
-            limit_type: "specific_amount", limit_value: "₹4,000 per day",
-            limit_amount_per_day: 4000, penaltyPct: 20, risk_level: "high", zone_adequacy: "marginal",
-            explanation: "₹4,000 a day covers a shared room locally. A private room triggers a proportionate cut across the whole bill.",
-          },
-          copayPct: 10, copayConditions: "10% of every claim.",
-          subLimits: [{ procedure: "Cataract (per eye)", limit: 30000, typical_cost_in_zone: 55000, severity: "medium" }],
-          pedMonths: 36, specificMonths: 24,
-          restoration: { exists: false, remarks: "No restoration on this plan." },
-          score: 61, ncar: 0.48, label: "RISKY", bucketLabel: "Under-covered",
-          summary: "A room-rent cap and a 10% co-pay sit on top of a ₹5L cover. Together they leave close to a third of a large bill with the family.",
-          realClaim: "Partly. On a ₹4.5L admission the family would find roughly ₹1.5L themselves.",
-          failures: [
-            "Room rent capped at ₹4,000 a day with proportionate deduction",
-            "10% co-pay on every claim",
-            "No restoration once the cover is used",
-            "₹5L is thin for two adults in their forties",
-          ],
-          deductions: [
-            { reason: "Room-rent cap with proportionate deduction", category: "Claim payout", severity: "high", points: 15 },
-            { reason: "10% co-pay on all claims", category: "Out of pocket", severity: "medium", points: 8 },
-            { reason: "Sum insured below recommended cover", category: "Net cover", severity: "medium", points: 10 },
-          ],
-          works: [
-            { benefit: "Wide cashless network", why_it_matters_in_claim: "Money is unlikely to be needed up front.", quantified_value: null },
-          ],
-          fails: [
-            { issue: "Room-rent cap", real_world_claim_impact: "A private room cuts every line of the bill, not just the room charge.", quantified_oop_risk: "≈ ₹90,000 on a ₹4.5L claim" },
-          ],
-          actions: [
-            {
-              action: "Move to a plan with no room-rent cap at renewal",
-              reason: "The cap is the largest single source of out-of-pocket cost here.",
-              oop_risk_if_ignored: "₹1.5L on one major hospitalisation",
-              suggested_riders_or_topups: ["₹10L no-cap base plan"],
-              estimated_cost: "₹3,500–₹5,500 more a year",
-            },
-          ],
-          port: "yes",
-          portReason: "The cap and the co-pay both need to go, and neither can be removed inside this plan.",
-          portLookFor: ["No room-rent cap", "No co-pay", "Restoration included"],
-        })
-      : null,
+    extracted_data: extracted,
+    report_data: report,
   };
+}
+
+/** The audit a simulated upload lands on. Deliberately a policy with something
+ *  wrong with it: a demo where the answer is "all fine" shows the agent nothing. */
+function uploadedHealthReport(name: string) {
+  return healthReport({
+    insured: [name, "Sarita Chauhan"], ages: [47, 44], genders: ["male", "female"],
+    city: "Indore", zone: "B",
+    inceptionDays: 301, expiryDays: -64, baseSI: 500000, ncbCurrent: 10,
+    roomRent: {
+      limit_type: "specific_amount", limit_value: "₹4,000 per day",
+      limit_amount_per_day: 4000, penaltyPct: 20, risk_level: "high", zone_adequacy: "marginal",
+      explanation: "₹4,000 a day covers a shared room locally. A private room triggers a proportionate cut across the whole bill.",
+    },
+    copayPct: 10, copayConditions: "10% of every claim.",
+    subLimits: [{ procedure: "Cataract (per eye)", limit: 30000, typical_cost_in_zone: 55000, severity: "medium" }],
+    pedMonths: 36, specificMonths: 24,
+    restoration: { exists: false, remarks: "No restoration on this plan." },
+    label: "RISKY", bucketLabel: "Under-covered",
+    summary: "A room-rent cap and a 10% co-pay sit on top of a ₹5L cover. Together they leave close to a third of a large bill with the family.",
+    realClaim: "Partly. On a ₹4.5L admission the family would find roughly ₹1.5L themselves.",
+    failures: [
+      "Room rent capped at ₹4,000 a day with proportionate deduction",
+      "10% co-pay on every claim",
+      "No restoration once the cover is used",
+      "₹5L is thin for two adults in their forties",
+    ],
+    deductions: [
+      { reason: "Room-rent cap with proportionate deduction", category: "CLAIM_REJECTION", severity: "high", points: 15 },
+      { reason: "10% co-pay on all claims", category: "OOP_EXPOSURE", severity: "medium", points: 8 },
+      { reason: "Sum insured below recommended cover", category: "NET_COVER", severity: "medium", points: 10 },
+      { reason: "No restoration once the cover is used", category: "COVERAGE_GAP", severity: "medium", points: 6 },
+    ],
+    works: [
+      { benefit: "Wide cashless network", why_it_matters_in_claim: "Money is unlikely to be needed up front.", quantified_value: null },
+    ],
+    fails: [
+      { issue: "Room-rent cap", real_world_claim_impact: "A private room cuts every line of the bill, not just the room charge.", quantified_oop_risk: "≈ ₹90,000 on a ₹4.5L claim" },
+    ],
+    actions: [
+      {
+        action: "Move to a plan with no room-rent cap at renewal",
+        reason: "The cap is the largest single source of out-of-pocket cost here.",
+        oop_risk_if_ignored: "₹1.5L on one major hospitalisation",
+        suggested_riders_or_topups: ["₹10L no-cap base plan"],
+        estimated_cost: "₹3,500–₹5,500 more a year",
+      },
+    ],
+    port: "yes",
+    portReason: "The cap and the co-pay both need to go, and neither can be removed inside this plan.",
+    portLookFor: ["No room-rent cap", "No co-pay", "Restoration included"],
+  });
 }
 
 /* ── Compare catalog ────────────────────────────────────────────────────── */
