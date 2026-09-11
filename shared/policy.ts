@@ -899,6 +899,76 @@ export interface WaitingPeriodView {
   detail: string | null;
 }
 
+/**
+ * What to show against one supplementary benefit.
+ *
+ * Four states, not two. This grid used to render a bare `covered` boolean as
+ * "Covered" or "Not Covered", which threw away everything the model had said
+ * about the benefit being worthless. A policy whose only outpatient benefit is
+ * unlimited video consultations showed OPD Cover: Covered, in green, beside the
+ * model's own note that physical OPD, diagnostics and pharmacy are all excluded
+ * and its grading of the benefit's usefulness as "low".
+ *
+ * Covered is a claim about what the policyholder can actually use. Like Served
+ * on a waiting period, it must never be what a nuanced answer falls back to.
+ *
+ *   covered   the benefit is there and worth having.
+ *   limited   it exists in name. A low-utility benefit, or partial cover. The
+ *             reason is shown, because the word on its own would mislead.
+ *   absent    not covered.
+ *   unclear   the document did not settle it. Not the same as absent.
+ *
+ * `utility` and `coverage_type` are the model's own fields and have been in the
+ * schema all along; nothing here asks it for anything new.
+ */
+export type BenefitState = "covered" | "limited" | "absent" | "unclear";
+
+export interface BenefitView {
+  status: BenefitState;
+  /** The word shown in the tile. */
+  label: string;
+  tone: "good" | "partial" | "bad" | "unknown";
+  /** The model's own explanation. Shown for everything except a plain "Covered",
+   *  where the word already says it. */
+  detail: string | null;
+}
+
+export const getBenefitStatus = (input: {
+  covered?: boolean | null;
+  /** OPD and maternity carry this. */
+  utility?: CoverageUtility | null;
+  /** Consumables carries this instead. */
+  coverageType?: "full" | "partial" | "none" | "unclear" | null;
+  conditions?: string | null;
+  remarks?: string | null;
+}): BenefitView => {
+  const { covered, utility, coverageType } = input;
+  // Remarks explain, conditions only qualify, so prefer the explanation.
+  const detail = (input.remarks || input.conditions || "").trim() || null;
+  const view = (status: BenefitState, label: string, tone: BenefitView["tone"]): BenefitView => ({
+    status,
+    label,
+    tone,
+    detail: status === "covered" ? null : detail,
+  });
+
+  // Absent first. A benefit graded "none" is not covered whatever the boolean
+  // says, and the two disagreeing is itself a reason to trust the grading.
+  if (covered === false || utility === "none" || coverageType === "none") {
+    return view("absent", "Not Covered", "bad");
+  }
+
+  if (coverageType === "unclear" || covered == null) {
+    return view("unclear", "Unclear", "unknown");
+  }
+
+  if (coverageType === "partial" || utility === "low") {
+    return view("limited", "Limited", "partial");
+  }
+
+  return view("covered", "Covered", "good");
+};
+
 export const getWaitingPeriodStatus = (input: {
   /** The duration as the document states it. null/undefined means it did not. */
   duration: number | null | undefined;

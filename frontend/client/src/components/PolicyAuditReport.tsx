@@ -20,9 +20,10 @@ import {
     computeUnlockDateMonths,
     describeRestoration,
     deriveCoverView,
-    isScoredUnderOldRules
+    isScoredUnderOldRules,
+    getBenefitStatus
 } from "@shared/policy";
-import type { WaitingPeriodView } from "@shared/policy";
+import type { WaitingPeriodView, BenefitView } from "@shared/policy";
 import { cn } from "@/lib/utils";
 import { CoverageDiagnostic } from "./CoverageDiagnostic";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -162,6 +163,14 @@ function coverOutlook(
     // A five-year projection does not deserve rupee precision.
     return { today, target: Math.round(projected / 500000) * 500000, years };
 }
+
+/** Tile colour by what the state MEANS, so a new state cannot default to green. */
+const BENEFIT_TONE: Record<BenefitView["tone"], string> = {
+    good: "text-green-600",
+    partial: "text-amber-600",
+    bad: "text-slate-500",
+    unknown: "text-slate-500",
+};
 
 /** Badge colour by what the state MEANS, so a new state cannot default to green. */
 const WAITING_TONE: Record<WaitingPeriodView["tone"], string> = {
@@ -1261,22 +1270,36 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">Supplementary Benefits</span>
                                 <Pill className="w-4 h-4 text-[var(--color-text-muted)]" />
                             </div>
+                            {/* Every tile used to be a bare `covered` boolean rendered as one
+                                of two words, which discarded the utility grading and the remark
+                                sitting beside it in the same object. A policy whose only
+                                outpatient benefit was a video consultation read OPD Cover:
+                                Covered, in green, next to the model's own note that physical
+                                OPD, diagnostics and pharmacy were all excluded. */}
                             <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {[
-                                    { label: "OPD Cover", covered: data.supplementary_coverage?.opd?.covered },
-                                    { label: "Modern Treatments", covered: data.supplementary_coverage?.modern_treatments?.covered },
-                                    { label: "Consumables", covered: data.supplementary_coverage?.consumables?.coverage_type === "full" },
-                                    { label: "Ambulance", covered: data.supplementary_coverage?.ambulance?.covered },
-                                    { label: "Day Care", covered: data.supplementary_coverage?.day_care_procedures?.covered },
-                                    { label: "Maternity", covered: data.supplementary_coverage?.maternity?.covered },
-                                ].map((item, i) => (
-                                    <div key={i} className="p-3 bg-slate-50 rounded text-center">
-                                        <div className="text-xs uppercase text-[var(--color-text-muted)] mb-1">{item.label}</div>
-                                        <div className={cn("font-bold", item.covered ? "text-green-600" : "text-slate-400")}>
-                                            {item.covered ? "Covered" : "Not Covered"}
+                                {(() => {
+                                    const supp = data.supplementary_coverage;
+                                    return [
+                                        { label: "OPD Cover", view: getBenefitStatus({ ...supp?.opd, utility: supp?.opd?.utility }) },
+                                        { label: "Modern Treatments", view: getBenefitStatus({ ...supp?.modern_treatments }) },
+                                        { label: "Consumables", view: getBenefitStatus({ ...supp?.consumables, coverageType: supp?.consumables?.coverage_type }) },
+                                        { label: "Ambulance", view: getBenefitStatus({ ...supp?.ambulance }) },
+                                        { label: "Day Care", view: getBenefitStatus({ ...supp?.day_care_procedures }) },
+                                        { label: "Maternity", view: getBenefitStatus({ ...supp?.maternity, utility: supp?.maternity?.utility }) },
+                                    ].map((item, i) => (
+                                        <div key={i} className="p-3 bg-slate-50 rounded text-center">
+                                            <div className="text-xs uppercase text-[var(--color-text-muted)] mb-1">{item.label}</div>
+                                            <div className={cn("font-bold", BENEFIT_TONE[item.view.tone])}>
+                                                {item.view.label}
+                                            </div>
+                                            {item.view.detail && (
+                                                <p className="mt-1 text-sm leading-snug text-[var(--color-text-secondary)]">
+                                                    {item.view.detail}
+                                                </p>
+                                            )}
                                         </div>
-                                    </div>
-                                ))}
+                                    ));
+                                })()}
                             </div>
                         </div>
 
