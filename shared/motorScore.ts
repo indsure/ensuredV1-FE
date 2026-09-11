@@ -1,4 +1,4 @@
-import type { AddOnScan, AddOnFinding } from "./motorAddOns";
+import { ADD_ON_FINDINGS_KEY, type AddOnScan, type AddOnFinding } from "./motorAddOns";
 
 /**
  * A score out of 100 for a motor policy, built from the add-on scan.
@@ -158,4 +158,30 @@ export function motorScoreCaption(s: MotorScore): string {
   const addOns = `${s.counted === 0 ? "no" : s.counted} add-on${s.counted === 1 ? "" : "s"} checked`;
   const aside = s.setAside > 0 ? `, ${s.setAside} left out as unreadable` : "";
   return `${base}. ${addOns}${aside}. This measures how completely the vehicle is covered, not the quality of the wording.`;
+}
+
+/**
+ * The score to store on a policy row, straight from its extracted data.
+ *
+ * One helper, used by every write path, so the advisor's copy of a policy and
+ * the consumer's copy of the same document cannot end up scored differently.
+ * Returns null for anything that is not motor, and for a motor policy nothing
+ * could be read from: `score` is nullable in both tables and null means "no
+ * score", which is the truth in both cases.
+ *
+ * Never throws. A scoring fault must not fail an extraction that otherwise
+ * succeeded, because the fields are worth more to the agent than the number is.
+ */
+export function scoreFromExtractedData(
+  insuranceType: string | null | undefined,
+  data: Record<string, any> | null | undefined,
+): number | null {
+  if (insuranceType !== "motor" || !data) return null;
+  try {
+    const scan = data[ADD_ON_FINDINGS_KEY] as AddOnScan | undefined;
+    const coverageType = typeof data.coverage_type === "string" ? data.coverage_type : null;
+    return scoreMotorPolicy(scan ?? null, coverageType).score;
+  } catch {
+    return null;
+  }
 }

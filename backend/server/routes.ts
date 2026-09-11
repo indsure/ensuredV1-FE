@@ -27,6 +27,7 @@ import { buildComparison, compareMany, type WordingProfile } from "./types/wordi
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
 import { pickShareableFields, hasShareableContent } from "../../shared/dataEntryShare";
 import { AGENT_TABLES, INDIVIDUAL_TABLES, selectForTable, type OwnedTable } from "./services/accountData";
+import { scoreFromExtractedData } from "../../shared/motorScore";
 import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
@@ -3936,6 +3937,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 await consumeOcr(agentId);
 
                 const shared = deriveSharedColumns(insuranceType, extraction.data);
+                /* Motor now carries a score, so a book of motor policies stops
+                   showing an empty column beside the health ones. Null for every
+                   other data-entry type, and for a motor policy nothing could be
+                   read from: null means "no score", which is the truth. */
+                const motorScore = scoreFromExtractedData(insuranceType, extraction.data);
                 await pool.query(
                   `UPDATE clients SET
                     status = 'done',
@@ -3945,7 +3951,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                     policy_name = $4,
                     expiry_date = $5,
                     sum_insured = $6,
-                    policyholder_name = COALESCE(policyholder_name, $7)
+                    policyholder_name = COALESCE(policyholder_name, $7),
+                    score = $9
                   WHERE id = $8`,
                   [
                     insuranceType,
@@ -3956,6 +3963,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                     shared.sum_insured ?? null,
                     shared.policyholder_name ?? null,
                     clientId,
+                    motorScore,
                   ]
                 );
               } else {
@@ -5017,12 +5025,16 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 job.status = "completed";
                 job.result = extraction.data;
                 const shared = deriveSharedColumns(insuranceType, extraction.data);
+                /* Same helper as the advisor path, so the advisor's copy of a
+                   document and the customer's copy cannot score differently. */
+                const motorScore = scoreFromExtractedData(insuranceType, extraction.data);
                 await pool.query(
                   `UPDATE individual_policies SET
                      status = 'done', insurance_type = $1, extracted_data = $2,
                      insurer = $3, policy_name = $4, expiry_date = $5, sum_insured = $6,
                      policyholder_name = COALESCE(policyholder_name, $7),
-                     renewal_date = COALESCE(renewal_date, $8::date), updated_at = now()
+                     renewal_date = COALESCE(renewal_date, $8::date),
+                     score = $10, updated_at = now()
                    WHERE id = $9`,
                   [
                     insuranceType,
@@ -5034,6 +5046,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                     shared.policyholder_name ?? null,
                     parseExpiryToDate(shared.expiry_date),
                     policyId,
+                    motorScore,
                   ]
                 );
               } else {
