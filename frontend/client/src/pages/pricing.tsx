@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { teamWaLink } from "@/components/app/portfolio-utils";
 import { Link } from "wouter";
 import { Check, Minus, ShieldCheck, ArrowRight, Plus } from "lucide-react";
 import { Reveal, Stagger, RevealItem } from "@/components/motion";
@@ -37,6 +38,8 @@ type Tier = {
   features: TierFeature[];
   cta: string;
   ctaHref: string;
+  /** Leaves the site (WhatsApp), so it renders as an anchor, not a router link. */
+  ctaExternal?: boolean;
   highlighted?: boolean;
 };
 
@@ -59,7 +62,7 @@ const tiers: Tier[] = [
       // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
       { label: "No expiry date. Stays free as long as you want it", muted: true },
     ],
-    cta: "Create free account",
+    cta: "Start free",
     ctaHref: "/signup",
   },
   {
@@ -82,8 +85,15 @@ const tiers: Tier[] = [
       { label: "Ask the Sach assistant any question about your cover" },
       { label: "Download every report as a PDF" },
     ],
-    cta: "Start free, upgrade anytime",
-    ctaHref: "/signup",
+    /* Upgrading is a conversation, not a checkout: there is no payment
+       integration in the product, so a button that looked like one would take
+       somebody to a page that cannot charge them. WhatsApp reaches a person who
+       can actually move the account onto the plan. */
+    cta: "Upgrade on WhatsApp",
+    ctaHref: teamWaLink(
+      "Hi, I would like to upgrade my IndSure account to the Personal plan.",
+    ),
+    ctaExternal: true,
     highlighted: true,
   },
 ];
@@ -220,6 +230,11 @@ export default function Pricing() {
               {tiers.map((tier, i) => {
                 const paid = !!tier.highlighted;
                 const accent = paid ? "var(--lob-health)" : "var(--lob-life)";
+                const ctaClass = `mt-auto inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-lg text-base font-semibold transition-all duration-200 ${
+                  paid
+                    ? "bg-[var(--color-cta)] text-white hover:bg-[#0F766E] hover:-translate-y-0.5"
+                    : "border border-[var(--color-border-medium)] bg-white text-[var(--color-text-main)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
+                }`;
                 const wash = paid ? "var(--lob-health-wash)" : "var(--lob-life-wash)";
                 return (
                   <Reveal key={tier.name} delay={i * 0.08} className="h-full">
@@ -282,17 +297,25 @@ export default function Pricing() {
                           ))}
                         </ul>
 
-                        <Link
-                          href={tier.ctaHref}
-                          className={`mt-auto inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-lg text-base font-semibold transition-all duration-200 ${
-                            paid
-                              ? "bg-[var(--color-cta)] text-white hover:bg-[#0F766E] hover:-translate-y-0.5"
-                              : "border border-[var(--color-border-medium)] bg-white text-[var(--color-text-main)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
-                          }`}
-                        >
-                          {tier.cta}
-                          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                        </Link>
+                        {tier.ctaExternal ? (
+                          /* wouter's Link pushes onto the router's history, so an
+                             off-site href would route to a page that does not
+                             exist instead of opening WhatsApp. */
+                          <a
+                            href={tier.ctaHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={ctaClass}
+                          >
+                            {tier.cta}
+                            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                          </a>
+                        ) : (
+                          <Link href={tier.ctaHref} className={ctaClass}>
+                            {tier.cta}
+                            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </Reveal>
