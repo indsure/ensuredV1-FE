@@ -298,6 +298,24 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
 
   const provenEmpty = arithmetic !== null && arithmetic.headroom === 0;
 
+  /* A declared list is an ENUMERATION, not a hint.
+     When the insurer prints its own heading ("Add-on Covers Opted", "Addons
+     Selected") and we recognised at least one cover under it, the covers that
+     are NOT in that list were not bought. That is the insurer's own statement
+     about its own policy, and it is the same standard of proof the arithmetic
+     channel uses.
+
+     Reading it as merely "not found" is what let a real Acko policy holding one
+     add-on publish 100 out of 100: Acko prints no own-damage premium table, so
+     `provenEmpty` was false, and eight covers the insurer had implicitly ruled
+     out were filed as unreadable and dropped out of the score's denominator.
+
+     The guard is `declared.size > 0`. A heading that matched but yielded
+     nothing we recognised means we did not actually read the list, and proving
+     absence from a list we could not parse would be a fabrication. */
+  const declaredHeading = label ? label[0].trim().replace(/\s+/g, " ") : "";
+  const declaredListProves = !!label && declared.size > 0;
+
   const findings: AddOnFinding[] = catalog.map((entry) => {
     const declaredAs = declared.get(entry.id) ?? null;
     const priced = pricedLines.find((p) => matchEntry(p.name)?.id === entry.id) ?? null;
@@ -331,18 +349,34 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
         amount: priced.amount,
       };
     }
-    // Only a zero headroom proves absence. A fully reconciled non-zero headroom
-    // does NOT, because an add-on bundled at zero rupees leaves no trace in the
-    // arithmetic (this document carries one: "Smart Use ... 0").
-    return {
-      id: entry.id,
-      label: entry.label,
-      state: provenEmpty ? "absent_proven" : "not_found",
-      evidence: provenEmpty && arithmetic
-        ? `Own damage premium is ${arithmetic.totalOd} against a basic of ${arithmetic.basicOd}, so no add-on premium was paid`
-        : null,
-      amount: null,
-    };
+    /* Absence needs a proof, from one of two channels.
+
+       Arithmetic: only a ZERO headroom proves it. A fully reconciled non-zero
+       headroom does NOT, because an add-on bundled at zero rupees leaves no
+       trace in the arithmetic (the Royal Sundaram document carries one:
+       "Smart Use ... 0").
+
+       Declared list: the insurer enumerated what was opted and this is not in
+       it. */
+    if (provenEmpty && arithmetic) {
+      return {
+        id: entry.id,
+        label: entry.label,
+        state: "absent_proven",
+        evidence: `Own damage premium is ${arithmetic.totalOd} against a basic of ${arithmetic.basicOd}, so no add-on premium was paid`,
+        amount: null,
+      };
+    }
+    if (declaredListProves) {
+      return {
+        id: entry.id,
+        label: entry.label,
+        state: "absent_proven",
+        evidence: `Not in the list the insurer prints under "${declaredHeading}"`,
+        amount: null,
+      };
+    }
+    return { id: entry.id, label: entry.label, state: "not_found", evidence: null, amount: null };
   });
 
   return {

@@ -88,12 +88,12 @@ describe("car policy that carries add-ons (Royal Sundaram)", () => {
         // Appears 3 times in this document. A bare `engine` alias ticks a cover
         // the customer never bought.
         assert.ok((CAR.match(/Engine No\./gi) ?? []).length >= 3);
-        assert.equal(find(s, "engine_protect").state, "not_found");
+        assert.notEqual(find(s, "engine_protect").state, "present");
     });
 
     test("'GST Invoice No.' does not tick return to invoice", () => {
         assert.match(CAR, /GST Invoice No\./i);
-        assert.equal(find(s, "return_to_invoice").state, "not_found");
+        assert.notEqual(find(s, "return_to_invoice").state, "present");
     });
 
     test("a cover priced at or below zero is never a tick", () => {
@@ -117,11 +117,32 @@ describe("car policy that carries add-ons (Royal Sundaram)", () => {
         assert.ok(Math.abs(s.reconciliation!.unexplained) < 1, "add-on premium is unaccounted for");
     });
 
-    test("a non-zero headroom never proves absence", () => {
-        // An add-on bundled at zero rupees leaves no trace in the arithmetic,
-        // and this very document carries one. So a reconciled non-zero headroom
-        // must still read "not found", never "absent".
-        assert.equal(s.findings.some((f) => f.state === "absent_proven"), false);
+    test("the insurer's own opted list rules out what is not in it", () => {
+        // "Add-on Covers Opted   Consumable, DepreciationWaiverPremium,
+        // RoadSideAssistanceCover, KeyReplacementCover". That is the insurer
+        // enumerating what was bought, so the rest was not bought. Filing them
+        // as merely "not found" is what let a one-add-on policy score 100.
+        const absent = s.findings.filter((f) => f.state === "absent_proven").map((f) => f.id).sort();
+        assert.deepEqual(absent, [
+            "engine_protect", "ncb_protect", "personal_belongings",
+            "return_to_invoice", "tyre_protect",
+        ]);
+        for (const f of s.findings.filter((x) => x.state === "absent_proven")) {
+            assert.match(f.evidence!, /Add-on Covers Opted/i, `${f.id} must cite the list`);
+        }
+    });
+
+    test("the ARITHMETIC alone still never proves absence on a non-zero headroom", () => {
+        // The other channel, pinned separately now that the declared list can
+        // prove absence on its own. An add-on bundled at zero rupees leaves no
+        // trace in the arithmetic and this document carries one ("Smart Use
+        // ... 0"), so a reconciled non-zero headroom proves nothing by itself.
+        // Strip the heading and the declared channel goes silent.
+        const noList = CAR.replace(/Add-on Covers Opted/gi, "Cover Particulars");
+        const bare = scan(noList);
+        assert.equal(bare.declaredListFound, false);
+        assert.ok(bare.arithmetic!.headroom > 0);
+        assert.equal(bare.findings.some((f) => f.state === "absent_proven"), false);
     });
 
     test("the product's own footer UIN is not read as an add-on", () => {
@@ -220,27 +241,27 @@ describe("Acko: a third way of declaring add-ons", () => {
   const text = fixture("motor_acko_scooter.txt");
 
   test("finds the add-on this policy actually holds", () => {
-    const scan = detectMotorAddOns(text);
-    const consumables = scan.findings.find((f) => f.id === "consumables");
+    const s = scan(text);
+    const consumables = s.findings.find((f) => f.id === "consumables");
     assert.ok(consumables, "consumables must be in the catalog");
     assert.equal(consumables!.state, "present");
-    assert.ok(scan.declaredListFound, '"Addons Selected" must be read as a declared list');
+    assert.ok(s.declaredListFound, '"Addons Selected" must be read as a declared list');
   });
 
   test("does not swallow the exclusions that follow the list", () => {
-    const scan = detectMotorAddOns(text);
+    const s = scan(text);
     // "What's not covered" terminates the window. Without that, every phrase in
     // the exclusions arrives as an unrecognised add-on and the review queue
     // fills with noise.
-    const noise = scan.unrecognisedDeclared.join(" ").toLowerCase();
+    const noise = s.unrecognisedDeclared.join(" ").toLowerCase();
     assert.ok(!noise.includes("wear and tear"), "exclusions must not leak into the declared list");
     assert.ok(!noise.includes("tyres"), "exclusions must not leak into the declared list");
   });
 
   test("does not invent add-ons this policy does not have", () => {
-    const scan = detectMotorAddOns(text);
+    const s = scan(text);
     for (const id of ["zero_depreciation", "return_to_invoice", "engine_protect"]) {
-      const f = scan.findings.find((x) => x.id === id);
+      const f = s.findings.find((x) => x.id === id);
       assert.notEqual(f?.state, "present", `${id} is not on this policy and must not be reported`);
     }
   });

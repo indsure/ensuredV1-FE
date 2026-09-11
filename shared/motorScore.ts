@@ -42,6 +42,24 @@ export const OWN_DAMAGE_WEIGHT = 2;
 export const ADD_ON_WEIGHT = 1;
 
 /**
+ * How much of the add-on list must be decidable before a number is published.
+ *
+ * Leaving unreadable add-ons out of the denominator is right on its own: a
+ * policy should not be marked down because OUR reader failed. But taken alone
+ * it produces a number that is true of the fragment we read and false of the
+ * policy. A real Acko document showed one add-on of nine and was published as
+ * 100 out of 100, "Strong cover", because the other eight had left the
+ * denominator.
+ *
+ * So there are two gates, and both have to hold. The add-ons we could read stay
+ * out of the denominator, AND we only publish at all when we read enough of the
+ * list for the result to describe the policy rather than the fragment. Half is
+ * the line. Below it the honest output is no score, which is a different
+ * statement from a low score and is said differently on the card.
+ */
+export const MIN_DECIDABLE_SHARE = 0.5;
+
+/**
  * The known gap, named so it cannot be forgotten.
  *
  * Applicability today means "in the catalog for this vehicle class" (car or
@@ -133,20 +151,19 @@ export function scoreMotorPolicy(
     if (f.state === "present") earned += ADD_ON_WEIGHT;
   }
 
-  /* A score needs more than one fact behind it.
-     Dropping unreadable add-ons out of the denominator is right, but on its own
-     it let a policy score 100 off a single readable word. A real Acko policy
-     stored nine add-ons all `not_found`, no own-damage premium arithmetic, and
-     the text "Comprehensive": own damage scored 2 of 2 possible, every add-on
-     was excluded as unreadable, and the customer was shown 100 out of 100 and
-     "Strong cover" for a document we had barely read.
+  /* A score has to describe the policy, not the fragment we could read.
 
-     So at least one ADD-ON must be decidable before a number is published.
-     Knowing whether own damage is covered is genuinely useful and the card
-     still shows it, but it is one half of the model, and half a model is not a
-     score. Null here means "we could not read enough", which is the truth and
+     Two conditions, both required. At least one add-on must be decidable, so
+     the number is never own damage alone dressed up as a full reading. And a
+     MAJORITY of the applicable list must be decidable, so a document we mostly
+     failed to read cannot publish a confident number over the sliver we
+     managed. See MIN_DECIDABLE_SHARE for what went wrong without the second.
+
+     Null means "we could not read enough". The card says that in words, and it
      is not the same statement as a low score. */
-  const scoreable = counted > 0 && possible > 0;
+  const applicable = scan?.applicable ?? findings.length;
+  const readEnough = applicable > 0 && counted / applicable >= MIN_DECIDABLE_SHARE;
+  const scoreable = counted > 0 && readEnough && possible > 0;
 
   return {
     score: scoreable ? Math.round((earned / possible) * 100) : null,

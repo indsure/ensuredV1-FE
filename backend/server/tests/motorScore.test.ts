@@ -76,16 +76,20 @@ describe("our uncertainty never costs the customer points", () => {
     const s = scoreMotorPolicy(
       scan([
         finding("zero_depreciation", "present"),
+        finding("consumables", "absent_proven"),
         finding("ncb_protect", "not_found"),
         finding("engine_protect", "check_manually"),
       ], 9000),
     null);
 
-    // Own damage (2) + one decidable add-on (1) = 3 possible, all earned.
-    assert.equal(s.possible, OWN_DAMAGE_WEIGHT + ADD_ON_WEIGHT);
+    // Own damage (2) + two decidable add-ons (1 each) = 4 possible, 3 earned.
+    // Counting the two unreadable ones as absent would give 3 of 6, marking the
+    // policy down for our reader's failure. They leave instead, and setAside
+    // says so.
+    assert.equal(s.possible, OWN_DAMAGE_WEIGHT + 2 * ADD_ON_WEIGHT);
     assert.equal(s.earned, OWN_DAMAGE_WEIGHT + ADD_ON_WEIGHT);
-    assert.equal(s.score, 100);
-    assert.equal(s.counted, 1);
+    assert.equal(s.score, 75);
+    assert.equal(s.counted, 2);
     assert.equal(s.setAside, 2);
   });
 
@@ -130,6 +134,43 @@ describe("a score needs more than one fact behind it", () => {
     );
     assert.notEqual(s.score, null);
     assert.equal(s.counted, 1);
+  });
+
+  it("refuses to score a document where most of the list was unreadable", () => {
+    /* THE FOUNDER'S REPORT, 2026-09-11: "1/9 is still 100?"
+
+       One add-on readable out of nine, own damage covered. Every unreadable
+       add-on left the denominator, so the arithmetic was 3 of 3 and the card
+       published 100 out of 100 and "Strong cover" over a document we had read
+       one line of. The number was true of the fragment and false of the
+       policy. */
+    const nine = [
+      finding("consumables", "present"),
+      ...["zero_depreciation", "roadside_assistance", "return_to_invoice", "ncb_protect",
+          "engine_protect", "tyre_protect", "key_replacement", "personal_belongings"]
+        .map((i) => finding(i, "not_found")),
+    ];
+    const s = scoreMotorPolicy(scan(nine, 4000), "Comprehensive");
+    assert.equal(s.score, null, "one add-on of nine is not a reading of the policy");
+    assert.equal(s.ownDamage, "covered", "the fact we do have is still reported");
+  });
+
+  it("scores that same policy once the insurer's own list is read", () => {
+    /* The fix upstream: Acko declares "Addons Selected: Consumables", which
+       rules out the other eight. All nine become decidable and the score
+       describes the policy. */
+    const nine = [
+      finding("consumables", "present"),
+      ...["zero_depreciation", "roadside_assistance", "return_to_invoice", "ncb_protect",
+          "engine_protect", "tyre_protect", "key_replacement", "personal_belongings"]
+        .map((i) => finding(i, "absent_proven")),
+    ];
+    const s = scoreMotorPolicy(scan(nine, 4000), "Comprehensive");
+    // Own damage 2 of 2, add-ons 1 of 9. 3 of 11.
+    assert.equal(s.possible, OWN_DAMAGE_WEIGHT + 9 * ADD_ON_WEIGHT);
+    assert.equal(s.earned, OWN_DAMAGE_WEIGHT + ADD_ON_WEIGHT);
+    assert.equal(s.score, 27);
+    assert.equal(s.setAside, 0);
   });
 });
 

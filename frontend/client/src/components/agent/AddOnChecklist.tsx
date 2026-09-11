@@ -74,12 +74,20 @@ function Row({ f }: { f: AddOnFinding }) {
       ) : (
         <span
           className={`whitespace-nowrap rounded-lg border px-2.5 py-1 text-sm font-semibold ${
-            check
+            found
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : check
               ? "border-amber-200 bg-amber-50 text-amber-800"
               : "border-slate-200 bg-slate-50 text-slate-500"
           }`}
         >
-          {f.state === "absent_proven"
+          {/* `found` first. Not every insurer prices its add-ons: Acko declares
+              them in prose with no rupee figure, so a ticked row fell through to
+              the else and printed "Not found in this document" beside its own
+              green tick and its own quoted evidence. */}
+          {found
+            ? "On this policy"
+            : f.state === "absent_proven"
             ? "Not on this policy"
             : check
             ? "Needs a look"
