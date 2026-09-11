@@ -368,7 +368,7 @@ export interface AuditScore {
   score: number;
   raw_score?: number;           // Original score before bucketing
   bucket_label?: string;         // Human-readable label (e.g., "Below Average")
-  bucketing_method?: string;     // Method used for bucketing (e.g., "nearest_12.5")
+  bucketing_method?: string;     // Method used for bucketing (e.g., "nearest_5")
   /* LEGACY: reports predating the scoring rewrite have no ncar/nec/rct. The
      PDF renderer already crashed once on this assumption. */
   ncar?: number;

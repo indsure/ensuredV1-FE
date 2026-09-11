@@ -4032,7 +4032,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 reportData.__companions = companionRecords;
               }
               const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
-              // clients.score is integer; the engine emits 12.5-step buckets (e.g. 87.5)
+              // clients.score is integer. The engine buckets to 5-point steps, so this
+              // round is a no-op; it stays as a guard for any unbucketed path.
               const score = rawScore == null ? null : Math.round(Number(rawScore));
               const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
               // Only a name the pipeline actually found in the policy document. When it
@@ -5640,7 +5641,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
             const reportData = result.result;
             const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
-            // clients.score is integer; the engine emits 12.5-step buckets (e.g. 87.5)
+            // clients.score is integer. The engine buckets to 5-point steps, so this
+            // round is a no-op; it stays as a guard for any unbucketed path.
             const score = rawScore == null ? null : Math.round(Number(rawScore));
             const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
             // Only a name the pipeline actually found in the policy document. When it

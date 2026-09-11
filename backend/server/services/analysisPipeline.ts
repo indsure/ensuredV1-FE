@@ -232,10 +232,15 @@ function pushConfidenceNote(parsed: any, note: string) {
 
 // Highest display bucket each verdict band is allowed to show, so the
 // bucketed score can never visually contradict the verdict label.
+/** The highest score each verdict may display: the top bucket strictly inside
+ *  that verdict's band. VERDICT RULES put RISKY below 50 and BORDERLINE below
+ *  70, so on the 5-point grid those ceilings are 45 and 65. These were 37.5 and
+ *  62.5, the same ceilings on the old 12.5 grid; leaving them would have let a
+ *  clamp put a non-multiple-of-5 score on screen. */
 const VERDICT_DISPLAY_MAX: Record<string, number> = {
   SAFE: 100,
-  BORDERLINE: 62.5,
-  RISKY: 37.5,
+  BORDERLINE: 65,
+  RISKY: 45,
 };
 
 /**
