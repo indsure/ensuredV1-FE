@@ -98,7 +98,7 @@ const featureRows: { label: string; free: string | boolean; agent: string | bool
   { label: "Rider directory", free: true, agent: true, agency: true },
   { label: "Policy data entry + Excel export (motor / life / travel / property)", free: "20 total", agent: "50 / month", agency: "50 / seat / month" },
   { label: "Policy checks — full audit of any policy", free: "3 one-time", agent: "12 / month", agency: "10 / seat / month, movable" },
-  { label: "Policy compare, side by side (uses 1 check)", free: true, agent: true, agency: true },
+  { label: "Policy compare, side by side (catalog free · uploaded quotes use 2 checks)", free: true, agent: true, agency: true },
   { label: "Live quotes — fetch & compare prices across insurers (coming soon)", free: false, agent: "Monthly allowance", agency: "Shared allowance" },
   { label: "Extra check packs (5 for ₹449 · 15 for ₹1,199)", free: false, agent: true, agency: true },
   { label: "Sach assistant — ask any policy question", free: false, agent: "Fair use", agency: "Fair use" },

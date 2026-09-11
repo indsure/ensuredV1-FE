@@ -17,6 +17,7 @@ import { extractStructuredData } from "./services/dataExtraction";
 import {
   isDataEntryType,
   deriveSharedColumns,
+  mergeExtractedData,
   isSupportedInsuranceType,
   SUPPORTED_INSURANCE_TYPES,
 } from "./services/extractionFields";
@@ -5562,9 +5563,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         return res.status(400).json({ error: "extracted_data object required" });
       }
 
-      // Verify ownership and fetch the insurance type for shared-column mapping.
+      // Verify ownership and fetch the insurance type for shared-column mapping,
+      // plus the stored blob so this save merges into it instead of replacing it.
       const ownerCheck = await pool.query(
-        "SELECT insurance_type FROM clients WHERE id = $1 AND agent_id = $2",
+        "SELECT insurance_type, extracted_data FROM clients WHERE id = $1 AND agent_id = $2",
         [id, agentId]
       );
       if (ownerCheck.rows.length === 0) {
@@ -5573,7 +5575,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       recordAccess(req, agentId, id, "update_client");
       const insuranceType = ownerCheck.rows[0].insurance_type;
-      const shared = deriveSharedColumns(insuranceType, extractedData);
+      // Callers send a partial: the review form omits every `json` field, the
+      // value card sends only the value keys. Merging keeps what the caller did
+      // not send. See mergeExtractedData for what this used to destroy.
+      const merged = mergeExtractedData(ownerCheck.rows[0].extracted_data, extractedData);
+      // Derived from the merged blob, not the patch — otherwise a partial save
+      // that omits `insurer` would null the column it maps to.
+      const shared = deriveSharedColumns(insuranceType, merged);
 
       await pool.query(
         `UPDATE clients SET
@@ -5585,7 +5593,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           policyholder_name = COALESCE($6, policyholder_name)
         WHERE id = $7 AND agent_id = $8`,
         [
-          JSON.stringify(extractedData),
+          JSON.stringify(merged),
           shared.insurer ?? null,
           shared.policy_name ?? null,
           shared.expiry_date ?? null,
@@ -5596,7 +5604,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         ]
       );
 
-      res.json({ ok: true });
+      res.json({ ok: true, extracted_data: merged });
     } catch (err: any) {
       console.error("Save extracted-data error:", err);
       res.status(500).json({ error: "Internal server error" });
@@ -5919,7 +5927,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       /* Two lanes end up on this URL. Health produces `report_data` and always
          has. Every data-entry type produces `extracted_data` and never a
-         report, so requiring report_data made those links permanently dead -
+         report, so requiring report_data made those links permanently dead —
          36 of 65 live links were in that state on 2026-09-09.
 
          The readiness test is therefore per lane: a data-entry policy is ready
@@ -5966,11 +5974,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
          For the data-entry lane the payload carries ONLY the allowlisted fields
          (see shared/dataEntryShare.ts). Policy, engine, chassis and registration
          numbers, nominees, life assured, travellers and site addresses never
-         leave this function. `filename` is withheld too: uploaded documents are
-         routinely named after the policy number or the customer. The motor
-         add-on scan rides along because it is the substance of a motor policy
-         and holds no personal data - it is a list of cover names with the
-         document line each was read from. */
+         leave this function. The motor add-on scan rides along because it is the
+         substance of a motor policy, and it holds no personal data — it is a
+         list of cover names with the document line each was read from. */
       if (isDataEntryShare) {
         const addOns = (client.extracted_data as any)?.[ADD_ON_FINDINGS_KEY] ?? null;
         return res.json({

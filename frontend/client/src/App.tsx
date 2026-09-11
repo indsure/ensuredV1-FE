@@ -258,11 +258,18 @@ function App() {
                       <Route path="/agent/calculator">
                         {() => <AgentProtectedRoute><AgentCalculator /></AgentProtectedRoute>}
                       </Route>
+                      {/* Compare defaults to the catalog: instant, and it costs the
+                          agent nothing. Uploading two wordings is the paid lane and
+                          lives one click deeper, at /agent/compare/quotes.
+                          /agent/compare/catalog stays alive for older links. */}
+                      <Route path="/agent/compare/quotes">
+                        {() => <AgentProtectedRoute><AgentCompare /></AgentProtectedRoute>}
+                      </Route>
                       <Route path="/agent/compare/catalog">
                         {() => <AgentProtectedRoute><AgentCatalogCompare /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/compare">
-                        {() => <AgentProtectedRoute><AgentCompare /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><AgentCatalogCompare /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/riders">
                         {() => <AgentProtectedRoute><RiderDirectory /></AgentProtectedRoute>}
