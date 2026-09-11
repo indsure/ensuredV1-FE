@@ -23,6 +23,11 @@ type PolicyRow = {
   /** The OCR lane's output. Present for every data-entry type, never for health. */
   extracted_data: Record<string, any> | null;
   error_message: string | null;
+  /* Identity for the downloaded PDF. The endpoint already returns these (it
+     SELECTs *); the type simply never named them, so the page could not pass
+     them on. */
+  policyholder_name: string | null;
+  created_at: string | null;
 };
 
 // Consumer report view. Reuses the full PolicyAuditReport renderer, but with
@@ -137,7 +142,29 @@ export default function PolicyDetail({ id }: { id: string }) {
               {row.nickname}
             </span>
           )}
-          <PolicyAuditReport data={report as any} hideNav hideLeadCTA />
+          {/* The downloaded PDF needs to say which policy it is about.
+              The report payload itself carries no insurer, plan name or
+              policyholder: the row wrapping it does, and this page was passing
+              none of it, so a customer who downloaded their own audit got an
+              anonymous document. The agent report and the shared report both
+              pass this; the consumer one was the last surface that did not.
+
+              policy_name only, never a suggested name. Since the provenance
+              change, policy_name holds a name actually read from the document,
+              and a guess must not be printed as the policy's name in a record
+              somebody keeps. */}
+          <PolicyAuditReport
+            data={report as any}
+            hideNav
+            hideLeadCTA
+            pdfMeta={{
+              insurer: row?.insurer ?? undefined,
+              policyName: row?.policy_name ?? undefined,
+              policyholderName: row?.policyholder_name ?? undefined,
+              sourceFilename: row?.filename ?? undefined,
+              generatedAt: row?.created_at ?? undefined,
+            }}
+          />
         </div>
       )}
 
