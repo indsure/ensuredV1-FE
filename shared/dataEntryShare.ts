@@ -86,6 +86,11 @@ export const SHAREABLE_FIELDS: Record<ShareableType, ShareableField[]> = {
     { key: "premium", label: "Premium", format: "money" },
     { key: "policy_start_date", label: "Cover starts", format: "date" },
     { key: "policy_expiry_date", label: "Cover ends", format: "date" },
+    // A bundled policy's two covers end on different days, and the customer is
+    // entitled to know which. Dates are commercial terms, not identifiers, so
+    // they are publishable: nothing here says which vehicle they belong to.
+    { key: "od_expiry_date", label: "Own-damage cover ends", format: "date" },
+    { key: "tp_expiry_date", label: "Third-party cover ends", format: "date" },
   ],
   life: [
     { key: "policyholder_name", label: "Policyholder", format: "text" },

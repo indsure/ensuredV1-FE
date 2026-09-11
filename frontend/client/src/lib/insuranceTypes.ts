@@ -74,6 +74,11 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "coverage_type", label: "Coverage type", type: "text" },
     { key: "policy_start_date", label: "Policy start date", type: "date" },
     { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
+    // Bundled motor policies end their own-damage and third-party covers on
+    // different days. The renewal an advisor sells against is the OD one.
+    // Keep in sync with backend/server/services/extractionFields.ts.
+    { key: "od_expiry_date", label: "Own-damage (OD) cover end date", type: "date" },
+    { key: "tp_expiry_date", label: "Third-party (TP) cover end date", type: "date" },
   ],
   life: [
     { key: "policyholder_name", label: "Policyholder / proposer", type: "text", shared: "policyholder_name" },

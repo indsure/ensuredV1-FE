@@ -88,6 +88,13 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "coverage_type", label: "Coverage type", type: "text" },
     { key: "policy_start_date", label: "Policy start date", type: "date" },
     { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
+    // A bundled motor policy is two covers with two different end dates: own
+    // damage runs a year, third party runs three (car) or five (two-wheeler).
+    // Only one of them is the renewal an advisor sells against, and it is the
+    // OD one. Capturing a single "policy expiry" left the model to pick, and it
+    // picked inconsistently, so a bundled policy could be chased years late.
+    { key: "od_expiry_date", label: "Own-damage (OD) cover end date", type: "date" },
+    { key: "tp_expiry_date", label: "Third-party (TP) cover end date", type: "date" },
   ],
   life: [
     { key: "policyholder_name", label: "Policyholder / proposer", type: "text", shared: "policyholder_name" },
@@ -249,6 +256,12 @@ export function buildExtractionPrompt(type: DataEntryType): string {
     })
     .join(",\n");
 
+  const hasOdTp = fields.some((f) => f.key === "od_expiry_date");
+  const odTpRule = hasOdTp
+    ? `
+- "od_expiry_date" and "tp_expiry_date": an Indian motor policy may be a BUNDLED or LONG-TERM policy covering own damage (OD) and third party (TP) for DIFFERENT periods - typically OD for 1 year and TP for 3 years (private car) or 5 years (two-wheeler). Read BOTH end dates separately when the document states two periods. If the policy is a single package where both covers end on the same day, put that same date in both. If it is a standalone TP-only or OD-only policy, fill the one it covers and use null for the other. Never copy one into the other as a guess.`
+    : "";
+
   const hasNextPremium = fields.some((f) => f.key === "next_premium_date");
   const today = new Date().toISOString().slice(0, 10);
   const nextPremiumRule = hasNextPremium
@@ -267,7 +280,7 @@ ${lines}
 Rules:
 - Use null for any field not clearly stated in the document. Do NOT guess or infer.
 - Dates must be formatted as YYYY-MM-DD.
-- Numeric fields must contain a plain number (e.g. 500000), no currency symbols, commas, or words.${nextPremiumRule}
+- Numeric fields must contain a plain number (e.g. 500000), no currency symbols, commas, or words.${odTpRule}${nextPremiumRule}
 - Do NOT add extra keys, comments, or markdown. Return only the raw JSON object.`;
 }
 
@@ -310,5 +323,23 @@ export function deriveSharedColumns(
     if (raw === null || raw === undefined || raw === "") continue;
     out[f.shared] = raw;
   }
+
+  /* Motor renews on the own-damage date, not the third-party one.
+     `clients.expiry_date` is the single date every renewal surface reads, and
+     on a bundled policy the two covers end years apart: OD after a year, TP
+     after three (car) or five (two-wheeler). Chasing the TP date means chasing
+     a renewal that is not due, and missing the one that is, which for an
+     advisor is a lost commission rather than a cosmetic slip.
+
+     This is a deliberate override rather than a `shared` mapping on the field,
+     because two fields cannot both claim one column and the fallback order
+     matters: OD when we read it, otherwise whatever the single policy expiry
+     said. A document with no OD date, and every row written before this change,
+     therefore behaves exactly as it did. */
+  if (type === "motor") {
+    const od = data.od_expiry_date;
+    if (od !== null && od !== undefined && od !== "") out.expiry_date = od;
+  }
+
   return out;
 }
