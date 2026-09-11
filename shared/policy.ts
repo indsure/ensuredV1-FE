@@ -489,10 +489,47 @@ export interface ForensicAuditReport {
   cover_stack?: CoverStack;
   confidence_notes: string[];
   data_quality: DataQuality;
+  /** Which rules produced this report. Absent on anything scored before we
+   *  started recording it: see CURRENT_SCORING_VERSION. */
+  engine?: EngineStamp;
   __internal?: {
     policyText: string;
   };
 }
+
+/**
+ * The scoring rules currently in force.
+ *
+ * Declared here because the frontend needs it to tell a reader that a stored
+ * report was scored under rules that have since changed, and the backend cannot
+ * be imported from there. analysisPipeline.ts holds the authoritative copy, for
+ * the reason computeSingleEventCover is duplicated: the EC2 box runs tsx over
+ * backend/server alone and a cross-directory import that resolves locally and
+ * not there would take the paid audit path down at boot.
+ * engineVersion.test.ts is what keeps the two equal.
+ */
+export const CURRENT_SCORING_VERSION = "2.0.0";
+
+export interface EngineStamp {
+  /** The audit prompt the model was given. */
+  prompt_version: string;
+  /** The server-side scoring rules. Bumped whenever the same policy would score
+   *  differently on the same input. */
+  scoring_version: string;
+  /** YYYY-MM-DD. */
+  scored_at: string;
+}
+
+/**
+ * Was this report scored under rules that have since changed?
+ *
+ * An absent stamp means yes: nothing carried one until the rules first moved, so
+ * every report without it predates that. Deliberately not a version comparison:
+ * "different from what runs today" is the question a reader has, and it stays
+ * right whichever direction a version string moves.
+ */
+export const isScoredUnderOldRules = (report: { engine?: EngineStamp } | null | undefined): boolean =>
+  (report?.engine?.scoring_version ?? null) !== CURRENT_SCORING_VERSION;
 
 // ─── Type Guards ──────────────────────────────────────────────────────────────
 

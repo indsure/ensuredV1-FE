@@ -1,6 +1,6 @@
 import fs from "fs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { MASTER_AUDIT_PROMPT } from "../promptTemplate";
+import { MASTER_AUDIT_PROMPT, PROMPT_VERSION } from "../promptTemplate";
 import { LIFE_INSURANCE_PROMPT } from "../lifeInsurancePrompt";
 import { VEHICLE_INSURANCE_PROMPT } from "../vehicleInsurancePrompt";
 import { AIService } from "./aiService";
@@ -368,6 +368,45 @@ export function enforceBreakdownCaps(parsed: any) {
 
     breakdown[key] = next;
   }
+}
+
+/**
+ * Which scoring rules produced a report.
+ *
+ * Separate from PROMPT_VERSION because the two move independently: the prompt
+ * can gain a field without any change to how a score is arrived at, and the
+ * server-side arithmetic can change without a word of the prompt moving.
+ *
+ * Bump this whenever a stored report would score differently on the same input.
+ * That is the whole contract. A report carrying an older stamp is not wrong, it
+ * was scored under rules that no longer apply, and saying so is the difference
+ * between an explanation and an unexplained number.
+ *
+ *   1.0.0  the rules as they stood before this was recorded. Never stamped, so
+ *          an absent stamp means this or older.
+ *   2.0.0  2026-09-11. Required cover re-anchored to what one admission costs,
+ *          from the calculator's own figures; the floater multiplier removed,
+ *          because a single-event threshold must not carry multi-event risk;
+ *          the NCAR penalty changed from four steps to the prompt's continuous
+ *          curve. Same policy, materially different score.
+ */
+export const SCORING_VERSION = "2.0.0";
+
+/**
+ * Record which rules scored this report, so a reader is never left comparing a
+ * number against rules it was not produced under.
+ *
+ * Stored beside the report rather than inside audit_score, so it survives any
+ * future rewrite of the score object and can be read without knowing anything
+ * about scoring.
+ */
+export function stampEngineVersion(parsed: any) {
+  if (!parsed || typeof parsed !== "object") return;
+  parsed.engine = {
+    prompt_version: PROMPT_VERSION,
+    scoring_version: SCORING_VERSION,
+    scored_at: new Date().toISOString().split("T")[0],
+  };
 }
 
 /**
@@ -829,6 +868,9 @@ export async function runAnalysisPipeline(
       // Add bucketing explanation to confidence notes
       pushConfidenceNote(parsed, getBucketingExplanation());
     }
+
+    // Last, so it records the rules everything above actually ran under.
+    stampEngineVersion(parsed);
 
     const planCandidate =
       metadata.product ||

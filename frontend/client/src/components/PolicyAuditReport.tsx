@@ -19,7 +19,8 @@ import {
     computeUnlockDate,
     computeUnlockDateMonths,
     describeRestoration,
-    deriveCoverView
+    deriveCoverView,
+    isScoredUnderOldRules
 } from "@shared/policy";
 import type { WaitingPeriodView } from "@shared/policy";
 import { cn } from "@/lib/utils";
@@ -685,6 +686,18 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 Your cover is {ncar.toFixed(2)}× the minimum recommended for your age and city.
                             </div>
                         </div>
+                        )}
+                        {/* A score is only meaningful against the rules that produced it.
+                            These rules have changed twice, and a stored report goes on
+                            displaying its original number for ever, so a reader comparing
+                            two reports can be comparing two different questions without
+                            being told. Say it on the score itself, where the number is. */}
+                        {isScoredUnderOldRules(data) && (
+                            <div className="mb-3 mx-auto max-w-[220px] rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                                Scored under earlier rules
+                                {data.engine?.scored_at ? ` (${data.engine.scored_at})` : ""}. Our cover
+                                thresholds have changed since. Re-run this policy for a score on today's rules.
+                            </div>
                         )}
                         <div className="text-xs text-[var(--color-text-secondary)] max-w-[220px] leading-relaxed mx-auto space-y-1">
                             <p>{data.audit_score?.deductions?.length ?? 0} {(data.audit_score?.deductions?.length ?? 0) === 1 ? 'clause' : 'clauses'} in your policy pushed this score down.</p>
