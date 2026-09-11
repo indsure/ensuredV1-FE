@@ -261,13 +261,19 @@ export default function SignupPublic() {
           <div className="space-y-1.5">
             <FieldLabel htmlFor="su-phone" required>Mobile number</FieldLabel>
             {/* +91 is a static prefix, not part of the value: we store 10 digits.
-                The input's left padding has to clear it and nothing more. At pl-14
-                the prefix ended 16px before the typed number began, which read as
-                a stray space in front of the number rather than as a prefix
-                attached to it. The prefix sits at left-4 and is 24px wide, so 48px
-                of padding leaves a normal 8px word gap. */}
+                z-10 is doing the real work here. The Input component wraps its
+                own field in a `relative` div, so the wrapper and this span are
+                both positioned siblings with z-index auto, and the wrapper comes
+                second - which means the input's white background painted straight
+                over the prefix. document.elementFromPoint at the prefix returned
+                the input, not this span. The +91 was not faint or mispositioned,
+                it was invisible, and all anyone saw was an empty gap in front of
+                the number they had typed.
+
+                The padding is sized to the prefix and nothing more: it sits at
+                left-4 and is 24px wide, so 48px leaves a normal 8px word gap. */}
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[var(--color-text-muted)] pointer-events-none">
+              <span className="absolute left-4 top-1/2 z-10 -translate-y-1/2 text-sm font-semibold text-[var(--color-text-muted)] pointer-events-none">
                 +91
               </span>
               <Input
