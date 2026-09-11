@@ -274,9 +274,14 @@ for (const f of files.filter(isUI)) {
    line went 12px -> 14px. Every public page now reports zero content nodes
    under 14px when measured in the browser at 375px, which is the check the
    line-counting rule below can only approximate. */
+/* 2026-09-11: 811 -> 798 and 368 -> 363. Deduplication, not a design pass. The
+   five rows of the audit report's Waiting Periods table each carried their own
+   copy of the same markup, badge ternary and info icon; they now share one row
+   component, so ten small-type lines and five slate-400 lines collapsed into
+   two and one. */
 const BUDGETS = {
-  "sub-14px-type": 811,
-  "low-contrast-token": 368,
+  "sub-14px-type": 798,
+  "low-contrast-token": 363,
   "native-dialog": 5,
   "placeholder-as-label": 2,
   // Weak detector: only catches `>...AI...<` on a single line, so it under-reports.

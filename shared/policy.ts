@@ -779,9 +779,13 @@ export const getNCARLabel = (ncar: number): string => {
 
 export const computeUnlockDate = (
   inceptionDate: string | null,
-  durationDays: number
+  durationDays: number | null | undefined
 ): string | null => {
   if (!inceptionDate) return null;
+  // A missing duration must return null, not a date. `getUTCDate() + undefined`
+  // is NaN, which makes the Date invalid, and toISOString() on an invalid Date
+  // throws. Inside a render that takes the whole report down, not one row.
+  if (durationDays == null || !Number.isFinite(durationDays)) return null;
   const start = new Date(inceptionDate);
   if (isNaN(start.getTime())) return null;
   start.setUTCDate(start.getUTCDate() + durationDays);
@@ -796,7 +800,7 @@ export const computeUnlockDateMonths = (
   inceptionDate: string | null,
   durationMonths: number | null
 ): string | null => {
-  if (!inceptionDate || durationMonths == null) return null;
+  if (!inceptionDate || durationMonths == null || !Number.isFinite(durationMonths)) return null;
   const start = new Date(inceptionDate);
   if (isNaN(start.getTime())) return null;
   const day = start.getUTCDate();
@@ -820,21 +824,116 @@ const monthsRemainingUntil = (endDate: string | null): number | null => {
   return Math.max(1, months);
 };
 
-export const getWaitingPeriodStatus = (
-  isActive: boolean,
-  monthsRemaining: number | null,
-  endDate: string | null
-): { status: "active" | "served"; label: string } => {
-  if (!isActive) return { status: "served", label: "✅ Served" };
+/**
+ * The five things a waiting-period row can mean.
+ *
+ * This returned only two of them for a long time, and everything that was not
+ * counting down came back "Served". So a policy that does not cover maternity
+ * at all rendered a green tick beside the word Maternity, directly below a
+ * coverage grid saying Not Covered, and beside a finding saying the same.
+ *
+ * Served is a claim: a real waiting period existed and has elapsed. It can
+ * never be the fallback, because the fallback is where every unknown lands.
+ *
+ *   not_covered  the benefit is absent, so there is no period to serve. A gap,
+ *                not an achievement.
+ *   not_stated   the benefit exists but the document gives no duration. We do
+ *                not know, and saying so is the only honest answer.
+ *   none         the document states zero: covered from day one.
+ *   served       a real period that has actually elapsed.
+ *   active       still counting down.
+ */
+export type WaitingPeriodState =
+  | "active"
+  | "served"
+  | "none"
+  | "not_stated"
+  | "not_covered";
+
+export interface WaitingPeriodView {
+  status: WaitingPeriodState;
+  /** Badge text. */
+  label: string;
+  /** What the badge means: a live gap, something unknown, or good news. */
+  tone: "bad" | "unknown" | "good";
+  /** Tooltip. Empty where the badge already says everything. */
+  note: string;
+  /** Replaces the row's duration sub-line when there is no duration to show. */
+  detail: string | null;
+}
+
+export const getWaitingPeriodStatus = (input: {
+  /** The duration as the document states it. null/undefined means it did not. */
+  duration: number | null | undefined;
+  /** false when the benefit itself is absent. Omit where coverage is not a concept. */
+  covered?: boolean | null;
+  isActive: boolean;
+  monthsRemaining?: number | null;
+  endDate?: string | null;
+}): WaitingPeriodView => {
+  const { duration, covered, isActive } = input;
+  const monthsRemaining = input.monthsRemaining ?? null;
+  const endDate = input.endDate ?? null;
+
+  // Order matters. Coverage is checked before duration, because a benefit the
+  // policy does not carry has no duration by definition, and "not stated" would
+  // send the reader to the insurer to ask about something that does not exist.
+  if (covered === false) {
+    return {
+      status: "not_covered",
+      label: "✕ Not covered",
+      tone: "bad",
+      note: "This policy does not cover it, so there is no waiting period to serve.",
+      detail: "Not covered by this policy",
+    };
+  }
+
+  if (duration == null || !Number.isFinite(duration)) {
+    return {
+      status: "not_stated",
+      label: "⚠ Not stated",
+      tone: "unknown",
+      note: "The uploaded document does not state a duration for this waiting period. Confirm it with the insurer or the full policy wording.",
+      detail: "Not specified in schedule",
+    };
+  }
+
+  if (duration <= 0) {
+    return {
+      status: "none",
+      label: "✅ No waiting period",
+      tone: "good",
+      note: "This benefit is available from day one.",
+      detail: "Covered from day one",
+    };
+  }
+
+  if (!isActive) {
+    return {
+      status: "served",
+      label: "✅ Served",
+      tone: "good",
+      note: "This waiting period is complete.",
+      detail: null,
+    };
+  }
+
   // Always prefer remaining derived from the unlock date so the label reflects
   // time left from today, not the policy's full original duration. Fall back to
   // the supplied value only when there is no usable end date.
   const remaining = monthsRemainingUntil(endDate) ?? monthsRemaining;
+  const active = (label: string): WaitingPeriodView => ({
+    status: "active",
+    label,
+    tone: "bad",
+    note: "",
+    detail: null,
+  });
   if (remaining !== null && remaining > 0) {
-    return { status: "active", label: `⏳ ${remaining} months remaining` };
+    return active(`⏳ ${remaining} months remaining`);
   }
   if (endDate) {
-    return { status: "active", label: `⏳ Unlocks ${endDate}` };
+    return active(`⏳ Unlocks ${endDate}`);
   }
-  return { status: "active", label: "⏳ Active" };
+  return active("⏳ Active");
 }

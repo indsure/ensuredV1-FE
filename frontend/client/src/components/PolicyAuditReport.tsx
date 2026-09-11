@@ -21,6 +21,7 @@ import {
     describeRestoration,
     deriveCoverView
 } from "@shared/policy";
+import type { WaitingPeriodView } from "@shared/policy";
 import { cn } from "@/lib/utils";
 import { CoverageDiagnostic } from "./CoverageDiagnostic";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -97,6 +98,36 @@ function getSimulationVerdictColor(verdict: "COVERED" | "PARTIAL" | "EXPOSED") {
         case "PARTIAL": return "text-amber-600 bg-amber-50 border-amber-200";
         case "EXPOSED": return "text-red-600 bg-red-50 border-red-200";
     }
+}
+
+/** Badge colour by what the state MEANS, so a new state cannot default to green. */
+const WAITING_TONE: Record<WaitingPeriodView["tone"], string> = {
+    bad: "bg-red-100 text-red-700",
+    unknown: "bg-amber-100 text-amber-700",
+    good: "bg-green-100 text-green-700",
+};
+
+/**
+ * One row of the Waiting Periods table.
+ *
+ * Every row used to carry its own copy of this markup, including its own
+ * red-or-green ternary, which is how one of them came to paint "Served" green
+ * for a benefit the policy does not cover. The colour and the words are decided
+ * once, by getWaitingPeriodStatus, and only rendered here.
+ */
+function WaitingPeriodRow({ title, detail, view }: { title: string; detail: string; view: WaitingPeriodView }) {
+    return (
+        <li className="flex justify-between items-center text-sm border-b border-blue-100 last:border-0 pb-2">
+            <div>
+                <span className="block font-medium">{title}</span>
+                <span className="text-xs text-[var(--color-text-secondary)]">{view.detail ?? detail}</span>
+            </div>
+            <div className="flex items-center">
+                <span className={cn("text-xs font-bold px-2 py-1 rounded", WAITING_TONE[view.tone])}>{view.label}</span>
+                {view.note ? <span title={view.note} className="ml-1 text-slate-400 cursor-help">ℹ</span> : null}
+            </div>
+        </li>
+    );
 }
 
 export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, pdfMeta }: PolicyAuditReportProps) {
@@ -1119,120 +1150,81 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                     {(() => {
                                         const wp = data.waiting_period_analysis?.initial_waiting_period;
                                         if (!wp) return null;
-                                        const computedEndDate = computeUnlockDate(data.policy_timeline?.policy_inception_date, wp.duration_days);
-                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today;
-                                        const { status, label } = getWaitingPeriodStatus(isActiveToday, null, computedEndDate);
-                                        return (
-                                            <li className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
-                                                <div>
-                                                    <span className="block font-medium">Initial Waiting Period</span>
-                                                    <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_days} days</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className={cn("text-xs font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
-                                                </div>
-                                            </li>
-                                        );
+                                        const endDate = computeUnlockDate(data.policy_timeline?.policy_inception_date, wp.duration_days);
+                                        const view = getWaitingPeriodStatus({
+                                            duration: wp.duration_days,
+                                            isActive: endDate ? new Date() < new Date(endDate) : !!wp.is_active_today,
+                                            endDate,
+                                        });
+                                        return <WaitingPeriodRow title="Initial Waiting Period" detail={`${wp.duration_days} days`} view={view} />;
                                     })()}
 
                                     {(() => {
                                         const wp = data.waiting_period_analysis?.pre_existing_disease;
                                         if (!wp) return null;
-
-                                        // Case 1: no PED duration anywhere in the document — don't fabricate a date.
-                                        if (wp.duration_months == null) {
-                                            return (
-                                                <li className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
-                                                    <div>
-                                                        <span className="block font-medium">Pre-Existing Diseases</span>
-                                                        <span className="text-xs text-[var(--color-text-secondary)]">Not specified in schedule</span>
-                                                    </div>
-                                                    <div className="flex items-center">
-                                                        <span className="text-xs font-bold px-2 py-1 rounded bg-amber-100 text-amber-700">⚠ Not stated — verify with insurer</span>
-                                                        <span title="The uploaded document does not state a pre-existing disease waiting period. Confirm it with the insurer or full policy wording." className="ml-1 text-slate-400 cursor-help">ℹ</span>
-                                                    </div>
-                                                </li>
-                                            );
+                                        const endDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
+                                        let view = getWaitingPeriodStatus({
+                                            duration: wp.duration_months,
+                                            isActive: endDate ? new Date() < new Date(endDate) : wp.is_active_today ?? false,
+                                            monthsRemaining: wp.months_remaining,
+                                            endDate,
+                                        });
+                                        // Derived from the specific-illness period rather than stated in its own
+                                        // right. The number is usable, but it is not a reading, so it must not
+                                        // be shown with the confidence of one.
+                                        if (wp.stated === false && view.status !== "not_stated") {
+                                            view = {
+                                                ...view,
+                                                label: `≈ ${view.label}`,
+                                                tone: "unknown",
+                                                note: "Estimated. The schedule does not separately state a pre-existing disease waiting period, so this is derived from the specific-illness exclusion period. Verify it with the insurer.",
+                                            };
                                         }
-
-                                        // Case 2: PED not explicitly stated but estimated from the specific-illness waiting period.
-                                        const estimated = wp.stated === false;
-                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
-                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today ?? false;
-                                        const { status, label } = getWaitingPeriodStatus(isActiveToday, wp.months_remaining, computedEndDate);
-                                        return (
-                                            <li className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
-                                                <div>
-                                                    <span className="block font-medium">Pre-Existing Diseases</span>
-                                                    <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months{estimated ? " (est. from specific-illness waiting)" : ""}</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className={cn("text-xs font-bold px-2 py-1 rounded", estimated ? "bg-amber-100 text-amber-700" : status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{estimated ? `≈ ${label}` : label}</span>
-                                                    <span title={estimated ? "Estimated: the schedule does not separately state a pre-existing disease waiting period. This is derived from the specific-illness exclusion period — verify with the insurer." : (status !== "active" ? "This waiting period is complete." : "")} className={cn("ml-1 text-slate-400", (estimated || status !== "active") ? "cursor-help" : "hidden")}>ℹ</span>
-                                                </div>
-                                            </li>
-                                        );
+                                        const detail = `${wp.duration_months} months${wp.stated === false ? " (est. from specific-illness waiting)" : ""}`;
+                                        return <WaitingPeriodRow title="Pre-Existing Diseases" detail={detail} view={view} />;
                                     })()}
 
                                     {(() => {
                                         const wp = data.waiting_period_analysis?.specific_diseases;
                                         if (!wp) return null;
-                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
-                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today;
-                                        const { status, label } = getWaitingPeriodStatus(isActiveToday, null, computedEndDate);
-                                        return (
-                                            <li className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
-                                                <div>
-                                                    <span className="block font-medium">Specific Diseases</span>
-                                                    <span className="text-xs text-[var(--color-text-secondary)]">
-                                                        {wp.duration_months} months
-                                                        {wp.diseases_covered?.length > 0 && ` — ${wp.diseases_covered.slice(0, 3).join(", ")}${wp.diseases_covered?.length > 3 ? "…" : ""}`}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className={cn("text-xs font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
-                                                </div>
-                                            </li>
-                                        );
+                                        const endDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
+                                        const view = getWaitingPeriodStatus({
+                                            duration: wp.duration_months,
+                                            isActive: endDate ? new Date() < new Date(endDate) : !!wp.is_active_today,
+                                            endDate,
+                                        });
+                                        const named = wp.diseases_covered?.length
+                                            ? `: ${wp.diseases_covered.slice(0, 3).join(", ")}${wp.diseases_covered.length > 3 ? "…" : ""}`
+                                            : "";
+                                        return <WaitingPeriodRow title="Specific Diseases" detail={`${wp.duration_months} months${named}`} view={view} />;
                                     })()}
 
                                     {data.waiting_period_analysis?.personal_waiting_periods?.map((wp, i) => {
-                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
-                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today;
-                                        const { status, label } = getWaitingPeriodStatus(isActiveToday, wp.months_remaining, computedEndDate);
-                                        return (
-                                            <li key={i} className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
-                                                <div>
-                                                    <span className="block font-medium">{wp.condition}</span>
-                                                    <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className={cn("text-xs font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
-                                                </div>
-                                            </li>
-                                        );
+                                        const endDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
+                                        const view = getWaitingPeriodStatus({
+                                            duration: wp.duration_months,
+                                            isActive: endDate ? new Date() < new Date(endDate) : !!wp.is_active_today,
+                                            monthsRemaining: wp.months_remaining,
+                                            endDate,
+                                        });
+                                        return <WaitingPeriodRow key={i} title={wp.condition} detail={`${wp.duration_months} months`} view={view} />;
                                     })}
 
                                     {data.waiting_period_analysis?.maternity?.relevant && (() => {
                                         const wp = data.waiting_period_analysis.maternity;
-                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
-                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : (wp.is_active_today ?? false);
-                                        const { status, label } = getWaitingPeriodStatus(isActiveToday, wp.months_remaining, computedEndDate);
-                                        return (
-                                            <li className="flex justify-between items-center text-sm pb-2">
-                                                <div>
-                                                    <span className="block font-medium">Maternity</span>
-                                                    <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className={cn("text-xs font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
-                                                </div>
-                                            </li>
-                                        );
+                                        // `relevant` is an audience filter: it says maternity matters to this
+                                        // family, not that the policy carries a maternity waiting period. Reading
+                                        // it as the second is what put a green tick beside Maternity on a policy
+                                        // that does not cover maternity at all.
+                                        const endDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
+                                        const view = getWaitingPeriodStatus({
+                                            duration: wp.duration_months,
+                                            covered: data.supplementary_coverage?.maternity?.covered,
+                                            isActive: endDate ? new Date() < new Date(endDate) : wp.is_active_today ?? false,
+                                            monthsRemaining: wp.months_remaining,
+                                            endDate,
+                                        });
+                                        return <WaitingPeriodRow title="Maternity" detail={`${wp.duration_months} months`} view={view} />;
                                     })()}
                                 </ul>
                             </div>
