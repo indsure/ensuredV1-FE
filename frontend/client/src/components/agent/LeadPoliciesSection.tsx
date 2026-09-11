@@ -197,7 +197,13 @@ function PolicyCard({ policy: p, busy, onToggleSpoken, onDelete }: {
 function AddPolicyForm({ leadId, agentId, onCancel, onAdded }: {
   leadId: string; agentId: string; onCancel: () => void; onAdded: (p: LeadPolicy) => void;
 }) {
-  const [type, setType] = useState<LeadPolicyType>("motor");
+  /* No default type. It used to start on Motor, so an advisor who did not
+     notice the field filed a life or health policy as motor, and nothing about
+     the screen told them. A wrong type is not cosmetic: it decides which
+     extraction runs, which fields are asked for, and which renewal date the
+     policy is chased on. One deliberate tap is cheaper than a silently
+     misfiled policy. */
+  const [type, setType] = useState<LeadPolicyType | "">("");
   const [file, setFile] = useState<File | null>(null);
   const [ocr, setOcr] = useState(true);
   const [insurer, setInsurer] = useState("");
@@ -207,10 +213,14 @@ function AddPolicyForm({ leadId, agentId, onCancel, onAdded }: {
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const ocrAvailable = OCR_SUPPORTED.includes(type);
+  const ocrAvailable = type !== "" && OCR_SUPPORTED.includes(type);
 
   async function save() {
     const overrides = { insurer, premium, due_date: dueDate, policyholder_name: holder };
+    if (!type) {
+      toast({ variant: "destructive", title: "Choose a policy type first" });
+      return;
+    }
     if (!file && !insurer.trim() && !premium.trim() && !dueDate.trim() && !holder.trim()) {
       toast({ variant: "destructive", title: "Add a file or some details first" });
       return;
@@ -239,7 +249,8 @@ function AddPolicyForm({ leadId, agentId, onCancel, onAdded }: {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-bold text-slate-500">Policy type</span>
-          <select value={type} onChange={(e) => setType(e.target.value as LeadPolicyType)} className={inputCls}>
+          <select value={type} onChange={(e) => setType(e.target.value as LeadPolicyType | "")} className={inputCls}>
+            <option value="">Choose a type</option>
             {LEAD_POLICY_TYPES.map((t) => <option key={t} value={t}>{LEAD_POLICY_TYPE_META[t].label}</option>)}
           </select>
         </label>
@@ -267,7 +278,13 @@ function AddPolicyForm({ leadId, agentId, onCancel, onAdded }: {
         <label className={`mt-3 flex items-center gap-2 text-sm ${ocrAvailable ? "text-slate-600" : "text-slate-400"}`}>
           <input type="checkbox" checked={ocr && ocrAvailable} disabled={!ocrAvailable} onChange={(e) => setOcr(e.target.checked)} className="h-4 w-4 accent-[#0D9488]" />
           Auto-fill details from the file
-          {!ocrAvailable && <span className="text-[11px] text-slate-400">(not available for {LEAD_POLICY_TYPE_META[type].label} — type details below)</span>}
+          {!ocrAvailable && (
+            <span className="text-[11px] text-slate-400">
+              {type
+                ? `(not available for ${LEAD_POLICY_TYPE_META[type].label} - type details below)`
+                : "(choose a policy type first)"}
+            </span>
+          )}
         </label>
       )}
 

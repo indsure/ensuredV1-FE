@@ -18,6 +18,7 @@ import { ArrowLeft, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TableRowSkeleton } from "@/components/ui/skeleton"
+import { isDataEntryType } from "@/lib/insuranceTypes"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import {
   fetchMember, fetchMemberClaims, fetchMemberCustomers, fetchMemberLeads, fetchMemberPolicies,
@@ -252,10 +253,20 @@ function PoliciesTable({ rows }: { rows: any[] }) {
             </td>
             <td className="px-3 py-3.5 text-slate-600" data-label="Insured with">{p.insurer || "—"}</td>
             <td className="px-3 py-3.5 text-slate-700" data-label="Expires">{fmtDate(p.expiry_date)}</td>
+            {/* Only health policies are scored. Every other type goes through the
+                data-entry lane, which produces no score and never will, so a
+                bordered badge containing a dash appeared on every row of a book
+                made mostly of motor and life policies. That reads as a number
+                that failed to load rather than a column that does not apply.
+                Say "not scored" in words, without the badge around it. */}
             <td className="px-3 py-3.5" data-label="Score">
-              <span className={`inline-flex items-center justify-center min-w-[34px] min-h-[26px] px-2 rounded-md border text-sm font-bold ${scoreChip(p.score)}`}>
-                {p.score ?? "—"}
-              </span>
+              {isDataEntryType(p.insurance_type) ? (
+                <span className="text-sm text-slate-500">Not scored</span>
+              ) : (
+                <span className={`inline-flex items-center justify-center min-w-[34px] min-h-[26px] px-2 rounded-md border text-sm font-bold ${scoreChip(p.score)}`}>
+                  {p.score ?? "—"}
+                </span>
+              )}
             </td>
             <td className="px-5 py-3.5 text-slate-500" data-label="Added">{fmtDate(p.created_at)}</td>
           </tr>
