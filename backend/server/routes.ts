@@ -25,6 +25,7 @@ import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage"
 import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
 import { pickShareableFields, hasShareableContent } from "../../shared/dataEntryShare";
+import { AGENT_TABLES, INDIVIDUAL_TABLES, selectForTable, type OwnedTable } from "./services/accountData";
 import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
@@ -4637,6 +4638,72 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   });
 
   /* ── Consumer: single policy (ownership-scoped) ──────────────────────── */
+  /* ── Account export ───────────────────────────────────────────────────────
+   * Hand a person everything we hold about them, on request, as one JSON file.
+   *
+   * The privacy policy promises deletion and the product had no control for it;
+   * export did not exist at all. Under the DPDP Act both are obligations. This
+   * is the read-only half and ships first on purpose: a person who is about to
+   * delete an account usually wants their data out before it goes, and nothing
+   * here can destroy anything.
+   *
+   * Built from the same table list the deletion walks (services/accountData.ts),
+   * so a table added to one is added to the other. Ledgers, audit rows and job
+   * records are deleted but not exported: they are our record of what happened,
+   * not the customer's data about themselves, and publishing an access log back
+   * to the person it audits is not a data right.
+   *
+   * Document BYTES are not bundled. The rows name every file and where it lives,
+   * but streaming a book of policy PDFs through a JSON response would time out
+   * and blow memory on a large account. The download route already exists per
+   * file and is authenticated; this says what there is to fetch.
+   */
+  async function buildExport(accountId: string, tables: OwnedTable[]) {
+    const data: Record<string, unknown[]> = {};
+    for (const t of tables) {
+      if (!t.exportable) continue;
+      try {
+        const r = await pool.query(selectForTable(t), [accountId]);
+        data[t.label] = r.rows;
+      } catch (err: any) {
+        // One unreadable table must not cost the person the rest of their data.
+        log.error("export_table_failed", { table: t.table, message: err?.message });
+        data[t.label] = [];
+      }
+    }
+    return data;
+  }
+
+  app.get("/api/me/export", async (req, res) => {
+    const userId = await requireIndividual(req, res);
+    if (!userId) return;
+    try {
+      const data = await buildExport(userId, INDIVIDUAL_TABLES);
+      const stamp = new Date().toISOString().slice(0, 10);
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="indsure-export-${stamp}.json"`);
+      return res.send(JSON.stringify({ exported_at: new Date().toISOString(), account: "individual", data }, null, 2));
+    } catch (err: any) {
+      log.error("me_export_failed", { message: err?.message });
+      return res.status(500).json({ error: "Could not build your export. Try again." });
+    }
+  });
+
+  app.get("/api/agent/export", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const data = await buildExport(agentId, AGENT_TABLES);
+      const stamp = new Date().toISOString().slice(0, 10);
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="indsure-export-${stamp}.json"`);
+      return res.send(JSON.stringify({ exported_at: new Date().toISOString(), account: "agent", data }, null, 2));
+    } catch (err: any) {
+      log.error("agent_export_failed", { message: err?.message });
+      return res.status(500).json({ error: "Could not build your export. Try again." });
+    }
+  });
+
   app.get("/api/me/policy/:id", async (req, res) => {
     try {
       const userId = await requireIndividual(req, res);
