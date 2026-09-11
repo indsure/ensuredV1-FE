@@ -76,16 +76,27 @@ export const scoreMeaning = (s: number) =>
 /* ── Dates ────────────────────────────────────────────────────────────── */
 
 // Days until a YYYY-MM-DD date (negative = past). null when unset/unparseable.
+/**
+ * A date column can arrive as "2026-10-04" or as a full ISO timestamp,
+ * depending on how the row was written and what the driver did with it. Both
+ * helpers below appended "T00:00:00" unconditionally, so a timestamp became
+ * "2026-10-04T00:00:00.000ZT00:00:00", which is not a date. daysUntil then
+ * returned null and the card fell back to printing the raw string: a customer
+ * saw "Renews 2026-10-04T00:00:00.000Z" and no countdown at all.
+ */
+const dayPart = (d: string): string =>
+  /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : String(d).slice(0, 10);
+
 export const daysUntil = (d: string | null): number | null => {
   if (!d) return null;
-  const t = new Date(d + "T00:00:00").getTime();
+  const t = new Date(dayPart(d) + "T00:00:00").getTime();
   if (Number.isNaN(t)) return null;
   return Math.ceil((t - Date.now()) / 86_400_000);
 };
 
 export const fmtDate = (d: string | null) => {
   if (!d) return "";
-  const dt = new Date(d + "T00:00:00");
+  const dt = new Date(dayPart(d) + "T00:00:00");
   return Number.isNaN(dt.getTime())
     ? d
     : dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });

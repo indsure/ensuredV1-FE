@@ -4503,8 +4503,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       );
       const p = prof.rows[0];
       const policies = await pool.query(
+        /* add_ons is the motor add-on scan only, lifted out of extracted_data
+           rather than sending the whole blob. It is what the checklist needs and
+           nothing else: no registration, engine or chassis number travels with
+           it, and the list payload stays small on a portfolio of many policies. */
         `SELECT id, insurance_type, status, filename, insurer, policy_name, nickname, score,
                 expiry_date, renewal_date, sum_insured, flaws, created_at, error_message,
+                extracted_data -> 'add_on_findings' AS add_ons,
                 (pdf_url IS NOT NULL) AS has_pdf
            FROM individual_policies
           WHERE user_id = $1

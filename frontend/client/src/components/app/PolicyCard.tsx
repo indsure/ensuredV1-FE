@@ -4,6 +4,9 @@ import {
   IndianRupee, Loader2, MessageCircle, Pencil, ShieldCheck, Trash2, X,
 } from "lucide-react";
 import type { Policy } from "./portfolio-types";
+import AddOnChecklist from "@/components/agent/AddOnChecklist";
+import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
+import { scoreMotorPolicy, motorScoreCaption } from "@shared/motorScore";
 import {
   daysUntil, fmtDate, formatINRShort, labelFor, parseSumInsured, renewalPhrase,
   scoreClasses, scoreVerdict, teamWaLink,
@@ -178,12 +181,30 @@ export function PolicyCard({
                   <p className={`text-sm font-semibold ${scoreClasses(p.score).text}`}>
                     {scoreVerdict(p.score)}
                   </p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                    Scored on what actually pays out: waiting periods, sub-limits, exclusions and
-                    claim conditions.
+                  {/* The caption has to match the policy. This line used to be
+                      hardcoded to the health audit for every scored policy, so a
+                      scooter was described as scored on "waiting periods and
+                      sub-limits" - health concepts that mean nothing about a
+                      vehicle. Motor policies score on how completely the vehicle
+                      is covered, and now say so in the same words the advisor
+                      portal uses. */}
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
+                    {p.insurance_type === "motor"
+                      ? motorScoreCaption(
+                          scoreMotorPolicy((p.add_ons ?? null) as any, null),
+                        )
+                      : "Scored on what actually pays out: waiting periods, sub-limits, exclusions and claim conditions."}
                   </p>
                 </div>
               )}
+
+              {/* What the vehicle is actually covered for, in the customer's own
+                  portfolio. The same checklist the advisor sees, from the same
+                  deterministic scan, so the two never disagree. It renders
+                  nothing at all unless the document was read. */}
+              {p.insurance_type === "motor" && p.add_ons ? (
+                <AddOnChecklist data={{ [ADD_ON_FINDINGS_KEY]: p.add_ons }} />
+              ) : null}
 
               {flaws.length > 0 ? (
                 <div>

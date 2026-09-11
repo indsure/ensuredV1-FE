@@ -19,6 +19,9 @@ export type Policy = {
   // (readableFailure in routes.ts) and safe to show as-is — internal errors are
   // mapped away before they reach this column.
   error_message: string | null;
+  /** The motor add-on scan, when this is a vehicle policy that was read.
+   *  Only the scan travels, never the rest of extracted_data. */
+  add_ons: unknown | null;
 };
 
 export type Portfolio = {
