@@ -155,6 +155,149 @@ export const AGENT_EXTRA_DELETES: ExtraDelete[] = [
   { table: "agents", sql: "DELETE FROM agents WHERE id = $1" },
 ];
 
+/* -- The references that BLOCK a delete of the agents row ----------------- */
+
+/**
+ * A foreign key pointing at `agents(id)` that will not get out of the way by
+ * itself, cleared before the agents row is deleted.
+ *
+ * WHY THIS LIST EXISTS AT ALL. Most references to `agents(id)` are CASCADE or
+ * SET NULL and need nothing from this code. Six are neither. Miss one and the
+ * final `DELETE FROM agents` raises a foreign key violation, the whole
+ * transaction rolls back, and the person is told "something went wrong" forever
+ * while the same endpoint works for everybody else. That is not a hypothetical:
+ * a live `pg_constraint` probe on 2026-09-11 found five unhandled, and four of
+ * them were held by ONE real advisor's five `policies` rows.
+ *
+ * THE TRAP THE MAP CANNOT SEE. `analysis_jobs` is in AGENT_TABLES and deletion
+ * clears it by `agent_id` - but the blocking constraint is on a DIFFERENT
+ * column, `triggered_by_agent_id`. Deleting by one column does nothing about a
+ * row that references the account through another. It is 0 rows today, so it is
+ * a latent trap rather than a live break: the day anything starts writing that
+ * column, account deletion breaks for every advisor at once.
+ *
+ * TO RE-VERIFY THIS LIST against the live database (read-only):
+ *
+ *   SELECT c.conrelid::regclass AS tbl,
+ *          a.attname            AS col,
+ *          c.confdeltype
+ *     FROM pg_constraint c
+ *     JOIN unnest(c.conkey) WITH ORDINALITY k(attnum, ord) ON true
+ *     JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
+ *    WHERE c.contype = 'f'
+ *      AND c.confrelid = 'public.agents'::regclass
+ *      AND c.confdeltype IN ('a', 'r')     -- NO ACTION, RESTRICT
+ *    ORDER BY 1, 2;
+ *
+ * Anything it returns that is not in BLOCKING_REFERENCES_PINNED (see
+ * tests/accountDeletion.test.ts) is an unhandled blocker.
+ */
+export interface BlockingReference {
+  table: string;
+  column: string;
+  /** `null` clears the pointer and keeps the row; `delete` removes the row. */
+  action: "null" | "delete";
+  sql: string;
+  /** Why that choice, in one line. The long form is in the constant below. */
+  why: string;
+}
+
+/**
+ * DELETE OR NULL, DECIDED PER TABLE.
+ *
+ * The rule applied: NULL when the row is not this account's to destroy and the
+ * agent id is only a pointer at them; DELETE when the row is a thing this
+ * account created that is meaningless - or dangerous - without them.
+ *
+ * Nulling is the conservative half of that rule and is chosen four times out of
+ * five on purpose. None of these four tables is in the account-data map, which
+ * means nobody has decided their rows are this person's data: they are not
+ * exported, so deleting them would destroy records the person was never given a
+ * copy of, on a guess about ownership. A wrong NULL is a follow-up ticket; a
+ * wrong DELETE is unrecoverable. On a T2 change that asymmetry decides it.
+ *
+ * The precedent is in the schema. `agent_connect_requests.assigned_agent_id`,
+ * the one comparable "which agent is this pointed at" column whose intent is
+ * written down, was deliberately made `ON DELETE SET NULL` in migration 006. An
+ * assignment is a pointer to a person, not the person's data.
+ *
+ * `policies`, `reports` and `report_shares` are legacy. Migration 010 left them
+ * standing as "empty, but still queried by live code"; the queries have since
+ * been fixed (the admin dashboard reads the `policy_analyses` view now) and a
+ * search of this repo finds no read or write of any of the three. They are dead
+ * to the application - but "almost certainly dead" is not a licence to destroy
+ * five rows whose contents nobody has looked at.
+ */
+export const AGENT_BLOCKING_REFERENCES: BlockingReference[] = [
+  {
+    table: "analysis_jobs",
+    column: "triggered_by_agent_id",
+    action: "null",
+    why: "the job belongs to whoever owns it by agent_id, not to whoever triggered it",
+    // Deleting here would destroy ANOTHER agent's job row because a third party
+    // set it running. Only the pointer at the departing account is ours to clear.
+    sql: "UPDATE analysis_jobs SET triggered_by_agent_id = NULL WHERE triggered_by_agent_id = $1",
+  },
+  {
+    table: "policies",
+    column: "created_by_agent_id",
+    action: "null",
+    why: "provenance on a legacy row whose ownership nobody has established",
+    // Not in the account-data map, so not exported. Deleting would destroy a row
+    // the person never received a copy of, on a guess. See the escalation note
+    // in the deletion report: whether these five rows are personal data that
+    // must also go is a founder decision, not this code's.
+    sql: "UPDATE policies SET created_by_agent_id = NULL WHERE created_by_agent_id = $1",
+  },
+  {
+    table: "policies",
+    column: "assigned_agent_id",
+    action: "null",
+    why: "an assignment points AT a person; it is not their data",
+    // Exactly the shape migration 006 made ON DELETE SET NULL for
+    // agent_connect_requests.assigned_agent_id. Same intent, same treatment.
+    sql: "UPDATE policies SET assigned_agent_id = NULL WHERE assigned_agent_id = $1",
+  },
+  {
+    table: "reports",
+    column: "reviewed_by_agent_id",
+    action: "null",
+    why: "audit provenance recording an action, on a row belonging to someone else",
+    // A report does not stop existing because its reviewer closed their account,
+    // and deleting one would destroy another party's record.
+    sql: "UPDATE reports SET reviewed_by_agent_id = NULL WHERE reviewed_by_agent_id = $1",
+  },
+  {
+    table: "report_shares",
+    column: "created_by_agent_id",
+    action: "delete",
+    why: "it IS a share link this account created, and a share link must not outlive it",
+    // THE ONE DELETE, and the plan singles out the reason: "A share link that
+    // survives a deleted account is the worst single outcome here." Nulling the
+    // creator would leave a live bearer capability minted by an account we just
+    // told the person was gone. The row is meaningless without its creator and
+    // dangerous with them removed, which is precisely when deleting is right.
+    sql: "DELETE FROM report_shares WHERE created_by_agent_id = $1",
+  },
+];
+
+/**
+ * Legacy tables that are expected to disappear, and must not take account
+ * deletion down with them when they do.
+ *
+ * Migration 010 left `policies`, `reports` and `report_shares` standing only
+ * because live code still queried them, and says the intention is to drop them
+ * once that is fixed. It has been fixed: nothing in this repo reads or writes
+ * any of the three any more. So the drop is a matter of when, not whether.
+ *
+ * On the day it happens, an unguarded `UPDATE policies ...` here would raise
+ * `42P01 undefined_table`, abort the transaction, and break account deletion for
+ * every advisor - a cleanup turning into an outage on a statutory right. Each
+ * blocking-reference statement therefore runs inside a SAVEPOINT, and a missing
+ * table or column is logged and stepped over.
+ */
+export const BLOCKING_REFERENCE_TABLES_MAY_BE_ABSENT = ["policies", "reports", "report_shares"] as const;
+
 /**
  * Deliberately absent from every list above: `individual_profiles`.
  *
@@ -356,6 +499,63 @@ export function registerAccountDeletionRoutes(app: Express, deps: AccountDeletio
    * `requireIndividual` answers NO_PROFILE and a person whose auth delete failed
    * can never retry.
    */
+  /**
+   * Clear one blocking reference, tolerating the table having been dropped.
+   *
+   * `policies`, `reports` and `report_shares` are legacy and migration 010 says
+   * out loud that the intention is to drop them once the last queries are fixed.
+   * The day that happens, an un-guarded `UPDATE policies ...` raises
+   * `42P01 undefined_table`, aborts the transaction, and account deletion breaks
+   * for every advisor - turning a cleanup into an outage on a statutory right.
+   *
+   * So each statement runs inside a SAVEPOINT. A missing table or column is
+   * rolled back to that savepoint and logged; the deletion carries on. Anything
+   * else propagates and takes the whole transaction down, which is what we want
+   * for a real failure.
+   */
+  async function clearBlockingReference(
+    client: { query: (text: string, values?: unknown[]) => Promise<{ rowCount: number | null }> },
+    accountId: string,
+    ref: BlockingReference,
+    counts: Record<string, number>,
+  ): Promise<void> {
+    // A savepoint name cannot be a bound parameter. It is built from the
+    // constants above and never from a request, and stripped anyway so that a
+    // future edit to that table cannot turn this line into an injection.
+    const savepoint = `blocking_${ref.table}_${ref.column}`.replace(/[^a-z0-9_]/gi, "");
+    await client.query(`SAVEPOINT ${savepoint}`);
+    try {
+      const r = await client.query(ref.sql, [accountId]);
+      await client.query(`RELEASE SAVEPOINT ${savepoint}`);
+      if (r.rowCount) {
+        const label = `${ref.table}.${ref.column}`;
+        counts[label] = (counts[label] ?? 0) + r.rowCount;
+        // Loud on purpose. These four tables are believed dead; the first time
+        // one of them actually holds rows for a departing account, somebody
+        // should see it rather than find it in an audit a year later.
+        log.warn("account_delete_blocking_reference_hit", {
+          accountId,
+          table: ref.table,
+          column: ref.column,
+          action: ref.action,
+          rows: r.rowCount,
+        });
+      }
+    } catch (err: any) {
+      await client.query(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+      if (err?.code === "42P01" || err?.code === "42703") {
+        // The legacy table or column is gone. It cannot block anything now.
+        log.info("account_delete_blocking_reference_absent", {
+          table: ref.table,
+          column: ref.column,
+          code: err.code,
+        });
+        return;
+      }
+      throw err;
+    }
+  }
+
   async function deleteRows(
     client: { query: (text: string, values?: unknown[]) => Promise<{ rowCount: number | null }> },
     accountId: string,
@@ -374,6 +574,13 @@ export function registerAccountDeletionRoutes(app: Express, deps: AccountDeletio
     for (const d of SHARED_EXTRA_DELETES) await run(d.table, d.sql);
 
     if (kind === "agent") {
+      // Clear every reference that would otherwise block the agents row, BEFORE
+      // teams and agents go. See AGENT_BLOCKING_REFERENCES for the delete-or-null
+      // reasoning on each one.
+      for (const ref of AGENT_BLOCKING_REFERENCES) {
+        await clearBlockingReference(client, accountId, ref, counts);
+      }
+
       // `teams` before `agents` (ON DELETE RESTRICT), and any surviving invite or
       // access row for that team cascades with it. `agents.team_id` is ON DELETE
       // SET NULL, so this agent's own row survives its team disappearing, for the

@@ -43,8 +43,10 @@ import {
 
 import {
   advisoryLockKeys,
+  BLOCKING_REFERENCE_TABLES_MAY_BE_ABSENT,
   AGENT_EXTRA_DELETES,
   SHARED_EXTRA_DELETES,
+  AGENT_BLOCKING_REFERENCES,
   DELETED_BY_AUTH_CASCADE,
 } from "../services/accountDeletion";
 
@@ -355,6 +357,146 @@ describe("the deletion order the foreign keys demand", () => {
   });
 });
 
+/* ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Every foreign key pointing at `agents(id)` that will NOT get out of the way by
+ * itself, as measured against the live database on 2026-09-11.
+ *
+ * WHY THIS IS PINNED HERE. Miss one of these and the final `DELETE FROM agents`
+ * raises a foreign key violation, the transaction rolls back, and one advisor is
+ * told "something went wrong" forever while the endpoint works for everybody
+ * else. That is not a hypothetical: five of these six were unhandled in the
+ * first version of this code, and four of them were held by a single real
+ * advisor's five `policies` rows.
+ *
+ * HOW TO REFRESH IT, and the honest limit of this test. A unit test cannot see
+ * the database, so this list is a RECORD of a probe, not a reading of one. It
+ * fails when the code and this list disagree - which catches somebody handling a
+ * constraint without pinning it, or pinning one without handling it. It CANNOT
+ * catch a migration that adds a new RESTRICT reference. For that, re-run the
+ * query in the docblock of AGENT_BLOCKING_REFERENCES (it is read-only) and add
+ * anything new to both places. Any migration touching `agents` should do this.
+ */
+const BLOCKING_REFERENCES_PINNED: Array<{ table: string; column: string; confdeltype: string }> = [
+  { table: "teams",         column: "owner_id",              confdeltype: "RESTRICT"  },
+  { table: "analysis_jobs", column: "triggered_by_agent_id", confdeltype: "NO ACTION" },
+  { table: "policies",      column: "created_by_agent_id",   confdeltype: "NO ACTION" },
+  { table: "policies",      column: "assigned_agent_id",     confdeltype: "NO ACTION" },
+  { table: "report_shares", column: "created_by_agent_id",   confdeltype: "NO ACTION" },
+  { table: "reports",       column: "reviewed_by_agent_id",  confdeltype: "NO ACTION" },
+];
+
+describe("every reference that blocks deleting the agents row is cleared first", () => {
+  const key = (t: string, c: string) => `${t}.${c}`;
+
+  it("pins all six, so a future migration adding one fails a test", () => {
+    assert.equal(BLOCKING_REFERENCES_PINNED.length, 6);
+    const seen = new Set(BLOCKING_REFERENCES_PINNED.map((r) => key(r.table, r.column)));
+    assert.equal(seen.size, 6, "a table/column pair is pinned twice");
+  });
+
+  it("handles every pinned reference, in code, before the agents row goes", () => {
+    // teams.owner_id is cleared by deleting the team itself (AGENT_EXTRA_DELETES);
+    // the other five are cleared by AGENT_BLOCKING_REFERENCES. Between them they
+    // must cover the pinned list exactly, with nothing left over.
+    const handled = new Set<string>([
+      key("teams", "owner_id"),
+      ...AGENT_BLOCKING_REFERENCES.map((r) => key(r.table, r.column)),
+    ]);
+    for (const r of BLOCKING_REFERENCES_PINNED) {
+      assert.ok(
+        handled.has(key(r.table, r.column)),
+        `${key(r.table, r.column)} (${r.confdeltype}) blocks the delete and nothing clears it`,
+      );
+    }
+    assert.equal(handled.size, BLOCKING_REFERENCES_PINNED.length,
+      "something is being cleared that is not on the pinned blocking list");
+  });
+
+  it("catches the trap the table map cannot see", () => {
+    // analysis_jobs IS in AGENT_TABLES and is deleted by agent_id, but the
+    // constraint is on triggered_by_agent_id. Deleting by one column does
+    // nothing about a row referencing the account through another. 0 rows today,
+    // so this is a latent trap: the day something writes that column, deletion
+    // breaks for every advisor at once.
+    assert.ok(AGENT_TABLES.some((t) => t.table === "analysis_jobs"), "still in the map");
+    const ref = AGENT_BLOCKING_REFERENCES.find((r) => r.table === "analysis_jobs");
+    assert.ok(ref, "analysis_jobs.triggered_by_agent_id must be cleared separately");
+    assert.equal(ref!.column, "triggered_by_agent_id");
+    assert.notEqual(ref!.column, "agent_id", "the map's column is not the blocking one");
+  });
+
+  it("keeps a share link from outliving the account, which is the one DELETE here", () => {
+    // "A share link that survives a deleted account is the worst single outcome
+    // here" (plan, section 2). Nulling the creator would leave a live bearer
+    // capability minted by an account we just said was gone.
+    const share = AGENT_BLOCKING_REFERENCES.find((r) => r.table === "report_shares");
+    assert.ok(share);
+    assert.equal(share!.action, "delete");
+    assert.match(share!.sql, /^DELETE FROM report_shares /);
+  });
+
+  it("nulls, rather than deletes, every row whose ownership nobody has established", () => {
+    // None of these tables is in the account-data map, so none is exported.
+    // Deleting a row the person was never given a copy of, on a guess about who
+    // it belongs to, is the mistake this endpoint cannot afford.
+    const mapped = new Set(AGENT_TABLES.map((t) => t.table));
+    for (const r of AGENT_BLOCKING_REFERENCES) {
+      if (r.action !== "null") continue;
+      assert.match(r.sql, new RegExp(`^UPDATE ${r.table} SET ${r.column} = NULL WHERE ${r.column} = \\$1$`),
+        `${r.table}.${r.column}: must clear only its own pointer`);
+      assert.ok(!mapped.has(r.table) || r.table === "analysis_jobs",
+        `${r.table} is in the account map; deleting it there and nulling here needs a reason`);
+    }
+  });
+
+  it("gives every choice a written reason, because this is where a guess costs a customer", () => {
+    for (const r of AGENT_BLOCKING_REFERENCES) {
+      assert.ok(r.why && r.why.length > 20, `${r.table}.${r.column}: needs a stated reason`);
+      assert.ok(["null", "delete"].includes(r.action));
+    }
+  });
+
+  it("binds the account id, names a plain identifier, and touches one table each", () => {
+    for (const r of AGENT_BLOCKING_REFERENCES) {
+      assert.match(r.table, /^[a-z_]+$/, `${r.table} is not a plain identifier`);
+      assert.match(r.column, /^[a-z_]+$/, `${r.column} is not a plain identifier`);
+      assert.match(r.sql, /\$1/, `${r.table}.${r.column}: must bind the account id`);
+      assert.ok(!/'/.test(r.sql), `${r.table}.${r.column}: no literal in the predicate`);
+      assert.ok(r.sql.includes(` ${r.table} `), `${r.table}: sql must name its own table`);
+    }
+  });
+
+  it("expects the three legacy tables to vanish one day without breaking deletion", () => {
+    // Migration 010 intends to drop these once the last queries are gone, and
+    // they are gone. When the drop lands, an unguarded UPDATE here would abort
+    // the transaction and break deletion for every advisor. Each statement runs
+    // inside a SAVEPOINT so a missing table is stepped over instead.
+    assert.deepEqual([...BLOCKING_REFERENCE_TABLES_MAY_BE_ABSENT], ["policies", "reports", "report_shares"]);
+    for (const t of BLOCKING_REFERENCE_TABLES_MAY_BE_ABSENT) {
+      assert.ok(
+        AGENT_BLOCKING_REFERENCES.some((r) => r.table === t),
+        `${t} is listed as droppable but nothing references it here`,
+      );
+      assert.ok(
+        !AGENT_TABLES.some((m) => m.table === t),
+        `${t} is droppable, so it must not be in the account-data map`,
+      );
+    }
+    // analysis_jobs is NOT droppable: it is live, and in the map.
+    assert.ok(!(BLOCKING_REFERENCE_TABLES_MAY_BE_ABSENT as readonly string[]).includes("analysis_jobs"));
+  });
+
+  it("clears the blockers before teams and agents, not after", () => {
+    // Ordering is the whole point: these run inside deleteRows ahead of
+    // AGENT_EXTRA_DELETES, whose last entry is `agents`.
+    assert.equal(AGENT_EXTRA_DELETES[AGENT_EXTRA_DELETES.length - 1].table, "agents");
+    const clearedTables = new Set(AGENT_BLOCKING_REFERENCES.map((r) => r.table));
+    assert.ok(!clearedTables.has("agents"), "the agents row is not cleared by nulling itself");
+  });
+});
+
 describe("what the rows do not cover, and the share links that must die with them", () => {
   it("leaves individual_profiles to the auth-user cascade, and says so out loud", () => {
     // It is REFERENCES auth.users(id) ON DELETE CASCADE (migration 002). Deleting
@@ -441,10 +583,11 @@ describe("storage keys are removed in batches", () => {
  *     table holding an account's rows (the map is pinned against an
  *     information_schema probe in accountData.test.ts, not against today's
  *     schema);
- *   - that no OTHER foreign key referencing agents(id) is RESTRICT, which would
- *     make the final delete throw. It would roll the whole transaction back and
- *     delete nothing, which is the safe failure, but it would also mean no
- *     advisor can ever delete their account;
+ *   - that BLOCKING_REFERENCES_PINNED above still matches the live database. The
+ *     six it names were measured on 2026-09-11 and are all handled, but only a
+ *     re-run of the pg_constraint query in accountDeletion.ts can prove a
+ *     migration has not added a seventh. The first version of this code missed
+ *     five of the six, and four were held by one real advisor's rows;
  *   - that supabaseAdmin.auth.admin.deleteUser really cascades
  *     individual_profiles;
  *   - that a storage object is actually gone afterwards.
