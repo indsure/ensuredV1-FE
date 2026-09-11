@@ -38,6 +38,8 @@ import { appearsInDocument, extractPolicyMetadata } from "../server/utils/policy
 const { Pool } = pkg;
 
 const APPLY = process.argv.includes("--apply");
+/** Also blank an insurer the document does not support. Deletes, so opt in. */
+const CLEAR = process.argv.includes("--clear-unsupported");
 const ONLY_ID = (() => {
     const i = process.argv.indexOf("--id");
     return i > -1 ? process.argv[i + 1] : null;
@@ -134,6 +136,7 @@ const show = (v: string | null) => (v == null ? "(null)" : JSON.stringify(v));
     let changed = 0;
     let leftToAdvisor = 0;
     let refusedAsGuess = 0;
+    let cleared = 0;
     let failed = 0;
 
     for (const row of rows) {
@@ -152,8 +155,26 @@ const show = (v: string | null) => (v == null ? "(null)" : JSON.stringify(v));
         const newPlan = meta.plan ?? null;
 
         // Never clear a value we already hold on the strength of a null. An
-        // extractor that finds nothing has not disproved what is stored.
+        // extractor that finds nothing has usually not disproved what is stored.
         const insurerMoves = !!newInsurer && newInsurer !== row.insurer;
+
+        // With one exception, and it is the whole reason the original bug went
+        // unnoticed for thirty reports.
+        //
+        // The extractor returns null only when NO insurer's name appears as a
+        // whole word anywhere in the document. So a null is not merely "we could
+        // not tell": it is positive evidence that nothing supports whatever is
+        // stored. Four rows here say Go Digit on documents where the words "go
+        // digit" appear nowhere at all, because the old matcher fired on the
+        // "digit" inside "digitally signed" and Go Digit happened to be the last
+        // key in the map, which made it the catch-all for every insurer the map
+        // did not know.
+        //
+        // Keeping a fabricated name is worse than keeping none. The report shows
+        // "Insurer not read" for a null, which is true, against an advisor
+        // reading Go Digit off a Star Health policy, which is not. Behind a flag
+        // because it deletes, so it is never something this script does quietly.
+        const insurerUnsupported = !newInsurer && !!row.insurer;
         const planMoves = !!newPlan && newPlan !== row.policy_name;
         const planIsAgents = row.policy_name_source === "agent";
 
@@ -178,12 +199,15 @@ const show = (v: string | null) => (v == null ? "(null)" : JSON.stringify(v));
             !appearsInDocument(newPlan, text);
         const planBlocked = planIsAgents || planIsGuess;
 
-        if (!insurerMoves && !planMoves) continue;
+        if (!insurerMoves && !planMoves && !(CLEAR && insurerUnsupported)) continue;
 
         changed++;
         console.log(row.id);
         if (insurerMoves) {
             console.log(`   insurer  ${show(row.insurer)}  ->  ${show(newInsurer)}`);
+        } else if (CLEAR && insurerUnsupported) {
+            console.log(`   insurer  ${show(row.insurer)}  ->  (null)   nothing in the document names any insurer`);
+            cleared++;
         }
         if (planMoves) {
             const why = planIsAgents
@@ -200,9 +224,9 @@ const show = (v: string | null) => (v == null ? "(null)" : JSON.stringify(v));
         if (APPLY) {
             const sets: string[] = [];
             const vals: any[] = [];
-            if (insurerMoves) {
+            if (insurerMoves || (CLEAR && insurerUnsupported)) {
                 sets.push(`insurer = $${sets.length + 1}`);
-                vals.push(newInsurer);
+                vals.push(insurerMoves ? newInsurer : null);
             }
             if (planMoves && !planBlocked) {
                 sets.push(`policy_name = $${sets.length + 1}`);
@@ -222,7 +246,7 @@ const show = (v: string | null) => (v == null ? "(null)" : JSON.stringify(v));
     console.log(
         `\n${changed} row(s) would change. ` +
             `${leftToAdvisor} plan name(s) left to the advisor, ` +
-            `${refusedAsGuess} refused as a guess, ${failed} unreadable.`,
+            `${refusedAsGuess} refused as a guess, ${cleared} insurer(s) blanked, ${failed} unreadable.`,
     );
     if (!APPLY && changed) console.log("Nothing was written. Re-run with --apply to commit.");
 
