@@ -204,12 +204,40 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
   const textLower = text.toLowerCase();
 
   // 1. Extract Insurer
-  let insurer = null;
-  for (const [key, val] of Object.entries(insurerMap)) {
-    if (textLower.includes(key.replace(/_/g, ' ')) || textLower.includes(val.toLowerCase())) {
-      insurer = val;
-      break;
+  //
+  // This used to take the FIRST entry in object key order whose name appeared
+  // anywhere in the text, as a bare substring. Two faults compounded:
+  //
+  //   - `digit` matched inside "digitally signed", which sits in the signature
+  //     block of nearly every policy PDF issued in India.
+  //   - It was the LAST key, so it only fired when nothing else had, which made
+  //     Go Digit the catch-all for every insurer missing from the map.
+  //
+  // A Future Generali policy ("Generali Central Insurance Company Limited ...
+  // This document is digitally signed by ...") was filed as Go Digit. The name
+  // Go Digit appears nowhere in it.
+  //
+  // Now: word-boundary matches only, and the LONGEST match wins rather than the
+  // first, so a specific name beats an incidental one. Ties break on whichever
+  // appears earliest, since the issuer is named in the header.
+  let insurer: string | null = null;
+  {
+    const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let best: { len: number; at: number; val: string } | null = null;
+
+    for (const [key, val] of Object.entries(insurerMap)) {
+      for (const needle of [key.replace(/_/g, ' '), String(val)]) {
+        // Anything shorter than this is a word, not an insurer, and matches by
+        // accident. "digit" was exactly this mistake.
+        if (needle.length < 6) continue;
+        const at = textLower.search(new RegExp(`\\b${escape(needle.toLowerCase())}\\b`));
+        if (at === -1) continue;
+        if (!best || needle.length > best.len || (needle.length === best.len && at < best.at)) {
+          best = { len: needle.length, at, val: String(val) };
+        }
+      }
     }
+    insurer = best ? best.val : null;
   }
 
   // 2. Extract Plan (Priority Order)

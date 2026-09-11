@@ -349,16 +349,21 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                 }
             }
 
+            // Two different findings shared one headline. "Too low to be useful"
+            // was printed over a policy with NO OPD cover at all, which is not a
+            // small amount, it is the absence of one. The body text already
+            // branched correctly; only the title lied.
             const opd = supp?.opd;
-            if (!opd || opd.covered === false || (opd.limit_per_year && opd.limit_per_year < 5000)) {
-                const limit = opd?.limit_per_year || 0;
-                const visits = Math.floor(limit / 800);
+            const opdLimit = Number(opd?.limit_per_year) || 0;
+            const opdAbsent = !opd || opd.covered === false;
+            if (opdAbsent || (opdLimit > 0 && opdLimit < 5000)) {
+                const visits = Math.floor(opdLimit / 800);
                 const visitLabel = visits === 1 ? "visit" : "visits";
                 items.push({
-                    issue: "OPD Cover Too Low to Be Useful",
-                    real_world_claim_impact: limit > 0
-                        ? `Annual OPD limit of ${formatINR(limit)} covers only ${visits} doctor ${visitLabel} at metro rates. Routine consultations and medicines are mostly out of pocket.`
-                        : `Routine doctor consultations, diagnostics, and medicines are entirely out of pocket.`,
+                    issue: opdAbsent ? "No OPD Cover" : "OPD Cover Too Low to Be Useful",
+                    real_world_claim_impact: opdAbsent
+                        ? `This policy does not cover OPD. Routine doctor consultations, diagnostics and medicines are entirely out of pocket.`
+                        : `Annual OPD limit of ${formatINR(opdLimit)} covers only ${visits} doctor ${visitLabel} at metro rates. Routine consultations and medicines are mostly out of pocket.`,
                     quantified_oop_risk: "Consider a top-up OPD plan or health wallet.",
                     severity: "low"
                 });
