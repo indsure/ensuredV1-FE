@@ -61,7 +61,7 @@ export default function SignupPublic() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Create your free account — IndSure";
+    document.title = "Create your free account | IndSure";
   }, []);
 
   /** Clear a field's error as soon as the person starts fixing it — leaving red
@@ -207,7 +207,7 @@ export default function SignupPublic() {
             </Button>
           </Link>
           <p className="text-xs text-[var(--color-text-muted)]">
-            Didn't get it? Check spam — it's the only mail we'll ever send you.
+            Didn't get it? Check spam. It's the only mail we'll ever send you.
           </p>
         </div>
       </AuthShell>
@@ -221,7 +221,13 @@ export default function SignupPublic() {
       subtitle="Upload your policies, get an unbiased audit in about a minute, and keep everything in one private dashboard."
       promise="No OTP, no spam calls, no messages you didn't ask for. We will never sell your data."
     >
-      <div className="space-y-5">
+      {/* A real form, for the same reason as /login: Enter only submitted from
+          the last field that happened to carry a keydown handler, and a browser
+          offers to save a password far more reliably when it can see a form. */}
+      <form
+        className="space-y-5"
+        onSubmit={(e) => { e.preventDefault(); void handleSignUp(); }}
+      >
         <div className="space-y-1">
           <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">Create your free account</h2>
           <p className="text-sm text-[var(--color-text-secondary)]">
@@ -325,7 +331,6 @@ export default function SignupPublic() {
                 aria-describedby={fieldErrors.password ? "su-password-err" : "su-password-hint"}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
-                onKeyDown={(e) => e.key === "Enter" && handleSignUp()}
                 className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.password))} transition-all font-medium px-4 pr-12 rounded-xl`}
                 placeholder="At least 6 characters"
               />
@@ -365,11 +370,11 @@ export default function SignupPublic() {
         )}
 
         <Button
-          onClick={handleSignUp}
+          type="submit"
           disabled={loading}
           className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
         >
-          {loading ? "Creating your account…" : <>Analyze my policy — free <ArrowRight className="w-4 h-4" /></>}
+          {loading ? "Creating your account…" : <>Analyse my policy for free <ArrowRight className="w-4 h-4" /></>}
         </Button>
 
         {/* Low-commitment escape hatch — warms up browsers instead of losing them. */}
@@ -381,7 +386,7 @@ export default function SignupPublic() {
           <FileText className="w-4 h-4" />
           Just browsing? See a sample audit
         </button>
-      </div>
+      </form>
     </AuthShell>
   );
 }

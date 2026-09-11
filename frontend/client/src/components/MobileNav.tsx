@@ -40,6 +40,16 @@ export function MobileNav() {
     return null;
   }
 
+  // The auth pages, for the same reason as /start. Logging in or signing up is
+  // a single-purpose screen, and on a phone this bar sits directly over the
+  // form card while offering four ways to leave before the person is in. On
+  // /login in particular everybody arriving is already a customer: the last
+  // thing that screen needs is a link to the blog.
+  const p = window.location.pathname;
+  if (p === '/login' || p === '/signup' || p === '/forgot-password' || p === '/reset-password') {
+    return null;
+  }
+
   // The signed-in consumer portfolio (/app) is the product, not the marketing
   // site: a bar offering Home / Calculator / Compare / Blog is a way *out* of
   // the app, and on a phone it covers the portfolio's own actions.

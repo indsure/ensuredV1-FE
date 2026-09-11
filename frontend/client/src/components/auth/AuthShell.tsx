@@ -17,9 +17,9 @@ const TRUST_PILLS = [
 ];
 
 const BENEFITS = [
-  "Unbiased audit — we earn ₹0 commission, so we have no reason to sell you anything.",
-  "50+ risk checks per policy — room-rent caps, waiting periods, silent exclusions.",
-  "Private by default — no agent ever sees your policy.",
+  "Unbiased audit. We earn ₹0 commission, so we have no reason to sell you anything.",
+  "50+ risk checks per policy: room-rent caps, waiting periods, silent exclusions.",
+  "Private by default. No agent ever sees your policy.",
 ];
 
 // The standing promise, shown twice (desktop panel + mobile card). Pages that
@@ -43,7 +43,7 @@ export function AuthShell({
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] lg:grid lg:grid-cols-[1.05fr_1fr]">
       {/* ─── BRAND PANEL (dark) ─── */}
-      <div className="relative overflow-hidden bg-[var(--color-navy-900)] text-white px-6 pt-8 pb-28 lg:pb-12 lg:px-14 xl:px-20 lg:flex lg:flex-col lg:justify-between">
+      <div className="relative overflow-hidden bg-[var(--color-navy-900)] text-white px-6 pt-6 pb-24 lg:pt-8 lg:pb-12 lg:px-14 xl:px-20 lg:flex lg:flex-col lg:justify-between">
         {/* soft gradient blobs — depth, not decoration-for-its-own-sake */}
         <div className="pointer-events-none absolute -top-24 -right-16 w-80 h-80 rounded-full bg-[var(--color-teal-600)]/25 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 -left-20 w-72 h-72 rounded-full bg-[var(--color-teal-400)]/10 blur-3xl" />
@@ -57,23 +57,29 @@ export function AuthShell({
             />
           </Link>
 
-          <div className="mt-10 lg:mt-16 max-w-lg">
+          <div className="mt-6 lg:mt-16 max-w-lg">
             <span className="inline-block py-1 px-3 rounded-full border border-white/15 bg-white/5 text-[11px] font-mono uppercase tracking-widest text-[var(--color-teal-400)]">
               {eyebrow}
             </span>
 
             {/* text-white is explicit: a global h1 rule sets a dark color and would
                 otherwise beat the inherited text-white from the panel. */}
-            <h1 className="mt-5 text-4xl lg:text-5xl xl:text-6xl font-serif font-bold leading-[1.08] text-white">
+            <h1 className="mt-4 text-[2rem] leading-[1.1] lg:text-5xl xl:text-6xl font-serif font-bold leading-[1.08] text-white">
               {title}
             </h1>
 
-            <p className="mt-4 text-base lg:text-lg text-[var(--color-white-muted)] font-light leading-relaxed max-w-md">
+            <p className="mt-3 text-base lg:text-lg text-[var(--color-white-muted)] font-light leading-relaxed max-w-md">
               {subtitle}
             </p>
 
-            {/* trust pills — visible on every screen size */}
-            <div className="mt-6 flex flex-wrap gap-2">
+            {/* Desktop only. On a phone this block sat between the headline and
+                the form, pushing the first input most of a screen down and the
+                sign-in button off the bottom entirely. It now renders under the
+                card instead, so the proof is still there for a cold visitor on
+                /signup, just after the thing they came to do rather than before
+                it. On /login it is barely needed at all: everyone arriving has
+                already bought. */}
+            <div className="hidden lg:flex mt-6 flex-wrap gap-2">
               {TRUST_PILLS.map(({ icon: Icon, label }) => (
                 <span
                   key={label}
@@ -111,11 +117,26 @@ export function AuthShell({
           {children}
 
           {/* promise repeated at the moment of hesitation (mobile especially) */}
-          <div className="lg:hidden mt-6 flex items-start gap-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
-            <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--color-teal-600)]" />
+          <div className="lg:hidden mt-6 flex items-start gap-2 text-sm text-[var(--color-text-muted)] leading-relaxed">
+            <Lock className="w-4 h-4 mt-0.5 shrink-0 text-[var(--color-teal-600)]" />
             <span>{promise}</span>
           </div>
         </div>
+
+        {/* The proof, after the form rather than in front of it. Same three
+            claims as the desktop panel, on the light ground below the card so
+            they read without the dark-on-dark contrast the panel version has. */}
+        <ul className="lg:hidden mx-auto w-full max-w-md mt-5 flex flex-wrap justify-center gap-2">
+          {TRUST_PILLS.map(({ icon: Icon, label }) => (
+            <li
+              key={label}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border-light)] bg-white/70 px-3 py-1.5 text-sm font-semibold text-[var(--color-text-secondary)]"
+            >
+              <Icon className="w-4 h-4 text-[var(--color-teal-600)]" />
+              {label}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

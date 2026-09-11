@@ -97,7 +97,7 @@ function Hero() {
           <motion.div variants={rise} className="flex flex-col sm:flex-row gap-3">
             <Link href="/policychecker" className="w-full sm:w-auto">
               <button className="w-full h-[52px] px-6 rounded-lg bg-[var(--color-cta)] text-white text-base font-semibold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
-                Check my policy — free <ArrowRight className="w-4 h-4" />
+                Check my policy for free <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
             <Link href="/policychecker" className="w-full sm:w-auto">
@@ -699,7 +699,7 @@ function ProductSection() {
           <div className="flex flex-col sm:flex-row gap-3">
             <Link href="/policychecker" className="w-full sm:w-auto">
               <button className="w-full h-12 px-5 rounded-lg bg-[var(--color-cta)] text-white text-base font-semibold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
-                Check my policy — free <ArrowRight className="w-4 h-4" />
+                Check my policy for free <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
             <Link href="/policychecker" className="w-full sm:w-auto">
@@ -879,7 +879,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/policychecker" className="w-full sm:w-auto">
                 <button className="w-full h-14 px-8 rounded-lg bg-[var(--color-cta)] text-white text-lg font-bold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
-                  Check my policy — free <ArrowRight className="w-5 h-5" />
+                  Check my policy for free <ArrowRight className="w-5 h-5" />
                 </button>
               </Link>
               <Link href="/agent" className="w-full sm:w-auto">

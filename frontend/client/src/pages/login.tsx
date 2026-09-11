@@ -36,7 +36,7 @@ export default function LoginPublic() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Sign in — IndSure";
+    document.title = "Sign in | IndSure";
   }, []);
 
   /** Ten digits after stripping punctuation and any +91 / leading 0 = a mobile.
@@ -126,9 +126,17 @@ export default function LoginPublic() {
     <AuthShell
       eyebrow="Welcome back"
       title={<>Your portfolio's <span className="italic text-[var(--color-teal-400)]">waiting.</span></>}
-      subtitle="Pick up where you left off — every policy you've added, audited and in one place."
+      subtitle="Pick up where you left off. Every policy you have added, audited and in one place."
     >
-      <div className="space-y-5">
+      {/* A real form, not a div. Enter used to submit only from the password
+          box, because that was the one field carrying a keydown handler: typing
+          an email and pressing Enter did nothing at all. A form also tells the
+          browser and the password manager that this is a sign-in, which is what
+          makes "save this password?" reliable. */}
+      <form
+        className="space-y-5"
+        onSubmit={(e) => { e.preventDefault(); void handleSignIn(); }}
+      >
         <div className="space-y-1">
           <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">Log in</h2>
           <p className="text-sm text-[var(--color-text-secondary)]">
@@ -186,7 +194,6 @@ export default function LoginPublic() {
                 aria-describedby={fieldErrors.password ? "login-password-err" : undefined}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
-                onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
                 className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.password))} transition-all font-medium px-4 pr-12 rounded-xl`}
                 placeholder="Your password"
               />
@@ -219,7 +226,7 @@ export default function LoginPublic() {
         )}
 
         <Button
-          onClick={handleSignIn}
+          type="submit"
           disabled={loading}
           className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
         >
@@ -232,7 +239,7 @@ export default function LoginPublic() {
             <span className="underline cursor-pointer hover:text-[var(--color-navy-900)]">Use the agent portal</span>
           </Link>
         </p>
-      </div>
+      </form>
     </AuthShell>
   );
 }
