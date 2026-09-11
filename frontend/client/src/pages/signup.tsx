@@ -260,7 +260,12 @@ export default function SignupPublic() {
 
           <div className="space-y-1.5">
             <FieldLabel htmlFor="su-phone" required>Mobile number</FieldLabel>
-            {/* +91 is a static prefix, not part of the value — we store 10 digits. */}
+            {/* +91 is a static prefix, not part of the value: we store 10 digits.
+                The input's left padding has to clear it and nothing more. At pl-14
+                the prefix ended 16px before the typed number began, which read as
+                a stray space in front of the number rather than as a prefix
+                attached to it. The prefix sits at left-4 and is 24px wide, so 48px
+                of padding leaves a normal 8px word gap. */}
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[var(--color-text-muted)] pointer-events-none">
                 +91
@@ -276,7 +281,7 @@ export default function SignupPublic() {
                 aria-describedby={fieldErrors.phone ? "su-phone-err" : undefined}
                 value={phone}
                 onChange={(e) => { setPhone(normalizeMobile(e.target.value)); clearFieldError("phone"); }}
-                className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.phone))} transition-all font-medium pl-14 pr-4 rounded-xl tracking-wide`}
+                className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.phone))} transition-all font-medium pl-12 pr-4 rounded-xl tracking-wide`}
                 placeholder="9876543210"
               />
             </div>
