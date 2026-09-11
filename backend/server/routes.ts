@@ -1433,9 +1433,16 @@ export async function registerRoutes(
          DPDP Act, so losing those is not a missed email, it is a missed legal
          obligation. The fallback is now a domain we own; the env var should
          still be set explicitly to a mailbox a person actually reads, because a
-         fallback nobody monitors fails just as quietly. */
+         fallback nobody monitors fails just as quietly.
+
+         The fallback is now the same address the public grievance page
+         advertises as the Grievance Officer's, rather than a plausible-looking
+         guess at a mailbox. If the page tells a person to write to a given
+         address, the form on that page must deliver to the same one, or the two
+         halves of the same statutory promise disagree. GRIEVANCE_OFFICER_EMAIL
+         still overrides, for when the officer changes. */
       const grievanceOfficerEmail =
-        process.env.GRIEVANCE_OFFICER_EMAIL ?? "grievance@indsure.in";
+        process.env.GRIEVANCE_OFFICER_EMAIL ?? "nikhil@indsure.in";
 
       // Best-effort acknowledgement email: if SMTP env vars are not set, we store the request and respond.
       const smtpHost = process.env.GRIEVANCE_SMTP_HOST;

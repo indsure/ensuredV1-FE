@@ -86,8 +86,16 @@ function Hero() {
             each one really covers, what it will not pay, and what renews next.
           </motion.p>
 
+          {/* "Check my policy" goes to the upload gate, not to signup.
+              It used to go straight to /signup, so the main call to action on
+              the site asked a stranger to create an account before they had
+              seen anything work. The gate exists precisely to avoid that: it
+              takes the file first, parks it, and only then asks for an account,
+              and the parked file is redeemed after signup so nothing is lost.
+              Routing past it wasted the whole mechanism, and a tester reported
+              it as the product demanding a signup up front. */}
           <motion.div variants={rise} className="flex flex-col sm:flex-row gap-3">
-            <Link href="/signup" className="w-full sm:w-auto">
+            <Link href="/policychecker" className="w-full sm:w-auto">
               <button className="w-full h-[52px] px-6 rounded-lg bg-[var(--color-cta)] text-white text-base font-semibold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
                 Check my policy — free <ArrowRight className="w-4 h-4" />
               </button>
@@ -689,7 +697,7 @@ function ProductSection() {
           </ul>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/signup" className="w-full sm:w-auto">
+            <Link href="/policychecker" className="w-full sm:w-auto">
               <button className="w-full h-12 px-5 rounded-lg bg-[var(--color-cta)] text-white text-base font-semibold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
                 Check my policy — free <ArrowRight className="w-4 h-4" />
               </button>
@@ -869,7 +877,7 @@ export default function Home() {
               Free to start. Your policies stay private — no calls, no spam, ever.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signup" className="w-full sm:w-auto">
+              <Link href="/policychecker" className="w-full sm:w-auto">
                 <button className="w-full h-14 px-8 rounded-lg bg-[var(--color-cta)] text-white text-lg font-bold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
                   Check my policy — free <ArrowRight className="w-5 h-5" />
                 </button>
