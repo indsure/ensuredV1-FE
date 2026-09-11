@@ -208,10 +208,25 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
      alias count, and the rest are reported for review. */
   const declared = new Map<string, string>();
   const unrecognisedDeclared: string[] = [];
-  const label = /add[\s-]?on\s+covers?\s+opted/i.exec(masked);
+  /* Insurers head this list differently, and matching only one spelling was
+     silently costing us whole policies. Royal Sundaram writes "Add-on Covers
+     Opted"; Acko writes "Addons Selected" and follows it with prose instead of
+     a comma list. An Acko policy that genuinely holds Consumables therefore
+     reported every add-on as not found, and the scorer then published 100 out
+     of 100 off the one word it could read. */
+  const label =
+    /add[\s-]?ons?\s+(?:covers?\s+)?(?:opted|selected|chosen|availed|included)/i.exec(masked);
   if (label) {
     const from = label.index + label[0].length;
-    for (const token of masked.slice(from, from + 300).split(",")) {
+    /* Stop at the next section instead of reading a fixed span into whatever
+       follows. Acko puts "What's not covered" directly after the add-on list,
+       and without a terminator every exclusion in it arrives as an
+       unrecognised add-on. Splitting on runs of whitespace as well as commas is
+       what reads a column layout once the PDF is flattened. */
+    const rest = masked.slice(from, from + 600);
+    const stop = /what'?s\s+not\s+covered|exclusions?\b|premium\s+break|total\s+premium/i.exec(rest);
+    const window = rest.slice(0, stop ? stop.index : 300);
+    for (const token of window.split(/[,\n]|\s{3,}/)) {
       const t = token.trim();
       if (!t) continue;
       const hit = matchEntry(t);

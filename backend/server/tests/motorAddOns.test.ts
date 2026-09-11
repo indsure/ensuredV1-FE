@@ -205,3 +205,43 @@ describe("guards", () => {
         }
     });
 });
+
+/* ── Acko ─────────────────────────────────────────────────────────────────
+ * The third insurer, added after a real Acko scooter policy scored 100 out of
+ * 100 on the strength of a single readable word.
+ *
+ * Acko prints neither of the two things the scanner originally relied on: no
+ * "Add-on Covers Opted" heading and no own-damage premium breakdown. It writes
+ * "Addons Selected" and follows it with prose, then runs straight into
+ * "What's not covered". So the policy really did hold Consumables, and we
+ * reported every add-on as absent.
+ */
+describe("Acko: a third way of declaring add-ons", () => {
+  const text = fixture("motor_acko_scooter.txt");
+
+  test("finds the add-on this policy actually holds", () => {
+    const scan = detectMotorAddOns(text);
+    const consumables = scan.findings.find((f) => f.id === "consumables");
+    assert.ok(consumables, "consumables must be in the catalog");
+    assert.equal(consumables!.state, "present");
+    assert.ok(scan.declaredListFound, '"Addons Selected" must be read as a declared list');
+  });
+
+  test("does not swallow the exclusions that follow the list", () => {
+    const scan = detectMotorAddOns(text);
+    // "What's not covered" terminates the window. Without that, every phrase in
+    // the exclusions arrives as an unrecognised add-on and the review queue
+    // fills with noise.
+    const noise = scan.unrecognisedDeclared.join(" ").toLowerCase();
+    assert.ok(!noise.includes("wear and tear"), "exclusions must not leak into the declared list");
+    assert.ok(!noise.includes("tyres"), "exclusions must not leak into the declared list");
+  });
+
+  test("does not invent add-ons this policy does not have", () => {
+    const scan = detectMotorAddOns(text);
+    for (const id of ["zero_depreciation", "return_to_invoice", "engine_protect"]) {
+      const f = scan.findings.find((x) => x.id === id);
+      assert.notEqual(f?.state, "present", `${id} is not on this policy and must not be reported`);
+    }
+  });
+});
