@@ -1,14 +1,21 @@
 import { useRef, useState } from "react";
 import {
   Scale, FileText, CheckCircle2, X, Loader2, AlertCircle, ArrowRight,
-  Share2, Copy, Check, MessageCircle, Zap,
+  Share2, Copy, Check, MessageCircle, ArrowLeft,
 } from "lucide-react";
 import { Link } from "wouter";
 import { apiFetch } from "@/lib/api";
+import ComparisonShareBar from "@/components/agent/ComparisonShareBar";
 import { type CompareResponse, type ComparisonResult } from "@/lib/wordingProfile";
 import ComparisonView, { TEAL, AMBER } from "@/components/ComparisonView";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { useAgent } from "@/context/AgentContext";
 import { isPlaygroundMode } from "@/lib/playground/mode";
 import { DEMO_COMPARE_RESPONSE } from "@/lib/playground/seed";
+
+// Must match COMPARE_COST in the /api/agent/compare route: one Gemini call per
+// uploaded wording. The catalog lane spends nothing and is priced nowhere.
+const COMPARE_COST = 2;
 
 // ─── Upload slot ────────────────────────────────────────────────────────────────
 function UploadSlot({
@@ -83,87 +90,6 @@ function UploadSlot({
 }
 
 // ─── Save / share bar ─────────────────────────────────────────────────────────────
-function ShareBar({ data, profiles }: { data: ComparisonResult; profiles?: unknown }) {
-  const [saving, setSaving] = useState(false);
-  const [uuid, setUuid] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  const shareUrl = uuid ? `${window.location.origin}/compare/report/${uuid}` : null;
-
-  async function save() {
-    setSaving(true);
-    setErr(null);
-    try {
-      const res = await apiFetch("/api/compare/save-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ result: data, profiles }),
-      });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Could not save");
-      const json = await res.json();
-      setUuid(json.uuid);
-    } catch (e: any) {
-      setErr(e.message || "Could not save. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function copy() {
-    if (!shareUrl) return;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch { /* ignore */ }
-  }
-
-  const waText = encodeURIComponent(
-    `Namaste 🙏 Maine aapke liye 2 health insurance policies ka poora comparison taiyaar kiya hai. Yahan side-by-side dekhiye:\n${shareUrl ?? ""}`
-  );
-
-  if (!uuid) {
-    return (
-      <div>
-        <button
-          onClick={save}
-          disabled={saving}
-          className="w-full md:w-auto h-12 px-6 rounded-xl bg-[#0D9488] hover:bg-[#0f766e] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Share2 className="h-5 w-5" />}
-          {saving ? "Saving…" : "Save & share with customer"}
-        </button>
-        {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-2xl border border-[#0D9488]/30 bg-[#F0FDFA] p-4 md:p-5">
-      <p className="text-sm font-bold text-[#0f766e] mb-3 flex items-center gap-2">
-        <CheckCircle2 className="h-4 w-4" /> Saved — send this to your customer
-      </p>
-      <div className="flex flex-col sm:flex-row gap-2.5">
-        <div className="flex-1 min-w-0 flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 h-12">
-          <span className="text-sm text-slate-500 truncate flex-1">{shareUrl}</span>
-          <button onClick={copy} className="text-slate-400 hover:text-[#0D9488] flex-shrink-0" aria-label="Copy link">
-            {copied ? <Check className="h-5 w-5 text-[#0D9488]" /> : <Copy className="h-5 w-5" />}
-          </button>
-        </div>
-        <a
-          href={`https://wa.me/?text=${waText}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="h-12 px-5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5b] text-white font-bold flex items-center justify-center gap-2 whitespace-nowrap"
-        >
-          <MessageCircle className="h-5 w-5" /> WhatsApp
-        </a>
-      </div>
-    </div>
-  );
-}
-
 // ─── Page ────────────────────────────────────────────────────────────────────────
 export default function Compare() {
   const [fileA, setFileA] = useState<File | null>(null);
@@ -172,8 +98,16 @@ export default function Compare() {
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<CompareResponse | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [confirmSpend, setConfirmSpend] = useState(false);
 
-  const canCompare = !!fileA && !!fileB && !loading;
+  // The balance is read once at login. It arrives a beat after first paint, so
+  // "0 left" is not trusted until loading is done - otherwise the button locks
+  // itself for a moment on every visit. The server checks it again regardless.
+  const { creditsRemaining, loading: agentLoading, refresh: refreshAgent } = useAgent();
+  const balanceKnown = !agentLoading;
+  const shortOfChecks = balanceKnown && creditsRemaining < COMPARE_COST;
+
+  const canCompare = !!fileA && !!fileB && !loading && !shortOfChecks;
 
   async function handleCompare() {
     if (!fileA || !fileB) return;
@@ -186,9 +120,12 @@ export default function Compare() {
       const res = await apiFetch("/api/agent/compare", { method: "POST", body: fd });
       if (!res.ok) {
         const e = await res.json().catch(() => ({ error: "Comparison failed" }));
-        throw new Error(e.error || "Comparison failed");
+        // The balance gate speaks for itself; anything else keeps its own text.
+        throw new Error(e.message || e.error || "Comparison failed");
       }
       setResponse(await res.json());
+      // Two checks just left the balance the header and dashboard show.
+      refreshAgent();
     } catch (e: any) {
       setError(e.message || "Something went wrong. Please try again.");
     } finally {
@@ -237,7 +174,7 @@ export default function Compare() {
             Save or share it first if you need it — it is not stored anywhere yet.
           </p>
         )}
-        <ShareBar data={response.result} profiles={response.profiles} />
+        <ComparisonShareBar data={response.result} profiles={response.profiles} />
         <ComparisonView data={response.result} />
       </div>
     );
@@ -245,42 +182,46 @@ export default function Compare() {
 
   return (
     <div className="max-w-3xl mx-auto">
+      <Link
+        href="/agent/compare"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 mb-4"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to the catalog (free)
+      </Link>
+
       <div className="flex items-center gap-3 mb-2">
         <div className="h-11 w-11 rounded-xl bg-[#0D9488]/10 text-[#0D9488] flex items-center justify-center">
           <Scale className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900">Compare Policies</h1>
-          <p className="text-slate-500">Upload two policy wordings — we'll break them down side by side.</p>
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900">Compare Quotes</h1>
+          <p className="text-slate-500">
+            For a plan the catalog does not carry. Upload both wordings and we read every clause.
+          </p>
         </div>
       </div>
 
-      {/* Catalog shortcut — instant, no upload, no AI cost */}
-      <Link
-        href="/agent/compare/catalog"
-        className="mt-6 flex items-center gap-3 rounded-2xl border-2 border-[#0D9488]/30 bg-[#0D9488]/5 hover:bg-[#0D9488]/10 p-4 transition-colors group"
-      >
-        <div className="h-11 w-11 rounded-xl bg-[#0D9488] text-white flex items-center justify-center flex-shrink-0">
-          <Zap className="h-6 w-6" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-slate-800">Compare from the catalog — instant, no upload</p>
-          <p className="text-sm text-slate-500">Pick any two pre-analysed plans. No PDF, no waiting.</p>
-        </div>
-        <ArrowRight className="h-5 w-5 text-[#0D9488] group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-      </Link>
-
-      <div className="relative my-6 text-center">
-        <div className="absolute inset-x-0 top-1/2 h-px bg-slate-200" />
-        <span className="relative bg-[#FAFAF8] px-3 text-xs font-bold uppercase tracking-widest text-slate-400">
-          or upload wordings
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <UploadSlot side="a" label="Policy A" file={fileA} onPick={setFileA} onClear={() => setFileA(null)} disabled={loading} />
         <UploadSlot side="b" label="Policy B" file={fileB} onPick={setFileB} onClear={() => setFileB(null)} disabled={loading} />
       </div>
+
+      {shortOfChecks ? (
+        <div className="mt-5 rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+          <p className="font-bold">
+            You need {COMPARE_COST} policy checks to compare uploads. You have {creditsRemaining}.
+          </p>
+          <p className="mt-1">
+            <Link href="/agent/compare" className="underline font-semibold">Comparing from the catalog</Link>{" "}
+            is free and instant, or ask your admin to top up.
+          </p>
+        </div>
+      ) : (
+        <p className="mt-5 text-sm text-slate-500">
+          Uses <span className="font-bold text-slate-700">{COMPARE_COST} policy checks</span>, one for each wording we read.
+          {balanceKnown && <> You have {creditsRemaining} left.</>}
+        </p>
+      )}
 
       {error && (
         <div className="mt-5 rounded-xl bg-red-50 border border-red-200 p-4 flex items-start gap-3 text-sm text-red-700">
@@ -290,7 +231,7 @@ export default function Compare() {
       )}
 
       <button
-        onClick={handleCompare}
+        onClick={() => setConfirmSpend(true)}
         disabled={!canCompare}
         className="mt-6 w-full h-14 rounded-2xl bg-[#0B1120] hover:bg-[#1e293b] text-white font-bold text-base flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
@@ -316,6 +257,22 @@ export default function Compare() {
           See a sample comparison — no upload needed
         </button>
       )}
+
+      {/* Last stop before the spend. The price is on the card that got them
+          here and on the line above the button; this is where they agree to it. */}
+      <ConfirmationDialog
+        open={confirmSpend}
+        onOpenChange={setConfirmSpend}
+        onConfirm={handleCompare}
+        title={`Use ${COMPARE_COST} policy checks?`}
+        description={
+          `Reading both uploaded wordings uses ${COMPARE_COST} of your policy checks` +
+          (balanceKnown ? `, leaving you ${Math.max(creditsRemaining - COMPARE_COST, 0)}. ` : ". ") +
+          "Comparing plans from the catalog stays free."
+        }
+        confirmText={`Use ${COMPARE_COST} checks`}
+        cancelText="Not now"
+      />
     </div>
   );
 }
