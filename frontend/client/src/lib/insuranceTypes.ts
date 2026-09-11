@@ -11,7 +11,7 @@
  *   backend/server/services/extractionFields.ts
  */
 
-export type FieldType = "text" | "number" | "date";
+export type FieldType = "text" | "number" | "date" | "json";
 
 export type SharedColumn =
   | "insurer"
@@ -74,6 +74,11 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "coverage_type", label: "Coverage type", type: "text" },
     { key: "policy_start_date", label: "Policy start date", type: "date" },
     { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
+    // Bundled motor policies end their own-damage and third-party covers on
+    // different days. The renewal an advisor sells against is the OD one.
+    // Keep in sync with backend/server/services/extractionFields.ts.
+    { key: "od_expiry_date", label: "Own-damage (OD) cover end date", type: "date" },
+    { key: "tp_expiry_date", label: "Third-party (TP) cover end date", type: "date" },
   ],
   life: [
     { key: "policyholder_name", label: "Policyholder / proposer", type: "text", shared: "policyholder_name" },
@@ -89,6 +94,21 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "start_date", label: "Commencement date", type: "date" },
     { key: "next_premium_date", label: "Next premium due date", type: "date" },
     { key: "maturity_date", label: "Maturity date", type: "date", shared: "expiry_date" },
+    { key: "plan_type", label: "Plan type (term / return of premium / endowment / money back / unit linked)", type: "text" },
+    // A money-back or guaranteed-income plan pays the customer during the term
+    // and states its maturity amount separately from the death cover. Without
+    // these the schedule silently loses both.
+    { key: "maturity_amount", label: "Maturity amount stated on the schedule", type: "number" },
+    { key: "payout_amount", label: "Survival / income payout amount", type: "number" },
+    { key: "payout_frequency", label: "Payout frequency (monthly / yearly)", type: "text" },
+    { key: "payout_start_date", label: "First payout date", type: "date" },
+    { key: "payout_end_date", label: "Last payout date", type: "date" },
+    { key: "bonus_per_1000", label: "Declared bonus per ₹1,000 sum assured (if any)", type: "number" },
+    { key: "fund_value", label: "Fund value (unit linked only)", type: "number" },
+    { key: "fund_value_as_on", label: "Fund value as on (statement date)", type: "date" },
+    { key: "age_at_entry", label: "Age when the policy started", type: "number" },
+    { key: "illustrated_maturity_value", label: "Maturity value stated in the document's illustration", type: "number" },
+    { key: "policy_parameters", label: "Charges and assumptions", type: "json" },
     { key: "nominee_name", label: "Nominee", type: "text" },
   ],
   term: [
@@ -106,7 +126,11 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "start_date", label: "Commencement date", type: "date" },
     { key: "next_premium_date", label: "Next premium due date", type: "date" },
     { key: "cover_end_date", label: "Cover end date", type: "date", shared: "expiry_date" },
+    { key: "plan_type", label: "Plan type (term / return of premium)", type: "text" },
     { key: "death_benefit_payout", label: "Death benefit payout (lump sum / income)", type: "text" },
+    { key: "age_at_entry", label: "Age when the policy started", type: "number" },
+    { key: "illustrated_maturity_value", label: "Maturity value stated in the document's illustration", type: "number" },
+    { key: "policy_parameters", label: "Charges and assumptions", type: "json" },
     { key: "nominee_name", label: "Nominee", type: "text" },
   ],
   travel: [

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
-import { claimPendingUpload } from "@/lib/pendingUpload";
+import { claimPendingUpload, attachEmailToPendingUpload } from "@/lib/pendingUpload";
 import { isPersonalEmail } from "@/lib/emailDomains";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { FieldLabel, FieldError, RequiredLegend, inputStateClass } from "@/components/auth/field";
@@ -61,7 +61,7 @@ export default function SignupPublic() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Create your free account — IndSure";
+    document.title = "Create your free account | IndSure";
   }, []);
 
   /** Clear a field's error as soon as the person starts fixing it — leaving red
@@ -102,6 +102,14 @@ export default function SignupPublic() {
 
     setLoading(true);
     setError(null);
+
+    // Before the account exists, while this tab still holds the token: tell the
+    // server which address is signing up for the parked upload. If the
+    // confirmation link is then opened in another tab or on a phone, the token
+    // is gone but the address still finds the file. Awaited rather than fired
+    // and forgotten, because a fast confirmation could otherwise race it, and it
+    // never throws.
+    await attachEmailToPendingUpload(email);
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -149,6 +157,7 @@ export default function SignupPublic() {
     });
 
     try {
+      // guard-ok(unchecked-apifetch): idempotent, and retried on /app entry. A failure here must not block signup.
       await apiFetch("/api/me/bootstrap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -193,12 +202,12 @@ export default function SignupPublic() {
             </p>
           </div>
           <Link href="/login">
-            <Button className="w-full h-[52px] bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl text-base font-bold">
+            <Button className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold">
               Go to sign in
             </Button>
           </Link>
           <p className="text-xs text-[var(--color-text-muted)]">
-            Didn't get it? Check spam — it's the only mail we'll ever send you.
+            Didn't get it? Check spam. It's the only mail we'll ever send you.
           </p>
         </div>
       </AuthShell>
@@ -212,7 +221,13 @@ export default function SignupPublic() {
       subtitle="Upload your policies, get an unbiased audit in about a minute, and keep everything in one private dashboard."
       promise="No OTP, no spam calls, no messages you didn't ask for. We will never sell your data."
     >
-      <div className="space-y-5">
+      {/* A real form, for the same reason as /login: Enter only submitted from
+          the last field that happened to carry a keydown handler, and a browser
+          offers to save a password far more reliably when it can see a form. */}
+      <form
+        className="space-y-5"
+        onSubmit={(e) => { e.preventDefault(); void handleSignUp(); }}
+      >
         <div className="space-y-1">
           <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">Create your free account</h2>
           <p className="text-sm text-[var(--color-text-secondary)]">
@@ -245,9 +260,20 @@ export default function SignupPublic() {
 
           <div className="space-y-1.5">
             <FieldLabel htmlFor="su-phone" required>Mobile number</FieldLabel>
-            {/* +91 is a static prefix, not part of the value — we store 10 digits. */}
+            {/* +91 is a static prefix, not part of the value: we store 10 digits.
+                z-10 is doing the real work here. The Input component wraps its
+                own field in a `relative` div, so the wrapper and this span are
+                both positioned siblings with z-index auto, and the wrapper comes
+                second - which means the input's white background painted straight
+                over the prefix. document.elementFromPoint at the prefix returned
+                the input, not this span. The +91 was not faint or mispositioned,
+                it was invisible, and all anyone saw was an empty gap in front of
+                the number they had typed.
+
+                The padding is sized to the prefix and nothing more: it sits at
+                left-4 and is 24px wide, so 48px leaves a normal 8px word gap. */}
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[var(--color-text-muted)] pointer-events-none">
+              <span className="absolute left-4 top-1/2 z-10 -translate-y-1/2 text-sm font-semibold text-[var(--color-text-muted)] pointer-events-none">
                 +91
               </span>
               <Input
@@ -261,7 +287,7 @@ export default function SignupPublic() {
                 aria-describedby={fieldErrors.phone ? "su-phone-err" : undefined}
                 value={phone}
                 onChange={(e) => { setPhone(normalizeMobile(e.target.value)); clearFieldError("phone"); }}
-                className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.phone))} transition-all font-medium pl-14 pr-4 rounded-xl tracking-wide`}
+                className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.phone))} transition-all font-medium pl-12 pr-4 rounded-xl tracking-wide`}
                 placeholder="9876543210"
               />
             </div>
@@ -316,14 +342,13 @@ export default function SignupPublic() {
                 aria-describedby={fieldErrors.password ? "su-password-err" : "su-password-hint"}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
-                onKeyDown={(e) => e.key === "Enter" && handleSignUp()}
                 className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.password))} transition-all font-medium px-4 pr-12 rounded-xl`}
                 placeholder="At least 6 characters"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
+                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -356,23 +381,23 @@ export default function SignupPublic() {
         )}
 
         <Button
-          onClick={handleSignUp}
+          type="submit"
           disabled={loading}
-          className="w-full h-[52px] bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
+          className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
         >
-          {loading ? "Creating your account…" : <>Analyze my policy — free <ArrowRight className="w-4 h-4" /></>}
+          {loading ? "Creating your account…" : <>Analyse my policy for free <ArrowRight className="w-4 h-4" /></>}
         </Button>
 
         {/* Low-commitment escape hatch — warms up browsers instead of losing them. */}
         <button
           type="button"
           onClick={viewSample}
-          className="w-full text-sm font-semibold text-[var(--color-teal-600)] hover:underline inline-flex items-center justify-center gap-2"
+          className="w-full min-h-11 text-sm font-semibold text-[var(--color-teal-600)] hover:underline inline-flex items-center justify-center gap-2"
         >
           <FileText className="w-4 h-4" />
           Just browsing? See a sample audit
         </button>
-      </div>
+      </form>
     </AuthShell>
   );
 }

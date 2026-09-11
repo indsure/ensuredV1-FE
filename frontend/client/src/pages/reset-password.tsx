@@ -97,7 +97,8 @@ export default function ResetPasswordPublic() {
       return;
     }
     // Ensure the profile/trial clock exists, then head into the portfolio.
-    try { await apiFetch("/api/me/bootstrap", { method: "POST" }); } catch { /* non-fatal */ }
+    // guard-ok(unchecked-apifetch): idempotent, and retried on /app entry. A failure here must not block sign-in.
+      try { await apiFetch("/api/me/bootstrap", { method: "POST" }); } catch { /* non-fatal */ }
     setDone(true);
     setTimeout(() => setLocation("/app"), 1600);
   }
@@ -120,7 +121,7 @@ export default function ResetPasswordPublic() {
             This reset link is invalid or has expired. Please request a new one.
           </div>
           <Link href="/forgot-password">
-            <Button className="w-full h-[52px] bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98]">
+            <Button className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98]">
               Request a new link
             </Button>
           </Link>
@@ -158,7 +159,7 @@ export default function ResetPasswordPublic() {
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
+                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -202,7 +203,7 @@ export default function ResetPasswordPublic() {
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full h-[52px] bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
+            className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
           >
             {loading ? "Updating…" : <>Update password <ArrowRight className="w-4 h-4" /></>}
           </Button>

@@ -146,7 +146,7 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
 
         <div className={`border-t ${variant === "yes" ? "border-red-200" : "border-amber-200"} pt-6`}>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="name" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
                   Full Name
@@ -179,7 +179,7 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
                 />
               </div>
             </div>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="email" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
                   Email Address

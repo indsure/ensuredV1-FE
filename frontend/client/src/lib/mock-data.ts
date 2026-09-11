@@ -1,4 +1,4 @@
-import { ForensicAuditReport } from "@/lib/policy-types";
+import { ForensicAuditReport } from "@shared/policy";
 import { TERM_RIDERS_DATABASE } from "./data/term-rider-data";
 import { VEHICLE_RIDERS_DATABASE } from "./data/vehicle-rider-data";
 
@@ -46,6 +46,10 @@ export const mockReportCareSupreme: ForensicAuditReport = {
       exists: true,
       type: "full",
       restore_amount: 1000000,
+      // Read off trigger_conditions below: unlimited, but unrelated illnesses only.
+      same_illness_covered: false,
+      unlimited: true,
+      triggers_on_first_claim: null,
       trigger_conditions: "Unlimited times for unrelated illnesses. Partial for related.",
       actually_useful: true,
       remarks: "Unlimited automatic recharge is a strong feature."
@@ -219,9 +223,9 @@ export const mockReportCareSupreme: ForensicAuditReport = {
       supplementary_benefits: 5
     },
     deductions: [
-      { reason: "Maternity Permanently Excluded", category: "Coverage", severity: "high", points: 15 },
-      { reason: "3-Year PED Waiting Period Active", category: "Timing", severity: "high", points: 10 },
-      { reason: "Robotic Surgery Sub-Limit", category: "Limits", severity: "low", points: 1 }
+      { reason: "Maternity Permanently Excluded", category: "COVERAGE_GAP", severity: "high", points: 15 },
+      { reason: "3-Year PED Waiting Period Active", category: "CLAIM_REJECTION", severity: "high", points: 10 },
+      { reason: "Robotic Surgery Sub-Limit", category: "OOP_EXPOSURE", severity: "low", points: 1 }
     ],
     interpretation: "A strong policy for hospitalization but fails completely on Maternity. Good for singles, risky for family planning."
   },
@@ -460,7 +464,7 @@ export const mockReportVehicle: ForensicAuditReport = {
   audit_score: {
     score: 94,
     breakdown: { claim_rejection_risk: 28, oop_exposure: 28, coverage_adequacy: 28, structural_clarity: 10, supplementary_benefits: 10 },
-    deductions: [{ reason: "Engine Protection Missing", category: "Benefits", severity: "low", points: 6 }],
+    deductions: [{ reason: "Engine Protection Missing", category: "COVERAGE_GAP", severity: "low", points: 6 }],
     interpretation: "Excellent comprehensive coverage with key riders (Zero Dep + RSA)."
   },
   final_verdict: {

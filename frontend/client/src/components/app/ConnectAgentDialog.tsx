@@ -100,7 +100,7 @@ export function ConnectAgentDialog({
             </div>
             <Button
               onClick={() => onOpenChange(false)}
-              className="w-full h-11 bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl font-bold"
+              className="w-full h-11 bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl font-bold"
             >
               Done
             </Button>
@@ -151,7 +151,7 @@ export function ConnectAgentDialog({
                       onClick={() => setTopic(t.value)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                         topic === t.value
-                          ? "bg-[var(--color-teal-600)] text-white border-[var(--color-teal-600)]"
+                          ? "bg-[var(--color-cta)] text-white border-[var(--color-teal-600)]"
                           : "bg-white text-[var(--color-text-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-teal-600)]"
                       }`}
                     >
@@ -197,7 +197,7 @@ export function ConnectAgentDialog({
               <Button
                 onClick={submit}
                 disabled={submitting}
-                className="w-full h-11 bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl font-bold disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                className="w-full h-11 bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl font-bold disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >
                 {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : "Request a callback"}
               </Button>

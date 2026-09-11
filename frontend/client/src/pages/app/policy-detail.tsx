@@ -5,7 +5,9 @@ import { supabase } from "@/lib/supabase";
 import { getApiBase } from "@/lib/queryClient";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { ConnectAgentDialog } from "@/components/app/ConnectAgentDialog";
-import { validateForensicAuditReport } from "@/lib/policy-types";
+import PolicyFactsheet from "@/components/app/PolicyFactsheet";
+import { isDataEntryType } from "@/lib/insuranceTypes";
+import { validateForensicAuditReport } from "@shared/policy";
 import { ArrowLeft, AlertCircle, Loader2, ShieldCheck, Download, PhoneCall } from "lucide-react";
 
 type PolicyRow = {
@@ -18,7 +20,14 @@ type PolicyRow = {
   filename: string | null;
   pdf_url: string | null;
   report_data: any | null;
+  /** The OCR lane's output. Present for every data-entry type, never for health. */
+  extracted_data: Record<string, any> | null;
   error_message: string | null;
+  /* Identity for the downloaded PDF. The endpoint already returns these (it
+     SELECTs *); the type simply never named them, so the page could not pass
+     them on. */
+  policyholder_name: string | null;
+  created_at: string | null;
 };
 
 // Consumer report view. Reuses the full PolicyAuditReport renderer, but with
@@ -71,6 +80,17 @@ export default function PolicyDetail({ id }: { id: string }) {
 
   const report = row?.report_data;
   const hasValidReport = report && validateForensicAuditReport(report);
+  /* A data-entry policy has no audit to validate. It is ready when the document
+     was read and produced at least one field, and it is shown instead of the
+     "report unavailable" message that used to greet the owner of a perfectly
+     good motor policy. */
+  const factsheet =
+    state === "ready" &&
+    !hasValidReport &&
+    row?.status === "done" &&
+    isDataEntryType(row?.insurance_type) &&
+    !!row?.extracted_data &&
+    Object.keys(row.extracted_data).length > 0;
 
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)]">
@@ -109,7 +129,7 @@ export default function PolicyDetail({ id }: { id: string }) {
       <ConnectAgentDialog open={connectOpen} onOpenChange={setConnectOpen} defaultTopic="review" />
 
       {state === "loading" && (
-        <div className="max-w-5xl mx-auto px-6 py-24 flex flex-col items-center text-center">
+        <div className="max-w-5xl mx-auto px-6 py-14 sm:py-20 lg:py-24 flex flex-col items-center text-center">
           <Loader2 className="w-8 h-8 text-[var(--color-teal-600)] animate-spin" />
           <p className="mt-4 text-sm text-slate-500">Loading your report…</p>
         </div>
@@ -122,12 +142,45 @@ export default function PolicyDetail({ id }: { id: string }) {
               {row.nickname}
             </span>
           )}
-          <PolicyAuditReport data={report as any} hideNav hideLeadCTA />
+          {/* The downloaded PDF needs to say which policy it is about.
+              The report payload itself carries no insurer, plan name or
+              policyholder: the row wrapping it does, and this page was passing
+              none of it, so a customer who downloaded their own audit got an
+              anonymous document. The agent report and the shared report both
+              pass this; the consumer one was the last surface that did not.
+
+              policy_name only, never a suggested name. Since the provenance
+              change, policy_name holds a name actually read from the document,
+              and a guess must not be printed as the policy's name in a record
+              somebody keeps. */}
+          <PolicyAuditReport
+            data={report as any}
+            hideNav
+            hideLeadCTA
+            pdfMeta={{
+              insurer: row?.insurer ?? undefined,
+              policyName: row?.policy_name ?? undefined,
+              policyholderName: row?.policyholder_name ?? undefined,
+              sourceFilename: row?.filename ?? undefined,
+              generatedAt: row?.created_at ?? undefined,
+            }}
+          />
         </div>
       )}
 
-      {((state === "ready" && !hasValidReport) || state === "error" || state === "notfound") && (
-        <div className="max-w-2xl mx-auto px-6 py-20 text-center">
+      {factsheet && (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+          {row?.nickname && (
+            <span className="inline-block ml-2 mb-2 py-1 px-3 rounded-full text-[11px] font-mono uppercase tracking-widest text-[var(--color-teal-600)] bg-[var(--color-teal-600)]/10">
+              {row.nickname}
+            </span>
+          )}
+          <PolicyFactsheet insuranceType={row!.insurance_type} data={row!.extracted_data} />
+        </div>
+      )}
+
+      {((state === "ready" && !hasValidReport && !factsheet) || state === "error" || state === "notfound") && (
+        <div className="max-w-2xl mx-auto px-6 py-12 sm:py-16 lg:py-20 text-center">
           <div className="inline-flex p-4 bg-amber-50 rounded-full mb-6 text-amber-600 border border-amber-100">
             <AlertCircle className="w-7 h-7" />
           </div>
@@ -144,7 +197,7 @@ export default function PolicyDetail({ id }: { id: string }) {
                   : "The stored report for this policy is missing or in an old format."}
           </p>
           <Link href="/app">
-            <span className="inline-flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] transition-colors cursor-pointer">
+            <span className="inline-flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] transition-colors cursor-pointer">
               <ArrowLeft className="w-4 h-4" /> Back to portfolio
             </span>
           </Link>

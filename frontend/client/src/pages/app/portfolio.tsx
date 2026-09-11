@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useDropzone } from "react-dropzone";
 import { supabase } from "@/lib/supabase";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiOk } from "@/lib/api";
+import { claimPendingUpload } from "@/lib/pendingUpload";
 import { getApiBase } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ConnectAgentDialog } from "@/components/app/ConnectAgentDialog";
@@ -66,6 +67,35 @@ export default function PortfolioPage() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [load]);
 
+  // Redeem an upload that was parked before signup and never claimed.
+  //
+  // /signup and /login already do this, but neither runs when the confirmation
+  // email is opened somewhere else, which is the case that loses the file: that
+  // link lands here, on /app. The token went with the tab that had it, so the
+  // server matches on the account's confirmed address instead.
+  //
+  // Only when the portfolio is empty, which is exactly the state of someone who
+  // just confirmed and has nothing yet, and only once per tab. Anyone with
+  // policies already has nothing to redeem and should not pay for the request.
+  useEffect(() => {
+    if (!data || data.policies.length > 0) return;
+    if (sessionStorage.getItem("indsure_claim_attempted")) return;
+    try { sessionStorage.setItem("indsure_claim_attempted", "1"); } catch { /* private mode */ }
+
+    let cancelled = false;
+    void (async () => {
+      const claimed = await claimPendingUpload();
+      if (cancelled || claimed.status !== "started") return;
+      toast({
+        variant: "success",
+        title: "We found the policy you uploaded",
+        description: "Reading it now. This usually takes under a minute.",
+      });
+      load();
+    })();
+    return () => { cancelled = true; };
+  }, [data, load, toast]);
+
   // Open the add panel automatically for a brand-new account — there's nothing
   // else to do on the page yet.
   useEffect(() => {
@@ -82,11 +112,11 @@ export default function PortfolioPage() {
     setEditingName(false);
     setData((d) => (d ? { ...d, fullName: name || null } : d)); // optimistic
     try {
-      await apiFetch("/api/me/profile", {
+      await apiOk(apiFetch("/api/me/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ full_name: name }),
-      });
+      }));
     } catch { load(); /* re-sync on failure */ }
   }
 
@@ -95,11 +125,11 @@ export default function PortfolioPage() {
       d ? { ...d, policies: d.policies.map((p) => (p.id === id ? { ...p, nickname: nickname || null } : p)) } : d
     ); // optimistic
     try {
-      await apiFetch(`/api/me/policy/${id}`, {
+      await apiOk(apiFetch(`/api/me/policy/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nickname }),
-      });
+      }));
     } catch { load(); }
   }, [load]);
 
@@ -108,11 +138,11 @@ export default function PortfolioPage() {
       d ? { ...d, policies: d.policies.map((p) => (p.id === id ? { ...p, renewal_date: date || null } : p)) } : d
     ); // optimistic
     try {
-      await apiFetch(`/api/me/policy/${id}`, {
+      await apiOk(apiFetch(`/api/me/policy/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ renewal_date: date }),
-      });
+      }));
       if (date) toast({ title: "Renewal date saved", description: "We'll remind you 30 days before.", variant: "success" });
     } catch { load(); }
   }, [load, toast]);
@@ -154,11 +184,11 @@ export default function PortfolioPage() {
   async function toggleReminders(next: boolean) {
     setData((d) => (d ? { ...d, renewalRemindersEnabled: next } : d)); // optimistic
     try {
-      await apiFetch("/api/me/profile", {
+      await apiOk(apiFetch("/api/me/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ renewal_reminders_enabled: next }),
-      });
+      }));
       toast({
         title: next ? "Reminders on" : "Reminders off",
         description: next
@@ -282,11 +312,11 @@ export default function PortfolioPage() {
         const body = await res.json().catch(() => ({}));
         setUploading(false);
         setUploadStage(null);
-        setPaywall(
-          body.reason === "trial_expired"
-            ? "Your 30-day free trial has ended. Upgrade to analyze more policies."
-            : `You've used your free ${labelFor(selectedType)} slot. Upgrade to add more.`
-        );
+        // checkIndividualQuota can only return "no_profile" or "slot_full"
+        // (backend/server/routes.ts:781, :796). The "trial_expired" branch that
+        // used to sit here was unreachable and asserted a 30-day trial the
+        // server stopped enforcing, contradicting /pricing.
+        setPaywall(`You've used your free ${labelFor(selectedType)} slot. Upgrade to add more.`);
         return;
       }
       if (!res.ok) {
@@ -457,7 +487,9 @@ export default function PortfolioPage() {
               onClick={() => setLocation("/pricing")}
               className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-teal-600)]/10 px-4 py-2.5 text-[11px] font-mono uppercase tracking-widest text-[var(--color-teal-600)] hover:bg-[var(--color-teal-600)]/20 transition-colors"
             >
-              {data.plan === "paid" ? "Paid · unlimited" : "Free · one policy per type"}
+              {/* claim-source: Personal is 4 health checks a year and 16 stored
+                  policies (pricing.tsx:91-93), not unlimited. */}
+              {data.plan === "paid" ? "Paid · 4 checks a year" : "Free · one policy per type"}
               {data.plan !== "paid" && <ArrowRight className="w-3 h-3" />}
             </button>
           )}
@@ -471,14 +503,14 @@ export default function PortfolioPage() {
             className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full blur-3xl"
             style={{ background: "radial-gradient(circle, rgba(45,212,191,0.22), transparent 70%)" }}
           />
-          <div className="relative grid gap-7 sm:gap-9 sm:grid-cols-[auto_1fr] items-center">
+          <div className="relative grid grid-cols-1 gap-7 sm:gap-9 sm:grid-cols-[auto_1fr] items-center">
             <div className="flex flex-col items-center sm:items-start gap-4">
               {d.avgScore != null ? (
                 <ScoreRing score={d.avgScore} color={ringColor(d.avgScore)} label="cover score" />
               ) : (
                 <div className="w-[168px] h-[168px] rounded-full border-[12px] border-white/10 flex flex-col items-center justify-center text-center px-6">
-                  <span className="font-serif text-4xl font-bold text-white/40">—</span>
-                  <span className="mt-1 text-[10px] font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
+                  <span className="font-serif text-3xl sm:text-4xl font-bold text-white/40">—</span>
+                  <span className="mt-1 text-xs font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
                     no score yet
                   </span>
                 </div>
@@ -534,7 +566,7 @@ export default function PortfolioPage() {
               <div className="mt-6 flex flex-wrap gap-2.5">
                 <button
                   onClick={heroCta.onClick}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] hover:text-[var(--color-navy-900)] transition-colors active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] hover:text-[var(--color-navy-900)] transition-colors active:scale-[0.98]"
                 >
                   <heroCta.icon className="w-4 h-4" /> {heroCta.label}
                 </button>
@@ -651,7 +683,7 @@ export default function PortfolioPage() {
               })}
             </div>
 
-            <div className="grid gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4">
               {visiblePolicies.map((p) => (
                 <PolicyCard
                   key={p.id}
@@ -685,7 +717,7 @@ export default function PortfolioPage() {
             <h2 className="font-serif text-xl font-bold text-[var(--color-navy-900)] flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-[var(--color-teal-600)]" /> Your next steps
             </h2>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* What you're missing */}
               <div className="bg-white rounded-2xl border border-[var(--color-border-light)] shadow-sm p-5 sm:p-6">
                 <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">
@@ -855,7 +887,7 @@ export default function PortfolioPage() {
                         aria-pressed={active}
                         className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-[0.98] flex items-center gap-1.5 ${
                           active
-                            ? "bg-[var(--color-teal-600)] text-white border-[var(--color-teal-600)] shadow-sm"
+                            ? "bg-[var(--color-cta)] text-white border-[var(--color-teal-600)] shadow-sm"
                             : "bg-white text-[var(--color-text-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
                         }`}
                       >
@@ -946,7 +978,7 @@ export default function PortfolioPage() {
                     href={advisorWa(data.advisor.phone)!}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] hover:text-[var(--color-navy-900)] transition-colors"
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] hover:text-[var(--color-navy-900)] transition-colors"
                   >
                     <MessageCircle className="w-4 h-4" /> WhatsApp
                   </a>
@@ -974,7 +1006,7 @@ export default function PortfolioPage() {
               {!data.hasOpenAgentRequest && (
                 <button
                   onClick={() => openConnect("review")}
-                  className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-teal-600)] text-white font-bold hover:bg-[var(--color-teal-400)] hover:text-[var(--color-navy-900)] transition-colors active:scale-[0.98]"
+                  className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] hover:text-[var(--color-navy-900)] transition-colors active:scale-[0.98]"
                 >
                   <PhoneCall className="w-4 h-4" /> Connect me to an advisor
                 </button>
@@ -1004,7 +1036,7 @@ export default function PortfolioPage() {
                 aria-checked={data.renewalRemindersEnabled}
                 aria-label="Renewal reminders"
                 onClick={() => toggleReminders(!data.renewalRemindersEnabled)}
-                className={`shrink-0 relative w-14 h-8 rounded-full transition-colors ${
+                className={`shrink-0 relative before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-[''] w-14 h-8 rounded-full transition-colors ${
                   data.renewalRemindersEnabled ? "bg-[var(--color-teal-600)]" : "bg-[var(--color-border-medium)]"
                 }`}
               >
@@ -1027,7 +1059,8 @@ export default function PortfolioPage() {
                   </p>
                   <p className="text-xs text-[var(--color-text-muted)]">
                     {data.plan === "paid"
-                      ? "Unlimited policy audits."
+                      // claim-source: pricing.tsx:91-93. Not unlimited.
+                      ? "4 health checks a year, 16 policies stored."
                       : "One free policy per type. Does not expire."}
                   </p>
                 </div>
@@ -1080,7 +1113,7 @@ function HeroStat({
 }) {
   const inner = (
     <>
-      <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
+      <span className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
         {icon} <span className="truncate">{label}</span>
       </span>
       <span className="block mt-1.5 font-serif text-xl sm:text-2xl font-bold text-white leading-none">{value}</span>
@@ -1162,7 +1195,7 @@ function PortfolioSkeleton() {
             <div key={i} className="h-11 w-32 rounded-xl bg-[var(--color-cream-dark)]" />
           ))}
         </div>
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {[0, 1].map((i) => (
             <div key={i} className="h-28 rounded-2xl bg-[var(--color-cream-dark)]" />
           ))}

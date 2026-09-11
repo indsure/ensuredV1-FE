@@ -4,6 +4,9 @@ import {
   IndianRupee, Loader2, MessageCircle, Pencil, ShieldCheck, Trash2, X,
 } from "lucide-react";
 import type { Policy } from "./portfolio-types";
+import AddOnChecklist from "@/components/agent/AddOnChecklist";
+import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
+import { scoreMotorPolicy, motorScoreCaption } from "@shared/motorScore";
 import {
   daysUntil, fmtDate, formatINRShort, labelFor, parseSumInsured, renewalPhrase,
   scoreClasses, scoreVerdict, teamWaLink,
@@ -91,7 +94,7 @@ export function PolicyCard({
             <span className={`text-xl sm:text-2xl font-serif font-bold leading-none ${scoreClasses(p.score).text}`}>
               {p.score}
             </span>
-            <span className="text-[8px] font-mono uppercase tracking-widest text-[var(--color-text-muted)] mt-0.5">
+            <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)] mt-0.5">
               score
             </span>
           </div>
@@ -107,7 +110,7 @@ export function PolicyCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[var(--color-teal-600)]">
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-[var(--color-teal-600)]">
               {labelFor(p.insurance_type)}
             </span>
             <StatusPill status={p.status} />
@@ -161,7 +164,7 @@ export function PolicyCard({
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-teal-600)] text-white text-sm font-bold hover:bg-[var(--color-teal-400)] transition-colors active:scale-[0.98]"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-cta)] text-white text-sm font-bold hover:bg-[var(--color-cta-hover)] transition-colors active:scale-[0.98]"
               >
                 <WhatsAppIcon className="w-4 h-4" /> Send it to our team
               </a>
@@ -175,15 +178,42 @@ export function PolicyCard({
             <>
               {p.score != null && (
                 <div className="rounded-xl bg-[var(--color-cream-main)] border border-[var(--color-border-light)] p-3.5">
-                  <p className={`text-sm font-semibold ${scoreClasses(p.score).text}`}>
-                    {scoreVerdict(p.score)}
-                  </p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                    Scored on what actually pays out: waiting periods, sub-limits, exclusions and
-                    claim conditions.
+                  {/* The verdict is hidden when the score is not publishable.
+                      A motor policy whose add-ons were all unreadable used to
+                      render "Strong cover" beside a caption saying we could not
+                      read it, because the stored score and the card's own
+                      reading disagreed. The card now defers to the same
+                      function the server used. */}
+                  {!(p.insurance_type === "motor" &&
+                     scoreMotorPolicy((p.add_ons ?? null) as any, p.coverage_type).score === null) && (
+                    <p className={`text-sm font-semibold ${scoreClasses(p.score).text}`}>
+                      {scoreVerdict(p.score)}
+                    </p>
+                  )}
+                  {/* The caption has to match the policy. This line used to be
+                      hardcoded to the health audit for every scored policy, so a
+                      scooter was described as scored on "waiting periods and
+                      sub-limits" - health concepts that mean nothing about a
+                      vehicle. Motor policies score on how completely the vehicle
+                      is covered, and now say so in the same words the advisor
+                      portal uses. */}
+                  <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
+                    {p.insurance_type === "motor"
+                      ? motorScoreCaption(
+                          scoreMotorPolicy((p.add_ons ?? null) as any, p.coverage_type),
+                        )
+                      : "Scored on what actually pays out: waiting periods, sub-limits, exclusions and claim conditions."}
                   </p>
                 </div>
               )}
+
+              {/* What the vehicle is actually covered for, in the customer's own
+                  portfolio. The same checklist the advisor sees, from the same
+                  deterministic scan, so the two never disagree. It renders
+                  nothing at all unless the document was read. */}
+              {p.insurance_type === "motor" && p.add_ons ? (
+                <AddOnChecklist data={{ [ADD_ON_FINDINGS_KEY]: p.add_ons }} />
+              ) : null}
 
               {flaws.length > 0 ? (
                 <div>
@@ -211,7 +241,7 @@ export function PolicyCard({
           )}
 
           {/* Inline editors — always reachable, no hover required. */}
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <InlineField
               icon={<Pencil className="w-3.5 h-3.5" />}
               label="Nickname"
@@ -240,7 +270,7 @@ export function PolicyCard({
             {hasReport && (
               <button
                 onClick={() => onOpenReport(p.id)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-teal-600)] text-white text-sm font-bold hover:bg-[var(--color-teal-400)] transition-colors active:scale-[0.98]"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-cta)] text-white text-sm font-bold hover:bg-[var(--color-cta-hover)] transition-colors active:scale-[0.98]"
               >
                 View full report <ArrowRight className="w-4 h-4" />
               </button>
@@ -325,7 +355,7 @@ function InlineField({
 
   return (
     <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-cream-main)] px-3 py-2">
-      <p className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{label}</p>
+      <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{label}</p>
       {editing ? (
         <div className="mt-1 flex items-center gap-1.5">
           <input
@@ -346,7 +376,7 @@ function InlineField({
             onMouseDown={(e) => e.preventDefault()}
             onClick={save}
             aria-label={`Save ${label}`}
-            className="shrink-0 p-1.5 rounded-lg bg-[var(--color-teal-600)] text-white"
+            className="shrink-0 p-1.5 rounded-lg bg-[var(--color-cta)] text-white"
           >
             <Check className="w-3.5 h-3.5" />
           </button>
@@ -382,7 +412,7 @@ export function StatusPill({ status }: { status: string }) {
   const label =
     status === "done" ? "Ready" : status === "error" ? "Couldn't read" : status.charAt(0).toUpperCase() + status.slice(1);
   return (
-    <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${map[status] ?? map.pending}`}>
+    <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full border ${map[status] ?? map.pending}`}>
       {label}
     </span>
   );

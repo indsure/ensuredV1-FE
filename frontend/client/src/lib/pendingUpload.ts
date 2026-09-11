@@ -46,6 +46,28 @@ export function clearPendingUpload() {
   }
 }
 
+/**
+ * Tell the server which address is signing up for the held upload, so the file
+ * can still be found if the confirmation email opens somewhere this tab's
+ * sessionStorage does not reach: another tab, another browser, a phone.
+ *
+ * Best effort by design. It runs before the account exists, and a failure here
+ * must never block a signup. The worst case is the behaviour we had before.
+ */
+export async function attachEmailToPendingUpload(email: string): Promise<void> {
+  const pending = readPendingUpload();
+  if (!pending?.token || !email) return;
+  try {
+    await apiFetch("/api/pending-upload/attach-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: pending.token, email }),
+    });
+  } catch {
+    /* nothing to do: the token path still works in this tab */
+  }
+}
+
 export type ClaimResult =
   | { status: "started"; policyId: string; jobId: string }
   | { status: "needs_upgrade"; reason?: string }
@@ -61,13 +83,17 @@ export type ClaimResult =
 // the user in a loop.
 export async function claimPendingUpload(): Promise<ClaimResult> {
   const pending = readPendingUpload();
-  if (!pending?.token) return { status: "none" };
 
+  // No early return when the token is missing, which is the change. The server
+  // falls back to looking up an unclaimed upload against this account's
+  // CONFIRMED address, which is the case where the confirmation email was opened
+  // outside this tab and the token went with it. Someone with no upload at all
+  // simply gets UPLOAD_NOT_FOUND, which reads as "none" below.
   try {
     const res = await apiFetch("/api/me/claim-upload", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: pending.token }),
+      body: JSON.stringify(pending?.token ? { token: pending.token } : {}),
     });
 
     if (res.status === 403) {
@@ -78,6 +104,10 @@ export async function claimPendingUpload(): Promise<ClaimResult> {
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       clearPendingUpload();
+      // With no token held, a 404 just means this account had nothing parked.
+      // That is the ordinary case for anyone who signed up without uploading,
+      // and telling them an analysis failed would be a lie.
+      if (!pending?.token && res.status === 404) return { status: "none" };
       return { status: "failed", message: body.message || "We could not start your analysis." };
     }
 

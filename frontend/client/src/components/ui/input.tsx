@@ -43,7 +43,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             type={type}
             className={cn(
               // Base styles
-              "flex h-10 w-full rounded-md border bg-transparent px-3 py-2.5 text-sm",
+              "flex h-11 md:h-10 w-full rounded-md border bg-transparent px-3 py-2.5 text-base md:text-sm",
               // Border and focus
               "border-gray-300 transition-all duration-[var(--transition-fast)]",
               "focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/10 focus:bg-primary-50/50",

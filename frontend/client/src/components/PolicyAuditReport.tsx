@@ -17,14 +17,20 @@ import {
     getWaitingPeriodStatus,
     RiskLevel,
     computeUnlockDate,
-    computeUnlockDateMonths
-} from "../../../../backend/server/types/policy";
+    computeUnlockDateMonths,
+    describeRestoration,
+    deriveCoverView,
+    isScoredUnderOldRules,
+    getBenefitStatus
+} from "@shared/policy";
+import type { WaitingPeriodView, BenefitView } from "@shared/policy";
 import { cn } from "@/lib/utils";
 import { CoverageDiagnostic } from "./CoverageDiagnostic";
 import { Tooltip } from "@/components/ui/tooltip";
 import { getZoneForCity } from "@/lib/data/zones";
+import { CALCULATOR_CONFIG } from "@/lib/health-engine-logic";
 import { pdf } from '@react-pdf/renderer';
-import { PolicyPDFDocument } from './PolicyPDFDocument';
+import { PolicyPDFDocument, registerPdfFonts, type PdfMeta } from './PolicyPDFDocument';
 import { apiFetch } from "@/lib/api";
 import { LeadCollectionCTA } from "./LeadCollectionCTA";
 
@@ -35,12 +41,26 @@ const OTHER_COVER_LABEL: Record<string, string> = {
     ayushman: "Ayushman Bharat (PM-JAY)",
 };
 
+/** The breakdown categories carry enum names in the JSON; these are the words a
+ *  policyholder actually reads. Keys match audit_score.deductions[].category. */
+const DEDUCTION_CATEGORY_LABELS: Record<string, string> = {
+    CLAIM_REJECTION: "Rules that cut your payout",
+    OOP_EXPOSURE: "Out-of-pocket exposure",
+    COVERAGE_GAP: "Coverage quality gap",
+    NET_COVER: "Net cover penalty",
+};
+
 interface PolicyAuditReportProps {
     data: ForensicAuditReport;
     hideNav?: boolean;
     /** Suppress the "Talk to an advisor" lead-capture CTA + its triggers.
      *  Set for signed-in consumers — we promised them zero lead selling/contact. */
     hideLeadCTA?: boolean;
+    /** Policy identity for the downloadable PDF. The audit payload carries no
+     *  insurer or plan name, so it has to come from the row that owns the report.
+     *  Every field is optional and an absent one is omitted from the document,
+     *  never printed as a placeholder. */
+    pdfMeta?: PdfMeta;
 }
 
 function getRiskColor(level: "low" | "medium" | "high") {
@@ -83,7 +103,106 @@ function getSimulationVerdictColor(verdict: "COVERED" | "PARTIAL" | "EXPOSED") {
     }
 }
 
-export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }: PolicyAuditReportProps) {
+/**
+ * What one bad admission costs today, and what the same admission is likely to
+ * cost by the time this family actually needs it.
+ *
+ * The first number is the one the score is measured against, and it is the same
+ * figure the cover calculator starts from: age band times a zone multiplier.
+ * Recomputed here rather than read from audit_score.rct, so reports analysed
+ * before the table was re-anchored show today's answer rather than the one their
+ * run happened to store.
+ *
+ * The second is that number carried forward at the calculator's own inflation
+ * rate and horizon, plus its allowance for a second claim in the same year. It
+ * is NOT what the score is measured against, deliberately: penalising a policy
+ * today for inflation that has not happened yet would mark almost every family
+ * in India as failing, and the score would stop being able to tell a well
+ * written policy from a predatory one.
+ *
+ * Deliberately not scaled by how many lives share the policy. One admission
+ * costs what it costs. The risk that a SECOND person is admitted is what the
+ * multi-incident allowance below is for, and this policy's own restoration
+ * decides how big that allowance needs to be, which is something the calculator
+ * has to guess at and this report knows.
+ *
+ * Neutral by construction: no income, no employer cover, no stated appetite for
+ * risk. A cover plan run for this family can land higher once those are known,
+ * and the panel says so rather than leaving two numbers to contradict each other.
+ */
+const WORST_CASE_BY_AGE: Array<[number, number]> = [
+    [34, 1400000], [44, 1750000], [54, 2500000],
+    [64, 3500000], [74, 4500000], [Infinity, 5000000],
+];
+
+function coverOutlook(
+    ages: unknown,
+    zone: string | null | undefined,
+    hasRestoration: boolean,
+): { today: number; target: number; years: number } | null {
+    const parsed = (Array.isArray(ages) ? ages : [])
+        .map((a) => parseInt(String(a).replace(/\D/g, ""), 10))
+        .filter((n) => Number.isFinite(n) && n > 0 && n < 120);
+    if (!parsed.length) return null;
+
+    // The eldest life drives claim cost, the same rule the score uses.
+    const eldest = Math.max(...parsed);
+    const cost = WORST_CASE_BY_AGE.find(([maxAge]) => eldest <= maxAge)?.[1];
+    const z = (zone || "").toUpperCase();
+    const mult = z === "A" ? 1.15 : z === "C" ? 1.0 : z === "B" || z === "D" ? 1.05 : null;
+    if (!cost || mult === null) return null;
+
+    const today = Math.round((cost * mult) / 50000) * 50000;
+    const { medicalInflationRate: rate, medicalInflationHorizon: years } = CALCULATOR_CONFIG;
+    const buffer = hasRestoration
+        ? CALCULATOR_CONFIG.multiIncidentBufferWithRestoration
+        : CALCULATOR_CONFIG.multiIncidentBufferWithoutRestoration;
+    const projected = today * Math.pow(1 + rate, years) * (1 + buffer);
+
+    // To the nearest 5 lakh, which is the step policies are actually sold in.
+    // A five-year projection does not deserve rupee precision.
+    return { today, target: Math.round(projected / 500000) * 500000, years };
+}
+
+/** Tile colour by what the state MEANS, so a new state cannot default to green. */
+const BENEFIT_TONE: Record<BenefitView["tone"], string> = {
+    good: "text-green-600",
+    partial: "text-amber-600",
+    bad: "text-slate-500",
+    unknown: "text-slate-500",
+};
+
+/** Badge colour by what the state MEANS, so a new state cannot default to green. */
+const WAITING_TONE: Record<WaitingPeriodView["tone"], string> = {
+    bad: "bg-red-100 text-red-700",
+    unknown: "bg-amber-100 text-amber-700",
+    good: "bg-green-100 text-green-700",
+};
+
+/**
+ * One row of the Waiting Periods table.
+ *
+ * Every row used to carry its own copy of this markup, including its own
+ * red-or-green ternary, which is how one of them came to paint "Served" green
+ * for a benefit the policy does not cover. The colour and the words are decided
+ * once, by getWaitingPeriodStatus, and only rendered here.
+ */
+function WaitingPeriodRow({ title, detail, view }: { title: string; detail: string; view: WaitingPeriodView }) {
+    return (
+        <li className="flex justify-between items-center text-sm border-b border-blue-100 last:border-0 pb-2">
+            <div>
+                <span className="block font-medium">{title}</span>
+                <span className="text-xs text-[var(--color-text-secondary)]">{view.detail ?? detail}</span>
+            </div>
+            <div className="flex items-center">
+                <span className={cn("text-xs font-bold px-2 py-1 rounded", WAITING_TONE[view.tone])}>{view.label}</span>
+                {view.note ? <span title={view.note} className="ml-1 text-slate-400 cursor-help">ℹ</span> : null}
+            </div>
+        </li>
+    );
+}
+
+export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, pdfMeta }: PolicyAuditReportProps) {
     const [showDeductions, setShowDeductions] = useState(false);
     const [showLeadForm, setShowLeadForm] = useState(false);
     const leadFormRef = useRef<HTMLDivElement>(null);
@@ -98,7 +217,10 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
         if (downloading) return;
         setDownloading(true);
         try {
-            const blob = await pdf(<PolicyPDFDocument data={data} />).toBlob();
+            // Fonts are self-hosted and registered lazily: the ~1.9MB of faces is
+            // only fetched when someone actually downloads.
+            registerPdfFonts();
+            const blob = await pdf(<PolicyPDFDocument data={data} meta={pdfMeta} />).toBlob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -330,16 +452,21 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                 }
             }
 
+            // Two different findings shared one headline. "Too low to be useful"
+            // was printed over a policy with NO OPD cover at all, which is not a
+            // small amount, it is the absence of one. The body text already
+            // branched correctly; only the title lied.
             const opd = supp?.opd;
-            if (!opd || opd.covered === false || (opd.limit_per_year && opd.limit_per_year < 5000)) {
-                const limit = opd?.limit_per_year || 0;
-                const visits = Math.floor(limit / 800);
+            const opdLimit = Number(opd?.limit_per_year) || 0;
+            const opdAbsent = !opd || opd.covered === false;
+            if (opdAbsent || (opdLimit > 0 && opdLimit < 5000)) {
+                const visits = Math.floor(opdLimit / 800);
                 const visitLabel = visits === 1 ? "visit" : "visits";
                 items.push({
-                    issue: "OPD Cover Too Low to Be Useful",
-                    real_world_claim_impact: limit > 0
-                        ? `Annual OPD limit of ${formatINR(limit)} covers only ${visits} doctor ${visitLabel} at metro rates. Routine consultations and medicines are mostly out of pocket.`
-                        : `Routine doctor consultations, diagnostics, and medicines are entirely out of pocket.`,
+                    issue: opdAbsent ? "No OPD Cover" : "OPD Cover Too Low to Be Useful",
+                    real_world_claim_impact: opdAbsent
+                        ? `This policy does not cover OPD. Routine doctor consultations, diagnostics and medicines are entirely out of pocket.`
+                        : `Annual OPD limit of ${formatINR(opdLimit)} covers only ${visits} doctor ${visitLabel} at metro rates. Routine consultations and medicines are mostly out of pocket.`,
                     quantified_oop_risk: "Consider a top-up OPD plan or health wallet.",
                     severity: "low"
                 });
@@ -365,10 +492,14 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
         if (deductions?.length === 0) {
             return <div className="text-sm italic text-slate-500">No deductions. This category is clean.</div>;
         }
+        // The model can emit the same clause twice inside one category, which reads
+        // as a bug even though the points were counted once. Same dedupe key as
+        // getRiskItems above.
+        const unique = Array.from(new Map(deductions.map(d => [d.reason, d])).values());
         return (
             <ul className="list-disc space-y-1 ml-4 text-sm text-gray-600">
-                {deductions.map((d, i) => (
-                    <li key={i}>{d.reason} — {Math.abs(d.points)} pts</li>
+                {unique.map((d, i) => (
+                    <li key={i}>{d.reason}, {Math.abs(d.points)} pts</li>
                 ))}
             </ul>
         );
@@ -376,10 +507,16 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
 
     const verdict = data.final_verdict?.label ?? "RISKY";
     const score = data.audit_score?.score ?? 0;
-    const hasNcar = typeof data.audit_score?.ncar === "number";
-    const ncar = data.audit_score?.ncar ?? 0;
     const simulations = data.claim_simulations ?? [];
-    const effectiveCoverage = calculateEffectiveCoverage(data);
+
+    // Every cover figure on this page comes from one derivation, so a report stored
+    // under an older prompt version cannot render a recomputed headline beside its
+    // stored stack and NCAR. See deriveCoverView.
+    const coverView = deriveCoverView(data);
+    const hasNcar = typeof coverView.ncar === "number";
+    const ncar = coverView.ncar ?? 0;
+    const effectiveCoverage = coverView.effectiveCover;
+    const restorationNote = describeRestoration(data);
 
     const realTimePolicyAgeDays = (() => {
         if (!data.policy_timeline?.policy_inception_date) return 0;
@@ -392,6 +529,19 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
     // Other cover uploaded with this policy. Absent on every pre-feature report.
     const otherCover = data.other_cover ?? [];
     const coverStack = data.cover_stack;
+
+    // hospital_count_in_zone is `number | string | null` in the schema, and the
+    // model does put prose in it — "unclear", "not specified". Rendered raw under
+    // the words "unique empanelled hospitals" that reads as a broken report, so
+    // anything that is not a real count becomes a dash.
+    const rawZoneCount = data.network_limitations?.hospital_count_in_zone;
+    const zoneCount =
+        typeof rawZoneCount === "number"
+            ? rawZoneCount
+            : typeof rawZoneCount === "string" && /\d/.test(rawZoneCount)
+                ? rawZoneCount.trim()   // keep useful shapes like "450+" or "200-300"
+                : null;
+    const countFallback = zoneCount ?? "—";
 
     useEffect(() => {
         const city = data.identity?.city;
@@ -493,10 +643,30 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             <div className="font-semibold text-lg capitalize">{data.data_quality?.overall ?? "N/A"}</div>
                         </div>
                     </div>
+
+                    {/* Effective Cover is single-event money, so a restore is not inside
+                        that number. It is real value and has to be visible somewhere, or
+                        removing it from the headline just loses the information. */}
+                    {(restorationNote || coverView.restated) && (
+                        <div className="mt-4 pt-4 border-t border-[var(--color-border-light)] space-y-1">
+                            {restorationNote && (
+                                <p className="text-sm text-[var(--color-text-secondary)]">{restorationNote}</p>
+                            )}
+                            {/* A number that changed under the reader's feet has to say so.
+                                Older reports counted a restoration tranche inside this
+                                figure; they are re-derived on read, not rewritten. */}
+                            {coverView.restated && (
+                                <p className="text-sm text-[var(--color-text-secondary)]">
+                                    This figure is what the policy pays for one hospitalisation. An earlier
+                                    version of this report added a restoration refill on top of it.
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* 2. SCORECARD + SCORE BREAKDOWN */}
-                <div className="grid md:grid-cols-12 gap-8 mb-16">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-16">
 
                     <div className="md:col-span-4 bg-white border border-[var(--color-border-light)] rounded-xl p-8 flex flex-col justify-center items-center text-center shadow-sm relative overflow-hidden">
                         <div className={cn(
@@ -504,13 +674,13 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             verdict === "SAFE" ? "bg-green-500" :
                                 verdict === "RISKY" ? "bg-red-500" : "bg-amber-500"
                         )} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Audit Score</span>
+                        <span className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Audit Score</span>
                         <div className={cn(
                             "text-8xl font-serif leading-none mb-2",
                             verdict === "SAFE" ? "text-[var(--color-green-primary)]" :
                                 verdict === "RISKY" ? "text-red-600" : "text-amber-600"
                         )}>
-                            {score}
+                            {score}<span className="text-3xl text-slate-400"> / 100</span>
                         </div>
                         {data.audit_score?.bucket_label && (
                             <div className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">
@@ -526,12 +696,24 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             </div>
                         </div>
                         )}
+                        {/* A score is only meaningful against the rules that produced it.
+                            These rules have changed twice, and a stored report goes on
+                            displaying its original number for ever, so a reader comparing
+                            two reports can be comparing two different questions without
+                            being told. Say it on the score itself, where the number is. */}
+                        {isScoredUnderOldRules(data) && (
+                            <div className="mb-3 mx-auto max-w-[220px] rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                                Scored under earlier rules
+                                {data.engine?.scored_at ? ` (${data.engine.scored_at})` : ""}. Our cover
+                                thresholds have changed since. Re-run this policy for a score on today's rules.
+                            </div>
+                        )}
                         <div className="text-xs text-[var(--color-text-secondary)] max-w-[220px] leading-relaxed mx-auto space-y-1">
-                            <p>Computed from {data.audit_score?.deductions?.length ?? 0} deduction {(data.audit_score?.deductions?.length ?? 0) === 1 ? 'rule' : 'rules'}.</p>
-                            <p>All scores are AI-computed from your policy text.</p>
-                            <p>No manual overrides.</p>
+                            <p>{data.audit_score?.deductions?.length ?? 0} {(data.audit_score?.deductions?.length ?? 0) === 1 ? 'clause' : 'clauses'} in your policy pushed this score down.</p>
+                            <p>Clauses are read automatically from your policy text, then checked against our scoring rules on our servers.</p>
+                            <p>Where the two disagree, the server's number is the one shown here.</p>
                             {data.audit_score?.raw_score && data.audit_score.raw_score !== score && (
-                                <p className="text-[10px] text-slate-400 mt-2">
+                                <p className="text-xs text-slate-400 mt-2">
                                     Raw score: {data.audit_score.raw_score} (rounded to {score})
                                 </p>
                             )}
@@ -546,16 +728,16 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 <div className="group cursor-pointer" onClick={() => toggleBreakdown('CLAIM_REJECTION')}>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="font-medium">
-                                            Claim Rejection Risk
-                                            <span title="Measures exposure to rule-based claim denials — room rent limits, co-payments, sub-limits, and network restrictions." className="ml-1 text-slate-400 cursor-help">ℹ</span>
+                                            Rules That Cut Your Payout
+                                            <span title="Clauses that reduce what the insurer pays out: room rent limits, co-payments, disease sub-limits and network restrictions." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs(data.audit_score.breakdown.claim_rejection_risk)} / 30 pts
+                                            {Math.abs((data.audit_score.breakdown.claim_rejection_risk ?? 0))} / 30 pts
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['CLAIM_REJECTION'] && "rotate-180")} />
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-red-400 rounded-full transition-all" style={{ width: `${(data.audit_score.breakdown.claim_rejection_risk / 30) * 100}%` }} />
+                                        <div className="h-full bg-red-400 rounded-full transition-all" style={{ width: `${((data.audit_score.breakdown.claim_rejection_risk ?? 0) / 30) * 100}%` }} />
                                     </div>
                                     {openBreakdown['CLAIM_REJECTION'] && (
                                         <div className="overflow-hidden">
@@ -573,12 +755,12 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                             <span title="Measures personal expenses you bear even when a claim is approved — co-pays, consumable exclusions, and sub-limits." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs(data.audit_score.breakdown.oop_exposure)} / 30 pts
+                                            {Math.abs((data.audit_score.breakdown.oop_exposure ?? 0))} / 30 pts
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['OOP_EXPOSURE'] && "rotate-180")} />
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${(data.audit_score.breakdown.oop_exposure / 30) * 100}%` }} />
+                                        <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${((data.audit_score.breakdown.oop_exposure ?? 0) / 30) * 100}%` }} />
                                     </div>
                                     {openBreakdown['OOP_EXPOSURE'] && (
                                         <div className="overflow-hidden">
@@ -596,12 +778,12 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                             <span title="Measures structural exclusions — waiting periods, missing restoration, AYUSH limits, and maternity gaps." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs(data.audit_score.breakdown.coverage_quality_gap)} / 20 pts
+                                            {Math.abs((data.audit_score.breakdown.coverage_quality_gap ?? 0))} / 20 pts
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['COVERAGE_GAP'] && "rotate-180")} />
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${(data.audit_score.breakdown.coverage_quality_gap / 20) * 100}%` }} />
+                                        <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${((data.audit_score.breakdown.coverage_quality_gap ?? 0) / 20) * 100}%` }} />
                                     </div>
                                     {openBreakdown['COVERAGE_GAP'] && (
                                         <div className="overflow-hidden">
@@ -619,12 +801,12 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                             <span title="Applied when your effective cover is below the minimum recommended for your age and city. This penalty is uncapped and overrides all other scores." className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs(data.audit_score.breakdown.net_cover_penalty)} pts
+                                            {Math.abs((data.audit_score.breakdown.net_cover_penalty ?? 0))} / 60 pts
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['NET_COVER'] && "rotate-180")} />
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-slate-400 rounded-full transition-all" style={{ width: `${Math.min(Math.abs(data.audit_score.breakdown.net_cover_penalty) / 20 * 100, 100)}%` }} />
+                                        <div className="h-full bg-slate-400 rounded-full transition-all" style={{ width: `${Math.min(Math.abs((data.audit_score.breakdown.net_cover_penalty ?? 0)) / 60 * 100, 100)}%` }} />
                                     </div>
                                     {openBreakdown['NET_COVER'] && (
                                         <div className="overflow-hidden">
@@ -636,9 +818,79 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 </div>
 
                             </div>
+                            <p className="mt-6 pt-4 border-t border-[var(--color-border-light)] text-xs text-[var(--color-text-muted)] leading-relaxed">
+                                One clause can appear in more than one row. A co-payment, for example, both cuts what the insurer pays and adds to what you pay yourself, so it counts against both.
+                            </p>
                         </div>
                     )}
                 </div>
+
+                {/* 2b. COVER TODAY vs COVER IN FIVE YEARS.
+                    The report used to state only the first, so an advisor could read
+                    "Good" here while the cover plan on another page told the same
+                    family to buy four times what they had, and nothing on either page
+                    acknowledged the other. Stated as facts, not as a second verdict. */}
+                {(() => {
+                    const outlook = coverOutlook(
+                        data.identity?.ages,
+                        data.identity?.assumed_zone,
+                        data.coverage_structure?.restoration?.exists === true,
+                    );
+                    const held = coverView.effectiveCover;
+                    if (!outlook || typeof held !== "number" || held <= 0) return null;
+
+                    const pctToday = Math.round((held / outlook.today) * 100);
+                    const pctTarget = Math.round((held / outlook.target) * 100);
+                    const shortToday = outlook.today - held;
+
+                    return (
+                        <section className="mb-16">
+                            <div className="flex items-center gap-3 mb-2">
+                                <Layers className="w-6 h-6 text-[var(--color-teal-600)]" />
+                                <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">How far this cover goes</h3>
+                            </div>
+                            <p className="text-sm text-[var(--color-text-muted)] mb-6">
+                                The score above is measured against the first of these. The second is
+                                what the same admission is likely to cost by the time it happens, and
+                                it is shown, not scored.
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
+                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                                        One serious admission, today
+                                    </div>
+                                    <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
+                                        {formatINR(outlook.today)}
+                                    </div>
+                                    <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                                        This policy covers {formatINR(held)}, which is {pctToday}% of it.
+                                        {shortToday > 0
+                                            ? ` A bill that size would leave ${formatINR(shortToday)} to be paid from savings.`
+                                            : " A bill that size would be met in full."}
+                                    </p>
+                                </div>
+                                <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
+                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                                        The same admission in {outlook.years} years
+                                    </div>
+                                    <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
+                                        {formatINR(outlook.target)}
+                                    </div>
+                                    <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                                        This policy is {pctTarget}% of that. Medical costs are carried forward at{" "}
+                                        {Math.round(CALCULATOR_CONFIG.medicalInflationRate * 100)}% a year, with an
+                                        allowance for a second claim in the same year.
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="mt-3 text-sm text-slate-500">
+                                Both figures assume nothing about income, employer cover or how much risk
+                                this family is willing to carry. A cover plan that includes those can
+                                recommend more.
+                            </p>
+                        </section>
+                    );
+                })()}
 
                 {/* 3. BENEFIT EVALUATION */}
                 {data.benefit_evaluation && (
@@ -648,7 +900,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">Coverage Overview</h3>
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-6 items-stretch">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                             <div className="border border-[var(--color-border-light)] bg-white p-8 rounded-xl shadow-sm flex flex-col h-full">
                                 <div className="text-sm font-bold uppercase tracking-wider text-green-700 mb-6 flex items-center gap-2">
                                     <CheckCircle2 className="w-5 h-5" /> What Actually Works
@@ -727,7 +979,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
 
                         {/* Total across the stack — deliberately styled as a fact panel,
                             not a score, so it never reads as a competing verdict. */}
-                        {coverStack && typeof coverStack.combined_effective_cover === "number" && (
+                        {coverView.stack && (
                             <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm mb-6">
                                 <div className="flex flex-wrap items-end justify-between gap-4">
                                     <div>
@@ -735,52 +987,52 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                             Usable cover across all policies
                                         </div>
                                         <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
-                                            {formatINR(coverStack.combined_effective_cover)}
+                                            {formatINR(coverView.stack.combined)}
                                         </div>
-                                        {typeof coverStack.required_cover === "number" && (
+                                        {typeof coverView.stack.required === "number" && (
                                             <div className="mt-1 text-sm text-[var(--color-text-muted)]">
-                                                against {formatINR(coverStack.required_cover)} needed for this family
-                                                {typeof coverStack.stack_ratio === "number" && ` — ${Math.round(coverStack.stack_ratio * 100)}%`}
+                                                against {formatINR(coverView.stack.required)} needed for this family
+                                                {typeof coverView.stack.ratio === "number" && ` — ${Math.round(coverView.stack.ratio * 100)}%`}
                                             </div>
                                         )}
                                     </div>
-                                    {coverStack.verdict && coverStack.verdict !== "unclear" && (
+                                    {coverView.stack.verdict !== "unclear" && (
                                         <span className={cn(
                                             "text-xs font-bold uppercase px-3 py-1 rounded border",
-                                            coverStack.verdict === "ADEQUATE"
+                                            coverView.stack.verdict === "ADEQUATE"
                                                 ? "border-green-300 bg-green-50 text-green-700"
-                                                : coverStack.verdict === "THIN"
+                                                : coverView.stack.verdict === "THIN"
                                                 ? "border-amber-300 bg-amber-50 text-amber-700"
                                                 : "border-red-300 bg-red-50 text-red-700"
-                                        )}>{coverStack.verdict}</span>
+                                        )}>{coverView.stack.verdict}</span>
                                     )}
                                 </div>
 
-                                {coverStack.remarks && (
-                                    <p className="mt-4 text-sm text-[var(--color-navy-900)]">{coverStack.remarks}</p>
+                                {coverView.stack.remarks && (
+                                    <p className="mt-4 text-sm text-[var(--color-navy-900)]">{coverView.stack.remarks}</p>
                                 )}
 
-                                {(coverStack.counted?.length || coverStack.excluded?.length) && (
-                                    <div className="mt-4 grid gap-4 md:grid-cols-2">
-                                        {coverStack.counted && coverStack.counted.length > 0 && (
+                                {(coverView.stack.counted.length || coverView.stack.excluded.length) && (
+                                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        {coverView.stack.counted.length > 0 && (
                                             <div>
                                                 <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
                                                     Counted
                                                 </div>
                                                 <ul className="space-y-1">
-                                                    {coverStack.counted.map((c, i) => (
+                                                    {coverView.stack.counted.map((c, i) => (
                                                         <li key={i} className="text-sm text-[var(--color-navy-900)]">• {c}</li>
                                                     ))}
                                                 </ul>
                                             </div>
                                         )}
-                                        {coverStack.excluded && coverStack.excluded.length > 0 && (
+                                        {coverView.stack.excluded.length > 0 && (
                                             <div>
                                                 <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
                                                     Not counted
                                                 </div>
                                                 <ul className="space-y-1">
-                                                    {coverStack.excluded.map((c, i) => (
+                                                    {coverView.stack.excluded.map((c, i) => (
                                                         <li key={i} className="text-sm text-slate-600">• {c}</li>
                                                     ))}
                                                 </ul>
@@ -789,7 +1041,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                     </div>
                                 )}
 
-                                {coverStack.where_the_stack_still_breaks && coverStack.where_the_stack_still_breaks.length > 0 && (
+                                {coverStack?.where_the_stack_still_breaks && coverStack.where_the_stack_still_breaks.length > 0 && (
                                     <div className="mt-4 border-t border-[var(--color-border-light)] pt-4">
                                         <div className="text-xs font-bold uppercase tracking-wider text-red-700 mb-1">
                                             Even with everything together, this still breaks
@@ -804,7 +1056,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             </div>
                         )}
 
-                        <div className="grid md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {otherCover.map((cover, i) => (
                                 <div key={i} className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
                                     <div className="flex justify-between items-start gap-3 mb-4">
@@ -889,7 +1141,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                             <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">Claim Simulations</h3>
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {simulations.map((sim, i) => (
                                 <div key={i} className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
                                     <div className="flex justify-between items-center mb-4">
@@ -937,7 +1189,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                         "border rounded-xl p-8 md:p-12 mb-16 shadow-lg relative overflow-hidden",
                         verdict === "SAFE" ? "bg-[#F0FDF4] border-green-100" : "bg-white border-slate-200"
                     )}>
-                        <div className="absolute top-0 right-0 p-12 opacity-5">
+                        <div className="absolute top-0 right-0 p-6 sm:p-8 lg:p-12 opacity-5">
                             {verdict === "SAFE"
                                 ? <Shield className="w-64 h-64 text-green-600" />
                                 : <Zap className="w-64 h-64 text-slate-900" />
@@ -972,7 +1224,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">Financial Limits & Caps</span>
                                 <Shield className="w-4 h-4 text-[var(--color-text-muted)]" />
                             </div>
-                            <div className="p-6 grid md:grid-cols-2 gap-8">
+                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
                                     <div className="flex justify-between mb-1">
                                         <span className="text-sm font-medium">Room Rent Limit</span>
@@ -1018,22 +1270,36 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">Supplementary Benefits</span>
                                 <Pill className="w-4 h-4 text-[var(--color-text-muted)]" />
                             </div>
-                            <div className="p-6 grid md:grid-cols-3 gap-6">
-                                {[
-                                    { label: "OPD Cover", covered: data.supplementary_coverage?.opd?.covered },
-                                    { label: "Modern Treatments", covered: data.supplementary_coverage?.modern_treatments?.covered },
-                                    { label: "Consumables", covered: data.supplementary_coverage?.consumables?.coverage_type === "full" },
-                                    { label: "Ambulance", covered: data.supplementary_coverage?.ambulance?.covered },
-                                    { label: "Day Care", covered: data.supplementary_coverage?.day_care_procedures?.covered },
-                                    { label: "Maternity", covered: data.supplementary_coverage?.maternity?.covered },
-                                ].map((item, i) => (
-                                    <div key={i} className="p-3 bg-slate-50 rounded text-center">
-                                        <div className="text-xs uppercase text-[var(--color-text-muted)] mb-1">{item.label}</div>
-                                        <div className={cn("font-bold", item.covered ? "text-green-600" : "text-slate-400")}>
-                                            {item.covered ? "Covered" : "Not Covered"}
+                            {/* Every tile used to be a bare `covered` boolean rendered as one
+                                of two words, which discarded the utility grading and the remark
+                                sitting beside it in the same object. A policy whose only
+                                outpatient benefit was a video consultation read OPD Cover:
+                                Covered, in green, next to the model's own note that physical
+                                OPD, diagnostics and pharmacy were all excluded. */}
+                            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {(() => {
+                                    const supp = data.supplementary_coverage;
+                                    return [
+                                        { label: "OPD Cover", view: getBenefitStatus({ ...supp?.opd, utility: supp?.opd?.utility }) },
+                                        { label: "Modern Treatments", view: getBenefitStatus({ ...supp?.modern_treatments }) },
+                                        { label: "Consumables", view: getBenefitStatus({ ...supp?.consumables, coverageType: supp?.consumables?.coverage_type }) },
+                                        { label: "Ambulance", view: getBenefitStatus({ ...supp?.ambulance }) },
+                                        { label: "Day Care", view: getBenefitStatus({ ...supp?.day_care_procedures }) },
+                                        { label: "Maternity", view: getBenefitStatus({ ...supp?.maternity, utility: supp?.maternity?.utility }) },
+                                    ].map((item, i) => (
+                                        <div key={i} className="p-3 bg-slate-50 rounded text-center">
+                                            <div className="text-xs uppercase text-[var(--color-text-muted)] mb-1">{item.label}</div>
+                                            <div className={cn("font-bold", BENEFIT_TONE[item.view.tone])}>
+                                                {item.view.label}
+                                            </div>
+                                            {item.view.detail && (
+                                                <p className="mt-1 text-sm leading-snug text-[var(--color-text-secondary)]">
+                                                    {item.view.detail}
+                                                </p>
+                                            )}
                                         </div>
-                                    </div>
-                                ))}
+                                    ));
+                                })()}
                             </div>
                         </div>
 
@@ -1049,120 +1315,81 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                     {(() => {
                                         const wp = data.waiting_period_analysis?.initial_waiting_period;
                                         if (!wp) return null;
-                                        const computedEndDate = computeUnlockDate(data.policy_timeline?.policy_inception_date, wp.duration_days);
-                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today;
-                                        const { status, label } = getWaitingPeriodStatus(isActiveToday, null, computedEndDate);
-                                        return (
-                                            <li className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
-                                                <div>
-                                                    <span className="block font-medium">Initial Waiting Period</span>
-                                                    <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_days} days</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
-                                                </div>
-                                            </li>
-                                        );
+                                        const endDate = computeUnlockDate(data.policy_timeline?.policy_inception_date, wp.duration_days);
+                                        const view = getWaitingPeriodStatus({
+                                            duration: wp.duration_days,
+                                            isActive: endDate ? new Date() < new Date(endDate) : !!wp.is_active_today,
+                                            endDate,
+                                        });
+                                        return <WaitingPeriodRow title="Initial Waiting Period" detail={`${wp.duration_days} days`} view={view} />;
                                     })()}
 
                                     {(() => {
                                         const wp = data.waiting_period_analysis?.pre_existing_disease;
                                         if (!wp) return null;
-
-                                        // Case 1: no PED duration anywhere in the document — don't fabricate a date.
-                                        if (wp.duration_months == null) {
-                                            return (
-                                                <li className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
-                                                    <div>
-                                                        <span className="block font-medium">Pre-Existing Diseases</span>
-                                                        <span className="text-xs text-[var(--color-text-secondary)]">Not specified in schedule</span>
-                                                    </div>
-                                                    <div className="flex items-center">
-                                                        <span className="text-[10px] font-bold px-2 py-1 rounded bg-amber-100 text-amber-700">⚠ Not stated — verify with insurer</span>
-                                                        <span title="The uploaded document does not state a pre-existing disease waiting period. Confirm it with the insurer or full policy wording." className="ml-1 text-slate-400 cursor-help">ℹ</span>
-                                                    </div>
-                                                </li>
-                                            );
+                                        const endDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
+                                        let view = getWaitingPeriodStatus({
+                                            duration: wp.duration_months,
+                                            isActive: endDate ? new Date() < new Date(endDate) : wp.is_active_today ?? false,
+                                            monthsRemaining: wp.months_remaining,
+                                            endDate,
+                                        });
+                                        // Derived from the specific-illness period rather than stated in its own
+                                        // right. The number is usable, but it is not a reading, so it must not
+                                        // be shown with the confidence of one.
+                                        if (wp.stated === false && view.status !== "not_stated") {
+                                            view = {
+                                                ...view,
+                                                label: `≈ ${view.label}`,
+                                                tone: "unknown",
+                                                note: "Estimated. The schedule does not separately state a pre-existing disease waiting period, so this is derived from the specific-illness exclusion period. Verify it with the insurer.",
+                                            };
                                         }
-
-                                        // Case 2: PED not explicitly stated but estimated from the specific-illness waiting period.
-                                        const estimated = wp.stated === false;
-                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
-                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today ?? false;
-                                        const { status, label } = getWaitingPeriodStatus(isActiveToday, wp.months_remaining, computedEndDate);
-                                        return (
-                                            <li className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
-                                                <div>
-                                                    <span className="block font-medium">Pre-Existing Diseases</span>
-                                                    <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months{estimated ? " (est. from specific-illness waiting)" : ""}</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", estimated ? "bg-amber-100 text-amber-700" : status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{estimated ? `≈ ${label}` : label}</span>
-                                                    <span title={estimated ? "Estimated: the schedule does not separately state a pre-existing disease waiting period. This is derived from the specific-illness exclusion period — verify with the insurer." : (status !== "active" ? "This waiting period is complete." : "")} className={cn("ml-1 text-slate-400", (estimated || status !== "active") ? "cursor-help" : "hidden")}>ℹ</span>
-                                                </div>
-                                            </li>
-                                        );
+                                        const detail = `${wp.duration_months} months${wp.stated === false ? " (est. from specific-illness waiting)" : ""}`;
+                                        return <WaitingPeriodRow title="Pre-Existing Diseases" detail={detail} view={view} />;
                                     })()}
 
                                     {(() => {
                                         const wp = data.waiting_period_analysis?.specific_diseases;
                                         if (!wp) return null;
-                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
-                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today;
-                                        const { status, label } = getWaitingPeriodStatus(isActiveToday, null, computedEndDate);
-                                        return (
-                                            <li className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
-                                                <div>
-                                                    <span className="block font-medium">Specific Diseases</span>
-                                                    <span className="text-xs text-[var(--color-text-secondary)]">
-                                                        {wp.duration_months} months
-                                                        {wp.diseases_covered?.length > 0 && ` — ${wp.diseases_covered.slice(0, 3).join(", ")}${wp.diseases_covered?.length > 3 ? "…" : ""}`}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
-                                                </div>
-                                            </li>
-                                        );
+                                        const endDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
+                                        const view = getWaitingPeriodStatus({
+                                            duration: wp.duration_months,
+                                            isActive: endDate ? new Date() < new Date(endDate) : !!wp.is_active_today,
+                                            endDate,
+                                        });
+                                        const named = wp.diseases_covered?.length
+                                            ? `: ${wp.diseases_covered.slice(0, 3).join(", ")}${wp.diseases_covered.length > 3 ? "…" : ""}`
+                                            : "";
+                                        return <WaitingPeriodRow title="Specific Diseases" detail={`${wp.duration_months} months${named}`} view={view} />;
                                     })()}
 
                                     {data.waiting_period_analysis?.personal_waiting_periods?.map((wp, i) => {
-                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
-                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : wp.is_active_today;
-                                        const { status, label } = getWaitingPeriodStatus(isActiveToday, wp.months_remaining, computedEndDate);
-                                        return (
-                                            <li key={i} className="flex justify-between items-center text-sm border-b border-blue-100 pb-2">
-                                                <div>
-                                                    <span className="block font-medium">{wp.condition}</span>
-                                                    <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
-                                                </div>
-                                            </li>
-                                        );
+                                        const endDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
+                                        const view = getWaitingPeriodStatus({
+                                            duration: wp.duration_months,
+                                            isActive: endDate ? new Date() < new Date(endDate) : !!wp.is_active_today,
+                                            monthsRemaining: wp.months_remaining,
+                                            endDate,
+                                        });
+                                        return <WaitingPeriodRow key={i} title={wp.condition} detail={`${wp.duration_months} months`} view={view} />;
                                     })}
 
                                     {data.waiting_period_analysis?.maternity?.relevant && (() => {
                                         const wp = data.waiting_period_analysis.maternity;
-                                        const computedEndDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
-                                        const isActiveToday = computedEndDate ? new Date() < new Date(computedEndDate) : (wp.is_active_today ?? false);
-                                        const { status, label } = getWaitingPeriodStatus(isActiveToday, wp.months_remaining, computedEndDate);
-                                        return (
-                                            <li className="flex justify-between items-center text-sm pb-2">
-                                                <div>
-                                                    <span className="block font-medium">Maternity</span>
-                                                    <span className="text-xs text-[var(--color-text-secondary)]">{wp.duration_months} months</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className={cn("text-[10px] font-bold px-2 py-1 rounded", status === "active" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")}>{label}</span>
-                                                    {status !== "active" && <span title="This waiting period is complete." className="ml-1 text-slate-400 cursor-help">ℹ</span>}
-                                                </div>
-                                            </li>
-                                        );
+                                        // `relevant` is an audience filter: it says maternity matters to this
+                                        // family, not that the policy carries a maternity waiting period. Reading
+                                        // it as the second is what put a green tick beside Maternity on a policy
+                                        // that does not cover maternity at all.
+                                        const endDate = computeUnlockDateMonths(data.policy_timeline?.policy_inception_date, wp.duration_months);
+                                        const view = getWaitingPeriodStatus({
+                                            duration: wp.duration_months,
+                                            covered: data.supplementary_coverage?.maternity?.covered,
+                                            isActive: endDate ? new Date() < new Date(endDate) : wp.is_active_today ?? false,
+                                            monthsRemaining: wp.months_remaining,
+                                            endDate,
+                                        });
+                                        return <WaitingPeriodRow title="Maternity" detail={`${wp.duration_months} months`} view={view} />;
                                     })()}
                                 </ul>
                             </div>
@@ -1175,15 +1402,15 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                 <Hospital className="w-4 h-4 text-[var(--color-text-muted)]" />
                             </div>
                             <div className="p-6">
-                                <div className="grid md:grid-cols-2 gap-6 mb-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                                     <div>
                                         <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">
                                             Cashless Hospitals in {data.identity?.city || "Your City"}
                                         </div>
                                         <div className="text-2xl font-bold text-[var(--color-navy-900)]">
                                             {hospitalCount !== null
-                                                ? hospitalCount?.toLocaleString("en-IN")
-                                                : (data.network_limitations?.hospital_count_in_zone ?? "—")}
+                                                ? hospitalCount.toLocaleString("en-IN")
+                                                : countFallback}
                                         </div>
                                         <div className="text-xs text-slate-400 mt-0.5">unique empanelled hospitals</div>
                                     </div>
@@ -1377,7 +1604,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                         {showDeductions && (
                             <div className="overflow-hidden">
                                 <div className="bg-white border border-[var(--color-border-light)] rounded-lg overflow-hidden">
-                                    <table className="w-full text-sm">
+                                    <table className="table-cards w-full text-sm">
                                         <thead>
                                             <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
                                                 <th className="px-4 py-3">Category</th>
@@ -1389,16 +1616,16 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false }
                                         <tbody>
                                             {data.audit_score.deductions.map((entry, i) => (
                                                 <tr key={i} className="border-t border-slate-100 hover:bg-slate-50/50">
-                                                    <td className="px-4 py-3">
-                                                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{entry.category}</span>
+                                                    <td className="px-4 py-3" data-label="Category" data-cell="title">
+                                                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{DEDUCTION_CATEGORY_LABELS[entry.category] ?? entry.category}</span>
                                                     </td>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-4 py-3" data-label="Severity">
                                                         <span className={cn("text-xs font-bold uppercase px-2 py-0.5 rounded border", getRiskColor(entry.severity))}>
                                                             {entry.severity}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 font-mono font-bold text-red-600">{entry.points}</td>
-                                                    <td className="px-4 py-3 text-slate-600 text-xs leading-relaxed">{entry.reason}</td>
+                                                    <td className="px-4 py-3 font-mono font-bold text-red-600" data-label="Points">{entry.points}</td>
+                                                    <td className="px-4 py-3 text-slate-600 text-xs leading-relaxed" data-label="Reason" data-cell="stack">{entry.reason}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

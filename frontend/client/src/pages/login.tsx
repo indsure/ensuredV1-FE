@@ -36,7 +36,7 @@ export default function LoginPublic() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Sign in — IndSure";
+    document.title = "Sign in | IndSure";
   }, []);
 
   /** Ten digits after stripping punctuation and any +91 / leading 0 = a mobile.
@@ -106,6 +106,7 @@ export default function LoginPublic() {
     }
     // Idempotent — ensures the profile + trial clock exist.
     try {
+      // guard-ok(unchecked-apifetch): idempotent, and retried on /app entry. A failure here must not block sign-in.
       await apiFetch("/api/me/bootstrap", { method: "POST" });
     } catch { /* non-fatal — retried on /app entry */ }
 
@@ -125,9 +126,17 @@ export default function LoginPublic() {
     <AuthShell
       eyebrow="Welcome back"
       title={<>Your portfolio's <span className="italic text-[var(--color-teal-400)]">waiting.</span></>}
-      subtitle="Pick up where you left off — every policy you've added, audited and in one place."
+      subtitle="Pick up where you left off. Every policy you have added, audited and in one place."
     >
-      <div className="space-y-5">
+      {/* A real form, not a div. Enter used to submit only from the password
+          box, because that was the one field carrying a keydown handler: typing
+          an email and pressing Enter did nothing at all. A form also tells the
+          browser and the password manager that this is a sign-in, which is what
+          makes "save this password?" reliable. */}
+      <form
+        className="space-y-5"
+        onSubmit={(e) => { e.preventDefault(); void handleSignIn(); }}
+      >
         <div className="space-y-1">
           <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">Log in</h2>
           <p className="text-sm text-[var(--color-text-secondary)]">
@@ -171,7 +180,7 @@ export default function LoginPublic() {
             <div className="flex items-center justify-between gap-3">
               <FieldLabel htmlFor="login-password" required>Password</FieldLabel>
               <Link href="/forgot-password">
-                <span className="text-xs font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">Forgot password?</span>
+                <span className="inline-flex min-h-11 items-center text-xs font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">Forgot password?</span>
               </Link>
             </div>
             <div className="relative">
@@ -185,14 +194,13 @@ export default function LoginPublic() {
                 aria-describedby={fieldErrors.password ? "login-password-err" : undefined}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
-                onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
                 className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.password))} transition-all font-medium px-4 pr-12 rounded-xl`}
                 placeholder="Your password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
+                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -218,9 +226,9 @@ export default function LoginPublic() {
         )}
 
         <Button
-          onClick={handleSignIn}
+          type="submit"
           disabled={loading}
-          className="w-full h-[52px] bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
+          className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
         >
           {loading ? "Signing you in…" : <>Take me to my portfolio <ArrowRight className="w-4 h-4" /></>}
         </Button>
@@ -231,7 +239,7 @@ export default function LoginPublic() {
             <span className="underline cursor-pointer hover:text-[var(--color-navy-900)]">Use the agent portal</span>
           </Link>
         </p>
-      </div>
+      </form>
     </AuthShell>
   );
 }
