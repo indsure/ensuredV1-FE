@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import { toast } from "@/hooks/use-toast"
+import { apiFetch } from "@/lib/api"
 
 type AgentProfile = {
   id: string;
@@ -39,6 +40,33 @@ function roleBadge(role: string) {
 }
 
 export default function SettingsNew() {
+  const [exporting, setExporting] = useState(false)
+
+  /* Fetched rather than linked, because the route needs the auth header and a
+     plain anchor cannot carry one. The blob is built in the browser and
+     released straight after, so nothing is left sitting in memory. */
+  async function exportAccount() {
+    setExporting(true)
+    try {
+      const res = await apiFetch("/api/agent/export")
+      if (!res.ok) throw new Error("Export failed")
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `indsure-export-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast({ variant: "success", title: "Your file has downloaded" })
+    } catch {
+      toast({ variant: "destructive", title: "Could not build your export", description: "Please try again in a moment." })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -210,6 +238,31 @@ export default function SettingsNew() {
             </Card>
           </div>
       </div>
+
+      {/* Your data, on request. The privacy policy has always promised people
+          control over what we hold; until now there was no way to exercise any
+          of it from inside the product. Export is the half that cannot destroy
+          anything, so it ships first. Deletion follows as its own change. */}
+      <Card className="border-none shadow-sm bg-white overflow-hidden">
+        <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+          <CardTitle className="text-xs font-black text-slate-900 uppercase tracking-widest">Your data</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4">
+          <p className="text-sm text-slate-600 max-w-prose">
+            Download everything we hold for your account: your policies, customers, leads, claims,
+            comparisons and cover calculations, as one file. Documents themselves are not in the
+            file, but every one of them is listed with where it is stored.
+          </p>
+          <Button
+            onClick={exportAccount}
+            disabled={exporting}
+            variant="outline"
+            className="font-bold"
+          >
+            {exporting ? "Preparing your file..." : "Download my data"}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Renders only for an advisor who is on someone's team. */}
       <TeamAccessLog />
