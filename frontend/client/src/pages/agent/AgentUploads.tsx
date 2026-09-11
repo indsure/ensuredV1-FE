@@ -78,10 +78,10 @@ function CompanionSlot({
               disabled ? "pointer-events-none opacity-50" : ""
             }`}
           >
-            Attach PDF
+            Attach file
             <input
               type="file"
-              accept="application/pdf"
+              accept="application/pdf,image/*"
               className="hidden"
               disabled={disabled}
               onChange={(e) => onPick(e.target.files?.[0] ?? null)}
@@ -418,7 +418,17 @@ export default function AgentUploads() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "application/pdf": [".pdf"] },
+    /* Photos of paper policies, not just PDFs. The server has always read images:
+       an image/* upload is routed through a Gemini OCR pass (see the file-type
+       switch in routes.ts), and claims, leads and the advisor page already
+       accept them. This screen alone refused, which meant the most natural
+       thing a phone-carrying advisor does with a paper policy was impossible
+       rather than politely declined. HEIC is included because that is what an
+       iPhone produces by default. */
+    accept: {
+      "application/pdf": [".pdf"],
+      "image/*": [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"],
+    },
     multiple: true,
     disabled: isProcessing,
   });
@@ -707,10 +717,10 @@ export default function AgentUploads() {
                             isProcessing ? "pointer-events-none opacity-50" : ""
                           }`}
                         >
-                          Attach PDF
+                          Attach file
                           <input
                             type="file"
-                            accept="application/pdf"
+                            accept="application/pdf,image/*"
                             className="hidden"
                             disabled={isProcessing}
                             onChange={(e) => setAyushmanFile(e.target.files?.[0] ?? null)}

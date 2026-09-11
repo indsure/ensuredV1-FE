@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import {
-  AlertTriangle, ArrowLeft, Check, CheckCircle2, Circle, Clock, Download, Eye, Loader2,
+  AlertTriangle, ArrowLeft, Check, CheckCircle2, Circle, Clock, Copy, Download, Eye, Loader2,
   MessageCircle, Pencil, Phone, Plus, RotateCcw, Trash2, Upload, X,
 } from "lucide-react";
 
@@ -85,9 +85,27 @@ export default function ClaimDetail() {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {/* Copy the claim's own address. The route already opens the right
+                claim, so nothing new is being published here: the link is
+                useless to anyone who cannot log in as this advisor, which is
+                the point. It exists because the URL working and the advisor
+                knowing it works are two different things, and a tester looked
+                for a button, found none, and reported the feature missing. */}
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/agent/claims/${claim.id}`;
+                navigator.clipboard.writeText(url).then(
+                  () => toast({ variant: "success", title: "Link copied", description: "Only people who can log in to this account can open it." }),
+                  () => toast({ variant: "destructive", title: "Copy failed", description: "Your browser blocked clipboard access." }),
+                );
+              }}
+              className="h-10 px-3.5 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50"
+            >
+              <Copy size={14} /> Copy link
+            </button>
             <button
               onClick={() => setEditing(true)}
-              className="h-10 px-3.5 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
+              className="h-10 px-3.5 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50"
             >
               <Pencil size={14} /> Edit
             </button>
