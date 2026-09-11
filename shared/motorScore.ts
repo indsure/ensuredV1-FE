@@ -127,17 +127,33 @@ export function scoreMotorPolicy(
 
   const findings = scan?.findings ?? [];
   const decidable = findings.filter(isDecidable);
+  const counted = decidable.length;
   for (const f of decidable) {
     possible += ADD_ON_WEIGHT;
     if (f.state === "present") earned += ADD_ON_WEIGHT;
   }
 
+  /* A score needs more than one fact behind it.
+     Dropping unreadable add-ons out of the denominator is right, but on its own
+     it let a policy score 100 off a single readable word. A real Acko policy
+     stored nine add-ons all `not_found`, no own-damage premium arithmetic, and
+     the text "Comprehensive": own damage scored 2 of 2 possible, every add-on
+     was excluded as unreadable, and the customer was shown 100 out of 100 and
+     "Strong cover" for a document we had barely read.
+
+     So at least one ADD-ON must be decidable before a number is published.
+     Knowing whether own damage is covered is genuinely useful and the card
+     still shows it, but it is one half of the model, and half a model is not a
+     score. Null here means "we could not read enough", which is the truth and
+     is not the same statement as a low score. */
+  const scoreable = counted > 0 && possible > 0;
+
   return {
-    score: possible === 0 ? null : Math.round((earned / possible) * 100),
+    score: scoreable ? Math.round((earned / possible) * 100) : null,
     ownDamage,
     earned,
     possible,
-    counted: decidable.length,
+    counted,
     setAside: findings.length - decidable.length,
   };
 }
@@ -148,7 +164,18 @@ export function scoreMotorPolicy(
  * the list and a shared report.
  */
 export function motorScoreCaption(s: MotorScore): string {
-  if (s.score === null) return "Not enough was readable in this document to score it.";
+  if (s.score === null) {
+    /* Own damage may still be known even when nothing is scoreable, and it is
+       the single most useful fact about a motor policy, so say it rather than
+       withholding everything. */
+    const od =
+      s.ownDamage === "covered"
+        ? "Own damage is covered. "
+        : s.ownDamage === "not_covered"
+        ? "This is third-party only: own damage is not covered. "
+        : "";
+    return `${od}We could not read the add-on cover on this document, so it is not scored.`;
+  }
   const base =
     s.ownDamage === "covered"
       ? "Own damage covered"

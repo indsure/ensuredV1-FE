@@ -22,6 +22,9 @@ export type Policy = {
   /** The motor add-on scan, when this is a vehicle policy that was read.
    *  Only the scan travels, never the rest of extracted_data. */
   add_ons: unknown | null;
+  /** Sent with the scan because the score depends on both. Without it the card
+   *  recomputed a different answer from the server and the two disagreed. */
+  coverage_type: string | null;
 };
 
 export type Portfolio = {

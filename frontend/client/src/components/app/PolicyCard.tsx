@@ -178,9 +178,18 @@ export function PolicyCard({
             <>
               {p.score != null && (
                 <div className="rounded-xl bg-[var(--color-cream-main)] border border-[var(--color-border-light)] p-3.5">
-                  <p className={`text-sm font-semibold ${scoreClasses(p.score).text}`}>
-                    {scoreVerdict(p.score)}
-                  </p>
+                  {/* The verdict is hidden when the score is not publishable.
+                      A motor policy whose add-ons were all unreadable used to
+                      render "Strong cover" beside a caption saying we could not
+                      read it, because the stored score and the card's own
+                      reading disagreed. The card now defers to the same
+                      function the server used. */}
+                  {!(p.insurance_type === "motor" &&
+                     scoreMotorPolicy((p.add_ons ?? null) as any, p.coverage_type).score === null) && (
+                    <p className={`text-sm font-semibold ${scoreClasses(p.score).text}`}>
+                      {scoreVerdict(p.score)}
+                    </p>
+                  )}
                   {/* The caption has to match the policy. This line used to be
                       hardcoded to the health audit for every scored policy, so a
                       scooter was described as scored on "waiting periods and
@@ -191,7 +200,7 @@ export function PolicyCard({
                   <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
                     {p.insurance_type === "motor"
                       ? motorScoreCaption(
-                          scoreMotorPolicy((p.add_ons ?? null) as any, null),
+                          scoreMotorPolicy((p.add_ons ?? null) as any, p.coverage_type),
                         )
                       : "Scored on what actually pays out: waiting periods, sub-limits, exclusions and claim conditions."}
                   </p>

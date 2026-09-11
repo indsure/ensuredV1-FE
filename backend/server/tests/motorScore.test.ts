@@ -108,6 +108,31 @@ describe("our uncertainty never costs the customer points", () => {
   });
 });
 
+describe("a score needs more than one fact behind it", () => {
+  it("refuses to score a policy where only the word Comprehensive was readable", () => {
+    /* The exact shape of a real Acko policy: nine add-ons all not_found, no
+       own-damage premium arithmetic, and coverage_type "Comprehensive". It used
+       to score 2 of 2 possible and publish 100 out of 100 with "Strong cover"
+       against a document we had barely read. */
+    const acko = scoreMotorPolicy(
+      scan(["zero_depreciation", "consumables", "roadside_assistance"].map((i) => finding(i, "not_found"))),
+      "Comprehensive",
+    );
+    assert.equal(acko.score, null);
+    assert.equal(acko.ownDamage, "covered", "the useful fact is still reported");
+    assert.equal(acko.counted, 0);
+  });
+
+  it("scores as soon as one add-on is genuinely decidable", () => {
+    const s = scoreMotorPolicy(
+      scan([finding("a", "absent_proven"), finding("b", "not_found")]),
+      "Comprehensive",
+    );
+    assert.notEqual(s.score, null);
+    assert.equal(s.counted, 1);
+  });
+});
+
 describe("own damage carries double an add-on", () => {
   it("a third-party-only policy with every add-on still loses the own-damage weight", () => {
     const addOns = ["a", "b", "c", "d"].map((i) => finding(i, "present"));
@@ -138,8 +163,16 @@ describe("the caption says what the number measures", () => {
     assert.match(c, /not the quality of the wording/);
   });
 
-  it("is explicit when nothing could be scored", () => {
-    assert.match(motorScoreCaption(scoreMotorPolicy(scan([]), null)), /Not enough was readable/);
+  it("is explicit when nothing could be scored, and still says what it does know", () => {
+    // Nothing readable at all.
+    assert.match(
+      motorScoreCaption(scoreMotorPolicy(scan([]), null)),
+      /could not read the add-on cover/,
+    );
+    // Own damage known but no add-on decidable: the useful half is still said.
+    const odOnly = scoreMotorPolicy(scan([finding("a", "not_found")]), "Comprehensive");
+    assert.equal(odOnly.score, null, "one readable word must not produce a score");
+    assert.match(motorScoreCaption(odOnly), /Own damage is covered/);
   });
 
   it("always carries the line that stops it being compared to a health score", () => {

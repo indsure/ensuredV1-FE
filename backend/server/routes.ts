@@ -4510,6 +4510,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         `SELECT id, insurance_type, status, filename, insurer, policy_name, nickname, score,
                 expiry_date, renewal_date, sum_insured, flaws, created_at, error_message,
                 extracted_data -> 'add_on_findings' AS add_ons,
+                extracted_data ->> 'coverage_type' AS coverage_type,
                 (pdf_url IS NOT NULL) AS has_pdf
            FROM individual_policies
           WHERE user_id = $1
