@@ -24,6 +24,7 @@ import {
     computeSingleEventCover,
     reconcileEffectiveCover,
     enforceRequiredCover,
+    lookupRequiredCover,
 } from "../services/analysisPipeline";
 
 // The production backend deliberately does NOT import this at runtime (no @shared
@@ -267,19 +268,25 @@ describe("reconcileEffectiveCover", () => {
 });
 
 describe("enforceRequiredCover derives NCAR even when RCT was already right", () => {
-    // Report 1b520f0d stated rct 6L (correct for age 26 zone C), nec 2Cr and
-    // ncar 16.67. 2Cr / 6L is 33.3, so the ratio matched neither its numerator nor
-    // the base cover, and the old early-return shipped it untouched because the
-    // threshold beside it happened to be right.
+    // Report 1b520f0d stated the right rct for age 26 zone C, nec 2Cr and ncar
+    // 16.67. The ratio matched neither its numerator nor the base cover, and the
+    // old early-return shipped it untouched because the threshold beside it
+    // happened to be right.
+    //
+    // The threshold is taken from the table rather than written in, so this keeps
+    // testing "a correct RCT is left alone" after the table's values change. It
+    // was 6L here until the table was re-anchored to what an admission costs.
+    const RCT_26_C = lookupRequiredCover(26, "C")!;
+
     test("a correct RCT no longer skips the NCAR recomputation", () => {
         const r = report();
         r.identity = { ages: [26], assumed_zone: "C" };
-        r.audit_score = { score: 90, nec: 2 * CR, rct: 6 * L, ncar: 16.67, breakdown: { net_cover_penalty: 0 } };
+        r.audit_score = { score: 90, nec: 2 * CR, rct: RCT_26_C, ncar: 16.67, breakdown: { net_cover_penalty: 0 } };
 
         enforceRequiredCover(r);
 
-        assert.equal(r.audit_score.rct, 6 * L, "the threshold was right and must stay");
-        assert.equal(r.audit_score.ncar, Number((2 * CR / (6 * L)).toFixed(4)), "the ratio must be derived, not accepted");
+        assert.equal(r.audit_score.rct, RCT_26_C, "the threshold was right and must stay");
+        assert.equal(r.audit_score.ncar, Number((2 * CR / RCT_26_C).toFixed(4)), "the ratio must be derived, not accepted");
     });
 
     test("reconcile then enforce leaves cover, nec and ncar mutually consistent", () => {
@@ -288,7 +295,7 @@ describe("enforceRequiredCover derives NCAR even when RCT was already right", ()
             restoration: { exists: true, type: "full", restore_amount: CR, same_illness_covered: true, unlimited: true, triggers_on_first_claim: false, trigger_conditions: "x", actually_useful: true, remarks: "" },
         });
         r.identity = { ages: [26], assumed_zone: "C" };
-        r.audit_score = { score: 90, nec: 2 * CR, rct: 6 * L, ncar: 16.67, breakdown: { net_cover_penalty: 0 } };
+        r.audit_score = { score: 90, nec: 2 * CR, rct: RCT_26_C, ncar: 16.67, breakdown: { net_cover_penalty: 0 } };
 
         reconcileEffectiveCover(r);
         enforceRequiredCover(r);

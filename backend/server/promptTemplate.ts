@@ -60,7 +60,7 @@
  * Because scores from 1.2.0 are NOT directly comparable with 1.1.0, every job
  * row stamps prompt_version — split any quality comparison on that column.
  */
-export const PROMPT_VERSION = "1.4.0";
+export const PROMPT_VERSION = "1.5.0";
 
 export const MASTER_AUDIT_PROMPT = `
 🔐 SYSTEM PROMPT — IndSure Forensic Policy Intelligence Engine
@@ -113,7 +113,9 @@ everywhere below:
 - **SCORING AGE = the age of the ELDEST insured** on the policy. Every age-banded
   rule (RCT, PED relevance) uses this age, because the eldest life drives claim cost.
 - **LIVES COVERED = the number of people insured** under this policy. On a floater,
-  the sum insured is shared, so lives covered scales the cover you need.
+  the sum insured is shared, so a claim by one person reduces what is left for the
+  rest that year. Report it, and let it inform the narrative. It does NOT scale RCT:
+  see STEP 1.
 
 If ages are missing, infer conservatively from any date of birth in the document; if
 still unknown, assume the eldest is 45, say so in confidence_notes, and set
@@ -310,19 +312,28 @@ matter. Getting them right is the job; the total is a checksum.
 
 **Required Cover Threshold (RCT) by Scoring Age × Zone:**
 
-| Age Band | Zone A | Zone B/D | Zone C |
-|----------|--------|--------|--------|
-| < 40     | ₹10L   | ₹8L    | ₹6L    |
-| 40–55    | ₹15L   | ₹12L   | ₹8L    |
-| 55–65    | ₹20L   | ₹15L   | ₹10L   |
-| 65+      | ₹25L   | ₹20L   | ₹12L   |
+RCT is what ONE bad hospital admission costs this insured, today, in this zone.
+These figures are the cover calculator's own cost anchors, so the two halves of
+this product price the same event at the same number.
 
-**FLOATER MULTIPLIER** — a shared sum insured must stretch across everyone on it:
-- 1–2 lives covered → × 1.0
-- 3–4 lives covered → × 1.4
-- 5 or more lives → × 1.7
-Individual (non-floater) policies always use × 1.0. Apply the multiplier to the RCT
-from the table, and report the multiplied figure as rct.
+| Age Band | Zone A | Zone B/D | Zone C |
+|----------|--------|----------|--------|
+| < 35     | ₹16L   | ₹14.5L   | ₹14L   |
+| 35–44    | ₹20L   | ₹18.5L   | ₹17.5L |
+| 45–54    | ₹29L   | ₹26.5L   | ₹25L   |
+| 55–64    | ₹40L   | ₹37L     | ₹35L   |
+| 65–74    | ₹52L   | ₹47.5L   | ₹45L   |
+| 75+      | ₹57.5L | ₹52.5L   | ₹50L   |
+
+**DO NOT scale RCT by how many lives the policy covers.** There is no floater
+multiplier. A single admission costs the same whether one person or five share
+the sum insured, and RCT is a single-event threshold throughout this rulebook.
+What does change with family size is the chance of a SECOND admission in the same
+year, which is a different risk and is carried in the multi-year target the report
+shows beside this figure. Pricing it here too would charge for it twice.
+
+Report the figure straight from the table as rct. The server recomputes it from
+the same table and corrects you if it disagrees.
 
 **NCAR = NEC ÷ RCT**
 

@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { CoverageDiagnostic } from "./CoverageDiagnostic";
 import { Tooltip } from "@/components/ui/tooltip";
 import { getZoneForCity } from "@/lib/data/zones";
+import { CALCULATOR_CONFIG } from "@/lib/health-engine-logic";
 import { pdf } from '@react-pdf/renderer';
 import { PolicyPDFDocument, registerPdfFonts, type PdfMeta } from './PolicyPDFDocument';
 import { apiFetch } from "@/lib/api";
@@ -98,6 +99,67 @@ function getSimulationVerdictColor(verdict: "COVERED" | "PARTIAL" | "EXPOSED") {
         case "PARTIAL": return "text-amber-600 bg-amber-50 border-amber-200";
         case "EXPOSED": return "text-red-600 bg-red-50 border-red-200";
     }
+}
+
+/**
+ * What one bad admission costs today, and what the same admission is likely to
+ * cost by the time this family actually needs it.
+ *
+ * The first number is the one the score is measured against, and it is the same
+ * figure the cover calculator starts from: age band times a zone multiplier.
+ * Recomputed here rather than read from audit_score.rct, so reports analysed
+ * before the table was re-anchored show today's answer rather than the one their
+ * run happened to store.
+ *
+ * The second is that number carried forward at the calculator's own inflation
+ * rate and horizon, plus its allowance for a second claim in the same year. It
+ * is NOT what the score is measured against, deliberately: penalising a policy
+ * today for inflation that has not happened yet would mark almost every family
+ * in India as failing, and the score would stop being able to tell a well
+ * written policy from a predatory one.
+ *
+ * Deliberately not scaled by how many lives share the policy. One admission
+ * costs what it costs. The risk that a SECOND person is admitted is what the
+ * multi-incident allowance below is for, and this policy's own restoration
+ * decides how big that allowance needs to be, which is something the calculator
+ * has to guess at and this report knows.
+ *
+ * Neutral by construction: no income, no employer cover, no stated appetite for
+ * risk. A cover plan run for this family can land higher once those are known,
+ * and the panel says so rather than leaving two numbers to contradict each other.
+ */
+const WORST_CASE_BY_AGE: Array<[number, number]> = [
+    [34, 1400000], [44, 1750000], [54, 2500000],
+    [64, 3500000], [74, 4500000], [Infinity, 5000000],
+];
+
+function coverOutlook(
+    ages: unknown,
+    zone: string | null | undefined,
+    hasRestoration: boolean,
+): { today: number; target: number; years: number } | null {
+    const parsed = (Array.isArray(ages) ? ages : [])
+        .map((a) => parseInt(String(a).replace(/\D/g, ""), 10))
+        .filter((n) => Number.isFinite(n) && n > 0 && n < 120);
+    if (!parsed.length) return null;
+
+    // The eldest life drives claim cost, the same rule the score uses.
+    const eldest = Math.max(...parsed);
+    const cost = WORST_CASE_BY_AGE.find(([maxAge]) => eldest <= maxAge)?.[1];
+    const z = (zone || "").toUpperCase();
+    const mult = z === "A" ? 1.15 : z === "C" ? 1.0 : z === "B" || z === "D" ? 1.05 : null;
+    if (!cost || mult === null) return null;
+
+    const today = Math.round((cost * mult) / 50000) * 50000;
+    const { medicalInflationRate: rate, medicalInflationHorizon: years } = CALCULATOR_CONFIG;
+    const buffer = hasRestoration
+        ? CALCULATOR_CONFIG.multiIncidentBufferWithRestoration
+        : CALCULATOR_CONFIG.multiIncidentBufferWithoutRestoration;
+    const projected = today * Math.pow(1 + rate, years) * (1 + buffer);
+
+    // To the nearest 5 lakh, which is the step policies are actually sold in.
+    // A five-year projection does not deserve rupee precision.
+    return { today, target: Math.round(projected / 500000) * 500000, years };
 }
 
 /** Badge colour by what the state MEANS, so a new state cannot default to green. */
@@ -740,6 +802,73 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         </div>
                     )}
                 </div>
+
+                {/* 2b. COVER TODAY vs COVER IN FIVE YEARS.
+                    The report used to state only the first, so an advisor could read
+                    "Good" here while the cover plan on another page told the same
+                    family to buy four times what they had, and nothing on either page
+                    acknowledged the other. Stated as facts, not as a second verdict. */}
+                {(() => {
+                    const outlook = coverOutlook(
+                        data.identity?.ages,
+                        data.identity?.assumed_zone,
+                        data.coverage_structure?.restoration?.exists === true,
+                    );
+                    const held = coverView.effectiveCover;
+                    if (!outlook || typeof held !== "number" || held <= 0) return null;
+
+                    const pctToday = Math.round((held / outlook.today) * 100);
+                    const pctTarget = Math.round((held / outlook.target) * 100);
+                    const shortToday = outlook.today - held;
+
+                    return (
+                        <section className="mb-16">
+                            <div className="flex items-center gap-3 mb-2">
+                                <Layers className="w-6 h-6 text-[var(--color-teal-600)]" />
+                                <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">How far this cover goes</h3>
+                            </div>
+                            <p className="text-sm text-[var(--color-text-muted)] mb-6">
+                                The score above is measured against the first of these. The second is
+                                what the same admission is likely to cost by the time it happens, and
+                                it is shown, not scored.
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
+                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                                        One serious admission, today
+                                    </div>
+                                    <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
+                                        {formatINR(outlook.today)}
+                                    </div>
+                                    <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                                        This policy covers {formatINR(held)}, which is {pctToday}% of it.
+                                        {shortToday > 0
+                                            ? ` A bill that size would leave ${formatINR(shortToday)} to be paid from savings.`
+                                            : " A bill that size would be met in full."}
+                                    </p>
+                                </div>
+                                <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
+                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                                        The same admission in {outlook.years} years
+                                    </div>
+                                    <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
+                                        {formatINR(outlook.target)}
+                                    </div>
+                                    <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                                        This policy is {pctTarget}% of that. Medical costs are carried forward at{" "}
+                                        {Math.round(CALCULATOR_CONFIG.medicalInflationRate * 100)}% a year, with an
+                                        allowance for a second claim in the same year.
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="mt-3 text-sm text-slate-500">
+                                Both figures assume nothing about income, employer cover or how much risk
+                                this family is willing to carry. A cover plan that includes those can
+                                recommend more.
+                            </p>
+                        </section>
+                    );
+                })()}
 
                 {/* 3. BENEFIT EVALUATION */}
                 {data.benefit_evaluation && (

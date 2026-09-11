@@ -371,34 +371,72 @@ export function enforceBreakdownCaps(parsed: any) {
 }
 
 /**
- * Required Cover Threshold by scoring age (eldest insured) and zone — the table
- * from SCORING SYSTEM / STEP 1 of the audit prompt, in code.
+ * What one bad hospital admission costs, by age.
+ *
+ * These are the cover calculator's own anchors, copied from
+ * frontend/client/src/lib/health-engine-logic.ts. They are duplicated rather
+ * than imported for the same reason computeSingleEventCover is: the backend has
+ * no @shared alias and the EC2 box runs tsx over backend/server alone, so a
+ * cross-directory import that resolves locally and not on the box would take the
+ * paid audit path down at boot. requiredCover.test.ts pins the two together.
+ *
+ * They replace a separate table the audit used to carry, which said a family
+ * under 40 in Pune needed ₹8L while the calculator, for the same man on the same
+ * day, priced a bad admission at ₹14L. One product, one event, two answers 75%
+ * apart, and the ₹8L one decided whether a policy scored as well covered.
+ *
+ * Treat these as a product judgement about what we are willing to recommend, not
+ * as a sourced medical statistic, and do not cite IRDAI against them.
  */
-const RCT_TABLE: { maxAge: number; A: number; BD: number; C: number }[] = [
-  { maxAge: 39,       A: 1000000, BD: 800000,  C: 600000 },
-  { maxAge: 55,       A: 1500000, BD: 1200000, C: 800000 },
-  { maxAge: 65,       A: 2000000, BD: 1500000, C: 1000000 },
-  { maxAge: Infinity, A: 2500000, BD: 2000000, C: 1200000 },
+const WORST_CASE_BY_AGE: { maxAge: number; cost: number }[] = [
+  { maxAge: 34,       cost: 1400000 },
+  { maxAge: 44,       cost: 1750000 },
+  { maxAge: 54,       cost: 2500000 },
+  { maxAge: 64,       cost: 3500000 },
+  { maxAge: 74,       cost: 4500000 },
+  { maxAge: Infinity, cost: 5000000 },
 ];
 
-/** Penalty bands for NCAR, also from STEP 1. */
-function netCoverPenaltyFor(ncar: number): number {
+/** Also the calculator's, where they are named Metro / Tier-1 / Tier-2. */
+const ZONE_COST_MULTIPLIER: Record<string, number> = { A: 1.15, B: 1.05, D: 1.05, C: 1.0 };
+
+/**
+ * The NCAR penalty curve from STEP 1 of the prompt.
+ *
+ * This used to be four step bands (0/10/25/40/60) while the prompt specified a
+ * continuous formula, so the same policy scored differently depending on which
+ * of the two you read. At NCAR 0.89 the prompt says 4 and the bands said 10.
+ * The prompt is the rulebook; the bands are gone.
+ */
+export function netCoverPenaltyFor(ncar: number): number {
   if (ncar >= 1.0) return 0;
-  if (ncar >= 0.75) return 10;
-  if (ncar >= 0.5) return 25;
-  if (ncar >= 0.3) return 40;
-  return 60;
+  if (ncar >= 0.75) return Math.round((10 * (1.0 - ncar)) / 0.25);
+  if (ncar >= 0.5) return Math.round(10 + (15 * (0.75 - ncar)) / 0.25);
+  if (ncar >= 0.3) return Math.round(25 + (15 * (0.5 - ncar)) / 0.2);
+  return Math.min(60, Math.round(40 + (20 * (0.3 - ncar)) / 0.3));
 }
 
+/**
+ * Required cover: what a single bad admission costs this insured, today.
+ *
+ * Deliberately NOT scaled by how many lives share the policy. A car crash does
+ * not cost more because there are more names on the card, and RCT is defined
+ * throughout the prompt as a single-event threshold. The old ×1.4 / ×1.7 floater
+ * multiplier was pricing the risk of a SECOND admission inside a single-event
+ * number, at 40% where the calculator prices the same risk at 8%. That risk is
+ * real and it belongs in the multi-year target the report shows alongside this,
+ * not in the threshold the score is measured against.
+ */
 export function lookupRequiredCover(age: number, zone: string): number | null {
   if (!Number.isFinite(age)) return null;
-  const row = RCT_TABLE.find((r) => age <= r.maxAge);
+  const row = WORST_CASE_BY_AGE.find((r) => age <= r.maxAge);
   if (!row) return null;
-  const z = (zone || "").toUpperCase();
-  if (z === "A") return row.A;
-  if (z === "C") return row.C;
-  if (z === "B" || z === "D") return row.BD;
-  return null;
+  const mult = ZONE_COST_MULTIPLIER[(zone || "").toUpperCase()];
+  if (mult === undefined) return null;
+  // To the nearest ₹50,000, so the printed table in the prompt and the value
+  // computed here are the same number and enforceRequiredCover has nothing to
+  // correct on a run where the model read the table properly.
+  return Math.round((row.cost * mult) / 50000) * 50000;
 }
 
 /**
