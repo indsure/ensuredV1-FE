@@ -35,6 +35,9 @@ type PolicyRow = {
   product_name_suggested: string | null;
   policy_number: string | null;
   status: string | null;
+  /** Why the last run failed, straight off the row. Only meaningful while
+   *  status is "error". */
+  error_message: string | null;
   score: number | null;
   created_at: string;
   updated_at: string | null;
@@ -161,6 +164,7 @@ export default function PolicyDetail() {
         product_name_suggested: clientData.policy_name_suggested ?? null,
         policy_number: clientData.policy_name,
         status: clientData.status,
+        error_message: clientData.error_message ?? null,
         score: clientData.score,
         created_at: clientData.created_at,
         updated_at: clientData.created_at,
@@ -554,9 +558,32 @@ export default function PolicyDetail() {
           ) : (
             <Card className="border-slate-100 shadow-sm">
               <CardContent className="p-8 text-center text-slate-400 text-sm italic">
-                {policy.status === "done"
-                  ? "Analysis data is in an unexpected format. Try re-running analysis."
-                  : "Analysis is still in progress. This page will update automatically."}
+                {/* A failed run is not a running one. Without this branch the
+                    card promised an update that was never coming, and the row's
+                    own error_message, which My Queue has always shown, stayed
+                    hidden here. The reason comes off the row when it has one;
+                    the remedy is always spelled out, because the reason alone
+                    never says what to do next. */}
+                {policy.status === "error" ? (
+                  <div className="mx-auto max-w-xl text-left not-italic">
+                    <div className="text-sm font-semibold text-slate-700">We could not finish this analysis.</div>
+                    {/* Verbatim, and scrollable rather than truncated: the agent
+                        lane stores the raw error on purpose so agents and admin
+                        can triage from it. Some real rows hold kilobytes of
+                        provider JSON, so it is boxed instead of set loose in a
+                        centred card. */}
+                    <div className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                      {policy.error_message || "No reason was recorded for the failure."}
+                    </div>
+                    <div className="mt-3 text-sm text-slate-500">
+                      Use Re-run Analysis, or delete and re-upload an unlocked PDF.
+                    </div>
+                  </div>
+                ) : policy.status === "done" ? (
+                  "Analysis data is in an unexpected format. Try re-running analysis."
+                ) : (
+                  "Analysis is still in progress. This page will update automatically."
+                )}
               </CardContent>
             </Card>
           )}
