@@ -419,7 +419,7 @@ export default function PolicyDetail() {
                   <div>
                     <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold text-slate-900">{policy.client_name || "Pending policyholder"}</h1>
                     <p className="mt-2 text-sm text-slate-500">
-                      {policy.insurer_name || "Insurer not read"} · {policy.product_name || "Plan name not read"} · {policy.id}
+                      {policy.insurer_name || "Insurer not read"} · {policy.product_name || "Plan Name Unclear in Doc"} · {policy.id}
                     </p>
                     <PlanNameField
                       clientId={policy.id}

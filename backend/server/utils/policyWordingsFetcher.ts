@@ -249,6 +249,39 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
   let plan = null;
   let sourceField = null;
 
+  /**
+   * A policy schedule is usually a key/value table, and PDF extraction flattens
+   * it into one line, so the NEXT field's label sits immediately after the value
+   * this one wants. A capture that allows spaces walks straight into it. A real
+   * document read:
+   *
+   *   "Plan Name : India Plan  Tenure : 1 Year  Portability : YES"
+   *
+   * and the plan came out as "India Plan  Tenure". The plan is "India Plan";
+   * "Tenure" is the next column's heading.
+   *
+   * Two things mark the end of a value in these documents. The column gap,
+   * which survives extraction as two or more spaces, and the next label, which
+   * is the word sitting immediately before a colon. Use the gap when there is
+   * one, because it is the stronger signal, and fall back to the label rule.
+   */
+  function cutAtNextField(captured: string, rest: string): string {
+    const parts = captured.split(/\s{2,}/);
+    if (parts.length > 1) return parts[0].trim();
+
+    let value = captured.trim();
+    if (/^\s*:/.test(rest)) {
+      const words = value.split(/\s+/);
+      // Never strip the only word: a one-word plan name followed by a colon is
+      // still the plan name.
+      if (words.length > 1) {
+        words.pop();
+        value = words.join(' ');
+      }
+    }
+    return value.trim();
+  }
+
   // Normalization helper
   function normalizePlanName(raw: string): string {
     return raw
@@ -257,22 +290,33 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
       .replace(/ Individual(\s|$)/i, '$1')
       .replace(/ Adult(\s|$)/i, '$1')
       .replace(/ \d+Year(\s|$)/i, '$1')
+      // The strips above leave a double space behind when the token they remove
+      // sat between two others, which is how "India Plan  Tenure" kept its gap.
+      .replace(/\s{2,}/g, ' ')
       .trim();
   }
 
   // Priority 1: Field "Plan Name"
   const planNameMatch = text.match(/Plan Name\s*[:\-\n]\s*([a-zA-Z0-9_\- ]+)/i);
   if (planNameMatch && planNameMatch[1].trim()) {
-    plan = normalizePlanName(planNameMatch[1].trim());
-    sourceField = 'Plan Name';
+    const rest = text.slice((planNameMatch.index ?? 0) + planNameMatch[0].length);
+    const cut = cutAtNextField(planNameMatch[1], rest);
+    if (cut) {
+      plan = normalizePlanName(cut);
+      sourceField = 'Plan Name';
+    }
   }
 
   // Priority 2: Field "Product name"
   if (!plan) {
     const productNameMatch = text.match(/Product name\s*[:\-\n]\s*([a-zA-Z0-9_\- ]+)/i);
     if (productNameMatch && productNameMatch[1].trim()) {
-      plan = normalizePlanName(productNameMatch[1].trim());
-      sourceField = 'Product name';
+      const rest = text.slice((productNameMatch.index ?? 0) + productNameMatch[0].length);
+      const cut = cutAtNextField(productNameMatch[1], rest);
+      if (cut) {
+        plan = normalizePlanName(cut);
+        sourceField = 'Product name';
+      }
     }
   }
 
