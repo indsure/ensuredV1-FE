@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ComposedChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, ReferenceArea, ReferenceLine,
@@ -66,7 +66,26 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
   );
 
   const term = !isValueGap(result) ? result.term : 1;
+
+  /**
+   * Open on the policy year the customer is actually in.
+   *
+   * The card used to start at year 1 for a policy in its ninth, which is the one
+   * year where a savings plan is worth nothing: the surrender value reads
+   * "Nothing" and the borrowing panel below it does not appear at all. The
+   * agent had to know to drag a slider before the screen answered the question
+   * they opened it to ask.
+   *
+   * Done as an effect rather than an initial value because the policy data
+   * arrives after the first render, so there is no current year to open on yet.
+   * It moves once, and never again after the agent has taken hold of the slider.
+   */
+  const openAt = !isValueGap(result) ? result.currentYear : null;
   const [year, setYear] = useState(1);
+  const [scrubbed, setScrubbed] = useState(false);
+  useEffect(() => {
+    if (!scrubbed && openAt !== null) setYear(openAt);
+  }, [openAt, scrubbed]);
   const yr = Math.min(year, term);
 
   async function persist(next: Record<string, any>) {
@@ -76,7 +95,9 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
-      // The endpoint replaces extracted_data, so send the whole object back.
+      // The endpoint merges, so a partial would be enough. Still sent whole:
+      // `patch` holds edits made in this session that were never posted on
+      // their own, and dropping them here would lose them.
       const payload = { ...(data ?? {}), ...patch, ...next };
       const res = await fetch(`${getApiBase()}/api/agent/clients/${clientId}/extracted-data`, {
         method: "PATCH",
@@ -433,7 +454,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             min={1}
             max={term}
             value={yr}
-            onChange={(e) => setYear(Number(e.target.value))}
+            onChange={(e) => { setScrubbed(true); setYear(Number(e.target.value)); }}
             className="mt-2 w-full accent-[#0D9488]"
           />
         </div>
@@ -498,6 +519,90 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
               {row.deferredTo ? "Cover stops if the policy is surrendered." : "Cover while the policy is in force."}
             </div>
           </div>
+        </div>
+
+        {/* Reduced paid-up. The values above are already cut down to this, so it
+            has to be said plainly rather than left for the reader to infer. */}
+        {result.paidUpFactor < 1 && (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+            <div className="text-sm font-black uppercase tracking-[0.2em] text-rose-800">
+              Reduced paid-up
+            </div>
+            <div className="mt-1 text-sm text-rose-900">
+              Premiums stopped after {result.paidThrough} of the {result.ppt} years payable, so every figure
+              above is {Math.round(result.paidUpFactor * 100)}% of what this policy would otherwise be worth.
+              Reviving it puts them back to full.
+            </div>
+          </div>
+        )}
+
+        {/* The two answers an advisor almost never has to hand: what the policy
+            will lend instead of being surrendered, and what a lapsed one costs
+            to bring back. Both are arithmetic on figures already on this page. */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {row.maxLoan > 0 && (
+            <div className="rounded-xl border border-[#0D9488]/30 bg-[#0D9488]/5 p-4">
+              <div className="text-sm font-black uppercase tracking-[0.2em] text-[#0f766e]">
+                Borrow instead
+              </div>
+              <div className="mt-1 text-2xl font-bold text-[#0f766e]">{rupee(row.maxLoan)}</div>
+              <div className="mt-1 text-sm text-slate-700">
+                Up to {result.loan.sharePct}% of the surrender value, borrowed against the policy. The cover
+                stays alive and so does the plan.
+              </div>
+              <div className="mt-1 text-sm text-slate-600">
+                {result.loan.ratePct !== null
+                  ? `Interest ${result.loan.ratePct}% a year, fixed for the life of the loan.`
+                  : result.loan.rateNote}
+              </div>
+              {result.loan.outstanding > 0 && (
+                <div className="mt-1 text-sm font-semibold text-slate-800">
+                  {rupee(result.loan.outstanding)} already drawn, so {rupee(result.loan.available)} is left today.
+                </div>
+              )}
+              {result.loan.forecloses && (
+                <div className="mt-1 text-sm font-semibold text-rose-800">
+                  The loan has passed {result.params.foreclosureAtPct.value}% of the surrender value. The
+                  policy can be foreclosed.
+                </div>
+              )}
+            </div>
+          )}
+
+          {result.revival && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="text-sm font-black uppercase tracking-[0.2em] text-amber-900">
+                {result.revival.expired ? "Revival window closed" : "Bring it back"}
+              </div>
+              <div className="mt-1 text-2xl font-bold text-amber-900">
+                {rupee(result.revival.payable)}
+                {result.revival.interest === null && (
+                  <span className="ml-1 text-sm font-semibold">+ interest</span>
+                )}
+              </div>
+              <div className="mt-1 text-sm text-slate-700">
+                {result.revival.missedInstalments} missed{" "}
+                {result.revival.missedInstalments === 1 ? "premium" : "premiums"} of{" "}
+                {rupee(result.revival.arrears)}
+                {result.revival.interest !== null && `, plus ${rupee(result.revival.interest)} interest`}.
+              </div>
+              <div className="mt-1 text-sm text-slate-600">
+                {result.revival.interest === null
+                  ? result.revival.rateNote
+                  : `Interest charged at ${result.revival.ratePct}% a year on each arrear from its due date.`}
+              </div>
+              <div
+                className={
+                  "mt-1 text-sm font-semibold " +
+                  (result.revival.expired ? "text-rose-800" : "text-amber-900")
+                }
+              >
+                {result.revival.expired
+                  ? `The window closed on ${result.revival.deadline}. This policy can no longer be revived.`
+                  : `Revive by ${result.revival.deadline ?? "the end of the revival window"}.`}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* The charge table and assumptions the whole schedule rests on. */}

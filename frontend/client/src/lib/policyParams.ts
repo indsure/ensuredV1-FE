@@ -79,6 +79,35 @@ export interface PolicyParams {
   surrenderAcquiresAfterYears: Param<number>;
   /** Age of the life assured when the policy started. */
   entryAge: Param<number>;
+
+  /**
+   * Reference 10-year G-Sec yield, as a percentage.
+   *
+   * The loan rate, the revival interest and the special surrender value
+   * discount are all defined in the wordings as this yield plus a fixed spread,
+   * so none of them can be worked out until it is set.
+   *
+   * It ships deliberately empty. A loan rate quoted from a made-up yield is a
+   * number an advisor would repeat to a customer, and an empty slot on screen
+   * gets noticed where a plausible wrong one does not. Everything that does not
+   * need a rate still computes: the borrowable amount, the arrears, the
+   * revival deadline.
+   */
+  gSecYieldPct: Param<number | null>;
+  /** Spread over the reference yield used to discount the special surrender value, in bps. */
+  ssvSpreadBps: Param<number>;
+  /** Spread over the reference yield charged on a policy loan, in bps. */
+  loanSpreadBps: Param<number>;
+  /** Share of the surrender value that may be borrowed against, as a percentage. */
+  loanValuePct: Param<number>;
+  /** Loan plus interest past this share of the surrender value forecloses the policy. */
+  foreclosureAtPct: Param<number>;
+  /** Spread over the reference yield charged on premium arrears at revival, in bps. */
+  revivalSpreadBps: Param<number>;
+  /** Years from the first unpaid premium in which a lapsed policy may still be revived. */
+  revivalWindowYears: Param<number>;
+  /** Loan already drawn against this policy, including interest accrued on it. */
+  outstandingLoan: Param<number>;
 }
 
 const d = <T,>(value: T): Param<T> => ({ value, source: "default" });
@@ -134,15 +163,38 @@ export const DEFAULT_PARAMS: PolicyParams = {
     { fromYear: 8, toYear: 99, pct: 90 },
   ]),
   entryAge: d(35),
+  gSecYieldPct: d(null),
+  ssvSpreadBps: d(150),
+  loanSpreadBps: d(200),
+  loanValuePct: d(80),
+  foreclosureAtPct: d(90),
+  revivalSpreadBps: d(200),
+  revivalWindowYears: d(5),
+  outstandingLoan: d(0),
 };
+
+/** The rate inputs, shown together on the card because they move as a set. */
+const RATE_PARAMS: (keyof PolicyParams)[] = [
+  "gSecYieldPct", "ssvSpreadBps", "loanSpreadBps", "loanValuePct",
+  "foreclosureAtPct", "outstandingLoan",
+];
+
+/**
+ * Reviving a lapsed policy applies to protection and savings plans alike, so
+ * these ride along with every shape. The reference yield is not repeated here:
+ * it is already in RATE_PARAMS, and a duplicated key renders the same field
+ * twice on the card.
+ */
+const REVIVAL_PARAMS: (keyof PolicyParams)[] = ["revivalSpreadBps", "revivalWindowYears"];
 
 /** Which parameters actually move the answer, per plan shape — so the card only
  *  asks for what matters and does not bury the agent in irrelevant fields. */
 export const RELEVANT_PARAMS: Record<string, (keyof PolicyParams)[]> = {
-  pure_term: [],
-  return_of_premium: ["gsvFactors", "surrenderAcquiresAfterYears"],
-  money_back: ["gsvFactors", "surrenderAcquiresAfterYears", "deathBenefitFloorPct"],
-  endowment: ["bonusPer1000", "gsvFactors", "ssvFactors", "surrenderAcquiresAfterYears", "deathBenefitFloorPct"],
+  // Term cover acquires no surrender value, so nothing here but reviving it.
+  pure_term: ["gSecYieldPct", ...REVIVAL_PARAMS],
+  return_of_premium: ["gsvFactors", "ssvFactors", "surrenderAcquiresAfterYears", ...RATE_PARAMS, ...REVIVAL_PARAMS],
+  money_back: ["gsvFactors", "ssvFactors", "surrenderAcquiresAfterYears", "deathBenefitFloorPct", ...RATE_PARAMS, ...REVIVAL_PARAMS],
+  endowment: ["bonusPer1000", "gsvFactors", "ssvFactors", "surrenderAcquiresAfterYears", "deathBenefitFloorPct", ...RATE_PARAMS, ...REVIVAL_PARAMS],
   unit_linked: [
     "grossReturnPct", "fundChargePct", "allocationCharges", "adminMonthly",
     "adminEscalationPct", "adminCapMonthly", "mortalityPer1000", "entryAge",
@@ -170,6 +222,14 @@ export const PARAM_LABELS: Partial<Record<keyof PolicyParams, string>> = {
   gsvFactors: "Guaranteed surrender value factors",
   ssvFactors: "Special surrender value factors",
   surrenderAcquiresAfterYears: "Surrender value acquired after (years)",
+  gSecYieldPct: "Reference 10-year G-Sec yield (% a year)",
+  ssvSpreadBps: "Special surrender value discount spread (bps over G-Sec)",
+  loanSpreadBps: "Policy loan spread (bps over G-Sec)",
+  loanValuePct: "Loan allowed against surrender value (%)",
+  foreclosureAtPct: "Policy forecloses when loan reaches (% of surrender value)",
+  revivalSpreadBps: "Revival interest spread (bps over G-Sec)",
+  revivalWindowYears: "Revival allowed within (years of first unpaid premium)",
+  outstandingLoan: "Loan already taken against this policy (₹)",
 };
 
 /**
@@ -200,4 +260,13 @@ export function bandPct(bands: YearBandPct[], year: number): number {
 /** How many of the parameters that matter here are still assumptions. */
 export function assumedCount(params: PolicyParams, shape: string): number {
   return (RELEVANT_PARAMS[shape] ?? []).filter((k) => params[k].source === "default").length;
+}
+
+/**
+ * Parameters that matter here and have no value at all, as against ones sitting
+ * on a standard default. An unset reference yield is not an assumption to be
+ * counted, it is a rate that cannot be quoted until someone supplies it.
+ */
+export function unsetParams(params: PolicyParams, shape: string): (keyof PolicyParams)[] {
+  return (RELEVANT_PARAMS[shape] ?? []).filter((k) => params[k].value === null);
 }

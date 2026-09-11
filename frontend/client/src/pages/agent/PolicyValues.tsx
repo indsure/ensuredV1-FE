@@ -63,8 +63,12 @@ export default function PolicyValues() {
     const surrenderable = rows.filter((r) => !r.deferredTo && r.action !== "none");
     return {
       liveValue: surrenderable.reduce((s, r) => s + r.valueToday, 0),
+      // The number an advisor can actually open a conversation with: what the
+      // book will raise for its customers without a single policy being ended.
+      borrowable: rows.reduce((s, r) => s + r.canBorrow, 0),
       tracked: rows.filter((r) => r.action !== "none").length,
       maturing: counts.maturing ?? 0,
+      reviving: (counts.lapsed ?? 0) + (counts.overdue ?? 0),
     };
   }, [rows, counts]);
 
@@ -91,33 +95,45 @@ export default function PolicyValues() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Surrender values</h1>
         <p className="mt-1 text-sm text-slate-500">
-          What every life policy in your book is worth if the customer stopped today, and what changes at
-          their next anniversary. Worked out from the policy documents, not estimated.
+          What every life policy in your book is worth if the customer stopped today, what it would lend
+          them instead, and what a lapsed one costs to bring back. Worked out from the policy documents by
+          arithmetic, not estimated.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-5">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">
               Surrenderable today
             </div>
             <div className="mt-1 text-2xl font-bold text-[#0D9488]">{short(totals.liveValue)}</div>
-            <div className="mt-1 text-xs text-slate-500">Across {totals.tracked} savings policies</div>
+            <div className="mt-1 text-sm text-slate-600">Across {totals.tracked} savings policies</div>
+          </CardContent>
+        </Card>
+        {/* The retention card. Surrendering is what a customer asks for; borrowing
+            is usually what they actually need, and it keeps the cover alive. */}
+        <Card className="border-[#0D9488]/30 bg-[#0D9488]/5 shadow-sm">
+          <CardContent className="p-5">
+            <div className="text-sm font-black uppercase tracking-[0.2em] text-[#0f766e]">
+              Can borrow instead
+            </div>
+            <div className="mt-1 text-2xl font-bold text-[#0f766e]">{short(totals.borrowable)}</div>
+            <div className="mt-1 text-sm text-slate-600">Raised without ending a single policy</div>
           </CardContent>
         </Card>
         <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-5">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Maturing</div>
+            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Maturing</div>
             <div className="mt-1 text-2xl font-bold text-slate-900">{totals.maturing}</div>
-            <div className="mt-1 text-xs text-slate-500">Money about to reach the customer</div>
+            <div className="mt-1 text-sm text-slate-600">Money about to reach the customer</div>
           </CardContent>
         </Card>
         <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-5">
-            <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Premiums overdue</div>
-            <div className="mt-1 text-2xl font-bold text-rose-700">{counts.overdue ?? 0}</div>
-            <div className="mt-1 text-xs text-slate-500">Values below do not hold until these are paid</div>
+            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Needs reviving</div>
+            <div className="mt-1 text-2xl font-bold text-rose-700">{totals.reviving}</div>
+            <div className="mt-1 text-sm text-slate-600">Lapsed, or a premium past its grace period</div>
           </CardContent>
         </Card>
       </div>
@@ -271,10 +287,13 @@ export default function PolicyValues() {
         </div>
       )}
 
-      <p className="text-xs text-slate-400">
+      <p className="text-sm text-slate-500">
         * Held in the discontinued fund — the amount shown is what is released when the lock-in ends, not
         what is payable now. Every value is worked out from the policy document each time this page loads, so
-        they move with the anniversary on their own.
+        they move with the anniversary on their own. What a policy will lend is its own loan percentage
+        applied to that day's surrender value; open a policy to see or correct it. Loan and revival interest
+        rates stay blank until the reference G-Sec yield is set on the policy, because a rate quoted from a
+        guess is one a customer would be told.
       </p>
     </div>
   );

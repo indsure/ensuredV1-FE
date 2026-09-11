@@ -18,7 +18,8 @@ import {
 } from "./policyValue";
 
 export type ValueAction =
-  | "overdue"       // premiums are not up to date — everything else is moot
+  | "lapsed"        // gone reduced paid-up — revivable, but only until a date
+  | "overdue"       // a premium is late but the policy is still on risk
   | "maturing"      // money is about to land — reinvestment conversation
   | "jumps"         // surrender value steps up materially at the next anniversary
   | "underwater"    // surrendering today returns less than has been paid in
@@ -56,6 +57,20 @@ export interface PolicyValueSummary {
   /** Annual return (XIRR where dates resolve) if exited today, and if held to the end. */
   irrToday: number | null;
   irrAtMaturity: number | null;
+  /**
+   * What the customer could raise against this policy without ending it. The
+   * question behind almost every surrender is "I need money", and this is the
+   * answer that keeps the cover, and the renewal, alive.
+   */
+  canBorrow: number;
+  /** Loan rate, where a reference yield has been set on the policy. */
+  loanRatePct: number | null;
+  /** Cost to bring a lapsed policy back, and the date after which it cannot be. */
+  revivalPayable: number | null;
+  revivalDeadline: string | null;
+  revivalExpired: boolean;
+  /** Share of the benefits still standing. Below 1 once the premiums stopped. */
+  paidUpFactor: number;
   action: ValueAction;
   headline: string;
 }
@@ -107,14 +122,28 @@ export function summarisePolicy(row: {
   const upliftPct = next && today.back > 0 ? (uplift / today.back) * 100 : 0;
 
   let action: ValueAction = "steady";
-  if (result.premiumStatus === "overdue" || result.premiumStatus === "paid_up") action = "overdue";
+  // A policy that has actually gone paid-up is a different job from one whose
+  // premium is a fortnight late: the first needs reviving before a deadline, the
+  // second needs a phone call before it becomes the first.
+  if (result.premiumStatus === "paid_up") action = "lapsed";
+  else if (result.premiumStatus === "overdue") action = "overdue";
   else if (result.shape === "pure_term") action = "none";
   else if (clamped >= result.term - 1) action = "maturing";
   else if (today.deferredTo) action = "locked";
-  else if (today.back < today.paid && clamped >= result.term / 2) action = "underwater";
+  // Payouts already banked are the customer's money too. Judging the surrender
+  // value on its own labels every money-back plan underwater the moment those
+  // payouts start, which is exactly when it is doing what it was sold to do.
+  else if (today.back + today.received < today.paid && clamped >= result.term / 2) action = "underwater";
   else if (upliftPct >= 15) action = "jumps";
 
   const nextAnniversary = anniversaryAfter(data?.start_date ?? null, clamped);
+
+  const rev = result.revival;
+  /* The borrowing line, appended wherever it is the more useful answer. Almost
+     every surrender starts as "I need money", and an advisor who can say what
+     the policy will lend has a second answer to give. */
+  const borrow =
+    result.loan.available > 0 ? ` Can borrow ${rupee(result.loan.available)} without ending it.` : "";
 
   const headline = (() => {
     switch (action) {
@@ -122,16 +151,27 @@ export function summarisePolicy(row: {
         return "No surrender value — term cover.";
       case "locked":
         return `Locked in. Nothing payable before ${today.deferredTo}.`;
+      case "lapsed":
+        if (rev?.expired) {
+          return `Lapsed and past the revival window that closed ${rev.deadline}. Benefits are down to ${Math.round(result.paidUpFactor * 100)}% for good.`;
+        }
+        return (
+          `Lapsed: benefits are down to ${Math.round(result.paidUpFactor * 100)}%. ` +
+          `Revive for ${rupee(rev?.payable ?? 0)}${rev?.interest === null ? " plus interest" : ""}` +
+          `${rev?.deadline ? ` by ${rev.deadline}` : ""}.`
+        );
       case "overdue":
-        return result.premiumStatusNote ?? "Premiums are not up to date.";
+        return rev && rev.arrears > 0
+          ? `${rupee(rev.arrears)} of premium is overdue. Pay it before the policy goes paid-up.`
+          : result.premiumStatusNote ?? "Premiums are not up to date.";
       case "underwater":
-        return `Still ${rupee(today.paid - today.back)} below the premiums paid, past halfway through the term.`;
+        return `Still ${rupee(today.paid - today.back - today.received)} below the premiums paid, past halfway through the term.` + borrow;
       case "jumps":
-        return `Goes up ${rupee(uplift)} on ${nextAnniversary ?? "the next anniversary"} — worth waiting.`;
+        return `Goes up ${rupee(uplift)} on ${nextAnniversary ?? "the next anniversary"} — worth waiting.` + borrow;
       case "maturing":
         return `Maturing: ${rupee(result.rows[result.term - 1].back)} due.`;
       default:
-        return `Worth ${rupee(today.back)} today.`;
+        return `Worth ${rupee(today.back)} today.` + borrow;
     }
   })();
 
@@ -160,21 +200,35 @@ export function summarisePolicy(row: {
     premiumStatusNote: result.premiumStatusNote,
     irrToday: today.xirr ?? today.irr,
     irrAtMaturity: result.xirrAtMaturity ?? result.irrAtMaturity,
+    canBorrow: result.loan.available,
+    loanRatePct: result.loan.ratePct,
+    revivalPayable: rev ? rev.payable : null,
+    revivalDeadline: rev ? rev.deadline : null,
+    revivalExpired: rev ? rev.expired : false,
+    paidUpFactor: result.paidUpFactor,
     action,
     headline,
   };
 }
 
 /** Order the agent should work the list in. */
-export const ACTION_ORDER: ValueAction[] = ["overdue", "maturing", "jumps", "underwater", "steady", "locked", "none"];
+export const ACTION_ORDER: ValueAction[] = ["lapsed", "overdue", "maturing", "jumps", "underwater", "steady", "locked", "none"];
 
 export const ACTION_META: Record<ValueAction, { label: string; tone: string; blurb: string }> = {
+  lapsed: {
+    label: "Lapsed",
+    tone: "border-rose-300 bg-rose-100 text-rose-900",
+    blurb:
+      "The premiums stopped, so the policy is reduced paid-up: the values shown are what is actually " +
+      "left, not what it would have been worth. It can be brought back to full benefit by paying the " +
+      "arrears, but only until the revival window closes.",
+  },
   overdue: {
     label: "Premiums overdue",
     tone: "border-rose-200 bg-rose-50 text-rose-800",
     blurb:
-      "The premium is past its grace period. Until it is paid these values do not hold, because they " +
-      "all assume the policy is fully paid up to date. Call before it lapses.",
+      "The premium is past its grace period but the policy has not gone paid-up yet, so the benefits " +
+      "below still stand. Call before it does.",
   },
   maturing: {
     label: "Maturing",

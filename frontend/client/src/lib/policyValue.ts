@@ -19,7 +19,7 @@
  */
 
 import {
-  bandPct, buildParams, type PolicyParams,
+  bandPct, buildParams, type PolicyParams, type YearBandPct,
 } from "./policyParams";
 
 export type PlanShape =
@@ -64,7 +64,54 @@ export interface ValueRow {
   irr: number | null;
   /** The same, discounted by actual dates. Preferred wherever it resolves. */
   xirr: number | null;
+  /**
+   * Most that could be borrowed against this year's surrender value instead of
+   * giving the policy up. Zero where nothing is payable yet, and on unit linked
+   * plans, which are not lent against.
+   */
+  maxLoan: number;
   note: string;
+}
+
+/**
+ * Borrowing against the policy rather than surrendering it.
+ *
+ * This is the option an advisor almost never has to hand. A customer who needs
+ * money is told what surrender pays; nobody works out that the same policy will
+ * lend them most of that and stay alive. Both numbers come off the same
+ * surrender value, so there is no reason to have one without the other.
+ */
+export interface LoanPosition {
+  /** Share of the surrender value that may be borrowed, as a percentage. */
+  sharePct: number;
+  /** Most that could be drawn today. */
+  available: number;
+  /** Interest rate, once a reference yield has been set. */
+  ratePct: number | null;
+  /** Why there is no rate, when there is none. */
+  rateNote: string | null;
+  /** Loan already drawn, including interest accrued on it. */
+  outstanding: number;
+  /** True once the loan has eaten enough of the value to force foreclosure. */
+  forecloses: boolean;
+}
+
+/** What it costs to bring a lapsed policy back, and by when. */
+export interface RevivalQuote {
+  /** Instalments missed since the first unpaid premium. */
+  missedInstalments: number;
+  /** The premium arrears themselves, which need no rate to work out. */
+  arrears: number;
+  /** Interest on those arrears, once a reference yield has been set. */
+  interest: number | null;
+  /** Arrears plus interest, or the arrears alone while the rate is unset. */
+  payable: number;
+  /** Last date the policy can still be revived. */
+  deadline: string | null;
+  /** True once that date has passed and the policy can no longer come back. */
+  expired: boolean;
+  ratePct: number | null;
+  rateNote: string | null;
 }
 
 export interface ValueSchedule {
@@ -94,6 +141,18 @@ export interface ValueSchedule {
   /** Policy year the actual fund value came from, when the statement gave one. */
   anchorYear: number | null;
   anchorValue: number | null;
+  /** Policy year as at the date this was worked out. */
+  currentYear: number | null;
+  /** Policy years actually paid for, where that is fewer than the schedule assumes. */
+  paidThrough: number | null;
+  /** Share of the premium paying term actually paid. 1 while premiums are current. */
+  paidUpFactor: number;
+  /** How the special surrender value was arrived at. */
+  ssvMethod: "present_value" | "factor_table";
+  /** Borrowing against the policy instead of surrendering it. */
+  loan: LoanPosition;
+  /** What reviving costs, when the policy has lapsed. Null while it is in force. */
+  revival: RevivalQuote | null;
 }
 
 /**
@@ -142,6 +201,23 @@ export function frequencyMultiplier(raw: unknown): number {
   return 1;
 }
 
+/**
+ * A rate quoted as a reference yield plus a fixed spread, rounded up to the
+ * next 25 basis points.
+ *
+ * This is how the wordings define the policy loan rate, the interest charged on
+ * revival and the discount rate behind the special surrender value. None of
+ * them is a number the insurer picks: each is a formula on a published yield,
+ * which is exactly why they can be computed here rather than read off a table.
+ *
+ * Returns null when no reference yield has been set, so every caller shows the
+ * slot as pending instead of quoting a rate built on a guess.
+ */
+export function derivedRate(gSecYieldPct: number | null, spreadBps: number): number | null {
+  if (gSecYieldPct === null || !Number.isFinite(gSecYieldPct)) return null;
+  return Math.ceil((gSecYieldPct + spreadBps / 100) / 0.25) * 0.25;
+}
+
 export function resolveShape(
   insuranceType: string,
   data: Record<string, any> | null
@@ -168,18 +244,36 @@ export function resolveShape(
 }
 
 /**
- * Guaranteed surrender value share. The flat bands come from the parameters;
- * the stretch between year 8 and the last two years is interpolated, which is
- * how the standard table is written.
+ * The share of the base a surrender in policy year `year` pays.
+ *
+ * Up to year 7 the factor is read straight off the bands in the table. After
+ * that the standard table interpolates, climbing from the year-7 level to the
+ * top rate. The wording writes it as "50% + 40% x (year - 7) / (term - 8)",
+ * which reaches the top rate in policy year term-1, not term-2.
+ *
+ * Ending the ramp at term-2 paid the top rate a year early and overstated every
+ * value from year 8 on. Against the benefit illustration for HDFC Life Click 2
+ * Achieve policy 27290434 (15-year term) it returned 90% in year 13 where the
+ * insurer's own table pays 84%: on 14,00,000 of premiums that is 84,000 of
+ * surrender value the customer would never have received.
+ *
+ * The interpolated factor is rounded to the nearest whole percent, which is how
+ * these tables are filed and published and what reproduces that illustration
+ * line for line. Without the rounding, year 9 lands about 6,000 out.
  */
-export function gsvShare(year: number, term: number, params: PolicyParams): number {
-  const bands = params.gsvFactors.value;
+function surrenderShare(year: number, term: number, bands: YearBandPct[]): number {
   if (year <= 7) return bandPct(bands, year) / 100;
   const top = bandPct(bands, 99) / 100;
   const mid = bandPct(bands, 7) / 100;
-  const last = Math.max(term - 2, 8);
-  if (year >= last) return top;
-  return mid + (top - mid) * ((year - 7) / (last - 7));
+  // A short term leaves no room to interpolate; the floor keeps the span positive.
+  const rampEnd = Math.max(term - 1, 8);
+  if (year >= rampEnd) return top;
+  return Math.round((mid + (top - mid) * ((year - 7) / (rampEnd - 7))) * 100) / 100;
+}
+
+/** Guaranteed surrender value share, as a fraction of the premiums paid. */
+export function gsvShare(year: number, term: number, params: PolicyParams): number {
+  return surrenderShare(year, term, params.gsvFactors.value);
 }
 
 /**
@@ -191,13 +285,7 @@ export function gsvShare(year: number, term: number, params: PolicyParams): numb
  * curve hardcoded in the engine, which meant the document could not correct it.
  */
 export function ssvShare(year: number, term: number, params: PolicyParams): number {
-  const bands = params.ssvFactors.value;
-  if (year <= 7) return bandPct(bands, year) / 100;
-  const top = bandPct(bands, 99) / 100;
-  const mid = bandPct(bands, 7) / 100;
-  const last = Math.max(term - 2, 8);
-  if (year >= last) return top;
-  return mid + (top - mid) * ((year - 7) / (last - 7));
+  return surrenderShare(year, term, params.ssvFactors.value);
 }
 
 /**
@@ -211,6 +299,25 @@ export function isoDate(d: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
   return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
 }
+/**
+ * Policy years completed between two dates, counted by anniversary.
+ *
+ * Not elapsed days over 365.2425: three calendar years from 16 March 2024 is
+ * 1,095 days, which that division calls 2.998 and a floor then calls 2. Every
+ * boundary in this file is an anniversary, so count anniversaries.
+ *
+ * Mirrors policyYearOn in ./policyBook, which returns this plus one. The two
+ * have to agree or the book and the detail card show different policy years for
+ * the same policy on the same day.
+ */
+function completedYears(start: Date, at: Date): number {
+  let years = at.getFullYear() - start.getFullYear();
+  const anniversary = new Date(start);
+  anniversary.setFullYear(start.getFullYear() + years);
+  if (anniversary > at) years -= 1;
+  return Math.max(years, 0);
+}
+
 function addYears(iso: string | null, years: number): string | null {
   const dt = policyDate(iso);
   if (!dt) return null;
@@ -292,16 +399,24 @@ function addMonths(d: Date, months: number): Date {
  * actually reaches the customer (which for a locked-in policy is not the
  * anniversary but the date the lock-in lifts).
  */
-/** Survival payouts falling inside a window, as dated cashflows. */
+/**
+ * Survival payouts falling inside a window, as dated cashflows.
+ *
+ * `reduce` scales the payouts falling after a date. A policy that stops being
+ * paid for goes reduced paid-up, and the payouts still to come shrink to the
+ * share of the premium paying term that was actually paid. The ones already
+ * banked were paid in full and stay that way.
+ */
 function payoutFlows(
-  amount: number, perYear: number, from: Date | null, to: Date | null, until: Date
+  amount: number, perYear: number, from: Date | null, to: Date | null, until: Date,
+  reduce?: { after: Date; factor: number }
 ): { date: Date; amount: number }[] {
   if (!amount || !from) return [];
   const out: { date: Date; amount: number }[] = [];
   const stepMonths = Math.max(Math.round(12 / perYear), 1);
   const last = to && to < until ? to : until;
   for (let i = 0, d = new Date(from); d <= last && i < 1200; i++) {
-    out.push({ date: new Date(d), amount });
+    out.push({ date: new Date(d), amount: reduce && d > reduce.after ? amount * reduce.factor : amount });
     d = addMonths(from, stepMonths * (i + 1));
   }
   return out;
@@ -430,9 +545,46 @@ export function computePolicyValue(
       premiumStatus = overdueDays > 365 ? "paid_up" : "overdue";
       premiumStatusNote =
         `Premium due on ${d.next_premium_date} is ${overdueDays} days overdue. ` +
-        "These figures assume every premium was paid, so they are too high until the policy is revived.";
+        "The benefits below are reduced to what has actually been paid for, and go back up on revival.";
     }
   }
+
+  const startDt = policyDate(start);
+
+  /**
+   * Policy years actually paid for.
+   *
+   * Premiums stop where the customer stopped, not where the schedule says they
+   * should have: a policy in arrears has been paid up to the anniversary before
+   * its first unpaid due date. Null while the policy is current, which means
+   * "assume the schedule". Everything downstream reads this instead of assuming
+   * the book stayed up to date, which is how a lapsed policy used to be shown
+   * at its full in-force value with a line of text underneath apologising.
+   */
+  let paidThrough: number | null = null;
+  // Only once the policy has actually gone paid-up. A premium a few weeks late
+  // is still on risk and still revivable at full benefit, so reducing it there
+  // would understate the cover at the exact moment the customer might claim.
+  if (nextDue && startDt && premiumStatus === "paid_up") {
+    paidThrough = Math.min(completedYears(startDt, nextDue), ppt);
+  }
+
+  /**
+   * Reduced paid-up proportion: the share of the premium paying term bought and
+   * paid for. Once premiums stop the benefits do not stay where they were, they
+   * reduce to this share. Showing a lapsed policy's full sum assured is the most
+   * misleading thing this screen could do, because it is the number the customer
+   * would be told they had lost.
+   */
+  const paidUpFactor = paidThrough === null ? 1 : Math.min(paidThrough / ppt, 1);
+  /** Payouts still to come shrink to the paid-up share; banked ones do not. */
+  const lapseReduce =
+    paidUpFactor < 1 && nextDue ? { after: nextDue, factor: paidUpFactor } : undefined;
+
+  /** Policy year as at the date this is being worked out. */
+  const currentYear = startDt
+    ? Math.min(Math.max(completedYears(startDt, asOf) + 1, 1), term!)
+    : null;
 
   // Solving the return is the expensive part; only do the years asked for.
   const wantReturn = (y: number) =>
@@ -450,7 +602,7 @@ export function computePolicyValue(
     const begin = policyDate(start);
     if (begin && payoutAmount > 0) {
       const exitOn = policyDate(payoutDate) ?? addMonths(begin, exitYear * 12);
-      flows.push(...payoutFlows(payoutAmount, payoutsPerYear, payoutStart, payoutEnd, exitOn));
+      flows.push(...payoutFlows(payoutAmount, payoutsPerYear, payoutStart, payoutEnd, exitOn, lapseReduce));
     }
     flows.sort((a, b) => a.date.getTime() - b.date.getTime());
     return xirr(flows);
@@ -471,9 +623,54 @@ export function computePolicyValue(
     anchorValue = actualFund;
   }
 
-  // Years that must complete before any surrender value exists. Two under the
-  // old convention, one under the 2024 regulations — a parameter, not a literal.
-  const acquired = (y: number) => y > params.surrenderAcquiresAfterYears.value - 1;
+  /**
+   * Years that must complete before any surrender value exists: two under the
+   * old convention, one under the IRDAI (Insurance Products) Regulations 2024,
+   * which bind products offered from 1 October 2024.
+   *
+   * Resolved from the policy's own start date rather than one setting applied to
+   * the whole book, because a real book spans the change and both sides of it
+   * have to be right. A value read off the document or typed in by the agent
+   * always wins over this.
+   */
+  const acquiresAfter =
+    params.surrenderAcquiresAfterYears.source === "default" && startDt
+      ? (startDt >= new Date(2024, 9, 1) ? 1 : 2)
+      : params.surrenderAcquiresAfterYears.value;
+  const acquired = (y: number) => y >= acquiresAfter;
+
+  const loanShare = params.loanValuePct.value / 100;
+  const ssvRate = derivedRate(params.gSecYieldPct.value, params.ssvSpreadBps.value);
+  const ssvMethod: "present_value" | "factor_table" =
+    ssvRate === null ? "factor_table" : "present_value";
+
+  /**
+   * Special surrender value: the present value of what the policy would still
+   * pay if it were made paid-up today, discounted at the reference yield plus
+   * the filed spread.
+   *
+   * This is what the regulations actually define, and what the insurer does. The
+   * banded factor table is only a shape fitted to it, and says so. Returns null
+   * until a reference yield is set, so the caller falls back to the table rather
+   * than discounting at a rate nobody chose.
+   */
+  const ssvPresentValue = (
+    fromYear: number, maturityAtEnd: number, payoutScale: number
+  ): number | null => {
+    if (ssvRate === null) return null;
+    const per = 1 + ssvRate / 100;
+    let pv = maturityAtEnd > 0 ? maturityAtEnd / Math.pow(per, Math.max(term! - fromYear, 0)) : 0;
+    if (startDt && payoutAmount > 0 && payoutScale > 0) {
+      const from = addMonths(startDt, fromYear * 12);
+      const until = addMonths(startDt, term! * 12);
+      for (const f of payoutFlows(payoutAmount, payoutsPerYear, payoutStart, payoutEnd, until, lapseReduce)) {
+        if (f.date <= from) continue;
+        const t = (f.date.getTime() - from.getTime()) / (365.2425 * 86400000);
+        pv += (f.amount * payoutScale) / Math.pow(per, t);
+      }
+    }
+    return pv;
+  };
 
   const rows: ValueRow[] = [];
 
@@ -535,6 +732,8 @@ export function computePolicyValue(
         back,
         cover: Math.max(sumAssured, fv, floor * (annualPremium * Math.min(y, ppt))),
         deferredTo: inLock ? lockInEnds : null,
+        // Unit linked plans are not lent against, so there is no loan line here.
+        maxLoan: 0,
         actual: anchorYear !== null && y >= anchorYear,
         irr: wantReturn(y) ? irr(exitFlows(annualPremium, ppt, y, back)) : null,
         xirr: wantReturn(y) ? datedIrr(y, back, inLock ? lockInEnds : null) : null,
@@ -572,7 +771,13 @@ export function computePolicyValue(
     }
   } else {
     for (let y = 1; y <= term!; y++) {
-      const paid = annualPremium * Math.min(y, ppt);
+      // Premiums stop where the customer stopped, not where the schedule says.
+      const paidYears = Math.min(y, ppt, paidThrough ?? ppt);
+      const paid = annualPremium * paidYears;
+      // Share of the premium paying term paid for by now. Every benefit on a
+      // policy that stopped early reduces to this, and so does the base the
+      // special surrender value is a present value of.
+      const puShare = Math.min(paidYears / ppt, 1);
       let receivedSoFar = 0;
       let value = 0;
       let back = 0;
@@ -580,17 +785,31 @@ export function computePolicyValue(
       let note = "";
 
       if (shape === "pure_term") {
-        note = "Term cover pays nothing on surrender or on survival.";
+        if (paidUpFactor < 1) {
+          // Term cover acquires no paid-up value, so stopping the premiums does
+          // not reduce the cover, it ends it. Saying so is the whole point.
+          cover = 0;
+          note = "Cover has stopped. Term insurance builds no paid-up value, so nothing is payable until it is revived.";
+        } else {
+          note = "Term cover pays nothing on surrender or on survival.";
+        }
       }
 
       if (shape === "return_of_premium") {
         value = paid;
-        back = y === term ? paid : acquired(y) ? gsvShare(y, term!, params) * paid : 0;
+        const gsv = acquired(y) ? gsvShare(y, term!, params) * paid : 0;
+        // The benefit still to come is the refund of the premiums actually paid,
+        // so its present value is the special surrender value on this shape.
+        const ssv = acquired(y) ? ssvPresentValue(y, paid, 0) ?? 0 : 0;
+        back = y === term ? paid : Math.max(gsv, ssv);
+        cover = Math.max(sumAssured * paidUpFactor, floor * paid);
         note =
           !acquired(y)
-            ? `No surrender value until ${params.surrenderAcquiresAfterYears.value} policy years are complete.`
+            ? `No surrender value until ${acquiresAfter} policy ${acquiresAfter === 1 ? "year is" : "years are"} complete.`
             : y === term
             ? "Every premium paid is returned at maturity."
+            : ssv > gsv
+            ? "Present value of the premium refund still to come, which beats the guaranteed table here."
             : `${Math.round(gsvShare(y, term!, params) * 100)}% of the premiums paid so far.`;
       }
 
@@ -598,42 +817,59 @@ export function computePolicyValue(
         // Survival payouts already received by the end of this policy year.
         const begin = policyDate(start);
         const received = begin
-          ? payoutFlows(payoutAmount, payoutsPerYear, payoutStart, payoutEnd, addMonths(begin, y * 12))
+          ? payoutFlows(payoutAmount, payoutsPerYear, payoutStart, payoutEnd, addMonths(begin, y * 12), lapseReduce)
               .reduce((sum, p) => sum + p.amount, 0)
           : payoutPerYear * y;
         // The maturity amount is whatever the schedule states. We do not derive
         // it from the sum assured, because they are different numbers.
-        const matAmount = statedMaturity ?? sumAssured;
+        const matAmount = (statedMaturity ?? sumAssured) * paidUpFactor;
         // Surrender pays the guaranteed value on premiums, less what has already
-        // been handed over as survival benefit — the standard treatment.
+        // been handed over as survival benefit — the standard treatment, and what
+        // the insurer's own formula does. Paying the gross figure counted every
+        // payout twice: once when it reached the customer, again on surrender.
         const gsv = acquired(y) ? gsvShare(y, term!, params) * paid : 0;
+        // The special surrender value discounts what is still to come: the
+        // payouts left plus the maturity amount, both at the paid-up share.
+        const ssv = acquired(y) ? ssvPresentValue(y, matAmount, puShare) ?? 0 : 0;
         value = received + (y === term ? matAmount : gsv);
-        back = y === term ? matAmount : Math.max(gsv - 0, 0);
+        back = y === term ? matAmount : Math.max(gsv - received, ssv);
         receivedSoFar = received;
-        cover = Math.max(sumAssured, floor * paid);
+        cover = Math.max(sumAssured * paidUpFactor, floor * paid);
         note =
           y === term
             ? `Maturity amount of ${Math.round(matAmount).toLocaleString("en-IN")} as stated on the schedule.`
             : !acquired(y)
-            ? `No surrender value until ${params.surrenderAcquiresAfterYears.value} policy years are complete.`
+            ? `No surrender value until ${acquiresAfter} policy ${acquiresAfter === 1 ? "year is" : "years are"} complete.`
+            : ssv > gsv - received
+            ? "Present value of the payouts and maturity still to come, which beats the guaranteed table here."
             : `Plus ${Math.round(received).toLocaleString("en-IN")} of payouts already received by then.`;
       }
 
       if (shape === "endowment") {
-        const bonus = params.bonusPer1000.value * (sumAssured / 1000) * y;
-        const paidUp = sumAssured * (Math.min(y, ppt) / ppt);
-        const ssv = (paidUp + bonus) * ssvShare(y, term!, params);
+        // Bonus accrues on the cover actually in force, so it stops where the
+        // premiums did rather than running on to the full term.
+        const bonus = params.bonusPer1000.value * (sumAssured / 1000) * Math.min(y, paidThrough ?? y);
+        const paidUp = sumAssured * puShare;
+        // Present value of the paid-up benefit where a rate is set, the banded
+        // factor table where it is not.
+        const ssv = ssvPresentValue(y, paidUp + bonus, 0) ?? (paidUp + bonus) * ssvShare(y, term!, params);
+        // Gated like every other shape. This was the one branch that paid a
+        // guaranteed surrender value before one had been acquired at all, which
+        // a filed table with a year-one factor would have exposed.
+        const gsv = acquired(y) ? gsvShare(y, term!, params) * paid : 0;
         value = paidUp + bonus;
         back = y === term
-          ? (statedMaturity ?? sumAssured + bonus)
-          : Math.max(gsvShare(y, term!, params) * paid, acquired(y) ? ssv : 0);
-        cover = Math.max(sumAssured, floor * paid) + bonus;
+          ? ((statedMaturity ?? sumAssured + bonus) * paidUpFactor)
+          : Math.max(gsv, acquired(y) ? ssv : 0);
+        cover = Math.max(sumAssured * paidUpFactor, floor * paid) + bonus;
         if (params.bonusPer1000.value > 0) guaranteed = false;
         note =
           !acquired(y)
-            ? `No surrender value until ${params.surrenderAcquiresAfterYears.value} policy years are complete.`
+            ? `No surrender value until ${acquiresAfter} policy ${acquiresAfter === 1 ? "year is" : "years are"} complete.`
             : y === term
             ? "Sum assured plus the bonus accrued."
+            : ssv > gsv
+            ? "Paid-up value with bonus, which beats the guaranteed table here."
             : "Higher of the guaranteed value and the paid-up value with bonus.";
       }
 
@@ -641,6 +877,7 @@ export function computePolicyValue(
         year: y,
         age: entryAge === null ? null : entryAge + y,
         paid, value, penalty: 0, back, cover, received: receivedSoFar, deferredTo: null, note,
+        maxLoan: shape === "pure_term" ? 0 : Math.max(back, 0) * loanShare,
         actual: false,
         irr: wantReturn(y) ? irr(exitFlows(annualPremium, ppt, y, back)) : null,
         xirr: wantReturn(y) ? datedIrr(y, back, null) : null,
@@ -666,7 +903,10 @@ export function computePolicyValue(
         `Maturity amount is ${Math.round(statedMaturity ?? sumAssured).toLocaleString("en-IN")}, taken from the schedule. ` +
           "It is a different figure from the death cover and is never derived from it."
       );
-      steps.push("Surrender before the end pays the guaranteed surrender value on the premiums paid.");
+      steps.push(
+        "Surrender before the end pays the guaranteed surrender value on the premiums paid, less the " +
+          "payouts already handed over. Those stay with the customer either way."
+      );
     }
     if (shape === "endowment") {
       steps.push(`Accrued bonus = ₹${params.bonusPer1000.value} per ₹1,000 of sum assured, per completed year.`);
@@ -679,6 +919,88 @@ export function computePolicyValue(
     steps.push(
       `Cover on death = the highest of the sum assured, the value built up, and ${params.deathBenefitFloorPct.value}% of the premiums paid.`
     );
+  }
+
+  if (paidUpFactor < 1) {
+    steps.push(
+      `Premiums stopped after ${paidThrough} of the ${ppt} years payable, so the policy is reduced paid-up: ` +
+        `every benefit above is ${Math.round(paidUpFactor * 100)}% of what it would have been. Reviving it puts them back.`
+    );
+  }
+  if (shape !== "pure_term" && shape !== "unit_linked") {
+    steps.push(
+      `Surrender is not the only way to get at the money: up to ${params.loanValuePct.value}% of the ` +
+        "surrender value can be borrowed against the policy, which keeps the cover alive."
+    );
+  }
+
+  /* Borrowing against the policy rather than giving it up. Both numbers come off
+     the same surrender value, so there is no reason to show one without the other. */
+  const currentRow = currentYear ? rows[Math.min(currentYear, term!) - 1] ?? null : null;
+  const loanRate = derivedRate(params.gSecYieldPct.value, params.loanSpreadBps.value);
+  const outstanding = params.outstandingLoan.value;
+  const loan: LoanPosition = {
+    sharePct: params.loanValuePct.value,
+    available: Math.max((currentRow?.maxLoan ?? 0) - outstanding, 0),
+    ratePct: shape === "pure_term" || shape === "unit_linked" ? null : loanRate,
+    rateNote:
+      shape === "pure_term"
+        ? "Term cover has no surrender value, so there is nothing to lend against."
+        : shape === "unit_linked"
+        ? "Unit linked plans are not lent against."
+        : loanRate === null
+        ? "Set the reference G-Sec yield on this policy to work out the loan rate."
+        : null,
+    outstanding,
+    forecloses:
+      outstanding > 0 && currentRow
+        ? outstanding > (params.foreclosureAtPct.value / 100) * currentRow.back
+        : false,
+  };
+
+  /* What it costs to bring a lapsed policy back. The arrears need no rate at all,
+     so they are quoted even while the interest is pending, and the deadline is
+     the number that actually decides whether the advisor picks up the phone. */
+  let revival: RevivalQuote | null = null;
+  if ((premiumStatus === "overdue" || premiumStatus === "paid_up") && nextDue) {
+    const monthsApart = 12 / perYear;
+    const pptEndIso = addYears(start, ppt);
+    const pptEnd = pptEndIso ? policyDate(pptEndIso) : null;
+    const missed: Date[] = [];
+    for (let i = 0; i < 600; i++) {
+      const due = addMonths(nextDue, monthsApart * i);
+      if (due > asOf) break;
+      // Nothing is owed for a premium that was never payable in the first place.
+      if (pptEnd && due >= pptEnd) break;
+      missed.push(due);
+    }
+    const arrears = missed.length * instalment;
+    const revivalRate = derivedRate(params.gSecYieldPct.value, params.revivalSpreadBps.value);
+    const interest =
+      revivalRate === null
+        ? null
+        : missed.reduce((sum, due) => {
+            const yrs = (asOf.getTime() - due.getTime()) / (365.2425 * 86400000);
+            return sum + instalment * (Math.pow(1 + revivalRate / 100, yrs) - 1);
+          }, 0);
+    const windowEnd = addYears(isoDate(nextDue), params.revivalWindowYears.value);
+    const policyEnd = addYears(start, term!);
+    const deadline =
+      windowEnd && policyEnd ? (windowEnd < policyEnd ? windowEnd : policyEnd) : windowEnd ?? policyEnd;
+    const deadlineDate = deadline ? policyDate(deadline) : null;
+    revival = {
+      missedInstalments: missed.length,
+      arrears,
+      interest,
+      payable: arrears + (interest ?? 0),
+      deadline,
+      expired: deadlineDate ? asOf > deadlineDate : false,
+      ratePct: revivalRate,
+      rateNote:
+        revivalRate === null
+          ? "Set the reference G-Sec yield on this policy to work out the interest on the arrears."
+          : null,
+    };
   }
 
   const maturity = rows[rows.length - 1]?.back ?? 0;
@@ -695,6 +1017,7 @@ export function computePolicyValue(
     term: term!, ppt, entryAge, lockInYears, lockInEnds, guaranteed, steps,
     illustratedMaturity, reconciliation,
     premiumStatus, premiumStatusNote, anchorYear, anchorValue,
+    currentYear, paidThrough, paidUpFactor, ssvMethod, loan, revival,
   };
 }
 
