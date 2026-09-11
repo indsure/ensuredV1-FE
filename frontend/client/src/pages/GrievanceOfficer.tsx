@@ -6,7 +6,7 @@
 // 1. GRIEVANCE_OFFICER_NAME — full name of your designated Grievance Officer
 // 2. GRIEVANCE_OFFICER_DESIGNATION — their job title
 // 3. REGISTERED_ADDRESS — IndSure's registered business address
-// 4. GRIEVANCE_EMAIL — dedicated email (e.g. grievance@ensured.in) — create this mailbox
+// 4. GRIEVANCE_EMAIL — dedicated email (e.g. grievance@indsure.in) — create this mailbox
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";

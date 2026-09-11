@@ -173,7 +173,7 @@ Email: nikhil@indsure.in
 Address: Nashik, Maharashtra, India
 Response time: Within 7 working days of receipt of grievance
 
-You may also submit a data rights request or grievance through our Grievance page at ensured.in/grievance.
+You may also submit a data rights request or grievance through our Grievance page at indsure.in/grievance.
 
 If you are not satisfied with our response, you may escalate your complaint to the Data Protection Board of India once the Board is constituted and operational under the DPDP Act 2023.`,
   },

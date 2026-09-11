@@ -1425,8 +1425,16 @@ export async function registerRoutes(
         [name.trim(), email.trim(), phone || null, requestType, details.trim(), submittedAt ? new Date(submittedAt) : new Date()]
       );
 
+      /* The fallback was grievance@ensured.in, a domain the company no longer
+         owns, and GRIEVANCE_OFFICER_EMAIL is not set in production. Every
+         grievance raised on the live site was therefore addressed to a domain
+         we do not control. The grievance route is a statutory one under the
+         DPDP Act, so losing those is not a missed email, it is a missed legal
+         obligation. The fallback is now a domain we own; the env var should
+         still be set explicitly to a mailbox a person actually reads, because a
+         fallback nobody monitors fails just as quietly. */
       const grievanceOfficerEmail =
-        process.env.GRIEVANCE_OFFICER_EMAIL ?? "grievance@ensured.in";
+        process.env.GRIEVANCE_OFFICER_EMAIL ?? "grievance@indsure.in";
 
       // Best-effort acknowledgement email: if SMTP env vars are not set, we store the request and respond.
       const smtpHost = process.env.GRIEVANCE_SMTP_HOST;
@@ -2547,6 +2555,26 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         await dropContradictingOutcomeDocs(claim.id, next as "settled" | "rejected");
       }
 
+      /* Reopening clears the purge state and the retention clock.
+
+         Closing sets documents_purged_at, and the upload route refuses every
+         non-outcome document while that column is set. Reopening used to leave
+         it set, so a reopened claim could never take another paper again: the
+         advisor could log the insurer's new query but not attach a single thing
+         answering it. Reopening is exactly the moment an advisor is arguing a
+         rejection and needs to attach evidence, so that made the reopen feature
+         decorative.
+
+         The clock is cleared with it, not merely the flag. retention_started_at
+         is what the upload route tests to decide whether to start the 30 days,
+         and leaving the old timestamp would hand a document uploaded today a
+         purge date set by a claim that closed weeks ago, possibly already past.
+         Clearing both means the new documents get a fresh, honest 30 days from
+         the first one that lands, which is the promise the screen makes.
+
+         extension_used is deliberately NOT reset: a claim that has already had
+         its one extension does not earn another by being closed and reopened,
+         or the 60-day ceiling could be walked past indefinitely. */
       const upd = await pool.query(
         `UPDATE claims
             SET status = $1,
@@ -2555,6 +2583,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 closed_at = CASE WHEN $3 THEN now() ELSE NULL END,
                 proof_consent_at = CASE WHEN $4 THEN COALESCE(proof_consent_at, now())
                                         ELSE proof_consent_at END,
+                documents_purged_at  = CASE WHEN $7 THEN NULL ELSE documents_purged_at END,
+                retention_started_at = CASE WHEN $7 THEN NULL ELSE retention_started_at END,
+                purge_at             = CASE WHEN $7 THEN NULL ELSE purge_at END,
                 updated_at = now()
           WHERE id = $5 AND agent_id = $6
           RETURNING *`,
@@ -2564,7 +2595,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (reopening) {
         await logClaimEvent(
           claim.id, agentId, "reopened",
-          `Reopened from ${claim.status}. Working documents were already deleted and cannot be recovered.`
+          `Reopened from ${claim.status}. The working documents deleted on closing cannot be recovered, but new ones can be added and start a fresh retention period.`
         );
       } else {
         await logClaimEvent(claim.id, agentId, next, note);
