@@ -1,6 +1,24 @@
 /**
  * MASTER HEALTH AUDIT PROMPT
  *
+ * 1.4.0 - identity gains insurer_name and previous_insurer.
+ *
+ *   - Who issued the policy was decided by a regex pre-pass over the whole
+ *     document (utils/policyWordingsFetcher), which cannot tell an issuer from a
+ *     previous insurer. A ported ManipalCigna policy stored as Care Health
+ *     because Care appears on page 7 in the cumulative-bonus table; a Future
+ *     Generali policy stored as Go Digit because the key `digit` matched inside
+ *     "digitally signed". The model reads the document in context and can tell
+ *     a welcome letter from a bonus table, so it is now asked directly.
+ *   - The pre-pass still runs, because the wordings fetch needs an insurer
+ *     BEFORE the model call. It is now the fallback, not the answer.
+ *   - previous_insurer is kept rather than discarded: porting carries
+ *     waiting-period continuity, and knowing a customer has already ported once
+ *     is worth having.
+ *
+ * Output shape changed, so split any quality comparison on prompt_version as at
+ * 1.2.0 -> 1.3.0.
+ *
  * 1.3.0 — Net Effective Cover is now SINGLE-EVENT money, and the schema gained the
  * fields that decision depends on. Founder call, 2026-09-08: "effective cover, that
  * it can pay in 1 event."
@@ -42,7 +60,7 @@
  * Because scores from 1.2.0 are NOT directly comparable with 1.1.0, every job
  * row stamps prompt_version — split any quality comparison on that column.
  */
-export const PROMPT_VERSION = "1.3.0";
+export const PROMPT_VERSION = "1.4.0";
 
 export const MASTER_AUDIT_PROMPT = `
 🔐 SYSTEM PROMPT — IndSure Forensic Policy Intelligence Engine
@@ -119,6 +137,22 @@ a live one — apply the reduced multiplier defined in STEP 4.
 
 **Cataract, joint replacement and cardiac sub-limits** are scored at full weight from
 scoring age 50 upward, and at full weight at any age if a related health flag exists.
+
+---
+
+### WHO ISSUED THIS POLICY (MANDATORY)
+
+**insurer_name** is the company that ISSUED this policy: the name on the schedule
+header, the welcome letter, or the signature block. Give its full legal name.
+
+**previous_insurer** is filled ONLY when this policy was ported or migrated from
+another company, and only with that company's name. A ported policy names both,
+and the previous one appears deep in the document, in a portability declaration
+or a cumulative-bonus carry-forward table, never in the header.
+
+If only one insurer is named anywhere, that is insurer_name and previous_insurer
+is null. Never put the same company in both. Never guess an insurer from a TPA,
+a network hospital list, or a bank or distributor name on the document.
 
 ---
 
@@ -533,6 +567,8 @@ Output this exact structure:
     "city": "string | null",
     "assumed_zone": "A | B | C | D",
     "health_flags": ["string"],
+    "insurer_name": "string | null",
+    "previous_insurer": "string | null",
     "confidence": "high | medium | low"
   },
   "policy_timeline": {

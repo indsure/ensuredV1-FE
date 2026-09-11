@@ -217,9 +217,14 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
   // This document is digitally signed by ...") was filed as Go Digit. The name
   // Go Digit appears nowhere in it.
   //
-  // Now: word-boundary matches only, and the LONGEST match wins rather than the
-  // first, so a specific name beats an incidental one. Ties break on whichever
-  // appears earliest, since the issuer is named in the header.
+  // Now: word-boundary matches only, and the EARLIEST match wins. A policy names
+  // its issuer in the header or the welcome letter; any other insurer it names
+  // is a previous one, and those sit deep in a portability or cumulative-bonus
+  // table. A real ported policy in the test set puts ManipalCigna at character
+  // 213 on page 1 and Care Health at character 11,258 on page 7, so position
+  // separates them by eleven thousand characters where specificity separated
+  // them by one. Length is kept only to break ties at the same offset, where
+  // the longer name is the more complete reading of the same text.
   let insurer: string | null = null;
   {
     const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -232,7 +237,7 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
         if (needle.length < 6) continue;
         const at = textLower.search(new RegExp(`\\b${escape(needle.toLowerCase())}\\b`));
         if (at === -1) continue;
-        if (!best || needle.length > best.len || (needle.length === best.len && at < best.at)) {
+        if (!best || at < best.at || (at === best.at && needle.length > best.len)) {
           best = { len: needle.length, at, val: String(val) };
         }
       }

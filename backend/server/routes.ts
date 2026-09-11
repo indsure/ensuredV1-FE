@@ -4035,7 +4035,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               // clients.score is integer. The engine buckets to 5-point steps, so this
               // round is a no-op; it stays as a guard for any unbucketed path.
               const score = rawScore == null ? null : Math.round(Number(rawScore));
-              const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
+              // The model's reading first. `metadata.insurer` is a regex pre-pass over
+              // the whole document, needed BEFORE the model runs so the official
+              // wordings can be fetched, but it cannot tell an issuer from a previous
+              // insurer: a ported ManipalCigna policy was stored as Care Health
+              // because Care appeared on page 7. The model reads in context.
+              const insurer = reportData?.identity?.insurer_name || result.metadata?.insurer || null;
               // Only a name the pipeline actually found in the policy document. When it
             // could not read one this is null, and the COALESCE below leaves any
             // existing name (including one an advisor corrected by hand) alone.
@@ -4949,7 +4954,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               const reportData = result.result;
               const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
               const score = rawScore == null ? null : Math.round(Number(rawScore));
-              const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
+              // The model's reading first. `metadata.insurer` is a regex pre-pass over
+              // the whole document, needed BEFORE the model runs so the official
+              // wordings can be fetched, but it cannot tell an issuer from a previous
+              // insurer: a ported ManipalCigna policy was stored as Care Health
+              // because Care appeared on page 7. The model reads in context.
+              const insurer = reportData?.identity?.insurer_name || result.metadata?.insurer || null;
               // Only a name the pipeline actually found in the policy document. When it
             // could not read one this is null, and the COALESCE below leaves any
             // existing name (including one an advisor corrected by hand) alone.

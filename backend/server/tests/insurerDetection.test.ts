@@ -80,8 +80,30 @@ describe("insurer detection: the genuine cases still resolve", () => {
     });
 });
 
-describe("insurer detection: the most specific name wins", () => {
-    test("a full company name beats a shorter key for the same insurer", async () => {
+describe("insurer detection: the issuer is named first", () => {
+    test("a ported policy resolves to the issuer, not the insurer it came from", async () => {
+        // The shape of a real ported policy: the welcome letter names the issuer
+        // in the first line, and the company it was ported FROM appears much
+        // later, in the cumulative-bonus carry-forward table. In the document
+        // that reported this bug the gap was character 213 on page 1 against
+        // character 11,258 on page 7.
+        const text =
+            "Dear Palash, Welcome to ManipalCigna Health Insurance family! " +
+            "Thank you for purchasing ManipalCigna Lifetime Health. " +
+            "x".repeat(4000) +
+            " Cumulative Bonus from Previous Policy: Care Health Insurance 59018198 MEDICLAIM";
+        assert.equal(await insurerOf(text), "ManipalCigna Health Insurance Company Limited");
+    });
+
+    test("the same two insurers the other way round resolve the other way", async () => {
+        const text =
+            "Care Health Insurance Limited. Policy Schedule. " +
+            "x".repeat(4000) +
+            " Ported from ManipalCigna Health Insurance Company Limited.";
+        assert.equal(await insurerOf(text), "Care Health Insurance Limited");
+    });
+
+    test("at the same position the fuller name wins", async () => {
         assert.equal(
             await insurerOf("Care Health Insurance Limited, formerly Religare Health Insurance"),
             "Care Health Insurance Limited",

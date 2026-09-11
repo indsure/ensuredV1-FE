@@ -39,6 +39,15 @@ export interface Identity {
   city: string | null;
   assumed_zone: Zone;
   health_flags: string[];
+  /** The company that issued THIS policy, read in context by the model.
+   *  Preferred over the regex pre-pass in utils/policyWordingsFetcher, which
+   *  scans the whole document and cannot tell an issuer from a previous
+   *  insurer named in a portability table. */
+  insurer_name?: string | null;
+  /** Set only when the policy was ported or migrated, naming the company it
+   *  came from. Porting also carries waiting-period continuity, so this is
+   *  worth keeping rather than discarding. */
+  previous_insurer?: string | null;
   confidence: Confidence;
 }
 
