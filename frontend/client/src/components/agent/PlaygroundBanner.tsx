@@ -25,7 +25,7 @@ export default function PlaygroundBanner() {
       </span>
       <button
         onClick={exit}
-        className="inline-flex items-center gap-1 rounded-lg bg-white/15 hover:bg-white/25 px-3 py-1 font-semibold transition-colors whitespace-nowrap"
+        className="inline-flex min-h-10 items-center gap-1 rounded-lg bg-white/15 hover:bg-white/25 px-3 py-1 font-semibold transition-colors whitespace-nowrap"
       >
         <X className="h-4 w-4" />
         Exit demo

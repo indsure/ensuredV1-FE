@@ -1,9 +1,9 @@
 import { SearchX } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 export function EmptyState() {
     return (
-        <section className="py-24 bg-[var(--color-cream-main)] text-center">
+        <section className="py-14 sm:py-20 lg:py-24 bg-[var(--color-cream-main)] text-center">
             <div className="container-editorial max-w-2xl px-4">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}

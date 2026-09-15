@@ -12,7 +12,6 @@ export default defineConfig({
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
       "@shared": path.resolve(import.meta.dirname, "..", "shared"),
-      "@assets": path.resolve(import.meta.dirname, "..", "attached_assets"),
     },
   },
   css: {
@@ -48,6 +47,9 @@ export default defineConfig({
     },
     fs: {
       strict: true,
+      // shared/ sits above this package, so fs.strict would refuse to
+      // serve it in dev even though the build resolves it fine.
+      allow: [path.resolve(import.meta.dirname), path.resolve(import.meta.dirname, "..", "shared")],
       deny: ["**/.*"],
     },
   },

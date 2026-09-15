@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   BarChart3, 
   Users, 
@@ -11,17 +11,19 @@ import {
   X,
   ShieldCheck,
   Bell,
-  Search
+  Search,
+  Building2
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import AdminOverview from '../../components/admin/AdminOverview';
 import AdminAgents from '../../components/admin/AdminAgents';
 import AdminInviteCodes from '../../components/admin/AdminInviteCodes';
 import AdminLeads from '../../components/admin/AdminLeads';
+import AdminTeamRequests from '../../components/admin/AdminTeamRequests';
 import { apiFetch } from '@/lib/api';
 
 const AdminPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'agents' | 'codes' | 'leads'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'agents' | 'codes' | 'leads' | 'enterprise'>('overview');
   const [adminName, setAdminName] = useState('');
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -64,6 +66,7 @@ const AdminPanel: React.FC = () => {
     { id: 'agents', label: 'Agents', icon: Users },
     { id: 'codes', label: 'Invite Codes', icon: Key },
     { id: 'leads', label: 'Leads', icon: Users },
+    { id: 'enterprise', label: 'Enterprise', icon: Building2 },
   ];
 
   if (loading) {
@@ -146,7 +149,7 @@ const AdminPanel: React.FC = () => {
                 </div>
                 <div className="hidden sm:block">
                   <p className="text-xs font-bold text-white leading-none">{adminName}</p>
-                  <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-tighter">Super Admin</p>
+                  <p className="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Super Admin</p>
                 </div>
               </div>
             </div>
@@ -167,6 +170,7 @@ const AdminPanel: React.FC = () => {
               {activeTab === 'agents' && <AdminAgents />}
               {activeTab === 'codes' && <AdminInviteCodes />}
               {activeTab === 'leads' && <AdminLeads />}
+              {activeTab === 'enterprise' && <AdminTeamRequests />}
             </motion.div>
           </AnimatePresence>
         </div>

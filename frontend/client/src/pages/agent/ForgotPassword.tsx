@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiOk } from "@/lib/api";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -21,13 +21,15 @@ export default function ForgotPassword() {
     // whether this is an agent and points the link at /agent/reset-password.
     // Delivered by our SES, not Supabase's rate-limited built-in sender.
     try {
-      await apiFetch('/api/auth/forgot-password', {
+      await apiOk(apiFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
-      });
+      }));
     } catch {
-      setError('Could not reach IndSure. Check your connection and try again.');
+      // Not revealing whether the address exists is the no-enumeration rule.
+      // Hiding a 500 is not: the user is told we sent a mail we never sent.
+      setError('Could not send the reset link just now. Please try again in a minute.');
       setLoading(false);
       return;
     }
@@ -54,7 +56,7 @@ export default function ForgotPassword() {
           </div>
 
           <div className="mt-20">
-            <h2 className="text-5xl font-bold leading-[1.1] font-['Playfair_Display']">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.1] font-['Playfair_Display']">
               Lost your <br />
               <span className="text-white/90 drop-shadow-lg">Vault Key?</span> <br />
               Let's restore it.
@@ -65,16 +67,16 @@ export default function ForgotPassword() {
           </div>
         </div>
 
-        <div className="relative z-10 text-white/60 text-[10px] font-black tracking-[0.2em] uppercase">
+        <div className="relative z-10 text-white/60 text-xs font-black tracking-[0.2em] uppercase">
           Standardized by Leading Insurers · v4.1.0-VITE
         </div>
       </div>
 
       {/* RIGHT PANEL: RESET REQUEST */}
-      <div className="flex-1 flex flex-col justify-center items-center py-20 px-8">
+      <div className="flex-1 flex flex-col justify-center items-center py-12 sm:py-16 lg:py-20 px-8">
         <div className="w-full max-w-md space-y-12">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-slate-900 font-['Playfair_Display']">Reset Access</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 font-['Playfair_Display']">Reset Access</h1>
             <p className="mt-3 text-slate-400 font-semibold uppercase text-[11px] tracking-widest">Credential Recovery</p>
           </div>
 
@@ -93,7 +95,7 @@ export default function ForgotPassword() {
           ) : (
             <div className="space-y-6">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Credential Email</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Credential Email</label>
                 <Input
                   type="email"
                   value={email}
@@ -120,7 +122,7 @@ export default function ForgotPassword() {
               </Button>
 
               <div className="text-center">
-                <Link href="/agent/login" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-[#0D9488]">
+                <Link href="/agent/login" className="inline-flex min-h-11 items-center text-xs font-black text-slate-400 uppercase tracking-widest hover:text-[#0D9488]">
                   ← Back to Portal
                 </Link>
               </div>

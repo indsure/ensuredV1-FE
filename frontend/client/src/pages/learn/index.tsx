@@ -49,7 +49,7 @@ export default function LearnHub() {
       <Header />
       <Breadcrumbs items={[{ label: "Learn" }]} />
 
-      <main className="flex-1 w-full max-w-5xl mx-auto px-6 pt-6 pb-16">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-6 pt-24 sm:pt-28 pb-16">
         <header className="max-w-2xl mb-12">
           <p className="text-xs uppercase tracking-widest text-[var(--color-green-primary)] font-semibold mb-3">
             Clause library
@@ -69,7 +69,7 @@ export default function LearnHub() {
             <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--color-text-muted)] mb-4 border-b border-[var(--color-border-light)] pb-2">
               {g.name}
             </h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {g.items.map((c) => (
                 <Link key={c.slug} href={`/learn/${c.slug}`}>
                   <div className="bg-white rounded-xl border border-[var(--color-border-light)] p-5 h-full hover:shadow-lg hover:border-[var(--color-green-secondary)] transition-all cursor-pointer flex flex-col">

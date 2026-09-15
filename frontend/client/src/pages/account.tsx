@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView } from "motion/react";
 import { useRef } from "react";
 import {
   ArrowLeft,
@@ -47,7 +47,7 @@ export default function Account() {
     <div className="bg-[var(--color-navy-900)] text-white font-sans min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-grow pt-32 pb-24">
+      <main className="flex-grow pt-32 pb-14 sm:pb-20 lg:pb-24">
         <section className="pb-16">
           <div className="container-editorial px-6">
             <Link href="/">
@@ -59,7 +59,7 @@ export default function Account() {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="text-5xl md:text-7xl font-serif font-bold tracking-tight leading-[1.1] mb-4 text-white"
+              className="text-3xl sm:text-5xl md:text-7xl font-serif font-bold tracking-tight leading-[1.1] mb-4 text-white"
             >
               Your <span className="text-[var(--color-teal-400)]">profile.</span>
             </motion.h1>
@@ -143,7 +143,7 @@ export default function Account() {
                     <button
                       type="button"
                       onClick={() => setLocation("/agent/login")}
-                      className="px-6 py-3 rounded-lg font-medium bg-[var(--color-teal-600)] text-white hover:bg-[var(--color-teal-400)] transition-colors"
+                      className="px-6 py-3 rounded-lg font-medium bg-[var(--color-cta)] text-white hover:bg-[var(--color-cta-hover)] transition-colors"
                     >
                       Agent Login
                     </button>
@@ -167,7 +167,7 @@ export default function Account() {
                 className="flex flex-col sm:flex-row gap-4 justify-between items-center"
               >
                 <Link href="/policychecker">
-                  <button className="bg-[var(--color-teal-600)] text-white px-8 py-4 rounded-lg font-medium hover:bg-[var(--color-teal-400)] transition-colors flex items-center gap-2 shadow-lg shadow-teal-900/20">
+                  <button className="bg-[var(--color-cta)] text-white px-8 py-4 rounded-lg font-medium hover:bg-[var(--color-cta-hover)] transition-colors flex items-center gap-2 shadow-lg shadow-teal-900/20">
                     Analyze a Policy <ArrowRight className="w-4 h-4" />
                   </button>
                 </Link>

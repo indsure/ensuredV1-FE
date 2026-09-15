@@ -123,6 +123,16 @@ const ALL_STEPS = [
     subtext: "Your city helps us determine the medical cost zone for your area.",
   },
   {
+    id: "globalTravel",
+    question: "Do you travel outside India?",
+    description:
+      "If you fall ill on a trip abroad, the hospital bill is a multiple of the Indian one, and the policies that pay overseas are only written at high cover.",
+    options: [
+      { label: "Rarely or never", sub: "Your cover only has to work in India" },
+      { label: "Yes, I travel abroad", sub: "Holidays or work trips outside India" },
+    ],
+  },
+  {
     id: "familyStructure",
     question: "Who needs coverage?",
     options: ["Individual", "Couple", "Couple + kids", "Parents included"],
@@ -217,6 +227,7 @@ function firstUnfilledStep(inputs: Partial<UserInputs>): StepId | null {
     ["detailedProfile", !inputs.exactAge || !inputs.annualIncome],
     ["employerCover", !inputs.employerCover],
     ["riskPosture", !inputs.riskPosture],
+    ["globalTravel", !inputs.globalTravel],
     ["hospitalPreference", shouldShowStep("hospitalPreference", inputs) && !inputs.hospitalPreference],
     ["recurringExpenses", shouldShowStep("recurringExpenses", inputs) && !inputs.recurringExpenses],
   ];
@@ -244,6 +255,7 @@ function buildReviewRows(inputs: Partial<UserInputs>): Array<{ label: string; va
   }
   push("Employer cover", inputs.employerCover, "employerCover");
   push("Risk attitude", inputs.riskPosture, "riskPosture");
+  push("Travels abroad", inputs.globalTravel, "globalTravel");
   push("Hospital preference", inputs.hospitalPreference, "hospitalPreference");
   push("Recurring expenses", inputs.recurringExpenses, "recurringExpenses");
   return rows;
@@ -301,7 +313,14 @@ export default function CoverCalculator({
     if (embedded) return;
     if (hasUnsavedProgress()) {
       const progress = loadProgress();
-      if (progress && confirm("You have unsaved progress. Would you like to continue where you left off?")) {
+      // A saved step id can name a step this build no longer has, because the
+      // wizard's steps change between deploys. Restoring it blindly puts
+      // currentStepId outside ALL_STEPS, and the step lookup below then hands
+      // `undefined` to code that reads `.question` off it, which white-screens
+      // the wizard and loses every answer. Verify before trusting it.
+      const savedStepExists =
+        !!progress && ALL_STEPS.some((step) => step.id === progress.step);
+      if (progress && savedStepExists && confirm("You have unsaved progress. Would you like to continue where you left off?")) {
         setInputs(progress.inputs);
         setCurrentStepId(progress.step as StepId);
         if (progress.inputs.cityTier) {
@@ -324,6 +343,23 @@ export default function CoverCalculator({
     if (currentStepId !== "intro" && Object.keys(inputs).length > 0) {
       saveProgress(currentStepId, inputs);
     }
+  }, [embedded, currentStepId, inputs]);
+
+  // The agent flow deliberately does NOT autosave: saveProgress() writes the
+  // wizard inputs to localStorage (calculator-storage.ts:139), and in the agent
+  // flow those inputs describe a *customer* — age, income, dependants, health.
+  // rules.md forbids putting that in web storage, so the answer is not to turn
+  // autosave on here. Warn before the work is lost instead.
+  useEffect(() => {
+    if (!embedded) return;
+    if (currentStepId === "intro" || Object.keys(inputs).length === 0) return;
+
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
   }, [embedded, currentStepId, inputs]);
 
   useEffect(() => {
@@ -561,7 +597,10 @@ export default function CoverCalculator({
   const currentVisibleIdx = visibleStepIds.indexOf(currentStepId as Exclude<StepId, "intro" | "review">);
   const isIntro = currentStepId === "intro";
 
-  const currentStepDef = ALL_STEPS.find((s) => s.id === currentStepId)!;
+  // Never assert here. An unknown id means a crash on the next property read,
+  // and starting the person at the top is a far better failure than a blank page.
+  const currentStepDef =
+    ALL_STEPS.find((s) => s.id === currentStepId) ?? ALL_STEPS[0];
   const { question, subtext } = getStepCopy(currentStepDef);
 
   if (isAnalyzing) {
@@ -590,9 +629,21 @@ export default function CoverCalculator({
     );
   }
 
+  /* The consumer landing runs full-bleed section backgrounds, so it cannot
+     sit inside the centred max-w-5xl column the wizard steps use. It is
+     returned before that wrapper rather than inside it. Never reached in
+     `embedded` mode, which opens on "location". */
+  if (isIntro) {
+    return (
+      <CalculatorErrorBoundary>
+        <CalculatorLanding onStart={() => setCurrentStepId("location")} />
+      </CalculatorErrorBoundary>
+    );
+  }
+
   return (
     <CalculatorErrorBoundary>
-      <div className="w-full flex flex-col items-center">
+      <div className="flex w-full flex-col items-center px-6 py-8">
         {!isIntro && currentStepId !== "review" && (
           <div className="mb-8 w-full max-w-2xl">
             <CalculatorProgressDots
@@ -605,17 +656,13 @@ export default function CoverCalculator({
           </div>
         )}
 
+        {/* The intro returns earlier, so every step reaching here is a wizard
+            step and takes the same narrow column. */}
         <div
           key={currentStepId}
-          className={cn(
-            "w-full transition-all duration-400 ease-in-out",
-            currentStepId === "intro" ? "max-w-5xl" : "max-w-2xl"
-          )}
+          className="w-full max-w-2xl transition-all duration-400 ease-in-out"
         >
-          {currentStepId === "intro" ? (
-            <CalculatorLanding onStart={() => setCurrentStepId("location")} />
-
-          ) : currentStepId === "location" ? (
+          {currentStepId === "location" ? (
             <div className="bg-white/50 backdrop-blur-sm border border-[var(--color-border-light)] p-8 md:p-12 rounded-3xl shadow-sm space-y-6">
               <div className="text-center">
                 <h2 className="text-3xl md:text-4xl font-serif text-[var(--color-navy-900)] mb-3">
@@ -672,7 +719,7 @@ export default function CoverCalculator({
                 <Button
                   disabled={!selectedCity}
                   className={cn(
-                    "bg-[var(--color-teal-600)] text-white px-8",
+                    "bg-[var(--color-cta)] text-white px-8",
                     !selectedCity && "opacity-50"
                   )}
                   onClick={confirmLocation}
@@ -691,7 +738,7 @@ export default function CoverCalculator({
                 Help us calculate risks precisely.
               </p>
 
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SectionDivider label="Your Details" />
 
                 <div className="space-y-2">
@@ -901,7 +948,7 @@ export default function CoverCalculator({
                   Back
                 </Button>
                 <Button
-                  className="bg-[var(--color-teal-600)] text-white px-8"
+                  className="bg-[var(--color-cta)] text-white px-8"
                   disabled={!inputs.exactAge || !inputs.annualIncome}
                   onClick={confirmDetailedProfile}
                 >
@@ -947,7 +994,7 @@ export default function CoverCalculator({
                   Back
                 </Button>
                 <Button
-                  className="bg-[var(--color-teal-600)] text-white px-8"
+                  className="bg-[var(--color-cta)] text-white px-8"
                   onClick={() => finishAnalysis(inputs as UserInputs)}
                 >
                   {embedded ? "Calculate Cover Need" : "See My Coverage Plan"}

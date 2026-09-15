@@ -11,14 +11,14 @@ export default function Team() {
       <Header />
       <Breadcrumbs items={[{ label: "Team" }]} />
 
-      <main className="flex-grow pt-8 pb-20 px-6 w-full">
+      <main className="flex-grow pt-24 sm:pt-28 lg:pt-32 pb-12 sm:pb-16 lg:pb-20 px-6 w-full">
 
         {/* HERO */}
         <section className="max-w-4xl mx-auto text-center mb-20 animate-reveal">
           <div className="inline-block py-1 px-3 border border-[var(--color-border-main)] rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-text-secondary)] mb-6 bg-white">
             The Team
           </div>
-          <h1 className="text-5xl md:text-7xl font-serif mb-8 tracking-tight text-[var(--color-text-main)] leading-tight">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-serif mb-8 tracking-tight text-[var(--color-text-main)] leading-tight">
             Three people, <br />
             <span className="italic text-[var(--color-green-primary)]">one fine-print problem.</span>
           </h1>
@@ -29,7 +29,7 @@ export default function Team() {
         </section>
 
         {/* FOUNDERS */}
-        <section className="max-w-6xl mx-auto mb-24 grid md:grid-cols-3 gap-8">
+        <section className="max-w-6xl mx-auto mb-12 sm:mb-16 lg:mb-24 grid grid-cols-1 md:grid-cols-3 gap-8">
           {founders.map((f) => (
             <div key={f.name} id={f.slug} className="card-white p-8 flex flex-col items-center text-center hover:shadow-lg transition-all duration-500 scroll-mt-32">
               <div className="w-24 h-24 rounded-full bg-[var(--color-cream-dark)] border border-[var(--color-border-main)] flex items-center justify-center mb-6 text-2xl font-serif text-[var(--color-green-primary)]">
@@ -58,7 +58,7 @@ export default function Team() {
         </section>
 
         {/* BEHIND THE SCENES */}
-        <section className="max-w-3xl mx-auto mb-24 text-center">
+        <section className="max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-24 text-center">
           <h2 className="text-3xl font-serif mb-6">And everyone else who builds this</h2>
           <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed font-light">
             Behind the three names above is a small crew of engineers, insurance
@@ -69,7 +69,7 @@ export default function Team() {
         </section>
 
         {/* CTA */}
-        <section className="bg-[var(--color-petrol-900)] text-white rounded-lg p-16 text-center max-w-5xl mx-auto shadow-2xl relative overflow-hidden">
+        <section className="bg-[var(--color-petrol-900)] text-white rounded-lg p-6 sm:p-10 lg:p-16 text-center max-w-5xl mx-auto shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
             <div className="absolute top-[-50%] left-[-20%] w-[500px] h-[500px] bg-[var(--color-green-primary)] rounded-full blur-[100px]"></div>
           </div>

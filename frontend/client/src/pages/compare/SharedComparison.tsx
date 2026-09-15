@@ -31,16 +31,16 @@ export default function SharedComparison({ uuid }: { uuid: string }) {
   return (
     <div className="min-h-screen bg-[#FAFAF8] font-['Inter'] flex flex-col">
       <Header />
-      <main className="flex-grow w-full max-w-4xl mx-auto px-4 sm:px-6 pt-28 pb-20">
+      <main className="flex-grow w-full max-w-4xl mx-auto px-4 sm:px-6 pt-28 pb-12 sm:pb-16 lg:pb-20">
         {status === "loading" && (
-          <div className="flex flex-col items-center justify-center py-32 text-slate-400">
+          <div className="flex flex-col items-center justify-center py-16 sm:py-24 lg:py-32 text-slate-400">
             <Loader2 className="h-8 w-8 animate-spin mb-3" />
             <p className="font-medium">Loading your comparison…</p>
           </div>
         )}
 
         {status === "error" && (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
+          <div className="flex flex-col items-center justify-center py-16 sm:py-24 lg:py-32 text-center">
             <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4 text-slate-400">
               <ScanSearch className="h-7 w-7" />
             </div>

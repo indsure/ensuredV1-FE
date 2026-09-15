@@ -3,7 +3,8 @@ import { Link } from "wouter";
 import { Upload, FileCheck, Loader2, AlertCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getApiBase } from "@/lib/queryClient";
-import { savePendingUpload, readPendingUpload, type PendingUpload } from "@/lib/pendingUpload";
+import { savePendingUpload, readPendingUpload, clearPendingUpload, type PendingUpload } from "@/lib/pendingUpload";
+import { LOBS } from "@/components/app/portfolio-utils";
 
 // Upload first, sign up second.
 //
@@ -21,11 +22,13 @@ import { savePendingUpload, readPendingUpload, type PendingUpload } from "@/lib/
 const MAX_BYTES = 10 * 1024 * 1024;
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.txt";
 
-const TYPES = [
-  { value: "health", label: "Health" },
-  { value: "term", label: "Term life" },
-  { value: "vehicle", label: "Vehicle" },
-];
+/* Derived from the canonical consumer registry rather than restated. The
+   local copy this replaces had drifted: it wrote "vehicle" where every other
+   part of the product (and every row in individual_policies) uses "motor",
+   and it left out "life" altogether so an endowment or ULIP policy could not
+   be uploaded here at all. Free slots are metered per insurance_type, so the
+   wrong value also split one allowance into two. */
+const TYPES = LOBS.map((l) => ({ value: l.type, label: l.label }));
 
 export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
   const [pending, setPending] = useState<PendingUpload | null>(() => readPendingUpload());
@@ -102,6 +105,10 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
 
         <button
           onClick={() => {
+            // Clear the stored token too, not just the local state. Without
+            // this the discarded file is still the one redeemed at signup, and
+            // it burns the free slot for that line of business.
+            clearPendingUpload();
             setPending(null);
             setError(null);
           }}
@@ -130,7 +137,7 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
             key={t.value}
             onClick={() => setType(t.value)}
             aria-pressed={type === t.value}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+            className={`inline-flex min-h-11 items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${
               type === t.value
                 ? "bg-[var(--color-green-primary)] text-white border-[var(--color-green-primary)]"
                 : "bg-white text-[var(--color-text-secondary)] border-[var(--color-border-main)] hover:border-[var(--color-green-primary)]"
@@ -179,7 +186,11 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
       {/* The consent line. These are health documents from people without an
           account, so the holding period is stated before a file is chosen —
           not buried in terms. Keep this in step with PENDING_UPLOAD_TTL_HOURS. */}
-      <p className="mt-5 flex items-start gap-2 text-xs text-[var(--color-text-muted)] leading-relaxed">
+      {/* Set at text-sm, not text-xs: the comment above says this is stated up
+          front rather than buried in terms, and 12px muted grey on a phone IS
+          burying it. A retention promise the reader cannot comfortably read is
+          not a promise that was made. */}
+      <p className="mt-5 flex items-start gap-2 text-sm text-[var(--color-text-muted)] leading-relaxed">
         <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           We hold your file for 24 hours so you can see your results after signing

@@ -50,7 +50,7 @@ export class CalculatorErrorBoundary extends Component<Props, State> {
             <div className="flex gap-3 justify-center">
               <Button
                 onClick={this.handleReset}
-                className="bg-[var(--color-teal-600)] text-white"
+                className="bg-[var(--color-cta)] text-white"
               >
                 <RefreshCcw className="w-4 h-4 mr-2" />
                 Start Over

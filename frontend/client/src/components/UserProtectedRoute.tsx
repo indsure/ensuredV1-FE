@@ -81,7 +81,42 @@ export default function UserProtectedRoute({ children }: { children: React.React
     );
   }
 
-  if (gate === "agent") return <Redirect to="/agent/dashboard" />;
+  /* An advisor who signs in here is sent to the portal that is theirs, but say
+     so instead of teleporting them. The silent redirect was read by a tester as
+     the consumer login leaking into the advisor portal: nothing leaks (the
+     server refuses every /api/me/* call from an agent account, which is how we
+     know to redirect at all), but a person who lands somewhere they did not ask
+     for has no way to tell those two apart. Signing out is offered because the
+     other reason to be on this screen is owning both kinds of account. */
+  if (gate === "agent") {
+    return (
+      <div className="min-h-screen bg-[var(--color-cream-main)] flex items-center justify-center px-6">
+        <div className="max-w-md text-center">
+          <h1 className="font-serif text-2xl text-[var(--color-navy-900)] mb-3">
+            That is an advisor account
+          </h1>
+          <p className="text-base text-[var(--color-text-secondary)] mb-7">
+            My Portfolio is for people tracking their own policies. Your advisor portal has your
+            customers, your policies and your leads in it.
+          </p>
+          <div className="flex flex-col gap-3">
+            <a
+              href="/agent/dashboard"
+              className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] transition-colors"
+            >
+              Go to the advisor portal
+            </a>
+            <button
+              onClick={() => { void supabase.auth.signOut().then(() => { window.location.href = "/login"; }); }}
+              className="text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)] transition-colors"
+            >
+              Sign out and use a different account
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (gate === "anon") return <Redirect to="/login" />;
 
   return <>{children}</>;

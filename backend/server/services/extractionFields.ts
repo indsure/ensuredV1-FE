@@ -10,7 +10,7 @@
  * (the review form + Excel export are driven by the same field list).
  */
 
-export type FieldType = "text" | "number" | "date";
+export type FieldType = "text" | "number" | "date" | "json";
 
 /** Shared `clients` columns a field can also populate, so the unified
  *  My-Policies list + filters work without reading into `extracted_data`. */
@@ -50,17 +50,19 @@ export function isDataEntryType(type: string): type is DataEntryType {
  * Every insurance type an upload endpoint accepts: `health` (the forensic
  * audit lane) plus every data-entry lane above. Derived, never retyped.
  *
- * The upload routes used to read `req.body.type` with no check at all, so an
- * unrecognised string became "health" by way of the `|| "health"` default.
- * That is the wrong direction to fail in: health is the expensive lane, so a
- * typo or a stale client charged a policy-check credit and returned a forensic
- * verdict on a document nobody asked us to audit. It also wrote a line of
- * business into the policy row that no filter or per-type quota could read
- * back.
+ * This exists because /api/agent/analyze carried its own hand-written set of
+ * four — health, term, life, motor — while the upload page offered all nine.
+ * The other five (travel, property, fire, marine, contractor_all_risk) missed
+ * the set and fell through a `has(x) ? x : "health"` fallback, so they were
+ * audited as health policies. A marine policy came back "Document does not
+ * appear to be a readable health insurance policy", drawn against a
+ * policy-check credit, on a screen that had just promised data entry and one
+ * data-entry entry. The two lists were never wired together, so the second one
+ * went stale the moment the first one grew.
  *
  * Keep in sync with the frontend registry at
  *   frontend/client/src/lib/insuranceTypes.ts
- * whose TYPE_META keys are exactly this list. insuranceTypes.test.ts asserts it.
+ * whose TYPE_META keys are exactly this list.
  */
 export const SUPPORTED_INSURANCE_TYPES = ["health", ...DATA_ENTRY_TYPES] as const;
 export type SupportedInsuranceType = (typeof SUPPORTED_INSURANCE_TYPES)[number];
@@ -86,6 +88,13 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "coverage_type", label: "Coverage type", type: "text" },
     { key: "policy_start_date", label: "Policy start date", type: "date" },
     { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
+    // A bundled motor policy is two covers with two different end dates: own
+    // damage runs a year, third party runs three (car) or five (two-wheeler).
+    // Only one of them is the renewal an advisor sells against, and it is the
+    // OD one. Capturing a single "policy expiry" left the model to pick, and it
+    // picked inconsistently, so a bundled policy could be chased years late.
+    { key: "od_expiry_date", label: "Own-damage (OD) cover end date", type: "date" },
+    { key: "tp_expiry_date", label: "Third-party (TP) cover end date", type: "date" },
   ],
   life: [
     { key: "policyholder_name", label: "Policyholder / proposer", type: "text", shared: "policyholder_name" },
@@ -101,6 +110,21 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "start_date", label: "Commencement date", type: "date" },
     { key: "next_premium_date", label: "Next premium due date", type: "date" },
     { key: "maturity_date", label: "Maturity date", type: "date", shared: "expiry_date" },
+    { key: "plan_type", label: "Plan type (term / return of premium / endowment / money back / unit linked)", type: "text" },
+    // A money-back or guaranteed-income plan pays the customer during the term
+    // and states its maturity amount separately from the death cover. Without
+    // these the schedule silently loses both.
+    { key: "maturity_amount", label: "Maturity amount stated on the schedule", type: "number" },
+    { key: "payout_amount", label: "Survival / income payout amount", type: "number" },
+    { key: "payout_frequency", label: "Payout frequency (monthly / yearly)", type: "text" },
+    { key: "payout_start_date", label: "First payout date", type: "date" },
+    { key: "payout_end_date", label: "Last payout date", type: "date" },
+    { key: "bonus_per_1000", label: "Declared bonus per ₹1,000 sum assured (if any)", type: "number" },
+    { key: "fund_value", label: "Fund value (unit linked only)", type: "number" },
+    { key: "fund_value_as_on", label: "Fund value as on (statement date)", type: "date" },
+    { key: "age_at_entry", label: "Age when the policy started", type: "number" },
+    { key: "illustrated_maturity_value", label: "Maturity value stated in the document's illustration", type: "number" },
+    { key: "policy_parameters", label: "Charges and assumptions", type: "json" },
     { key: "nominee_name", label: "Nominee", type: "text" },
   ],
   term: [
@@ -118,7 +142,11 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "start_date", label: "Commencement date", type: "date" },
     { key: "next_premium_date", label: "Next premium due date", type: "date" },
     { key: "cover_end_date", label: "Cover end date", type: "date", shared: "expiry_date" },
+    { key: "plan_type", label: "Plan type (term / return of premium)", type: "text" },
     { key: "death_benefit_payout", label: "Death benefit payout (lump sum / income)", type: "text" },
+    { key: "age_at_entry", label: "Age when the policy started", type: "number" },
+    { key: "illustrated_maturity_value", label: "Maturity value stated in the document's illustration", type: "number" },
+    { key: "policy_parameters", label: "Charges and assumptions", type: "json" },
     { key: "nominee_name", label: "Nominee", type: "text" },
   ],
   travel: [
@@ -228,6 +256,12 @@ export function buildExtractionPrompt(type: DataEntryType): string {
     })
     .join(",\n");
 
+  const hasOdTp = fields.some((f) => f.key === "od_expiry_date");
+  const odTpRule = hasOdTp
+    ? `
+- "od_expiry_date" and "tp_expiry_date": an Indian motor policy may be a BUNDLED or LONG-TERM policy covering own damage (OD) and third party (TP) for DIFFERENT periods - typically OD for 1 year and TP for 3 years (private car) or 5 years (two-wheeler). Read BOTH end dates separately when the document states two periods. If the policy is a single package where both covers end on the same day, put that same date in both. If it is a standalone TP-only or OD-only policy, fill the one it covers and use null for the other. Never copy one into the other as a guess.`
+    : "";
+
   const hasNextPremium = fields.some((f) => f.key === "next_premium_date");
   const today = new Date().toISOString().slice(0, 10);
   const nextPremiumRule = hasNextPremium
@@ -246,8 +280,30 @@ ${lines}
 Rules:
 - Use null for any field not clearly stated in the document. Do NOT guess or infer.
 - Dates must be formatted as YYYY-MM-DD.
-- Numeric fields must contain a plain number (e.g. 500000), no currency symbols, commas, or words.${nextPremiumRule}
+- Numeric fields must contain a plain number (e.g. 500000), no currency symbols, commas, or words.${odTpRule}${nextPremiumRule}
 - Do NOT add extra keys, comments, or markdown. Return only the raw JSON object.`;
+}
+
+/**
+ * Merge an incoming edit into the stored `extracted_data` blob.
+ *
+ * The save endpoint used to write the request body over the column wholesale,
+ * and the review form builds its body from the non-`json` fields only
+ * (a text input would stringify an object and destroy it on the next save).
+ * Between the two, every `json` field was deleted the first time an agent
+ * corrected a typo: a life or term policy lost `policy_parameters`, which is
+ * the blob the policy-value chart reads, and the chart went blank with no
+ * error anywhere. The form never sent that key, so nothing looked wrong.
+ *
+ * Shallow by design. A key present in the patch wins, including an explicit
+ * null (that is how the form clears a field). A key absent from the patch
+ * survives. Keys are never removed.
+ */
+export function mergeExtractedData(
+  existing: Record<string, any> | null | undefined,
+  patch: Record<string, any>
+): Record<string, any> {
+  return { ...(existing ?? {}), ...patch };
 }
 
 /**
@@ -267,5 +323,23 @@ export function deriveSharedColumns(
     if (raw === null || raw === undefined || raw === "") continue;
     out[f.shared] = raw;
   }
+
+  /* Motor renews on the own-damage date, not the third-party one.
+     `clients.expiry_date` is the single date every renewal surface reads, and
+     on a bundled policy the two covers end years apart: OD after a year, TP
+     after three (car) or five (two-wheeler). Chasing the TP date means chasing
+     a renewal that is not due, and missing the one that is, which for an
+     advisor is a lost commission rather than a cosmetic slip.
+
+     This is a deliberate override rather than a `shared` mapping on the field,
+     because two fields cannot both claim one column and the fallback order
+     matters: OD when we read it, otherwise whatever the single policy expiry
+     said. A document with no OD date, and every row written before this change,
+     therefore behaves exactly as it did. */
+  if (type === "motor") {
+    const od = data.od_expiry_date;
+    if (od !== null && od !== undefined && od !== "") out.expiry_date = od;
+  }
+
   return out;
 }

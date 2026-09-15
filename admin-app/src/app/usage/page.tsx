@@ -10,7 +10,7 @@ async function getUsage(days = 7): Promise<UsageRow[]> {
   const { data, error } = await supabaseAdmin
     .from("gemini_usage_log")
     .select(
-      "created_at, feature, model, source_type, actor_id, input_hash, prompt_tokens, output_tokens, total_tokens, est_cost_usd, status"
+      "created_at, feature, route, model, source_type, actor_id, input_hash, prompt_tokens, output_tokens, total_tokens, est_cost_usd, status, error_message"
     )
     .gte("created_at", since)
     .order("created_at", { ascending: false })

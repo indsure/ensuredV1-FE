@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { Copy, ExternalLink, FileText, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, FileText, RefreshCw, Trash2 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import CustomerTagCard from "@/components/agent/CustomerTagCard";
 import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
+import PolicyValueChart from "@/components/agent/PolicyValueChart";
+import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
 import { Button } from "@/components/ui/button";
@@ -15,9 +17,12 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
+import { apiFetch, apiJson } from "@/lib/api";
+import { PlanNameField } from "@/components/agent/PlanNameField";
 import { rerunPolicy } from "@/lib/rerun";
 import { supabase } from "@/lib/supabase";
-import { validateForensicAuditReport, type ForensicAuditReport } from "@/lib/policy-types";
+import { validateForensicAuditReport, type ForensicAuditReport } from "@shared/policy";
+import { hasShareableContent } from "@shared/dataEntryShare";
 
 type PolicyRow = {
   id: string;
@@ -25,8 +30,14 @@ type PolicyRow = {
   client_identifier: string | null;
   insurer_name: string | null;
   product_name: string | null;
+  /** Best guess when the plan name could not be read from the document. Agent
+   *  facing only: it is a suggestion until accepted, never the policy's name. */
+  product_name_suggested: string | null;
   policy_number: string | null;
   status: string | null;
+  /** Why the last run failed, straight off the row. Only meaningful while
+   *  status is "error". */
+  error_message: string | null;
   score: number | null;
   created_at: string;
   updated_at: string | null;
@@ -112,6 +123,11 @@ export default function PolicyDetail() {
   const scoreMeta = scoreTone(score);
   const expiry = expiryMeta(policy?.policy_end_date ?? null);
   const isDataEntry = isDataEntryType(insuranceType);
+  /* A policy may be shared once there is something at the other end of the
+     link. Health needs its audit; a data-entry policy needs at least one
+     publishable field. This mirrors the readiness test the server applies in
+     /api/shared/report/:token, so the button and the link agree with it. */
+  const canShare = Boolean(reportData) || hasShareableContent(insuranceType, extractedData);
 
   async function loadDetail() {
     if (!id || !agent?.agentId) return;
@@ -126,7 +142,8 @@ export default function PolicyDetail() {
           expiry_date, sum_insured, flaws, report_data, policyholder_name,
           share_token, share_enabled, filename, file_size,
           client_email, client_phone, policy_identifier, agent_notes,
-          insurance_type, extracted_data, customer_id
+          insurance_type, extracted_data, customer_id,
+          policy_name_suggested
         `)
         .eq("id", id)
         .eq("agent_id", agent.agentId)
@@ -144,8 +161,10 @@ export default function PolicyDetail() {
         client_identifier: clientData.policy_identifier,
         insurer_name: clientData.insurer,
         product_name: clientData.policy_name,
+        product_name_suggested: clientData.policy_name_suggested ?? null,
         policy_number: clientData.policy_name,
         status: clientData.status,
+        error_message: clientData.error_message ?? null,
         score: clientData.score,
         created_at: clientData.created_at,
         updated_at: clientData.created_at,
@@ -194,6 +213,16 @@ export default function PolicyDetail() {
   }
 
   const statusRef = useRef<string | null>(null);
+  const clientCardRef = useRef<HTMLDivElement | null>(null);
+
+  // The Client details card sits at the top of the left column; the Action bar
+  // button that opens it is in the right rail, ~750px below the fold on a
+  // laptop. Flipping the state alone opened the editor somewhere the agent
+  // could not see, so the button read as broken. Bring the editor to them.
+  function openClientEditor() {
+    setEditOpen(true);
+    clientCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
   useEffect(() => {
     statusRef.current = policy?.status ?? null;
   }, [policy?.status]);
@@ -270,27 +299,19 @@ export default function PolicyDetail() {
     if (!policy?.id || !agent?.agentId) return;
     setBusy("share");
     try {
-      // Get auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Not authenticated");
-      }
-
-      // Toggle share to enabled
-      const res = await fetch(`/api/agent/clients/${policy.id}/share/toggle`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${session.access_token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ enabled: true })
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to generate share link");
-      }
-
-      const { shareUrl, shareToken: newToken } = await res.json();
+      // apiFetch, not bare fetch: the backend lives on api.indsure.in, and a
+      // relative /api path resolves against the Vercel origin, where the SPA
+      // fallback answers it with index.html and a 200. `res.ok` was therefore
+      // true for a request that never reached the server, and sharing failed on
+      // the JSON parse instead — with no clue as to why. apiFetch also carries
+      // the bearer token, so the hand-rolled session read is gone with it.
+      const { shareUrl, shareToken: newToken } = await apiJson<{ shareUrl: string; shareToken: string }>(
+        apiFetch(`/api/agent/clients/${policy.id}/share/toggle`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled: true }),
+        }),
+      );
       setShareToken(newToken);
 
       // Copy to clipboard
@@ -338,14 +359,18 @@ export default function PolicyDetail() {
     }
   }
 
-  async function archivePolicy() {
+  // Named for what it does. This is a hard delete, not an archive — there is no
+  // recoverable copy. `public_reports.client_id` is ON DELETE CASCADE, so any
+  // live share link for this policy stops working as a side effect.
+  async function deletePolicy() {
     if (!policy?.id || !agent?.agentId) return;
     setBusy("delete");
     try {
       const update = await supabase
         .from("clients")
         .delete()
-        .eq("id", policy.id);
+        .eq("id", policy.id)
+        .eq("agent_id", agent.agentId);
       if (update.error) throw new Error(update.error.message);
 
       toast({ variant: "success", title: "Policy deleted" });
@@ -371,7 +396,7 @@ export default function PolicyDetail() {
             Refresh
           </Button>
           {!isDataEntry && (
-            <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={shareReport} disabled={!reportData || busy === "share"}>
+            <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={shareReport} disabled={!canShare || busy === "share"}>
               Share Report
             </Button>
           )}
@@ -396,10 +421,16 @@ export default function PolicyDetail() {
                     </span>
                   </div>
                   <div>
-                    <h1 className="font-['Playfair_Display'] text-4xl font-bold text-slate-900">{policy.client_name || "Pending policyholder"}</h1>
+                    <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold text-slate-900">{policy.client_name || "Pending policyholder"}</h1>
                     <p className="mt-2 text-sm text-slate-500">
-                      {policy.insurer_name || "Pending insurer"} · {policy.product_name || "Pending plan"} · {policy.policy_number || policy.id}
+                      {policy.insurer_name || "Insurer not read"} · {policy.product_name || "Plan Name Unclear in Doc"} · {policy.id}
                     </p>
+                    <PlanNameField
+                      clientId={policy.id}
+                      name={policy.product_name}
+                      suggestion={policy.product_name_suggested}
+                      onSaved={loadDetail}
+                    />
                   </div>
                 </div>
 
@@ -415,7 +446,7 @@ export default function PolicyDetail() {
 
               <div className="mt-6 flex flex-wrap gap-3 items-center w-full">
                 {!isDataEntry && (
-                  <Button variant="outline" className="border-slate-200 bg-white shrink-0" onClick={shareReport} disabled={!reportData || busy === "share"}>
+                  <Button variant="outline" className="border-slate-200 bg-white shrink-0" onClick={shareReport} disabled={!canShare || busy === "share"}>
                     <Copy className="mr-2 h-4 w-4" />
                     Share Report
                   </Button>
@@ -426,7 +457,14 @@ export default function PolicyDetail() {
                 </Button>
               </div>
 
-              {shareToken && (
+              {/* Gated on the report, not just the token. A policy can hold a
+                  share token with no report behind it - every data-entry type
+                  never produces one, and a health policy whose analysis failed
+                  does not either. Showing the link anyway invited the agent to
+                  copy an address that answers "report_not_ready" to their
+                  customer. The Share button above has always been gated this
+                  way; this block was not. */}
+              {shareToken && canShare && (
                 <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#0D9488]/10 bg-slate-50 p-4">
                   <div className="min-w-0 flex-1 truncate text-sm text-slate-700">{shareLink}</div>
                   <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={() => void copyText(shareLink, "Report link copied")}>
@@ -469,12 +507,28 @@ export default function PolicyDetail() {
           {/* Data-entry types show an editable details form; health shows the full audit report. */}
           {isDataEntry ? (
             policy.status === "done" ? (
-              <ExtractedDataForm
-                clientId={policy.id}
-                insuranceType={insuranceType}
-                initialData={extractedData}
-                onSaved={() => void loadDetail()}
-              />
+              <div className="space-y-6">
+                {/* Motor only, and it renders nothing unless the document was
+                    actually read. The summary sits above the fields it was
+                    read from. */}
+                <AddOnChecklist data={extractedData} />
+                <ExtractedDataForm
+                  clientId={policy.id}
+                  insuranceType={insuranceType}
+                  initialData={extractedData}
+                  onSaved={() => void loadDetail()}
+                />
+                {/* Life and term policies also get the value schedule worked out
+                    from those same fields — arithmetic only, no analysis run. */}
+                {(insuranceType === "life" || insuranceType === "term") && (
+                  <PolicyValueChart
+                    clientId={policy.id}
+                    insuranceType={insuranceType}
+                    data={extractedData}
+                    onSaved={() => void loadDetail()}
+                  />
+                )}
+              </div>
             ) : (
               <Card className="border-slate-100 shadow-sm">
                 <CardContent className="p-8 text-center text-slate-400 text-sm italic">
@@ -485,27 +539,63 @@ export default function PolicyDetail() {
               </Card>
             )
           ) : reportData ? (
-            // reportData is validated at runtime; the frontend policy-types and backend
-            // ForensicAuditReport definitions diverge only on optional modifiers, so cast.
-            <PolicyAuditReport data={reportData as unknown as React.ComponentProps<typeof PolicyAuditReport>["data"]} hideNav />
+            // reportData is validated at runtime by validateForensicAuditReport.
+            // The double cast this used to carry existed only because the frontend
+            // and backend each had their own ForensicAuditReport; there is now one.
+            <PolicyAuditReport
+              data={reportData}
+              hideNav
+              pdfMeta={{
+                insurer: policy.insurer_name,
+                // product_name only: product_name_suggested is a guess, and a guess
+                // must not be printed as the policy's name in a downloadable record.
+                policyName: policy.product_name,
+                policyNumber: policy.policy_number,
+                policyholderName: policy.client_name,
+                generatedAt: policy.last_analyzed_at ?? policy.created_at,
+              }}
+            />
           ) : (
             <Card className="border-slate-100 shadow-sm">
               <CardContent className="p-8 text-center text-slate-400 text-sm italic">
-                {policy.status === "done"
-                  ? "Analysis data is in an unexpected format. Try re-running analysis."
-                  : "Analysis is still in progress. This page will update automatically."}
+                {/* A failed run is not a running one. Without this branch the
+                    card promised an update that was never coming, and the row's
+                    own error_message, which My Queue has always shown, stayed
+                    hidden here. The reason comes off the row when it has one;
+                    the remedy is always spelled out, because the reason alone
+                    never says what to do next. */}
+                {policy.status === "error" ? (
+                  <div className="mx-auto max-w-xl text-left not-italic">
+                    <div className="text-sm font-semibold text-slate-700">We could not finish this analysis.</div>
+                    {/* Verbatim, and scrollable rather than truncated: the agent
+                        lane stores the raw error on purpose so agents and admin
+                        can triage from it. Some real rows hold kilobytes of
+                        provider JSON, so it is boxed instead of set loose in a
+                        centred card. */}
+                    <div className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                      {policy.error_message || "No reason was recorded for the failure."}
+                    </div>
+                    <div className="mt-3 text-sm text-slate-500">
+                      Use Re-run Analysis, or delete and re-upload an unlocked PDF.
+                    </div>
+                  </div>
+                ) : policy.status === "done" ? (
+                  "Analysis data is in an unexpected format. Try re-running analysis."
+                ) : (
+                  "Analysis is still in progress. This page will update automatically."
+                )}
               </CardContent>
             </Card>
           )}
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div className="space-y-6">
-              <Card className="border-slate-100 shadow-sm">
+              <Card ref={clientCardRef} className="border-slate-100 shadow-sm">
                 <CardHeader><CardTitle>Client details</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   {!editOpen ? (
                     <>
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Full name</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.client_name || "-"}</div></div>
                         <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Policy identifier</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.client_identifier || "-"}</div></div>
                         <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Email</div><div className="mt-1 text-sm font-semibold text-slate-900">{clientMeta.email || "-"}</div></div>
@@ -514,7 +604,7 @@ export default function PolicyDetail() {
                       <Button variant="outline" className="border-slate-200 bg-white" onClick={() => setEditOpen(true)}>Edit Client Details</Button>
                     </>
                   ) : (
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <Input value={draftName} onChange={(event) => setDraftName(event.target.value)} placeholder="Client name" />
                       <Input value={draftIdentifier} onChange={(event) => setDraftIdentifier(event.target.value)} placeholder="Identifier / relationship / reference" />
                       <Input value={draftClientMeta.email} onChange={(event) => setDraftClientMeta((current) => ({ ...current, email: event.target.value }))} placeholder="Email" />
@@ -563,9 +653,9 @@ export default function PolicyDetail() {
                     <RefreshCw className={`mr-2 h-4 w-4 ${busy === "rerun" || policy.status === "processing" ? "animate-spin" : ""}`} />
                     {isDataEntry ? "Re-read Document" : "Re-run Analysis"}
                   </Button>
-                  <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={() => setEditOpen(true)}>Edit Client Details</Button>
+                  <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={openClientEditor}>Edit Client Details</Button>
                   {!isDataEntry && (
-                    <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!reportData || busy === "share"}>
+                    <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!canShare || busy === "share"}>
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Share Link
                     </Button>
@@ -576,15 +666,6 @@ export default function PolicyDetail() {
                   </Button>
                 </CardContent>
               </Card>
-
-              <Card className="border-slate-100 shadow-sm">
-                <CardContent className="flex items-start gap-3 p-5">
-                  <ShieldCheck className="mt-0.5 h-5 w-5 text-[#0D9488]" />
-                  <div className="text-sm text-slate-600">
-                    Internal detail pages show the unabridged report and agent-only notes. Client shares still go through the public `/report/[token]` route.
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </>
@@ -593,9 +674,9 @@ export default function PolicyDetail() {
       <ConfirmationDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        onConfirm={() => void archivePolicy()}
-        title="Delete this policy?"
-        description="This action archives the policy, revokes active share links, and removes it from the active upload flow."
+        onConfirm={() => void deletePolicy()}
+        title="Delete this policy permanently?"
+        description="The policy, its analysis and its uploaded file are deleted for good — this cannot be undone. Any share link you sent the customer will stop working immediately."
         confirmText={busy === "delete" ? "Deleting..." : "Delete policy"}
         variant="destructive"
       />

@@ -45,9 +45,9 @@ export function CalculatorProgress({
                   className={cn(
                     "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300",
                     isCompleted &&
-                      "bg-[var(--color-teal-600)] text-white scale-100",
+                      "bg-[var(--color-cta)] text-white scale-100",
                     isCurrent &&
-                      "bg-[var(--color-teal-600)] text-white scale-110 ring-4 ring-[var(--color-teal-100)]",
+                      "bg-[var(--color-cta)] text-white scale-110 ring-4 ring-[var(--color-teal-100)]",
                     !isCompleted &&
                       !isCurrent &&
                       "bg-[var(--color-border-light)] text-[var(--color-text-muted)]"

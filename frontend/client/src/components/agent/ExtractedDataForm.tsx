@@ -26,7 +26,12 @@ export default function ExtractedDataForm({
   initialData,
   onSaved,
 }: ExtractedDataFormProps) {
-  const fields = useMemo<ExtractionField[]>(() => getFields(insuranceType), [insuranceType]);
+  // json fields (the charge table) are edited on the value card, not here — a
+  // text input would stringify the object and destroy it on the next save.
+  const fields = useMemo<ExtractionField[]>(
+    () => getFields(insuranceType).filter((f) => f.type !== "json"),
+    [insuranceType]
+  );
 
   const [values, setValues] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
@@ -112,7 +117,7 @@ export default function ExtractedDataForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fields.map((f) => (
             <div key={f.key} className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest">
                 {f.label}
               </label>
               <Input

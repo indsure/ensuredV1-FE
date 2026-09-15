@@ -200,21 +200,87 @@ export const policyFetcher = new PolicyWordingsFetcher();
 
 // --- Named Exports for Routes (Bridge) ---
 
-export async function extractPolicyMetadata(text: string): Promise<{ insurer: string | null, product: string | null, plan: string | null, year: string | number | null }> {
+export async function extractPolicyMetadata(text: string): Promise<{ insurer: string | null, product: string | null, plan: string | null, planSource: string | null, year: string | number | null }> {
   const textLower = text.toLowerCase();
 
   // 1. Extract Insurer
-  let insurer = null;
-  for (const [key, val] of Object.entries(insurerMap)) {
-    if (textLower.includes(key.replace(/_/g, ' ')) || textLower.includes(val.toLowerCase())) {
-      insurer = val;
-      break;
+  //
+  // This used to take the FIRST entry in object key order whose name appeared
+  // anywhere in the text, as a bare substring. Two faults compounded:
+  //
+  //   - `digit` matched inside "digitally signed", which sits in the signature
+  //     block of nearly every policy PDF issued in India.
+  //   - It was the LAST key, so it only fired when nothing else had, which made
+  //     Go Digit the catch-all for every insurer missing from the map.
+  //
+  // A Future Generali policy ("Generali Central Insurance Company Limited ...
+  // This document is digitally signed by ...") was filed as Go Digit. The name
+  // Go Digit appears nowhere in it.
+  //
+  // Now: word-boundary matches only, and the EARLIEST match wins. A policy names
+  // its issuer in the header or the welcome letter; any other insurer it names
+  // is a previous one, and those sit deep in a portability or cumulative-bonus
+  // table. A real ported policy in the test set puts ManipalCigna at character
+  // 213 on page 1 and Care Health at character 11,258 on page 7, so position
+  // separates them by eleven thousand characters where specificity separated
+  // them by one. Length is kept only to break ties at the same offset, where
+  // the longer name is the more complete reading of the same text.
+  let insurer: string | null = null;
+  {
+    const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let best: { len: number; at: number; val: string } | null = null;
+
+    for (const [key, val] of Object.entries(insurerMap)) {
+      for (const needle of [key.replace(/_/g, ' '), String(val)]) {
+        // Anything shorter than this is a word, not an insurer, and matches by
+        // accident. "digit" was exactly this mistake.
+        if (needle.length < 6) continue;
+        const at = textLower.search(new RegExp(`\\b${escape(needle.toLowerCase())}\\b`));
+        if (at === -1) continue;
+        if (!best || at < best.at || (at === best.at && needle.length > best.len)) {
+          best = { len: needle.length, at, val: String(val) };
+        }
+      }
     }
+    insurer = best ? best.val : null;
   }
 
   // 2. Extract Plan (Priority Order)
   let plan = null;
   let sourceField = null;
+
+  /**
+   * A policy schedule is usually a key/value table, and PDF extraction flattens
+   * it into one line, so the NEXT field's label sits immediately after the value
+   * this one wants. A capture that allows spaces walks straight into it. A real
+   * document read:
+   *
+   *   "Plan Name : India Plan  Tenure : 1 Year  Portability : YES"
+   *
+   * and the plan came out as "India Plan  Tenure". The plan is "India Plan";
+   * "Tenure" is the next column's heading.
+   *
+   * Two things mark the end of a value in these documents. The column gap,
+   * which survives extraction as two or more spaces, and the next label, which
+   * is the word sitting immediately before a colon. Use the gap when there is
+   * one, because it is the stronger signal, and fall back to the label rule.
+   */
+  function cutAtNextField(captured: string, rest: string): string {
+    const parts = captured.split(/\s{2,}/);
+    if (parts.length > 1) return parts[0].trim();
+
+    let value = captured.trim();
+    if (/^\s*:/.test(rest)) {
+      const words = value.split(/\s+/);
+      // Never strip the only word: a one-word plan name followed by a colon is
+      // still the plan name.
+      if (words.length > 1) {
+        words.pop();
+        value = words.join(' ');
+      }
+    }
+    return value.trim();
+  }
 
   // Normalization helper
   function normalizePlanName(raw: string): string {
@@ -224,22 +290,47 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
       .replace(/ Individual(\s|$)/i, '$1')
       .replace(/ Adult(\s|$)/i, '$1')
       .replace(/ \d+Year(\s|$)/i, '$1')
+      // The strips above leave a double space behind when the token they remove
+      // sat between two others, which is how "India Plan  Tenure" kept its gap.
+      .replace(/\s{2,}/g, ' ')
       .trim();
   }
 
   // Priority 1: Field "Plan Name"
   const planNameMatch = text.match(/Plan Name\s*[:\-\n]\s*([a-zA-Z0-9_\- ]+)/i);
   if (planNameMatch && planNameMatch[1].trim()) {
-    plan = normalizePlanName(planNameMatch[1].trim());
-    sourceField = 'Plan Name';
+    const rest = text.slice((planNameMatch.index ?? 0) + planNameMatch[0].length);
+    const cut = cutAtNextField(planNameMatch[1], rest);
+    if (cut) {
+      plan = normalizePlanName(cut);
+      sourceField = 'Plan Name';
+    }
   }
 
   // Priority 2: Field "Product name"
   if (!plan) {
     const productNameMatch = text.match(/Product name\s*[:\-\n]\s*([a-zA-Z0-9_\- ]+)/i);
     if (productNameMatch && productNameMatch[1].trim()) {
-      plan = normalizePlanName(productNameMatch[1].trim());
-      sourceField = 'Product name';
+      const rest = text.slice((productNameMatch.index ?? 0) + productNameMatch[0].length);
+      const cut = cutAtNextField(productNameMatch[1], rest);
+      if (cut) {
+        plan = normalizePlanName(cut);
+        sourceField = 'Product name';
+      }
+    }
+  }
+
+  // Priority 2b: the IRDAI Customer Information Sheet line. Every compliant
+  // policy carries it, and it is the document naming the product itself rather
+  // than us guessing from vocabulary. Without this, a Tata AIG MediCare Premier
+  // fell all the way through to the alias map and came out "Optima Restore".
+  if (!plan) {
+    const cisMatch = text.match(
+      /Name of the Insurance Product\s*\/?\s*(?:Policy)?\s*[:\-]?\s*([A-Za-z0-9][A-Za-z0-9\- ]{3,60}?)\s*(?:\d+\s*\.|\n|$)/i
+    );
+    if (cisMatch && cisMatch[1].trim()) {
+      plan = normalizePlanName(cisMatch[1].trim());
+      sourceField = 'CIS Product Name';
     }
   }
 
@@ -262,10 +353,21 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
     }
   }
 
-  // Fallback to alias loop if priorities fail
+  // Fallback to alias loop if priorities fail.
+  //
+  // Whole-word matching, not `includes`. As a raw substring search over the
+  // entire document this matched "care" inside "daycare" and "plus" inside
+  // "surplus", and since the first entry in the map wins, an unrelated policy
+  // took whichever brand happened to be listed earliest. The generic aliases
+  // that made that likely are gone from plan_aliases.json too; this stops the
+  // remaining ones matching mid-word.
   if (!plan) {
+    const wordBoundaryHit = (alias: string) => {
+      const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(textLower);
+    };
     for (const [key, val] of Object.entries(planAliases)) {
-      if (val.aliases.some(alias => textLower.includes(alias))) {
+      if (val.aliases.some(wordBoundaryHit)) {
         plan = val.canonical;
         sourceField = 'Alias Map Fallback';
         break;
@@ -282,8 +384,32 @@ export async function extractPolicyMetadata(text: string): Promise<{ insurer: st
     insurer,
     product: plan, // Mapping plan to product for route compatibility
     plan,
+    // Which rule produced the name. Callers need this to tell a value read off
+    // the document from one inferred by the alias map: only the former may be
+    // stored as fact. It was computed here all along and then discarded, which
+    // is why a guess could reach a customer-facing report indistinguishable
+    // from a reading.
+    planSource: sourceField,
     year
   };
+}
+
+/**
+ * Does this name actually appear in the policy document?
+ *
+ * The single test behind "we read it" vs "we guessed it". Punctuation, case and
+ * spacing are squashed on both sides first, because PDF text extraction breaks
+ * words apart: the Tata AIG document literally reads "T ata AIG Medicare
+ * Premier", so a plain substring check would reject the very name printed on
+ * the policy. Squashing keeps that working while still rejecting "Optima
+ * Restore", which appears nowhere in it.
+ */
+export function appearsInDocument(name: string | null | undefined, text: string): boolean {
+  if (!name || !text) return false;
+  const squash = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const needle = squash(name);
+  if (needle.length < 4) return false; // too short to be evidence of anything
+  return squash(text).includes(needle);
 }
 
 export async function fetchPolicyWordings(insurerName: string, product: string, planName: string, year: string | number): Promise<string | null> {

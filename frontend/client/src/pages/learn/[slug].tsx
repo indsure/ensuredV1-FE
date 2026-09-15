@@ -76,7 +76,7 @@ export default function ClauseDetail() {
       <Header />
       <Breadcrumbs items={[{ label: "Learn", href: "/learn" }, { label: clause.term }]} />
 
-      <main className="flex-1 w-full max-w-3xl mx-auto px-6 pt-6 pb-16">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-6 pt-24 sm:pt-28 pb-16">
         <article>
           <p className="text-xs uppercase tracking-widest text-[var(--color-green-primary)] font-semibold mb-3">
             {clause.category}

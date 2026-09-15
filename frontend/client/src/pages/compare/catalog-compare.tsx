@@ -9,6 +9,8 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useSEO } from "@/hooks/use-seo";
+import { Eyebrow } from "@/components/marketing";
+import { DiffRows } from "@/components/marketing/showcase";
 import { LifeInsuranceComparer } from "@/components/LifeInsuranceComparer";
 import { TermInsuranceComparer } from "@/components/TermInsuranceComparer";
 import { VehicleInsuranceComparer } from "@/components/VehicleInsuranceComparer";
@@ -100,7 +102,7 @@ function AddPlanPicker({
             ) : (
               filtered.map(([insurer, items]) => (
                 <div key={insurer}>
-                  <div className="px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-wider text-[var(--color-text-muted)]">{insurer}</div>
+                  <div className="px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-[var(--color-text-muted)]">{insurer}</div>
                   {items.map((it) => (
                     <button
                       key={it.uin}
@@ -132,7 +134,7 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
   const pal = SIDE_PALETTE[index % SIDE_PALETTE.length];
   return (
     <div className="relative rounded-xl border-2 bg-white p-3.5 pr-9 w-full sm:w-56 flex-shrink-0" style={{ borderColor: pal.accent }}>
-      <span className="inline-block text-[10px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
+      <span className="inline-block text-xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
         {String.fromCharCode(65 + index)}
       </span>
       <p className="font-bold text-[var(--color-navy-900)] leading-tight truncate">{item.plan_name}</p>
@@ -248,14 +250,12 @@ function HealthCatalogCompare() {
     <div className="min-h-screen bg-[var(--color-cream-main)] flex flex-col font-sans text-[var(--color-navy-900)]">
       <Header />
 
-      <main className="flex-grow pt-24 pb-20 px-4 sm:px-6 max-w-5xl mx-auto w-full">
+      <main className="flex-grow pt-24 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 max-w-5xl mx-auto w-full">
         <Breadcrumbs items={[{ label: "Compare" }]} />
 
         {/* Hero */}
         <div className="mt-6 mb-10 max-w-2xl">
-          <span className="inline-block py-1 px-3 border border-[var(--color-teal-600)]/25 bg-[var(--color-teal-600)]/10 rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-teal-600)]">
-            Compare Tool
-          </span>
+          <Eyebrow icon={Scale}>Compare plans</Eyebrow>
           <h1 className="mt-4 text-4xl md:text-5xl font-serif font-bold leading-[1.1]">
             The fine print, <span className="italic text-[var(--color-teal-600)]">compared.</span>
           </h1>
@@ -263,14 +263,14 @@ function HealthCatalogCompare() {
             Pick up to {MAX_PLANS} real health plans and we'll compare the actual policy
             wordings — room limits, waiting periods, co-pays, exclusions. Instant, free, no signup.
           </p>
-          <p className="mt-2 text-xs text-[var(--color-text-muted)] font-mono flex items-center gap-1.5">
-            <Zap className="h-3.5 w-3.5 text-[var(--color-teal-600)]" />
+          <p className="mt-3 text-[15px] text-[var(--color-text-secondary)] flex items-center gap-1.5">
+            <Zap className="h-4 w-4 shrink-0 text-[var(--color-teal-600)]" aria-hidden="true" />
             {catalog.length > 0 ? `${catalog.length} pre-analysed plans across ${Object.keys(grouped).length} insurers` : "Pre-analysed policy wordings, decoded"}
           </p>
         </div>
 
         {loadingCatalog ? (
-          <div className="flex flex-col items-center py-24 text-[var(--color-text-muted)]">
+          <div className="flex flex-col items-center py-14 sm:py-20 lg:py-24 text-[var(--color-text-muted)]">
             <Loader2 className="h-7 w-7 animate-spin mb-2" /> Loading catalog…
           </div>
         ) : (
@@ -305,10 +305,43 @@ function HealthCatalogCompare() {
               </div>
             )}
 
-            {!comparing && !result && !error && (
-              <div className="text-center py-16 text-[var(--color-text-muted)]">
-                <Scale className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                Add two or more plans to see the head-to-head.
+            {/* An empty comparison tool is a page that explains nothing. Rather
+                than a grey icon and one line, the empty state shows a worked
+                example so a first-time visitor can see the output before
+                deciding whether to build one.
+
+                Deliberately NOT gated on `!error`: when the catalog fails to
+                load, the error sits above this and the page would otherwise be
+                a dead end. That is exactly when a visitor most needs to see
+                what they came for. */}
+            {!comparing && !result && (
+              <div className="mt-10 flex flex-col gap-5">
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+                    What a comparison looks like
+                  </span>
+                  <p className="max-w-xl text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
+                    Pick two plans above and you get this, built from the filed wordings rather than
+                    the brochures. The example below is illustrative.
+                  </p>
+                </div>
+
+                <DiffRows
+                  left="Plan A"
+                  right="Plan B"
+                  rows={[
+                    { label: "Room rent cap", a: "No cap", b: "₹5,000 / day", better: "a" },
+                    { label: "Co-pay", a: "None", b: "20% after 60", better: "a" },
+                    { label: "Knee and hip waiting", a: "2 years", b: "4 years", better: "a" },
+                    { label: "Restoration", a: "Same illness too", b: "Different illness only", better: "a" },
+                    { label: "Annual premium", a: "₹42,000", b: "₹38,700", better: "b" },
+                  ]}
+                />
+
+                <p className="text-center text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
+                  Plan B is ₹3,300 cheaper and costs more at the first hospital bill. That is the
+                  trade the brochures do not show you.
+                </p>
               </div>
             )}
 
@@ -323,7 +356,7 @@ function HealthCatalogCompare() {
                   in about a minute, saved to your private portfolio.
                 </p>
                 <Link href="/signup">
-                  <button className="mt-6 inline-flex items-center gap-2 bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white px-8 py-4 rounded-xl font-bold text-lg transition-colors cursor-pointer">
+                  <button className="mt-6 inline-flex items-center gap-2 bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white px-8 py-4 rounded-xl font-bold text-lg transition-colors cursor-pointer">
                     Analyze my policy — free <ArrowRight className="w-5 h-5" />
                   </button>
                 </Link>

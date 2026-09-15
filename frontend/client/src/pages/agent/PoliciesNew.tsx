@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react"
-import { useLocation } from "wouter"
+import { useLocation, useSearch } from "wouter"
 import { Info, RefreshCw, ExternalLink, Download, Loader2, Trash2, FileSpreadsheet, Sparkles } from "lucide-react"
 import React from "react"
 import { formatDistanceToNow, format } from "date-fns"
@@ -14,6 +14,9 @@ import { exportPoliciesToExcel } from "@/lib/exportPolicies"
 import { fetchCustomers, type Customer } from "@/lib/customers"
 import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog"
 import type { DraftTarget } from "@/lib/draftMessage"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { toast } from "@/hooks/use-toast"
+import { PoliciesMobileList } from "@/components/agent/PoliciesMobileList"
 
 type ClientRow = {
   id: string;
@@ -103,7 +106,7 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
             ref={btnRef}
             onMouseEnter={handleEnter}
             onMouseLeave={() => setPos(null)}
-            className="text-slate-300 hover:text-slate-500 transition-colors"
+            className="-m-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-300 hover:text-slate-500 transition-colors"
           >
             <Info size={13} />
           </button>
@@ -115,7 +118,7 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
             >
               {failures.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Painpoints</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Painpoints</p>
                   <ul className="space-y-1.5">
                     {failures.slice(0, 3).map((f, i) => (
                       <li key={i} className="text-xs text-slate-700 flex gap-2"><span className="text-red-400 shrink-0 mt-0.5">•</span>{f}</li>
@@ -125,7 +128,7 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
               )}
               {criticals.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Critical Actions</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-orange-400 mb-2">Critical Actions</p>
                   <ul className="space-y-1.5">
                     {criticals.slice(0, 2).map((c, i) => (
                       <li key={i} className="text-xs text-slate-700 flex gap-2"><span className="text-orange-400 shrink-0 mt-0.5">⚡</span>{c.action}</li>
@@ -135,7 +138,7 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
               )}
               {portRec && (
                 <div className="pt-2.5 border-t border-slate-100">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
                     Port? <span className={portRec === 'yes' ? 'text-red-500' : portRec === 'consider' ? 'text-amber-500' : 'text-green-500'}>{portRec.toUpperCase()}</span>
                   </p>
                   {portReason && <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{portReason}</p>}
@@ -152,14 +155,39 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
 type FilterTab = "all" | "expiring" | "switch" | "healthy";
 type SortKey = "expiry" | "score" | "name";
 
+/** "others" is the sidebar's catch-all: everything outside the four types it
+ *  names. It is not an `insurance_type` value, only a filter. */
+type TypeFilter = "all" | "others" | InsuranceType;
+
+const NAMED_TYPES = ["health", "life", "term", "motor"];
+
+/** The URL is the single source of truth for the type filter, so a refresh, a
+ *  Back press, or a deep link from the sidebar all land on the same list. */
+function normaliseType(raw: string | null): TypeFilter {
+  if (!raw || raw === "all") return "all";
+  if (raw === "others") return "others";
+  return raw in TYPE_META ? (raw as InsuranceType) : "all";
+}
+
 export default function PoliciesNew() {
   const [, setLocation] = useLocation();
   const [rows, setRows] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // The spreadsheet writer is fetched on click now, so the button has to be
+  // able to say it is working instead of looking dead for a beat.
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<FilterTab>("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | InsuranceType>("all");
+  const search_ = useSearch();
+  const urlType = new URLSearchParams(search_).get("type");
+  const typeFilter = normaliseType(urlType);
+  /** Writing the filter to the URL rather than to state keeps the sidebar, the
+   *  chips and the address bar from disagreeing with each other. */
+  const setTypeFilter = useCallback(
+    (tk: TypeFilter) => setLocation(tk === "all" ? "/agent/policies" : `/agent/policies?type=${tk}`),
+    [setLocation]
+  );
   const [sort, setSort] = useState<SortKey>("expiry");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -197,12 +225,29 @@ export default function PoliciesNew() {
   useEffect(() => { fetchPolicies(); }, [fetchPolicies]);
 
   async function handleDelete(id: string) {
+    if (!agent?.agentId) return;
     setDeletingId(id);
     try {
-      await supabase.from("clients").delete().eq("id", id);
+      // supabase-js resolves with { error } instead of throwing, so a bare
+      // try/catch around this never fires. Read the error explicitly, or the
+      // row disappears from the table whether or not the delete succeeded and
+      // reappears on the next refresh.
+      const { error: dErr } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", id)
+        .eq("agent_id", agent.agentId);
+      if (dErr) throw new Error(dErr.message);
       setRows(prev => prev.filter(r => r.id !== id));
-    } catch {
-      alert("Delete failed. Please try again.");
+      toast({ variant: "success", title: "Policy deleted", description: "This cannot be undone." });
+    } catch (e: unknown) {
+      // Re-fetch so the table shows what the database actually holds.
+      void fetchPolicies();
+      toast({
+        variant: "destructive",
+        title: "Could not delete",
+        description: e instanceof Error ? e.message : "Please try again.",
+      });
     } finally {
       setDeletingId(null);
       setConfirmId(null);
@@ -233,13 +278,21 @@ export default function PoliciesNew() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Could not download PDF.");
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: e instanceof Error ? e.message : "Could not download the PDF. Please try again.",
+      });
     } finally {
       setDownloadingId(null);
     }
   }
 
   // Stats
+  // Phones get a purpose-built list rather than the eight-column table.
+  // Both views read the same rows, filters and sort.
+  const isMobile = useIsMobile()
+
   const stats = useMemo(() => {
     const expiringSoon = rows.filter(r => { const d = getDays(r.expiry_date); return d !== null && d >= 0 && d <= 30; }).length;
     const shouldSwitch = rows.filter(r => r.score !== null && r.score < 70).length;
@@ -255,7 +308,11 @@ export default function PoliciesNew() {
       (r.insurer || "").toLowerCase().includes(q) ||
       (r.policy_identifier || "").toLowerCase().includes(q)
     );
-    if (typeFilter !== "all") list = list.filter(r => (r.insurance_type || "health") === typeFilter);
+    if (typeFilter === "others") {
+      list = list.filter(r => !NAMED_TYPES.includes(r.insurance_type || "health"));
+    } else if (typeFilter !== "all") {
+      list = list.filter(r => (r.insurance_type || "health") === typeFilter);
+    }
     if (tab === "expiring") list = list.filter(r => { const d = getDays(r.expiry_date); return d !== null && d >= 0 && d <= 30; });
     if (tab === "switch") list = list.filter(r => r.score !== null && r.score < 70);
     if (tab === "healthy") list = list.filter(r => r.score !== null && r.score >= 70);
@@ -286,13 +343,23 @@ export default function PoliciesNew() {
         <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">My Policies</h1>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => exportPoliciesToExcel(filtered, typeFilter)}
-            disabled={loading || filtered.length === 0}
+            onClick={async () => {
+              setExporting(true)
+              try {
+                await exportPoliciesToExcel(filtered, typeFilter)
+              } catch {
+                toast({ title: "Export failed", description: "Could not build the spreadsheet. Please try again.", variant: "destructive" })
+              } finally {
+                setExporting(false)
+              }
+            }}
+            disabled={loading || exporting || filtered.length === 0}
             className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:border-[#0D9488] hover:text-[#0D9488] disabled:opacity-50"
           >
-            <FileSpreadsheet size={14} /> Export to Excel
+            {exporting ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
+            {exporting ? "Preparing..." : "Export to Excel"}
           </button>
-          <button onClick={fetchPolicies} disabled={loading} className="flex items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
+          <button onClick={fetchPolicies} disabled={loading} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
@@ -300,18 +367,18 @@ export default function PoliciesNew() {
 
       {/* STAT STRIP */}
       {!loading && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Analysed</p>
-            <p className="text-3xl font-extrabold text-slate-800">{stats.total}</p>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-3 sm:p-5 min-w-0">
+            <p className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wide sm:tracking-widest mb-1">Total Analysed</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-800 tabular-nums">{stats.total}</p>
           </div>
-          <div className="bg-white rounded-xl border border-amber-100 shadow-sm p-5 border-l-4 border-l-amber-400">
-            <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Expiring in 30 days</p>
-            <p className="text-3xl font-extrabold text-amber-600">{stats.expiringSoon}</p>
+          <div className="bg-white rounded-xl border border-amber-100 shadow-sm p-3 sm:p-5 border-l-4 border-l-amber-400 min-w-0">
+            <p className="text-[11px] sm:text-xs font-bold text-amber-500 uppercase tracking-wide sm:tracking-widest mb-1">Expiring in 30 days</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-amber-600 tabular-nums">{stats.expiringSoon}</p>
           </div>
-          <div className="bg-white rounded-xl border border-red-100 shadow-sm p-5 border-l-4 border-l-red-400">
-            <p className="text-xs font-bold text-red-400 uppercase tracking-widest mb-1">Should Switch</p>
-            <p className="text-3xl font-extrabold text-red-500">{stats.shouldSwitch}</p>
+          <div className="bg-white rounded-xl border border-red-100 shadow-sm p-3 sm:p-5 border-l-4 border-l-red-400 min-w-0">
+            <p className="text-[11px] sm:text-xs font-bold text-red-400 uppercase tracking-wide sm:tracking-widest mb-1">Should Switch</p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-red-500 tabular-nums">{stats.shouldSwitch}</p>
           </div>
         </div>
       )}
@@ -323,14 +390,17 @@ export default function PoliciesNew() {
 
           {/* TYPE FILTER */}
           <div className="flex flex-wrap items-center gap-2 px-6 pt-5">
-            {(["all", ...(Object.keys(TYPE_META) as InsuranceType[])] as ("all" | InsuranceType)[]).map(tk => {
+            {(["all", ...(Object.keys(TYPE_META) as InsuranceType[]), "others"] as TypeFilter[]).map(tk => {
               const active = typeFilter === tk;
-              const label = tk === "all" ? "All types" : `${TYPE_META[tk].emoji} ${TYPE_META[tk].label}`;
+              const label =
+                tk === "all" ? "All types"
+                : tk === "others" ? "Others"
+                : `${TYPE_META[tk].emoji} ${TYPE_META[tk].label}`;
               return (
                 <button
                   key={tk}
                   onClick={() => setTypeFilter(tk)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-all ${
+                  className={`inline-flex min-h-10 sm:min-h-0 items-center rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all ${
                     active
                       ? "border-[#0D9488] bg-[#0D9488]/10 text-[#0D9488]"
                       : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
@@ -344,17 +414,17 @@ export default function PoliciesNew() {
 
           {/* TOOLBAR */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-6 pt-4 pb-4 border-b border-slate-50">
-            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+            <div className="flex w-full sm:w-auto items-center gap-1 overflow-x-auto bg-slate-100 rounded-lg p-1">
               {tabs.map(t => (
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  className={`flex flex-none min-h-10 sm:min-h-0 items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
                     tab === t.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
                   {t.label}
-                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${tab === t.key ? "bg-slate-100 text-slate-600" : "text-slate-400"}`}>
+                  <span className={`rounded-full px-1.5 py-0.5 text-xs font-black ${tab === t.key ? "bg-slate-100 text-slate-600" : "text-slate-400"}`}>
                     {t.count}
                   </span>
                 </button>
@@ -366,12 +436,12 @@ export default function PoliciesNew() {
                 placeholder="Search client, insurer, policy ID…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="flex-1 sm:w-56 rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
+                className="min-w-0 flex-1 sm:w-56 rounded-lg border border-slate-200 px-3 py-2 sm:py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
               />
               <select
                 value={sort}
                 onChange={e => setSort(e.target.value as SortKey)}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
+                className="min-w-0 shrink-0 rounded-lg border border-slate-200 px-2 sm:px-3 py-2 sm:py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
               >
                 <option value="expiry">Expiring Soon</option>
                 <option value="score">Lowest Score</option>
@@ -380,9 +450,19 @@ export default function PoliciesNew() {
             </div>
           </div>
 
-          {/* TABLE */}
+          {/* TABLE (md and up) / LIST (phones) */}
+          {isMobile ? (
+            <div className="p-3">
+              <PoliciesMobileList
+                rows={filtered}
+                loading={loading}
+                emptyText={search ? `No results for "${search}"` : "No policies in this category."}
+                onOpen={(id) => setLocation(`/agent/policies/${id}`)}
+              />
+            </div>
+          ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="table-cards w-full text-sm">
               <thead className="bg-slate-50/60 text-xs text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-3.5 text-left">Customer</th>
@@ -427,7 +507,7 @@ export default function PoliciesNew() {
                       className="hover:bg-slate-50/60 transition-colors cursor-pointer group"
                       onClick={() => setLocation(`/agent/policies/${p.id}`)}
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4" data-label="Customer" data-cell="title">
                         <div className="font-semibold text-slate-800">{p.policyholder_name || p.name || "—"}</div>
                         {(p.policy_identifier || p.policy_name) && (
                           <div className="text-[11px] text-slate-400 font-medium mt-0.5">
@@ -437,31 +517,31 @@ export default function PoliciesNew() {
                         {p.customer_id && customersById.has(p.customer_id) && (
                           <button
                             onClick={e => { e.stopPropagation(); setLocation(`/agent/customers/${p.customer_id}`); }}
-                            className="mt-1 inline-flex items-center gap-1 rounded-full bg-teal-50 border border-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-700 hover:bg-teal-100 transition-colors"
+                            className="mt-1 inline-flex items-center gap-1 rounded-full bg-teal-50 border border-teal-100 px-2 py-0.5 text-xs font-bold text-teal-700 hover:bg-teal-100 transition-colors"
                           >
                             👤 {customersById.get(p.customer_id)!.name}
                           </button>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                      <td className="px-6 py-4" data-label="Type">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider">
                           {TYPE_META[(p.insurance_type || "health") as InsuranceType]?.emoji} {typeLabel(p.insurance_type)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-slate-500">{p.insurer || "—"}</td>
-                      <td className="px-6 py-4"><NextPremiumBadge dateStr={npDate} /></td>
-                      <td className="px-6 py-4">{isHealth ? <ScoreBadge score={p.score} /> : <span className="text-slate-300 text-sm">—</span>}</td>
-                      <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                      <td className="px-6 py-4 text-slate-500" data-label="Insured With">{p.insurer || "—"}</td>
+                      <td className="px-6 py-4" data-label="Next Premium"><NextPremiumBadge dateStr={npDate} /></td>
+                      <td className="px-6 py-4" data-label="Score">{isHealth ? <ScoreBadge score={p.score} /> : <span className="text-slate-300 text-sm">—</span>}</td>
+                      <td className="px-6 py-4" data-label="Recommendation" onClick={e => e.stopPropagation()}>
                         {isHealth ? <SwitchCell shouldSwitch={shouldSwitch} reportData={p.report_data} /> : <span className="text-slate-300 text-sm">—</span>}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4" data-label="Views">
                         {views === 0 ? (
                           <span className="text-xs text-slate-400">Not viewed</span>
                         ) : (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest cursor-default">
+                                <span className="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-0.5 text-xs font-black uppercase tracking-widest cursor-default">
                                   {views} views
                                 </span>
                               </TooltipTrigger>
@@ -472,8 +552,8 @@ export default function PoliciesNew() {
                           </TooltipProvider>
                         )}
                       </td>
-                      <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
+                      <td className="px-6 py-4" data-label="Actions" data-cell="actions" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1 max-md:w-full max-md:justify-start">
 
                           {/* Draft AI WhatsApp message */}
                           <TooltipProvider>
@@ -495,9 +575,9 @@ export default function PoliciesNew() {
                                       weakPoint: weak,
                                     });
                                   }}
-                                  className="p-1.5 rounded text-slate-400 hover:text-[#0D9488] hover:bg-teal-50 transition-colors"
+                                  className="inline-flex h-10 w-10 md:h-9 md:w-9 items-center justify-center p-1.5 rounded text-slate-500 hover:text-[#0D9488] hover:bg-teal-50 transition-colors"
                                 >
-                                  <Sparkles className="w-3.5 h-3.5" />
+                                  <Sparkles className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent>Draft WhatsApp message</TooltipContent>
@@ -510,9 +590,9 @@ export default function PoliciesNew() {
                               <TooltipTrigger asChild>
                                 <button
                                   onClick={() => window.open(`/agent/policies/${p.id}`, "_blank")}
-                                  className="p-1.5 rounded text-slate-400 hover:text-[#0D9488] hover:bg-teal-50 transition-colors"
+                                  className="inline-flex h-10 w-10 md:h-9 md:w-9 items-center justify-center p-1.5 rounded text-slate-500 hover:text-[#0D9488] hover:bg-teal-50 transition-colors"
                                 >
-                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  <ExternalLink className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent>Open report</TooltipContent>
@@ -526,11 +606,11 @@ export default function PoliciesNew() {
                                 <button
                                   onClick={() => handleDownload(p)}
                                   disabled={!p.pdf_url || downloadingId === p.id}
-                                  className="p-1.5 rounded text-slate-400 hover:text-[#0D9488] hover:bg-teal-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                  className="inline-flex h-10 w-10 md:h-9 md:w-9 items-center justify-center p-1.5 rounded text-slate-500 hover:text-[#0D9488] hover:bg-teal-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                   {downloadingId === p.id
                                     ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    : <Download className="w-3.5 h-3.5" />
+                                    : <Download className="w-4 h-4" />
                                   }
                                 </button>
                               </TooltipTrigger>
@@ -565,13 +645,13 @@ export default function PoliciesNew() {
                               <button
                                 onClick={() => handleDelete(p.id)}
                                 disabled={deletingId === p.id}
-                                className="text-[10px] font-black uppercase tracking-wider text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                                className="text-xs font-black uppercase tracking-wider text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded transition-colors disabled:opacity-50"
                               >
                                 {deletingId === p.id ? "…" : "Delete"}
                               </button>
                               <button
                                 onClick={() => setConfirmId(null)}
-                                className="text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-slate-600 px-1.5 py-1 rounded"
+                                className="text-xs font-black uppercase tracking-wider text-slate-400 hover:text-slate-600 px-1.5 py-1 rounded"
                               >
                                 Cancel
                               </button>
@@ -579,9 +659,9 @@ export default function PoliciesNew() {
                           ) : (
                             <button
                               onClick={() => setConfirmId(p.id)}
-                              className="p-1.5 rounded text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                              className="inline-flex h-10 w-10 md:h-9 md:w-9 items-center justify-center p-1.5 rounded text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           )}
                         </div>
@@ -592,6 +672,7 @@ export default function PoliciesNew() {
               </tbody>
             </table>
           </div>
+          )}
 
           {!loading && filtered.length > 0 && (
             <div className="px-6 py-3 border-t border-slate-50 text-xs text-slate-400">

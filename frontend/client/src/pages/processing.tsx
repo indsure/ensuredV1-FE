@@ -5,7 +5,7 @@ import { CheckCircle2, AlertCircle, ShieldCheck, ChevronDown, FileText, Search, 
 import { useAnalysis } from "@/hooks/use-analysis";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 
 // Enhanced "Live Insight" Lines - Rotating
 const LIVE_INSIGHTS = [
@@ -101,7 +101,7 @@ export default function Processing() {
             <h2 className="text-2xl font-serif text-[var(--color-navy-900)] mb-2">
               {STEPS[activeStep]?.title || "Finalizing..."}
             </h2>
-            <p className="text-sm text-[var(--color-text-secondary)] opacity-80 mb-8 font-mono uppercase tracking-widest text-[10px]">
+            <p className="text-sm text-[var(--color-text-secondary)] opacity-80 mb-8 font-mono uppercase tracking-widest text-xs">
               {STEPS[activeStep]?.desc}
             </p>
 
@@ -132,11 +132,11 @@ export default function Processing() {
               return (
                 <div key={i} className={`flex items-start gap-4 mb-8 last:mb-0 transition-all duration-700 ${isActive || isCompleted ? "opacity-100" : "opacity-30 blur-[0.5px]"}`}>
                   <div className={`
-                        w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-mono border mt-0.5 shrink-0 transition-colors duration-500
+                        w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono border mt-0.5 shrink-0 transition-colors duration-500
                         ${isCompleted
                       ? "bg-[var(--color-teal-100)] border-[var(--color-teal-200)] text-[var(--color-teal-700)]"
                       : isActive
-                        ? "bg-[var(--color-teal-600)] border-[var(--color-teal-600)] text-white shadow-[0_0_15px_rgba(20,184,166,0.2)]"
+                        ? "bg-[var(--color-cta)] border-[var(--color-teal-600)] text-white shadow-[0_0_15px_rgba(20,184,166,0.2)]"
                         : "border-[var(--color-border-light)] text-[var(--color-text-muted)]"
                     }
                       `}>
@@ -149,7 +149,7 @@ export default function Processing() {
                     {isActive && (
                       <motion.p
                         initial={{ opacity: 0 }} animate={{ opacity: 0.7 }}
-                        className="text-[10px] font-mono text-[var(--color-text-secondary)] uppercase tracking-widest mt-1"
+                        className="text-xs font-mono text-[var(--color-text-secondary)] uppercase tracking-widest mt-1"
                       >
                         {step.desc}
                       </motion.p>
@@ -167,7 +167,7 @@ export default function Processing() {
               What this audit is actively checking
             </h3>
 
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {/* Panel 1 */}
               <div className="bg-white border border-[var(--color-border-light)] p-5 rounded-lg shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
@@ -208,7 +208,7 @@ export default function Processing() {
           <div className="text-center w-full">
             <button
               onClick={() => setIsWhyOpen(!isWhyOpen)}
-              className="group flex items-center gap-2 text-[10px] uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-teal-600)] transition-colors mx-auto mb-4"
+              className="group flex items-center gap-2 text-xs uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-teal-600)] transition-colors mx-auto mb-4"
             >
               Why this takes a minute
               <span className={`transition-transform duration-300 ${isWhyOpen ? "rotate-180" : ""}`}>
@@ -235,7 +235,7 @@ export default function Processing() {
 
         {/* 5. PRIVACY & ISOLATION */}
         <div className="absolute bottom-6 w-full text-center px-6">
-          <p className="text-[10px] text-[var(--color-text-muted)] opacity-60 flex items-center justify-center gap-2 font-mono tracking-wide">
+          <p className="text-xs text-[var(--color-text-muted)] opacity-60 flex items-center justify-center gap-2 font-mono tracking-wide">
             <ShieldCheck className="w-3 h-3 text-[var(--color-teal-600)] opacity-70" />
             ANALYSIS IN ISOLATION • NO HUMAN REVIEW • PRIVATE ENCLAVE
           </p>

@@ -162,14 +162,14 @@ export default function LeadsNew() {
           >
             {createOpen ? <X size={18} /> : <Plus size={18} />} {createOpen ? "Cancel" : "Add Lead"}
           </button>
-          <button onClick={load} disabled={loading} className="flex items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
+          <button onClick={load} disabled={loading} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
       </div>
 
       {/* TABS: Pipeline vs Renewals */}
-      <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 w-fit">
+      <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 w-fit">
         {([["pipeline", "Pipeline"], ["renewals", "Renewals"]] as const).map(([key, label]) => {
           const active = view === key;
           return (
@@ -177,7 +177,7 @@ export default function LeadsNew() {
               key={key}
               onClick={() => setView(key)}
               className={[
-                "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-colors",
+                "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-colors",
                 active ? "bg-white text-[#0D9488] shadow-sm" : "text-slate-500 hover:text-slate-700",
               ].join(" ")}
             >
@@ -198,7 +198,7 @@ export default function LeadsNew() {
       {createOpen && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
           <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">New lead</p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Labeled label="Name *">
               <input value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} placeholder="Full name" className={inputCls} />
             </Labeled>
@@ -251,7 +251,7 @@ export default function LeadsNew() {
                 <Bell className="h-5 w-5 text-amber-600" />
                 <h2 className="text-lg font-bold text-amber-800">Call today ({dueToday.length})</h2>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {dueToday.map((l) => (
                   <div key={l.id} className="bg-white rounded-xl border border-amber-200 p-4 flex items-center justify-between gap-3">
                     <button onClick={() => setLocation(`/agent/leads/${l.id}`)} className="text-left min-w-0">
@@ -283,7 +283,7 @@ export default function LeadsNew() {
 
           {/* LEAD CARDS */}
           {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3].map((i) => <div key={i} className="h-44 rounded-2xl bg-slate-100 animate-pulse" />)}
             </div>
           ) : filtered.length === 0 ? (
@@ -294,7 +294,7 @@ export default function LeadsNew() {
                 : <span className="italic">No leads here yet. Tap "Add Lead" to add your first one.</span>}
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((l) => (
                 <LeadCard
                   key={l.id}
@@ -339,7 +339,7 @@ function FilterChip({ active, onClick, label, count, dot }: { active: boolean; o
     <button
       onClick={onClick}
       className={[
-        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold border transition-colors",
+        "inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold border transition-colors",
         active ? "bg-[#0D9488] text-white border-[#0D9488]" : "bg-white text-slate-600 border-slate-200 hover:border-[#0D9488]/40",
       ].join(" ")}
     >

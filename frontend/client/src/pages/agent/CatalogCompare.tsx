@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
-import { Loader2, Scale, Zap, Upload, Search, Plus, X } from "lucide-react";
+import { Loader2, Scale, Zap, Upload, Search, Plus, X, ArrowRight } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import ComparisonShareBar from "@/components/agent/ComparisonShareBar";
 import ComparisonView, { SIDE_PALETTE } from "@/components/ComparisonView";
 import { type ComparisonResult } from "@/lib/wordingProfile";
 
@@ -84,7 +85,7 @@ function AddPlanPicker({
             ) : (
               filtered.map(([insurer, items]) => (
                 <div key={insurer}>
-                  <div className="px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{insurer}</div>
+                  <div className="px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-slate-400">{insurer}</div>
                   {items.map((it) => (
                     <button
                       key={it.uin}
@@ -116,7 +117,7 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
   const pal = SIDE_PALETTE[index % SIDE_PALETTE.length];
   return (
     <div className="relative rounded-xl border-2 bg-white p-3.5 pr-9 w-full sm:w-56 flex-shrink-0" style={{ borderColor: pal.accent }}>
-      <span className="inline-block text-[10px] font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
+      <span className="inline-block text-xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
         {String.fromCharCode(65 + index)}
       </span>
       <p className="font-bold text-slate-800 leading-tight truncate">{item.plan_name}</p>
@@ -210,19 +211,16 @@ export default function CatalogCompare() {
             <Scale className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900">Compare from Catalog</h1>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900">Compare Policies</h1>
             <p className="text-slate-500 flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-[#0D9488]" /> Instant — add up to 4 pre-analysed plans.
+              <Zap className="h-3.5 w-3.5 text-[#0D9488]" /> Instant and free. Add up to 4 pre-analysed plans.
             </p>
           </div>
         </div>
-        <Link href="/agent/compare" className="hidden sm:flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 whitespace-nowrap mt-1">
-          <Upload className="h-4 w-4" /> Upload instead
-        </Link>
       </div>
 
       {loadingCatalog ? (
-        <div className="flex flex-col items-center py-24 text-slate-400">
+        <div className="flex flex-col items-center py-14 sm:py-20 lg:py-24 text-slate-400">
           <Loader2 className="h-7 w-7 animate-spin mb-2" /> Loading catalog…
         </div>
       ) : (
@@ -243,6 +241,26 @@ export default function CatalogCompare() {
             </p>
           </div>
 
+          {/* The paid lane, deliberately below the free one. The cost is stated
+              here as well as in the confirmation on the page itself, so nobody
+              spends two checks without having read the price twice. */}
+          <Link
+            href="/agent/compare/quotes"
+            className="mt-4 flex items-center gap-3 rounded-2xl border-2 border-slate-200 bg-white hover:border-[#0D9488]/40 hover:bg-[#0D9488]/5 p-4 transition-colors group"
+          >
+            <div className="h-11 w-11 rounded-xl bg-slate-100 text-slate-500 group-hover:bg-[#0D9488] group-hover:text-white flex items-center justify-center flex-shrink-0 transition-colors">
+              <Upload className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-slate-800">Compare Quotes</p>
+              <p className="text-sm text-slate-500">
+                Plan not in the catalog? Upload the two quotes and we read both wordings clause by clause.
+                <span className="font-semibold text-slate-600"> Uses 2 policy checks.</span>
+              </p>
+            </div>
+            <ArrowRight className="h-5 w-5 text-slate-500 group-hover:text-[#0D9488] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+          </Link>
+
           {error && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">{error}</div>}
 
           {comparing && (
@@ -251,10 +269,19 @@ export default function CatalogCompare() {
             </div>
           )}
 
-          {!comparing && result && <div className="mt-6"><ComparisonView data={result} /></div>}
+          {!comparing && result && (
+            <div className="mt-6 space-y-6">
+              <ComparisonView data={result} />
+              {/* The catalogue compare had no way to share at all, so this table
+                  left the product as a screenshot. Same component the uploaded
+                  comparison uses, and the same public link: no profiles are
+                  passed because a catalogue comparison has none. */}
+              <ComparisonShareBar data={result} />
+            </div>
+          )}
 
           {!comparing && !result && !error && (
-            <div className="text-center py-20 text-slate-400">
+            <div className="text-center py-12 sm:py-16 lg:py-20 text-slate-400">
               <Scale className="h-10 w-10 mx-auto mb-3 opacity-40" />
               Add two or more plans to see the head-to-head.
             </div>

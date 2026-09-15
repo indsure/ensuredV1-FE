@@ -17,6 +17,7 @@ import { extractStructuredData } from "./services/dataExtraction";
 import {
   isDataEntryType,
   deriveSharedColumns,
+  mergeExtractedData,
   isSupportedInsuranceType,
   SUPPORTED_INSURANCE_TYPES,
 } from "./services/extractionFields";
@@ -24,11 +25,17 @@ import { extractWordingProfile, hashText } from "./services/wordingCompare";
 import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage";
 import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
+import { pickShareableFields, hasShareableContent } from "../../shared/dataEntryShare";
+import { AGENT_TABLES, INDIVIDUAL_TABLES, selectForTable, type OwnedTable } from "./services/accountData";
+import { scoreFromExtractedData } from "../../shared/motorScore";
+import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { pool } from "./lib/db";
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
+import { registerTeamRoutes } from "./teamRoutes";
+import { registerAccountDeletionRoutes } from "./services/accountDeletion";
 import { log } from "./lib/logger";
 
 /* ---------- SUPABASE ADMIN CLIENT ---------- */
@@ -62,7 +69,7 @@ const supabaseAuth = SUPABASE_ANON_KEY
 /* ---------- DB POOL (shared, see ./lib/db) ---------- */
 
 pool.query("SELECT 1")
-  .then(() => console.log("✅ DB connected successfully"))
+  .then(() => log.info("db connected"))
   .catch((err) => console.error("❌ DB connection failed:", err.message));
 
 /* ---------- MULTER ---------- */
@@ -75,6 +82,54 @@ const upload = multer({
 // Supabase Storage bucket where original uploaded policy PDFs are kept,
 // so they can be downloaded later (and re-analyzed without re-uploading).
 const PDF_BUCKET = "policy-pdfs";
+
+/**
+ * Remove `__internal` before a stored report leaves the server.
+ *
+ * `__internal.policyText` is the entire source document — roughly 55k characters
+ * carrying the policyholder's phone, address, DOB, nominee details and medical
+ * declaration. It was persisted into report_data and handed out verbatim by the
+ * PUBLIC share endpoint, so any recipient of a share link could read all of it.
+ * The pipeline no longer attaches it, but every report analysed before that
+ * change still has it in the database, so strip on the way out as well.
+ *
+ * Nothing on the client reads `__internal`, so this is applied to authenticated
+ * responses too rather than only the public ones.
+ */
+/**
+ * Record where a plan name came from, and park the guess where it cannot be
+ * mistaken for a reading.
+ *
+ * `clients.policy_name` now holds only names found in the policy document. When
+ * the pipeline could not read one, the best guess lands in
+ * `policy_name_suggested` instead, is shown to the advisor as a suggestion, and
+ * becomes the policy's name only if they accept it. See migration 021.
+ */
+async function recordPlanProvenance(
+  clientId: string,
+  metadata: any,
+): Promise<void> {
+  const verified = !!metadata?.planNameVerified;
+  const candidate = metadata?.planName ?? null;
+  try {
+    await pool.query(
+      `UPDATE clients
+          SET policy_name_suggested = $1,
+              policy_name_source    = $2
+        WHERE id = $3`,
+      [verified ? null : candidate, metadata?.planSource ?? null, clientId],
+    );
+  } catch (err: any) {
+    // Provenance is a nicety; never fail a completed analysis over it.
+    console.error(`[plan provenance ${clientId}]`, err?.message);
+  }
+}
+
+function stripInternal<T>(reportData: T): T {
+  if (!reportData || typeof reportData !== "object") return reportData;
+  const { __internal, ...rest } = reportData as Record<string, unknown>;
+  return rest as T;
+}
 
 /* ---------- PDF RENDER CONCURRENCY CAP ---------- */
 
@@ -153,7 +208,7 @@ async function sweepExpiredPendingUploads() {
     await pool.query("DELETE FROM pending_uploads WHERE id = ANY($1::uuid[])", [
       rows.map((r: any) => r.id),
     ]);
-    console.log(`[pending uploads] swept ${paths.length} unclaimed upload(s).`);
+    log.info("pending uploads swept", { count: paths.length });
   } catch (err: any) {
     console.error("[pending uploads] sweep error:", err?.message || err);
   }
@@ -161,6 +216,99 @@ async function sweepExpiredPendingUploads() {
 
 void sweepExpiredPendingUploads();
 setInterval(sweepExpiredPendingUploads, 60 * 60 * 1000);
+
+// ── CLAIM DOCUMENT INCINERATION ──────────────────────────────────────────────
+// The promise the upload screen makes to the customer, kept by a machine.
+//
+// Claim documents live 30 days from the first upload, extendable once to 60.
+// Past purge_at this destroys the bucket objects and the claim_documents rows,
+// then stamps claims.documents_purged_at so the UI can say plainly that the
+// files are gone. Same ordering as the sweep above and for the same reason:
+// objects first, rows second, so a crash costs a retry rather than an orphan.
+//
+// The CASE RECORD is never touched — insurer, hospital, ailment, amounts,
+// dates, the query rounds and the timeline all survive. Once the files are
+// gone those columns describe a case, not a person, and they are what the
+// advisor's claims track record is built from.
+//
+// THE ONE EXCEPTION is outcome proof. A settlement letter is what the advisor
+// shows future customers, and it also carries a name, a policy number and an
+// amount — so it survives only where the customer agreed on the record
+// (claims.proof_consent_at). No consent, and it burns with everything else.
+async function incinerateExpiredClaimDocuments() {
+  try {
+    const { rows: claims } = await pool.query(
+      // Two kinds of candidate. The ordinary one is a claim past its deadline
+      // that has never been purged. The second exists because CLOSING a claim
+      // purges its working documents and stamps documents_purged_at while
+      // deliberately leaving the insurer's letter — so a claim closed WITHOUT
+      // consent still has a letter that must die at purge_at, and keying only
+      // on the stamp would let it live forever.
+      `SELECT id, proof_consent_at
+         FROM claims
+        WHERE purge_at IS NOT NULL
+          AND purge_at < now()
+          AND (
+            documents_purged_at IS NULL
+            OR (proof_consent_at IS NULL
+                AND EXISTS (SELECT 1 FROM claim_documents d WHERE d.claim_id = claims.id))
+          )
+        LIMIT 200`
+    );
+    if (claims.length === 0) return;
+
+    for (const claim of claims) {
+      // A claim that consented keeps its outcome proof; everything else on it
+      // still goes. Without consent the whole set is in scope.
+      const { rows: docs } = await pool.query(
+        claim.proof_consent_at
+          ? `SELECT id, storage_path FROM claim_documents
+              WHERE claim_id = $1 AND category IN ('personal','case')`
+          : `SELECT id, storage_path FROM claim_documents WHERE claim_id = $1`,
+        [claim.id]
+      );
+
+      if (docs.length > 0) {
+        const paths = docs.map((d: any) => d.storage_path);
+        const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove(paths);
+        if (error) {
+          // Leave the rows and the stamp alone; next run retries the pair
+          // together. Never stamp purged while files are still standing.
+          console.error(`[claims] object purge failed for ${claim.id}:`, error.message);
+          continue;
+        }
+        await pool.query("DELETE FROM claim_documents WHERE id = ANY($1::uuid[])", [
+          docs.map((d: any) => d.id),
+        ]);
+      }
+
+      await pool.query(
+        `UPDATE claims
+            SET documents_purged_at = COALESCE(documents_purged_at, now()),
+                updated_at = now()
+          WHERE id = $1`,
+        [claim.id]
+      );
+      await pool.query(
+        `INSERT INTO claim_events (claim_id, agent_id, status, note)
+         SELECT id, agent_id, 'documents_purged', $2 FROM claims WHERE id = $1`,
+        [
+          claim.id,
+          claim.proof_consent_at
+            ? `${docs.length} document(s) deleted. Settlement proof kept with the customer's permission.`
+            : `${docs.length} document(s) deleted.`,
+        ]
+      );
+      log.info("claim documents incinerated", { claim: claim.id, count: docs.length });
+    }
+  } catch (err: any) {
+    console.error("[claims] incineration sweep error:", err?.message || err);
+  }
+}
+
+// Daily. The deadline is a date, not a minute, so hourly would buy nothing.
+void incinerateExpiredClaimDocuments();
+setInterval(incinerateExpiredClaimDocuments, 24 * 60 * 60 * 1000);
 
 // ── D2C consumer ("individual") metering knobs ───────────────────────────
 // Free plan holds one policy per line of business, and does not expire. That
@@ -924,7 +1072,7 @@ export async function registerRoutes(
     try {
       const { city, pincode, limit = "10" } = req.query;
 
-      console.log(`[Hospital Samples] Request: city=${city}, pincode=${pincode}, limit=${limit}`);
+      log.debug("hospital samples request", { city, pincode, limit });
       
       const samples = getHospitalSamples({
         city: city as string | undefined,
@@ -932,7 +1080,7 @@ export async function registerRoutes(
         limit: parseInt(limit as string, 10),
       });
 
-      console.log(`[Hospital Samples] Returning ${samples.length} samples`);
+      log.debug("hospital samples returned", { count: samples.length });
       res.json(samples);
     } catch (error: any) {
       console.error("[Hospital Samples] Error:", error);
@@ -991,7 +1139,11 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Report not found or inactive" });
       }
 
-      return res.json(reportRes.rows[0]);
+      const publicRow = reportRes.rows[0];
+      return res.json({
+        ...publicRow,
+        recommendation_data: stripInternal(publicRow.recommendation_data),
+      });
     } catch (err: any) {
       console.error("PUBLIC REPORT ERROR:", err.message, err.stack);
       res.status(500).json({ error: "Internal Server Error", details: err.message });
@@ -1277,8 +1429,23 @@ export async function registerRoutes(
         [name.trim(), email.trim(), phone || null, requestType, details.trim(), submittedAt ? new Date(submittedAt) : new Date()]
       );
 
+      /* The fallback was grievance@ensured.in, a domain the company no longer
+         owns, and GRIEVANCE_OFFICER_EMAIL is not set in production. Every
+         grievance raised on the live site was therefore addressed to a domain
+         we do not control. The grievance route is a statutory one under the
+         DPDP Act, so losing those is not a missed email, it is a missed legal
+         obligation. The fallback is now a domain we own; the env var should
+         still be set explicitly to a mailbox a person actually reads, because a
+         fallback nobody monitors fails just as quietly.
+
+         The fallback is now the same address the public grievance page
+         advertises as the Grievance Officer's, rather than a plausible-looking
+         guess at a mailbox. If the page tells a person to write to a given
+         address, the form on that page must deliver to the same one, or the two
+         halves of the same statutory promise disagree. GRIEVANCE_OFFICER_EMAIL
+         still overrides, for when the officer changes. */
       const grievanceOfficerEmail =
-        process.env.GRIEVANCE_OFFICER_EMAIL ?? "grievance@ensured.in";
+        process.env.GRIEVANCE_OFFICER_EMAIL ?? "nikhil@indsure.in";
 
       // Best-effort acknowledgement email: if SMTP env vars are not set, we store the request and respond.
       const smtpHost = process.env.GRIEVANCE_SMTP_HOST;
@@ -1338,9 +1505,7 @@ export async function registerRoutes(
           });
         }
       } else {
-        console.log(
-          "⚠️ Skipping grievance acknowledgement email: SMTP env vars not configured."
-        );
+        log.warn("grievance acknowledgement email skipped: SMTP not configured");
       }
 
       return res.status(200).json({ success: true, id: insertRes.rows[0]?.id });
@@ -1354,8 +1519,16 @@ export async function registerRoutes(
 
   app.post("/api/agent/create-profile", async (req, res) => {
     try {
-      const { id, email, full_name, phone, city, experience_years, invite_code, marketing_consent } =
-        req.body;
+      const {
+        id, email, full_name, phone, city, experience_years, invite_code, marketing_consent,
+        // Agent signup asks "solo advisor or agency". An agency's answer rides
+        // in on THIS call rather than a second endpoint, because this is the
+        // one that already copes with having no session yet (the
+        // email-confirmation path) and already proves the id is a real auth
+        // user. A separate unauthenticated endpoint would be a second door to
+        // guard for no benefit.
+        account_type, agency_name, seats_wanted,
+      } = req.body;
 
       if (!id || !email || !full_name) {
         return res
@@ -1396,7 +1569,38 @@ export async function registerRoutes(
         ]
       );
 
-      return res.json({ success: true });
+      // Agency signup: record the ask. This does NOT create a team and does not
+      // grant a seat — the Agency tier has a five-seat minimum and no self-serve
+      // billing, so provisioning stays an admin action (migration 018).
+      //
+      // Deliberately non-fatal: the account is already created above, and
+      // losing the agency detail must never cost someone their signup. We log
+      // it loudly and let them through; the portal shows nothing is pending, so
+      // a dropped request surfaces as "not on a team" rather than a silent lie.
+      let enterpriseCaptured = false;
+      if (String(account_type || "").toLowerCase() === "agency" && String(agency_name || "").trim()) {
+        try {
+          const seats = Number(seats_wanted);
+          await pool.query(
+            `INSERT INTO team_requests (agent_id, agency_name, seats_wanted, contact_phone)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (agent_id) WHERE status = 'pending' DO NOTHING`,
+            [
+              id,
+              String(agency_name).trim().slice(0, 200),
+              Number.isInteger(seats) && seats >= 1 ? Math.min(seats, 500) : null,
+              phone || null,
+            ]
+          );
+          enterpriseCaptured = true;
+        } catch (e: any) {
+          log.error("team_request_capture_failed", {
+            agentId: id, message: e?.message ?? String(e),
+          });
+        }
+      }
+
+      return res.json({ success: true, enterpriseCaptured });
     } catch (err: any) {
       console.error("Create profile error:", err);
       res.status(500).json({ error: err.message || "Failed to create agent profile" });
@@ -1896,6 +2100,910 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   );
 
+  /* ═══════════════════════════════════════════════════════════════════════
+   * CLAIMS DESK
+   *
+   * An advisor tracks a customer's health claim from first consultation to
+   * settlement letter. ZERO AI in this lane: no OCR, no extraction, no scoring.
+   * Every field is typed. Note that the extraction pipeline is deliberately NOT
+   * referenced anywhere below — adding a model call here should require a
+   * visible new import, not a quiet flag flip.
+   *
+   * Retention: documents live 30 days from the FIRST upload, extendable once by
+   * 30 more while the claim is open, hard ceiling 60. The daily sweep that
+   * actually destroys them lives in index.ts next to the other lifecycle jobs.
+   * ═══════════════════════════════════════════════════════════════════════ */
+
+  const CLAIM_RETENTION_DAYS = 30;
+  const CLAIM_EXTENSION_DAYS = 30;
+  // Extend unlocks this many days before purge_at — i.e. day 25 of the first 30.
+  const CLAIM_EXTEND_UNLOCK_DAYS = 5;
+
+  const CLAIM_TERMINAL = ["settled", "rejected"];
+  const CLAIM_STATUSES = [
+    "opened", "docs_received", "submitted", "under_process",
+    "query_raised", "settled", "rejected",
+  ];
+
+  // Ownership check. Every claim route starts here, so a claim id from another
+  // agent is a 404 rather than a 403 — we do not confirm the row exists.
+  async function claimForAgent(claimId: string, agentId: string) {
+    const r = await pool.query(
+      "SELECT * FROM claims WHERE id = $1 AND agent_id = $2",
+      [claimId, agentId]
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async function logClaimEvent(
+    claimId: string, agentId: string, status: string, note?: string | null
+  ) {
+    try {
+      await pool.query(
+        `INSERT INTO claim_events (claim_id, agent_id, status, note)
+         VALUES ($1, $2, $3, $4)`,
+        [claimId, agentId, status, note ?? null]
+      );
+    } catch (e: any) {
+      // The timeline is a record, not a gate — never fail the caller for it.
+      console.error(`[claims ${claimId}] event log failed:`, e?.message ?? e);
+    }
+  }
+
+  // Amounts arrive as free text from a phone keyboard: "1,85,000", "₹185000",
+  // "185000 ". Number() returns NaN for the first two, and anything wider than
+  // the column used to reach Postgres and come back as "numeric field
+  // overflow" — which the advisor saw as a bare 500 mid-way through closing a
+  // claim. Parse defensively here and let the caller answer 400 in words.
+  const CLAIM_AMOUNT_MAX = 999999999999.99; // numeric(14,2)
+  function parseMoney(
+    raw: unknown
+  ): { ok: true; value: number | null } | { ok: false; message: string } {
+    if (raw == null || raw === "") return { ok: true, value: null };
+    const cleaned = String(raw).replace(/[₹,\s_]/g, "");
+    if (cleaned === "") return { ok: true, value: null };
+    const n = Number(cleaned);
+    if (!Number.isFinite(n)) return { ok: false, message: "Enter the amount in numbers only." };
+    if (n < 0) return { ok: false, message: "Amount cannot be negative." };
+    if (n > CLAIM_AMOUNT_MAX) return { ok: false, message: "That amount is too large. Check the figure." };
+    return { ok: true, value: Math.round(n * 100) / 100 };
+  }
+
+  // An insurer cannot pay out more than was asked for, so a settled figure
+  // above the claimed one is a typo — usually a digit too many, which is
+  // exactly the mistake that matters here because these two numbers are what
+  // the advisor's track record is computed from.
+  //
+  // Checked as a PAIR, not per field: editing the CLAIMED amount downward
+  // breaks the relationship just as surely as raising the settled one, so both
+  // write paths compare the values the row will actually end up holding.
+  function checkAmountPair(
+    claimed: unknown,
+    settled: unknown
+  ): { ok: true } | { ok: false; message: string } {
+    if (claimed == null || settled == null) return { ok: true };
+    const c = Number(claimed);
+    const s = Number(settled);
+    if (!Number.isFinite(c) || !Number.isFinite(s)) return { ok: true };
+    if (s > c) {
+      return {
+        ok: false,
+        message: `The settled amount cannot be more than the amount claimed (₹${c.toLocaleString("en-IN")}).`,
+      };
+    }
+    return { ok: true };
+  }
+
+  // Closing a claim destroys its personal and case documents immediately —
+  // the purpose they were collected for has ended, so holding them to the
+  // 30-day mark would be keeping identity documents for no reason. The outcome
+  // letter is what survives; it is the proof the advisor closes claims.
+  //
+  // Same ordering as the sweeps: objects first, rows second.
+  async function purgeClaimWorkingDocuments(claimId: string, agentId: string) {
+    const { rows: docs } = await pool.query(
+      `SELECT id, storage_path FROM claim_documents
+        WHERE claim_id = $1 AND category IN ('personal','case')`,
+      [claimId]
+    );
+    if (docs.length > 0) {
+      const { error } = await supabaseAdmin.storage
+        .from(PDF_BUCKET)
+        .remove(docs.map((d: any) => d.storage_path));
+      if (error) {
+        console.error(`[claims ${claimId}] close-purge objects failed:`, error.message);
+        return 0; // leave the rows; the daily sweep retries the pair together
+      }
+      await pool.query("DELETE FROM claim_documents WHERE id = ANY($1::uuid[])", [
+        docs.map((d: any) => d.id),
+      ]);
+    }
+    // Only stamp when something was actually destroyed. Stamping a claim that
+    // never held a working document would make the UI announce a deletion that
+    // never happened, and would hide the piles on a claim that may be reopened.
+    if (docs.length > 0) {
+      await pool.query(
+        "UPDATE claims SET documents_purged_at = COALESCE(documents_purged_at, now()) WHERE id = $1",
+        [claimId]
+      );
+      await logClaimEvent(
+        claimId, agentId, "documents_purged",
+        `${docs.length} document(s) deleted on closing. The insurer's letter is kept.`
+      );
+    }
+    return docs.length;
+  }
+
+  // A claim ends one way or the other. If a settlement letter was uploaded and
+  // the claim is then rejected (or the advisor changes his mind mid-dialog),
+  // the losing letter is removed rather than left sitting alongside the winner
+  // — two contradictory outcomes on one claim is not a record anyone can show.
+  async function dropContradictingOutcomeDocs(claimId: string, keepKind: "settled" | "rejected") {
+    const losing = keepKind === "settled" ? "Rejection letter" : "Settlement letter";
+    const { rows } = await pool.query(
+      `SELECT id, storage_path FROM claim_documents
+        WHERE claim_id = $1 AND category = 'outcome' AND doc_type = $2`,
+      [claimId, losing]
+    );
+    if (rows.length === 0) return;
+    const { error } = await supabaseAdmin.storage
+      .from(PDF_BUCKET)
+      .remove(rows.map((r: any) => r.storage_path));
+    if (error) {
+      console.error(`[claims ${claimId}] contradicting outcome remove failed:`, error.message);
+      return;
+    }
+    await pool.query("DELETE FROM claim_documents WHERE id = ANY($1::uuid[])", [
+      rows.map((r: any) => r.id),
+    ]);
+  }
+
+  async function openQueryCount(claimId: string): Promise<number> {
+    const r = await pool.query(
+      "SELECT count(*)::int AS c FROM claim_queries WHERE claim_id = $1 AND resolved_on IS NULL",
+      [claimId]
+    );
+    return r.rows[0]?.c ?? 0;
+  }
+
+  /* ── Agent: list claims ───────────────────────────────────────────────── */
+  app.get("/api/agent/claims", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const result = await pool.query(
+        `SELECT c.*,
+                cu.name  AS customer_name,
+                cu.phone AS customer_phone,
+                (SELECT count(*)::int FROM claim_queries q
+                   WHERE q.claim_id = c.id AND q.resolved_on IS NULL) AS open_queries,
+                (SELECT count(*)::int FROM claim_queries q
+                   WHERE q.claim_id = c.id)                            AS total_queries,
+                (SELECT count(*)::int FROM claim_documents d
+                   WHERE d.claim_id = c.id)                            AS document_count,
+                CASE WHEN c.purge_at IS NULL THEN NULL
+                     ELSE GREATEST(0, EXTRACT(DAY FROM (c.purge_at - now()))::int)
+                END AS days_to_purge
+           FROM claims c
+           LEFT JOIN customers cu ON cu.id = c.customer_id
+          WHERE c.agent_id = $1
+          ORDER BY
+            -- Needs-attention first: open queries, then nearest purge, then new.
+            (SELECT count(*) FROM claim_queries q
+               WHERE q.claim_id = c.id AND q.resolved_on IS NULL) DESC,
+            c.purge_at ASC NULLS LAST,
+            c.created_at DESC`,
+        [agentId]
+      );
+      return res.json(result.rows);
+    } catch (err: any) {
+      console.error("list claims error:", err);
+      return res.status(500).json({ error: "Could not load claims" });
+    }
+  });
+
+  /* ── Agent: open a claim ──────────────────────────────────────────────── */
+  app.post("/api/agent/claims", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
+    const {
+      customer_id, new_customer_name, new_customer_phone,
+      claim_type, insurer, tpa, policy_number, hospital, ailment,
+      claimed_amount, admitted_on, discharged_on,
+    } = req.body ?? {};
+
+    const type = String(claim_type || "reimbursement").toLowerCase();
+    if (type !== "cashless" && type !== "reimbursement") {
+      return res.status(400).json({ error: "claim_type must be cashless or reimbursement" });
+    }
+
+    try {
+      // Resolve the customer: an existing one this agent owns, or create it
+      // inline so a walk-in claim never forces a detour through Customers.
+      let resolvedCustomerId: string | null = null;
+      if (customer_id) {
+        const own = await pool.query(
+          "SELECT id FROM customers WHERE id = $1 AND agent_id = $2",
+          [customer_id, agentId]
+        );
+        if (own.rows.length === 0) return res.status(404).json({ error: "Customer not found" });
+        resolvedCustomerId = customer_id;
+      } else if (new_customer_name) {
+        const created = await pool.query(
+          `INSERT INTO customers (agent_id, name, phone) VALUES ($1, $2, $3) RETURNING id`,
+          [agentId, String(new_customer_name).trim(), new_customer_phone || null]
+        );
+        resolvedCustomerId = created.rows[0].id;
+      } else {
+        return res.status(400).json({ error: "Pick a customer, or give a name for a new one" });
+      }
+
+      const money = parseMoney(claimed_amount);
+      if (!money.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: money.message });
+
+      const ins = await pool.query(
+        `INSERT INTO claims
+           (agent_id, customer_id, claim_type, insurer, tpa, policy_number,
+            hospital, ailment, claimed_amount, admitted_on, discharged_on)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         RETURNING *`,
+        [
+          agentId, resolvedCustomerId, type,
+          insurer || null, tpa || null, policy_number || null,
+          hospital || null, ailment || null,
+          money.value,
+          admitted_on || null, discharged_on || null,
+        ]
+      );
+      const claim = ins.rows[0];
+      await logClaimEvent(claim.id, agentId, "opened", "Claim opened");
+      void recordAccess(req, agentId, claim.id, "claim_open");
+      return res.json(claim);
+    } catch (err: any) {
+      console.error("create claim error:", err);
+      return res.status(500).json({ error: "Could not open the claim" });
+    }
+  });
+
+  /* ── Agent: one claim, with documents, queries and timeline ───────────── */
+  app.get("/api/agent/claims/:id", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const c = await pool.query(
+        `SELECT c.*, cu.name AS customer_name, cu.phone AS customer_phone,
+                CASE WHEN c.purge_at IS NULL THEN NULL
+                     ELSE GREATEST(0, EXTRACT(DAY FROM (c.purge_at - now()))::int)
+                END AS days_to_purge,
+                (c.purge_at IS NOT NULL
+                   AND NOT c.extension_used
+                   AND c.status NOT IN ('settled','rejected')
+                   AND now() >= c.purge_at - make_interval(days => $3)) AS can_extend
+           FROM claims c
+           LEFT JOIN customers cu ON cu.id = c.customer_id
+          WHERE c.id = $1 AND c.agent_id = $2`,
+        [req.params.id, agentId, CLAIM_EXTEND_UNLOCK_DAYS]
+      );
+      if (c.rows.length === 0) return res.status(404).json({ error: "Claim not found" });
+
+      const [docs, queries, events] = await Promise.all([
+        pool.query(
+          `SELECT id, claim_id, query_id, category, doc_type, filename,
+                  file_size, mime_type, uploaded_at
+             FROM claim_documents WHERE claim_id = $1
+            ORDER BY uploaded_at ASC`,
+          [req.params.id]
+        ),
+        pool.query(
+          "SELECT * FROM claim_queries WHERE claim_id = $1 ORDER BY seq ASC",
+          [req.params.id]
+        ),
+        pool.query(
+          "SELECT * FROM claim_events WHERE claim_id = $1 ORDER BY occurred_at ASC",
+          [req.params.id]
+        ),
+      ]);
+
+      void recordAccess(req, agentId, req.params.id, "claim_view");
+      // storage_path is deliberately not returned — the browser never needs it,
+      // and a URL is minted per document through the route below.
+      return res.json({
+        ...c.rows[0],
+        documents: docs.rows,
+        queries: queries.rows,
+        events: events.rows,
+      });
+    } catch (err: any) {
+      console.error("get claim error:", err);
+      return res.status(500).json({ error: "Could not load the claim" });
+    }
+  });
+
+  /* ── Agent: edit the typed fields ─────────────────────────────────────────
+   * Every accepted change is written to the timeline in words — "Insurer: Tata
+   * → Tata AIG" — because on a record whose documents are destroyed on a clock,
+   * the history of what the advisor asserted and when IS the audit trail. A
+   * silent edit would leave the timeline claiming things the row no longer says.
+   */
+  app.patch("/api/agent/claims/:id", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
+    const LABELS: Record<string, string> = {
+      insurer: "Insurer", tpa: "TPA", policy_number: "Policy number",
+      hospital: "Hospital", ailment: "What happened",
+      claimed_amount: "Amount claimed", settled_amount: "Amount settled",
+      admitted_on: "Admitted on", discharged_on: "Discharged on",
+      claim_type: "Type of claim",
+    };
+    const MONEY = new Set(["claimed_amount", "settled_amount"]);
+
+    const sets: string[] = [];
+    const vals: any[] = [];
+    const wanted: Record<string, any> = {};
+
+    for (const key of Object.keys(LABELS)) {
+      if (req.body?.[key] === undefined) continue;
+      let value: any = req.body[key] === "" ? null : req.body[key];
+      if (MONEY.has(key)) {
+        const parsed = parseMoney(req.body[key]);
+        if (!parsed.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: parsed.message });
+        value = parsed.value;
+      }
+      if (key === "claim_type" && value && !["cashless", "reimbursement"].includes(String(value))) {
+        return res.status(400).json({ error: "claim_type must be cashless or reimbursement" });
+      }
+      wanted[key] = value;
+      vals.push(value);
+      sets.push(`${key} = $${vals.length}`);
+    }
+    if (sets.length === 0) return res.status(400).json({ error: "Nothing to update" });
+
+    try {
+      const before = await claimForAgent(req.params.id, agentId);
+      if (!before) return res.status(404).json({ error: "Claim not found" });
+
+      // Compare what the row will HOLD after this edit, so lowering the claimed
+      // amount under an existing settled figure is caught too.
+      //
+      // Only when the edit actually TOUCHES an amount, though. Rows written
+      // before this rule existed can already violate it, and refusing to let
+      // the advisor correct the hospital name on such a claim — with an error
+      // about amounts he did not touch — would trap the row permanently, with
+      // no way to reach the very fields that would fix it.
+      const touchesMoney = "claimed_amount" in wanted || "settled_amount" in wanted;
+      if (touchesMoney) {
+        const nextClaimed = "claimed_amount" in wanted ? wanted.claimed_amount : before.claimed_amount;
+        const nextSettled = "settled_amount" in wanted ? wanted.settled_amount : before.settled_amount;
+        const pair = checkAmountPair(nextClaimed, nextSettled);
+        if (!pair.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: pair.message });
+      }
+
+      vals.push(req.params.id, agentId);
+      const upd = await pool.query(
+        `UPDATE claims SET ${sets.join(", ")}, updated_at = now()
+          WHERE id = $${vals.length - 1} AND agent_id = $${vals.length}
+          RETURNING *`,
+        vals
+      );
+      if (upd.rows.length === 0) return res.status(404).json({ error: "Claim not found" });
+
+      // Compare loosely: numerics come back from pg as strings, and an
+      // unchanged field resubmitted by the form must not fake a change.
+      const show = (v: any) => (v == null || v === "" ? "—" : String(v));
+      const changes = Object.entries(wanted)
+        .filter(([k, v]) => show((before as any)[k]) !== show(v) && Number((before as any)[k]) !== Number(v as any))
+        .map(([k, v]) => `${LABELS[k]}: ${show((before as any)[k])} → ${show(v)}`);
+
+      if (changes.length > 0) {
+        await logClaimEvent(req.params.id, agentId, "details_edited", changes.join(" · "));
+      }
+      return res.json(upd.rows[0]);
+    } catch (err: any) {
+      console.error("update claim error:", err);
+      return res.status(500).json({ error: "Could not save the change" });
+    }
+  });
+
+  /* ── Agent: move the claim ────────────────────────────────────────────────
+   * Deliberately permissive about ORDER. A 40+ advisor logging a claim after
+   * the fact should not be told he cannot record what already happened, so any
+   * of the non-terminal states can be set at any time. Two hard rules remain:
+   * settling or rejecting needs proof attached, and query_raised is owned by
+   * the queries routes rather than settable by hand.
+   */
+  app.post("/api/agent/claims/:id/status", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
+    const next = String(req.body?.status || "").toLowerCase();
+    const note = req.body?.note || null;
+    const settledAmount = req.body?.settled_amount;
+    const proofConsent = req.body?.proof_consent === true;
+
+    if (!CLAIM_STATUSES.includes(next)) {
+      return res.status(400).json({ error: "Unknown status" });
+    }
+    if (next === "query_raised") {
+      return res.status(400).json({
+        error: "Log the query itself so it keeps its own question and dates.",
+        use: "POST /api/agent/claims/:id/queries",
+      });
+    }
+
+    try {
+      const claim = await claimForAgent(req.params.id, agentId);
+      if (!claim) return res.status(404).json({ error: "Claim not found" });
+
+      const closing = CLAIM_TERMINAL.includes(next);
+      const reopening = CLAIM_TERMINAL.includes(claim.status) && !closing;
+
+      const money = parseMoney(settledAmount);
+      if (!money.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: money.message });
+
+      if (money.value != null) {
+        const pair = checkAmountPair(claim.claimed_amount, money.value);
+        if (!pair.ok) return res.status(400).json({ error: "BAD_AMOUNT", message: pair.message });
+      }
+
+      if (closing) {
+        // Count only proof that will still be here afterwards. Counting every
+        // outcome document would let a settlement letter satisfy a REJECTION
+        // and then be deleted as contradicting, closing the claim on nothing.
+        const losing = next === "settled" ? "Rejection letter" : "Settlement letter";
+        const proof = await pool.query(
+          `SELECT count(*)::int AS c FROM claim_documents
+            WHERE claim_id = $1 AND category = 'outcome' AND doc_type IS DISTINCT FROM $2`,
+          [claim.id, losing]
+        );
+        if ((proof.rows[0]?.c ?? 0) === 0) {
+          return res.status(400).json({
+            error: "NEEDS_PROOF",
+            message: "Attach the insurer's letter before closing the claim.",
+          });
+        }
+        await dropContradictingOutcomeDocs(claim.id, next as "settled" | "rejected");
+      }
+
+      /* Reopening clears the purge state and the retention clock.
+
+         Closing sets documents_purged_at, and the upload route refuses every
+         non-outcome document while that column is set. Reopening used to leave
+         it set, so a reopened claim could never take another paper again: the
+         advisor could log the insurer's new query but not attach a single thing
+         answering it. Reopening is exactly the moment an advisor is arguing a
+         rejection and needs to attach evidence, so that made the reopen feature
+         decorative.
+
+         The clock is cleared with it, not merely the flag. retention_started_at
+         is what the upload route tests to decide whether to start the 30 days,
+         and leaving the old timestamp would hand a document uploaded today a
+         purge date set by a claim that closed weeks ago, possibly already past.
+         Clearing both means the new documents get a fresh, honest 30 days from
+         the first one that lands, which is the promise the screen makes.
+
+         extension_used is deliberately NOT reset: a claim that has already had
+         its one extension does not earn another by being closed and reopened,
+         or the 60-day ceiling could be walked past indefinitely. */
+      const upd = await pool.query(
+        `UPDATE claims
+            SET status = $1,
+                settled_amount = CASE WHEN $7 THEN NULL
+                                      ELSE COALESCE($2, settled_amount) END,
+                closed_at = CASE WHEN $3 THEN now() ELSE NULL END,
+                proof_consent_at = CASE WHEN $4 THEN COALESCE(proof_consent_at, now())
+                                        ELSE proof_consent_at END,
+                documents_purged_at  = CASE WHEN $7 THEN NULL ELSE documents_purged_at END,
+                retention_started_at = CASE WHEN $7 THEN NULL ELSE retention_started_at END,
+                purge_at             = CASE WHEN $7 THEN NULL ELSE purge_at END,
+                updated_at = now()
+          WHERE id = $5 AND agent_id = $6
+          RETURNING *`,
+        [next, money.value, closing, proofConsent, claim.id, agentId, reopening]
+      );
+
+      if (reopening) {
+        await logClaimEvent(
+          claim.id, agentId, "reopened",
+          `Reopened from ${claim.status}. The working documents deleted on closing cannot be recovered, but new ones can be added and start a fresh retention period.`
+        );
+      } else {
+        await logClaimEvent(claim.id, agentId, next, note);
+      }
+
+      // Closing ends the purpose the identity and case documents were collected
+      // for, so they go now rather than waiting out the 30-day clock. The
+      // insurer's letter is deliberately left standing.
+      let purged = 0;
+      if (closing) purged = await purgeClaimWorkingDocuments(claim.id, agentId);
+
+      void recordAccess(req, agentId, claim.id, `claim_status_${next}`);
+      const fresh = await claimForAgent(claim.id, agentId);
+      return res.json({ ...(fresh ?? upd.rows[0]), purged_on_close: purged });
+    } catch (err: any) {
+      console.error("claim status error:", err);
+      return res.status(500).json({ error: "Could not update the claim" });
+    }
+  });
+
+  /* ── Agent: log an insurer query round ────────────────────────────────────
+   * No cap. Insurers routinely raise two or three rounds and a messy claim can
+   * run to five; each gets its own row, question, dates and reply papers.
+   */
+  app.post("/api/agent/claims/:id/queries", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
+    const question = String(req.body?.question || "").trim();
+    if (!question) return res.status(400).json({ error: "Write down what the insurer asked" });
+
+    try {
+      const claim = await claimForAgent(req.params.id, agentId);
+      if (!claim) return res.status(404).json({ error: "Claim not found" });
+
+      // seq is max+1 and never reused, so deleting a mis-logged round leaves a
+      // gap rather than renumbering history under the advisor's feet.
+      const seqRow = await pool.query(
+        "SELECT COALESCE(MAX(seq), 0) + 1 AS next FROM claim_queries WHERE claim_id = $1",
+        [claim.id]
+      );
+      const seq = seqRow.rows[0].next;
+
+      const ins = await pool.query(
+        `INSERT INTO claim_queries (claim_id, agent_id, seq, question, raised_on, raised_by)
+         VALUES ($1,$2,$3,$4,COALESCE($5::date, CURRENT_DATE),$6)
+         RETURNING *`,
+        [claim.id, agentId, seq, question, req.body?.raised_on || null, req.body?.raised_by || null]
+      );
+
+      await pool.query(
+        `UPDATE claims SET status = 'query_raised', updated_at = now()
+          WHERE id = $1 AND agent_id = $2 AND status NOT IN ('settled','rejected')`,
+        [claim.id, agentId]
+      );
+      await logClaimEvent(claim.id, agentId, "query_raised", `Round ${seq}: ${question}`);
+      return res.json(ins.rows[0]);
+    } catch (err: any) {
+      console.error("create claim query error:", err);
+      return res.status(500).json({ error: "Could not save the query" });
+    }
+  });
+
+  /* ── Agent: edit or resolve a query round ─────────────────────────────── */
+  app.patch("/api/agent/claims/:id/queries/:queryId", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const claim = await claimForAgent(req.params.id, agentId);
+      if (!claim) return res.status(404).json({ error: "Claim not found" });
+
+      const sets: string[] = [];
+      const vals: any[] = [];
+      for (const key of ["question", "raised_on", "raised_by", "resolution_note"]) {
+        if (req.body?.[key] !== undefined) {
+          vals.push(req.body[key] === "" ? null : req.body[key]);
+          sets.push(`${key} = $${vals.length}`);
+        }
+      }
+      // resolve: true stamps today; passing an explicit resolved_on wins.
+      if (req.body?.resolved_on !== undefined) {
+        vals.push(req.body.resolved_on || null);
+        sets.push(`resolved_on = $${vals.length}`);
+      } else if (req.body?.resolve === true) {
+        sets.push("resolved_on = CURRENT_DATE");
+      } else if (req.body?.resolve === false) {
+        sets.push("resolved_on = NULL");
+      }
+      if (sets.length === 0) return res.status(400).json({ error: "Nothing to update" });
+
+      vals.push(req.params.queryId, claim.id);
+      const upd = await pool.query(
+        `UPDATE claim_queries SET ${sets.join(", ")}
+          WHERE id = $${vals.length - 1} AND claim_id = $${vals.length}
+          RETURNING *`,
+        vals
+      );
+      if (upd.rows.length === 0) return res.status(404).json({ error: "Query not found" });
+      const row = upd.rows[0];
+
+      // The claim leaves query_raised only when the LAST open round closes.
+      const stillOpen = await openQueryCount(claim.id);
+      if (stillOpen === 0 && !CLAIM_TERMINAL.includes(claim.status)) {
+        await pool.query(
+          `UPDATE claims SET status = 'under_process', updated_at = now() WHERE id = $1`,
+          [claim.id]
+        );
+      }
+      if (row.resolved_on) {
+        await logClaimEvent(claim.id, agentId, "query_resolved", `Round ${row.seq} resolved`);
+      }
+      return res.json({ ...row, open_queries: stillOpen });
+    } catch (err: any) {
+      console.error("update claim query error:", err);
+      return res.status(500).json({ error: "Could not update the query" });
+    }
+  });
+
+  /* ── Agent: remove a query logged by mistake ──────────────────────────── */
+  app.delete("/api/agent/claims/:id/queries/:queryId", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const claim = await claimForAgent(req.params.id, agentId);
+      if (!claim) return res.status(404).json({ error: "Claim not found" });
+      await pool.query(
+        "DELETE FROM claim_queries WHERE id = $1 AND claim_id = $2",
+        [req.params.queryId, claim.id]
+      );
+      const stillOpen = await openQueryCount(claim.id);
+      if (stillOpen === 0 && !CLAIM_TERMINAL.includes(claim.status)) {
+        await pool.query(
+          `UPDATE claims SET status = 'under_process', updated_at = now() WHERE id = $1`,
+          [claim.id]
+        );
+      }
+      return res.json({ ok: true, open_queries: stillOpen });
+    } catch (err: any) {
+      console.error("delete claim query error:", err);
+      return res.status(500).json({ error: "Could not remove the query" });
+    }
+  });
+
+  /* ── Agent: upload a document ─────────────────────────────────────────────
+   * The retention clock starts HERE, on the first file, not at ticket creation:
+   * an empty ticket holds nothing worth counting down.
+   */
+  app.post(
+    "/api/agent/claims/:id/documents",
+    (req, res, next) => {
+      upload.single("file")(req, res, (err: any) => {
+        if (err) {
+          console.error("CLAIM DOC MULTER ERROR:", err);
+          return res.status(400).json({ error: "File upload failed: " + (err.message || "Unknown error") });
+        }
+        next();
+      });
+    },
+    async (req, res) => {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      if (!req.file) return res.status(400).json({ error: "No file received" });
+
+      const category = String(req.body?.category || "").toLowerCase();
+      if (!["personal", "case", "outcome"].includes(category)) {
+        return res.status(400).json({ error: "category must be personal, case or outcome" });
+      }
+
+      const file = req.file;
+      try {
+        const claim = await claimForAgent(req.params.id, agentId);
+        if (!claim) return res.status(404).json({ error: "Claim not found" });
+        // A purged claim still accepts OUTCOME proof — closing the claim is what
+        // triggered the purge, and the letter is the thing being kept. Only the
+        // working documents are refused, since re-collecting identity papers
+        // onto a finished claim is exactly what the purge exists to prevent.
+        if (claim.documents_purged_at && category !== "outcome") {
+          return res.status(409).json({
+            error: "PURGED",
+            message: "This claim's documents were deleted. Only the insurer's letter can be added now.",
+          });
+        }
+
+        const docId = crypto.randomUUID();
+        const ext = file.originalname.includes(".") ? file.originalname.split(".").pop() : "pdf";
+        const storagePath = `${agentId}/claims/${claim.id}/${category}/${docId}.${ext}`;
+
+        const fileBuffer = fs.readFileSync(file.path);
+        const { error: upErr } = await supabaseAdmin.storage
+          .from(PDF_BUCKET)
+          .upload(storagePath, fileBuffer, {
+            contentType: file.mimetype || "application/pdf",
+            upsert: true,
+          });
+        if (upErr) {
+          console.error(`[claim-doc ${docId}] storage upload failed:`, upErr.message);
+          return res.status(502).json({ error: "Could not store the file. Try again." });
+        }
+
+        const ins = await pool.query(
+          `INSERT INTO claim_documents
+             (id, claim_id, agent_id, query_id, category, doc_type,
+              storage_path, filename, file_size, mime_type)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+           RETURNING id, claim_id, query_id, category, doc_type, filename,
+                     file_size, mime_type, uploaded_at`,
+          [
+            docId, claim.id, agentId, req.body?.query_id || null, category,
+            req.body?.doc_type || null, storagePath, file.originalname,
+            file.size ?? null, file.mimetype ?? null,
+          ]
+        );
+
+        // Start the clock, once, on the first file that lands.
+        let clock = null;
+        if (!claim.retention_started_at) {
+          const started = await pool.query(
+            `UPDATE claims
+                SET retention_started_at = now(),
+                    purge_at = now() + make_interval(days => $2),
+                    updated_at = now()
+              WHERE id = $1 AND retention_started_at IS NULL
+              RETURNING retention_started_at, purge_at`,
+            [claim.id, CLAIM_RETENTION_DAYS]
+          );
+          clock = started.rows[0] ?? null;
+        }
+
+        void recordAccess(req, agentId, claim.id, `claim_doc_upload_${category}`);
+        return res.json({ ...ins.rows[0], retention: clock });
+      } catch (err: any) {
+        console.error("claim document upload error:", err);
+        return res.status(500).json({ error: "Could not save the document" });
+      } finally {
+        if (file?.path && fs.existsSync(file.path)) {
+          try { fs.unlinkSync(file.path); } catch { /* best effort */ }
+        }
+      }
+    }
+  );
+
+  /* ── Agent: open or download a document ──────────────────────────────────
+   * Ten minutes, minted on demand, audited every time. The lead-policy route
+   * writes a ONE-YEAR url into its row; that is tolerable for a prospect's own
+   * policy PDF and not for an Aadhaar scan, and it would outlive the
+   * incineration it is supposed to be subject to.
+   *
+   * ?download=1 asks storage to serve it as an attachment named after the
+   * document's label rather than its storage uuid — the advisor is usually
+   * pulling these back out to attach to an insurer's portal, and a folder of
+   * uuid.pdf files is useless to him at that moment.
+   */
+  app.get("/api/agent/claims/:id/documents/:docId/url", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const doc = await pool.query(
+        `SELECT d.storage_path, d.filename, d.doc_type
+           FROM claim_documents d
+           JOIN claims c ON c.id = d.claim_id
+          WHERE d.id = $1 AND d.claim_id = $2 AND c.agent_id = $3`,
+        [req.params.docId, req.params.id, agentId]
+      );
+      if (doc.rows.length === 0) return res.status(404).json({ error: "Document not found" });
+      const row = doc.rows[0];
+
+      const wantsDownload = String(req.query.download ?? "") === "1";
+      // Name the download after the advisor's own label, keeping the real
+      // extension so the file still opens in the right app.
+      const ext = row.filename?.includes(".") ? `.${row.filename.split(".").pop()}` : "";
+      const safeLabel = String(row.doc_type || row.filename || "document")
+        .replace(/[\\/:*?"<>|]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 80);
+      const downloadName = safeLabel.toLowerCase().endsWith(ext.toLowerCase())
+        ? safeLabel
+        : `${safeLabel}${ext}`;
+
+      const { data: signed, error } = await supabaseAdmin.storage
+        .from(PDF_BUCKET)
+        .createSignedUrl(row.storage_path, 600, wantsDownload ? { download: downloadName } : undefined);
+      if (error || !signed?.signedUrl) {
+        return res.status(502).json({ error: "Could not open the file" });
+      }
+      void recordAccess(req, agentId, req.params.id, wantsDownload ? "claim_doc_download" : "claim_doc_view");
+      return res.json({ url: signed.signedUrl, filename: row.filename, expires_in: 600 });
+    } catch (err: any) {
+      console.error("claim document url error:", err);
+      return res.status(500).json({ error: "Could not open the file" });
+    }
+  });
+
+  /* ── Agent: rename a document ─────────────────────────────────────────────
+   * Only the LABEL changes. filename and storage_path are provenance — what
+   * the advisor actually received and where it sits — and renaming must never
+   * rewrite either, or the record stops matching the file.
+   */
+  app.patch("/api/agent/claims/:id/documents/:docId", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+
+    const label = String(req.body?.doc_type ?? "").trim().slice(0, 120);
+    if (!label) return res.status(400).json({ error: "Give the document a name" });
+
+    try {
+      const upd = await pool.query(
+        `UPDATE claim_documents d
+            SET doc_type = $1
+           FROM claims c
+          WHERE d.id = $2 AND d.claim_id = $3
+            AND c.id = d.claim_id AND c.agent_id = $4
+          RETURNING d.id, d.claim_id, d.query_id, d.category, d.doc_type,
+                    d.filename, d.file_size, d.mime_type, d.uploaded_at`,
+        [label, req.params.docId, req.params.id, agentId]
+      );
+      if (upd.rows.length === 0) return res.status(404).json({ error: "Document not found" });
+      return res.json(upd.rows[0]);
+    } catch (err: any) {
+      console.error("claim document rename error:", err);
+      return res.status(500).json({ error: "Could not rename the document" });
+    }
+  });
+
+  /* ── Agent: delete a document ─────────────────────────────────────────── */
+  app.delete("/api/agent/claims/:id/documents/:docId", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const doc = await pool.query(
+        `SELECT d.id, d.storage_path
+           FROM claim_documents d
+           JOIN claims c ON c.id = d.claim_id
+          WHERE d.id = $1 AND d.claim_id = $2 AND c.agent_id = $3`,
+        [req.params.docId, req.params.id, agentId]
+      );
+      if (doc.rows.length === 0) return res.status(404).json({ error: "Document not found" });
+
+      // Object first, row second: a crash between the two costs an orphaned
+      // row the sweep will retry, never a file nothing can reach.
+      const { error } = await supabaseAdmin.storage
+        .from(PDF_BUCKET)
+        .remove([doc.rows[0].storage_path]);
+      if (error) console.error("claim doc object remove failed:", error.message);
+
+      await pool.query("DELETE FROM claim_documents WHERE id = $1", [doc.rows[0].id]);
+      void recordAccess(req, agentId, req.params.id, "claim_doc_delete");
+      return res.json({ ok: true });
+    } catch (err: any) {
+      console.error("claim document delete error:", err);
+      return res.status(500).json({ error: "Could not delete the document" });
+    }
+  });
+
+  /* ── Agent: extend retention by 30 days ───────────────────────────────────
+   * Triple-guarded so 60 days is a structural ceiling rather than a policy
+   * someone has to remember: inside the unlock window, claim still open, and
+   * no extension used yet. All three are checked in the UPDATE's WHERE so two
+   * taps in quick succession cannot both win.
+   */
+  app.post("/api/agent/claims/:id/extend", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const upd = await pool.query(
+        `UPDATE claims
+            SET purge_at = purge_at + make_interval(days => $3),
+                extension_used = true,
+                extension_granted_at = now(),
+                updated_at = now()
+          WHERE id = $1 AND agent_id = $2
+            AND purge_at IS NOT NULL
+            AND extension_used = false
+            AND documents_purged_at IS NULL
+            AND status NOT IN ('settled','rejected')
+            AND now() >= purge_at - make_interval(days => $4)
+          RETURNING purge_at, extension_used`,
+        [req.params.id, agentId, CLAIM_EXTENSION_DAYS, CLAIM_EXTEND_UNLOCK_DAYS]
+      );
+      if (upd.rows.length === 0) {
+        const claim = await claimForAgent(req.params.id, agentId);
+        if (!claim) return res.status(404).json({ error: "Claim not found" });
+        return res.status(409).json({
+          error: "CANNOT_EXTEND",
+          message: claim.extension_used
+            ? "This claim has already had its one extension."
+            : "Extending opens in the last 5 days, and only while the claim is open.",
+        });
+      }
+      await logClaimEvent(req.params.id, agentId, "retention_extended", "Kept 30 more days");
+      return res.json(upd.rows[0]);
+    } catch (err: any) {
+      console.error("claim extend error:", err);
+      return res.status(500).json({ error: "Could not extend" });
+    }
+  });
+
   /* ── Agent: Create Public Report ─────────────────────────────────────── */
 
   app.post("/api/agent/public-report", async (req, res) => {
@@ -1973,7 +3081,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       }
 
       recordAccess(req, agentId, clientId, "view_report");
-      return res.json({ report_data: getClient.rows[0].report_data });
+      return res.json({ report_data: stripInternal(getClient.rows[0].report_data) });
     } catch (err: any) {
       console.error("Fetch client report error:", err);
       res.status(500).json({ error: "Failed to fetch report" });
@@ -2116,14 +3224,20 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const days = Math.min(Math.max(parseInt(String(req.query.days ?? "7"), 10) || 7, 1), 90);
       const since = `NOW() - interval '${days} days'`;
 
-      const [totals, byFeature, byDay, topActors, duplicates] = await Promise.all([
+      const [totals, byFeature, byDay, topActors, duplicates, largestInputs] = await Promise.all([
+        // Token/cost sums count BILLED statuses only. 'rejected_oversize' rows
+        // carry an estimate of input we refused to send — real money was never
+        // spent on them, so folding them into spend totals would be a lie.
         pool.query(
           `SELECT COUNT(*)::int AS calls,
                   COUNT(*) FILTER (WHERE status='error')::int AS errors,
-                  COALESCE(SUM(prompt_tokens),0)::bigint AS prompt_tokens,
-                  COALESCE(SUM(output_tokens),0)::bigint AS output_tokens,
-                  COALESCE(SUM(total_tokens),0)::bigint AS total_tokens,
-                  COALESCE(SUM(est_cost_usd),0)::numeric AS est_cost_usd
+                  COUNT(*) FILTER (WHERE status='degraded')::int AS degraded,
+                  COUNT(*) FILTER (WHERE status='rejected_oversize')::int AS blocked_oversize,
+                  COALESCE(SUM(prompt_tokens) FILTER (WHERE status <> 'rejected_oversize'),0)::bigint AS prompt_tokens,
+                  COALESCE(SUM(output_tokens) FILTER (WHERE status <> 'rejected_oversize'),0)::bigint AS output_tokens,
+                  COALESCE(SUM(total_tokens)  FILTER (WHERE status <> 'rejected_oversize'),0)::bigint AS total_tokens,
+                  COALESCE(SUM(est_cost_usd),0)::numeric AS est_cost_usd,
+                  COALESCE(SUM(est_cost_usd) FILTER (WHERE status='degraded'),0)::numeric AS degraded_cost_usd
              FROM gemini_usage_log WHERE created_at >= ${since}`
         ),
         pool.query(
@@ -2160,6 +3274,16 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
            HAVING COUNT(*) > 1
             ORDER BY times DESC LIMIT 50`
         ),
+        // Biggest inputs in range — the outlier watch. A single oversized
+        // document is the cheapest way to burn a day's budget, so it needs to
+        // be visible without anyone having to write a query.
+        pool.query(
+          `SELECT id, created_at, feature, route, status,
+                  prompt_tokens, output_tokens, est_cost_usd
+             FROM gemini_usage_log
+            WHERE created_at >= ${since} AND prompt_tokens IS NOT NULL
+            ORDER BY prompt_tokens DESC LIMIT 20`
+        ),
       ]);
 
       res.json({
@@ -2170,6 +3294,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         byDay: byDay.rows,
         topActors: topActors.rows,
         duplicates: duplicates.rows,
+        largestInputs: largestInputs.rows,
       });
     } catch (err: any) {
       console.error("Gemini usage summary error:", err?.message);
@@ -2212,6 +3337,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const agentsRes = await pool.query(`
         SELECT
           a.id, a.full_name, a.email, a.city, a.created_at, a.upload_limit,
+          -- Both insurer stores, deliberately. They answer different questions
+          -- and they can legitimately diverge, so showing one and hiding the
+          -- other is how someone concludes they are duplicates and merges them.
+          --   empanelments        (below) everything this agent sells, all lines
+          --   partnered_companies (here)  health partners the calculator uses
+          a.partnered_companies,
           COUNT(c.id)  AS client_count,
           AVG(c.score) AS avg_score
         FROM agents a
@@ -2232,6 +3363,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const agents = agentsRes.rows.map((a) => ({
         ...a,
         empanelments: empanelMap[a.id] || [],
+        partnered_companies: a.partnered_companies || [],
         client_count: parseInt(a.client_count),
         avg_score: a.avg_score ? parseFloat(a.avg_score).toFixed(1) : "0",
       }));
@@ -2307,7 +3439,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      Upload two product policy-wording PDFs. Text is extracted deterministically
      (free), each wording is normalized into a WordingProfile via one cached
      Gemini call, then a deterministic engine builds the side-by-side + verdict.
-     This does NOT touch the per-customer forensic audit pipeline. */
+     This does NOT touch the per-customer forensic audit pipeline.
+
+     Priced at COMPARE_COST policy checks (one Gemini call per wording). The
+     agent portal shows the same number before the run - keep them in step. */
+  const COMPARE_COST = 2;
 
   app.post(
     "/api/agent/compare",
@@ -2344,6 +3480,23 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           return res.status(400).json({ error: "Two wording PDFs are required (wording_a and wording_b)." });
         }
 
+        // Metering. Reading two uploaded wordings costs one Gemini call each, so
+        // it draws COMPARE_COST policy checks. Checked up front, decremented only
+        // on success. Comparing from the catalog stays free - those profiles are
+        // already extracted, so /api/compare/from-catalog spends nothing.
+        const creditRes = await pool.query(
+          "SELECT balance FROM agent_credits WHERE agent_id = $1",
+          [agentId]
+        );
+        const credits = creditRes.rows[0]?.balance ?? 0;
+        if (credits < COMPARE_COST) {
+          cleanup();
+          return res.status(403).json({
+            error: "NO_CREDITS",
+            message: `Comparing two uploaded policies uses ${COMPARE_COST} policy checks. You have ${credits} left. Comparing from the catalog is free.`,
+          });
+        }
+
         // 1. Extract raw text from both (deterministic, no AI cost).
         let textA: string, textB: string;
         try {
@@ -2377,6 +3530,23 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         // 3. Deterministic side-by-side + verdict.
         const result = buildComparison(profileA, profileB);
         cleanup();
+
+        // Charge only now that both wordings actually parsed. Conditional on the
+        // balance so two comparisons running at once cannot drive it negative; if
+        // it loses that race the work is already done and paid for, so the agent
+        // still gets the result.
+        try {
+          const spend = await pool.query(
+            `UPDATE agent_credits SET balance = balance - $2, total_used = total_used + $2
+               WHERE agent_id = $1 AND balance >= $2 RETURNING balance`,
+            [agentId, COMPARE_COST]
+          );
+          if (spend.rowCount === 0) {
+            log.warn("compare_not_charged", { agent: agentId, cost: COMPARE_COST });
+          }
+        } catch (e: any) {
+          log.error("compare_charge_failed", { agent: agentId, message: e?.message });
+        }
 
         return res.json({
           result,
@@ -2567,12 +3737,20 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           return res.status(403).json({ error: "WRONG_ACCOUNT_TYPE", message: "This endpoint is for agent accounts." });
         }
 
-        // An unrecognised type is refused rather than defaulted to health.
-        // Health is the expensive lane: guessing it charges a policy-check
-        // credit and returns a forensic verdict on a document the agent never
-        // asked us to audit. The value is also stored on the policy row and
-        // drives every later filter and per-type allowance, so a value nothing
-        // else can read must not get in.
+        // The client used to be trusted with this string verbatim, and it sent
+        // "vehicle" while the rest of the product uses "motor". Whatever lands
+        // here is stored on the policy row, meters the per-type allowance, and
+        // drives every later filter, so an unrecognised value silently creates
+        // a line of business nothing else can read or count.
+        //
+        // It used to be checked against a hand-written set of four while the
+        // upload page offered nine, and anything off that set fell back to
+        // health. That fallback is gone, for two reasons. It was wrong about
+        // which types exist (see SUPPORTED_INSURANCE_TYPES), and a fallback is
+        // the wrong shape for this decision either way: "health" is the
+        // expensive lane, so guessing it charges a policy-check credit and
+        // returns a forensic verdict on a document the agent never asked us to
+        // audit. An unknown type is now a 400 that names what we accept.
         const requestedType = String(req.body.type || "health").toLowerCase();
         if (!isSupportedInsuranceType(requestedType)) {
           dropTempFiles();
@@ -2759,6 +3937,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 await consumeOcr(agentId);
 
                 const shared = deriveSharedColumns(insuranceType, extraction.data);
+                /* Motor now carries a score, so a book of motor policies stops
+                   showing an empty column beside the health ones. Null for every
+                   other data-entry type, and for a motor policy nothing could be
+                   read from: null means "no score", which is the truth. */
+                const motorScore = scoreFromExtractedData(insuranceType, extraction.data);
                 await pool.query(
                   `UPDATE clients SET
                     status = 'done',
@@ -2768,7 +3951,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                     policy_name = $4,
                     expiry_date = $5,
                     sum_insured = $6,
-                    policyholder_name = COALESCE(policyholder_name, $7)
+                    policyholder_name = COALESCE(policyholder_name, $7),
+                    score = $9
                   WHERE id = $8`,
                   [
                     insuranceType,
@@ -2779,6 +3963,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                     shared.sum_insured ?? null,
                     shared.policyholder_name ?? null,
                     clientId,
+                    motorScore,
                   ]
                 );
               } else {
@@ -2896,10 +4081,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 reportData.__companions = companionRecords;
               }
               const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
-              // clients.score is integer; the engine emits 12.5-step buckets (e.g. 87.5)
+              // clients.score is integer. The engine buckets to 5-point steps, so this
+              // round is a no-op; it stays as a guard for any unbucketed path.
               const score = rawScore == null ? null : Math.round(Number(rawScore));
-              const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
-              const policyName = result.metadata?.product || result.metadata?.plan || reportData?.coverage_structure?.policy_name || null;
+              // The model's reading first. `metadata.insurer` is a regex pre-pass over
+              // the whole document, needed BEFORE the model runs so the official
+              // wordings can be fetched, but it cannot tell an issuer from a previous
+              // insurer: a ported ManipalCigna policy was stored as Care Health
+              // because Care appeared on page 7. The model reads in context.
+              const insurer = reportData?.identity?.insurer_name || result.metadata?.insurer || null;
+              // Only a name the pipeline actually found in the policy document. When it
+            // could not read one this is null, and the COALESCE below leaves any
+            // existing name (including one an advisor corrected by hand) alone.
+            const policyName = result.metadata?.planNameVerified ? (result.metadata?.planName ?? null) : null;
               const expiryDate = reportData?.policy_timeline?.policy_expiry_date || null;
               const sumInsured = reportData?.coverage_structure?.base_sum_insured || null;
               const flaws = reportData?.final_verdict?.key_failure_points || [];
@@ -2912,7 +4106,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   report_data = $1,
                   score = $2,
                   insurer = $3,
-                  policy_name = $4,
+                  policy_name = COALESCE($4, policy_name),
                   expiry_date = $5,
                   sum_insured = $6,
                   flaws = $7,
@@ -2930,6 +4124,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   clientId
                 ]
               );
+
+              await recordPlanProvenance(clientId, result.metadata);
             } else {
               job.status = "failed";
               job.error = result.error;
@@ -3307,8 +4503,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       );
       const p = prof.rows[0];
       const policies = await pool.query(
+        /* add_ons is the motor add-on scan only, lifted out of extracted_data
+           rather than sending the whole blob. It is what the checklist needs and
+           nothing else: no registration, engine or chassis number travels with
+           it, and the list payload stays small on a portfolio of many policies. */
         `SELECT id, insurance_type, status, filename, insurer, policy_name, nickname, score,
                 expiry_date, renewal_date, sum_insured, flaws, created_at, error_message,
+                extracted_data -> 'add_on_findings' AS add_ons,
+                extracted_data ->> 'coverage_type' AS coverage_type,
                 (pdf_url IS NOT NULL) AS has_pdf
            FROM individual_policies
           WHERE user_id = $1
@@ -3459,6 +4661,72 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   });
 
   /* ── Consumer: single policy (ownership-scoped) ──────────────────────── */
+  /* ── Account export ───────────────────────────────────────────────────────
+   * Hand a person everything we hold about them, on request, as one JSON file.
+   *
+   * The privacy policy promises deletion and the product had no control for it;
+   * export did not exist at all. Under the DPDP Act both are obligations. This
+   * is the read-only half and ships first on purpose: a person who is about to
+   * delete an account usually wants their data out before it goes, and nothing
+   * here can destroy anything.
+   *
+   * Built from the same table list the deletion walks (services/accountData.ts),
+   * so a table added to one is added to the other. Ledgers, audit rows and job
+   * records are deleted but not exported: they are our record of what happened,
+   * not the customer's data about themselves, and publishing an access log back
+   * to the person it audits is not a data right.
+   *
+   * Document BYTES are not bundled. The rows name every file and where it lives,
+   * but streaming a book of policy PDFs through a JSON response would time out
+   * and blow memory on a large account. The download route already exists per
+   * file and is authenticated; this says what there is to fetch.
+   */
+  async function buildExport(accountId: string, tables: OwnedTable[]) {
+    const data: Record<string, unknown[]> = {};
+    for (const t of tables) {
+      if (!t.exportable) continue;
+      try {
+        const r = await pool.query(selectForTable(t), [accountId]);
+        data[t.label] = r.rows;
+      } catch (err: any) {
+        // One unreadable table must not cost the person the rest of their data.
+        log.error("export_table_failed", { table: t.table, message: err?.message });
+        data[t.label] = [];
+      }
+    }
+    return data;
+  }
+
+  app.get("/api/me/export", async (req, res) => {
+    const userId = await requireIndividual(req, res);
+    if (!userId) return;
+    try {
+      const data = await buildExport(userId, INDIVIDUAL_TABLES);
+      const stamp = new Date().toISOString().slice(0, 10);
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="indsure-export-${stamp}.json"`);
+      return res.send(JSON.stringify({ exported_at: new Date().toISOString(), account: "individual", data }, null, 2));
+    } catch (err: any) {
+      log.error("me_export_failed", { message: err?.message });
+      return res.status(500).json({ error: "Could not build your export. Try again." });
+    }
+  });
+
+  app.get("/api/agent/export", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      const data = await buildExport(agentId, AGENT_TABLES);
+      const stamp = new Date().toISOString().slice(0, 10);
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="indsure-export-${stamp}.json"`);
+      return res.send(JSON.stringify({ exported_at: new Date().toISOString(), account: "agent", data }, null, 2));
+    } catch (err: any) {
+      log.error("agent_export_failed", { message: err?.message });
+      return res.status(500).json({ error: "Could not build your export. Try again." });
+    }
+  });
+
   app.get("/api/me/policy/:id", async (req, res) => {
     try {
       const userId = await requireIndividual(req, res);
@@ -3664,7 +4932,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const row = r.rows[0];
       if (!row) return res.status(404).json({ status: "not_found", error: "Job not found" });
       if (row.status === "done") {
-        return res.json({ status: "completed", policyId: row.id, result: row.report_data ?? row.extracted_data });
+        return res.json({ status: "completed", policyId: row.id, result: stripInternal(row.report_data) ?? row.extracted_data });
       }
       if (row.status === "error") {
         return res.json({ status: "error", policyId: row.id, error: row.error_message });
@@ -3763,12 +5031,16 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 job.status = "completed";
                 job.result = extraction.data;
                 const shared = deriveSharedColumns(insuranceType, extraction.data);
+                /* Same helper as the advisor path, so the advisor's copy of a
+                   document and the customer's copy cannot score differently. */
+                const motorScore = scoreFromExtractedData(insuranceType, extraction.data);
                 await pool.query(
                   `UPDATE individual_policies SET
                      status = 'done', insurance_type = $1, extracted_data = $2,
                      insurer = $3, policy_name = $4, expiry_date = $5, sum_insured = $6,
                      policyholder_name = COALESCE(policyholder_name, $7),
-                     renewal_date = COALESCE(renewal_date, $8::date), updated_at = now()
+                     renewal_date = COALESCE(renewal_date, $8::date),
+                     score = $10, updated_at = now()
                    WHERE id = $9`,
                   [
                     insuranceType,
@@ -3780,6 +5052,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                     shared.policyholder_name ?? null,
                     parseExpiryToDate(shared.expiry_date),
                     policyId,
+                    motorScore,
                   ]
                 );
               } else {
@@ -3807,8 +5080,16 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               const reportData = result.result;
               const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
               const score = rawScore == null ? null : Math.round(Number(rawScore));
-              const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
-              const policyName = result.metadata?.product || result.metadata?.plan || reportData?.coverage_structure?.policy_name || null;
+              // The model's reading first. `metadata.insurer` is a regex pre-pass over
+              // the whole document, needed BEFORE the model runs so the official
+              // wordings can be fetched, but it cannot tell an issuer from a previous
+              // insurer: a ported ManipalCigna policy was stored as Care Health
+              // because Care appeared on page 7. The model reads in context.
+              const insurer = reportData?.identity?.insurer_name || result.metadata?.insurer || null;
+              // Only a name the pipeline actually found in the policy document. When it
+            // could not read one this is null, and the COALESCE below leaves any
+            // existing name (including one an advisor corrected by hand) alone.
+            const policyName = result.metadata?.planNameVerified ? (result.metadata?.planName ?? null) : null;
               const expiryDate = reportData?.policy_timeline?.policy_expiry_date || null;
               const sumInsured = reportData?.coverage_structure?.base_sum_insured || null;
               const flaws = reportData?.final_verdict?.key_failure_points || [];
@@ -3817,7 +5098,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               await pool.query(
                 `UPDATE individual_policies SET
                    status = 'done', report_data = $1, score = $2, insurer = $3,
-                   policy_name = $4, expiry_date = $5, sum_insured = $6, flaws = $7,
+                   policy_name = COALESCE($4, policy_name), expiry_date = $5, sum_insured = $6, flaws = $7,
                    policyholder_name = COALESCE(policyholder_name, $8),
                    renewal_date = COALESCE(renewal_date, $9::date), updated_at = now()
                  WHERE id = $10`,
@@ -3867,9 +5148,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         const userId = await requireIndividual(req, res);
         if (!userId) return;
 
-        // Same contract as the agent lane. Here the stakes are the free
-        // per-type allowance, which checkIndividualQuota meters by this exact
-        // string, so an unrecognised value would spend the wrong lane's quota.
+        // Same contract as the agent lane: an unrecognised type is refused
+        // rather than quietly treated as health. Here the stakes are the free
+        // per-type allowance — checkIndividualQuota meters by this string, so a
+        // guess spends the wrong lane's quota — and the type is copied onto
+        // individual_policies, where the portfolio filters read it back.
         const requestedType = String(req.body.type || "health").toLowerCase();
         if (!isSupportedInsuranceType(requestedType)) {
           return res.status(400).json({
@@ -3953,10 +5236,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           });
         }
 
-        // Validated at the anonymous half so a bad type is refused while the
-        // visitor is still on the page and can pick again. The claim handler
-        // copies this string straight onto the real analysis, so letting it
-        // through would only surface the problem after signup.
+        // Validated here, at the anonymous half, so a bad type is refused
+        // while the visitor is still on the page and can pick again. The claim
+        // handler copies this string straight onto the real analysis, so
+        // letting it through would only surface the problem after signup.
         // (The temp upload is cleaned up by the `finally` below.)
         const insuranceType = String(req.body.type || "health").toLowerCase();
         if (!isSupportedInsuranceType(insuranceType)) {
@@ -4018,6 +5301,49 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   );
 
+  /* ── Associate a held upload with the address signing up for it ──────────
+     Called from the signup form, which is the last moment the browser has both
+     the token and the address. Unauthenticated by necessity: when email
+     confirmation is on there is no session yet, and that is exactly the case
+     this exists to survive.
+
+     Presenting the token IS the authority here. Whoever holds it can already
+     redeem the upload outright, so letting them name the address that may
+     redeem it later grants nothing extra. What it does NOT do is let anyone
+     claim by address alone: that path additionally requires a session whose
+     email is confirmed (see /api/me/claim-upload).
+
+     Only ever sets the address on an unclaimed, unexpired row, and never
+     overwrites one that is already set, so a token cannot be re-pointed at a
+     different address after the fact. */
+  app.post("/api/pending-upload/attach-email", analyzeRateLimiter, async (req, res) => {
+    try {
+      const token = String(req.body?.token || "").trim();
+      const email = String(req.body?.email || "").trim().toLowerCase();
+      if (!token || !email || !email.includes("@") || email.length > 254) {
+        return res.status(400).json({ error: "BAD_REQUEST" });
+      }
+
+      await pool.query(
+        `UPDATE pending_uploads
+            SET signup_email = $1
+          WHERE token = $2
+            AND claimed_by IS NULL
+            AND expires_at > now()
+            AND signup_email IS NULL`,
+        [email, token]
+      );
+
+      // Deliberately always 204, whatever happened. The caller cannot act on the
+      // difference, and distinguishing "no such token" from "already attached"
+      // would turn this into an oracle for probing tokens.
+      return res.status(204).end();
+    } catch (err: any) {
+      console.error("[pending upload] attach-email error:", err?.message);
+      return res.status(204).end();
+    }
+  });
+
   // Claim: the authenticated half. This is where the account, the quota and the
   // spend all enter. A token can only be claimed once — claimed_by is set at the
   // end and checked at the start.
@@ -4028,13 +5354,51 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (!userId) return;
 
       const token = String(req.body?.token || "");
-      if (!token) return res.status(400).json({ error: "NO_TOKEN", message: "No upload to claim." });
 
-      const found = await pool.query(
-        `SELECT id, storage_path, filename, file_size, mime_type, insurance_type, claimed_by, expires_at
-           FROM pending_uploads WHERE token = $1`,
-        [token]
-      );
+      // Two ways in, and the second is why this endpoint exists in this shape.
+      //
+      // By TOKEN: the browser still holds it, the normal same-tab path.
+      //
+      // By CONFIRMED EMAIL: the token is gone because the confirmation link was
+      // opened in another tab, another browser, or on a phone, and
+      // sessionStorage does not follow. Confirming the address is what proves
+      // ownership, so it is a sound key. The confirmation is checked here rather
+      // than assumed: a session can exist before confirmation depending on
+      // project settings, and an unconfirmed account claiming by address would
+      // let anyone who knows an address take that person's upload.
+      let found;
+      if (token) {
+        found = await pool.query(
+          `SELECT id, storage_path, filename, file_size, mime_type, insurance_type, claimed_by, expires_at
+             FROM pending_uploads WHERE token = $1`,
+          [token]
+        );
+      } else {
+        const who = await pool.query(
+          "SELECT email, email_confirmed_at FROM auth.users WHERE id = $1",
+          [userId]
+        );
+        const email = who.rows[0]?.email;
+        const confirmedAt = who.rows[0]?.email_confirmed_at;
+        if (!email || !confirmedAt) {
+          return res.status(404).json({ error: "UPLOAD_NOT_FOUND", message: "No upload to claim." });
+        }
+        // Newest first: someone who uploaded twice before finishing signup gets
+        // the one they most recently chose, which is the one they are expecting.
+        found = await pool.query(
+          `SELECT id, storage_path, filename, file_size, mime_type, insurance_type, claimed_by, expires_at
+             FROM pending_uploads
+            WHERE lower(signup_email) = lower($1)
+              AND claimed_by IS NULL
+              AND expires_at > now()
+            -- id breaks the tie. Two rows can share created_at (it defaults to
+            -- now(), which is transaction time), and without this the winner
+            -- between them is whatever the planner returns first.
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1`,
+          [email]
+        );
+      }
       const row = found.rows[0];
       if (!row) {
         return res.status(404).json({ error: "UPLOAD_NOT_FOUND", message: "That upload is no longer available. Please upload your policy again." });
@@ -4082,7 +5446,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       tempPath = null; // ownership passed to startIndividualAnalysis
 
       await pool.query(
-        "UPDATE pending_uploads SET claimed_by = $1, claimed_at = now() WHERE id = $2",
+        // signup_email is cleared here: it existed only to survive the round
+        // trip, and a claimed row has no further use for the address.
+        "UPDATE pending_uploads SET claimed_by = $1, claimed_at = now(), signup_email = NULL WHERE id = $2",
         [userId, row.id]
       );
 
@@ -4107,6 +5473,51 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   });
 
   /* ── Agent: Toggle Share ─────────────────────────────────────────────── */
+
+  /**
+   * Set the plan name by hand.
+   *
+   * The audit lane had no way to correct one: the extractor's answer was final,
+   * right or wrong. Now that a name is stored only when it was actually read
+   * from the document, the advisor needs a way to fill in the blank, and to
+   * accept or overrule a suggestion. Accepting one writes it here, which also
+   * clears the suggestion so it stops being offered.
+   */
+  app.post("/api/agent/clients/:id/plan-name", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+
+      const { id } = req.params;
+      const raw = typeof req.body?.policy_name === "string" ? req.body.policy_name.trim() : "";
+      if (raw.length > 120) {
+        return res.status(400).json({ error: "Plan name is too long." });
+      }
+      // Empty clears it back to "not known", which is a legitimate correction:
+      // an advisor who realises the name is wrong should be able to unset it
+      // rather than being forced to leave something wrong in place.
+      const value = raw.length > 0 ? raw : null;
+
+      const updated = await pool.query(
+        `UPDATE clients
+            SET policy_name           = $1,
+                policy_name_suggested = NULL,
+                policy_name_source    = 'agent'
+          WHERE id = $2 AND agent_id = $3
+        RETURNING id`,
+        [value, id, agentId],
+      );
+      if (updated.rows.length === 0) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      recordAccess(req, agentId, id, "update_client");
+      return res.json({ ok: true, policy_name: value });
+    } catch (err: any) {
+      console.error("Plan name update error:", err?.message);
+      return res.status(500).json({ error: "Could not save the plan name." });
+    }
+  });
 
   app.post("/api/agent/clients/:id/share/toggle", async (req, res) => {
     try {
@@ -4171,9 +5582,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         return res.status(400).json({ error: "extracted_data object required" });
       }
 
-      // Verify ownership and fetch the insurance type for shared-column mapping.
+      // Verify ownership and fetch the insurance type for shared-column mapping,
+      // plus the stored blob so this save merges into it instead of replacing it.
       const ownerCheck = await pool.query(
-        "SELECT insurance_type FROM clients WHERE id = $1 AND agent_id = $2",
+        "SELECT insurance_type, extracted_data FROM clients WHERE id = $1 AND agent_id = $2",
         [id, agentId]
       );
       if (ownerCheck.rows.length === 0) {
@@ -4182,7 +5594,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       recordAccess(req, agentId, id, "update_client");
       const insuranceType = ownerCheck.rows[0].insurance_type;
-      const shared = deriveSharedColumns(insuranceType, extractedData);
+      // Callers send a partial: the review form omits every `json` field, the
+      // value card sends only the value keys. Merging keeps what the caller did
+      // not send. See mergeExtractedData for what this used to destroy.
+      const merged = mergeExtractedData(ownerCheck.rows[0].extracted_data, extractedData);
+      // Derived from the merged blob, not the patch — otherwise a partial save
+      // that omits `insurer` would null the column it maps to.
+      const shared = deriveSharedColumns(insuranceType, merged);
 
       await pool.query(
         `UPDATE clients SET
@@ -4194,7 +5612,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           policyholder_name = COALESCE($6, policyholder_name)
         WHERE id = $7 AND agent_id = $8`,
         [
-          JSON.stringify(extractedData),
+          JSON.stringify(merged),
           shared.insurer ?? null,
           shared.policy_name ?? null,
           shared.expiry_date ?? null,
@@ -4205,7 +5623,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         ]
       );
 
-      res.json({ ok: true });
+      res.json({ ok: true, extracted_data: merged });
     } catch (err: any) {
       console.error("Save extracted-data error:", err);
       res.status(500).json({ error: "Internal server error" });
@@ -4366,10 +5784,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
             const reportData = result.result;
             const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
-            // clients.score is integer; the engine emits 12.5-step buckets (e.g. 87.5)
+            // clients.score is integer. The engine buckets to 5-point steps, so this
+            // round is a no-op; it stays as a guard for any unbucketed path.
             const score = rawScore == null ? null : Math.round(Number(rawScore));
-            const insurer = result.metadata?.insurer || reportData?.identity?.insurer_name || null;
-            const policyName = result.metadata?.product || result.metadata?.plan || reportData?.coverage_structure?.policy_name || null;
+            // The model's reading first. `metadata.insurer` is a regex pre-pass over
+            // the whole document, needed BEFORE the model runs so the official
+            // wordings can be fetched, but it cannot tell an issuer from a previous
+            // insurer: a ported ManipalCigna policy was stored as Care Health
+            // because Care appeared on page 7. The model reads in context.
+            const insurer = reportData?.identity?.insurer_name || result.metadata?.insurer || null;
+            // Only a name the pipeline actually found in the policy document. When it
+            // could not read one this is null, and the COALESCE below leaves any
+            // existing name (including one an advisor corrected by hand) alone.
+            const policyName = result.metadata?.planNameVerified ? (result.metadata?.planName ?? null) : null;
             const expiryDate = reportData?.policy_timeline?.policy_expiry_date || null;
             const sumInsured = reportData?.coverage_structure?.base_sum_insured || null;
             const flaws = reportData?.final_verdict?.key_failure_points || [];
@@ -4381,7 +5808,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 report_data = $1,
                 score = $2,
                 insurer = $3,
-                policy_name = $4,
+                policy_name = COALESCE($4, policy_name),
                 expiry_date = $5,
                 sum_insured = $6,
                 flaws = $7,
@@ -4399,6 +5826,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 id,
               ]
             );
+
+            await recordPlanProvenance(id, result.metadata);
           } else {
             await pool.query(
               "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
@@ -4496,10 +5925,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       // Fetch client record
       const clientRes = await pool.query(
-        `SELECT 
-          id, report_data, score, insurer, policy_name, policyholder_name, 
-          filename, created_at, status, share_enabled
-        FROM clients 
+        `SELECT
+          id, report_data, score, insurer, policy_name, policyholder_name,
+          filename, created_at, status, share_enabled,
+          insurance_type, extracted_data
+        FROM clients
         WHERE share_token = $1`,
         [shareToken]
       );
@@ -4514,7 +5944,20 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         return res.status(404).json({ error: "invalid_or_revoked" });
       }
 
-      if (!client.report_data || client.status !== 'done') {
+      /* Two lanes end up on this URL. Health produces `report_data` and always
+         has. Every data-entry type produces `extracted_data` and never a
+         report, so requiring report_data made those links permanently dead —
+         36 of 65 live links were in that state on 2026-09-09.
+
+         The readiness test is therefore per lane: a data-entry policy is ready
+         when it has finished AND has at least one publishable field. A row that
+         finished with nothing readable still answers report_not_ready rather
+         than rendering an empty page with the customer's name on it. */
+      const isDataEntryShare =
+        client.status === "done" &&
+        hasShareableContent(client.insurance_type, client.extracted_data);
+
+      if (!isDataEntryShare && (!client.report_data || client.status !== "done")) {
         return res.status(404).json({ error: "report_not_ready" });
       }
 
@@ -4543,9 +5986,33 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         );
       }
 
-      // Return public-safe data
+      /* Return public-safe data. `kind` tells the page which of the two views to
+         render; it is not inferred in the browser, because the browser must not
+         be the thing deciding what was safe to send.
+
+         For the data-entry lane the payload carries ONLY the allowlisted fields
+         (see shared/dataEntryShare.ts). Policy, engine, chassis and registration
+         numbers, nominees, life assured, travellers and site addresses never
+         leave this function. The motor add-on scan rides along because it is the
+         substance of a motor policy, and it holds no personal data — it is a
+         list of cover names with the document line each was read from. */
+      if (isDataEntryShare) {
+        const addOns = (client.extracted_data as any)?.[ADD_ON_FINDINGS_KEY] ?? null;
+        return res.json({
+          kind: "data_entry",
+          insurance_type: client.insurance_type,
+          fields: pickShareableFields(client.insurance_type, client.extracted_data),
+          add_ons: addOns,
+          insurer: client.insurer,
+          policy_name: client.policy_name,
+          policyholder_name: client.policyholder_name,
+          created_at: client.created_at,
+        });
+      }
+
       res.json({
-        report_data: client.report_data,
+        kind: "audit",
+        report_data: stripInternal(client.report_data),
         score: client.score,
         insurer: client.insurer,
         policy_name: client.policy_name,
@@ -4594,7 +6061,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       const lead = result.rows[0];
 
-      console.log(`✅ New lead created: ${name} (${email}) - ID: ${lead.id}`);
+      log.info("lead created", { id: lead.id });
 
       // TODO: Send notification email to admin
       // TODO: Add to CRM system
@@ -5030,7 +6497,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           console.warn(`[advisor-lead ${leadId}] no email on agent ${agentId} — portal badge only`);
         }
 
-        console.log(`✅ Advisor-page lead for ${slug}: ${name} (${stored} file(s))`);
+        log.info("advisor page lead", { slug, files: stored });
 
         return res.status(201).json({ ok: true, files_saved: stored });
       } catch (err: any) {
@@ -5207,6 +6674,39 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   });
 
-  console.log("[ROUTES] All routes registered successfully");
+  /* ── Agency teams ────────────────────────────────────────────────────────
+     Owner/member/invite surface. Kept in its own module because every route in
+     it writes a team_access_log row as it serves a member's data — the property
+     that makes "you see each time your owner opens your book" true. See the
+     header of teamRoutes.ts before adding any route that reads member data. */
+  registerTeamRoutes(app, verifyJwt, isAdmin);
+
+  /* ── Account deletion ────────────────────────────────────────────────────
+     DELETE /api/me/account and DELETE /api/agent/account. The mirror of the
+     export above: same table list, walked to destroy rather than to read.
+
+     Kept in its own module because the ORDER of its five steps is the whole
+     safety argument (preconditions, collect storage keys, rows in one
+     transaction, objects best-effort, auth user LAST) and that argument has to
+     be readable in one place. Read the header of services/accountDeletion.ts
+     before changing anything about it.
+
+     Only the pieces it cannot reach on its own are passed in. `forgetTokens`
+     exists because a verified token stays cached here for up to a minute, and a
+     deleted account must stop authenticating the moment it is deleted. */
+  registerAccountDeletionRoutes(app, {
+    verifyJwt,
+    requireIndividual,
+    supabaseAdmin,
+    analysisJobs,
+    pdfBucket: PDF_BUCKET,
+    forgetTokens: (userId: string) => {
+      for (const [token, entry] of tokenCache) {
+        if (entry.userId === userId) tokenCache.delete(token);
+      }
+    },
+  });
+
+  log.info("routes registered");
   return _httpServer;
 }

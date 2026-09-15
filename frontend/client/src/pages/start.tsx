@@ -41,12 +41,14 @@ const steps = [
 const trust = [
   { icon: IndianRupee, text: "We earn no commission from any insurer" },
   { icon: Lock, text: "Your documents stay private, and you can delete them anytime" },
+  // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
   { icon: ShieldCheck, text: "Free forever for one policy of each type. No card needed" },
 ];
 
 export default function Start() {
   useSEO({
     title: "Review Your Insurance. Make Your Portfolio Today | IndSure",
+    // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
     description:
       "Upload your health, term life or vehicle policy and see what it actually covers in plain language. Keep every policy in one portfolio with renewal reminders. Free forever for one policy of each type, no card needed.",
   });
@@ -132,6 +134,7 @@ export default function Start() {
           <h2 className="text-2xl md:text-3xl font-serif mb-4">
             Start with the policy you already have
           </h2>
+          {/* claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07. */}
           <p className="text-[var(--color-text-secondary)] mb-6">
             One policy of each type is free forever — health, term life and vehicle.
           </p>

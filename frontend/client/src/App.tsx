@@ -29,23 +29,34 @@ const AgentResetPassword = lazy(() => import("@/pages/agent/ResetPassword"));
 const AgentSignupFlow = lazy(() => import("@/pages/agent/SignupFlow"));
 
 // --- Agent App ---
-const DashboardNew = lazy(() => import("@/pages/agent/DashboardNew"));
-const LeadRenewals = lazy(() => import("@/pages/agent/LeadRenewals"));
-const AgentUploads = lazy(() => import("@/pages/agent/AgentUploads"));
-const PoliciesNew = lazy(() => import("@/pages/agent/PoliciesNew"));
-const AgentCalculator = lazy(() => import("@/pages/agent/AgentCalculator"));
-const AgentCompare = lazy(() => import("@/pages/agent/Compare"));
-const AgentCatalogCompare = lazy(() => import("@/pages/agent/CatalogCompare"));
-const RiderDirectory = lazy(() => import("@/pages/agent/RiderDirectory"));
-const PolicyDetail = lazy(() => import("@/pages/agent/PolicyDetail"));
-const CustomersNew = lazy(() => import("@/pages/agent/CustomersNew"));
-const CustomerDetail = lazy(() => import("@/pages/agent/CustomerDetail"));
-const LeadsNew = lazy(() => import("@/pages/agent/LeadsNew"));
-const LeadDetail = lazy(() => import("@/pages/agent/LeadDetail"));
-const MyQueue = lazy(() => import("@/pages/agent/MyQueue"));
-const SettingsNew = lazy(() => import("@/pages/agent/SettingsNew"));
-const MyProfile = lazy(() => import("@/pages/agent/MyProfile"));
-const AgentMyPage = lazy(() => import("@/pages/agent/MyPage"));
+// Declared in one module so the post-login preloader can warm the very same
+// chunks this Switch renders. See pages/agent/lazyRoutes.ts.
+import {
+  DashboardNew,
+  Insights,
+  LeadRenewals,
+  AgentUploads,
+  PoliciesNew,
+  PolicyValues,
+  AgentCalculator,
+  AgentCompare,
+  AgentCatalogCompare,
+  RiderDirectory,
+  PolicyDetail,
+  CustomersNew,
+  CustomerDetail,
+  LeadsNew,
+  LeadDetail,
+  Claims,
+  ClaimDetail,
+  MyQueue,
+  SettingsNew,
+  MyProfile,
+  AgentMyPage,
+  AgentTeam,
+  AgentTeamMember,
+} from "@/pages/agent/lazyRoutes";
+const JoinTeam = lazy(() => import("@/pages/agent/JoinTeam"));
 import AgentProtectedRoute from "@/components/agent/ProtectedRoute";
 
 // --- Advisor landing pages (public, per-agent lead capture) ---
@@ -187,16 +198,26 @@ function App() {
                       <Route path="/agent/forgot-password" component={AgentForgotPassword} />
                       <Route path="/agent/reset-password" component={AgentResetPassword} />
                       <Route path="/agent/signup/:rest*" component={AgentSignupFlow} />
+                      {/* Reachable signed-out on purpose: an invited advisor
+                          usually has no IndSure account yet. The page itself
+                          decides what to ask for. */}
+                      <Route path="/agent/join/:token" component={JoinTeam} />
 
                       {/* --- Agent Protected App --- */}
                       <Route path="/agent/dashboard">
                         {() => <AgentProtectedRoute><DashboardNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/insights">
+                        {() => <AgentProtectedRoute><Insights /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/uploads">
                         {() => <AgentProtectedRoute><AgentUploads /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/policies">
                         {() => <AgentProtectedRoute><PoliciesNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/values">
+                        {() => <AgentProtectedRoute><PolicyValues /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/policies/:id">
                         {() => <AgentProtectedRoute><PolicyDetail /></AgentProtectedRoute>}
@@ -206,6 +227,18 @@ function App() {
                       </Route>
                       <Route path="/agent/customers/:id">
                         {() => <AgentProtectedRoute><CustomerDetail /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/team">
+                        {() => <AgentProtectedRoute><AgentTeam /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/team/:id">
+                        {() => <AgentProtectedRoute><AgentTeamMember /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/claims">
+                        {() => <AgentProtectedRoute><Claims /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/claims/:id">
+                        {() => <AgentProtectedRoute><ClaimDetail /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/leads">
                         {() => <AgentProtectedRoute><LeadsNew /></AgentProtectedRoute>}
@@ -225,11 +258,18 @@ function App() {
                       <Route path="/agent/calculator">
                         {() => <AgentProtectedRoute><AgentCalculator /></AgentProtectedRoute>}
                       </Route>
+                      {/* Compare defaults to the catalog: instant, and it costs the
+                          agent nothing. Uploading two wordings is the paid lane and
+                          lives one click deeper, at /agent/compare/quotes.
+                          /agent/compare/catalog stays alive for older links. */}
+                      <Route path="/agent/compare/quotes">
+                        {() => <AgentProtectedRoute><AgentCompare /></AgentProtectedRoute>}
+                      </Route>
                       <Route path="/agent/compare/catalog">
                         {() => <AgentProtectedRoute><AgentCatalogCompare /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/compare">
-                        {() => <AgentProtectedRoute><AgentCompare /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><AgentCatalogCompare /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/riders">
                         {() => <AgentProtectedRoute><RiderDirectory /></AgentProtectedRoute>}

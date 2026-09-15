@@ -52,7 +52,11 @@ const visionGoals = [
   {
     icon: Target,
     title: "Zero Compromise",
-    description: "No sales. No storage. No bias. Ever.",
+    /* claim-source: we hold no IRDAI intermediary licence and take no
+       commission (advisors-pricing.tsx:155). "No storage" used to sit here and
+       was false: individual_policies holds real rows and routes.ts persists the
+       document so it can be downloaded later. Verified 2026-09-07. */
+    description: "No sales. No commissions. No bias. Ever.",
     timeline: "Forever",
     gradient: "from-emerald-500 to-teal-500",
     bgGradient: "from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/20 dark:to-teal-500/20",
@@ -69,21 +73,26 @@ const visionMilestones = [
     color: "from-emerald-500 to-green-500",
   },
   {
-    year: "2025",
+    // claim-source: Hindi (i18n/hi.json) ships and the language toggle is live,
+    // so "in progress" is accurate. The previous line promised "100K+ policy
+    // analyses" against 48 real ones, and was still tagged 2025 in September
+    // 2026. A milestone with no number in it cannot go stale. Verified
+    // 2026-09-07.
+    year: "2026",
     icon: TrendingUp,
-    achievement: "Reach 100K+ policy analyses, expand to regional languages",
+    achievement: "Expand the policy check to regional languages",
     status: "in-progress",
     color: "from-[#4A9B9E] to-[#3CBBA0]",
   },
   {
-    year: "2026",
+    year: "2027",
     icon: Award,
     achievement: "Become India's #1 trusted insurance analysis platform",
     status: "planned",
     color: "from-[#1A3A52] to-[#4A9B9E]",
   },
   {
-    year: "2027+",
+    year: "2028+",
     icon: Star,
     achievement: "Democratize insurance literacy across all of India",
     status: "vision",
@@ -114,7 +123,7 @@ export default function Vision() {
             <div className="absolute inset-0 bg-gradient-to-br from-[#1A3A52] via-[#4A9B9E] to-[#3CBBA0] rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
             <Eye className="w-10 h-10 text-white relative z-10 group-hover:scale-110 transition-transform" />
           </div>
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-black mb-6 bg-gradient-to-r from-[#1A3A52] via-[#4A9B9E] to-[#3CBBA0] bg-clip-text text-transparent leading-tight">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-6 bg-gradient-to-r from-[#1A3A52] via-[#4A9B9E] to-[#3CBBA0] bg-clip-text text-transparent leading-tight">
             Our Vision
           </h1>
           <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-200 max-w-4xl mx-auto leading-relaxed font-semibold mb-4">
@@ -128,7 +137,7 @@ export default function Vision() {
         {/* Vision Statement */}
         <div className="mb-16">
           <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-2 border-gray-200 dark:border-gray-700 shadow-xl">
-            <CardContent className="p-8 md:p-12">
+            <CardContent className="p-5 sm:p-8 md:p-12">
               <div className="space-y-8">
                 <div className="flex items-start gap-4">
                   <div className="p-3 rounded-xl bg-gradient-to-br from-[#1A3A52] to-[#4A9B9E] flex-shrink-0">
@@ -144,7 +153,7 @@ export default function Vision() {
                   </div>
                 </div>
                 
-                <div className="mt-8 p-6 bg-gradient-to-r from-[#1A3A52]/10 to-[#4A9B9E]/10 dark:from-[#1A3A52]/20 dark:to-[#4A9B9E]/20 rounded-xl border-l-4 border-[#4A9B9E]">
+                <div className="mt-8 p-4 sm:p-6 bg-gradient-to-r from-[#1A3A52]/10 to-[#4A9B9E]/10 dark:from-[#1A3A52]/20 dark:to-[#4A9B9E]/20 rounded-xl border-l-4 border-[#4A9B9E]">
                   <p className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">
                     Our vision extends beyond individual analysis. We see a future where:
                   </p>
@@ -184,7 +193,7 @@ export default function Vision() {
           <p className="text-center text-gray-600 dark:text-gray-400 mb-12 text-lg">
             Our roadmap to making this vision reality
           </p>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {visionGoals.map((goal, index) => {
               const Icon = goal.icon;
               return (
@@ -299,6 +308,7 @@ export default function Vision() {
               </div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Join Us on This Journey</h2>
               <p className="text-lg md:text-xl mb-8 text-white/90 font-medium max-w-2xl mx-auto">
+                {/* claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07. */}
                 See what your policy actually covers. A free account, no card, one policy of each type free forever. No BS.
               </p>
               <Link href="/">

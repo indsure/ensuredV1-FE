@@ -22,7 +22,7 @@ The platform is built as a modern full-stack web application with a clear separa
 - **Core Stack**: [Express.js 5](https://expressjs.com/), Node.js, TypeScript.
 - **API Architecture**: Centralized routing in `backend/server/routes.ts`.
 - **Database Layer**:
-    - **ORM**: [Drizzle ORM](https://orm.drizzle.team/) for type-safe database interactions.
+    - **Database access**: raw `pg.Pool` with parameterised SQL. There is no ORM. Drizzle was bootstrapped in 2026 and removed on 2026-09-01 having never been adopted; the schema of record is `migrations/`.
     - **Infrastructure**: [Supabase](https://supabase.com/) / PostgreSQL for persistent storage.
 - **Integration Hooks**:
     - Middleware for authentication and error handling.

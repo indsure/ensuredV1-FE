@@ -13,7 +13,9 @@
     "tata_aig": "Tata AIG General Insurance Company Limited",
     "sbi_general": "SBI General Insurance Company Limited",
     "acko": "Acko General Insurance Limited",
-    "navi": "Navi General Insurance Limited",
+    "navi_general": "Navi General Insurance Limited",
     "reliance": "Reliance General Insurance Company Limited",
-    "digit": "Go Digit General Insurance Limited"
+    "go_digit": "Go Digit General Insurance Limited",
+    "generali_central": "Generali Central Insurance Company Limited",
+    "future_generali": "Generali Central Insurance Company Limited"
 }

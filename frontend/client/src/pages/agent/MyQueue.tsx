@@ -93,7 +93,11 @@ export default function MyQueue() {
     }
   }
 
-  async function dismiss(id: string) {
+  // This DELETES the policy row — it does not merely hide it from the queue.
+  // The button, the confirmation and the toast must all keep saying so. An
+  // earlier version said "Dismiss / Removed from queue" while running this
+  // exact delete, and agents cleared their queue believing it was a notification.
+  async function deletePolicy(id: string) {
     if (!agent?.agentId) return
     setDismissingId(id)
     try {
@@ -104,9 +108,9 @@ export default function MyQueue() {
         .eq("agent_id", agent.agentId)
       if (dErr) throw new Error(dErr.message)
       setMyPolicies((prev) => prev.filter((p) => p.id !== id))
-      toast({ variant: "success", title: "Removed from queue" })
+      toast({ variant: "success", title: "Policy deleted", description: "The upload and its record are gone. This cannot be undone." })
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not remove", description: e instanceof Error ? e.message : undefined })
+      toast({ variant: "destructive", title: "Could not delete", description: e instanceof Error ? e.message : undefined })
     } finally {
       setDismissingId(null)
       setConfirmDismissId(null)
@@ -157,7 +161,7 @@ export default function MyQueue() {
               actionLabel="Retry"
               onAction={retry}
               onRowClick={(rid) => setLocation(`/agent/policies/${rid}`)}
-              onDismiss={dismiss}
+              onDismiss={deletePolicy}
               confirmDismissId={confirmDismissId}
               setConfirmDismissId={setConfirmDismissId}
               dismissingId={dismissingId}
@@ -174,7 +178,7 @@ export default function MyQueue() {
               actionLabel="View"
               onAction={(rid) => setLocation(`/agent/policies/${rid}`)}
               onRowClick={(rid) => setLocation(`/agent/policies/${rid}`)}
-              onDismiss={dismiss}
+              onDismiss={deletePolicy}
               confirmDismissId={confirmDismissId}
               setConfirmDismissId={setConfirmDismissId}
               dismissingId={dismissingId}
@@ -218,7 +222,7 @@ function QueueTable({
   return (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="table-cards w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-100">
             <tr className="text-left text-xs text-slate-400 uppercase tracking-wider font-semibold">
               <th className="px-5 py-3.5">File</th>
@@ -250,15 +254,15 @@ function QueueTable({
                 className="group hover:bg-slate-50/50 transition-colors cursor-pointer"
                 onClick={() => onRowClick(p.id)}
               >
-                <td className="px-5 py-4 font-medium text-slate-600 text-xs">{p.filename || '—'}</td>
-                <td className="px-5 py-4 font-semibold text-slate-800">{p.client_name}</td>
+                <td className="px-5 py-4 font-medium text-slate-600 text-xs" data-label="File">{p.filename || '—'}</td>
+                <td className="px-5 py-4 font-semibold text-slate-800" data-label="Client" data-cell="title">{p.client_name}</td>
                 {showError && (
-                  <td className="px-5 py-4 text-xs text-red-500 max-w-xs truncate">
+                  <td className="px-5 py-4 text-xs text-red-500 max-w-xs md:truncate" data-label="Reason">
                     {p.error_message || 'Analysis failed'}
                   </td>
                 )}
-                <td className="px-5 py-4">
-                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest border ${statusColor(p.status)}`}>
+                <td className="px-5 py-4" data-label="Status">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-black uppercase tracking-widest border ${statusColor(p.status)}`}>
                     {showSpinner && (p.status === "processing" || p.status === "pending") ? (
                       <span className="inline-flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin" />
@@ -267,38 +271,39 @@ function QueueTable({
                     ) : p.status.replace(/_/g, " ")}
                   </span>
                 </td>
-                <td className="px-5 py-4 text-slate-400 text-xs">
+                <td className="px-5 py-4 text-slate-400 text-xs" data-label="Date">
                   {new Date(p.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                 </td>
-                <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                  <div className="inline-flex items-center gap-2">
+                <td className="px-5 py-4 text-right" data-label="Action" data-cell="actions" onClick={(e) => e.stopPropagation()}>
+                  <div className="inline-flex items-center gap-2 max-md:w-full">
                     <Button size="sm" variant="outline" className="border-slate-200" onClick={() => onAction(p.id)}>
                       {actionLabel}
                     </Button>
                     {confirmDismissId === p.id ? (
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-2">
+                        <span className="text-sm text-slate-700">Delete permanently?</span>
                         <button
                           onClick={() => onDismiss(p.id)}
                           disabled={dismissingId === p.id}
-                          className="text-[10px] font-black uppercase tracking-wider text-white bg-red-500 hover:bg-red-600 px-2 py-1.5 rounded transition-colors disabled:opacity-50"
+                          className="text-sm font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded transition-colors disabled:opacity-50"
                         >
-                          {dismissingId === p.id ? "…" : "Remove"}
+                          {dismissingId === p.id ? "Deleting…" : "Delete"}
                         </button>
                         <button
                           onClick={() => setConfirmDismissId(null)}
-                          className="text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-slate-600 px-1.5 py-1.5"
+                          className="text-sm font-bold text-slate-600 hover:text-slate-900 px-3 py-2"
                         >
-                          Cancel
+                          Keep
                         </button>
                       </span>
                     ) : (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200"
+                        className="border-slate-200 text-slate-600 hover:text-red-600 hover:border-red-200"
                         onClick={() => setConfirmDismissId(p.id)}
                       >
-                        Dismiss
+                        Delete
                       </Button>
                     )}
                   </div>

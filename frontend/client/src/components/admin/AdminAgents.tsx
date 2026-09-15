@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, 
   ChevronDown, 
@@ -15,7 +15,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabase';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiOk } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
 
 interface Agent {
   id: string;
@@ -27,6 +28,7 @@ interface Agent {
   client_count: number;
   avg_score: string;
   empanelments: string[];
+  partnered_companies: string[];
 }
 
 const AdminAgents: React.FC = () => {
@@ -61,14 +63,22 @@ const AdminAgents: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await apiFetch(`/api/admin/agents/${agentId}`, {
+      // apiOk throws on a non-2xx. Before this, a rejected update still ran the
+      // two lines below, so the table showed the new limit, the editor closed,
+      // and the admin had no idea nothing had been saved until a refresh.
+      await apiOk(apiFetch(`/api/admin/agents/${agentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
         body: JSON.stringify({ upload_limit: editLimit }),
-      });
+      }));
       setAgents(prev => prev.map(a => a.id === agentId ? { ...a, upload_limit: editLimit } : a));
       setEditingId(null);
-    } catch (err) {
+    } catch (err: unknown) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not update the limit',
+        description: err instanceof Error ? err.message : 'Please try again.',
+      });
     }
   };
 
@@ -109,23 +119,23 @@ const AdminAgents: React.FC = () => {
       {/* Agents Table */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="table-cards w-full text-left">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Agent</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">City</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Signup Date</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Clients</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Avg Portfolio</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Upload Limit</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Agent</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">City</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Signup Date</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Clients</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Avg Portfolio</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Upload Limit</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredAgents.map((agent) => (
                 <React.Fragment key={agent.id}>
                   <tr className={`hover:bg-slate-50/80 transition-colors group ${expandedId === agent.id ? 'bg-slate-50/80' : ''}`}>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" data-label="Agent" data-cell="title">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs uppercase shadow-sm">
                            {agent.full_name?.charAt(0) || 'A'}
@@ -136,18 +146,18 @@ const AdminAgents: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" data-label="City">
                        <span className="text-xs font-semibold text-slate-600 px-2 py-1 bg-slate-100 rounded-lg">{agent.city}</span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" data-label="Signup Date">
                        <p className="text-xs text-slate-500 font-medium">
                           {agent.created_at ? format(new Date(agent.created_at), 'MMM dd, yyyy') : 'N/A'}
                        </p>
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-6 py-4 text-center" data-label="Clients">
                        <span className="text-sm font-bold text-[#0F172A]">{agent.client_count}</span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" data-label="Avg Portfolio">
                        <div className="flex items-center gap-2">
                           <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden max-w-[60px]">
                              <div 
@@ -158,7 +168,7 @@ const AdminAgents: React.FC = () => {
                           <span className="text-xs font-bold text-slate-700">{agent.avg_score}/100</span>
                        </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" data-label="Upload Limit">
                        {editingId === agent.id ? (
                          <div className="flex items-center gap-2">
                            <input 
@@ -189,7 +199,7 @@ const AdminAgents: React.FC = () => {
                          </div>
                        )}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right" data-label="Actions" data-cell="actions">
                        <button 
                          onClick={() => setExpandedId(expandedId === agent.id ? null : agent.id)}
                          className="p-2 hover:bg-white rounded-xl transition-all shadow-sm border border-slate-100"
@@ -210,19 +220,38 @@ const AdminAgents: React.FC = () => {
                           >
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
-                                   <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Empanelled Insurers</h5>
+                                   {/* Two stores, two questions. Labelled so the
+                                       difference is visible: this is everything the
+                                       agent sells, across life, health and general.
+                                       The block beside it is the health-only subset
+                                       the cover calculator biases toward, which the
+                                       agent can edit in their profile. */}
+                                   <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Empanelled Insurers</h5>
+                                   <p className="text-sm text-slate-500 mb-4">Chosen at signup, all lines of business</p>
                                    <div className="flex flex-wrap gap-2">
                                       {agent.empanelments.length > 0 ? agent.empanelments.map((ins, i) => (
                                         <span key={i} className="px-3 py-1.5 bg-white border border-teal-100 text-[#0D9488] text-[11px] font-bold rounded-full shadow-sm">
                                           {ins}
                                         </span>
                                       )) : (
-                                        <p className="text-xs text-slate-400 italic">No empanelments listed</p>
+                                        <p className="text-sm text-slate-500 italic">No empanelments listed</p>
+                                      )}
+                                   </div>
+
+                                   <h5 className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-6 mb-1">Health partners</h5>
+                                   <p className="text-sm text-slate-500 mb-4">What the cover calculator uses. Editable by the agent in their profile.</p>
+                                   <div className="flex flex-wrap gap-2">
+                                      {agent.partnered_companies.length > 0 ? agent.partnered_companies.map((ins, i) => (
+                                        <span key={i} className="px-3 py-1.5 bg-white border border-indigo-100 text-indigo-700 text-xs font-bold rounded-full shadow-sm">
+                                          {ins}
+                                        </span>
+                                      )) : (
+                                        <p className="text-sm text-slate-500 italic">None. The calculator gives neutral output for this agent.</p>
                                       )}
                                    </div>
                                 </div>
                                 <div className="space-y-4">
-                                   <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Quick Stats</h5>
+                                   <h5 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Quick Stats</h5>
                                    <div className="grid grid-cols-2 gap-4">
                                       <div className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
                                          <Mail size={16} className="text-slate-400" />

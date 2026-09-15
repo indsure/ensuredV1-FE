@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Building2, MapPin } from "lucide-react";
 import { clsx } from "clsx";
 import { apiFetch } from "@/lib/api";
@@ -42,8 +42,6 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
         if (type === "pincode") params.append("pincode", title);
         params.append("limit", "10");
 
-        console.log(`[InsurerCard] Fetching hospitals for ${type}: ${title}`);
-
         apiFetch(`/api/hospitals/samples?${params.toString()}`)
             .then(r => {
                 if (!r.ok) {
@@ -52,7 +50,6 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                 return r.json();
             })
             .then(data => {
-                console.log(`[InsurerCard] Received ${data.length} hospitals for ${title}`, data);
                 setHospitalSamples(data);
             })
             .catch(err => {
@@ -92,7 +89,7 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                         className={clsx(
                             "w-6 h-6 rounded border flex items-center justify-center transition-colors",
                             isSelected
-                                ? "bg-[var(--color-teal-600)] border-[var(--color-teal-600)] text-white"
+                                ? "bg-[var(--color-cta)] border-[var(--color-teal-600)] text-white"
                                 : "border-[var(--color-border-subtle)] text-transparent hover:border-[var(--color-teal-400)]"
                         )}
                         aria-label={isSelected ? "Unselect for comparison" : "Select for comparison"}
@@ -141,7 +138,7 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                                     <div className="font-medium text-[var(--color-navy-900)] line-clamp-2 leading-tight mb-0.5">
                                         {hospital.hospital_name}
                                     </div>
-                                    <div className="text-[var(--color-text-muted)] text-[10px] line-clamp-1">
+                                    <div className="text-[var(--color-text-muted)] text-xs line-clamp-1">
                                         {hospital.address}
                                     </div>
                                 </div>
@@ -150,7 +147,7 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                     ) : (
                         <div className="text-xs text-[var(--color-text-muted)] space-y-1">
                             <p className="italic">No hospital names available</p>
-                            <p className="text-[10px]">Check browser console for details</p>
+                            <p className="text-xs">This insurer has not shared its hospital list with us yet.</p>
                         </div>
                     )}
                 </div>

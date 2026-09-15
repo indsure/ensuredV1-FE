@@ -3,19 +3,17 @@
  *
  * NO NETWORK, NO DB. These are pure list/config assertions.
  *
- * Why this file exists: the upload page drives its type buttons off TYPE_META
- * in the frontend registry, while the API decides what to do with the string
- * it receives from its own list in extractionFields.ts. Nothing tied the two
- * together, so a line of business could exist as a button and not as an
- * accepted value. On the beta backend that gap cost a real upload: an agent
- * picked "Marine", the API did not recognise the string, defaulted it to
- * health, and returned "Document does not appear to be a readable health
- * insurance policy" against a policy-check credit.
+ * Why this file exists: on 2026-09-07 an agent uploaded Marinepolicy.pdf, chose
+ * the "Marine" button the upload page offered, and got back "Document does not
+ * appear to be a readable health insurance policy" against a policy-check
+ * credit. The upload page drove its buttons off TYPE_META (nine types) while
+ * /api/agent/analyze validated against a hand-written set of four and silently
+ * fell back to "health" for everything else. Two lists, no wire between them.
  *
- * The first test is the missing wire. It reads the frontend registry as text
- * (the backend cannot import across the app boundary) and asserts the two
- * lists are identical, so adding a type to one file and not the other fails
- * here instead of in front of an agent.
+ * The first test is that wire. It reads the frontend registry as text (the
+ * backend cannot import across the app boundary) and asserts the two lists are
+ * identical, so adding a line of business to one file and not the other fails
+ * here instead of in production.
  *
  * Run:  npx tsx --test backend/server/tests/insuranceTypes.test.ts
  */
@@ -55,7 +53,7 @@ function frontendTypeMetaKeys(): string[] {
     assert.ok(close > open, "could not find the end of the TYPE_META literal");
     const body = src.slice(open, close);
     const keys = [...body.matchAll(/^\s{2}([a-z_]+)\s*:/gm)].map((m) => m[1]);
-    assert.ok(keys.length > 0, "parsed no keys out of TYPE_META — has its shape changed?");
+    assert.ok(keys.length > 0, "parsed no keys out of TYPE_META - has its shape changed?");
     return keys;
 }
 
@@ -76,6 +74,15 @@ describe("SUPPORTED_INSURANCE_TYPES", () => {
             [...SUPPORTED_INSURANCE_TYPES],
             ["health", ...DATA_ENTRY_TYPES],
         );
+    });
+
+    test("accepts the five types the old four-item whitelist dropped", () => {
+        // These are the ones that silently became "health" and got billed as a
+        // forensic audit. Named explicitly so a future edit has to mean it.
+        for (const type of ["travel", "property", "fire", "marine", "contractor_all_risk"]) {
+            assert.ok(isSupportedInsuranceType(type), `${type} must be accepted`);
+            assert.ok(isDataEntryType(type), `${type} must route to data entry, not the audit`);
+        }
     });
 
     test("every data-entry type is accepted and stays out of the audit lane", () => {
@@ -109,12 +116,11 @@ describe("SUPPORTED_INSURANCE_TYPES", () => {
 
 describe("the Gemini output ceiling leaves room to think", () => {
     test("is above the largest known-good visible+thinking total", () => {
-        // This model thinks, and the reasoning trace is billed against the same
-        // ceiling as the answer while being reported separately. Sizing this
-        // against the largest report ever emitted (4,411 tokens) measures the
-        // wrong half: a real successful audit ran ~3,339 visible + ~8,494
-        // thinking = ~11,833. Set the ceiling under that and the JSON comes
-        // back cut mid-object.
+        // 2026-08-31 set this to 8,192 by comparing against visible output
+        // alone (4,411 tokens). On a thinking model the ceiling covers the
+        // reasoning trace too, and a real successful audit measured
+        // ~3,339 visible + ~8,494 thinking = ~11,833. Every audit after that
+        // commit died at MAX_TOKENS with the JSON cut mid-object.
         const LARGEST_KNOWN_GOOD_TOTAL = 11_833;
         assert.ok(
             AI_CONFIG.generation_config.max_output_tokens > LARGEST_KNOWN_GOOD_TOTAL,

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '@/lib/supabase'
+import { motion, AnimatePresence } from 'motion/react'
+import { supabase } from '@/lib/supabase'
+import { partnersFromSignup } from '@/lib/data/signup-insurer-map'
 import { Search, X, Check, Plus, CheckCircle2 } from 'lucide-react'
 
 // Insurers grouped by category
@@ -50,6 +51,27 @@ export default function AgentSignupStep2() {
     const [showCustomInput, setShowCustomInput] = useState(false)
     const [customInsurer, setCustomInsurer] = useState('')
 
+    // Set by step 1 when the account was created but the agency request was
+    // not stored. Read once on mount — it is a hand-off from the previous
+    // screen, not state that changes here.
+    const [agencyUnconfirmed] = useState(
+        () => new URLSearchParams(window.location.search).get('agency') === 'unconfirmed'
+    )
+
+    // Selections live in component state only. They are not written to web
+    // storage on purpose — but that means a refresh or an accidental close
+    // silently discards them, so warn first. (A real Back to step 1 is not
+    // offered here: the account is already created by this point.)
+    useEffect(() => {
+        if (selected.length === 0) return
+        const warn = (e: BeforeUnloadEvent) => {
+            e.preventDefault()
+            e.returnValue = ''
+        }
+        window.addEventListener('beforeunload', warn)
+        return () => window.removeEventListener('beforeunload', warn)
+    }, [selected])
+
     const toggleInsurer = (name: string) => {
         if (selected.includes(name)) {
             setSelected(prev => prev.filter(i => i !== name))
@@ -95,6 +117,32 @@ export default function AgentSignupStep2() {
             return
         }
 
+        // Mirror the HEALTH selections into agents.partnered_companies, which is
+        // what the cover calculator actually reads. Without this the answer
+        // above went nowhere: it was stored, shown to admins, and ignored by the
+        // one feature that needed it, until the agent typed the same insurers
+        // again in their profile.
+        //
+        // Health only, via an explicit map. Life and general have no true
+        // counterpart in the profile vocabulary, and guessing one turns
+        // "SBI Life" into "SBI Health Insurance", which is a different company.
+        // Those selections stay in empanelments; see signup-insurer-map.ts.
+        //
+        // Non-fatal on purpose. The empanelments row above is already saved and
+        // this is a convenience mirror; failing here must not strand someone at
+        // the end of signup with an account they cannot get into. They can still
+        // set partners in their profile, exactly as before.
+        const partners = partnersFromSignup(selected)
+        if (partners.length > 0) {
+            const { error: partnerError } = await supabase
+                .from('agents')
+                .update({ partnered_companies: partners })
+                .eq('id', user.id)
+            if (partnerError) {
+                console.error('partner mirror failed', partnerError.message)
+            }
+        }
+
         setLocation('/agent/dashboard')
     }
 
@@ -137,6 +185,33 @@ export default function AgentSignupStep2() {
                         </h1>
                         <p className="text-slate-500 text-sm font-medium">Advisor Portal</p>
                     </div>
+
+                    {/* Step 1 said "agency" but the server did not confirm it
+                        stored the request. Rather than let the promise on the
+                        previous screen stand unearned, say so and give them a
+                        way to reach us. Silence here would mean an agency that
+                        thinks a team is coming and never hears from anyone. */}
+                    {agencyUnconfirmed && (
+                        <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                            <p className="text-sm font-semibold text-amber-900">
+                                Your account is set up, but we could not record your agency details.
+                            </p>
+                            <p className="mt-1 text-sm text-amber-800 leading-relaxed">
+                                Nothing is lost on your side — carry on below and use IndSure normally.
+                                Message us and we will set your team up by hand.
+                            </p>
+                            {/* target and rel stay on ONE line: checks/guard.mjs
+                                matches them per line, so splitting them reads
+                                as an unprotected _blank. */}
+                            <a
+                                href="https://wa.me/919987148125?text=Hi%2C%20I%20signed%20up%20as%20an%20agency%20but%20my%20agency%20details%20were%20not%20saved."
+                                target="_blank" rel="noopener noreferrer"
+                                className="mt-3 inline-flex items-center min-h-[44px] px-4 rounded-full bg-amber-600 text-white text-sm font-semibold"
+                            >
+                                Message us on WhatsApp
+                            </a>
+                        </div>
+                    )}
 
                     {/* Progress Indicator */}
                     <div className="flex items-center gap-3 mb-10">
@@ -368,14 +443,14 @@ export default function AgentSignupStep2() {
                 </div>
 
                 {/* Content */}
-                <div className="relative z-10 flex flex-col justify-center px-16 py-20 text-white">
+                <div className="relative z-10 flex flex-col justify-center px-6 sm:px-10 lg:px-16 py-12 sm:py-16 lg:py-20 text-white">
                     {/* Wordmark */}
                     <div className="mb-12">
                         <h2 className="font-['Playfair_Display'] text-2xl font-semibold">IndSure</h2>
                     </div>
 
                     {/* Hero Copy */}
-                    <h1 className="font-['Playfair_Display'] text-5xl font-bold leading-tight mb-6">
+                    <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
                         Almost there.
                         <br />
                         Let's personalize your experience.
@@ -401,7 +476,10 @@ export default function AgentSignupStep2() {
                                 <Check className="w-4 h-4" />
                             </div>
                             <div>
-                                <div className="text-white/95 font-semibold mb-1">Commission tracking across all insurers in one place</div>
+                                {/* Not built. The word "commission" appears in no implementation file;
+    agent/Landing.tsx was rebuilt in 2026-08 specifically to drop this claim.
+    Kept as a labelled roadmap item by founder decision 2026-09-07. */}
+                                <div className="text-white/95 font-semibold mb-1">Commission tracking across all insurers in one place (coming soon)</div>
                                 <div className="text-white/70 text-sm">Unified view of earnings from all your partnerships</div>
                             </div>
                         </div>
@@ -410,7 +488,10 @@ export default function AgentSignupStep2() {
                                 <Check className="w-4 h-4" />
                             </div>
                             <div>
-                                <div className="text-white/95 font-semibold mb-1">Auto-filled forms for faster policy submissions</div>
+                                {/* Not built. There is no insurer submission path; insurer integrations
+    are mocked per rules.md. The shipped OCR autofill fills OUR records from
+    a PDF, which is a different thing. Founder decision 2026-09-07. */}
+                                <div className="text-white/95 font-semibold mb-1">Auto-filled forms for faster policy submissions (coming soon)</div>
                                 <div className="text-white/70 text-sm">Save time with pre-populated insurer-specific fields</div>
                             </div>
                         </div>

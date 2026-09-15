@@ -85,7 +85,7 @@ export default function AuthorPage() {
         {articles.length > 0 && (
           <section>
             <h2 className="text-2xl font-serif font-bold mb-6">Articles by {founder.name}</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {articles.map((post) => (
                 <Link key={post.id} href={blogPath(post.id)}>
                   <div className="bg-white rounded-xl border border-[var(--color-border-light)] p-5 hover:shadow-lg hover:border-[var(--color-green-secondary)] transition-all h-full flex flex-col cursor-pointer">

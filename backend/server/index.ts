@@ -55,7 +55,7 @@ function cleanupUploadsDirectory() {
     });
 
     if (cleaned > 0) {
-      console.log(`[uploads] Cleaned ${cleaned} stale upload file(s).`);
+      log.info("stale uploads cleaned", { count: cleaned });
     }
   } catch (err) {
     console.error("Failed to cleanup uploads directory:", err);
@@ -156,7 +156,7 @@ async function sendRenewalReminders() {
     );
 
     if (due.rows.length === 0) return;
-    console.log(`[reminders] ${due.rows.length} renewal reminder(s) due.`);
+    log.info("renewal reminders due", { count: due.rows.length });
 
     for (const row of due.rows) {
       const label = row.nickname || row.policy_name || row.insurer || `your ${row.insurance_type} policy`;
@@ -683,7 +683,7 @@ async function start() {
   if (process.env.SERVE_STATIC === "true") {
     try {
       serveStatic(app);
-      console.log("[static] Serving frontend build.");
+      log.info("serving frontend build");
     } catch (e: any) {
       console.error("[static] Static serving disabled (no build found):", e?.message);
     }
@@ -692,7 +692,7 @@ async function start() {
   const port = Number(process.env.PORT) || 5000;
 
   server.listen(port, "0.0.0.0", () => {
-    console.log(`API server running on http://localhost:${port}`);
+    log.info("api server listening", { port });
     // Run DPDP retention once shortly after boot (the interval only fires 24h
     // later otherwise). Guarded so a cleanup failure never crashes the server.
     setTimeout(() => {

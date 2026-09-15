@@ -1,15 +1,52 @@
-import { useState } from 'react';
-import { useLocation, Link } from 'wouter';
+import { useEffect, useState } from 'react';
+import { useLocation, useSearch, Link } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useLanguage, LanguageToggle } from '@/i18n/LanguageContext';
 import { ShieldCheck, Eye, EyeOff, FolderKanban, MessageCircle, Scale } from 'lucide-react';
+import { preloadAgentRoutes } from '@/pages/agent/lazyRoutes';
+
+/**
+ * Where to land after a successful sign-in.
+ *
+ * A team invite sends people here mid-flow, and dropping them on the dashboard
+ * means re-opening the invite email to finish. `?next=` brings them back.
+ *
+ * Only same-site absolute paths are honoured. Anything else — a full URL, a
+ * protocol-relative `//evil.example`, a backslash variant — is discarded and the
+ * dashboard is used instead, so the parameter cannot be used to bounce someone
+ * off IndSure with a freshly minted session.
+ */
+function safeNext(rawSearch: string): string {
+  const raw = new URLSearchParams(rawSearch).get('next');
+  if (!raw) return '/agent/dashboard';
+  const decoded = (() => { try { return decodeURIComponent(raw); } catch { return raw; } })();
+  const ok = decoded.startsWith('/')
+    && !decoded.startsWith('//')
+    && !decoded.startsWith('/\\')
+    && !decoded.includes('://');
+  return ok ? decoded : '/agent/dashboard';
+}
 
 export default function LoginNew() {
+  // Start pulling the workspace down while they are still typing. Waiting until
+  // after sign-in wastes the one dead window the flow gives us for free: by the
+  // time the password is submitted the portal is already in memory, so the
+  // dashboard and every screen in the rail are there on arrival rather than
+  // fetching a chunk each on first visit.
+  //
+  // Deliberately not gated on a successful login. Anyone on the advisor login
+  // screen is about to be an advisor, and paying for the odd bounce is worth a
+  // workspace that is ready the moment they land.
+  useEffect(() => { preloadAgentRoutes() }, []);
+
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { t } = useLanguage();
-  const [email, setEmail] = useState('');
+  // Prefilled when an invite sent them here, so the address that has to match
+  // the invite is not something they have to remember and retype.
+  const [email, setEmail] = useState(() => new URLSearchParams(search).get('email') ?? '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -46,7 +83,7 @@ export default function LoginNew() {
       return;
     }
 
-    setLocation('/agent/dashboard');
+    setLocation(safeNext(search));
   }
 
   const benefits = [
@@ -115,7 +152,7 @@ export default function LoginNew() {
           </Link>
 
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-slate-900 font-['Playfair_Display']">{t('agent_login.welcome_title')}</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 font-['Playfair_Display']">{t('agent_login.welcome_title')}</h1>
             <p className="mt-3 text-slate-500 font-medium">{t('agent_login.welcome_subtitle')}</p>
           </div>
 
@@ -143,7 +180,7 @@ export default function LoginNew() {
                   <button
                     type="button"
                     onClick={() => setLocation('/agent/forgot-password')}
-                    className="text-sm font-semibold text-[#0D9488] hover:underline"
+                    className="inline-flex min-h-11 items-center text-sm font-semibold text-[#0D9488] hover:underline"
                   >
                     {t('agent_login.forgot')}
                   </button>
@@ -162,7 +199,7 @@ export default function LoginNew() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-11 items-center gap-1 rounded-md px-2 text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors"
                     aria-label={showPassword ? t('agent_login.hide') : t('agent_login.show')}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

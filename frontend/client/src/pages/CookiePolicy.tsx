@@ -83,7 +83,7 @@ export default function CookiePolicy() {
       {/* Header */}
       <div className="border-b border-gray-100 bg-white sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+          <a href="/" className="inline-flex min-h-11 items-center text-sm text-gray-500 hover:text-gray-800 transition-colors">
             ← Back to IndSure
           </a>
           <span className="text-xs text-gray-400">Last updated: {LAST_UPDATED}</span>
@@ -94,7 +94,7 @@ export default function CookiePolicy() {
         {/* Title */}
         <div className="mb-12">
           <p className="text-xs font-medium tracking-widest text-gray-400 uppercase mb-3">Legal</p>
-          <h1 className="text-4xl font-semibold text-gray-900 mb-4 leading-tight">Cookie Policy</h1>
+          <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-4 leading-tight">Cookie Policy</h1>
           <p className="text-gray-500 text-sm leading-relaxed">
             This policy explains what cookies and browser storage IndSure uses, what data they contain,
             and how you can control them.
@@ -105,7 +105,7 @@ export default function CookiePolicy() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">1. Cookies we set</h2>
             <div className="rounded-xl border border-gray-100 overflow-hidden">
-              <table className="w-full text-sm">
+              <table className="table-cards w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
@@ -117,14 +117,14 @@ export default function CookiePolicy() {
                 <tbody>
                   {cookies.map((c) => (
                     <tr key={c.name} className="border-b border-gray-50 last:border-0">
-                      <td className="px-4 py-3 font-mono text-xs text-gray-700 align-top">{c.name}</td>
-                      <td className="px-4 py-3 align-top">
+                      <td className="px-4 py-3 font-mono text-xs text-gray-700 align-top" data-label="Name" data-cell="title">{c.name}</td>
+                      <td className="px-4 py-3 align-top" data-label="Type">
                         <span className="inline-block bg-blue-50 text-blue-700 text-xs font-medium px-2 py-0.5 rounded">
                           {c.type}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 align-top">{c.purpose}</td>
-                      <td className="px-4 py-3 text-gray-500 align-top whitespace-nowrap">{c.duration}</td>
+                      <td className="px-4 py-3 text-gray-600 align-top" data-label="Purpose">{c.purpose}</td>
+                      <td className="px-4 py-3 text-gray-500 align-top whitespace-nowrap" data-label="Duration">{c.duration}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -140,7 +140,7 @@ export default function CookiePolicy() {
             </p>
 
             <div className="rounded-xl border border-gray-100 overflow-hidden mb-8">
-              <table className="w-full text-sm">
+              <table className="table-cards w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">localStorage key</th>
@@ -151,9 +151,9 @@ export default function CookiePolicy() {
                 <tbody>
                   {localStorageItems.map((item) => (
                     <tr key={item.key} className="border-b border-gray-50 last:border-0">
-                      <td className="px-4 py-3 font-mono text-xs text-gray-700 align-top">{item.key}</td>
-                      <td className="px-4 py-3 text-gray-600 align-top">{item.purpose}</td>
-                      <td className="px-4 py-3 text-gray-500 align-top text-xs">{item.duration}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-700 align-top" data-label="Key" data-cell="title">{item.key}</td>
+                      <td className="px-4 py-3 text-gray-600 align-top" data-label="Purpose">{item.purpose}</td>
+                      <td className="px-4 py-3 text-gray-500 align-top text-xs" data-label="Duration">{item.duration}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -161,7 +161,7 @@ export default function CookiePolicy() {
             </div>
 
             <div className="rounded-xl border border-gray-100 overflow-hidden">
-              <table className="w-full text-sm">
+              <table className="table-cards w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">sessionStorage key</th>
@@ -172,8 +172,8 @@ export default function CookiePolicy() {
                 <tbody>
                   {sessionStorageItems.map((item) => (
                     <tr key={item.key} className="border-b border-gray-50 last:border-0">
-                      <td className="px-4 py-3 font-mono text-xs text-gray-700 align-top">{item.key}</td>
-                      <td className="px-4 py-3 text-gray-600 align-top">
+                      <td className="px-4 py-3 font-mono text-xs text-gray-700 align-top" data-label="Key" data-cell="title">{item.key}</td>
+                      <td className="px-4 py-3 text-gray-600 align-top" data-label="Purpose">
                         {item.purpose}
                         {item.sensitive && (
                           <span className="ml-2 inline-block bg-amber-50 text-amber-700 text-xs font-medium px-2 py-0.5 rounded">
@@ -181,7 +181,7 @@ export default function CookiePolicy() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 align-top text-xs">{item.duration}</td>
+                      <td className="px-4 py-3 text-gray-500 align-top text-xs" data-label="Duration">{item.duration}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -215,7 +215,7 @@ export default function CookiePolicy() {
         </div>
 
         {/* Footer nav */}
-        <div className="mt-16 pt-8 border-t border-gray-100 flex flex-wrap gap-4 text-sm">
+        <div className="mt-16 pt-8 border-t border-gray-100 flex flex-wrap gap-x-4 text-sm [&>a]:inline-flex [&>a]:min-h-11 [&>a]:items-center">
           <a href="/privacy-policy" className="text-blue-600 hover:underline">
             Privacy Policy
           </a>

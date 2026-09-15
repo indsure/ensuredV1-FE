@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Redirect } from 'wouter'
 import { supabase } from '@/lib/supabase'
 import AgentLayout from './AgentLayout'
+import { preloadAgentRoutes } from '@/pages/agent/lazyRoutes'
 import { AgentProvider } from '../../context/AgentContext'
 
 export default function AgentProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,20 @@ export default function AgentProtectedRoute({ children }: { children: React.Reac
         })
         return () => subscription.unsubscribe()
     }, [])
+
+    // The workspace is one SPA but twenty-odd route chunks, so without this the
+    // first visit to each screen pays a network round trip and shows the page
+    // skeleton. Pull the whole portal down as soon as there is a session, so by
+    // the time they reach for the nav every screen is already in memory.
+    //
+    // Fires on the session alone rather than waiting for `isAgent`, which costs
+    // a round trip to the agents table. A signed-in consumer who wanders onto an
+    // /agent/* URL warms chunks they will not use before being redirected; that
+    // is a rare path, and the wait it would otherwise add sits in front of every
+    // real advisor. Usually a no-op anyway: the login screen started this.
+    useEffect(() => {
+        if (session) preloadAgentRoutes()
+    }, [session])
 
     if (loading) return (
         <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">

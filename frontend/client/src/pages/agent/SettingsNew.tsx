@@ -3,11 +3,13 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import TeamAccessLog from "@/components/agent/TeamAccessLog"
 import { FormFieldSkeleton } from "@/components/ui/skeleton"
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import { toast } from "@/hooks/use-toast"
+import { apiFetch } from "@/lib/api"
 
 type AgentProfile = {
   id: string;
@@ -38,6 +40,33 @@ function roleBadge(role: string) {
 }
 
 export default function SettingsNew() {
+  const [exporting, setExporting] = useState(false)
+
+  /* Fetched rather than linked, because the route needs the auth header and a
+     plain anchor cannot carry one. The blob is built in the browser and
+     released straight after, so nothing is left sitting in memory. */
+  async function exportAccount() {
+    setExporting(true)
+    try {
+      const res = await apiFetch("/api/agent/export")
+      if (!res.ok) throw new Error("Export failed")
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `indsure-export-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast({ variant: "success", title: "Your file has downloaded" })
+    } catch {
+      toast({ variant: "destructive", title: "Could not build your export", description: "Please try again in a moment." })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const [agentProfile, setAgentProfile] = useState<AgentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,29 +179,29 @@ export default function SettingsNew() {
                     ) : (
                     <div className="space-y-4">
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Full Name</label>
                             <Input value={profileName} onChange={e => setProfileName(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] font-semibold h-11" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Registered Email</label>
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Registered Email</label>
                             <Input value={agentProfile?.email ?? ''} readOnly className="bg-slate-50/50 border-slate-100 text-slate-400 cursor-not-allowed font-medium h-11" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Authorization Level</label>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Authorization Level</label>
                                 <div className="h-11 flex items-center px-4 bg-slate-50/50 border border-slate-100 rounded-lg text-xs font-bold text-slate-500 uppercase">
                                     {agentProfile?.role}
                                 </div>
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Primary Location</label>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Primary Location</label>
                                 <Input value={profileLocation} onChange={e => setProfileLocation(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] font-semibold h-11" />
                             </div>
                         </div>
                     </div>
                     )}
                     <div className="pt-4 flex items-center gap-4">
-                        <Button onClick={saveProfile} disabled={saveStatus === "saving" || loading} className="bg-[#0D9488] hover:bg-[#0f766e] text-white font-black uppercase text-[10px] tracking-widest px-8">
+                        <Button onClick={saveProfile} disabled={saveStatus === "saving" || loading} className="bg-[#0D9488] hover:bg-[#0f766e] text-white font-black uppercase text-xs tracking-widest px-8">
                             {saveStatus === "saving" ? "Saving…" : "Save"}
                         </Button>
                     </div>
@@ -189,26 +218,54 @@ export default function SettingsNew() {
                 <CardContent className="p-6 space-y-4">
                     <div className="space-y-4">
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Vault Password</label>
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">New Vault Password</label>
                             <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] h-11" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm Credentials</label>
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Confirm Credentials</label>
                             <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] h-11" />
                         </div>
                     </div>
                     <div className="pt-4 flex flex-col gap-3">
-                        <Button onClick={changePassword} disabled={passwordSaveStatus === "saving"} className="bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-[10px] tracking-widest w-full h-11">
+                        <Button onClick={changePassword} disabled={passwordSaveStatus === "saving"} className="bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-xs tracking-widest w-full h-11">
                             {passwordSaveStatus === "saving" ? "Saving…" : "Update Password"}
                         </Button>
                         <div className="min-h-4 text-center">
-                          {passwordError && <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">{passwordError}</span>}
+                          {passwordError && <span className="text-xs font-black text-red-600 uppercase tracking-widest">{passwordError}</span>}
                         </div>
                     </div>
                 </CardContent>
             </Card>
           </div>
       </div>
+
+      {/* Your data, on request. The privacy policy has always promised people
+          control over what we hold; until now there was no way to exercise any
+          of it from inside the product. Export is the half that cannot destroy
+          anything, so it ships first. Deletion follows as its own change. */}
+      <Card className="border-none shadow-sm bg-white overflow-hidden">
+        <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+          <CardTitle className="text-xs font-black text-slate-900 uppercase tracking-widest">Your data</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4">
+          <p className="text-sm text-slate-600 max-w-prose">
+            Download everything we hold for your account: your policies, customers, leads, claims,
+            comparisons and cover calculations, as one file. Documents themselves are not in the
+            file, but every one of them is listed with where it is stored.
+          </p>
+          <Button
+            onClick={exportAccount}
+            disabled={exporting}
+            variant="outline"
+            className="font-bold"
+          >
+            {exporting ? "Preparing your file..." : "Download my data"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Renders only for an advisor who is on someone's team. */}
+      <TeamAccessLog />
     </div>
   );
 }

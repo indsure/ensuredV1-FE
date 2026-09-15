@@ -247,6 +247,26 @@
                                 "null"
                             ]
                         },
+                        "same_illness_covered": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ],
+                            "description": "True only where the wording says the restored amount is available for the SAME illness already claimed. Silent or unrelated-only is false. Null only where no restoration clause was found."
+                        },
+                        "unlimited": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ]
+                        },
+                        "triggers_on_first_claim": {
+                            "type": [
+                                "boolean",
+                                "null"
+                            ],
+                            "description": "False where the wording excludes the first claim from triggering a restore."
+                        },
                         "trigger_conditions": {
                             "type": [
                                 "string",

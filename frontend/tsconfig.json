@@ -1,6 +1,7 @@
 {
   "include": [
-    "client/src/**/*"
+    "client/src/**/*",
+    "../shared/**/*"
   ],
   "exclude": [
     "node_modules",

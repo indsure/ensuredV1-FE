@@ -173,6 +173,8 @@ export default function TermPage() {
     },
     {
       question: "Can I cancel my term policy early? Will I get my money back?",
+      // claim-source: illustrative arithmetic inside the answer itself (10
+      // years of premium at the stated rate), not a claim about IndSure.
       answer: "YES, you can cancel anytime. But NO refund (unless policy has rider). Scenario: You bought 20-year term at age 30. At age 40, you want to cancel. You've paid 10 years of premiums: ₹2,00,000+. Insurer says: Policy is EXPIRED (no death benefit after cancellation). You get: ₹0 back (pure insurance, not savings). Options if you want to cancel: 1. Stop paying premium → policy lapses (after grace period). 2. Surrender policy formally. 3. Convert to lower sum assured (keep some protection, reduce premium). AVOID cancellation if: You have dependents (they lose protection). Your health has deteriorated (can't get new policy). You still have loans. Recommendation: Only cancel if you've upgraded to better policy elsewhere.",
     },
     {
@@ -293,7 +295,7 @@ export default function TermPage() {
           <div className="space-y-3">
             {faqList.map((faq, index) => (
               <details key={index} className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-                <summary className="flex items-center justify-between cursor-pointer list-none">
+                <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
                   <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC] pr-4">
                     {faq.question}
                   </span>
@@ -315,7 +317,7 @@ export default function TermPage() {
             Use our tools to maximize coverage per rupee:
           </h3>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Calculator Card */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-[#E5E7EB] dark:border-gray-700 p-6 text-center">
               <div className="w-12 h-12 rounded-xl bg-[#00B4D8]/10 flex items-center justify-center mx-auto mb-4">

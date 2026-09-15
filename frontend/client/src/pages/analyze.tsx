@@ -95,7 +95,7 @@ export default function AnalyzePage() {
       {/* Insurance Type Selector */}
       <section className="py-16 md:py-20 px-6 md:px-14">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {insuranceTypes.map((type) => {
               const Icon = type.icon;
               return (
@@ -147,7 +147,7 @@ export default function AnalyzePage() {
                         loadSampleReport(type.sampleReport);
                         setLocation("/report?sample=" + type.id);
                       }}
-                      className="mt-3 w-full text-center text-sm text-[#00B4D8] hover:text-[#0099B4] dark:text-cyan-400 dark:hover:text-cyan-300 flex items-center justify-center gap-2"
+                      className="mt-3 min-h-11 w-full text-center text-sm text-[#00B4D8] hover:text-[#0099B4] dark:text-cyan-400 dark:hover:text-cyan-300 flex items-center justify-center gap-2"
                     >
                       <FileSearch className="w-4 h-4" />
                       View sample report
@@ -166,7 +166,7 @@ export default function AnalyzePage() {
           <h3 className="text-[28px] font-semibold text-center text-black dark:text-[#FAFBFC] mb-8 leading-[1.3]">
             Need more help? Use our tools:
           </h3>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-4 mb-4">

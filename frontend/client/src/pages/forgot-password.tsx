@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiOk } from "@/lib/api";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,13 +31,15 @@ export default function ForgotPasswordPublic() {
     // server mints the same Supabase recovery link and mails it itself, so the
     // /reset-password screen is unchanged.
     try {
-      await apiFetch("/api/auth/forgot-password", {
+      await apiOk(apiFetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
-      });
+      }));
     } catch {
-      setError("Could not reach IndSure. Please check your connection and try again.");
+      // Not revealing whether the address exists is the no-enumeration rule.
+      // Hiding a 500 is not: the user is told we sent a mail we never sent.
+      setError("Could not send the reset link just now. Please try again in a minute.");
       setLoading(false);
       return;
     }
@@ -65,7 +67,7 @@ export default function ForgotPasswordPublic() {
             </p>
           </div>
           <Link href="/login">
-            <Button className="w-full h-[52px] bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98]">
+            <Button className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98]">
               Back to log in
             </Button>
           </Link>
@@ -103,7 +105,7 @@ export default function ForgotPasswordPublic() {
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full h-[52px] bg-[var(--color-teal-600)] hover:bg-[var(--color-teal-400)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
+            className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
           >
             {loading ? "Sending…" : <>Send reset link <ArrowRight className="w-4 h-4" /></>}
           </Button>
