@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import { teamWaLink } from "@/components/app/portfolio-utils";
 import { Check, Minus, Sparkles, ArrowRight } from "lucide-react";
 
 type TierFeature = { label: string; soon?: boolean };
@@ -20,6 +21,8 @@ type Tier = {
   highlighted?: boolean;
   cta: string;
   ctaHref: string;
+  /** Leaves the site (WhatsApp), so it renders as an anchor, not a router link. */
+  ctaExternal?: boolean;
 };
 
 const tiers: Tier[] = [
@@ -61,8 +64,15 @@ const tiers: Tier[] = [
       { label: "Need more? Packs from ₹449" },
     ],
     highlighted: true,
-    cta: "Start free",
-    ctaHref: "/agent/signup/step1",
+    /* There is no checkout in the product, so a button that looked like one
+       would land an advisor on a page that cannot charge them. WhatsApp reaches
+       a person who can actually put the account on the plan. The free signup on
+       the card to the left is the only self-serve path, and it stays one. */
+    cta: "Upgrade on WhatsApp",
+    ctaHref: teamWaLink(
+      "Hi, I would like to put my IndSure account on the Agent plan.",
+    ),
+    ctaExternal: true,
   },
   {
     name: "Agency",
@@ -84,8 +94,11 @@ const tiers: Tier[] = [
       { label: "Manage all your advisors in one place" },
       { label: "Dedicated onboarding" },
     ],
-    cta: "Talk to us",
-    ctaHref: "/agent",
+    cta: "Talk to us on WhatsApp",
+    ctaHref: teamWaLink(
+      "Hi, I run an agency and would like to know more about the IndSure Agency plan.",
+    ),
+    ctaExternal: true,
   },
 ];
 
@@ -232,6 +245,11 @@ export default function Pricing() {
             const accent = ["var(--lob-life)", "var(--lob-health)", "var(--lob-motor)"][i] ?? "var(--lob-general)";
             const wash = ["var(--lob-life-wash)", "var(--lob-health-wash)", "var(--lob-motor-wash)"][i] ?? "var(--lob-general-wash)";
             const pick = !!tier.highlighted;
+            const ctaClass = `mt-auto inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-lg text-base font-semibold transition-all duration-200 ${
+              pick
+                ? "bg-[var(--color-cta)] text-white hover:bg-[#0F766E] hover:-translate-y-0.5"
+                : "border border-[var(--color-border-medium)] bg-white text-[var(--color-text-main)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
+            }`;
             return (
               <div
                 key={tier.name}
@@ -297,17 +315,25 @@ export default function Pricing() {
                     ))}
                   </ul>
 
-                  <Link
-                    href={tier.ctaHref}
-                    className={`mt-auto inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-lg text-base font-semibold transition-all duration-200 ${
-                      pick
-                        ? "bg-[var(--color-cta)] text-white hover:bg-[#0F766E] hover:-translate-y-0.5"
-                        : "border border-[var(--color-border-medium)] bg-white text-[var(--color-text-main)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
-                    }`}
-                  >
-                    {tier.cta}
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
+                  {tier.ctaExternal ? (
+                    /* wouter's Link pushes onto the router's history, so an
+                       off-site href would route to a page that does not exist
+                       instead of opening WhatsApp. */
+                    <a
+                      href={tier.ctaHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={ctaClass}
+                    >
+                      {tier.cta}
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </a>
+                  ) : (
+                    <Link href={tier.ctaHref} className={ctaClass}>
+                      {tier.cta}
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  )}
                 </div>
               </div>
             );
@@ -330,15 +356,23 @@ export default function Pricing() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               {topUpPacks.map((pack) => (
-                <div
+                <a
                   key={pack.credits}
+                  href={teamWaLink(
+                    `Hi, I would like to buy the ${pack.credits}-check pack (${pack.price}) on IndSure.`,
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-cream-main)] px-8 py-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--color-teal-600)]/40"
                 >
                   <div className="font-serif text-3xl font-bold text-[var(--color-navy-900)] tabular">{pack.price}</div>
                   <div className="text-[15px] font-semibold text-[var(--color-text-secondary)]">
                     {pack.credits} policy checks
                   </div>
-                </div>
+                  <div className="mt-1 text-sm font-semibold text-[var(--color-teal-700)]">
+                    Buy on WhatsApp
+                  </div>
+                </a>
               ))}
             </div>
             <p className="mt-4 text-sm text-[var(--color-text-secondary)]">
@@ -399,7 +433,15 @@ export default function Pricing() {
               Talk to us for 15 minutes — we'll tell you honestly if the free plan covers you.
             </p>
             <Button asChild size="lg" className="bg-[var(--color-green-primary)] hover:bg-[var(--color-green-secondary)] text-white h-14 px-8 text-lg rounded-full">
-              <Link href="/agent">Talk to Us</Link>
+              <a
+                href={teamWaLink(
+                  "Hi, I am an advisor and I am not sure which IndSure plan fits me.",
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Talk to Us on WhatsApp
+              </a>
             </Button>
           </div>
         </section>
