@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import {
   ArrowRight, Users, CalendarClock, ListChecks, ShieldCheck, Scale, FileText,
-  IndianRupee, UserCircle, MessageCircle, Phone, Calendar, Download,
+  IndianRupee, UserCircle, MessageCircle, Phone, Calendar, Download, LogIn,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext";
@@ -69,59 +69,94 @@ export default function AgentLanding() {
     <div className="min-h-screen bg-white text-[var(--color-text-main)]">
 
       {/* ─────────── NAV ─────────── */}
-      <nav className="sticky top-0 z-50 h-14 bg-white border-b border-[var(--color-border-light)] flex items-center justify-between px-5 sm:px-10 gap-4">
-        <div className="flex items-center gap-5">
-          <Link href="/agent">
-            <img src="/logo.png" alt="IndSure" className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity" />
-          </Link>
-          <span className="hidden md:inline-flex px-2.5 py-1 rounded-lg bg-[#EAF3F1] text-sm font-semibold text-[#0F766E]">
-            {t("agent_landing.pill_advisors")}
-          </span>
-          <Link href="/advisors/pricing">
-            <span className="hidden md:inline-flex px-2.5 py-1 rounded-lg bg-[#FDF6EC] text-sm font-medium text-[#92400E] hover:bg-[#FBEBD5] transition-colors cursor-pointer">
-              {t("agent_landing.pill_agencies")}
+      {/* Rebuilt 2026-09-15. The bar this replaces hid "Log in" below 640px and
+         "Pricing" below 1024px, so an advisor on a phone saw one button (sign
+         up), and an advisor who already had an account had no way back in. Log
+         in is now a bordered button at every width, and the links that used to
+         disappear sit in a second row that only shows below lg. */}
+      <nav className="sticky top-0 z-50 bg-white border-b border-[var(--color-border-light)]">
+        <div className="h-14 flex items-center justify-between px-4 sm:px-10 gap-2 sm:gap-4">
+          <div className="flex items-center gap-5 min-w-0">
+            <Link href="/agent">
+              <img src="/logo.png" alt="IndSure" className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity" />
+            </Link>
+            <span className="hidden md:inline-flex px-2.5 py-1 rounded-lg bg-[#EAF3F1] text-sm font-semibold text-[#0F766E]">
+              {t("agent_landing.pill_advisors")}
             </span>
-          </Link>
+            <Link href="/advisors/pricing">
+              <span className="hidden md:inline-flex px-2.5 py-1 rounded-lg bg-[#FDF6EC] text-sm font-medium text-[#92400E] hover:bg-[#FBEBD5] transition-colors cursor-pointer">
+                {t("agent_landing.pill_agencies")}
+              </span>
+            </Link>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-1">
+            <a
+              href="#what-you-get"
+              className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors"
+            >
+              {t("agent_landing.nav_what")}
+            </a>
+            <Link href="/advisors/pricing">
+              <span className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
+                {t("agent_landing.nav_pricing")}
+              </span>
+            </Link>
+            <Link href="/agent/playground">
+              <span className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
+                {t("agent_landing.nav_playground")}
+              </span>
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <LanguageToggle />
+            <button
+              onClick={openCalendly}
+              className="hidden lg:inline-flex h-9 items-center gap-1.5 px-3.5 rounded-lg bg-white border border-[var(--color-border-light)] text-sm font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors"
+            >
+              <MessageCircle className="w-4 h-4 text-[var(--color-teal-600)]" />
+              {t("agent_landing.nav_talk")}
+            </button>
+            <Link href="/agent/login">
+              <button className="h-9 inline-flex items-center gap-1.5 px-3 sm:px-3.5 rounded-lg bg-white border border-[var(--color-border-medium)] text-sm font-semibold text-[var(--color-text-main)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)] transition-colors">
+                <LogIn className="hidden sm:block w-4 h-4" />
+                {t("agent_landing.nav_login")}
+              </button>
+            </Link>
+            <Link href="/agent/signup/step1">
+              <button className="h-9 px-3 sm:px-3.5 rounded-lg bg-[var(--color-cta)] text-white text-sm font-semibold hover:bg-[var(--color-cta-hover)] transition-colors whitespace-nowrap">
+                {t("agent_landing.nav_start")}
+              </button>
+            </Link>
+          </div>
         </div>
 
-        <div className="hidden lg:flex items-center gap-1">
+        {/* The same links the lg bar carries, for everyone below lg. Without this
+           row a phone has no route to the price list or the playground. */}
+        <div className="lg:hidden flex items-center gap-1 h-10 px-4 sm:px-10 border-t border-[var(--color-border-light)] overflow-x-auto">
           <a
             href="#what-you-get"
-            className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors"
+            className="shrink-0 px-1.5 py-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors"
           >
             {t("agent_landing.nav_what")}
           </a>
           <Link href="/advisors/pricing">
-            <span className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
+            <span className="shrink-0 px-1.5 py-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
               {t("agent_landing.nav_pricing")}
             </span>
           </Link>
           <Link href="/agent/playground">
-            <span className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
+            <span className="shrink-0 px-1.5 py-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
               {t("agent_landing.nav_playground")}
-            </span>
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          <LanguageToggle />
-          <Link href="/agent/login">
-            <span className="hidden sm:inline text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer px-1">
-              {t("agent_landing.nav_login")}
             </span>
           </Link>
           <button
             onClick={openCalendly}
-            className="hidden sm:inline-flex h-9 items-center gap-1.5 px-3.5 rounded-lg bg-white border border-[var(--color-border-light)] text-sm font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors"
+            className="shrink-0 px-1.5 py-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors"
           >
-            <MessageCircle className="w-4 h-4 text-[var(--color-teal-600)]" />
             {t("agent_landing.nav_talk")}
           </button>
-          <Link href="/agent/signup/step1">
-            <button className="h-9 px-3.5 rounded-lg bg-[var(--color-cta)] text-white text-sm font-semibold hover:bg-[var(--color-cta-hover)] transition-colors">
-              {t("agent_landing.nav_start")}
-            </button>
-          </Link>
         </div>
       </nav>
 

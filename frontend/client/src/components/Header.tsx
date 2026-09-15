@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Menu, X, ChevronDown, Building2, ScanSearch, Calculator,
-  Scale, Hospital, ArrowRight,
+  Scale, Hospital, ArrowRight, LogIn,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -203,10 +203,14 @@ export function Header() {
 
           <span className="h-5 w-px bg-[var(--color-border-medium)]" aria-hidden="true" />
 
+          {/* Log in used to be a grey text link beside a filled CTA, so the
+             one control an existing customer came for read as the least
+             important thing in the bar. It is a button now. */}
           <Link
             href="/login"
-            className="rounded-lg px-2.5 py-2 text-[15px] font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-navy-900)]"
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--color-border-medium)] bg-white px-3.5 text-[15px] font-semibold text-[var(--color-navy-900)] transition-colors hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
           >
+            <LogIn className="h-4 w-4" aria-hidden="true" />
             Log in
           </Link>
 
@@ -219,16 +223,30 @@ export function Header() {
           </Link>
         </div>
 
-        {/* ─── MOBILE TOGGLE ─── */}
-        <button
-          className="lg:hidden -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-navy-900)] transition-colors hover:bg-[var(--color-cream-dark)]"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-          aria-expanded={mobileMenuOpen}
-          aria-controls="mobile-nav"
-        >
-          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        {/* ─── MOBILE: LOG IN, THEN THE MENU ─── */}
+        {/* Log in was reachable on a phone only by opening the hamburger and
+           scrolling past four marketing links and a sign-up CTA. Someone who
+           already has an account should not have to hunt for the door. The four
+           auth pages render no Header at all, so this cannot point at the
+           screen the visitor is already on. */}
+        <div className="flex items-center gap-2 lg:hidden">
+          <Link
+            href="/login"
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-border-medium)] bg-white px-3 text-[15px] font-semibold text-[var(--color-navy-900)] transition-colors hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
+          >
+            <LogIn className="h-4 w-4" aria-hidden="true" />
+            Log in
+          </Link>
+          <button
+            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-navy-900)] transition-colors hover:bg-[var(--color-cream-dark)]"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-nav"
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
       </div>
 
       {/* ─── MOBILE NAV ─── */}
