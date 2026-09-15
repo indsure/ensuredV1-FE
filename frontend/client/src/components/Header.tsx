@@ -316,13 +316,8 @@ export function Header() {
                 Get started free
               </Link>
 
-              <Link
-                href="/login"
-                className="block rounded-lg border border-[var(--color-border-medium)] px-3 py-3 text-center text-base font-semibold text-[var(--color-navy-900)] transition-colors hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Log in
-              </Link>
+              {/* No "Log in" here: the bar above the menu now carries one, and
+                 the second copy just pushed "For advisors" further down. */}
 
               <button
                 className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-3 text-base font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-cream-dark)]"
