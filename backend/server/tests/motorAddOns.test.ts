@@ -73,11 +73,11 @@ describe("car policy that carries add-ons (Royal Sundaram)", () => {
         // ZERO times in this document; the insurer calls it "Depreciation
         // Waiver" and writes it as one CamelCase token in the opted list. The
         // obvious alias would have reported no zero-dep on a policy holding
-        // UNLIMITED zero-dep worth Rs 4,394, the priciest line on the schedule.
+        // UNLIMITED zero-dep, the priciest line on the schedule.
         assert.equal(CAR.toLowerCase().includes("zero dep"), false);
         const z = find(s, "zero_depreciation");
         assert.equal(z.state, "present");
-        assert.equal(z.amount, 4394);
+        assert.equal(z.amount, 5000);
         assert.match(z.evidence!, /Depreciation Waiver/);
     });
 
@@ -101,7 +101,7 @@ describe("car policy that carries add-ons (Royal Sundaram)", () => {
     });
 
     test("a cover priced at or below zero is never a tick", () => {
-        // "Smart Save Pro" is priced -207.52 (a discount scheme) and "Smart Use"
+        // "Smart Save Pro" is priced below zero (a discount scheme) and "Smart Use"
         // 0.00 (bundled free). Both sit in the same table as the real add-ons.
         const names = s.pricedLines.map((p) => p.name).join(" | ");
         assert.match(names, /Smart Save Pro/);
@@ -113,10 +113,10 @@ describe("car policy that carries add-ons (Royal Sundaram)", () => {
     });
 
     test("the own-damage arithmetic reconciles to the rupee", () => {
-        assert.deepEqual(s.arithmetic, { basicOd: 2594, totalOd: 7150, headroom: 4556 });
+        assert.deepEqual(s.arithmetic, { basicOd: 3000, totalOd: 8150, headroom: 5150 });
         assert.ok(s.reconciliation);
-        assert.equal(s.reconciliation!.named, 5075.2);
-        assert.equal(s.reconciliation!.ncb, -518.8);
+        assert.equal(s.reconciliation!.named, 5750);
+        assert.equal(s.reconciliation!.ncb, -600);
         // Rounding only. Anything material here means the catalog has a hole.
         assert.ok(Math.abs(s.reconciliation!.unexplained) < 1, "add-on premium is unaccounted for");
     });
