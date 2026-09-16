@@ -71,7 +71,7 @@ const toolsItems = [
 ];
 
 export function Header() {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -192,14 +192,18 @@ export function Header() {
         {/* ─── RIGHT: advisor path, then the consumer CTAs ─── */}
         <div className="hidden lg:flex items-center gap-3 shrink-0">
           {/* Advisors are a different audience, not a fifth nav item. The
-              divider is what says so. */}
-          <button
-            onClick={() => setLocation("/agent")}
+              divider is what says so.
+
+              This is an <a>, not a button with an onClick: a button is
+              invisible to a crawler, and /agent's only other internal link is
+              in the footer. */}
+          <Link
+            href="/agent"
             className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[15px] font-medium text-[var(--color-text-secondary)] outline-none transition-colors hover:text-[var(--color-teal-600)]"
           >
             <Building2 className="h-4 w-4" aria-hidden="true" />
-            For advisors
-          </button>
+            Advisor Portal
+          </Link>
 
           <span className="h-5 w-px bg-[var(--color-border-medium)]" aria-hidden="true" />
 
@@ -319,16 +323,14 @@ export function Header() {
               {/* No "Log in" here: the bar above the menu now carries one, and
                  the second copy just pushed "For advisors" further down. */}
 
-              <button
+              <Link
+                href="/agent"
                 className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-3 text-base font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-cream-dark)]"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setTimeout(() => setLocation("/agent"), 50);
-                }}
+                onClick={() => setMobileMenuOpen(false)}
               >
                 <Building2 className="h-4 w-4" aria-hidden="true" />
-                For advisors
-              </button>
+                Advisor Portal
+              </Link>
             </div>
           </motion.div>
         )}
