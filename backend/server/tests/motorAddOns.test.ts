@@ -321,3 +321,39 @@ describe("Go Digit: a list that does not say add-on, and runs past the window", 
         }
     });
 });
+
+/**
+ * One token, several covers.
+ *
+ * Whether a schedule's opted list arrives as four lines or as one flattened run
+ * is decided by the PDF extractor, not by the insurer. The reader used to keep
+ * only the FIRST cover it recognised in a token and drop the rest, and since a
+ * declared list rules out what it does not name, the dropped ones were then
+ * published as "Not on this policy" - covers named in the text being read.
+ */
+describe("a flattened list loses no cover", () => {
+    const FLAT =
+        "Optional Cover Optional Coverage Details UIN " +
+        "Digit Private Car Consumable Cover Cover Unlimited Claims IRDAN158RP0005V01201718/A0008V01201718 " +
+        "Digit Private Car Breakdown Assistance IRDAN158RP0005V01201718/A0014V02201718 " +
+        "Digit Private Car Engine and Gear Box Protect Maximum of one claim would be payable IRDAN158RP0005V01201718/A0010V01201718 " +
+        "Digit Private Car Parts Depreciation Protect Cover Unlimited Claims IRDAN158RP0005V01201718/A0009V01201718 " +
+        "-- 1 of 5 -- Private Car Package Policy";
+
+    test("finds all four when the whole list is a single token", () => {
+        const s = scan(FLAT);
+        assert.equal(s.present, 4, "one token must not collapse to one cover");
+        for (const id of ["zero_depreciation", "consumables", "roadside_assistance", "engine_protect"]) {
+            assert.equal(find(s, id).state, "present", `${id} is named in the text`);
+        }
+    });
+
+    test("and reads the same as the line-separated form", () => {
+        const lines = FLAT.split(" Digit Private Car ").join("\nDigit Private Car ").split(" -- 1 of 5 --").join("\n-- 1 of 5 --");
+        assert.deepEqual(
+            scan(lines).findings.map((f) => [f.id, f.state]),
+            scan(FLAT).findings.map((f) => [f.id, f.state]),
+            "how the PDF flattened the table must not change the answer",
+        );
+    });
+});

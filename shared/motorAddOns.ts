@@ -224,10 +224,18 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
   const vehicleClass = detectVehicleClass(policyText);
   const catalog = ADD_ON_CATALOG[vehicleClass];
   const normalised = catalog.map((c) => ({ entry: c, keys: c.aliases.map(squash) }));
-  const matchEntry = (s: string): AddOnCatalogEntry | null => {
+  /* EVERY cover a chunk of text names, not the first.
+     Returning one was a silent discard. Whether a schedule's opted list arrives
+     as four lines or as one flattened run depends on nothing but how the PDF
+     extractor handles the table, and in the flattened case a single token holds
+     all four covers. Keeping only the first meant the other three were dropped,
+     and the enumeration rule then published them as "Not on this policy" -
+     covers named in the very text we were reading. Presence must never be lost
+     to tokenisation. */
+  const matchEntries = (s: string): AddOnCatalogEntry[] => {
     const q = squash(s);
-    if (!q) return null;
-    return normalised.find((n) => n.keys.some((k) => q.includes(k)))?.entry ?? null;
+    if (!q) return [];
+    return normalised.filter((n) => n.keys.some((k) => q.includes(k))).map((n) => n.entry);
   };
 
   const masked = maskVehicleFields(policyText);
@@ -268,9 +276,9 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
     for (const piece of window.split(/([,\n]|\s{3,})/)) {
       const t = piece.trim();
       if (t) {
-        const hit = matchEntry(t);
-        if (hit) {
-          declared.set(hit.id, t.slice(0, 70));
+        const hits = matchEntries(t);
+        if (hits.length) {
+          for (const hit of hits) declared.set(hit.id, t.slice(0, 70));
           lastHitEnd = cursor + piece.length;
         } else {
           unrecognisedDeclared.push(t.slice(0, 50));
@@ -375,11 +383,19 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
 
   const findings: AddOnFinding[] = catalog.map((entry) => {
     const declaredAs = declared.get(entry.id) ?? null;
-    const priced = pricedLines.find((p) => matchEntry(p.name)?.id === entry.id) ?? null;
+    /* A priced line counts for every cover it names. The rupee figure does
+       not: one amount sits beside one line, so when a line names two covers
+       there is no honest way to split it and the tick carries no price rather
+       than the same figure printed twice. */
+    const pricedHit = pricedLines.find((p) => matchEntries(p.name).some((e) => e.id === entry.id)) ?? null;
+    const priced =
+      pricedHit && matchEntries(pricedHit.name).length > 1
+        ? { ...pricedHit, amount: null as number | null }
+        : pricedHit;
 
     // A cover priced at or below zero was not bought at that price: it is a
     // bundled freebie or a discount scheme, never a paid tick on its own.
-    if (priced && priced.amount > 0) {
+    if (priced && typeof priced.amount === "number" && priced.amount > 0) {
       return {
         id: entry.id,
         label: entry.label,
