@@ -1,0 +1,365 @@
+Schedule/Certificate	Go Digit General Insurance Ltd.
+Digit Private Car Policy UIN No.: IRDAN158RP0005V01201718
+PB
+Policy No: D000000000
+Page No: 1 of 5
+Go Digit General Insurance Limited (“GDGIL”) | CIN: L66010PN2016PLC167410 | IRDAI Regn. No. 158 | Corporate Office Address: Atlantis, 95, 4th B Cross Road, Koramangala Industrial Layout, 5th Block,
+Bengaluru 560095 | Registered Office Address: 1 to 6 floors, Ananta One (AR One), Pride Hotel Lane, Narveer Tanaji Wadi, Shivajinagar, Pune-411005, Maharashtra | Trade logo of GDGIL displayed above
+belongs to Go Digit Solutions Private Limited and is provided and used by GDGIL under license. | Toll Free No (1800 258 5956/1800-103-4448) | GST Reg No 27AACCO4128Q1Z0 , PAN No:- AACCO4128Q,
+HSN: 997134/General Insurance Services, GSTIN Address :Mumbai Business Centre,13th Flr, Godrej Coliseum, Lokmanya Pan Bazaar,Behind Everard Nagar,Sion(E),Mumbai,Maharashtra,PIN-400022 |
+www.godigit.com
+67.
+IU	A
+28
+14058
+100
+132/
+1074
+N
+4.5
+Br
+13
+13
+A
+A
+1003
+10
+36
+739
+.12
+A
+8212
+.47
+82
+A
+M
+MA
+A
+G0
+1
+1
+P
+29.
+7
+1
+11.
+79
+A	7
+74
+747.
+CG
+ST
+71
+0.7
+1
+fal
+A
+A
+239
+01
+PARTNER DETAILS	YOUR DETAILS
+person@example.com
+90xxxxxx00
+0000000
+BROKER NAME INSURANCE
+BROKING PRIVATE LIMITED
+Partner Email :
+Partner Mobile Number:
+Partner Code :
+Partner Name:
+D000000000 / 07012026
+person@example.com
+90xxxxxx00
+GJ00XX0000
+POLICYHOLDER TWO
+Email:
+Mobile Number:
+Policy Number:
+Registration Number:
+Name:
+YOUR POLICY DETAILS
+Policy Issue Date 07-Jan-2026 Invoice No. INV00000000 Invoice Date 07-Jan-2026
+From 10-Jan-2026 00:00:01 NCB % (Current Policy) 50%	
+Period of Policy for
+Own Damage Cover To 09-Jan-2027 23:59:59 Additional Excess (`) --
+From 10-Jan-2026 00:00:01 Voluntary Deductible (`) 0.00	
+Period of Policy for
+Third Party Liability To 09-Jan-2027 23:59:59 Compulsory Deductible (`) 2000
+From 10-Jan-2026 00:00:01	
+Period of Policy for
+PA Owner-Driver To 09-Jan-2027 23:59:59
+Address 07, ADDRESS LINE ONE, OPP LANDMARK, AREA, VTC CITY,I 400000,City-400000
+Optional Cover Optional Coverage Details UIN
+Digit Private Car Consumable Cover Cover Unlimited Claims IRDAN158RP0005V01201718/A0008V01201718
+Digit Private Car Breakdown Assistance IRDAN158RP0005V01201718/A0014V02201718
+Digit Private Car Engine and Gear Box Protect Maximum of one claim would be payable IRDAN158RP0005V01201718/A0010V01201718
+Digit Private Car Parts Depreciation Protect Cover Unlimited Claims IRDAN158RP0005V01201718/A0009V01201718
+POLICYHOLDER TWO GJ00XX0000 VEHICLE MAKE MODEL 2026-01-10 2027-01-09 Digit Private Car Policy
+
+-- 1 of 5 --
+
+Schedule/Certificate	Go Digit General Insurance Ltd.
+Digit Private Car Policy UIN No.: IRDAN158RP0005V01201718
+PB
+Policy No: D000000000
+Page No: 2 of 5
+Go Digit General Insurance Limited (“GDGIL”) | CIN: L66010PN2016PLC167410 | IRDAI Regn. No. 158 | Corporate Office Address: Atlantis, 95, 4th B Cross Road, Koramangala Industrial Layout, 5th Block,
+Bengaluru 560095 | Registered Office Address: 1 to 6 floors, Ananta One (AR One), Pride Hotel Lane, Narveer Tanaji Wadi, Shivajinagar, Pune-411005, Maharashtra | Trade logo of GDGIL displayed above
+belongs to Go Digit Solutions Private Limited and is provided and used by GDGIL under license. | Toll Free No (1800 258 5956/1800-103-4448) | GST Reg No 27AACCO4128Q1Z0 , PAN No:- AACCO4128Q,
+HSN: 997134/General Insurance Services, GSTIN Address :Mumbai Business Centre,13th Flr, Godrej Coliseum, Lokmanya Pan Bazaar,Behind Everard Nagar,Sion(E),Mumbai,Maharashtra,PIN-400022 |
+www.godigit.com
+Digit Private Car Loss of Personal Belongings Cover Only 1 Claims Per Year/Max SI-30000 IRDAN158RP0005V01201718/A0069V01202021
+Digit Private Car Key & Lock Protect Cover Only 1 Claims Per Year/Max SI-30000 IRDAN158RP0005V01201718/A0068V01202021
+YOUR VEHICLE DETAILS
+RTO Location Valsad,GUJARAT Make TOYOTA Model/Vehicle Variant (Sub-
+Type) VEHICLE MODEL/1.2 X
+Seating Capacity 8 Fuel Type Diesel Year of Regn./
+Manufacturing 2017/0001-01-01
+Engine No. ENGXXXXXXXXX Chassis No. CHSXXXXXXXXXXXXXXX
+718 Cubic Capacity 1200 CC
+Odometer FASTag
+Number. NA Financier Details FINANCIER BANK LTD
+FASTag NUMBER DECLARATION
+The Policy has been issued subject to your affirmative declaration that a valid FASTag has been affixed on the insured vehicle.
+Call us at 1800-258-5956 to update your contact details. This will help us give you a smooth claim process.
+YOUR VEHICLE IDV
+Year Vechicle IDV
+(`)
+Non-Electrical
+Accessories IDV (`)
+Electrical
+Accessories IDV (`)
+CNG/LPG
+IDV (`)
+Trailer
+IDV (`)
+Total
+IDV (`)
+PA Owner
+Driver
+Year 1 500000 -- -- -- -- 500000.00 1500000
+Year 2 -- -- -- -- -- -- --
+Year 3 -- -- -- -- -- -- --
+Legal Liability to Paid Driver (`)
+PA cover for 8 passengers 100000 (`)
+(`)
+PA cover for Paid Driver (`)
+CGST @ 9% = (`847.88) + SGST/UTGST @ 9% = (`847.88)
+7500.00
+4000.00	15000.00
+NCB Discount Amount
+Total Basic Own Damage Premium
+11111.11
+1695.76
+-7500.00
+7500.00 (`)
+9415.35
+4400.00
+Legal Liability to Employees
+(`)
+(`)
+Net Premium
+Final Premium
+Basic Third-Party Liability
+PA cover for Owner-Driver
+CNG/LPG Premium
+Total OD Premium Total Act Premium
+Own Damage Premium
+Others
+OWN DAMAGE PREMIUM [A] LIABILITY PREMIUM [B]	(`) (`)
+(`)
+(`)
+(`)
+(`)
+(`)
+(`)
+(`)
+(`) -14058.00
+400
+50
+747.86
+748
+747.86
+7897
+50.00
+400.00
+330.00
+Note: The above total OD premium is inclusive of all applicable loading / discounts viz (automobile association memberships, voluntary excess, anti-theft
+handicap person, driver tuition, fiber glass, CNG/ LPG unit, geographical extension, imported vehicle etc., wherever applicable). GDD - Subject to successful
+vehicle inspection
+In case of an accident to your vehicle, please intimate us immediately for SPOT SURVEY. Failure to intimate in time could prejudice your claim. In case of Total
+Loss and/or Theft claim, applicable subsidy amount availed as per government policy will be reduced from IDV for claim settlement.
+If the “Own Damage Cover” under your policy is cancelled during the policy period, then your policy shall be governed by the standard terms and conditions of “Act only” policy for the Third Party Cover during the
+remaining period of policy .	
+POLICYHOLDER TWO GJ00XX0000 VEHICLE MAKE MODEL 2026-01-10 2027-01-09 Digit Private Car Policy
+
+-- 2 of 5 --
+
+Schedule/Certificate	Go Digit General Insurance Ltd.
+Digit Private Car Policy UIN No.: IRDAN158RP0005V01201718
+PB
+Policy No: D000000000
+Page No: 3 of 5
+Go Digit General Insurance Limited (“GDGIL”) | CIN: L66010PN2016PLC167410 | IRDAI Regn. No. 158 | Corporate Office Address: Atlantis, 95, 4th B Cross Road, Koramangala Industrial Layout, 5th Block,
+Bengaluru 560095 | Registered Office Address: 1 to 6 floors, Ananta One (AR One), Pride Hotel Lane, Narveer Tanaji Wadi, Shivajinagar, Pune-411005, Maharashtra | Trade logo of GDGIL displayed above
+belongs to Go Digit Solutions Private Limited and is provided and used by GDGIL under license. | Toll Free No (1800 258 5956/1800-103-4448) | GST Reg No 27AACCO4128Q1Z0 , PAN No:- AACCO4128Q,
+HSN: 997134/General Insurance Services, GSTIN Address :Mumbai Business Centre,13th Flr, Godrej Coliseum, Lokmanya Pan Bazaar,Behind Everard Nagar,Sion(E),Mumbai,Maharashtra,PIN-400022 |
+www.godigit.com
+Nominee Details
+Name of
+Nominee Mobile
+number
+of
+Nominee
+E-mail Id
+of
+Nominee
+Present
+Address of
+the
+Nominee
+Permanent
+Address of
+Nominee
+(Not
+required, if
+same as
+present
+address)
+Relationship
+of Nominee
+with Insured
+Person
+Details of
+authorized
+person (If
+Nominee is
+minor)
+Percentag
+e of claim
+amount
+Details of Bank
+Account of Nominee
+i. Bank a/c no :
+ii. IFSC code :
+iii. Branch :
+iv. Bank Name :
+i. Bank a/c no :
+ii. IFSC code :
+iii. Branch :
+iv. Bank Name :
+i. Bank a/c no :
+ii. IFSC code :
+iii. Branch :
+iv. Bank Name :
+ENDORSEMENT
+Invoice Number Invoice Date Net Premium Igst Cgst Sgst Utgst Cess Gross Premium
+INV00000000 2026-09-07 9415.35 0.00 847.88 847.88 0.00 0.00 11111.11
+--
+RA337339699	Receipt Number
+12_dp-DI6AAC250DCD07-1	Online
+27
+IMT-16,IMT-22,IMT-28,IMT-7
+Unregistered
+000/00/00/0000/MTP/0000000000
+Future Generali India Insurance Company Limited
+IFSC/MICR No
+Cheque/Transation No
+Bank Name
+Payment Mode
+Previous Insurer
+IMT - Endorsements
+GSTIN/UIN No.
+Nominee Details
+Previous Policy No. Previous Policy Expiry Date
+Receipt Date	Premium Payment Details
+State Code
+OTHER DETAILS
+07-Jan-2026
+09-Sep-2026
+Other Details --
+Details of Existing Damages --
+Geographical Area: Any accidental loss, damage and/or liability caused, sustained or incurred within India shall be covered subject to Policy Terms and Conditions, unless specifically agreed and endorsed.. Limitation as to
+use The policy covers use of the vehicle for any purpose other than hire or reward, racing, pace making, reliability trial, speed testing and use for any purpose in connection with the Motor Trade. Person or Class of persons
+entitled to drive: Any person including the insured 1) Provided that a person driving holds a valid & effective driving license at the time of the accident and is not disqualified from holding or obtaining such a license. 2)
+Provided also that the person holding a valid & effective Learner’s License may also drive the vehicle and that such a person satisfies the requirements of Rule 3 of the Central Motor Vehicles Rules, 1989 and any subsequent
+amendment as applicable. Limits of Liability: 1) Under Section I of the policy _ IDV as shown in the schedule. 2) Under Section II - 1 (i)of the policy: Death of or bodily injury _ Such amount as is necessary to meet the
+requirements of the Motor Vehicles Act, 1988. 3) Under Section II _ 1 (ii)of the policy: Damage to Third Party Property _ `750000 4) P.A. Cover for Owner Driver under Section III (CSI) - `1500000
+NCB Declaration: The premium has been charged and policy has been issued subject to NCB declared by you as an insured. In the event of NCB found wrongly declared at any point of time during policy period, all benefits
+and coverages under the Policy in respect of section I of the Policy will stand forfeited. If there is any disagreement, write to us within 7 days from the date of issuance of policy or before the start date of period of insurance
+whichever is earlier.PUC Declaration: The Policy has been issued subject to valid Pollution Under Control (PUC) Certificate disclosed by you as an insured on or before the date of commencement of the Policy . Cheque
+dishonor / Non-receipt of payment premium paid through Cheque, the policy is void ab-initio in case of dishonor of Cheque or non-receipt of payment. Violation of Motor Vehicle Act: This policy is issued in accordance with the
+provision of Chapter X and Chapter XI of MV act, 1988 and any subsequent amendment as applicable. Any violation will forfeit all benefits and coverages under the Policy. The insured is not indemnified if the vehicle is used
+or driven otherwise than in accordance with this Schedule. Any payment made by the Company by reason of wider terms appearing in Certificate in order to comply with the Motor Vehicle Act, 1988 is recoverable from the
+insured. See the Clause headed (Avoidance Of Certain Terms And Right Of Recovery) in the policy. Pre-existing Damages: All types of pre-existing damages or cost of repair of such damage will be excluded at the time of
+claim settlement,as per the attached images. Important Notice: The company may cancel the policy by sending 7 days notice in case of fraud, misrepresentation, non disclosure of material fact or non co-operation of the
+insured. This policy is subject to the standard policy wordings, warranties and conditions applicable for this product in addition to Indian Motor Tariff. Break in Insurance: In case of a break-in, the company may conduct pre-
+inspection of the vehicle and in such a case, Own Damage cover (Section -I) of the policy would not commence unless the pre-inspection of the vehicle has been done and the acceptance of risk is subject to evaluation of the
+vehicle inspection report. In case of any adverse findings in the report, the Company, at its discretion, may cancel the Policy as per the Motor Tariff.
+Note: The policy is issued in utmost good faith, relying on the information shared by insured at the time of obtaining the policy. The terms and conditions detailed in this policy schedule as well as the policy document sent by
+Digit shall prevail in case of any dispute.
+Follow these rules like you follow the rules of the road.
+POLICYHOLDER TWO GJ00XX0000 VEHICLE MAKE MODEL 2026-01-10 2027-01-09 Digit Private Car Policy
+
+-- 3 of 5 --
+
+Schedule/Certificate	Go Digit General Insurance Ltd.
+Digit Private Car Policy UIN No.: IRDAN158RP0005V01201718
+PB
+Policy No: D000000000
+Page No: 4 of 5
+Go Digit General Insurance Limited (“GDGIL”) | CIN: L66010PN2016PLC167410 | IRDAI Regn. No. 158 | Corporate Office Address: Atlantis, 95, 4th B Cross Road, Koramangala Industrial Layout, 5th Block,
+Bengaluru 560095 | Registered Office Address: 1 to 6 floors, Ananta One (AR One), Pride Hotel Lane, Narveer Tanaji Wadi, Shivajinagar, Pune-411005, Maharashtra | Trade logo of GDGIL displayed above
+belongs to Go Digit Solutions Private Limited and is provided and used by GDGIL under license. | Toll Free No (1800 258 5956/1800-103-4448) | GST Reg No 27AACCO4128Q1Z0 , PAN No:- AACCO4128Q,
+HSN: 997134/General Insurance Services, GSTIN Address :Mumbai Business Centre,13th Flr, Godrej Coliseum, Lokmanya Pan Bazaar,Behind Everard Nagar,Sion(E),Mumbai,Maharashtra,PIN-400022 |
+www.godigit.com
+Wish to go through your detailed policy wordings, click here.
+In case of claim or any other query, please contact our 24-hour
+Call Centre at 1800-258-5956 or email us at
+hello@godigit.com or visit our website Digit Insurance: Car,
+Bike, Health & Travel Insurance Online .
+For instant resolution, you can ping us “Hi” on WhatsApp at
+702 606 1234
+For Claims Notification and Procedure click here.
+Praveen Bhat
+Senior Vice President - Customer Experience
+grievance@godigit.com
+Authorized Signatory
+Printed, Signed, and Executed at Bengaluru
+Consolidated Stamp Duty has been paid as per
+Letter of Authorization No.67-B/04/2017-18 Date:
+30th May 2017 issued by Department of Stamps
+and Registration , Bengaluru- 560009 -
+KARNATAKA.
+Hey, our document is now digitally signed
+Click here to view the certificate.
+For instant resolution, you can ping us “Hi” on
+WhatsApp at 702 606 1234
+For & On Behalf of Go Digit General Insurance Ltd.
+POLICYHOLDER TWO GJ00XX0000 VEHICLE MAKE MODEL 2026-01-10 2027-01-09 Digit Private Car Policy
+
+-- 4 of 5 --
+
+Schedule/Certificate	Go Digit General Insurance Ltd.
+Digit Private Car Policy UIN No.: IRDAN158RP0005V01201718
+PB
+Policy No: D000000000
+Page No: 5 of 5
+Go Digit General Insurance Limited (“GDGIL”) | CIN: L66010PN2016PLC167410 | IRDAI Regn. No. 158 | Corporate Office Address: Atlantis, 95, 4th B Cross Road, Koramangala Industrial Layout, 5th Block,
+Bengaluru 560095 | Registered Office Address: 1 to 6 floors, Ananta One (AR One), Pride Hotel Lane, Narveer Tanaji Wadi, Shivajinagar, Pune-411005, Maharashtra | Trade logo of GDGIL displayed above
+belongs to Go Digit Solutions Private Limited and is provided and used by GDGIL under license. | Toll Free No (1800 258 5956/1800-103-4448) | GST Reg No 27AACCO4128Q1Z0 , PAN No:- AACCO4128Q,
+HSN: 997134/General Insurance Services, GSTIN Address :Mumbai Business Centre,13th Flr, Godrej Coliseum, Lokmanya Pan Bazaar,Behind Everard Nagar,Sion(E),Mumbai,Maharashtra,PIN-400022 |
+www.godigit.com
+• Complete cashless facility • 6 Months warranty on repairs • Complimentary Pick-up & Drop
+*Facilities mentioned above are offered by the garages. List of garages is subject to change in future. Please
+call on 1800-258-5956 in case you require further help.
+We hope that you do not get in a situation when you have to file a claim. However, if that happens, we are always there for
+you. That’s a promise!
+Stay Calm and just relax! We will take care of everything!
+You can take your car to any of the listed network garages in case anything happens, and we assure you a hassle-free claim
+process.
+This is the end of the document and the beginning of a wonderful relationship.
+POLICYHOLDER TWO GJ00XX0000 VEHICLE MAKE MODEL 2026-01-10 2027-01-09 Digit Private Car Policy
+
+-- 5 of 5 --
+
