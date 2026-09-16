@@ -1,4 +1,6 @@
 import { getFields, typeLabel, isDataEntryType, type InsuranceType } from "./insuranceTypes";
+import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
+import { scoreMotorPolicy } from "@shared/motorScore";
 
 /** Minimal shape the exporter needs from a policy row. */
 export interface ExportablePolicy {
@@ -15,6 +17,26 @@ export interface ExportablePolicy {
   extracted_data?: Record<string, any> | null;
 }
 
+/**
+ * The score column.
+ *
+ * Health reads the stored column. Motor is computed from the add-on scan on the
+ * row, the same reading the portal shows, so a sheet mailed to a customer cannot
+ * disagree with the screen the advisor is looking at. Everything else exports
+ * blank, because nothing else is scored.
+ */
+function scoreFor(type: InsuranceType, p: ExportablePolicy): number | string {
+  if (type === "health") return p.score ?? "";
+  if (type !== "motor") return "";
+  const ed = p.extracted_data;
+  if (!ed || typeof ed !== "object") return "";
+  const s = scoreMotorPolicy(
+    (ed as any)[ADD_ON_FINDINGS_KEY] ?? null,
+    typeof ed.coverage_type === "string" ? ed.coverage_type : null,
+  );
+  return s.score ?? "";
+}
+
 function baseRow(p: ExportablePolicy): Record<string, any> {
   const type = (p.insurance_type || "health") as InsuranceType;
   return {
@@ -25,7 +47,7 @@ function baseRow(p: ExportablePolicy): Record<string, any> {
     "Policy ID": p.policy_identifier || "",
     "Expiry": p.expiry_date || "",
     "Sum Insured": p.sum_insured ?? "",
-    Score: type === "health" ? (p.score ?? "") : "",
+    Score: scoreFor(type, p),
     Created: p.created_at ? new Date(p.created_at).toLocaleDateString("en-IN") : "",
   };
 }

@@ -134,7 +134,16 @@ export default function Insights() {
     // Health is the only line we actually check, so it is the only one with a
     // score. Averaging across everything would divide by policies that were
     // never scored.
-    const scored = rows.filter((r) => typeof r.score === "number");
+    /* Health only, and not just because motor scores were always null here.
+       The two numbers share a scale and mean different things: health grades
+       wording, motor measures how completely a vehicle is covered. Averaging
+       them produces a figure that describes neither, and a motor 18 (own damage,
+       no add-ons, a perfectly ordinary policy) would be counted as weak cover.
+       The re-read path now writes motor scores, so this had to stop being
+       accidentally correct and start being deliberately correct. */
+    const scored = rows.filter(
+      (r) => (r.insurance_type || "health") === "health" && typeof r.score === "number",
+    );
     const avgScore = scored.length
       ? Math.round(scored.reduce((s, r) => s + (r.score ?? 0), 0) / scored.length)
       : null;
