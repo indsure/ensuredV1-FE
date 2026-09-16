@@ -152,11 +152,62 @@ function injectJsonLd(html, blocks) {
 // paint and createRoot replacing #root, a real visitor sees an unstyled <h1>
 // and paragraph fill the screen. <noscript> keeps the markup in the document
 // for the crawlers that need it and renders nothing for everyone else.
-function injectBody(html, bodyHtml) {
+function injectBody(html, bodyHtml, currentPath) {
+  if (currentPath !== undefined) {
+    html = injectJsonLd(html, [siteNavLd()]);
+    bodyHtml += navHtml(currentPath);
+  }
   return html.replace(
     /<div id="root">[\s\S]*?<\/div>/,
     `<div id="root"><noscript>${bodyHtml}</noscript></div>`,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Site navigation seed.
+//
+// Two separate holes this plugs. The seed below used to carry an <h1> and one
+// paragraph and nothing else, so a crawler that does not run JS read every
+// page as an orphan with no outbound links at all. And the header's Tools
+// menu is a Radix dropdown, whose links live in a portal that is not mounted
+// until a human opens it, so /calculator, /compare, /policychecker and
+// /find-provider were reachable only from the footer.
+//
+// These are the pages we want treated as the site's primary entry points,
+// with the anchor text we want them labelled by.
+const SITE_NAV = [
+  { name: "Policy check", url: "/policychecker" },
+  { name: "Cover Calculator", url: "/calculator" },
+  { name: "Compare policies", url: "/compare" },
+  { name: "Advisor Portal", url: "/agent" },
+  { name: "Your Insurance Portfolio", url: "/start" },
+  { name: "Network hospital finder", url: "/find-provider" },
+  { name: "Clause library", url: "/learn" },
+  { name: "Pricing", url: "/pricing" },
+];
+
+// Rendered into every prerendered page's seed, minus a self-link.
+function navHtml(currentPath) {
+  const items = SITE_NAV.filter((x) => x.url !== currentPath)
+    .map((x) => `<li><a href="${x.url}">${escText(x.name)}</a></li>`)
+    .join("");
+  return `<nav aria-label="Site"><h2>IndSure</h2><ul>${items}</ul></nav>`;
+}
+
+// The only machine-readable way to say which pages we consider the main
+// sections. A weak signal by itself, and Google is free to ignore it.
+function siteNavLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "IndSure main navigation",
+    itemListElement: SITE_NAV.map((x, i) => ({
+      "@type": "SiteNavigationElement",
+      position: i + 1,
+      name: x.name,
+      url: SITE + x.url,
+    })),
+  };
 }
 
 // BreadcrumbList JSON-LD from [{name, url}] items.
@@ -241,7 +292,7 @@ const STATIC_ROUTES = [
   },
   {
     path: "/compare",
-    title: "Compare Two Insurance Policies Wording-to-Wording | IndSure",
+    title: "Compare Insurance Policies Side by Side, Clause by Clause | IndSure",
     description:
       "Compare two insurance policies side by side, clause by clause. See the real differences in coverage, limits, waiting periods, and exclusions in plain language.",
     h1: "Compare insurance policies",
@@ -259,7 +310,7 @@ const STATIC_ROUTES = [
   },
   {
     path: "/start",
-    title: "Review Your Insurance. Make Your Portfolio Today | IndSure",
+    title: "Your Insurance Portfolio: Add Your First Policy Free | IndSure",
     description:
       "Upload your health, term life or vehicle policy and see what it actually covers in plain language. Keep every policy in one portfolio with renewal reminders. Free forever for one policy of each type, no card needed.",
     h1: "Review your insurance. Make your portfolio today.",
@@ -295,7 +346,7 @@ const STATIC_ROUTES = [
   },
   {
     path: "/signup",
-    title: "Your Insurance Portfolio, All in One Place | IndSure",
+    title: "Create a Free IndSure Account | IndSure",
     description:
       "Create a free IndSure account to store every policy, get renewal reminders before they lapse, and see exactly where your family is under-covered. Private, no sales calls.",
     h1: "Your insurance portfolio, all in one place",
@@ -306,7 +357,7 @@ const STATIC_ROUTES = [
   },
   {
     path: "/agent",
-    title: "IndSure for Advisors: The CRM Built for Insurance Agents | IndSure",
+    title: "Advisor Portal: The CRM Built for Insurance Agents | IndSure",
     description:
       "Manage clients, never miss a renewal, and decode any policy for your customers — all from one simple dashboard. IndSure is the CRM built for Indian insurance advisors.",
     h1: "The CRM built for insurance advisors",
@@ -314,6 +365,60 @@ const STATIC_ROUTES = [
       "IndSure gives insurance advisors one simple dashboard to manage clients, track every renewal, and decode any policy for their customers in plain language. Built for how Indian agents actually work.",
     image: "/opengraph-agent.jpg",
     imageAlt: "IndSure for advisors — the CRM built for insurance agents.",
+  },
+  {
+    path: "/calculator",
+    title: "Cover Calculator: How Much Health Insurance You Need | IndSure",
+    description:
+      "Work out how much health cover your family actually needs, from hospital costs in your city, your ages and your obligations. No policy upload, no medical history, nothing to buy.",
+    h1: "Cover calculator",
+    intro:
+      "How much health cover your family actually needs, worked out from hospital costs in your city, your ages and your obligations. It takes two to three minutes, asks for no policy upload and no medical history, and there is nothing to buy at the end of it.",
+  },
+  {
+    path: "/find-provider",
+    title: "Network Hospital Finder: Is Your Hospital Cashless? | IndSure",
+    description:
+      "A policy is only cashless at hospitals the insurer has a tie-up with. Check which insurers actually cover the hospitals in your area before you buy, not after a claim.",
+    h1: "Is your hospital on their list?",
+    intro:
+      "A policy is only cashless at hospitals the insurer has a tie-up with. Check which insurers actually cover your area before you buy, not after a claim.",
+  },
+  {
+    path: "/team",
+    title: "Meet the IndSure Team | IndSure",
+    description:
+      "IndSure is built by a small team that got tired of watching people find out what their policy actually covers only after a claim gets rejected.",
+    h1: "Three people, one fine-print problem",
+    intro:
+      "IndSure is built by a small team that got tired of watching people find out what their policy actually covers only after a claim gets rejected.",
+  },
+  {
+    path: "/help",
+    title: "Help and Support | IndSure",
+    description:
+      "Answers to common questions about reading your policy, your IndSure account and your privacy, plus how to reach the IndSure support team.",
+    h1: "Help and support",
+    intro:
+      "Find answers to common questions or get in touch with our support team.",
+  },
+  {
+    path: "/mission",
+    title: "Our Mission: Insurance You Can Actually Understand | IndSure",
+    description:
+      "Insurance was designed to protect you. Somewhere along the way it became about confusing you. IndSure exists to put the plain meaning back into the policy.",
+    h1: "Why IndSure?",
+    intro:
+      "Insurance was designed to protect you. Somewhere along the way, it became about confusing you.",
+  },
+  {
+    path: "/vision",
+    title: "Our Vision: Insurance Decisions Made With Clarity | IndSure",
+    description:
+      "A future where insurance decisions are made with complete clarity, and every policyholder understands exactly what they are buying and how it protects them.",
+    h1: "Our vision",
+    intro:
+      "A future where insurance decisions are made with complete clarity, where every policyholder understands exactly what they are buying and how it protects them.",
   },
 ];
 
@@ -376,7 +481,7 @@ async function main() {
     if (blocks.length) html = injectJsonLd(html, blocks);
 
     const body = `<main><h1>${escText(r.h1)}</h1><p>${escText(r.intro)}</p></main>`;
-    html = injectBody(html, body);
+    html = injectBody(html, body, r.path);
     await writeRoute(r.path, html);
   }
 
@@ -449,7 +554,7 @@ async function main() {
       `<article><h1>${escText(post.title)}</h1>` +
       `<p>${escText(post.excerpt)}</p>${byline}` +
       `${post.content || ""}${faqHtml}</article>`;
-    html = injectBody(html, body);
+    html = injectBody(html, body, path);
 
     await writeRoute(path, html);
     postCount++;
@@ -495,7 +600,7 @@ async function main() {
       `<p>${escText(f.bio)}</p>` +
       (list ? `<h2>Articles by ${escText(f.name)}</h2><ul>${list}</ul>` : "") +
       `</main>`;
-    html = injectBody(html, body);
+    html = injectBody(html, body, path);
     await writeRoute(path, html);
   }
 
@@ -535,7 +640,7 @@ async function main() {
       `<main><h1>Every insurance clause, explained plainly</h1>` +
       `<p>The plain-language library of the clauses, waiting periods, and benefits that decide whether your claim gets paid.</p>` +
       `<ul>${list}</ul></main>`;
-    html = injectBody(html, body);
+    html = injectBody(html, body, "/learn");
     await writeRoute("/learn", html);
   }
 
@@ -613,7 +718,7 @@ async function main() {
       `<article><h1>What is a ${escText(c.term)}?</h1>` +
       `<p>${escText(c.shortAnswer)}</p>` +
       `${sectionsHtml}${exampleHtml}${mistakesHtml}${faqHtml}${relatedHtml}</article>`;
-    html = injectBody(html, body);
+    html = injectBody(html, body, path);
     await writeRoute(path, html);
   }
 
@@ -635,14 +740,16 @@ async function writeSitemap(blogPosts, slugFor, FOUNDERS = [], CLAUSE_LIBRARY = 
     { path: "/term", priority: "0.8", changefreq: "monthly" },
     { path: "/vehicle", priority: "0.8", changefreq: "monthly" },
     { path: "/compare", priority: "0.9", changefreq: "weekly" },
-    { path: "/calculator", priority: "0.8", changefreq: "monthly" },
+    { path: "/calculator", priority: "0.9", changefreq: "monthly" },
+    { path: "/start", priority: "0.9", changefreq: "monthly" },
+    { path: "/find-provider", priority: "0.7", changefreq: "monthly" },
     { path: "/how-it-works", priority: "0.7", changefreq: "monthly" },
     { path: "/why-indsure", priority: "0.7", changefreq: "monthly" },
     { path: "/pricing", priority: "0.8", changefreq: "monthly" },
     { path: "/advisors/pricing", priority: "0.7", changefreq: "monthly" },
     { path: "/blog", priority: "0.8", changefreq: "weekly" },
     { path: "/signup", priority: "0.9", changefreq: "monthly" },
-    { path: "/agent", priority: "0.8", changefreq: "monthly" },
+    { path: "/agent", priority: "0.9", changefreq: "monthly" },
     { path: "/mission", priority: "0.5", changefreq: "monthly" },
     { path: "/vision", priority: "0.5", changefreq: "monthly" },
     { path: "/team", priority: "0.5", changefreq: "monthly" },
