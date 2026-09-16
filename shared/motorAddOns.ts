@@ -156,6 +156,36 @@ const toNumber = (s: string): number => Number(String(s).replace(/[^0-9.-]/g, ""
      "GST Invoice No. VPC17908..."            -> Return to invoice
      "ACTIVA 125 DISC OBD2B Solo With Pillion" -> Pillion rider cover
      "Additional Accessories (Rs) 0.00"        -> Accessories cover  */
+/* ── The insurer's own list of opted covers ───────────────────────────────
+
+   HEADINGS. Insurers head this list differently, and matching one spelling
+   silently costs whole policies. Royal Sundaram writes "Add-on Covers Opted",
+   Acko writes "Addons Selected", and Go Digit writes "Optional Cover" with an
+   "Optional Coverage Details" column beside it, never saying "add-on" at all.
+   A real Digit Innova carrying four covers was read as carrying none. */
+const DECLARED_LIST_HEADING =
+  /(?:add[\s-]?ons?\s+(?:covers?\s+)?(?:opted|selected|chosen|availed|included)|optional\s+cover(?:s|age)?(?:\s+details)?)/i;
+
+/* WHERE IT STOPS. The page-break form catches schedules whose list is the last
+   thing on the page. */
+const DECLARED_LIST_END =
+  /what'?s\s+not\s+covered|exclusions?\b|premium\s+break|total\s+premium|your\s+vehicle\b|nominee\s+details|--\s*\d+\s+of\s+\d+\s*--/i;
+
+/* HOW FAR WE READ. The old code took 600 characters and then kept only the
+   first 300 whenever no terminator matched. Digit's four cover lines carry a
+   UIN each and run to 347 characters, so the fourth, Parts Depreciation
+   Protect, fell outside the window. It was not merely missed: the enumeration
+   rule treats what the list does not name as not bought, so a cover the
+   customer had paid for was published as "Not on this policy". Truncation was
+   being converted into proof of absence. */
+const DECLARED_LIST_SPAN = 1200;
+
+/* The clear space that must follow the last cover we recognised before the
+   list counts as complete. When the last hit sits hard against the end of the
+   window, the next line could be another cover we never saw, so such a list
+   proves presence only, never absence. */
+const DECLARED_LIST_TAIL_MARGIN = 200;
+
 const PROTECTED_FIELDS: RegExp[] = [
   /engine\s*(?:no|number)\.?\s*:?[^\n]{0,40}/gi,
   /chassis\s*(?:no|number)\.?\s*:?[^\n]{0,40}/gi,
@@ -214,8 +244,12 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
      a comma list. An Acko policy that genuinely holds Consumables therefore
      reported every add-on as not found, and the scorer then published 100 out
      of 100 off the one word it could read. */
-  const label =
-    /add[\s-]?ons?\s+(?:covers?\s+)?(?:opted|selected|chosen|availed|included)/i.exec(masked);
+  const label = DECLARED_LIST_HEADING.exec(masked);
+  /* Whether we can see where the list ENDS. Recognising a cover is positive
+     evidence and survives anything; proving the REST absent does not, because
+     that claim is only as good as our certainty that we read the whole list.
+     See DECLARED_LIST_TAIL_MARGIN for the real document that forced this. */
+  let declaredListBounded = false;
   if (label) {
     const from = label.index + label[0].length;
     /* Stop at the next section instead of reading a fixed span into whatever
@@ -223,16 +257,35 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
        and without a terminator every exclusion in it arrives as an
        unrecognised add-on. Splitting on runs of whitespace as well as commas is
        what reads a column layout once the PDF is flattened. */
-    const rest = masked.slice(from, from + 600);
-    const stop = /what'?s\s+not\s+covered|exclusions?\b|premium\s+break|total\s+premium/i.exec(rest);
-    const window = rest.slice(0, stop ? stop.index : 300);
-    for (const token of window.split(/[,\n]|\s{3,}/)) {
-      const t = token.trim();
-      if (!t) continue;
-      const hit = matchEntry(t);
-      if (hit) declared.set(hit.id, t.slice(0, 70));
-      else unrecognisedDeclared.push(t.slice(0, 50));
+    const rest = masked.slice(from, from + DECLARED_LIST_SPAN);
+    const stop = DECLARED_LIST_END.exec(rest);
+    const window = stop ? rest.slice(0, stop.index) : rest;
+    /* Split KEEPING the separators, so every token's offset in the window is
+       exact. The offset is the whole point: it is how we tell "the list ended"
+       from "our window ended". */
+    let cursor = 0;
+    let lastHitEnd = 0;
+    for (const piece of window.split(/([,\n]|\s{3,})/)) {
+      const t = piece.trim();
+      if (t) {
+        const hit = matchEntry(t);
+        if (hit) {
+          declared.set(hit.id, t.slice(0, 70));
+          lastHitEnd = cursor + piece.length;
+        } else {
+          unrecognisedDeclared.push(t.slice(0, 50));
+        }
+      }
+      cursor += piece.length;
     }
+    /* Three ways to know the list is whole: a terminator was found, the
+       document ended inside our span, or there is clear space after the last
+       cover we recognised. Otherwise it may have been cut off mid-list and
+       absence cannot be claimed from it. */
+    declaredListBounded =
+      !!stop ||
+      masked.length <= from + DECLARED_LIST_SPAN ||
+      window.length - lastHitEnd >= DECLARED_LIST_TAIL_MARGIN;
   }
 
   /* Channel 2: priced lines. Scoped to the own-damage block, or the product's
@@ -314,7 +367,11 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
      nothing we recognised means we did not actually read the list, and proving
      absence from a list we could not parse would be a fabrication. */
   const declaredHeading = label ? label[0].trim().replace(/\s+/g, " ") : "";
-  const declaredListProves = !!label && declared.size > 0;
+  /* Bounded is the third condition and it is not optional. A heading that
+     matched but yielded nothing we recognised means we never read the list; a
+     list whose end we could not see means we may have read only part of it.
+     Absence may be claimed from neither. */
+  const declaredListProves = !!label && declared.size > 0 && declaredListBounded;
 
   const findings: AddOnFinding[] = catalog.map((entry) => {
     const declaredAs = declared.get(entry.id) ?? null;

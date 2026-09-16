@@ -3,10 +3,13 @@
  *
  * NO NETWORK, NO DB, NO AI. Pure text in, findings out.
  *
- * The fixtures are two real policies, scrubbed of personal data with the field
+ * The fixtures are real policies, scrubbed of personal data with the field
  * SHAPES kept, because the field labels are themselves the traps:
  *   - motor_car_royal_sundaram.txt   declares its add-ons AND prices them
  *   - motor_bike_icici_lombard.txt   declares nothing and prices nothing
+ *   - motor_car_digit_schedule.txt     heads its list "Optional Cover", never
+ *                                    says "add-on", prices no add-on, and runs
+ *                                    its fourth cover past 300 characters
  *
  * Every assertion below corresponds to something that went wrong, or would have
  * gone wrong, on a real document. Run:
@@ -34,6 +37,7 @@ const fixture = (name: string) => readFileSync(join(HERE, "fixtures", name), "ut
 
 const CAR = fixture("motor_car_royal_sundaram.txt");
 const BIKE = fixture("motor_bike_icici_lombard.txt");
+const DIGIT = fixture("motor_car_digit_schedule.txt");
 
 const scan = (t: string): AddOnScan => {
     const r = detectMotorAddOns(t);
@@ -265,4 +269,55 @@ describe("Acko: a third way of declaring add-ons", () => {
       assert.notEqual(f?.state, "present", `${id} is not on this policy and must not be reported`);
     }
   });
+});
+
+/**
+ * Go Digit, and the two faults it exposed.
+ *
+ * This document was uploaded to production and read as carrying NO add-ons at
+ * all. It carries four. Digit heads the table "Optional Cover" with an
+ * "Optional Coverage Details" column and never writes the word "add-on", so the
+ * heading never matched; and it prices no add-on individually, so there was
+ * nothing for the arithmetic channel either.
+ *
+ * The second fault only appeared while fixing the first, and is the worse of
+ * the two. Digit's four lines each carry a UIN and run to 347 characters, while
+ * the reader kept 300 whenever no terminator matched. With the heading fixed
+ * but the window still short, the fourth cover fell outside it and the
+ * enumeration rule reported it as "Not on this policy" - a cover the customer
+ * had bought, published as absent. Truncation must never become proof.
+ */
+describe("Go Digit: a list that does not say add-on, and runs past the window", () => {
+    test("finds all four covers, including the one past 300 characters", () => {
+        const s = scan(DIGIT);
+        assert.equal(s.declaredListFound, true, 'the "Optional Cover" heading must be recognised');
+        assert.equal(s.present, 4);
+        for (const id of ["zero_depreciation", "consumables", "roadside_assistance", "engine_protect"]) {
+            assert.equal(find(s, id).state, "present", `${id} is on this policy`);
+        }
+        // Parts Depreciation Protect is the one at +347. Its evidence must be
+        // the insurer's own line, not an inference.
+        assert.match(find(s, "zero_depreciation").evidence ?? "", /Parts Depreciation/i);
+    });
+
+    test("proves the rest absent, and scores the policy", () => {
+        const s = scan(DIGIT);
+        for (const id of ["return_to_invoice", "ncb_protect", "key_replacement", "tyre_protect", "personal_belongings"]) {
+            assert.equal(find(s, id).state, "absent_proven", `${id} is not in the insurer's list`);
+        }
+        assert.equal(s.findings.filter((f) => f.state === "not_found").length, 0);
+    });
+
+    test("a list whose end we cannot see proves NOTHING absent", () => {
+        /* The guard itself. Head a list, name one cover, then run text to the
+           end of the span with no terminator and no clear space after the hit:
+           the cover found stays found, and nothing else may be called absent,
+           because the next line could be a cover we never read. */
+        const runOn = "Optional Cover " + "Digit Private Car Consumable Cover " + "x".repeat(2000);
+        const s = scan(runOn + " Private Car Package Policy Registration No MH00XX0000");
+        assert.equal(find(s, "consumables").state, "present", "a cover we read is still proven present");
+        for (const id of ["zero_depreciation", "return_to_invoice", "tyre_protect"]) {
+            assert.equal(find(s, id).state, "not_found", `${id} must NOT be claimed absent from a list we could not finish`);
+        }
+    });
 });
