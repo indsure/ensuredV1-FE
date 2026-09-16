@@ -17,6 +17,8 @@ import type { DraftTarget } from "@/lib/draftMessage"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { toast } from "@/hooks/use-toast"
 import { PoliciesMobileList } from "@/components/agent/PoliciesMobileList"
+import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns"
+import { scoreMotorPolicy, motorScoreTone, motorScoreVerdict } from "@shared/motorScore"
 
 type ClientRow = {
   id: string;
@@ -74,6 +76,46 @@ function ScoreBadge({ score }: { score: number | null }) {
   return (
     <span className={`inline-flex items-center justify-center w-11 h-8 rounded-lg text-sm font-black border ${cls}`}>
       {score}
+    </span>
+  );
+}
+
+/**
+ * The motor score, read from the add-on scan on the row rather than the `score`
+ * column, so an older row whose column was never written still shows the number
+ * its own scan supports. Same helper as the detail page and the customer's copy.
+ *
+ * Banded by motorScoreTone, NOT by the health thresholds above: a comprehensive
+ * policy with no add-ons scores 18 and is an ordinary purchase, so it is grey
+ * and not red. Red is reserved for a vehicle that is not covered at all.
+ */
+const MOTOR_BADGE_CLASS = {
+  strong: "bg-green-100 text-green-700 border-green-200",
+  core: "bg-amber-100 text-amber-700 border-amber-200",
+  basic: "bg-slate-100 text-slate-700 border-slate-200",
+  third_party: "bg-red-100 text-red-700 border-red-200",
+  unscored: "",
+} as const;
+
+function motorScoreOf(extracted: any) {
+  if (!extracted || typeof extracted !== "object") return null;
+  return scoreMotorPolicy(
+    extracted[ADD_ON_FINDINGS_KEY] ?? null,
+    typeof extracted.coverage_type === "string" ? extracted.coverage_type : null,
+  );
+}
+
+function MotorScoreBadge({ extracted }: { extracted: any }) {
+  const s = motorScoreOf(extracted);
+  // No scan, or too little of it read to publish a number: a dash, the same as
+  // any unscored policy. A dash is not a low score and must not look like one.
+  if (!s || s.score === null) return <span className="text-slate-500 text-sm">—</span>;
+  return (
+    <span
+      title={motorScoreVerdict(s)}
+      className={`inline-flex items-center justify-center w-11 h-8 rounded-lg text-sm font-black border ${MOTOR_BADGE_CLASS[motorScoreTone(s)]}`}
+    >
+      {s.score}
     </span>
   );
 }
@@ -295,8 +337,12 @@ export default function PoliciesNew() {
 
   const stats = useMemo(() => {
     const expiringSoon = rows.filter(r => { const d = getDays(r.expiry_date); return d !== null && d >= 0 && d <= 30; }).length;
-    const shouldSwitch = rows.filter(r => r.score !== null && r.score < 70).length;
-    const healthy = rows.filter(r => r.score !== null && r.score >= 70).length;
+    /* Scored on WORDING, so health only. A motor score measures how completely
+       a vehicle is covered: sweeping a motor 55 into "should switch" would put
+       a health judgement on a number that cannot carry one. */
+    const isHealthRow = (r: ClientRow) => (r.insurance_type || "health") === "health";
+    const shouldSwitch = rows.filter(r => isHealthRow(r) && r.score !== null && r.score < 70).length;
+    const healthy = rows.filter(r => isHealthRow(r) && r.score !== null && r.score >= 70).length;
     return { total: rows.length, expiringSoon, shouldSwitch, healthy };
   }, [rows]);
 
@@ -314,8 +360,10 @@ export default function PoliciesNew() {
       list = list.filter(r => (r.insurance_type || "health") === typeFilter);
     }
     if (tab === "expiring") list = list.filter(r => { const d = getDays(r.expiry_date); return d !== null && d >= 0 && d <= 30; });
-    if (tab === "switch") list = list.filter(r => r.score !== null && r.score < 70);
-    if (tab === "healthy") list = list.filter(r => r.score !== null && r.score >= 70);
+    // Same rule as the stats above: these two tabs are a health verdict.
+    const isHealthRow = (r: ClientRow) => (r.insurance_type || "health") === "health";
+    if (tab === "switch") list = list.filter(r => isHealthRow(r) && r.score !== null && r.score < 70);
+    if (tab === "healthy") list = list.filter(r => isHealthRow(r) && r.score !== null && r.score >= 70);
 
     return [...list].sort((a, b) => {
       if (sort === "expiry") {
@@ -500,6 +548,7 @@ export default function PoliciesNew() {
                   const shareUrl = p.share_token ? `${shareBaseUrl}/shared/report/${p.share_token}` : null;
                   const views = p.views ?? 0;
                   const isHealth = (p.insurance_type || "health") === "health";
+                  const isMotor = p.insurance_type === "motor";
 
                   return (
                     <tr
@@ -530,7 +579,7 @@ export default function PoliciesNew() {
                       </td>
                       <td className="px-6 py-4 text-slate-500" data-label="Insured With">{p.insurer || "—"}</td>
                       <td className="px-6 py-4" data-label="Next Premium"><NextPremiumBadge dateStr={npDate} /></td>
-                      <td className="px-6 py-4" data-label="Score">{isHealth ? <ScoreBadge score={p.score} /> : <span className="text-slate-300 text-sm">—</span>}</td>
+                      <td className="px-6 py-4" data-label="Score">{isHealth ? <ScoreBadge score={p.score} /> : isMotor ? <MotorScoreBadge extracted={p.extracted_data} /> : <span className="text-slate-300 text-sm">—</span>}</td>
                       <td className="px-6 py-4" data-label="Recommendation" onClick={e => e.stopPropagation()}>
                         {isHealth ? <SwitchCell shouldSwitch={shouldSwitch} reportData={p.report_data} /> : <span className="text-slate-300 text-sm">—</span>}
                       </td>

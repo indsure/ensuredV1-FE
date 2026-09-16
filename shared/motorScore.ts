@@ -229,3 +229,48 @@ export function scoreFromExtractedData(
     return null;
   }
 }
+
+/**
+ * The one-line verdict beside the number, in motor's own words.
+ *
+ * The agent portal had no motor verdict at all, so it hid the score rather than
+ * print one. The words it uses for health ("Strong fit", "Watch", "Needs
+ * action") cannot be borrowed: those judge WORDING, and this number measures
+ * how completely the vehicle is covered. A comprehensive policy whose owner
+ * bought no add-ons scores 18, and it is not a policy that "needs action". It
+ * is an ordinary purchase, and saying so plainly is the honest reading.
+ *
+ * One thing here is a real warning and it leads regardless of the number: a
+ * policy that does not cover the customer's own vehicle.
+ */
+export function motorScoreVerdict(s: MotorScore): string {
+  if (s.ownDamage === "not_covered") return "Third-party only";
+  if (s.score === null) return "Not scored";
+  if (s.score >= 75) return "Fully covered";
+  if (s.score >= 50) return "Core cover, some add-ons";
+  if (s.score >= 25) return "Basic cover, few add-ons";
+  /* Below 25 with own damage covered can only be own damage and nothing else:
+     the weights make 2/11 the floor for a policy that covers the vehicle, and
+     a single add-on lifts it to 27. Say the specific thing when it is provable,
+     and stay vague when own damage itself could not be read. */
+  return s.ownDamage === "covered" ? "Own damage only, no add-ons" : "Minimal add-on cover";
+}
+
+/**
+ * The colour band for the verdict. Tokens, not classes, so the palette stays a
+ * frontend decision and every surface still bands the number identically.
+ *
+ * Deliberately NOT health's red-below-60. Red on a comprehensive policy with no
+ * add-ons would tell an agent to act on a number that reflects a legitimate
+ * choice, which is the judgement this scale is not entitled to make. The only
+ * red is a vehicle that is not covered at all.
+ */
+export type MotorScoreTone = "strong" | "core" | "basic" | "third_party" | "unscored";
+
+export function motorScoreTone(s: MotorScore): MotorScoreTone {
+  if (s.ownDamage === "not_covered") return "third_party";
+  if (s.score === null) return "unscored";
+  if (s.score >= 75) return "strong";
+  if (s.score >= 50) return "core";
+  return "basic";
+}

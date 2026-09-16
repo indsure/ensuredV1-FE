@@ -18,6 +18,8 @@ import {
   scoreMotorPolicy,
   readOwnDamage,
   motorScoreCaption,
+  motorScoreVerdict,
+  motorScoreTone,
   OWN_DAMAGE_WEIGHT,
   ADD_ON_WEIGHT,
 } from "../../../shared/motorScore";
@@ -223,5 +225,68 @@ describe("the caption says what the number measures", () => {
     ]) {
       assert.match(motorScoreCaption(s), /how completely the vehicle is covered/);
     }
+  });
+});
+
+/**
+ * The verdict words on the tile.
+ *
+ * These exist because the agent portal had none and hid the score rather than
+ * print health's. The tests that matter are the two ways the words can lie: a
+ * legitimate policy called a problem, and a vehicle that is not covered failing
+ * to say so.
+ */
+describe("the verdict is motor's own, not health's", () => {
+  /** Nine add-ons, `present` of them carried, all decidable. */
+  function policy(present: number, basicOd: number | null = 5000) {
+    const findings = Array.from({ length: 9 }, (_, i) =>
+      finding(`a${i}`, i < present ? "present" : "absent_proven"),
+    );
+    return scoreMotorPolicy(scan(findings, basicOd), "Comprehensive");
+  }
+
+  it("never calls a comprehensive policy with no add-ons a problem", () => {
+    const bare = policy(0);
+    assert.equal(bare.score, 18, "own damage alone is 2 of 11");
+    assert.equal(motorScoreVerdict(bare), "Own damage only, no add-ons");
+    // The one thing it must not be is red: nothing here needs acting on.
+    assert.equal(motorScoreTone(bare), "basic");
+  });
+
+  it("leads with third-party only, whatever the number underneath is", () => {
+    const tp = scoreMotorPolicy(
+      scan(Array.from({ length: 9 }, (_, i) => finding(`a${i}`, "present"))),
+      "Liability Only",
+    );
+    assert.equal(motorScoreVerdict(tp), "Third-party only");
+    assert.equal(motorScoreTone(tp), "third_party");
+  });
+
+  it("grades the middle and the top on cover, not on wording", () => {
+    assert.equal(motorScoreVerdict(policy(4)), "Core cover, some add-ons");
+    assert.equal(motorScoreTone(policy(4)), "core");
+    assert.equal(motorScoreVerdict(policy(8)), "Fully covered");
+    assert.equal(motorScoreTone(policy(8)), "strong");
+  });
+
+  it("says nothing about own damage when own damage could not be read", () => {
+    // No premium arithmetic and no coverage type: the low score is about
+    // add-ons, so the words must not claim the vehicle is covered.
+    const blind = scoreMotorPolicy(
+      scan(Array.from({ length: 9 }, (_, i) => finding(`a${i}`, "absent_proven")), null),
+      null,
+    );
+    assert.equal(blind.ownDamage, "unknown");
+    assert.equal(motorScoreVerdict(blind), "Minimal add-on cover");
+  });
+
+  it("does not publish a verdict for a policy it could not read enough of", () => {
+    const thin = scoreMotorPolicy(
+      scan([finding("a", "present"), ...Array.from({ length: 8 }, (_, i) => finding(`b${i}`, "not_found"))]),
+      null,
+    );
+    assert.equal(thin.score, null);
+    assert.equal(motorScoreVerdict(thin), "Not scored");
+    assert.equal(motorScoreTone(thin), "unscored");
   });
 });
