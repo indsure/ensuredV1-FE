@@ -280,11 +280,11 @@ for (const f of files.filter(isUI)) {
    component, so ten small-type lines and five slate-400 lines collapsed into
    two and one. */
 const BUDGETS = {
-  "sub-14px-type": 798,
+  "sub-14px-type": 797,
   // 2026-09-11: 363 -> 362. The supplementary-benefits grid stopped painting
   // an absent benefit in slate-400; it now says why it is absent, in a readable
   // colour, which is the point of the tile.
-  "low-contrast-token": 361,
+  "low-contrast-token": 359,
   "native-dialog": 5,
   "placeholder-as-label": 2,
   // Weak detector: only catches `>...AI...<` on a single line, so it under-reports.

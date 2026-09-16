@@ -15,6 +15,55 @@ import { translateAll } from '@/i18n/translate';
 import { TYPE_META, typeLabel, getNextPremiumDate, type InsuranceType } from '@/lib/insuranceTypes';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardMobile } from "@/components/agent/DashboardMobile";
+import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
+import { scoreMotorPolicy, motorScoreTone, motorScoreVerdict } from "@shared/motorScore";
+
+/**
+ * The score cell, for both tables on this page.
+ *
+ * Health reads the stored column, which is where the audit writes its verdict.
+ * Motor is computed from the add-on scan on the row, because the column can lag
+ * it: the re-read path did not write the score until this change, so a policy
+ * re-read after a detector fix carried a fresh scan next to an empty column.
+ * Computing means the dashboard shows what the policy actually says.
+ *
+ * Bands differ on purpose. Health grades wording and goes red below 60. Motor
+ * measures how completely the vehicle is covered, where a comprehensive policy
+ * with no add-ons scores 18 and is an ordinary purchase, so it reads grey. Red
+ * on a motor policy means the vehicle itself is not covered.
+ */
+const MOTOR_CELL_CLASS = {
+  strong: "bg-green-100 text-green-700",
+  core: "bg-amber-100 text-amber-700",
+  basic: "bg-slate-100 text-slate-700",
+  third_party: "bg-red-100 text-red-700",
+  unscored: "",
+} as const;
+
+function ScoreCell({ policy }: { policy: { score: number | null; insurance_type: string | null; extracted_data: any } }) {
+  const dash = <span className="text-slate-500">—</span>;
+  const type = policy.insurance_type || "health";
+  const box = "inline-flex items-center justify-center w-10 h-7 rounded-md text-xs font-bold";
+
+  if (type === "motor") {
+    const ed = policy.extracted_data;
+    if (!ed || typeof ed !== "object") return dash;
+    const s = scoreMotorPolicy(
+      ed[ADD_ON_FINDINGS_KEY] ?? null,
+      typeof ed.coverage_type === "string" ? ed.coverage_type : null,
+    );
+    if (s.score === null) return dash;
+    return <span title={motorScoreVerdict(s)} className={`${box} ${MOTOR_CELL_CLASS[motorScoreTone(s)]}`}>{s.score}</span>;
+  }
+
+  if (type !== "health" || policy.score === null) return dash;
+  const cls = policy.score >= 80
+    ? "bg-green-100 text-green-700"
+    : policy.score >= 60
+    ? "bg-amber-100 text-amber-700"
+    : "bg-red-100 text-red-700";
+  return <span className={`${box} ${cls}`}>{policy.score}</span>;
+}
 
 const INSURER_HI: Record<string, string> = {
   "Tata AIG General Insurance Company Limited": "टाटा AIG जनरल इन्श्योरेंस कंपनी लिमिटेड",
@@ -420,7 +469,12 @@ export default function DashboardNew() {
   }
 
   if (isMobile) {
-    const atRisk = recentActivity.filter(p => p.score !== null && p.score < 70);
+    /* "Weak cover worth a call" is a judgement about WORDING, so it stays a
+       health list. A motor 55 means half the available add-ons were not bought,
+       which is not the same statement and does not belong under that heading. */
+    const atRisk = recentActivity.filter(
+      p => (p.insurance_type || 'health') === 'health' && p.score !== null && p.score < 70,
+    );
     return (
       <DashboardMobile
         agentName={agent.name.split(' ')[0] || 'Agent'}
@@ -610,11 +664,7 @@ export default function DashboardNew() {
                            )}
                          </td>
                          <td className="px-6 py-4" data-label={t("dashboard.col_score")}>
-                           {p.score !== null ? (
-                             <span className={`inline-flex items-center justify-center w-10 h-7 rounded-md text-xs font-bold ${p.score >= 80 ? 'bg-green-100 text-green-700' : p.score >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
-                               {p.score}
-                             </span>
-                           ) : <span className="text-slate-400">—</span>}
+                           <ScoreCell policy={p} />
                          </td>
                          <td className="px-6 py-4" data-label={t("dashboard.col_switch")}>
                            {isHealth ? <PainpointCell shouldSwitch={shouldSwitch} reportData={p.report_data} /> : <span className="text-slate-400">—</span>}
@@ -707,9 +757,7 @@ export default function DashboardNew() {
                           : <span className="font-semibold text-amber-500">{p.days} days</span>}
                       </td>
                       <td className="px-6 py-4" data-label={t("dashboard.col_score")}>
-                        {p.score !== null ? (
-                          <span className={`inline-flex items-center justify-center w-10 h-7 rounded-md text-xs font-bold ${p.score >= 80 ? 'bg-green-100 text-green-700' : p.score >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{p.score}</span>
-                        ) : <span className="text-slate-400">—</span>}
+                        <ScoreCell policy={p} />
                       </td>
                       <td className="px-6 py-4" data-label={t("dashboard.col_report")} data-cell="actions" onClick={e => e.stopPropagation()}>
                         <button onClick={() => setLocation(`/agent/policies/${p.id}`)} className="inline-flex min-h-10 items-center text-xs font-semibold text-[#0D9488] hover:underline">Open →</button>

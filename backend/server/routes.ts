@@ -5602,6 +5602,17 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       // that omits `insurer` would null the column it maps to.
       const shared = deriveSharedColumns(insuranceType, merged);
 
+      /* A hand-corrected field can move the score. `coverage_type` is the one
+         that does: it is how own damage is read when the document prints no
+         own-damage premium, and own damage is worth two add-ons. So the number
+         is recomputed from the MERGED blob, the same helper every other write
+         path uses.
+
+         The CASE is not decoration. This endpoint serves every line of
+         business, and scoreFromExtractedData returns null for anything that is
+         not motor, so an unguarded assignment would wipe the audit score off
+         every health policy an advisor edits. Motor only, always. */
+      const motorScore = scoreFromExtractedData(insuranceType, merged);
       await pool.query(
         `UPDATE clients SET
           extracted_data = $1,
@@ -5609,7 +5620,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           policy_name = $3,
           expiry_date = $4,
           sum_insured = $5,
-          policyholder_name = COALESCE($6, policyholder_name)
+          policyholder_name = COALESCE($6, policyholder_name),
+          score = CASE WHEN $9 = 'motor' THEN $10::int ELSE score END
         WHERE id = $7 AND agent_id = $8`,
         [
           JSON.stringify(merged),
@@ -5620,6 +5632,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           shared.policyholder_name ?? null,
           id,
           agentId,
+          insuranceType,
+          motorScore,
         ]
       );
 
@@ -5740,6 +5754,15 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               await consumeOcr(agentId);
 
               const shared = deriveSharedColumns(insuranceType, extraction.data);
+              /* The score has to be rewritten here too, and was not.
+                 Re-reading a document is the ONE path that exists to correct a
+                 policy read by an older scanner, so it is the path that most
+                 needs to write the number. Without this the re-read stored a
+                 fresh, correct add-on scan next to a stale `score` column: a
+                 real motor policy was re-read after the detector fix, the scan
+                 came back 9 of 9 decidable and worth 55, and the column stayed
+                 null. Same helper as both upload paths. */
+              const motorScore = scoreFromExtractedData(insuranceType, extraction.data);
               await pool.query(
                 `UPDATE clients SET
                   status = 'done',
@@ -5748,7 +5771,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   policy_name = $3,
                   expiry_date = $4,
                   sum_insured = $5,
-                  policyholder_name = COALESCE(policyholder_name, $6)
+                  policyholder_name = COALESCE(policyholder_name, $6),
+                  score = $8
                 WHERE id = $7`,
                 [
                   JSON.stringify(extraction.data),
@@ -5758,6 +5782,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   shared.sum_insured ?? null,
                   shared.policyholder_name ?? null,
                   id,
+                  motorScore,
                 ]
               );
             } else {
