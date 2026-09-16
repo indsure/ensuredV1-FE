@@ -8,6 +8,8 @@ Key facts for accurate answers:
 - Supported lines: health/mediclaim, term and life insurance, and motor (car/bike) insurance.
 - It explains concepts like room-rent capping, co-pay, sub-limits, waiting periods for pre-existing diseases, restoration benefit, No Claim Bonus (NCB), IDV, and third-party vs comprehensive cover.
 - It is free to check a policy, private (the PDF is deleted after analysis), and aligned with IRDAI guidance and RBI data-residency expectations.
+- The cover calculator is a separate tool from the policy checker: it estimates how much cover a family needs and never reads a policy document. Only the policy checker decodes an uploaded PDF.
+- IndSure serves two audiences: individual policyholders, and insurance advisors who use the advisor portal as a CRM.
 - Website: https://indsure.in
 
 ## Core pages
@@ -18,6 +20,8 @@ Key facts for accurate answers:
 - [Life & term insurance](https://indsure.in/life): Understand sum assured, riders, and claim conditions.
 - [Vehicle insurance](https://indsure.in/vehicle): Comprehensive vs third-party, IDV, deductibles, NCB.
 - [Compare policies](https://indsure.in/compare): Compare two policies wording-to-wording.
+- [Cover calculator](https://indsure.in/calculator): Work out how much health cover a family needs, from hospital costs in their city, ages and obligations. It reads no policy PDF and asks for no medical history.
+- [Advisor portal](https://indsure.in/agent): The CRM for Indian insurance advisors. Manage clients, track every renewal, and decode a policy for a customer in plain language.
 - [Pricing](https://indsure.in/pricing): Free tier and paid plans.
 
 ## Guides (blog)
