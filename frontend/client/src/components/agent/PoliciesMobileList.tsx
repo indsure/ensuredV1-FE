@@ -1,6 +1,8 @@
 import { ChevronRight } from "lucide-react"
 import { format } from "date-fns"
 import { TYPE_META, typeLabel, getNextPremiumDate, type InsuranceType } from "@/lib/insuranceTypes"
+import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns"
+import { scoreMotorPolicy, motorScoreTone } from "@shared/motorScore"
 
 /**
  * The phone view of the policy book.
@@ -30,6 +32,29 @@ function scoreBand(score: number) {
   if (score >= 80) return "bg-green-100 text-green-700 border-green-200"
   if (score >= 60) return "bg-amber-100 text-amber-700 border-amber-200"
   return "bg-red-100 text-red-700 border-red-200"
+}
+
+/**
+ * Motor's own bands. Not the ones above: a comprehensive policy carrying no
+ * add-ons scores 18 and is an ordinary purchase, so it reads grey rather than
+ * red. Red is for a vehicle the policy does not cover at all.
+ */
+const MOTOR_BAND = {
+  strong: "bg-green-100 text-green-700 border-green-200",
+  core: "bg-amber-100 text-amber-700 border-amber-200",
+  basic: "bg-slate-100 text-slate-700 border-slate-200",
+  third_party: "bg-red-100 text-red-700 border-red-200",
+  unscored: "",
+} as const
+
+/** Read from the scan on the row, so it matches the table and the detail screen. */
+function motorScore(extracted: any) {
+  if (!extracted || typeof extracted !== "object") return null
+  const s = scoreMotorPolicy(
+    extracted[ADD_ON_FINDINGS_KEY] ?? null,
+    typeof extracted.coverage_type === "string" ? extracted.coverage_type : null,
+  )
+  return s.score === null ? null : s
 }
 
 function renewalChip(dateStr: string | null) {
@@ -82,6 +107,7 @@ export function PoliciesMobileList({
       {rows.map((p) => {
         const type = (p.insurance_type || "health") as InsuranceType
         const isHealth = type === "health"
+        const motor = type === "motor" ? motorScore(p.extracted_data) : null
         const chip = renewalChip(getNextPremiumDate(p.expiry_date, p.extracted_data))
 
         return (
@@ -101,6 +127,13 @@ export function PoliciesMobileList({
                     className={`inline-flex min-h-6 min-w-[34px] shrink-0 items-center justify-center rounded-md border text-[13px] font-extrabold ${scoreBand(p.score)}`}
                   >
                     {p.score}
+                  </span>
+                )}
+                {motor && (
+                  <span
+                    className={`inline-flex min-h-6 min-w-[34px] shrink-0 items-center justify-center rounded-md border text-[13px] font-extrabold ${MOTOR_BAND[motorScoreTone(motor)]}`}
+                  >
+                    {motor.score}
                   </span>
                 )}
               </div>

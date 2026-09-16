@@ -9,6 +9,10 @@ import PolicyValueChart from "@/components/agent/PolicyValueChart";
 import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
+import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
+import {
+  scoreMotorPolicy, motorScoreCaption, motorScoreVerdict, motorScoreTone,
+} from "@shared/motorScore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -57,6 +61,37 @@ function scoreTone(score: number | null) {
   if (score >= 60) return { label: "Watch", bar: score, color: "text-amber-600" };
   return { label: "Needs action", bar: score, color: "text-red-600" };
 }
+
+/**
+ * Motor's own colours for the score tile.
+ *
+ * Health's bands are not reused. See motorScoreTone: red here means the
+ * vehicle itself is not covered, not a low number.
+ */
+const MOTOR_TONE_CLASS = {
+  strong: "text-emerald-600",
+  core: "text-amber-600",
+  basic: "text-slate-700",
+  third_party: "text-red-600",
+  unscored: "text-slate-500",
+} as const;
+
+/**
+ * The meter is drawn here rather than with <Progress>.
+ *
+ * That component fills with `bg-primary`, and this app's Tailwind v4 theme
+ * never defines `primary`, so the fill computes to transparent and the bar
+ * paints nothing at all. Verified in the browser, not assumed. The health tile
+ * above has the same invisible bar and is left alone: it is one shared
+ * component and fixing it belongs in its own change.
+ */
+const MOTOR_BAR_CLASS = {
+  strong: "bg-emerald-500",
+  core: "bg-amber-500",
+  basic: "bg-slate-400",
+  third_party: "bg-red-500",
+  unscored: "bg-slate-300",
+} as const;
 
 function expiryMeta(value: string | null) {
   if (!value) return { label: "No expiry data", className: "bg-slate-100 text-slate-600" };
@@ -121,6 +156,22 @@ export default function PolicyDetail() {
   const shareLink = shareToken ? `${origin}/shared/report/${shareToken}` : "";
   const score = policy?.score ?? null;
   const scoreMeta = scoreTone(score);
+  /* Motor is scored from the add-on scan, which is stored on the row, so the
+     tile is computed from that scan rather than read from the `score` column.
+     The two can disagree: a row written before the scorer shipped holds null
+     while its scan scores perfectly well, and a row written before a detector
+     fix holds a number the current rules would refuse. Computing it here means
+     the number, the verdict and the caption are always the same reading. */
+  const motor = useMemo(
+    () =>
+      insuranceType === "motor"
+        ? scoreMotorPolicy(
+            (extractedData?.[ADD_ON_FINDINGS_KEY] ?? null) as any,
+            typeof extractedData?.coverage_type === "string" ? extractedData.coverage_type : null,
+          )
+        : null,
+    [insuranceType, extractedData],
+  );
   const expiry = expiryMeta(policy?.policy_end_date ?? null);
   const isDataEntry = isDataEntryType(insuranceType);
   /* A policy may be shared once there is something at the other end of the
@@ -436,10 +487,33 @@ export default function PolicyDetail() {
 
                 {!isDataEntry && (
                   <div className="min-w-[280px] rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Score</div>
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Score</div>
                     <div className={`mt-2 text-4xl font-black ${scoreMeta.color}`}>{score == null ? "-" : score}</div>
                     <div className="text-sm font-medium text-slate-500">{scoreMeta.label}</div>
                     <Progress value={scoreMeta.bar} className="mt-4 h-2 bg-white" />
+                  </div>
+                )}
+
+                {/* Motor carries a score too, and the portal used to hide it
+                    because the tile above was gated on health. The caption is
+                    not decoration: this number and a health score share a scale
+                    and mean different things, so the surface showing it owes
+                    the reader the sentence saying which. */}
+                {motor && (
+                  <div className="min-w-[280px] max-w-[320px] rounded-3xl border border-slate-100 bg-slate-50 p-5">
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Cover score</div>
+                    <div className={`mt-2 text-4xl font-black ${MOTOR_TONE_CLASS[motorScoreTone(motor)]}`}>
+                      {motor.score == null ? "-" : motor.score}
+                      {motor.score != null && <span className="text-xl font-extrabold text-slate-500">/100</span>}
+                    </div>
+                    <div className="text-sm font-medium text-slate-500">{motorScoreVerdict(motor)}</div>
+                    <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white">
+                      <div
+                        className={`h-full rounded-full ${MOTOR_BAR_CLASS[motorScoreTone(motor)]}`}
+                        style={{ width: `${motor.score ?? 0}%` }}
+                      />
+                    </div>
+                    <p className="mt-3 text-xs leading-relaxed text-slate-500">{motorScoreCaption(motor)}</p>
                   </div>
                 )}
               </div>

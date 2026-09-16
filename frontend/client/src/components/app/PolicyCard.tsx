@@ -6,11 +6,28 @@ import {
 import type { Policy } from "./portfolio-types";
 import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
-import { scoreMotorPolicy, motorScoreCaption } from "@shared/motorScore";
+import {
+  scoreMotorPolicy, motorScoreCaption, motorScoreVerdict, motorScoreTone,
+} from "@shared/motorScore";
 import {
   daysUntil, fmtDate, formatINRShort, labelFor, parseSumInsured, renewalPhrase,
   scoreClasses, scoreVerdict, teamWaLink,
 } from "./portfolio-utils";
+
+/**
+ * Motor's verdict colours, in the portfolio's own palette.
+ *
+ * Grey, not red, for a comprehensive policy carrying no add-ons: the number is
+ * low because little was bought, which is the customer's choice and not a fault
+ * in the policy. Red says the vehicle itself is not covered.
+ */
+const MOTOR_VERDICT_CLASS = {
+  strong: "text-[var(--color-teal-600)]",
+  core: "text-[var(--color-gold-500)]",
+  basic: "text-[var(--color-text-muted)]",
+  third_party: "text-red-600",
+  unscored: "text-[var(--color-text-muted)]",
+} as const;
 
 /**
  * The WhatsApp mark, inline because lucide ships no brand icons and a generic
@@ -62,6 +79,13 @@ export function PolicyCard({
   const [dateDraft, setDateDraft] = useState<string | null>(null);
 
   const hasReport = p.status === "done" && p.insurance_type === "health";
+  /* One reading of the motor score for the whole card: the verdict and the
+     caption used to call the scorer separately, which is how they came to
+     disagree in the first place. Null for every other line of business. */
+  const motorScore =
+    p.insurance_type === "motor"
+      ? scoreMotorPolicy((p.add_ons ?? null) as any, p.coverage_type)
+      : null;
   const title = p.nickname || p.insurer || p.policy_name || p.filename || "Policy";
   const subtitle = p.nickname
     ? [p.insurer, p.policy_name].filter(Boolean).join(" · ")
@@ -183,9 +207,19 @@ export function PolicyCard({
                       render "Strong cover" beside a caption saying we could not
                       read it, because the stored score and the card's own
                       reading disagreed. The card now defers to the same
-                      function the server used. */}
-                  {!(p.insurance_type === "motor" &&
-                     scoreMotorPolicy((p.add_ons ?? null) as any, p.coverage_type).score === null) && (
+                      function the server used.
+
+                      The words are motor's own too. "Strong cover" and "Needs
+                      attention" grade WORDING, which is not what this number
+                      measures: a comprehensive policy with no add-ons scores 18
+                      and needs nothing. */}
+                  {motorScore ? (
+                    motorScore.score !== null && (
+                      <p className={`text-sm font-semibold ${MOTOR_VERDICT_CLASS[motorScoreTone(motorScore)]}`}>
+                        {motorScoreVerdict(motorScore)}
+                      </p>
+                    )
+                  ) : (
                     <p className={`text-sm font-semibold ${scoreClasses(p.score).text}`}>
                       {scoreVerdict(p.score)}
                     </p>
@@ -198,10 +232,8 @@ export function PolicyCard({
                       is covered, and now say so in the same words the advisor
                       portal uses. */}
                   <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-                    {p.insurance_type === "motor"
-                      ? motorScoreCaption(
-                          scoreMotorPolicy((p.add_ons ?? null) as any, p.coverage_type),
-                        )
+                    {motorScore
+                      ? motorScoreCaption(motorScore)
                       : "Scored on what actually pays out: waiting periods, sub-limits, exclusions and claim conditions."}
                   </p>
                 </div>

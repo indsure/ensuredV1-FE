@@ -284,7 +284,7 @@ const BUDGETS = {
   // 2026-09-11: 363 -> 362. The supplementary-benefits grid stopped painting
   // an absent benefit in slate-400; it now says why it is absent, in a readable
   // colour, which is the point of the tile.
-  "low-contrast-token": 362,
+  "low-contrast-token": 361,
   "native-dialog": 5,
   "placeholder-as-label": 2,
   // Weak detector: only catches `>...AI...<` on a single line, so it under-reports.

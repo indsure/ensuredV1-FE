@@ -49,6 +49,9 @@ function dateAgo(days: number): string {
  * no-claim bonus equals the total, so the "every rupee accounted for" seal in
  * the card is earned here the same way it is earned on a real policy.
  */
+/** The heading a real schedule prints its opted add-ons under. */
+const DECLARED_HEADING = "Add-on Covers Opted";
+
 function demoAddOnScan(vehicleClass: VehicleClass): AddOnScan {
   const catalog = ADD_ON_CATALOG[vehicleClass];
   const priced =
@@ -60,6 +63,7 @@ function demoAddOnScan(vehicleClass: VehicleClass): AddOnScan {
         ]
       : [];
 
+  const declaredListFound = vehicleClass === "car";
   const named = priced.reduce((t, p) => t + p.amount, 0);
   const ncb = vehicleClass === "car" ? -1240 : 0;
   const basicOd = vehicleClass === "car" ? 6200 : 720;
@@ -70,7 +74,7 @@ function demoAddOnScan(vehicleClass: VehicleClass): AddOnScan {
     version: 1,
     vehicleClass,
     scannedAt: dateAgo(vehicleClass === "car" ? 14 : 9),
-    declaredListFound: vehicleClass === "car",
+    declaredListFound,
     pricedLines: priced.map(({ name, uin, amount }) => ({ name, uin, amount })),
     arithmetic: { basicOd, totalOd, headroom },
     reconciliation: headroom === 0 ? null : { named, ncb, unexplained: 0 },
@@ -82,14 +86,28 @@ function demoAddOnScan(vehicleClass: VehicleClass): AddOnScan {
           evidence: `${hit.name} (${hit.uin})`, amount: hit.amount,
         };
       }
-      return {
-        id: entry.id, label: entry.label,
-        state: headroom === 0 ? ("absent_proven" as const) : ("not_found" as const),
-        evidence: headroom === 0
-          ? `Own damage premium is ${totalOd} against a basic of ${basicOd}, so no add-on premium was paid`
-          : null,
-        amount: null,
-      };
+      /* The demo has to show what the real scanner now produces. A declared
+         add-on list is an ENUMERATION: what the insurer does not name was not
+         bought, which proves absence exactly as a zero headroom does. Left as
+         "not_found", the demo car had 3 of 9 decidable, fell under the publish
+         floor and showed no score at all, which is the pre-fix behaviour and
+         not what a prospect would see today. Evidence wording is copied from
+         detectMotorAddOns so the demo cannot drift from production. */
+      if (headroom === 0) {
+        return {
+          id: entry.id, label: entry.label, state: "absent_proven" as const,
+          evidence: `Own damage premium is ${totalOd} against a basic of ${basicOd}, so no add-on premium was paid`,
+          amount: null,
+        };
+      }
+      if (declaredListFound) {
+        return {
+          id: entry.id, label: entry.label, state: "absent_proven" as const,
+          evidence: `Not in the list the insurer prints under "${DECLARED_HEADING}"`,
+          amount: null,
+        };
+      }
+      return { id: entry.id, label: entry.label, state: "not_found" as const, evidence: null, amount: null };
     }),
     present: priced.length,
     applicable: catalog.length,
