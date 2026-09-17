@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
-import { Loader2, Scale, Zap, Upload, Search, Plus, X, ArrowRight } from "lucide-react";
+import { Loader2, Scale, Zap, Upload, Search, Plus, X, ArrowRight, ChevronRight, ChevronLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import ComparisonShareBar from "@/components/agent/ComparisonShareBar";
 import ComparisonView, { SIDE_PALETTE } from "@/components/ComparisonView";
@@ -29,12 +29,17 @@ function AddPlanPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  // Two-level browse: the catalogue is ~100 plans, so the closed state lists insurers and you
+  // drill into one. Typing bypasses both levels and searches every plan at once.
+  const [openInsurer, setOpenInsurer] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const reset = () => { setOpen(false); setQuery(""); setOpenInsurer(null); };
+
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setQuery(""); }
+      if (ref.current && !ref.current.contains(e.target as Node)) reset();
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
@@ -52,7 +57,36 @@ function AddPlanPicker({
     return out;
   }, [grouped, exclude, query]);
 
-  const add = (uin: string) => { onAdd(uin); setOpen(false); setQuery(""); };
+  const insurers = useMemo(
+    () =>
+      Object.entries(grouped)
+        .map(([insurer, items]) => [insurer, items.filter((i) => !exclude.has(i.uin))] as [string, CatalogItem[]])
+        .filter(([, items]) => items.length > 0)
+        .sort((a, b) => a[0].localeCompare(b[0])),
+    [grouped, exclude],
+  );
+
+  const searching = query.trim().length > 0;
+  const drilledPlans = openInsurer ? insurers.find(([n]) => n === openInsurer)?.[1] ?? [] : [];
+
+  const add = (uin: string) => { onAdd(uin); reset(); };
+
+  const planRow = (it: CatalogItem) => (
+    <button
+      key={it.uin}
+      type="button"
+      onClick={() => add(it.uin)}
+      className="w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50 cursor-pointer transition-colors"
+    >
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-slate-800 truncate">{it.plan_name}</span>
+        {it.sum_insured_options && it.sum_insured_options !== "Not specified" && (
+          <span className="block text-[11px] text-slate-400 truncate">{it.sum_insured_options}</span>
+        )}
+      </span>
+      <Plus className="h-4 w-4 text-slate-300 flex-shrink-0" />
+    </button>
+  );
 
   return (
     <div className="relative w-full sm:w-auto" ref={ref}>
@@ -80,29 +114,47 @@ function AddPlanPicker({
             </div>
           </div>
           <div className="max-h-80 overflow-y-auto py-1">
-            {filtered.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-slate-400">No more plans found.</div>
+            {searching ? (
+              filtered.length === 0 ? (
+                <div className="px-4 py-6 text-center text-sm text-slate-400">No plans match that.</div>
+              ) : (
+                filtered.map(([insurer, items]) => (
+                  <div key={insurer}>
+                    <div className="px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-slate-400">{insurer}</div>
+                    {items.map(planRow)}
+                  </div>
+                ))
+              )
+            ) : openInsurer ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setOpenInsurer(null)}
+                  className="w-full text-left px-3 py-2 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-[#0D9488] border-b border-slate-100 cursor-pointer transition-colors"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> All insurers
+                </button>
+                <div className="px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-slate-400">{openInsurer}</div>
+                {drilledPlans.map(planRow)}
+              </>
+            ) : insurers.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-slate-400">No more plans available.</div>
             ) : (
-              filtered.map(([insurer, items]) => (
-                <div key={insurer}>
-                  <div className="px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-slate-400">{insurer}</div>
-                  {items.map((it) => (
-                    <button
-                      key={it.uin}
-                      type="button"
-                      onClick={() => add(it.uin)}
-                      className="w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50 cursor-pointer transition-colors"
-                    >
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-slate-800 truncate">{it.plan_name}</span>
-                        {it.sum_insured_options && it.sum_insured_options !== "Not specified" && (
-                          <span className="block text-[11px] text-slate-400 truncate">{it.sum_insured_options}</span>
-                        )}
-                      </span>
-                      <Plus className="h-4 w-4 text-slate-300 flex-shrink-0" />
-                    </button>
-                  ))}
-                </div>
+              insurers.map(([insurer, items]) => (
+                <button
+                  key={insurer}
+                  type="button"
+                  onClick={() => setOpenInsurer(insurer)}
+                  className="w-full text-left px-3 py-3 flex items-center justify-between gap-2 hover:bg-slate-50 cursor-pointer transition-colors"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-slate-800 truncate">{insurer}</span>
+                    <span className="block text-[11px] text-slate-400">
+                      {items.length} plan{items.length === 1 ? "" : "s"}
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
+                </button>
               ))
             )}
           </div>
