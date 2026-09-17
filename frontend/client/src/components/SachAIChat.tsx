@@ -4,6 +4,8 @@ import { getApiBase } from "@/lib/queryClient";
 import { useAnalysis } from "@/hooks/use-analysis";
 import { Send, X, Trash2, Bot, Sparkles, Loader2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+import { CLAUSE_LIBRARY } from "@/data/clause-library";
 
 // Simple markdown parser for bold, italic, and lists
 const SimpleMarkdown = ({ content }: { content: string }) => {
@@ -41,11 +43,13 @@ const SimpleMarkdown = ({ content }: { content: string }) => {
   );
 };
 
+// Every one of these resolves from stored data, so each is a zero-cost answer
+// rather than a prompt. They double as a hint at what Sach can actually read.
 const SUGGESTED_QUESTIONS = [
-  "Does this policy cover robotic surgery?",
-  "What are the waiting periods?",
-  "Is there a copay for senior citizens?",
-  "Are there any room rent capping limits?",
+  "Am I covered for robotic surgery?",
+  "What is my room rent limit?",
+  "Is there a co-pay on my policy?",
+  "How long is my pre-existing disease waiting?",
 ];
 
 type Message = {
@@ -54,21 +58,10 @@ type Message = {
 };
 
 const SACH_AI_MAX_INPUT_CHARS = 500;
-const SACH_AI_RATE_LIMIT = 20;
+const SACH_AI_RATE_LIMIT = 60;
 const SACH_AI_SESSION_ID_KEY = "sach_ai_session_id";
 const SACH_AI_MESSAGE_COUNT_KEY = "sach_ai_message_count";
 
-const LANGUAGE_OPTIONS = [
-  { value: "auto", label: "Auto-detect" },
-  { value: "English", label: "English" },
-  { value: "Hindi", label: "Hindi" },
-  { value: "Marathi", label: "Marathi" },
-  { value: "Gujarati", label: "Gujarati" },
-  { value: "Tamil", label: "Tamil" },
-  { value: "Telugu", label: "Telugu" },
-  { value: "Kannada", label: "Kannada" },
-  { value: "Bengali", label: "Bengali" },
-];
 
 function containsPersonalData(text: string): boolean {
   const email = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
@@ -80,6 +73,30 @@ function containsPersonalData(text: string): boolean {
   return email.test(text) || phone.test(text) || aadhaar.test(text) || aadhaarPlain.test(text) || policyLike.test(text);
 }
 
+
+/**
+ * General insurance questions are answered from the /learn clause library, which
+ * already ships in this bundle. Resolving it here rather than on the server keeps
+ * one copy of the content and means a definition costs no network call at all.
+ *
+ * Matching is on the canonical term and its `aka` list, longest phrase first so
+ * "pre-existing disease" is not swallowed by "disease".
+ */
+const GLOSSARY_INDEX = CLAUSE_LIBRARY
+  .flatMap((e) => [e.term, ...(e.aka ?? [])].map((phrase) => ({ phrase: phrase.toLowerCase(), entry: e })))
+  .sort((a, b) => b.phrase.length - a.phrase.length);
+
+function answerFromGlossary(question: string): string | null {
+  const q = question.toLowerCase();
+  const hit = GLOSSARY_INDEX.find(({ phrase }) => q.includes(phrase));
+  if (!hit) return null;
+  return [
+    `**${hit.entry.term}**`,
+    hit.entry.shortAnswer,
+    `Read the full explanation: /learn/${hit.entry.slug}`,
+  ].join("\n\n");
+}
+
 export default function SachAIChat() {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
@@ -87,7 +104,6 @@ export default function SachAIChat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [language, setLanguage] = useState<string>("auto");
 
   const [sachSessionId] = useState(() => {
     try {
@@ -114,6 +130,23 @@ export default function SachAIChat() {
       return 0;
     }
   });
+
+  // Null while the session is still being read, so the bubble does not flash in
+  // and out on first paint.
+  const [signedIn, setSignedIn] = useState<boolean>(false);
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (alive) setSignedIn(Boolean(data?.session?.access_token));
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+      setSignedIn(Boolean(session?.access_token));
+    });
+    return () => {
+      alive = false;
+      sub?.subscription?.unsubscribe();
+    };
+  }, []);
 
   const { currentJobId, state } = useAnalysis();
   const hasPolicy = !!(currentJobId || state?.analysis);
@@ -168,7 +201,7 @@ export default function SachAIChat() {
       setMessages((prev: Message[]) => [
         ...prev,
         userMessage,
-        { role: "assistant", content: "Rate limit reached (20 messages). Please wait and try again." },
+        { role: "assistant", content: `Rate limit reached (${SACH_AI_RATE_LIMIT} messages). Please wait and try again.` },
       ]);
       setInput("");
       return;
@@ -181,7 +214,7 @@ export default function SachAIChat() {
         {
           role: "assistant",
           content:
-            "I can only answer general health insurance education. Please remove personal identifiers (Aadhaar/phone/email/policy numbers) and resend your question.",
+            "Please remove personal identifiers (Aadhaar, phone, email, policy numbers) and resend your question. I never need them to read your cover.",
         },
       ]);
       setInput("");
@@ -230,8 +263,6 @@ export default function SachAIChat() {
           messages: historyForRequest,
           jobId: currentJobId,
           sessionId: sachSessionId,
-          language,
-          stream: false, // Changed from true to false for stability
         }),
       });
 
@@ -241,16 +272,27 @@ export default function SachAIChat() {
         return;
       }
 
-      // Handle non-streaming response
       const data = await res.json();
-      const content = typeof data?.content === "string" ? data.content : "";
-      setLastAssistantContent(content || "Sach AI is currently unavailable.");
+
+      // kind:"general" means the server understood no clause, so the answer
+      // comes from the clause library bundled here. No model is involved on
+      // either side of this call.
+      let content = typeof data?.content === "string" ? data.content : "";
+      if (!content && data?.kind === "general") {
+        content =
+          answerFromGlossary(messageText) ??
+          "I answer from your policy document and from the plan catalogue, so I can tell you what your cover actually says. I do not have a general answer for that one. Try asking about a specific clause, like your room rent limit, co-pay, waiting periods or modern treatments.";
+      }
+      if (Array.isArray(data?.links) && data.links.length) {
+        content += "\n\n" + data.links.map((l: any) => `${l.label}: ${l.href}`).join("\n");
+      }
+      setLastAssistantContent(content || "Sach could not answer that right now.");
 
       // success
     } catch (err: any) {
       // Error handling
       setLastAssistantContent(
-        err?.message ? `Sach AI error: ${err.message}` : "Sach AI is currently unavailable."
+        err?.message ? `Sach could not answer: ${err.message}` : "Sach is currently unavailable."
       );
     } finally {
       setLoading(false);
@@ -263,9 +305,12 @@ export default function SachAIChat() {
     setInput("");
   };
 
-  // Sach AI is an Agent Portal–only assistant. Render it nowhere else
-  // (no consumer pages, no public analyzer, no admin surface).
-  if (!location.startsWith("/agent")) {
+  // Sach reads policy data, so it renders only inside the two signed-in portals
+  // (agent and consumer) and never on public or admin surfaces. The session
+  // check matters as well as the route: without a token every answer would come
+  // back 401, and a chat bubble that can only apologise is worse than no bubble.
+  const inPortal = location.startsWith("/agent") || location.startsWith("/app");
+  if (!inPortal || !signedIn) {
     return null;
   }
 
@@ -276,7 +321,7 @@ export default function SachAIChat() {
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 group flex items-center justify-center w-14 h-14 bg-[var(--color-green-primary)] text-white rounded-full shadow-xl border border-[var(--color-green-secondary)] hover:scale-105 transition-all duration-300 hover:shadow-2xl"
-          aria-label="Open Sach AI Chat"
+          aria-label="Open Sach, your policy assistant"
         >
           <Bot className="w-6 h-6" />
         </button>
@@ -293,9 +338,9 @@ export default function SachAIChat() {
                 <Bot className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-white font-serif font-bold text-lg leading-none tracking-wide">Sach AI</h3>
+                <h3 className="text-white font-serif font-bold text-lg leading-none tracking-wide">Sach</h3>
                 <p className="text-white/60 text-xs uppercase tracking-widest mt-1">
-                  Private Policy Analyst
+                  Reads your policy
                 </p>
               </div>
             </div>
@@ -318,7 +363,7 @@ export default function SachAIChat() {
                 </div>
                 <p className="font-serif text-[var(--color-text-main)] text-xl mb-2 font-bold">How can I help?</p>
                 <p className="text-xs font-mono text-[var(--color-text-secondary)] uppercase tracking-wide mb-4">
-                  Ask about exclusions, limits, or jargon.
+                  Ask what your policy actually covers.
                 </p>
 
                 {!hasPolicy && (
@@ -327,7 +372,7 @@ export default function SachAIChat() {
                     <p className="text-xs text-amber-600 leading-relaxed">
                       For specific analysis,{" "}
                       <a href="/policychecker" className="underline font-medium">upload a policy first</a>.
-                      I can still answer general insurance questions.
+                      I can still explain how any clause works.
                     </p>
                   </div>
                 )}
@@ -373,24 +418,6 @@ export default function SachAIChat() {
 
           {/* Input Area */}
           <div className="p-4 bg-white border-t border-[var(--color-border-light)] shrink-0">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">
-                Language
-              </span>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                disabled={loading}
-                className="flex-1 min-w-0 py-2 px-3 rounded-lg border border-[var(--color-border-light)] bg-[var(--color-cream-main)] text-xs text-[var(--color-text-main)] focus:border-[var(--color-green-primary)] outline-none"
-                aria-label="Select language"
-              >
-                {LANGUAGE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className="relative flex items-center">
               <input
                 ref={inputRef}
@@ -410,7 +437,7 @@ export default function SachAIChat() {
               </button>
             </div>
             <p className="text-xs text-center text-[var(--color-text-muted)] mt-2 font-mono uppercase tracking-wider">
-              AI generated • Verify with policy
+              Read from your documents • Always confirm with your insurer
             </p>
           </div>
         </div>
