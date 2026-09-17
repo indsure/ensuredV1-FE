@@ -221,6 +221,26 @@ export default function SachAIChat() {
       return;
     }
 
+    // Signed out, anywhere on the site: general insurance terms still answer from the clause
+    // library bundled here, with no network call at all. Anything that needs someone's own
+    // policy cannot be answered without a session, so say that plainly rather than letting the
+    // request come back as a bare 401.
+    if (!signedIn) {
+      const general = answerFromGlossary(userMessage.content);
+      setMessages((prev: Message[]) => [
+        ...prev,
+        userMessage,
+        {
+          role: "assistant",
+          content:
+            general ??
+            "I can explain any insurance term here. To ask about **your own policy** — your room rent limit, your waiting periods, your co-pay — sign in and upload it, and I will read it back to you in plain language.",
+        },
+      ]);
+      setInput("");
+      return;
+    }
+
     const historyForRequest: Message[] = [...messages, userMessage];
 
     // Add placeholder immediately to avoid race conditions while streaming.
@@ -309,8 +329,11 @@ export default function SachAIChat() {
   // (agent and consumer) and never on public or admin surfaces. The session
   // check matters as well as the route: without a token every answer would come
   // back 401, and a chat bubble that can only apologise is worse than no bubble.
-  const inPortal = location.startsWith("/agent") || location.startsWith("/app");
-  if (!inPortal || !signedIn) {
+  // Everywhere except the admin console. Signed in, it reads your own policy; signed out, it
+  // still explains any insurance term from the bundled clause library. Admin is excluded
+  // because it is an internal tool operating on other people's data, not a place to ask about
+  // "your" cover.
+  if (location.startsWith("/admin")) {
     return null;
   }
 
