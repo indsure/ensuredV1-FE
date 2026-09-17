@@ -24,7 +24,11 @@ const pillars = [
     accent: "var(--lob-health)",
     wash: "var(--lob-health-wash)",
     lead: "We read what insurers file, not what they advertise.",
-    body: "A wording-level database of 69 health insurance plans across 10 insurers, hand-built rather than scraped: every room-rent clause, co-pay clause, sub-limit and waiting period, taken out of the policy documents insurers actually file. That takes months of work most comparison sites will not do.",
+    // "hand-built rather than scraped" was true when the catalog was assembled by hand. It is
+    // not any more: most entries are now read out of the filed wordings by a model and marked
+    // unverified until reviewed. The differentiator that survives is the SOURCE — the document
+    // insurers file with the regulator, not the brochure — so the claim now rests on that.
+    body: "A wording-level database of 112 health insurance plans across 11 insurers, built from the documents insurers file with the regulator rather than from brochures: every room-rent clause, co-pay clause, sub-limit and waiting period, taken out of the filed wording itself. That is the document the exclusions actually live in, and it is not the one a price comparison reads.",
   },
   {
     n: "02",
@@ -55,19 +59,25 @@ const pillars = [
   },
 ];
 
-/* claim-source: counted from backend/catalog_seed/*.json on 2026-08-31 —
-   69 plan files across 10 insurer prefixes (adityabirla, bajaj, care,
-   hdfc, indusind, manipalcigna, nia, nivabupa, sbi, tataaig). The page
-   previously said 63, which was a stale count. /compare renders the same
-   two figures live from the catalog (catalog-compare.tsx:268), so check
-   them against each other whenever the catalog grows.
+/* claim-source: counted in the live policy_catalog on 2026-09-17 —
+   112 active rows of product_type 'comprehensive_health_indemnity' across
+   11 insurers (ICICI Lombard joined that day). Previously 69 / 10, which
+   went stale when the catalog was expanded. Excluded from the count: 3
+   top-ups, 2 fixed-benefit plans, and 24 deactivated Bajaj filings that
+   are one product registered separately per state.
+
+   /compare renders the same two figures live from the catalog
+   (catalog-compare.tsx:268), so check them against each other whenever the
+   catalog grows. Re-derive with:
+     SELECT COUNT(*), COUNT(DISTINCT insurer) FROM policy_catalog
+      WHERE is_active AND product_type = 'comprehensive_health_indemnity';
 
    The strip used to carry "50+ risk checks per audit" as its third
    figure. Nothing in the codebase substantiates that number, so it has
    been replaced with a second structural zero rather than restated. */
 const stats = [
-  { value: 69, suffix: "", label: "Plans indexed", accent: "var(--lob-health)" },
-  { value: 10, suffix: "", label: "Insurers covered", accent: "var(--lob-life)" },
+  { value: 112, suffix: "", label: "Plans indexed", accent: "var(--lob-health)" },
+  { value: 11, suffix: "", label: "Insurers covered", accent: "var(--lob-life)" },
   { value: 0, suffix: "", label: "Commission earned, ever", accent: "var(--lob-motor)" },
   { value: 0, suffix: "", label: "Leads sold, ever", accent: "var(--lob-home)" },
 ];
