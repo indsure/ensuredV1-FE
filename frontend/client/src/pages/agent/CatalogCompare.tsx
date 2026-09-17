@@ -130,15 +130,15 @@ function AddPlanPicker({
                 <button
                   type="button"
                   onClick={() => setOpenInsurer(null)}
-                  className="w-full text-left px-3 py-2 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-[#0D9488] border-b border-slate-100 cursor-pointer transition-colors"
+                  className="w-full text-left px-3 py-2 flex items-center gap-1.5 text-sm font-bold text-slate-600 hover:text-[#0D9488] border-b border-slate-100 cursor-pointer transition-colors"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" /> All insurers
                 </button>
-                <div className="px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-slate-400">{openInsurer}</div>
+                <div className="px-3 pt-2 pb-1 text-sm font-bold text-slate-600">{openInsurer}</div>
                 {drilledPlans.map(planRow)}
               </>
             ) : insurers.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-slate-400">No more plans available.</div>
+              <div className="px-4 py-6 text-center text-sm text-slate-600">No more plans available.</div>
             ) : (
               insurers.map(([insurer, items]) => (
                 <button
@@ -149,7 +149,7 @@ function AddPlanPicker({
                 >
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-slate-800 truncate">{insurer}</span>
-                    <span className="block text-[11px] text-slate-400">
+                    <span className="block text-sm text-slate-600">
                       {items.length} plan{items.length === 1 ? "" : "s"}
                     </span>
                   </span>

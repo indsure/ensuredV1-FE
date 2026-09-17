@@ -470,6 +470,71 @@ async function resolveSachCaller(
  * fall back to their most recent completed analysis, which is what someone means
  * by "my policy" when they have only ever uploaded one.
  */
+/**
+ * "In Palash Baheti's policy, what is wrong" names a customer, not a job id.
+ *
+ * Rather than trying to pull a person's name out of free text, this loads the names this agent
+ * actually has and tests each one against the question. A name the agent does not own can never
+ * match, so there is no route by which one agent's question reaches another agent's client.
+ *
+ * The displayed customer name lives in clients.policyholder_name. clients.name is null
+ * throughout, and identity.insured_names inside the report carries "Unknown" for some rows, so
+ * neither is a safe key.
+ */
+async function loadByPolicyholder(
+  caller: { userId: string; kind: "agent" | "consumer" },
+  question: string
+): Promise<
+  | { kind: "none" }
+  | { kind: "one"; name: string; report: any }
+  | { kind: "many"; name: string; options: { id: string; policy: string | null; insurer: string | null }[] }
+> {
+  if (caller.kind !== "agent") return { kind: "none" };
+
+  const q = question.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  if (!q) return { kind: "none" };
+
+  const known = await pool.query(
+    `SELECT id, policyholder_name, policy_name, insurer
+       FROM clients
+      WHERE agent_id = $1 AND report_data IS NOT NULL AND policyholder_name IS NOT NULL
+      ORDER BY created_at DESC`,
+    [caller.userId]
+  );
+
+  // Longest name first, so "Palash Baheti" wins over a client who is just "Palash".
+  const hits = known.rows
+    .filter((r: any) => {
+      const n = String(r.policyholder_name).toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+      return n.length >= 4 && q.includes(n);
+    })
+    .sort((a: any, b: any) => String(b.policyholder_name).length - String(a.policyholder_name).length);
+
+  if (hits.length === 0) return { kind: "none" };
+
+  const name = String(hits[0].policyholder_name);
+  const sameName = hits.filter((r: any) => String(r.policyholder_name) === name);
+
+  if (sameName.length > 1) {
+    return {
+      kind: "many",
+      name,
+      options: sameName.map((r: any) => ({
+        id: String(r.id),
+        policy: r.policy_name ?? null,
+        insurer: r.insurer ?? null,
+      })),
+    };
+  }
+
+  const one = await pool.query(
+    `SELECT report_data FROM clients WHERE id = $1 AND agent_id = $2`,
+    [sameName[0].id, caller.userId]
+  );
+  const report = one.rows[0]?.report_data ?? null;
+  return report ? { kind: "one", name, report } : { kind: "none" };
+}
+
 async function loadOwnAnalysis(
   caller: { userId: string; kind: "agent" | "consumer" },
   jobId: unknown
@@ -622,9 +687,60 @@ app.post("/api/sach-ai", async (req: Request, res: Response) => {
       });
     }
 
+    // ── the overall verdict: "what is wrong with this policy" ──────────────
+    // The audit already decided this and stored it. Until now the question fell through to the
+    // general path and apologised, which is the first thing an advisor asks.
+    if (intent.kind === "verdict") {
+      const byName = await loadByPolicyholder(caller, lastText);
+
+      if (byName.kind === "many") {
+        const list = byName.options
+          .map((o) => `- ${[o.insurer, o.policy].filter(Boolean).join(", ") || "policy on file"}`)
+          .join("\n");
+        return res.json({
+          kind: "verdict",
+          source: "none",
+          content: `**${byName.name} has ${byName.options.length} policies on file, and they do not have the same problems.**\n\n${list}\n\nOpen the one you mean and ask again, and I will read that report.`,
+        });
+      }
+
+      const own = byName.kind === "one" ? byName.report : await loadOwnAnalysis(caller, jobId);
+      if (!own) {
+        return res.json({
+          kind: "verdict",
+          source: "none",
+          content:
+            "I need a policy in front of me before I can tell you what is wrong with it. Open a report, or name the client whose policy you mean.",
+        });
+      }
+
+      const { text } = answerFromData(lastText, { ownAnalysis: own, catalogRow: null });
+      return res.json({
+        kind: "verdict",
+        source: "own_policy",
+        about: byName.kind === "one" ? byName.name : null,
+        content:
+          text ??
+          "This report does not carry an overall verdict, so I will not invent one. Ask me about a specific clause instead.",
+      });
+    }
+
     // ── a clause question: the main path ───────────────────────────────────
     if (intent.kind === "clause") {
-      const own = await loadOwnAnalysis(caller, jobId);
+      // A named client wins over "the most recent report", so "what is Palash Baheti's room
+      // rent limit" reads the right document instead of whatever was uploaded last.
+      const byName = await loadByPolicyholder(caller, lastText);
+      if (byName.kind === "many") {
+        const list = byName.options
+          .map((o) => `- ${[o.insurer, o.policy].filter(Boolean).join(", ") || "policy on file"}`)
+          .join("\n");
+        return res.json({
+          kind: "clause",
+          source: "none",
+          content: `**${byName.name} has ${byName.options.length} policies on file.**\n\n${list}\n\nOpen the one you mean and ask again.`,
+        });
+      }
+      const own = byName.kind === "one" ? byName.report : await loadOwnAnalysis(caller, jobId);
       const catalogRow = own ? null : await loadCatalogRow(lastText, intent.namedPlanText);
 
       if (catalogRow && (catalogRow as any).__ambiguous) {

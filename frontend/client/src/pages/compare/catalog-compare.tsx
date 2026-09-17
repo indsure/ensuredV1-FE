@@ -150,11 +150,11 @@ function AddPlanPicker({
                 <button
                   type="button"
                   onClick={() => setOpenInsurer(null)}
-                  className="w-full text-left px-3 py-2 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[var(--color-text-muted)] hover:text-[var(--color-teal-600)] border-b border-[var(--color-border-light)] cursor-pointer transition-colors"
+                  className="w-full text-left px-3 py-2 flex items-center gap-1.5 text-sm font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-teal-600)] border-b border-[var(--color-border-light)] cursor-pointer transition-colors"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" /> All insurers
                 </button>
-                <div className="px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-[var(--color-text-muted)]">{openInsurer}</div>
+                <div className="px-3 pt-2 pb-1 text-sm font-bold text-[var(--color-text-secondary)]">{openInsurer}</div>
                 {drilledPlans.map(planRow)}
               </>
             ) : insurers.length === 0 ? (
@@ -170,7 +170,7 @@ function AddPlanPicker({
                 >
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-[var(--color-navy-900)] truncate">{insurer}</span>
-                    <span className="block text-[11px] text-[var(--color-text-muted)]">
+                    <span className="block text-sm text-[var(--color-text-secondary)]">
                       {items.length} plan{items.length === 1 ? "" : "s"}
                     </span>
                   </span>

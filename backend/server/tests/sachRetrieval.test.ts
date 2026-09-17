@@ -374,3 +374,93 @@ describe("hyphens", () => {
     assert.equal(parseIntent("is there a co pay").clauseKey, "copayment");
   });
 });
+
+/* ─── the overall verdict ───────────────────────────────────────────────────── */
+
+/**
+ * Shape copied from a live analysis_jobs.result on 2026-09-17 and scrubbed. Note that
+ * key_failure_points is where "what is wrong with this policy" is actually answered, and
+ * that recommendations uses `critical_actions`, not `high_priority`.
+ */
+const RISKY_REPORT = {
+  audit_score: { score: 5 },
+  final_verdict: {
+    label: "RISKY",
+    summary: "The sum insured is insufficient for this city.",
+    key_failure_points: [
+      "Severe underinsurance",
+      "Room rent capped low enough to trigger proportional deductions",
+      "No restoration benefit",
+    ],
+    will_this_policy_protect_in_real_claim: "No, it will leave the family heavily exposed.",
+  },
+  recommendations: {
+    critical_actions: [{ action: "Buy a super top-up", reason: "To bridge the gap to the cover this city needs." }],
+    should_port_to_better_policy: "Porting preserves the waiting periods already served.",
+  },
+  claim_risk_analysis: {},
+};
+
+describe("the overall verdict", () => {
+  test("open questions route to verdict, not to the general apology", () => {
+    for (const q of [
+      "In this policy, what is wrong",
+      "is this any good",
+      "should they switch",
+      "any red flags here",
+      "koi problem hai kya",
+    ]) {
+      assert.equal(parseIntent(q).kind, "verdict", `"${q}" should be a verdict question`);
+    }
+  });
+
+  test("a clause named in the question still beats the summary", () => {
+    // "what is wrong with the room rent" is a room-rent question. The specific answer is
+    // more useful than a whole-policy verdict, so clause must win.
+    assert.equal(parseIntent("what is wrong with the room rent").kind, "clause");
+    assert.equal(parseIntent("what is wrong with my co-pay").kind, "clause");
+  });
+
+  test("answers from the audit's own verdict, naming the actual failures", () => {
+    const { intent, text } = answerFromData("what is wrong with this policy", {
+      ownAnalysis: RISKY_REPORT,
+      catalogRow: null,
+    });
+    assert.equal(intent.kind, "verdict");
+    assert.ok(text, "a verdict answer is expected");
+    assert.match(text!, /real problems/);
+    assert.match(text!, /Severe underinsurance/);
+    assert.match(text!, /No restoration benefit/);
+    assert.match(text!, /Buy a super top-up/);
+    assert.match(text!, /5 out of 100/);
+    assert.match(text!, /Source: your uploaded policy analysis/);
+  });
+
+  test("the switching question surfaces the porting advice the audit stored", () => {
+    const { text } = answerFromData("should they switch", { ownAnalysis: RISKY_REPORT, catalogRow: null });
+    assert.match(text!, /On switching: Porting preserves/);
+  });
+
+  test("a report with no verdict says so instead of assembling a reassuring one", () => {
+    const { text } = answerFromData("what is wrong with this policy", {
+      ownAnalysis: { claim_risk_analysis: {}, audit_score: { score: 70 } },
+      catalogRow: null,
+    });
+    assert.ok(text, "an honest refusal is still an answer");
+    assert.match(text!, /does not carry an overall verdict/);
+    assert.doesNotMatch(text!, /real problems|holds up/);
+  });
+
+  test("with no policy at all there is nothing to summarise", () => {
+    const { text } = answerFromData("what is wrong with this policy", { ownAnalysis: null, catalogRow: null });
+    assert.equal(text, null, "the route decides what to say when no policy is loaded");
+  });
+
+  test("no em dash reaches the reader", () => {
+    const { text } = answerFromData("what is wrong with this policy", {
+      ownAnalysis: RISKY_REPORT,
+      catalogRow: null,
+    });
+    assert.doesNotMatch(text!, /—/, "house style: no em dashes in user-facing copy");
+  });
+});

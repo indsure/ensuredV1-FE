@@ -342,7 +342,7 @@ export const CLAUSE_MAP: Record<ClauseKey, ClauseDef> = {
 
 /* ─── intent parsing ────────────────────────────────────────────────────────── */
 
-export type IntentKind = "clause" | "cover_need" | "compare" | "general";
+export type IntentKind = "clause" | "cover_need" | "compare" | "verdict" | "general";
 
 export interface SachIntent {
   kind: IntentKind;
@@ -394,8 +394,31 @@ export function parseIntent(question: string): SachIntent {
   if (clauseHit) {
     return { kind: "clause", clauseKey: clauseHit.key, aboutOwnPolicy, namedPlanText };
   }
+  // Checked after the clause hit on purpose: "what is wrong with the room rent" is a room-rent
+  // question, and the specific answer beats the summary. Only an open question with no clause
+  // in it reaches here.
+  if (VERDICT_PHRASES.some((p) => q.includes(p))) {
+    return { kind: "verdict", clauseKey: null, aboutOwnPolicy, namedPlanText };
+  }
   return { kind: "general", clauseKey: null, aboutOwnPolicy, namedPlanText };
 }
+
+/**
+ * Open questions that ask for the overall picture rather than one clause. This is the first
+ * thing an advisor asks about a client's policy, and until now it fell through to "I do not
+ * have a general answer for that one" while the audit sat on the answer.
+ */
+const VERDICT_PHRASES = [
+  "what is wrong", "whats wrong", "what s wrong", "anything wrong", "what are the problems",
+  "what are the issues", "any issues", "any problems", "red flag", "red flags",
+  "is this any good", "is it any good", "is this policy good", "is this good", "how good is",
+  "is this policy safe", "is this safe", "how risky", "is this risky",
+  "should i switch", "should they switch", "should he switch", "should she switch",
+  "should we switch", "should i port", "should they port", "should he port", "should she port",
+  "review this policy", "review the policy", "overall verdict", "the verdict",
+  "summarise this policy", "summarize this policy", "summarise the policy", "summarize the policy",
+  "kya problem hai", "koi problem", "theek hai kya", "sahi hai kya",
+];
 
 /**
  * Pull an insurer mention out of the question so the route can look it up in
@@ -688,6 +711,100 @@ export function renderClauseAnswer(fact: ClauseFact): string {
  * The whole deterministic path in one call. Returns null when nothing could be
  * answered from data, which is the ONLY case that should reach a model.
  */
+/* ─── overall verdict ───────────────────────────────────────────────────────── */
+
+export interface VerdictFact {
+  /** "RISKY" | "SAFE" as the audit recorded it. Never invented. */
+  label: string | null;
+  summary: string | null;
+  failurePoints: string[];
+  realClaimAnswer: string | null;
+  criticalActions: { action: string; reason: string }[];
+  portAdvice: string | null;
+  score: number | null;
+  sourceLabel: string;
+}
+
+const asText = (v: unknown): string | null =>
+  typeof v === "string" && v.trim() ? v.trim() : null;
+
+/**
+ * Read the audit's own verdict. Every field here is something the analysis already decided and
+ * stored; nothing is recomputed and nothing is inferred. A report that carries no verdict
+ * returns null so the caller can say so rather than assemble a reassuring-sounding summary out
+ * of whatever else happens to be present.
+ */
+export function resolveVerdict(analysisResult: any): VerdictFact | null {
+  const fv = analysisResult?.final_verdict;
+  if (!fv || typeof fv !== "object") return null;
+
+  const failurePoints = Array.isArray(fv.key_failure_points)
+    ? fv.key_failure_points.map(asText).filter((s: string | null): s is string => Boolean(s))
+    : [];
+
+  const label = asText(fv.label);
+  const summary = asText(fv.summary);
+  if (!label && !summary && failurePoints.length === 0) return null;
+
+  const recs = analysisResult?.recommendations ?? {};
+  const criticalActions = (Array.isArray(recs.critical_actions) ? recs.critical_actions : [])
+    .map((a: any) => ({ action: asText(a?.action) ?? "", reason: asText(a?.reason) ?? "" }))
+    .filter((a: { action: string }) => a.action);
+
+  // The audit stores this under recommendations; it is the direct answer to "should they switch".
+  const port = recs.should_port_to_better_policy;
+  const portAdvice =
+    asText(port) ??
+    asText(port?.reason) ??
+    (typeof port === "boolean" ? (port ? "Yes, porting is worth considering." : "No, porting is not indicated.") : null);
+
+  const rawScore = analysisResult?.audit_score?.score;
+
+  return {
+    label,
+    summary,
+    failurePoints,
+    realClaimAnswer: asText(fv.will_this_policy_protect_in_real_claim),
+    criticalActions,
+    portAdvice,
+    score: typeof rawScore === "number" ? rawScore : null,
+    sourceLabel: "your uploaded policy analysis",
+  };
+}
+
+export function renderVerdictAnswer(v: VerdictFact): string {
+  const lines: string[] = [];
+
+  if (v.label === "RISKY") lines.push("**This policy has real problems.**");
+  else if (v.label === "SAFE") lines.push("**This policy holds up.**");
+  else if (v.label) lines.push(`**Verdict: ${v.label}.**`);
+
+  if (v.summary) lines.push(v.summary);
+  if (typeof v.score === "number") lines.push(`Audit score: ${v.score} out of 100.`);
+
+  if (v.failurePoints.length) {
+    lines.push("What is wrong with it:");
+    lines.push(v.failurePoints.map((p) => `- ${p}`).join("\n"));
+  }
+
+  if (v.realClaimAnswer) lines.push(`At an actual claim: ${v.realClaimAnswer}`);
+
+  if (v.criticalActions.length) {
+    lines.push("Do these first:");
+    lines.push(
+      v.criticalActions
+        .slice(0, 3)
+        .map((a) => `- **${a.action}**${a.reason ? `: ${a.reason}` : ""}`)
+        .join("\n"),
+    );
+  }
+
+  if (v.portAdvice) lines.push(`On switching: ${v.portAdvice}`);
+
+  lines.push(`Source: ${v.sourceLabel}.`);
+  return lines.join("\n\n");
+}
+
 export function answerFromData(
   question: string,
   sources: {
@@ -696,6 +813,23 @@ export function answerFromData(
   }
 ): { intent: SachIntent; fact: ClauseFact | null; text: string | null } {
   const intent = parseIntent(question);
+
+  // "What is wrong with this policy" is answered from the audit's own verdict. It only works
+  // against a real report: there is no product-level equivalent, because a catalog row describes
+  // a wording, not whether it suits a particular family.
+  if (intent.kind === "verdict") {
+    const verdict = sources.ownAnalysis ? resolveVerdict(sources.ownAnalysis) : null;
+    if (verdict) return { intent, fact: null, text: renderVerdictAnswer(verdict) };
+    if (sources.ownAnalysis) {
+      return {
+        intent,
+        fact: null,
+        text: "This report does not carry an overall verdict, so I will not invent one. Ask me about a specific clause instead, like the room rent limit, co-pay, waiting periods or modern treatments, and I will read it out of the document.",
+      };
+    }
+    return { intent, fact: null, text: null };
+  }
+
   if (intent.kind !== "clause" || !intent.clauseKey) {
     return { intent, fact: null, text: null };
   }
