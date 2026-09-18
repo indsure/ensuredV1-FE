@@ -28,7 +28,7 @@ const pillars = [
     // not any more: most entries are now read out of the filed wordings by a model and marked
     // unverified until reviewed. The differentiator that survives is the SOURCE — the document
     // insurers file with the regulator, not the brochure — so the claim now rests on that.
-    body: "A wording-level database of 112 health insurance plans across 11 insurers, built from the documents insurers file with the regulator rather than from brochures: every room-rent clause, co-pay clause, sub-limit and waiting period, taken out of the filed wording itself. That is the document the exclusions actually live in, and it is not the one a price comparison reads.",
+    body: "A wording-level database of 161 health insurance plans across 19 insurers, built from the documents insurers file with the regulator rather than from brochures: every room-rent clause, co-pay clause, sub-limit and waiting period, taken out of the filed wording itself. That is the document the exclusions actually live in, and it is not the one a price comparison reads.",
   },
   {
     n: "02",
@@ -59,16 +59,19 @@ const pillars = [
   },
 ];
 
-/* claim-source: counted in the live policy_catalog on 2026-09-17 —
-   112 active rows of product_type 'comprehensive_health_indemnity' across
-   11 insurers (ICICI Lombard joined that day). Previously 69 / 10, which
-   went stale when the catalog was expanded. Excluded from the count: 3
-   top-ups, 2 fixed-benefit plans, and 24 deactivated Bajaj filings that
-   are one product registered separately per state.
+/* claim-source: counted in the live policy_catalog on 2026-09-18, which is
+   161 active rows of product_type 'comprehensive_health_indemnity' across
+   19 insurers. It read 69/10 on 2026-08-31 and 112/11 on 2026-09-17.
+   Excluded from the count: 3 top-ups, 2 fixed-benefit plans, and 24
+   deactivated Bajaj filings that are one product registered per state.
 
-   /compare renders the same two figures live from the catalog
-   (catalog-compare.tsx:268), so check them against each other whenever the
-   catalog grows. Re-derive with:
+   THIS HAS NOW GONE STALE THREE TIMES IN THREE WEEKS. /compare renders the
+   same two figures LIVE from the catalog (catalog-compare.tsx:268); this
+   page hardcodes them, which is the whole difference. The next person to
+   touch it should make it read from the same source rather than edit a
+   constant again. More insurers are mid-ingest, so this will be wrong again.
+
+   Re-derive with:
      SELECT COUNT(*), COUNT(DISTINCT insurer) FROM policy_catalog
       WHERE is_active AND product_type = 'comprehensive_health_indemnity';
 
@@ -76,8 +79,8 @@ const pillars = [
    figure. Nothing in the codebase substantiates that number, so it has
    been replaced with a second structural zero rather than restated. */
 const stats = [
-  { value: 112, suffix: "", label: "Plans indexed", accent: "var(--lob-health)" },
-  { value: 11, suffix: "", label: "Insurers covered", accent: "var(--lob-life)" },
+  { value: 161, suffix: "", label: "Plans indexed", accent: "var(--lob-health)" },
+  { value: 19, suffix: "", label: "Insurers covered", accent: "var(--lob-life)" },
   { value: 0, suffix: "", label: "Commission earned, ever", accent: "var(--lob-motor)" },
   { value: 0, suffix: "", label: "Leads sold, ever", accent: "var(--lob-home)" },
 ];
