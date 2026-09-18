@@ -1,0 +1,173 @@
+{
+  "insurer": "Galaxy Health Insurance Company Limited",
+  "plan_name": "Galaxy Privilege",
+  "uin": "GHIHLIP26044V012526",
+  "sum_insured_options": "₹5L – ₹25L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "2% of SI/day, max ₹10,000",
+    "note": "Room rent capped at 2% of Sum Insured per day subject to maximum of Rs.10,000 per day",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "3% of SI/day, max ₹20,000",
+    "note": "ICU including Digital ICU covered at 3% of Sum Insured per day, maximum Rs.20,000 per day",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "25% on all claims",
+    "note": "Mandatory 25% co-payment on all claims; not applicable on cataract, repatriation, home care, major disease sub-limits, and optional supportive/recovery covers. Can be modified via optional cover (20% with loading or 30% with discount).",
+    "optional": false,
+    "number": 25
+  },
+  "sub_limits": {
+    "display": "Cataract, major diseases, modern treatments capped",
+    "note": "Cataract: ₹35,000/eye, ₹50,000/policy year; Modern treatments: 50% of SI; Major diseases (neuro, heart, cancer, renal): SI-linked sub-limits; All other major surgeries: SI-linked sub-limits; Surgeon fees: 35% of SI; Other medical expenses: 60% of SI; Home care: 5% of SI or ₹1L; Ambulance: ₹2,500/hosp",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None (optional voluntary deductible available)",
+    "note": "No mandatory deductible in base plan. Optional voluntary aggregate deductible of ₹25,000/₹50,000/₹1,00,000 available with premium discount.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day initial waiting period for illnesses; not applicable for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "12 months",
+    "note": "PED waiting period is 12 months from first policy inception with insurer",
+    "optional": false,
+    "number": 12
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Specified diseases list includes cataract, ENT, thyroid, hernia, joint replacements, spine, HPB diseases, kidney calculi, gynaec diseases, prostate, haemorrhoids, varicose veins, transplants, congenital internal diseases, and more",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Code Excl 18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration or reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days, max ₹10,000 combined",
+    "note": "Pre and post hospitalisation combined limit is 30 days subject to maximum Rs.10,000 total",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "30 days, max ₹10,000 combined",
+    "note": "Pre and post hospitalisation combined limit is 30 days subject to maximum Rs.10,000 total",
+    "optional": false,
+    "number": 30
+  },
+  "day_care": {
+    "display": "All day-care procedures covered up to SI",
+    "note": "All day care procedures/treatments covered up to sum insured",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (home care, 5% of SI or ₹1L)",
+    "note": "Home care treatment covered for specified conditions up to 5% of SI or Rs.1,00,000 whichever is less",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient treatment covered up to sum insured; Yoga and Naturopathy require prior company approval",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Transplant and related surgeries are listed under 24-month specific disease waiting period exclusion list; no explicit organ donor expense cover mentioned",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,500/hospitalisation, ₹5,000/year",
+    "note": "Road ambulance covered up to Rs.2,500 per hospitalisation and Rs.5,000 per policy year",
+    "optional": false,
+    "number": 2500
+  },
+  "modern_treatments": {
+    "display": "Sub-limited to 50% of SI",
+    "note": "Robotic surgery, immunotherapy, stem cell therapy, intravitreal injections, deep brain stimulation, and other listed modern treatments covered up to 50% of SI",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider",
+    "note": "Consumables (List I items) covered up to sum insured only if optional cover 14 is purchased",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit clause restricts all investigations/treatments to India only",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim can be contested except for proven fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 15 days for monthly premium mode and 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free look period applicable on new policies only, not on renewals or portability",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI norms; credits for PED, specific waiting periods, NCB, moratorium transferable",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, dental implants, STDs (except HIV), venereal diseases, hazardous sports, consumables (unless rider), no global cover",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Consumables cover, Voluntary deductible, Supportive Care (rehab/hospice), Recovery & Enrichment Care (assisted living/nursing), Co-payment modification",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Galaxy-Privilege-Policy-Wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:22:18.383Z"
+}

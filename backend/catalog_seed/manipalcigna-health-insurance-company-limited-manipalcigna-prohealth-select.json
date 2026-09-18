@@ -1,0 +1,173 @@
+{
+  "insurer": "ManipalCigna Health Insurance Company Limited",
+  "plan_name": "ManipalCigna ProHealth Select",
+  "uin": "MCIHLIP26037V052526",
+  "sum_insured_options": "₹50K – ₹25L (Select A: ₹0.5L–₹25L; Select B: ₹2L–₹25L)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "2% of SI/day (max ₹3,000)",
+    "note": "Rateable proportion applies to associated medical expenses if higher room taken. Optional add-on (Removal of Room Rent Limit) upgrades to Single Private AC Room.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "4% of SI/day (max ₹7,000)",
+    "note": "Rateable proportion clause does not apply to ICU stays.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None (base); Zone co-pay up to 20% for out-of-zone treatment",
+    "note": "No mandatory co-pay on base plan. Zone II policyholders bear 10% for Zone I treatment; Zone III bear 10% for Zone II and 20% for Zone I. Optional voluntary co-pay of 10% or 20% available only under ProHealth Select (A). Co-pay and deductible cannot be combined.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits (base); optional Disease Specific Sub-limits available under Select (A)",
+    "note": "Base plan has no disease sub-limits. Optional Disease Specific Sub-limit cover (Select A only) caps: Cataract ₹7.5K–₹22.5K/eye, Hernia ₹12.5K–₹37.5K, Joint Replacement ₹40K–₹80K, Cardiac ₹40K–₹80K, Cancer ₹40K–₹80K, and others.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None (base); optional ₹1L–₹5L deductible available",
+    "note": "Deductible is an optional cover (₹1/2/3/4/5 Lacs); aggregate per policy year. Cannot be combined with voluntary co-pay.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "36 months continuous coverage required. Reduced to extent of prior coverage under portability/migration.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, hernia, knee replacement, varicose veins, calculus diseases, BPH, piles/fissures/fistula, ENT disorders, hysterectomy, joint replacement, spondylitis, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl 18). Ectopic pregnancy is covered. No optional maternity add-on mentioned in this policy.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (5%/yr, no reduction on claim)",
+    "note": "5% per year, max 100% of SI. Not reduced for claims. Optional Cumulative Bonus Booster upgrades to 10%/25%/50% per year up to 100%, or 10%/yr up to 200%.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% for unrelated illness",
+    "note": "Restored SI available once per policy year only for unrelated illness/injury. Not available for ₹0.5L and ₹1L SI under Select (A). Restored SI not carried forward and not counted for cumulative bonus.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Covered on reimbursement basis for same condition as hospitalisation.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Covered on reimbursement basis for same condition as hospitalisation.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "171 listed procedures, up to full SI",
+    "note": "Specific list of 171 day care procedures in Annexure II. OPD treatment not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered up to SI",
+    "note": "Requires treatment for at least 3 days. Excludes asthma, bronchitis, COPD, arthritis, diabetes, hypertension, epilepsy, and several other conditions for domiciliary claims.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "In-patient/day care in AYUSH hospital or AYUSH Day Care Centre. Excludes pleasure/rejuvenation treatments and treatment outside India.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered up to SI",
+    "note": "Covers in-patient hospitalisation expenses for organ harvesting from donor. Excludes pre/post-hospitalisation for donor, donor screening costs, organ acquisition costs.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000 per hospitalisation",
+    "note": "Covers road ambulance by registered healthcare/ambulance provider for emergency. Also covers inter-hospital transfer.",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "Listed modern treatments (robotic/HIFU/stereotactic/oral chemo/immunotherapy/intravitreal injections/stem cell therapy etc.) covered under in-patient or day care.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on (ManipalCigna Health 360 – Shield)",
+    "note": "Base policy excludes consumables (Annexure IV List I). Optional Health 360 Shield add-on covers listed non-medical items up to base SI and durable medical equipment up to ₹1L.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional (Worldwide Emergency Cover, Select A only)",
+    "note": "Covers emergency in-patient hospitalisation outside India up to SI, reimbursement only in INR. Available only under ProHealth Select (A) as optional cover.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim contestable except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "30 days for annual/half-yearly/quarterly; 15 days for monthly premium payment. Coverage available during grace period if premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or porting. Refund within 7 days of cancellation request.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "As per IRDAI portability guidelines. Apply at least 30 days before but not earlier than 60 days from renewal date.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, dental (non-accident), external congenital anomaly, treatment outside India (base), sleep apnea devices, CPAP, femto-laser/multifocal lens cataract, non-allopathic (except AYUSH)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Deductible, Voluntary Co-pay (A only), Cumulative Bonus Booster, Room Rent Limit Removal, Re-Assurance, Health Check-up (A), Worldwide Emergency (A), Disease Sub-limits (A), HMB (A), CI Add-on, Health 360 (Shield/OPD)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "ProHealthSelect-V5-TnC.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:40:54.180Z"
+}

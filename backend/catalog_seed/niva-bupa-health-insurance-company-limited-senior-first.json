@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "Senior First",
+  "uin": "NBHHLIP27053V022627",
+  "sum_insured_options": "Not specified in document",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified",
+    "note": "Policy mentions eligible room category and additional 10% co-pay for higher room, but no explicit room rent cap or type stated in wording; likely specified in Policy Schedule",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "ICU charges defined but no explicit cap mentioned in wording; likely in Policy Schedule",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "50% default (20%–50% options)",
+    "note": "Default co-payment is 50%; can be modified to 40%, 30%, or 20% at inception of first policy. Additional 10% co-pay if treated in higher room category than eligible. Co-pay cannot be changed once chosen.",
+    "optional": false,
+    "number": 50
+  },
+  "sub_limits": {
+    "display": "Robotic surgery capped at ₹1L/claim (some exceptions)",
+    "note": "Robotic surgeries capped at ₹1,00,000 per claim except total radical prostatectomy, cardiac surgeries, partial nephrectomy and surgeries for malignancies. Sub-limits do not increase with Loyalty Additions.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (optional add-on)",
+    "note": "Annual Aggregate Deductible is an optional benefit; if opted, co-payment does not apply (except for higher room category). Amount not specified in wording.",
+    "optional": true,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "Pre-existing diseases excluded for 24 months of continuous coverage from policy inception.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Specified diseases/procedures (cataract, hernia, joint replacement, etc.) excluded for 24 months. Personal waiting periods also 24 months.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under Standard Exclusion Excl18. Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr as Loyalty Additions)",
+    "note": "10% of previous year's Base Sum Insured added as Loyalty Additions each policy anniversary, up to 100% of Base Sum Insured. Sub-limits do not increase with Loyalty Additions.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited (ReAssure), up to Base SI per claim",
+    "note": "ReAssure benefit triggered by first paid claim; provides unlimited restoration but each single claim capped at Base Sum Insured. Applies for all subsequent claims.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days before admission, for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge, for the same condition.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "Minimum 2-hour admission required; day care treatment defined as procedures under anaesthesia in less than 24 hours due to technological advancement.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (min 3 days, doctor certificate required)",
+    "note": "Covered if treating doctor certifies no hospital room available or patient unable to travel; minimum 3 consecutive days of treatment required.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (min 24-hr admission in AYUSH hospital)",
+    "note": "AYUSH treatment covered with minimum 24-hour admission in a qualifying AYUSH hospital. India only.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (harvesting expenses only)",
+    "note": "Hospitalisation expenses of organ donor for harvesting covered only when insured's transplant claim is paid.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000 road / ₹2,50,000 air per hospitalisation",
+    "note": "Road ambulance up to ₹2,000; air ambulance up to ₹2,50,000 for emergency care only. Must use registered provider. Paid only when hospital admission claim is paid.",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Covered; robotic surgery sub-limited at ₹1L",
+    "note": "12 modern treatments listed including robotic surgery, immunotherapy, stem cell therapy, deep brain stimulation, etc. Robotic surgeries capped at ₹1,00,000 per claim with exceptions.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-medical consumables (gloves, nebuliser kit, masks, etc.) explicitly excluded in Annexure I. No rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy covers treatments in India only. Treatment outside India explicitly excluded under specific exclusions.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim can be contested except for established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (annual); 15 days (monthly)",
+    "note": "Grace period is 15 days for monthly premium mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual policies only, not on renewals. Pro-rata premium refunded if no claim made.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI norms with transfer of waiting period credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment, hormone replacement therapy, sleep disorders, STIs (non-HIV), external congenital anomaly, dental (non-accident), multifocal lens, self-inflicted injury",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Annual Aggregate Deductible (optional); co-payment level selection (20%/30%/40%/50%) at inception",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Senior-First-Policy-Wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:43:00.900Z"
+}

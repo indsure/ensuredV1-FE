@@ -1,0 +1,173 @@
+{
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "Health Infinity",
+  "uin": "BAJHLIP21005V022021",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Per day room rent plan opted",
+    "note": "Room rent is based on a per-day limit chosen at inception; proportionate deduction applies if higher room is taken. Actual limit amounts not specified in wording.",
+    "optional": false,
+    "ordinal": 2
+  },
+  "icu": {
+    "display": "At actuals",
+    "note": "Policy states ICU expenses paid up to actual ICU expenses provided by hospital.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "15%/20%/25% on claim amount exceeding 100x room rent limit",
+    "note": "Co-pay applies on the portion of a claim exceeding 100 times the opted per-day room rent limit; percentage (15%/20%/25%) is chosen at inception. Also proportionate co-pay if room category exceeds opted limit.",
+    "optional": false,
+    "number": 15
+  },
+  "sub_limits": {
+    "display": "Many sub-limits: specific diseases & modern treatments capped at 100x room rent",
+    "note": "Listed conditions (cataracts, hernia, piles, joint replacement, etc.) and modern treatments capped at 100 times per-day room rent per claim. Joint replacement/vertebral surgery have 36-month wait plus same cap.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "Not specified (aggregate or per-claim deductible as per schedule)",
+    "note": "Policy mentions deductible concept and that it applies per year or per claim as specified in schedule, but no fixed amount stated in wording.",
+    "optional": false,
+    "number": null
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; waived for accidents and if continuously covered for 12+ months.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "36 months continuous coverage from first policy inception; reducible via portability credit.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "24-month wait for listed conditions (cataracts, hernia, piles, fistula, etc.); 36 months for joint replacement, vertebral surgery, deviated nasal septum, congenital internal diseases, refractive error ≥7.5D.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18); only ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "Cumulative bonus is defined in the policy but no rate or maximum percentage is stated in the wording.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reinstatement benefit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days prior to admission.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses covered for 90 days after discharge.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "Listed + any qualifying day-care procedure",
+    "note": "Indicative list of 399 procedures in Annexure I; any other procedure requiring <24 hrs due to technological advances also covered.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is defined but not listed as a covered benefit under Section C.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered",
+    "note": "AYUSH treatment covered; AYUSH hospital and day care centre definitions included. No separate sub-limit stated.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "No organ donor expense benefit mentioned in the policy wording.",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹5,000 per hospitalisation",
+    "note": "Road ambulance covered up to ₹5,000 per hospitalisation for emergency transfer; also covers transfer to higher-facility hospital.",
+    "optional": false,
+    "number": 5000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (100x room rent per claim)",
+    "note": "12 modern treatments listed in Annexure III (robotic surgery, stereotactic radiosurgery, oral chemo, etc.) covered but capped at 100 times per-day room rent per claim.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-medical/consumable items excluded (Annexure II). Medicines and drugs during hospitalisation are covered under C1(vii) but standard consumables like gloves, masks, etc. are excluded.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment in India only; overseas treatment excluded.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage no claim can be contested except for proven fraud and permanent exclusions.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for all modes except monthly premium where it is 15 days.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; must apply at least 30 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "No overseas treatment, no maternity, no domiciliary, no organ donor, no restoration, congenital external anomalies, growth hormone therapy, terrorism covered",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Co-pay level selection (15%/20%/25%), per-day room rent plan selection; no other riders specified in wording",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Health-Infinity_PW.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:26:09.541Z"
+}

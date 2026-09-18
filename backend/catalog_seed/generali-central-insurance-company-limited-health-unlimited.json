@@ -1,0 +1,173 @@
+{
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Unlimited",
+  "uin": "GCIHLIP26041V012526",
+  "sum_insured_options": "₹7.5L – ₹200L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private Room (₹7.5L–15L); No cap (₹25L+)",
+    "note": "For SI of ₹7.5L, ₹10L, ₹15L: Single Private Room. For SI of ₹25L and above: up to SI (no cap). Proportionate deduction applies if higher room taken.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "No cap (up to SI)",
+    "note": "ICU charges covered up to Sum Insured for all plan variants. Proportionate deduction does not apply to ICU charges.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "20% (age 61+ at first entry)",
+    "note": "Mandatory 20% co-pay on every claim for insured persons aged 61 years and above at the time of first policy issuance. Also, 15% co-pay if Zone 2 policyholder takes treatment in Zone 1. OPD treatment has 30% co-pay. Optional Mandatory Co-pay Waiver rider available.",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Maternity capped; Bariatric capped; Emergency Evacuation capped; OPD capped",
+    "note": "Maternity: ₹40K–₹1.35L depending on SI and delivery type. Bariatric Surgery: ₹3.75L–₹10L. Emergency Medical Evacuation: ₹2.5L–₹5L. OPD: ₹5K–₹10K. Home Healthcare: 25% of SI up to ₹10L. Accidental Hospitalisation add-on: 25% of SI up to ₹10L. Most core inpatient benefits up to full SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (inbuilt); optional voluntary deductible available",
+    "note": "No mandatory deductible. Optional Voluntary Deductible available: ₹10K–₹50K for lower SIs, up to ₹5L for higher SIs, on aggregate basis.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day initial waiting period for illnesses. Not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing disease waiting period is 36 months. Reducible via portability credit from prior continuous coverage.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 36 months (some)",
+    "note": "24 months for cataracts, hernia, BPH, DNS, hydrocele, fistula/haemorrhoids, uterine conditions, tumours/cysts, varicose veins, gallstones, LASIK, etc. 36 months for rheumatoid arthritis, gout, joint replacement (degenerative), osteoarthritis/osteoporosis.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (36mo wait); Normal ₹40K–₹1.35L; C-Section ₹60K–₹1.35L",
+    "note": "Inbuilt benefit. Available for female policyholder (Self) or Spouse/Live-in Partner aged 18+. Both Self and Spouse must be covered for 36 continuous months. Max 2 events lifetime. Limits vary by SI: Normal ₹40K (₹15L SI) to ₹1.35L (₹200L SI); C-Section ₹60K to ₹1.35L. Not available for ₹7.5L and ₹10L SI plans.",
+    "optional": false,
+    "exists": true,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr claim-free)",
+    "note": "50% of expiring SI added per claim-free year, max 100%. Reduced by 50% in a claim year, minimum zero. Applies on individual or floater basis accordingly.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited, 100% of Base SI",
+    "note": "Triggers from 2nd claim onwards after full exhaustion of Base SI + CB + Inflation Guard. Applicable for same or different illness. Once per claim event. Not available for Medical Treatment Abroad.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days prior to admission for all SI variants.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days (₹7.5L–15L); 180 days (₹25L+)",
+    "note": "90 days post-hospitalisation for SI of ₹7.5L, ₹10L, ₹15L. 180 days for SI of ₹25L and above.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care covered up to SI",
+    "note": "Day care treatment covered up to Sum Insured. Includes IV chemotherapy, radiotherapy, haemodialysis and other therapeutic procedures requiring less than 24 hours.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (Home Health Care up to 25% of SI, max ₹10L)",
+    "note": "Home Health Care covered via empanelled providers on cashless basis only. Conditions: patient unable to move, no hospital bed available, or government notification. Chemotherapy and dialysis at home covered. Only allopathic treatment.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient treatment covered up to Sum Insured. Requires minimum 24-hour admission in AYUSH Hospital. Government hospital treatment required.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered up to SI",
+    "note": "Organ donor harvesting expenses covered up to SI. Excludes donor screening, pre/post hospitalisation of donor, and organ acquisition costs.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to SI (no separate cap stated)",
+    "note": "Emergency Road Ambulance covered up to Sum Insured per hospitalisation. Covers transfer to hospital, hospital-to-hospital, and return home if medically required.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 modern treatment procedures covered including robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, deep brain stimulation, stem cell therapy (haematopoietic), HIFU, balloon sinuplasty, etc.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider (up to SI)",
+    "note": "Consumables/Non-Medical Expenses Cover available as optional add-on. Covers List I items used during inpatient treatment. Pre/post hospitalisation excluded.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Inbuilt (36mo wait; 8 major conditions only)",
+    "note": "Medical Treatment Abroad inbuilt for 8 specific conditions: craniotomy for cancer, lung lobectomy, liver lobectomy, major organ transplant, bone marrow transplant, aortic aneurysm repair, heart valve replacement, CABG. Available after 36 months continuous coverage. Paid in INR at RBI exchange rate. Inflation Guard and Unlimited Restoration not applicable.",
+    "optional": false,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 30 days for annual/quarterly/half-yearly premium modes; 15 days for monthly instalment. Coverage available during grace period if premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document. Applicable only at inception, not on renewals or porting.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines. Waiting period credit given for prior continuous coverage.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "External congenital anomaly, STDs (non-HIV), stem cell storage, hormone replacement therapy, treatment outside India (beyond 8 listed conditions), circumcision, vaccination",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Consumables/Non-Medical Expenses Cover, Voluntary Deductible (₹10K–₹5L), Mandatory Co-pay Waiver (age 61+)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "health-unlimited-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:24:32.402Z"
+}

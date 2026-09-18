@@ -1,0 +1,172 @@
+{
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Vital",
+  "uin": "GCIHLIP25038V022425",
+  "sum_insured_options": "₹5L – ₹15L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "₹5K/day (₹5L SI); ₹10K/day (₹10L & ₹15L SI)",
+    "note": "Fixed ₹ per day limits; ICU at 1.5x normal room limit. Proportionate deduction applies if higher room taken.",
+    "optional": false,
+    "ordinal": 2
+  },
+  "icu": {
+    "display": "1.5x normal room limit/day",
+    "note": "E.g. ₹7,500/day for ₹5L SI; ₹15,000/day for ₹10L & ₹15L SI",
+    "optional": false,
+    "ordinal": 2
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in policy wording",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Many sub-limits: cataract, maternity, cancer, cardiac, joint replacement, etc.",
+    "note": "23 disease/procedure categories sub-limited per policy year; e.g. cataract ₹25K-₹50K, cancer ₹1L-₹2L, CABG ₹1.5L-₹2L, joint replacement ₹1.5L-₹2.5L",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Except accidents; waived if continuously covered for 12+ months",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "No optional reduction mentioned; reducible via portability/migration credit",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 36 months (joint replacement, osteoporosis, maternity, bariatric)",
+    "note": "24-month list includes cataract, hernia, hysterectomy, LASIK etc.; 36-month list includes joint replacement, bariatric surgery",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (36mo wait); sub-limited",
+    "note": "Normal delivery ₹35K-₹50K; C-section ₹30K-₹60K depending on SI; max 2 lifetime claims; pre/post natal excluded; portability/migration not applicable",
+    "optional": false,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% added per claim-free year; reduced by 10% on claim; max 100% of SI",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Up to Sum Insured; disease sub-limits apply",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "30 days",
+    "note": "Up to Sum Insured; disease sub-limits apply",
+    "optional": false,
+    "number": 30
+  },
+  "day_care": {
+    "display": "530 listed day-care procedures",
+    "note": "Plus any other procedures agreed by insurer requiring <24hr hospitalisation due to technology advancement",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "No domiciliary treatment benefit mentioned",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI (disease sub-limits apply)",
+    "note": "Inpatient AYUSH hospitalisation covered; preventive/rejuvenation and OPD excluded",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "No organ donor expense benefit mentioned",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹3,000/event (₹5L SI); ₹5,000/event (₹10L & ₹15L SI)",
+    "note": "Road ambulance only; over and above disease sub-limits but subject to SI availability",
+    "optional": false,
+    "number": 3000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (disease sub-limit or 50% of SI, whichever lower)",
+    "note": "12 listed procedures including robotic surgery, stereotactic radiosurgery, oral chemo, stem cell therapy etc.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on",
+    "note": "Consumables/Non-Medical Expenses Cover available as optional cover on additional premium; covers List I items in Annexure II",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment in India only (Section 7.1.7 & 6.2.14)",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to enhanced SI from date of enhancement",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "30 days for annual/quarterly/half-yearly; 15 days for monthly instalment; coverage not available during grace period",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable at inception only; not on renewals or porting",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; waiting period credit for prior continuous coverage",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Treatment outside India, external congenital anomaly, STDs (non-HIV), stem cell storage, OPD, dental (non-injury), durable medical equipment post-discharge",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Consumables/Non-Medical Expenses Cover",
+    "note": "Only one optional cover mentioned in policy wording",
+    "optional": true
+  },
+  "source_file": "health-vital-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:24:21.382Z"
+}

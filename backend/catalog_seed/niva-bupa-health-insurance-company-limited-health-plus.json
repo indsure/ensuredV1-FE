@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "Health Plus",
+  "uin": "NBHHLGP22157V032122",
+  "sum_insured_options": "Not specified",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified (as per Policy Schedule)",
+    "note": "Room rent eligibility is referenced as per Policy Schedule/Certificate of Insurance; proportionate deduction applies if higher room opted. Specific limit not stated in wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified (as per Policy Schedule)",
+    "note": "ICU charges covered under inpatient care; specific cap not stated in wording, deferred to Policy Schedule.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "As per Policy Schedule",
+    "note": "Co-payment percentage specified in Policy Schedule/Certificate of Insurance; also 50% co-pay applies for Cyberknife/Robotic surgery for malignant tumors (Sec 3.1.1.28). Base co-pay not fixed in wording.",
+    "optional": false,
+    "number": null
+  },
+  "sub_limits": {
+    "display": "Sub-limits on specified illnesses/conditions per Policy Schedule",
+    "note": "Section 3.1.1.20 provides for sub-limits on specified illnesses as per Policy Schedule. Annexure VII (list for sub-limits) is referenced but not populated in the wording. Robotic surgeries capped at ₹1L except specified procedures.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "As per Policy Schedule (Annual Aggregate or Catastrophic Deductible options)",
+    "note": "Two deductible options available: Annual Aggregate Deductible (Sec 3.1.1.25) and Annual Catastrophic Claim Deductible (Sec 3.1.1.26); amounts per Policy Schedule. Base plan may have zero deductible.",
+    "optional": false,
+    "number": null
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses from first policy commencement; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "As per Policy Schedule (typically 36 months)",
+    "note": "PED waiting period stated as 'number of months as mentioned in Policy Schedule/Certificate of Insurance'. PED definition uses 36-month look-back. Exact waiting period not fixed in wording.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "As per Policy Schedule (typically 24–36 months)",
+    "note": "Specific disease/procedure waiting period per Policy Schedule. Standard list includes cataract, hernia, kidney disease, etc. Exact months not fixed in wording; definition references up to 36 months.",
+    "optional": false,
+    "number": 36
+  },
+  "maternity": {
+    "display": "Covered (waiting period as per Policy Schedule; family floater only)",
+    "note": "Maternity covered under Sec 3.1.1.8 for family floater policies only; includes normal/C-section/complicated delivery; max 2 pregnancies lifetime; waiting period per Policy Schedule; newborn cover, pre/post natal, cord blood banking also available.",
+    "optional": false,
+    "exists": true,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% of Base SI",
+    "note": "No Claim Bonus added each claim-free year at rate per Policy Schedule; max 100% of Base Sum Insured. Bonus reduces by same % if claim made in expiring year.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/year up to 100% Base SI (unrelated illness)",
+    "note": "Re-fill Benefit (Sec 3.1.1.23): up to 100% of Base SI restored once SI exhausted; cannot be used for same illness/complication already claimed in that year. Not available for maternity or health check-up claims.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "As per Policy Schedule",
+    "note": "Pre-hospitalisation expenses covered for number of days specified in Policy Schedule/Certificate of Insurance.",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "As per Policy Schedule",
+    "note": "Post-hospitalisation expenses covered for number of days specified in Policy Schedule/Certificate of Insurance.",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "Listed day-care procedures covered",
+    "note": "Day care treatment covered per listed procedures (Sec 3.1.1.4); list attached to policy. OPD treatment and diagnostic services not included.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered (Sec 3.1.1.6) if patient cannot be moved to hospital or no room available; minimum 3 consecutive days; reimbursement only.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (inpatient in AYUSH Hospital, up to sub-limit per Policy Schedule)",
+    "note": "AYUSH inpatient treatment covered under Sec 3.1.1.5 (Ayurveda, Unani, Sidha, Homeopathy) in recognised AYUSH hospitals; limit per Policy Schedule. Yoga excluded from inpatient AYUSH cover.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (harvesting expenses for living donor)",
+    "note": "Organ donor's inpatient harvesting expenses covered (Sec 3.1.1.7) when recipient is insured; donor's stay, screening, pre/post-hosp expenses excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered (reasonable & customary; non-network capped per Policy Schedule)",
+    "note": "Emergency ground ambulance covered at R&C charges for network providers; non-network capped per Policy Schedule. Air ambulance also covered. One transfer per hospitalisation.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered; robotic surgeries capped at ₹1L (exceptions apply)",
+    "note": "12 modern treatments listed (Sec 3.1.1.33) including robotic surgery, stereotactic radio surgery, oral chemo, etc. Robotic surgeries sub-limited to ₹1L except prostatectomy, cardiac, partial nephrectomy, malignancy surgeries.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (listed as non-payable in Annexure III)",
+    "note": "Gloves, masks, and many consumables explicitly listed as non-payable in Annexure III. No consumables rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Optional (emergency evacuation, emergency hospitalisation, specified illness cover abroad)",
+    "note": "Section 3.5 provides international coverage options including emergency medical evacuation, emergency hospitalisation outside India, and specified illness cover abroad; available only in territories specified in Policy Schedule.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Grace period is 30 days for all premium modes except monthly (15 days). Coverage available during grace period if premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free look period from date of receipt of policy document; applicable on new policies only, not renewals.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed per IRDAI norms; credits for PED waiting, specific waiting periods, NCB, moratorium transferable to new insurer.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Circumcision (non-medical), external congenital anomaly, dental/oral treatment, sleep disorders, STIs (non-HIV), off-label drugs, OPD treatment, multifocal lens, animal bite (unless opted)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Critical illness cover (Basic/Intermediate/Advanced/Women/Child), Accidental cover, Hospital cash, OPD cover, International cover, Re-fill benefit, Loyalty credits, Wellness/health coaching",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "healthplus-policydocument.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T14:01:24.336Z"
+}

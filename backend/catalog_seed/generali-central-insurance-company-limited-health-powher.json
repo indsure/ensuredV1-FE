@@ -1,0 +1,173 @@
+{
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health PowHER",
+  "uin": "GCIHLIP24180V012324",
+  "sum_insured_options": "₹5L – ₹1Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private Room (Essential/Advance); No cap (Supreme)",
+    "note": "Essential plan: Single Private Room; Advance plan: Single Private Room; Supreme plan: Actuals (no cap). Proportionate deduction applies if higher room taken.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (Actuals) – all plans",
+    "note": "ICU charges covered at actuals across all three plans; proportionate deduction explicitly excluded for ICU.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (mandatory); Voluntary 10%/20%/30% optional",
+    "note": "No mandatory co-payment. Policyholder may opt for voluntary co-pay of 10%, 20%, or 30% for a premium discount. Co-pay not applicable to several benefits including maternity, OPD, LASIK, cataract etc.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract ₹1L/eye, LASIK ₹50k–₹1L, Bariatric up to ₹5L, Road ambulance ₹2k–₹4k",
+    "note": "Cataract: ₹1L per eye per year; LASIK: ₹50k–₹1L (plan-dependent, once lifetime); Bariatric: up to ₹5L/year; Road ambulance: ₹2k–₹4k per hospitalisation; Maternity: plan-specific sub-limits; Home Health Care: up to 20% of SI (Advance/Supreme); OPD: plan-specific limits.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible applicable under this policy.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day initial waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing disease waiting period is 36 months across all plans. Reducible via portability credit from prior continuous coverage.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 36 months (joint replacement, osteoporosis)",
+    "note": "24-month wait: cataract, hernia, ENT disorders, hysterectomy, LASIK, calculi, varicose veins, etc. 36-month wait: joint replacement, age-related osteoarthritis/osteoporosis.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered inbuilt (24mo wait); Normal up to ₹50k–₹1.25L; Caesarean up to ₹75k–₹2L",
+    "note": "Inbuilt benefit. 24-month waiting period. Covers normal and caesarean delivery, pre/post-natal hospitalisation, miscarriage/MTP (12mo wait), newborn expenses, newborn defect lump sum, newborn vaccination, stem cell storage. Limits vary by plan. Max 2 deliveries lifetime.",
+    "optional": false,
+    "number": 24,
+    "exists": true
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (10%/yr)",
+    "note": "10% of SI added per claim-free year; maximum 50% of base SI. Reduces at same rate if claim made. Claims under optional covers (CI, PA), OPD, wellness, preventive care, antenatal care do not affect CB.",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of base SI",
+    "note": "Triggered on second claim in the policy year, irrespective of whether SI/CB is fully or partially exhausted. Can be used for same or different illness. For chemotherapy/dialysis, usable only once in lifetime. Does not carry forward.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "30 days (Essential); 60 days (Advance/Supreme)",
+    "note": "Essential plan: 30 days pre-hospitalisation; Advance and Supreme plans: 60 days.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days (Essential); 90 days (Advance/Supreme)",
+    "note": "Essential plan: 60 days post-hospitalisation; Advance and Supreme plans: 90 days.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "530 listed day-care procedures",
+    "note": "Comprehensive list of 530 day-care procedures in Annexure II. Also covers any other procedure requiring <24hr hospitalisation due to technological advancement.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (Home Health Care)",
+    "note": "Home Health Care benefit available on cashless basis via empanelled providers. Covered up to 20% of SI (Advance/Supreme); not available under Essential plan. Requires pre-authorisation.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to Sum Insured",
+    "note": "Covers Ayurveda, Yoga & Naturopathy, Unani, Siddha, Homeopathy for in-patient treatment at AYUSH hospitals. OPD and preventive/rejuvenation treatments excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered up to Sum Insured",
+    "note": "Covers harvesting expenses of organ donor up to SI. Donor screening, pre/post-hospitalisation of donor, and organ acquisition costs excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000–₹4,000/hospitalisation (road); up to ₹3L/yr (air)",
+    "note": "Road ambulance: ₹2,000 (Essential), ₹3,000 (Advance), ₹4,000 (Supreme) per hospitalisation. Air ambulance: not available (Essential), ₹2L/yr (Advance), ₹3L/yr (Supreme).",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Covered up to Sum Insured",
+    "note": "12 modern treatments covered including robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, deep brain stimulation, HIFU, stem cell therapy etc. Covered under IPD or day care up to SI.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (standard non-payables list applies)",
+    "note": "Annexure III lists non-payable consumables (gloves, masks, diapers, ECG electrodes, etc.). No consumables cover rider available.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly restricts all medical treatment to India only (Section 7.1.7 and exclusion 6.2.15).",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes. Coverage not available during grace period unless premium paid in instalments during policy period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy. Applicable only at inception, not on renewals or porting.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability permitted as per IRDAI guidelines. Waiting period credit given for prior continuous coverage. Note: maternity, infertility, voluntary sterilisation, bariatric surgery benefits are not portable.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Treatment outside India, commercial/traditional surrogacy, STDs (non-HIV), external congenital anomaly, stem cell storage (base), hormone replacement therapy, non-payables list",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Critical Illness (lump sum, 21 conditions), Personal Accident (AD/PTD/PPD), Voluntary Co-payment (10%/20%/30%)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "health-powher-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:23:53.438Z"
+}

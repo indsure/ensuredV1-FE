@@ -1,0 +1,173 @@
+{
+  "insurer": "Liberty General Insurance",
+  "plan_name": "Liberty Eternia Health",
+  "uin": "LIBHLIP27040V012627",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private AC Room",
+    "note": "Optional 'Room Type Modifier' add-on can downgrade to twin-sharing for a premium discount. Proportionate deduction applies if higher room taken.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (covered under inpatient)",
+    "note": "ICU charges covered; no separate sub-limit stated. Proportionate deductions not applicable for ICU.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "10% non-network; +10% age 61+; zone-based 10%",
+    "note": "10% co-pay for non-network hospitals; additional 10% for insured above 60 years on all claims; 10% if lower-zone insured treated in Zone A hospital. Green Channel benefit adds 5% co-pay if not treated at Green Channel hospital.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Sub-limits on listed surgeries/procedures (plan-specific)",
+    "note": "Sub-limits apply to listed surgeries/medical procedures as per Annexure attached to policy schedule. Cataract capping available as optional cover. Domiciliary capped at 10% of BSI. Bariatric surgery capped at Annual SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (base); Voluntary deductible optional",
+    "note": "No mandatory deductible in base plan. Voluntary deductible available as optional cover for premium discount.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Base plan: 36 months. Optional 'PED Protector' add-on (only at inception, below age 50) can reduce to 12 or 24 months.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "24-month waiting for listed conditions (cataract, hernia, BPH, joint replacement, etc.). Optional add-on can reduce to 12 months.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (24mo wait)",
+    "note": "Maternity cover available as paid optional add-on; 24-month waiting period (reducible to 12 months via further optional add-on); limited to 2 deliveries/terminations lifetime; limit as per policy schedule; female insured age 18–50.",
+    "optional": true,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "As per plan opted (rate/max not specified in wording)",
+    "note": "CB accrues every policy year irrespective of claims; maximum cap as per plan opted. Super Booster optional add-on gives 100%/yr up to 500% (no-claim years only).",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Unlimited, 100% of BSI",
+    "note": "Triggered unlimited times for any illness/injury; not for first claim of year; not for same illness/related complications within 45 days; not available with Unlimited Claim option; unutilized amount lapses at year end.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "As per schedule",
+    "note": "Pre-hospitalisation period not explicitly stated in wording; referred to as 'period as mentioned in the Schedule'.",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "As per schedule",
+    "note": "Post-hospitalisation period not explicitly stated in wording; referred to as 'period as mentioned in the Schedule'.",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "All day-care (listed + others)",
+    "note": "Comprehensive list of 140 day-care procedures covered; also covers other day-care procedures not explicitly listed.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (up to 10% of BSI/yr)",
+    "note": "Domiciliary hospitalisation covered up to 10% of Basic Sum Insured per policy year; several conditions excluded (asthma, diabetes, hypertension, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to BSI",
+    "note": "Inpatient AYUSH treatment covered up to Basic Sum Insured; minimum 24-hour hospitalisation required; OPD/day-care AYUSH excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (harvesting expenses)",
+    "note": "Organ donor's in-patient medical expenses for harvesting covered up to amount in schedule; screening, pre/post-hospitalisation of donor excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to limit in schedule",
+    "note": "Road ambulance covered up to amount specified in policy schedule. Air ambulance (Emergency Domestic Medical Evacuation) available as optional add-on up to BSI.",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Covered up to Annual SI",
+    "note": "12 listed modern/technological treatments covered including robotic surgery, stereotactic radio surgery, oral chemotherapy, immunotherapy, stem cell therapy, etc.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on (Zero Deduct Cover)",
+    "note": "Non-medical/consumable expenses (Annexure-A items) covered via optional 'Zero Deduct Cover' add-on; within Basic Sum Insured; not applicable for Global Cover.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional add-on (emergency only)",
+    "note": "Global Cover for Emergency Hospitalisation available as optional add-on; 24-month waiting period; up to age 65; emergency in-patient only; max 60 consecutive days; within BSI limit.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim can be contested except on grounds of fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days grace for annual/quarterly/half-yearly premium; 15 days for monthly instalment. Coverage not available during grace period unless premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable only for new individual health insurance policies; not on renewals or policies with tenure less than 1 year.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-compliant portability; apply at least 30 days before renewal; accrued waiting period credits transferred.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "STDs/HIV, dental (non-accident), external congenital anomaly, spectacles/hearing aids, external prosthetics/devices, RMO/surcharges, self-inflicted injury, war",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Zero Deduct, Maternity, Global Cover, Super Booster, Unlimited Claim, PED Protector, OPD Cover, Voluntary Co-pay/Deductible, Air Ambulance, EMI Protector, Vector Borne, Pause the Age",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Liberty Eternia Health Policy - Policy Wordings (UIN - LIBHLIP27040V012627) (Effective from 15.04.2026).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:32:26.584Z"
+}

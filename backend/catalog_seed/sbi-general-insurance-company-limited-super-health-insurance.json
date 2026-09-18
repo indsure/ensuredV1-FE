@@ -1,0 +1,173 @@
+{
+  "insurer": "SBI General Insurance Company Limited",
+  "plan_name": "Super Health Insurance",
+  "uin": "SBIHLIP24141V022324",
+  "sum_insured_options": "₹3L – ₹2Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap (actuals up to SI)",
+    "note": "All plan variants: actuals up to Sum Insured; no room category restriction mentioned",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap (actuals up to SI)",
+    "note": "ICU charges covered at actuals up to Sum Insured across all plan variants",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base); 10% or 20% optional",
+    "note": "No mandatory co-payment in base plan; 10%/20% co-pay is an optional add-on (D.3) that once opted cannot be removed. OPD cover has built-in co-pays of 20%/30%/50% for respective sub-sections.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Few sub-limits (bariatric, AYUSH, ambulance, maternity)",
+    "note": "Bariatric surgery capped (₹50k–₹2L by plan); Road ambulance ₹3k–₹5k/hosp (Infinite: up to SI); Air ambulance up to ₹2L–₹10L; Maternity sub-limited; AYUSH up to SI; most other covers at actuals up to SI",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (base); optional aggregate deductible available",
+    "note": "Aggregate deductible is an optional add-on (D.4): ₹1L/₹2L/₹3L for Prime/Elite/Premier; ₹3L/₹5L for Platinum; ₹5L/₹10L for Infinite",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day initial waiting period; not applicable for accidents; not applicable for hypertension, diabetes, cardiac (90-day specific waiting applies instead)",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "All plan variants have 24-month PED waiting period; reducible via portability credits",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "12 months (Platinum/Infinite); 24 months (Prime/Elite/Premier)",
+    "note": "Platinum and Infinite plans: 1 year; Prime, Elite, Premier plans: 2 years for listed specific diseases/procedures",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Covered (24mo wait for family; 48mo for single adult)",
+    "note": "Inbuilt from Premier plan onwards; NA on Prime and Elite. Premier: ₹25k normal/₹50k C-sec; Platinum: ₹50k/₹75k; Infinite: up to ₹2L. Single adult: 48-month wait + 5 continuous premiums; other family combos: 24-month wait + 3 continuous premiums.",
+    "optional": false,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (200% on Infinite)",
+    "note": "50% of base SI added per claim-free year; max 100% for Prime/Elite/Premier/Platinum; max 200% for Infinite. Reduces at same rate if claim made. Optional ECB Safeguard add-on protects bonus if claim ≤₹1L.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited, 100% (related & unrelated)",
+    "note": "ReInsure Benefit (C.12): triggered from first claim, unlimited restorations up to 100% of base SI for both related and unrelated illnesses (Prime–Platinum); Infinite: up to 200%. Enhanced ReInsure optional add-on upgrades to 200% for Prime–Platinum.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "All plan variants: 60 days pre-hospitalisation expenses covered up to SI",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days (180 days on Infinite)",
+    "note": "Prime/Elite/Premier/Platinum: 90 days; Infinite: 180 days; covered up to SI",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day-care procedures covered across all plan variants up to SI; must be admitted >2 hours",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (actuals up to SI)",
+    "note": "Domiciliary hospitalisation covered if condition prevents transfer or no hospital bed available; minimum 3 consecutive days; pre/post-hosp not payable under this benefit",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH in-patient hospitalisation covered at actuals up to Sum Insured across all plan variants",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (actuals up to SI)",
+    "note": "Organ donor harvesting expenses covered up to SI; donor pre/post-hosp excluded; available across all plans",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹3,000–₹5,000/hosp (Infinite: up to SI)",
+    "note": "Prime/Elite: ₹3,000; Premier: ₹4,000; Platinum: ₹5,000; Infinite: up to SI per hospitalisation. Air ambulance also covered (domestic) up to ₹2L–₹10L by plan.",
+    "optional": false,
+    "number": 3000
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "Modern treatments including robotic surgery, stereotactic radio surgery, oral chemotherapy, HIFU, deep brain stimulation etc. covered at actuals up to SI across all plans",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Covered via Claims Shield (inbuilt)",
+    "note": "Claims Shield (C.17) makes non-payable consumable items (Annexure II List I) payable when a hospitalisation claim is admitted; inbuilt across all plans up to SI",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional (listed major illnesses, diagnosis in India)",
+    "note": "Medical Treatment Abroad (C.24) available on Elite/Premier/Platinum/Infinite plans for 16 listed major illnesses diagnosed in India; 36-month waiting period; reimbursement only; not available on Prime plan",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days grace for annual/half-yearly/quarterly premium modes; 15 days for monthly instalment mode",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for new individual policies with tenure ≥1 year",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability permitted as per IRDAI guidelines; credits for PED waiting, specific waiting periods, moratorium transferred",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Treatment outside India (base plans), circumcision, convalescence, external congenital anomaly, vaccination (except post-bite/child vaccination cover), home visit charges",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Enhanced ReInsure (200%), ECB Safeguard, Co-payment (10/20%), Aggregate Deductible, Domestic Staff Indemnity, Accident SI top-up (2x), Wellness (gym, dietician, walk-healthy)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Super_Health_Insurance_Policy_Wording_New_1512_1a70d6d07a.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:44:48.512Z"
+}

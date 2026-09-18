@@ -1,0 +1,173 @@
+{
+  "insurer": "THE NEW INDIA ASSURANCE CO. LTD.",
+  "plan_name": "Janata Mediclaim Policy",
+  "uin": "NIAHLIP25046V042425",
+  "sum_insured_options": "₹50,000 – ₹75,000 (implied from schedule references; exact range not stated in wording)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "₹450/day (General Ward)",
+    "note": "Room rent capped at ₹450 per day inclusive of nursing/treatment charges for general ward. ICU charges also capped at fixed amounts per day.",
+    "optional": false,
+    "ordinal": 2
+  },
+  "icu": {
+    "display": "₹1,800/day (ICU fixed cap)",
+    "note": "ICU charges capped at ₹1,800 per day (all intensive care infrastructure & facilities). Ventilator ₹450/day extra.",
+    "optional": false,
+    "ordinal": 2
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Many procedure sub-limits (cataract ₹10,800, angioplasty ₹12,000, etc.)",
+    "note": "Extensive schedule of fixed sub-limits for named surgeries (e.g. cataract ₹10,800, hysterectomy ₹22,500, CABG ₹36,000, angioplasty ₹12,000). Modern treatments capped at 10% of SI each. Several conditions capped at 25% or 10% of SI.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day initial waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases excluded for 36 months from policy inception. No optional reduction mentioned.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most conditions)",
+    "note": "90 days for diabetes/hypertension/cardiac; 24 months for cataract, hernia, piles, etc.; 36 months for joint replacement, ARMD, genetic disorders, mental illness.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under standard exclusion Excl18. Only ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 30% (5%/yr)",
+    "note": "5% increase in SI per claim-free year, maximum 30%. Bonus reduced at same rate if claim made. Option to take premium discount instead.",
+    "optional": false,
+    "number": 30
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation medical expenses covered up to 30 days.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered up to 60 days, subject to maximum 10% of hospital bill.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures",
+    "note": "Specific listed day-care procedures covered (e.g. cataract, dialysis, chemotherapy, etc.) as enumerated in the hospitalisation definition.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (15% of SI; many diseases excluded)",
+    "note": "Domiciliary hospitalisation covered at 15% of SI. Excludes asthma, diabetes, hypertension, epilepsy, arthritis and several other conditions. Home care treatment (stroke/spine/lower limb injury) covered ₹13,500–₹27,000.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to 100% of SI",
+    "note": "AYUSH treatment (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy) covered up to 100% of sum insured per policy year.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (hospitalisation expenses only)",
+    "note": "Donor hospitalisation expenses covered (excluding cost of organ) subject to recipient's sum insured limit.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹1,000/trip",
+    "note": "Actual expenses or ₹1,000 whichever is less, for emergency transfer to hospital or between hospitals.",
+    "optional": false,
+    "number": 1000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (10% of SI each)",
+    "note": "12 modern treatments covered (robotic surgery, stereotactic radiosurgery, oral chemo, etc.) each capped at 10% of SI per policy period.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-medical consumables (gloves, masks, diapers, etc.) explicitly excluded in Annexure I.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly states all medical expenses/surgery must be taken in India (Clause 5.15). Treatment outside India excluded.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim contestable except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30 days grace period for non-monthly premium modes; 15 days for monthly mode. No coverage during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for new policies of 1 year or more.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, dental (non-accident), external prosthetics/hearing aids, treatment outside India, RFQMR/ECP/EECP/hyperbaric O2, vaccination, circumcision (non-medical), sleep apnea devices",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None mentioned in policy wording",
+    "note": "No optional riders or add-ons described in the policy document.",
+    "optional": false
+  },
+  "source_file": "Policy Clause Janata Mediclaim Policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:35:16.038Z"
+}

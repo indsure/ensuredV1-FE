@@ -1,0 +1,165 @@
+{
+  "insurer": "ICICI Lombard General Insurance Company Ltd.",
+  "plan_name": "Healthcare Plus Policy",
+  "uin": "ICIHLGP21390V032021",
+  "sum_insured_options": null,
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified",
+    "note": "Policy wording does not cap room rent; charges are reimbursable as charged by hospital, but no explicit cap or category mentioned in the wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "ICU charges are listed as reimbursable but no specific cap or limit is mentioned",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Not specified",
+    "note": "No explicit disease-wise or procedure sub-limits stated in the wording; Specified Treatments (cataract, dialysis, etc.) are listed but no monetary caps given",
+    "optional": false,
+    "ordinal": 0
+  },
+  "deductible": {
+    "display": "Not specified",
+    "note": "A deductible is referenced as applicable per claim and stated in Part a of the Schedule, but the actual rupee amount is not disclosed in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; 90-day waiting for hypertension, diabetes, cardiac conditions",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases excluded for 36 months from policy inception; no optional reduction mentioned",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Covers cataract, hernia, hydrocele, arthritis, joint replacements, stones, piles, sinusitis, skin tumours, dialysis, tonsils, gastric ulcers, deviated nasal septum, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is explicitly excluded under Excl18; only ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not specified",
+    "note": "No restoration or reinstatement benefit mentioned; limit of indemnity is reinstated only if a claim is rejected",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "Not specified",
+    "note": "Pre-hospitalisation expenses are defined and covered but the number of days is not stated in the wording",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "Not specified",
+    "note": "Post-hospitalisation expenses are defined and covered but the number of days is not stated in the wording",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "Covered (specified procedures)",
+    "note": "Day care treatment covered for procedures requiring less than 24 hours due to technological advancement; specific treatments listed",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is explicitly excluded under specific exclusion (xxii)",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered",
+    "note": "AYUSH treatments, AYUSH hospitals and AYUSH day care centres are defined and included in the policy scope",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Costs of donor screening or treatment including surgery to remove organs from a donor are explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "Not covered",
+    "note": "Ambulance charges are explicitly excluded under specific exclusion (xix)",
+    "optional": false,
+    "number": 0
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "No mention of modern/robotic treatments in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-payable consumables (gloves, syringes, etc.) explicitly excluded per IRDAI non-payables list",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Cover is restricted to India; treatment outside geographical scope is explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "Not specified",
+    "note": "No moratorium period explicitly stated in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "Not specified",
+    "note": "Free look period is referenced in the cancellation clause but the number of days is not stated",
+    "optional": false,
+    "number": null
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI norms; credits for PED and specific waiting periods transferable",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Ambulance charges, domiciliary hospitalisation, organ donor costs, sleep disorders/apnoea, dental (non-accident), cochlear implants (non-accident), OPD treatment",
+  "optional_riders": "Not specified",
+  "source_file": "health-care-plus8c0007ff45fd68ff8a0df0055fa762ab.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:58:28.547Z"
+}

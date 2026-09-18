@@ -1,0 +1,173 @@
+{
+  "insurer": "HDFC ERGO",
+  "plan_name": "Optima Plus",
+  "uin": "HDHHLIP21336V022021",
+  "sum_insured_options": "₹5L (fixed, with deductible options)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified",
+    "note": "Policy wording covers room rent and boarding expenses under in-patient treatment but no specific cap or category is mentioned in the schedule of benefits.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "ICU is listed as a covered in-patient expense but no specific cap is mentioned.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Ambulance capped at ₹2,000/hosp",
+    "note": "No disease-wise sub-limits found. Only the ambulance benefit is capped at ₹2,000 per hospitalisation.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "₹1L – ₹5L (as per schedule)",
+    "note": "Deductible options: ₹1,00,000; ₹2,00,000; ₹3,00,000; ₹4,00,000; ₹5,00,000. Applies per hospitalisation except for Any One Illness.",
+    "optional": false,
+    "number": 100000
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases covered after 36 months of continuous coverage.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Specified diseases/procedures (e.g. cataract, hernia, joint replacement) excluded for 24 months.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard permanent exclusion (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording or schedule of benefits.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration or reset benefit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for up to 60 days before admission.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses covered for up to 90 days after discharge.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care",
+    "note": "Day care procedures covered; defined as procedures under anaesthesia in less than 24 hours due to technological advancement.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary treatment covered when hospitalisation is not possible on medical advice; condition must continue for at least 3 days.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (in-patient only)",
+    "note": "AYUSH in-patient treatment covered in recognised AYUSH hospitals. Out-patient AYUSH not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ donor harvesting expenses covered; donor pre/post expenses not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance reimbursement capped at ₹2,000 per hospitalisation.",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "Modern/robotic treatments not specifically mentioned in the policy wording.",
+    "optional": false,
+    "exists": false
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Non-medical consumables (gloves, masks, etc.) are explicitly excluded per the Non-Medical Expenses annexure.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly states coverage is only for medical treatment taken within India.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 15 days for monthly premium mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Free look period of 30 days from date of receipt of policy document; applicable on new policies only.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines; apply at least 30 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, congenital external anomalies, stem cell harvesting, dental (OPD), hearing aids, spectacles, alopecia, OPD treatment",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Deductible waiver option (age 58–60, converts to ₹5L indemnity policy without deductible)",
+    "note": null,
+    "optional": false
+  },
+  "source_file": "optima-plus-policy-wordings-579493504477.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:33:07.434Z"
+}

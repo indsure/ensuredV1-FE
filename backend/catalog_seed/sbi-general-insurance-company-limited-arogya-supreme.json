@@ -1,0 +1,165 @@
+{
+  "insurer": "SBI General Insurance Company Limited",
+  "plan_name": "Arogya Supreme",
+  "uin": "SBIHLIP21043V012122",
+  "sum_insured_options": "Not specified in wording (schedule-dependent)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day or Single Private AC Room",
+    "note": "Higher of 1% of base SI per day or single private AC room (most economical); proportionate deduction applies if higher room taken. Optional 'Any Room Upgrade' add-on allows any room except suite.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of base SI/day or actuals",
+    "note": "2% of base SI per day OR actual ICU/ICCU expenses OR at actuals up to SI; no proportionate deduction on associated medical expenses when admitted to ICU",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None (base); 10% or 20% optional",
+    "note": "No mandatory co-payment in base plan. Optional co-payment of 10% or 20% on every admissible claim can be opted at inception; once opted cannot be removed at renewal.",
+    "optional": true,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract ₹50k or ₹1L/eye; Genetic Disorder ₹1L; Advance Procedures 25% of SI",
+    "note": "Cataract capped at ₹50,000 or ₹1,00,000 per eye per year (as per schedule); Genetic Disorder capped at ₹1,00,000; Advance Procedures (robotic, etc.) capped at 25% of SI; Internal Congenital Anomaly capped at 25% of SI; Major Illness Benefit capped at 100% of SI or ₹25L whichever lower.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (base); optional deductible available",
+    "note": "No deductible in base plan. Optional deductible can be chosen at inception only; does not apply to several covers like ambulance, cataract, advance procedures, etc.",
+    "optional": true,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Waived for accidents, COVID-19, Hypertension, Diabetes, Cardiac Conditions (90-day wait applies for those). Not applicable after 12 months continuous coverage.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "36 months continuous coverage required; reduced to extent of prior coverage under portability/migration norms.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Extensive list including cataract, hernia, joint replacement, gallbladder, sinusitis, fibroids, etc. Reduced by prior continuous coverage under portability.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered (standard exclusion)",
+    "note": "Maternity expenses explicitly excluded under Standard Exclusion Code-Excl 18. Ectopic pregnancy is also excluded. No optional maternity add-on mentioned.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (15%/yr, base plan)",
+    "note": "15% of basic SI added per claim-free year; reduces at same rate on a claim; max 100% of basic SI. Optional Enhanced Cumulative Bonus add-on increases rate to 25% or 50%/yr up to 200% of basic SI.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of basic SI",
+    "note": "Sum Insured Refill: 100% of basic SI refilled once per policy year on complete or partial utilisation; available for all Section C.1 claims; single claim cannot exceed basic SI + cumulative bonus; refill not counted for cumulative bonus calculation.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "30 or 60 days (as per schedule)",
+    "note": "Pre-hospitalisation cover is 30 days or 60 days as specified in the Policy Schedule.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60, 90, or 180 days (as per schedule)",
+    "note": "Post-hospitalisation cover is 60, 90, or 180 days as specified in the Policy Schedule.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care (indicative list of 537+ procedures)",
+    "note": "Extensive indicative list of day-care procedures in Annexure II; all medically necessary day-care treatments covered.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered up to SI",
+    "note": "Covered up to Sum Insured; several conditions excluded from domiciliary cover (asthma, diabetes, hypertension, epilepsy, psychiatric disorders, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Ayurveda, Unani, Siddha, Homeopathy covered up to SI for in-patient treatment in recognised AYUSH hospitals/day care centres within India.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered up to SI",
+    "note": "Organ donor's hospitalisation expenses for harvesting covered up to SI; donor's pre/post-hospitalisation and other consequential expenses excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹3,000 / ₹5,000 / ₹7,000 per hospitalisation",
+    "note": "Road ambulance limit is ₹3,000, ₹5,000, or ₹7,000 as specified in Policy Schedule; covers transfer to hospital, hospital-to-hospital, and hospital-to-home.",
+    "optional": false,
+    "number": 3000
+  },
+  "modern_treatments": {
+    "display": "Covered up to 25% of SI",
+    "note": "Listed as 'Advance Procedures' (Section C.7) including robotic surgery, stereotactic radio surgery, oral chemotherapy, immunotherapy, intra-vitreal injections, etc.; capped at 25% of SI; co-payment does not apply to this cover.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (non-medical expenses excluded)",
+    "note": "Extensive list of non-medical/consumable items excluded per Annexure III (gloves, masks, nebulisation kits, etc.). No optional consumables rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Treatment taken outside India is a specific exclusion (Section G.B.III). Domestic Emergency Assistance (including air ambulance) is available within India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "15 days grace period for monthly premium instalment; 30 days for all other modes. Coverage available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for new individual policies (not applicable for policies with tenure less than 1 year).",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines; credits for PED waiting, specific waiting periods, moratorium, no-claim bonus transferred.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Treatment outside India, OPD (except specific approved conditions), dental (unless inpatient), maternity, external congenital anomaly, circumcision (non-medical), vaccination",
+  "optional_riders": "Hospital Cash, Major Illness Benefit (CI lump sum), Accidental Hospitalisation extra SI (1.5x/2x), Enhanced Cumulative Bonus (up to 200%), No Claim Bonus Protector, Co-Payment, Any Room Upgrade, Deductible",
+  "source_file": "AROGYA_SUPREME_Policy_Wording_NEW_1_8dd1b90eac.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:44:37.559Z"
+}

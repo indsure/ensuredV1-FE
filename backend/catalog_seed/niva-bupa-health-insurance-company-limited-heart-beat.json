@@ -1,0 +1,165 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "Heart Beat",
+  "uin": "NBHHLIP26048V092526",
+  "sum_insured_options": "₹2L – ₹1Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private Room (Gold/Platinum); Shared or 1% SI/day (Silver)",
+    "note": "Silver plan: shared room or 1% of Base SI per day. Gold plan: any room except Suite or above. Platinum plan: any room (no cap). Family First Silver: ₹3,000/day or shared room.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "Covered up to Sum Insured",
+    "note": "ICU charges covered as part of inpatient care up to Sum Insured across all plans; no separate ICU sub-limit stated.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base); optional 10% or 20%",
+    "note": "No mandatory co-payment in base plan. Optional 10% or 20% co-pay available. Zone 2 pricing for Silver/Gold adds 20% co-pay for treatment in Mumbai, Delhi NCR, Kolkata & Gujarat if Zone 2 selected.",
+    "optional": true,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "HIV ₹50k, Mental disorders ₹50k (some conditions), Maternity varies by plan",
+    "note": "HIV/AIDS capped at ₹50,000. Mental disorder treatment covered up to SI but specific conditions (severe depression, schizophrenia, bipolar, etc.) subject to sub-limit per policy schedule. Maternity: Silver ₹35k (Family First), Gold ₹40k–₹1L, Platinum ₹1.2L–₹2L. Suite room excluded on Gold. Domiciliary: Silver ₹20k–₹30k.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (base); optional aggregate deductible",
+    "note": "No mandatory deductible. Optional annual aggregate deductible available: ₹10k to ₹10L depending on plan.",
+    "optional": true,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses from first policy commencement; accidents covered from day 1.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months (Gold & Platinum); 36 months (Silver)",
+    "note": "Gold and Platinum plans: 24 months. Silver plan: 36 months. Reducible via portability credit.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (for insured aged 45+ at inception)",
+    "note": "Specific disease/procedure waiting period of 24 months applies only to insured persons above 45 years of age at inception of first policy. Covers cataract, hernia, joint replacement, stones, fibroids, varicose veins, benign tumours, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (24-month wait); inbuilt on Family Floater & Family First",
+    "note": "Available only under Family Floater (both spouses covered) or Family First policy; not available under Individual policy. 24-month continuous coverage required. Limit varies: Silver Family First ₹35k/yr, Gold ₹40k–₹1L, Platinum ₹1.2L–₹2L. Max 2 pregnancies/terminations lifetime.",
+    "optional": false,
+    "number": 24,
+    "exists": true
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (Gold/Platinum); up to 50% (Silver)",
+    "note": "10% of Base SI added per claim-free year. Silver plan max 50% of Base SI; Gold and Platinum max 100% of Base SI.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/year, 100% of Base SI; same & different illness",
+    "note": "Re-fill benefit reinstates up to 100% of Base SI once per policy year. Applicable for both same and different illness/injury. Not available under Family First policy.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for up to 60 days preceding admission.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses covered for up to 90 days following discharge.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "Listed procedures only (536 procedures in Annexure III)",
+    "note": "Day care covered for procedures listed in Annexure III only, not all day-care treatments.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered; minimum 3 consecutive days required. Silver plan sub-limit ₹20k–₹30k; Gold and Platinum up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to Sum Insured (inpatient in AYUSH hospital)",
+    "note": "AYUSH inpatient treatment covered up to Sum Insured in recognised AYUSH hospitals. OPD AYUSH covered under Platinum plan OPD benefit.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Living organ donor's inpatient harvesting expenses covered up to Sum Insured, subject to organ being for the insured person and conforming to Transplantation of Human Organs Act.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Network: up to SI; Non-network: ₹2,000/event",
+    "note": "Road ambulance covered up to Sum Insured at network hospitals; capped at ₹2,000 per event at non-network hospitals. One transfer per hospitalisation.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to Sum Insured",
+    "note": "12 modern treatments listed including robotic surgery, stereotactic radiosurgery, oral chemotherapy, deep brain stimulation, etc. covered up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Gloves, masks, and most consumables explicitly listed as non-payable in Annexure VI. Standard consumables excluded.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Inbuilt (worldwide ex-USA/Canada); USA/Canada optional",
+    "note": "Platinum plan includes inbuilt Specified Illness cover, Emergency Hospitalisation and Medical Evacuation outside India (worldwide excluding USA & Canada). Optional 'Enhanced Geographical Scope' add-on extends to USA & Canada.",
+    "optional": false,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (annual/other modes); 15 days (monthly)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document; applicable on new policies only, not renewals.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-mandated portability available; credits for PED waiting, specific waiting periods, cumulative bonus and moratorium transferable.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Hormone replacement therapy, sleep disorders, STIs (non-HIV), external congenital anomaly, ancillary hospital charges, refractive error <7.5D, artificial life maintenance (brain dead)",
+  "optional_riders": "Personal Accident cover, Critical Illness cover (20 conditions), Hospital Cash, e-Consultation, Premium Waiver, Enhanced International Cover (USA/Canada)",
+  "source_file": "HBPolicy-Wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:42:30.828Z"
+}

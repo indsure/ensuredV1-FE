@@ -1,0 +1,173 @@
+{
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Care",
+  "uin": "CHIHLIP26055V092526",
+  "sum_insured_options": "Not specified in document",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private Room (base); No Limit via optional add-on",
+    "note": "Base plan offers Single Private Room or 1% of SI/day depending on Policy Schedule. Optional Cover 16 (Room Rent Modification) can upgrade to No Limit.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "2% of SI/day (base); No sub-limit via optional add-on",
+    "note": "Base plan caps ICU at 2% of SI/day. Optional Cover 16 removes the cap.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None (base); optional co-pay for age 61+ via Optional Cover 18",
+    "note": "No mandatory co-pay in base plan. Optional Cover 18 introduces co-pay for insured aged 61+. Benefit 11 (Global Coverage excl. USA) has a mandatory 10% co-pay.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract, knee replacement, hernia, hysterectomy, BPH, renal stones, cardio/cerebrovascular, cancer, renal complications, bone fractures — if specified in Policy Schedule",
+    "note": "Sub-limits for named ailments/procedures apply only if specifically mentioned in the Policy Schedule. Amounts not stated in the wording itself.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (base); optional aggregate deductible via Optional Cover 5",
+    "note": "No deductible in base plan. Optional Cover 5 (Deductible Option) allows policyholder to choose a deductible for premium discount; applied on aggregate basis per policy year.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents or if continuously covered for more than 12 months.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (reducible to 24 months via Optional Cover 12)",
+    "note": "Base PED waiting period is 36 months. Optional Cover 12 (Reduction in PED Wait Period) reduces it to 24 months at inception only.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, hernia, joint replacement, BPH, kidney stones, varicose veins, Parkinson's/Alzheimer's, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (24-month wait); floater only",
+    "note": "Benefit 15: Maternity Cover included in base plan with 24-month waiting period from first policy inception. Available only under floater cover for insured aged 18+. Limit as specified in Policy Schedule.",
+    "optional": false,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (10%/yr base); up to 100% with NCB Super add-on",
+    "note": "Base No Claims Bonus: 10% per claim-free year, max 50% of base SI. Optional Cover 4 (NCB Super) adds 50%/yr up to 100% of SI. Bonus reduced by 10% (or 50% for NCB Super) on a claim year.",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Once/year, 100% of base SI (same & different illness)",
+    "note": "Benefit 7 (Automatic Recharge): reinstates base SI once per policy year after full exhaustion, for same or different illness. Optional Cover 3 (Unlimited Automatic Recharge) upgrades to unlimited restorations.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days prior to admission for the same condition.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days after discharge for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (Annexure I — extensive list)",
+    "note": "Day Care Treatment covered up to base SI for procedures listed in Annexure I. List is illustrative and not exhaustive; technological advancements may be included.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (up to limit in Policy Schedule)",
+    "note": "Benefit 6: Domiciliary Hospitalization covered via reimbursement for treatment lasting more than 3 consecutive days. Excludes 12 specified conditions (asthma, diabetes, hypertension, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to base SI",
+    "note": "Benefit 9: AYUSH (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy) in-patient treatment covered up to base SI at registered AYUSH hospitals within India.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (up to limit in Policy Schedule)",
+    "note": "Benefit 5: Organ Donor Cover pays medical expenses of the donor for organ transplant surgery. Pre/post-hospitalisation for donor not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered up to base SI (road ambulance)",
+    "note": "Benefit 4: Road ambulance covered up to base SI for emergency transport to nearest hospital or inter-hospital transfer. Air ambulance available via Optional Cover 14.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to base SI",
+    "note": "Clause 3.1.1(iv) lists 12 advanced technology methods including robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, stem cell therapy (haematopoietic), HIFU, deep brain stimulation, etc., covered up to base SI.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (non-medical items excluded per Annexure II)",
+    "note": "Annexure II lists extensive non-medical/consumable items excluded. No inbuilt or optional consumables cover rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Inbuilt (excl. USA); USA coverage via optional add-on",
+    "note": "Benefit 11: Global Coverage (excl. USA) inbuilt — 45 days/trip, 90 days/year, 10% mandatory co-pay. Benefit 14 (Care Anywhere) covers major illnesses globally up to base SI. Optional Cover 1 extends to USA. Optional Cover 17 (Global Plus) covers all inpatient globally with diagnosis in India.",
+    "optional": false,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months (5 years)",
+    "note": "After 5 continuous years, no look-back applies except for proven fraud and permanent exclusions. Enhanced SI has its own 5-year moratorium from date of enhancement.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly premium modes and 15 days for monthly mode. Coverage not available during grace period unless premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Free look period of 30 days from receipt of policy document for new policies only; not applicable on renewals or portability/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines; must apply at least 30 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "External congenital anomalies, RMO/surcharges, external prosthetics, refractive error <7.5D, non-allopathic (except AYUSH benefit), self-inflicted injury, tobacco/alcohol-related illness, advanced treatments not in Clause 3.1.1(iv)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Global Coverage–Total (USA), Travel Plus, Unlimited Recharge, NCB Super, Deductible Option, Everyday Care, Smart Select, OPD Care, Personal Accident, Accidental SI top-up, PED wait reduction (24mo), Air Ambulance, Room Rent Modification, Co-pay (age 61+), Loyalty Bonus",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "care---policy-terms-&-conditions-(effective-from-21-march-2026).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:39:37.022Z"
+}

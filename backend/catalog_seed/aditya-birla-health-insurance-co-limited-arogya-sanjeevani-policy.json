@@ -1,0 +1,165 @@
+{
+  "insurer": "Aditya Birla Health Insurance Co. Limited",
+  "plan_name": "Arogya Sanjeevani Policy",
+  "uin": "ADIHLIP20170V011920",
+  "sum_insured_options": "₹50,000 – ₹10L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "If room taken at higher rate, all other expenses (except medicines) reimbursed proportionately",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "Proportionate deduction applies if ICU charges exceed limit",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-payment applies to every admissible claim for all insured persons",
+    "optional": false,
+    "number": 5
+  },
+  "sub_limits": {
+    "display": "Cataract capped; modern treatments at 50% SI",
+    "note": "Cataract: 25% of SI or ₹40,000 per eye per year (whichever lower); listed modern treatments (robotic surgery, HIFU, etc.) capped at 50% of SI",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Waived for accidents; not applicable after 12 months continuous coverage",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Reduced by prior continuous coverage under portability",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 36 months (joint replacement, osteoporosis)",
+    "note": "24-month list includes cataract, hernia, piles, calculi, hydrocele, etc.; 36-month list includes joint replacement and age-related osteoarthritis/osteoporosis",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% added per claim-free year; reduced at same rate on claim; alternatively insured may opt for No Claim Discount on premium instead",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day-care treatments covered; 24-hour hospitalisation limit not applicable for day-care",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation and OPD treatment explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to sum insured in recognised AYUSH hospitals",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "No mention of organ donor expense cover in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance covered up to ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "Listed modern treatments (robotic surgery, HIFU, deep brain stimulation, oral chemo, immunotherapy, intravitreal injections, stem cell therapy, etc.) covered up to 50% of SI",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Gloves, masks, and many consumables explicitly listed as non-payable in Annexure A List I",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded; territorial limit is India only",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; includes portability/migration credits",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "15 days for monthly premium mode; 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-mandated portability with continuity of waiting period credits",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Domiciliary & OPD, maternity, overseas treatment, sterility/infertility, war, nuclear/bio/chemical, addiction treatment",
+  "optional_riders": "Not specified",
+  "source_file": "20250407T110432.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:25:42.500Z"
+}

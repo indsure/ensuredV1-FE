@@ -1,0 +1,165 @@
+{
+  "insurer": "Liberty General Insurance Ltd.",
+  "plan_name": "Secure Health Connect",
+  "uin": "LIBHLIP21503V022021",
+  "sum_insured_options": "Not specified in wording (schedule-dependent)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "As per plan/schedule",
+    "note": "Room rent limit is specified in the Policy Schedule per plan (Secure Basic, Elite, Supreme, Complete). Proportionate deduction applies if higher room taken.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "As per plan/schedule",
+    "note": "ICU charges covered; specific limit per plan stated in schedule, not detailed in wording text.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "10% (non-network or age 60+)",
+    "note": "10% co-pay on all claims at non-network hospitals; 10% co-pay on all claims for insured above 60 years regardless of network.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Many sub-limits: cataract, CABG, knee/hip replacement, PTCA, hysterectomy, hernia, piles, etc.",
+    "note": "Extensive disease/procedure sub-limits vary by plan (Secure Basic to Secure Complete). Optional 'Waiver of Sub-limits' add-on available.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned in base policy. Hospital Daily Cash has a 48-hour deductible.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (or 24 months per plan)",
+    "note": "PED waiting period is 36 months or 24 months depending on plan chosen as per schedule. Base/default is 36 months.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 36 months (obesity surgery, diabetes/hypertension complications)",
+    "note": "Most listed conditions (cataract, hernia, piles, etc.) have 24-month wait; obesity surgery and some others have 36-month wait.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). No optional maternity add-on mentioned in this wording.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10% or 25%/yr depending on plan)",
+    "note": "Base plan: 10%/yr up to 50% or 25%/yr up to 100% depending on plan. Optional Enhanced CB add-on can go up to 150%.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% (optional add-on)",
+    "note": "Reload of Sum Insured is an optional cover; triggers after original SI + CB exhausted; available for in-patient claims only; unused reload lapses at year end.",
+    "optional": true,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "As per schedule",
+    "note": "Pre-hospitalisation period and limit specified in Policy Schedule; exact days not stated in wording text.",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "As per schedule",
+    "note": "Post-hospitalisation period and limit specified in Policy Schedule; exact days not stated in wording text.",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "Listed day-care procedures covered",
+    "note": "Coverage limited to procedures on the company's listed day-care procedure list (400+ procedures listed in annexure).",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "No domiciliary hospitalisation benefit mentioned in the policy wording.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to basic SI (inpatient only)",
+    "note": "AYUSH inpatient treatment covered up to basic Sum Insured; OPD, day care, pre/post-hosp AYUSH excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "No organ donor expense benefit mentioned in the policy wording.",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "As per schedule",
+    "note": "Emergency local road ambulance covered; maximum liability as specified in schedule (amount not stated in wording).",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "Modern/robotic treatments not explicitly mentioned as a separate benefit or exclusion in this wording.",
+    "optional": false,
+    "exists": false
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-medical consumables (gloves, masks, etc.) explicitly excluded in Annexure-A standard exclusion lists.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment within India only; treatment outside India is a specific exclusion.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), claims cannot be contested except for fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for annual/quarterly/half-yearly; 15 days for monthly premium mode. Coverage not available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable only for new individual policies; not on renewals or policies with tenure less than 1 year.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-compliant portability with credit transfer for PED, waiting periods, moratorium, and no-claim bonus.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "STDs/HIV, dental (unless accident-related), OPD treatment, treatment outside India, external congenital anomaly, prosthetics/external devices, RMO/surcharges",
+  "optional_riders": "Reload of Sum Insured, Enhanced Cumulative Bonus (up to 150%), Waiver of Medical Expense Sub-limits",
+  "source_file": "Secure Health Connect_Policy Wordings_ LIBHLIP21503V022021(Effective from 07.01.2026)_06_04_26.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:33:09.607Z"
+}

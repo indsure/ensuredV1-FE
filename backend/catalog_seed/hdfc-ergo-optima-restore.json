@@ -1,0 +1,173 @@
+{
+  "insurer": "HDFC ERGO",
+  "plan_name": "Optima Restore",
+  "uin": "HDFHLIP26055V102526",
+  "sum_insured_options": "₹3L – ₹100L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap",
+    "note": "Policy covers hospital room rent under in-patient treatment with no stated room rent sub-limit or cap in the policy wording or schedule of benefits.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap",
+    "note": "ICU charges covered under in-patient treatment with no stated cap or sub-limit.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (optional co-pay available)",
+    "note": "No mandatory co-payment. Co-payment is an optional benefit that can be opted at 10% or 20%; once opted it cannot be removed. No geography-based co-pay applies.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits",
+    "note": "No disease-wise or procedure-wise monetary sub-limits found in the policy wording or schedule of benefits.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None (optional aggregate deductible available)",
+    "note": "No inbuilt deductible. Optional aggregate deductible of ₹25K/₹50K/₹1L can be opted; once opted cannot be reduced.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing disease waiting period is 36 months of continuous coverage. Reducible via portability/migration credit.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, joint replacement, etc.) have a 24-month waiting period.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (24mo wait)",
+    "note": "Maternity is excluded from base plan. Available via 'Parenthood' add-on covering maternity expenses, embryo storage and IVF after 2-year waiting period.",
+    "optional": true,
+    "exists": false,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr)",
+    "note": "Multiplier Benefit: 50% of base SI added each claim-free or claim year at renewal, capped at 100% of base SI. Applies irrespective of claims.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% (any illness)",
+    "note": "Inbuilt Restore Benefit restores 100% of base SI once per policy year on complete or partial utilisation. Unlimited Restore (optional add-on) triggers unlimited times.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days before admission.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures",
+    "note": "Day care procedures under general or local anaesthesia requiring less than 24-hour stay are covered.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary treatment covered when patient cannot be moved to hospital or no room available; minimum 3-day treatment required.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (in-patient only)",
+    "note": "AYUSH in-patient treatment covered in recognised AYUSH hospitals. OPD AYUSH not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Medical and surgical expenses of organ donor for harvesting covered when insured is recipient. Donor's pre/post-hospitalisation and insured donating an organ excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance capped at ₹2,000 per hospitalisation. Air ambulance covered up to ₹2.5L per hospitalisation (within India only).",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Covered (up to SI)",
+    "note": "No specific exclusion or sub-limit for modern/robotic treatments found; covered under in-patient treatment up to sum insured.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider (Protector Rider)",
+    "note": "Non-medical consumables (List I items) excluded from base plan. 'Protector Rider' add-on covers IRDAI-listed excluded items including consumables.",
+    "optional": true,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy covers treatment within India only. 'Critical Advantage Rider' add-on covers planned treatment abroad for 8 listed major illnesses.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30 days for yearly/half-yearly/quarterly premium; 15 days for monthly instalment.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period applicable on new policies only, not on renewals or portability.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines with continuity of waiting period credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Treatment outside India, sleep apnoea, external congenital anomalies, maternity (base), consumables (List I), circumcision, OPD treatment",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Unlimited Restore, Parenthood (maternity/IVF), Protector (consumables), Critical Advantage (overseas), Personal Accident, ABCD Chronic Care, Hospital Daily Cash",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "PolicyWordings_OptimaRestore-811520192624.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:32:45.561Z"
+}

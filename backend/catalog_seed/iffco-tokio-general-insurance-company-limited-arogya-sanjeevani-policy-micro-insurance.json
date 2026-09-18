@@ -1,0 +1,165 @@
+{
+  "insurer": "IFFCO-Tokio General Insurance Company Limited",
+  "plan_name": "Arogya Sanjeevani Policy (Micro Insurance)",
+  "uin": "IFFPMIP23040V012223",
+  "sum_insured_options": "₹50,000 – ₹2,50,000",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "If room taken at higher rate, all other expenses (except medicines) reimbursed proportionately",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "Proportionate deduction applies if ICU charges exceed limit",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-pay on every admissible claim amount",
+    "optional": false,
+    "number": 5
+  },
+  "sub_limits": {
+    "display": "Cataract capped; modern treatments at 50% SI",
+    "note": "Cataract: 25% of SI or ₹40,000 per eye per year (whichever lower); modern treatments (robotic surgery etc.) capped at 50% of SI",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Accidents exempt; not applicable if continuously covered for 12+ months",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "No optional reduction available; portability/migration credits apply",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 48 months (joint replacement, osteoporosis)",
+    "note": "24-month list includes cataract, hernia, hydrocele, piles etc.; joint replacement and age-related osteoarthritis/osteoporosis have 48-month wait",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% added per claim-free year; reduced at same rate if claim made; max 50% of SI",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in policy",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed procedures (383 listed)",
+    "note": "Extensive listed day-care procedures in Annexure C; list is dynamic",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation and OPD treatment explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to full sum insured",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "No mention of organ donor expense cover in policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance only; fixed cap of ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 modern treatments listed (robotic surgery, stereotactic radiosurgery, stem cell therapy etc.) covered up to 50% of SI",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-covered consumables/non-medical items in Annexure A List I",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded; territorial limit is India only",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to enhanced SI from date of enhancement",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (renewal/non-monthly); 15 days (monthly)",
+    "note": "Coverage not available during grace period for renewal; available during grace period for instalment policies",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable only at inception, not on renewal or porting/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Port to same product of other insurer; apply 45 days before but not earlier than 60 days before renewal",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Maternity, domiciliary/OPD, overseas treatment, sterility/IVF, gender change, cosmetic surgery, refractive error <7.5D, war, nuclear/bio/chemical",
+  "optional_riders": "Not specified",
+  "source_file": "wording-arogya-sanjeevani-mi-itgi.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:30:30.306Z"
+}

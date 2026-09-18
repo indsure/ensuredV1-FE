@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "Health Multiplier",
+  "uin": "MAXHLGP21002V012021",
+  "sum_insured_options": "₹5L – ₹10L",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Option 1: 2% of SI/day; Option 2: Single Private Room",
+    "note": "Two options available as per Policy Schedule. Pro-rata clause applies if room exceeds eligibility.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "Option 1: Double of room rent/day; Option 2: Actuals",
+    "note": "Option 2 (actuals) available as per Policy Schedule selection.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None (unless specified in Policy Schedule)",
+    "note": "Co-payment is mentioned as applicable if specified in Policy Schedule; no standard mandatory co-pay stated in wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Modern treatment sub-limits (e.g. Robotic ₹2.5L, Deep Brain Stim ₹5L)",
+    "note": "Sub-limits on specific modern treatments: Deep Brain Stimulation ₹5L, Immunotherapy ₹5L, Intra vitreal injections ₹5L, Robotic surgeries ₹2.5L, Stereotactic radio surgeries ₹3.5L, Bronchial Thermoplasty ₹2L, Vaporisation of prostate ₹2L. Ambulance capped at ₹3,000.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (unless specified in Policy Schedule)",
+    "note": "Deductible is mentioned as applicable if specified in Policy Schedule; no standard deductible stated.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents covered from day 1.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (Option 2: 24 months)",
+    "note": "Option 1 is 36 months; Option 2 is 24 months as per Policy Schedule selection.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Specific disease/procedure waiting period as stated in Annexure I (24 months). Includes cataract, hernia, osteoarthritis, kidney disease, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses are a permanent standard exclusion (Code-Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus terms found in the policy wording.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Once/year, 100% of Base SI (unrelated illness only)",
+    "note": "Re-fill Benefit reinstates 100% of Base Sum Insured once per policy year. Cannot be used for the same illness/complication for which a claim was already paid. Cannot be carried forward.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "Option 1: 30 days; Option 2: 60 days",
+    "note": "Two options as per Policy Schedule selection.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "Option 1: 60 days; Option 2: 90 days",
+    "note": "Two options as per Policy Schedule selection.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures covered up to SI",
+    "note": "Covered up to Base Sum Insured for listed procedures as per Annexure V (536 listed procedures).",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary Hospitalization is defined in the policy but not listed as a covered benefit in the product benefit table or scope of cover.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to Base SI (inpatient only)",
+    "note": "Inpatient AYUSH treatment covered under Section 3.1.1.5. Yoga excluded. NABH/NQAS accreditation required for AYUSH hospital.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (harvesting expenses only)",
+    "note": "Covers living donor's inpatient treatment for organ harvesting. Donor's hospital stay, pre/post-hosp, screening, and organ transport costs excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹3,000 per hospitalisation",
+    "note": "₹3,000 for both network and non-network hospitals. One transfer per hospitalisation.",
+    "optional": false,
+    "number": 3000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (e.g. Robotic ₹2.5L, Stereotactic ₹3.5L)",
+    "note": "12 modern treatments covered; several have sub-limits. Uterine Artery Embolization, Balloon Sinuplasty, Oral Chemotherapy, Stem cell therapy covered up to SI.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables such as gloves, masks, etc. are explicitly listed as non-payable in Annexure II. No consumables rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly states all benefits are available in India only (Section 4.22). Expenses outside India excluded.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (annual); 15 days (monthly)",
+    "note": "30 days for annual/non-monthly modes; 15 days for monthly premium payment mode.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual policies only, not on renewals.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-mandated portability with transfer of PED waiting period credits, specific waiting periods, and moratorium credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment, hormone replacement therapy, STIs (non-HIV), sleep disorders, dental (non-accident), external congenital anomaly, circumcision (non-medical), overseas treatment",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Critical Illness Multiplier (3x SI for listed CIs, 3 options: 13/21/37 illnesses); PED waiting period reduction (36mo or 24mo); pre/post-hosp days options",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "HealthMultiplier_FINALPolicyDocument.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T14:01:11.582Z"
+}

@@ -1,0 +1,173 @@
+{
+  "insurer": "Galaxy Health Insurance Company Limited",
+  "plan_name": "Galaxy Guardian",
+  "uin": "GHIHLIP25037V012425",
+  "sum_insured_options": "₹3L – ₹5L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Proportionate deduction on associated medical expenses if higher room chosen; not applied on pharmacy, consumables, implants, diagnostics, ICU charges",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "At actuals",
+    "note": "ICU charges covered at actuals as part of inpatient benefit; no separate per-day cap stated for ICU room",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "10% on every claim",
+    "note": "Mandatory 10% co-payment applies to every admissible claim amount for all insured persons",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Cataract, bariatric, modern treatments, rehab, home care, newborn, OPD capped",
+    "note": "Cataract: ₹25k/₹35k; Bariatric: ₹90k/₹1.5L; Modern treatments: various sub-limits (30% SI for some); Rehab & Pain Mgmt: ₹25k; Home Care: 10% SI; Newborn: 10% SI; OPD: ₹2k/₹3k; Ambulance: ₹1,500/hosp",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Not applicable for accidents; waived if continuously covered for more than 12 months",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "36 months continuous coverage; reducible via portability credits from prior insurer",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Covers cataract, ENT, thyroid, hernia, joint replacement, gallbladder, kidney stones, gynaec conditions, varicose veins, and many others; not applicable for accidents",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Code Excl 18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (10%/yr)",
+    "note": "10% of SI added per claim-free year up to 50% max; reduced at same rate on a claim; mutually exclusive with No Claim Discount — insured must choose one at first purchase",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All day care procedures covered up to sum insured",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (with exclusions)",
+    "note": "Covered up to SI for treatment >3 days; excludes asthma, bronchitis, diabetes, hypertension, epilepsy, psychiatric disorders, arthritis, gout and several other conditions",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH at recognised AYUSH hospitals covered up to SI; Yoga & Naturopathy requires prior approval",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered up to SI",
+    "note": "Includes harvesting of donated organ; 36-month waiting period applies",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹1,500/hospitalisation",
+    "note": "Road ambulance: ₹1,500 per hospitalisation, ₹3,000 per policy year; covers transport to hospital, hospital-to-hospital, and hospital-to-home (same city with doctor certificate)",
+    "optional": false,
+    "number": 1500
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Robotic surgery for knee/hip replacement capped at ₹4L or SI; some procedures up to SI; others at 30% SI (cyto-reduction, intravitreal injections, oral chemo, etc.)",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables listed in List I are excluded; Lists II–IV items subsumed into room/procedure charges but not separately payable",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit: all treatments must be taken in India (Condition 23)",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to original SI; enhanced SI has fresh 60-month period on enhanced portion",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes; coverage not available during grace period except for instalment payers",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-compliant portability; apply at least 30 days before but not earlier than 60 days from renewal date",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, dental (non-accidental), venereal diseases, erectile dysfunction, vaccination, EECP/chelation/hyperbaric O2, PRP/platelet-rich plasma, biologicals (outpatient)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "No Claim Discount (in lieu of Cumulative Bonus) — must choose at inception; no other riders mentioned",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy Wording (1).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:22:31.192Z"
+}

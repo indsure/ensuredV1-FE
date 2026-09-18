@@ -1,0 +1,172 @@
+{
+  "insurer": "IndusInd General Insurance Company Limited",
+  "plan_name": "IndusInd Health Infinity Insurance",
+  "uin": "RELHLIP23120V042223",
+  "sum_insured_options": "₹3L – ₹500L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private A.C. Room (up to Deluxe)",
+    "note": "Optional add-on (3.4.11) allows downgrade to Twin Sharing for a discount. Proportionate deduction applies if higher room chosen.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (ICU not proportionately reduced)",
+    "note": "Policy explicitly states ICU charges shall not be proportionately reduced in all cases.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment on base plan. Voluntary co-payment available as optional add-on (3.4.1) for premium discount.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Special treatments capped at 50% SI (SI <10L); Transportation ₹500/hosp",
+    "note": "Special treatments (robotic, HIFU, etc.) sub-limited to 50% of SI for SI <10L, 100% for SI >=10L. Transportation benefit capped at ₹500 per hospitalisation. No other disease-wise sub-limits found.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "Voluntary aggregate deductible available as optional add-on (3.4.13) in options of ₹10,000/₹25,000/₹50,000/₹1,00,000.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; waived after 12 months continuous coverage. COVID-19 has a 15-day waiting period.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Reducible to 24 or 12 months via optional paid add-on (3.4.9).",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Covers ENT, gynaecological, orthopaedic, GI, urogenital, eye conditions and others. Reducible to 12 months via optional add-on (3.4.10).",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (12 or 24 mo wait; 3-yr policy only)",
+    "note": "Maternity Cover (3.4.4.1) is an optional paid add-on. Limit: ₹1L (SI 5L) or ₹1L/₹2L (SI >=10L). Max 2 deliveries lifetime. Available only on 3-year policy period. Waiting period 12 or 24 months as opted.",
+    "optional": true,
+    "number": 12
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "Policy mentions 'Stay Healthy Discount' of up to 10% on renewal premium for health check-up submission, but no traditional cumulative bonus / NCB on sum insured is described in the wording.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Once/yr, 100% (unrelated only for SI <10L)",
+    "note": "Base Restore Benefit (3.1.11): once per policy year, 100% of SI, for unrelated illness only. Unlimited Restore (3.4.2.2) available as optional paid add-on: unlimited restorations; SI >=10L covers related and unrelated illness.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "90 days",
+    "note": "Pre-hospitalisation expenses covered for 90 days prior to admission.",
+    "optional": false,
+    "number": 90
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care (surgical/chemo/radio/dialysis)",
+    "note": "Day care procedures covered; diagnostic-only day care excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered if condition continues for at least 3 continuous days.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (within SI, inpatient AYUSH hospital)",
+    "note": "AYUSH treatment covered as inpatient in recognised AYUSH hospital; cashless on best-effort basis.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ donor harvesting expenses covered within SI, subject to Transplantation of Human Organs Act compliance.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered within SI (incl. intercity >100km)",
+    "note": "Road ambulance covered within SI; intercity ambulance also covered. Air ambulance available as optional paid add-on (3.4.3.2).",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered (sub-limited for SI <10L)",
+    "note": "12 modern/special treatments listed (robotic surgery, stereotactic, HIFU, etc.) covered; capped at 50% of SI for SI <10L, 100% for SI >=10L.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on (Consumables Cover 3.4.2.1)",
+    "note": "Non-medical/consumable items (Annexure A List I) excluded by default; covered if Consumables Cover add-on is opted.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional (MoreGlobal add-on, up to SI or ₹50L for planned)",
+    "note": "MoreGlobal (3.2.3) is a More Options Benefit chosen at inception at no extra premium (one complementary benefit). Covers emergency and planned overseas treatment up to SI (planned capped at ₹50L). Available up to 45 days cumulative international travel per year.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim contestable except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "30 days grace for annual/quarterly/half-yearly; 15 days for monthly instalment.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Peritoneal dialysis, hormone replacement therapy, hazardous activities, external congenital anomaly, spinal manipulation, self-injury, nuclear/bio/chemical attack",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Unlimited Restore, Consumables Cover, Maternity+Newborn, OPD (Plan A/B), Air Ambulance, Double Cover, Super Charger, MoreGlobal, Home Care, DME/Small Equipment, Voluntary Deductible, PED waiting reduction",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "indusind-health-infinity-pw.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:44:00.355Z"
+}

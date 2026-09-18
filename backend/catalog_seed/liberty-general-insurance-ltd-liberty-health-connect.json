@@ -1,0 +1,173 @@
+{
+  "insurer": "Liberty General Insurance Ltd.",
+  "plan_name": "Liberty Health Connect",
+  "uin": "LIBHLIP24108V042324",
+  "sum_insured_options": "Not specified in wording (schedule-dependent)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap (base plan)",
+    "note": "Base plan has no room rent cap. Optional 'Room Rent limit' add-on caps at 1% of SI or ₹5,000/day (whichever lower) and ICU at 2% of SI or ₹7,500/day.",
+    "optional": false
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (base plan)",
+    "note": "Base plan has no ICU cap. Optional 'Room Rent limit' add-on caps ICU at 2% of SI or ₹7,500/day (whichever lower).",
+    "optional": false
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base plan)",
+    "note": "Optional Co-Pay add-on allows insured to voluntarily opt 5%, 10% or 20% co-pay on every claim.",
+    "optional": false
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits (optional add-ons)",
+    "note": "Base plan has no sub-limits. Optional 'Cataract Capping' add-on caps cataract at ₹25k–₹40k/eye. Optional 'Modern Surgeries limit' caps modern treatments at 50% of SI. Domiciliary capped at 10% of SI (inbuilt).",
+    "optional": false
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": null,
+    "optional": false
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "36 months (24 mo on select plans)",
+    "note": "PED waiting is 36 months or 24 months depending on plan chosen (E-Connect/Basic vs Elite/Supreme/Supreme Plus). Optional 'PED Protector' add-on (age ≤50) can reduce to 1–2 completed policy years with sub-limits.",
+    "optional": false
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12–36 months (condition-dependent)",
+    "note": "12-month list includes cataract, hernia, hydrocele, piles, sinusitis etc.; 24-month list includes calculus, joint replacement, prolapsed disc etc.; 36-month list includes obesity surgery, joint replacement (degenerative), spondylosis etc.",
+    "optional": false
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Code Excl18). Ectopic pregnancy is covered. No optional maternity add-on mentioned.",
+    "optional": false
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "Inbuilt Loyalty Perk: 10% of Basic SI per claim-free year, max 100%. Optional 'Super Booster' add-on increases rate to 50%/yr up to 150% of Basic SI.",
+    "optional": false
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% (unrelated illness only)",
+    "note": "Restored SI = 100% of Basic SI, triggered when Basic SI exhausted. Cannot be used for same illness/disease for which claim was paid in current year. Optional 'Reload of Sum Insured' add-on waives the unrelated-illness restriction.",
+    "optional": false
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "As per Schedule",
+    "note": "Policy wording states 'period as mentioned in the Schedule'; exact days not specified in the wording document.",
+    "optional": false
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "As per Schedule",
+    "note": "Policy wording states 'period as mentioned in the Schedule'; exact days not specified in the wording document.",
+    "optional": false
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures covered",
+    "note": "Extensive list of 140 named day-care procedures provided; also covers any procedure requiring <24 hrs due to technological advancement.",
+    "optional": false
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to 10% of Basic SI",
+    "note": "Several conditions excluded from domiciliary cover (asthma, diabetes, hypertension, epilepsy, etc.).",
+    "optional": false
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to Basic SI (inpatient only)",
+    "note": "AYUSH inpatient hospitalisation (min 24 hrs) covered up to Basic SI. OPD, day care, pre/post-hospitalisation AYUSH excluded.",
+    "optional": false
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (up to Schedule limit)",
+    "note": "Covers donor screening and harvesting expenses. Donor's pre/post-hospitalisation and post-harvesting treatment excluded.",
+    "optional": false
+  },
+  "ambulance": {
+    "number": null,
+    "display": "Covered (limit as per Schedule)",
+    "note": "Road ambulance covered; maximum liability as specified in Schedule (exact amount not stated in wording).",
+    "optional": false
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Optional add-on, up to 50% of SI",
+    "note": "Modern surgeries (robotic, stereotactic, HIFU, deep brain stimulation, oral chemo, immunotherapy, intravitreal injections, stem cell therapy etc.) covered only via optional 'Modern Surgeries limit' add-on at 50% of SI.",
+    "optional": true
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional add-on (Zero Deduct Cover)",
+    "note": "Non-medical/consumable items in Annexure-A are excluded by default. Optional 'Zero Deduct Cover' waives these exclusions.",
+    "optional": true
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional add-on (emergency only)",
+    "note": "Optional 'Global Cover' for emergency inpatient hospitalisation outside India; reimbursement in INR; max 180 consecutive days abroad; treatment must originate outside India.",
+    "optional": true
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim contestable except on grounds of fraud.",
+    "optional": false
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for annual/quarterly/half-yearly premium; 15 days for monthly instalment.",
+    "optional": false
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable only for new individual policies; not on renewals or policies with tenure less than 1 year.",
+    "optional": false
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; apply at least 30 days before renewal.",
+    "optional": false
+  },
+  "notable_exclusions": {
+    "display": "STDs/HIV, dental (non-accident), external congenital anomaly, OPD treatment, spectacles/hearing aids, external prosthetics/devices, alopecia/hair treatment",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Zero Deduct Cover, Vector Borne Disease Benefit, Super Booster, EMI Protector, PED Protector, Global Cover, Domestic Travel Plus, Reload of SI, Co-Pay, Modern Surgeries, Room Rent Limit, Cataract Capping",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "LIBHLIP24108V042324 - Liberty Health Connect Revision  - Policy Wordings - Effective from 30092024.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:32:59.104Z"
+}

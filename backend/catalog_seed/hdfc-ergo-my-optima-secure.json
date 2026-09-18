@@ -1,0 +1,173 @@
+{
+  "insurer": "HDFC ERGO",
+  "plan_name": "my:Optima Secure",
+  "uin": "HDFHLIP26058V082526",
+  "sum_insured_options": "₹5L – ₹200L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap (At Actuals)",
+    "note": "Default is At Actuals for Optima Secure, Optima Super Secure, Optima Suraksha, Global plans, and Optima Secure+. Optima Select defaults to Single Private Room; Optima Lite defaults to 1% of BSI/day. Optional room rent modification available for some plans.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap (At Actuals)",
+    "note": "At Actuals for most plans. Optima Lite has 2% of BSI/day cap. Proportionate deduction does not apply to associated medical expenses during ICU stay.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment. No tier-based co-payment either — insured from lower tier can avail treatment in higher tier without co-pay.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits",
+    "note": "No disease-wise or procedure-wise sub-limits specified in the policy wording. All covers are up to Sum Insured unless a specific optional aggregate deductible is chosen.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None (optional aggregate deductible available)",
+    "note": "No mandatory deductible. Optional aggregate deductible ranging from ₹10,000 to ₹25L can be opted at inception/renewal to reduce premium.",
+    "optional": true,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents. Waived after 12 months of continuous coverage.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Default PED waiting period is 36 months. Reducible to 24 or 12 months via optional PED wait period modification (channel-level only, not available to individual customers directly).",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, hernia, joint replacement, gallbladder, kidney stones, varicose veins, etc. Not applicable for accidents.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (24mo wait)",
+    "note": "Maternity is excluded under standard exclusion Excl18. Available as 'Parenthood' add-on covering maternity expenses, embryo freezing and IVF with 2-year waiting period.",
+    "optional": true,
+    "exists": false,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr)",
+    "note": "CB of 10% per year up to 100% of BSI available in Optima Suraksha plan. Not available in Optima Secure, Optima Super Secure, Global plans, or Optima Secure+. Optima Select has 25%/yr up to 100%. CB ceases if Plus Benefit is opted.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of BSI",
+    "note": "Automatic Restore Benefit triggers once per year (100% of BSI) for Optima Secure, Optima Super Secure, Optima Suraksha, Global plans. Optima Select, Optima Lite, and Optima Secure+ have unlimited restorations inbuilt. Restored SI can be used for same or different illness.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "60 days for all plans except Optima Lite (30 days). Optima Lite's 30-day limit is inbuilt.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "180 days for all plans except Optima Lite (60 days). Optima Lite's 60-day limit is inbuilt.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day care treatments covered up to Sum Insured across all plans.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary Hospitalization covered up to Sum Insured. Home Health Care also covered (pre-authorization required, cashless only).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH in-patient treatment covered up to Sum Insured in all plans.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ donor hospitalisation expenses for harvesting covered up to Sum Insured. Pre/post-hospitalisation and transport of organ excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered up to SI",
+    "note": "Road ambulance covered up to Sum Insured for emergency transfer or hospital-to-home (same city). Emergency Air Ambulance up to ₹5L as optional/inbuilt cover depending on plan.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered (up to SI)",
+    "note": "No specific exclusion or sub-limit for modern/robotic treatments; covered under hospitalisation expenses up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional (Protect Benefit)",
+    "note": "Non-medical/consumable expenses covered via 'Protect Benefit' optional cover (inbuilt in some plans like Optima Secure by default, optional in others). Standard non-medical items listed in Annexure B are excluded unless Protect Benefit is active.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional (Global plans)",
+    "note": "Global Health Cover (Emergency only) and Global Health Cover (Emergency & Planned) available as optional covers. Inbuilt in Optima Secure Global and Optima Secure Global Plus plans.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30 days for yearly/half-yearly/quarterly premium; 15 days for monthly instalment. Coverage available during grace period for instalment payers.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free look period applicable on new individual policies only; not on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines with continuity of waiting period credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity (std excl), congenital external anomalies, stem cell harvesting, sleep apnoea investigation, circumcision, alopecia, external prosthetics/devices, OPD treatment",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Critical Illness add-on, Hospital Cash add-on, Personal Accident rider, Unlimited Restore add-on, Optima Wellbeing (OPD), ABCD Chronic Care, Limitless, Parenthood (maternity/IVF)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "PolicyWordings_myOptimaSecure-76673175551.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:58:20.676Z"
+}

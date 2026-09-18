@@ -1,0 +1,173 @@
+{
+  "insurer": "TATA AIG General Insurance Company Limited",
+  "plan_name": "Tata AIG Elder Care",
+  "uin": "TATHLIP23179V012223",
+  "sum_insured_options": "₹5L – ₹25L",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private Room",
+    "note": "If higher room category is chosen, rateable proportion of associated medical expenses (excluding pharmacy, diagnostics, implants, consumables) is borne by insured.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "Policy does not explicitly state a separate ICU room limit; general room rent cap of Single Private Room applies.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "20% mandatory on all claims",
+    "note": "20% co-payment applies on all admissible claims under B1, B2, B3, B7, B8, B12, B15, B16. Not applicable on Road Ambulance (B9) and sub-limited surgical procedures (Cataract, Joint Replacement).",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract & Joint Replacement capped",
+    "note": "Cataract: ₹40k–₹1L per eye (zone/SI dependent); Joint Replacement: ₹1.6L–₹5L per person (zone/SI dependent). Sub-limits include pre/post-hosp expenses for these procedures.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "PED waiting period is 24 months of continuous coverage from first policy inception.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (36 mo for joint replacement)",
+    "note": "Most listed conditions (cataract, hernia, calculus, etc.) have 24-month wait; joint replacement surgeries have 36-month wait.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl 18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% of base SI added per claim-free year; reduced by 10% after a claim year. Max 100% of base SI.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days before admission (B2). AYUSH benefit covers 90 days pre-hosp.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days after discharge (B3). AYUSH benefit covers 90 days post-hosp.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "B7 covers day care treatment due to disease/illness/injury at hospital or day care centre.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (limited conditions)",
+    "note": "B16 Home Care Treatment covers dialysis, chemotherapy, and pandemic care at home up to 10% of SI. Not a broad domiciliary cover.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "B8 covers AYUSH inpatient and day care treatment with pre/post-hosp of 90 days each. Assessed per AYUSH insurance guidelines.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly mention organ donor expense cover.",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹5,000 per hospitalisation",
+    "note": "B9 covers road ambulance up to ₹5,000 per hospitalisation. Mandatory 20% co-pay not applicable on this benefit.",
+    "optional": false,
+    "number": 5000
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly mention modern/robotic surgery treatments as a named benefit.",
+    "optional": false,
+    "exists": false
+  },
+  "consumables": {
+    "display": "Covered (inbuilt, B12)",
+    "note": "B12 Consumables Benefit covers specified consumables (Annexure-1 List 1) used during hospitalisation. Personal comfort items, external durable devices excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly states coverage is only for medical treatment taken within India; payments in Indian Rupees within India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years of coverage, no claim/policy contestable except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 15 days for monthly premium mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free look period from date of receipt of policy document.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; credits for PED, specific waiting periods, moratorium transferred.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Dental treatment, sleep apnoea, stem cell therapy, growth hormone therapy, alcoholic pancreatitis, STDs, external congenital anomalies, hearing aids/spectacles",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None explicitly listed as optional riders in the policy wording",
+    "note": "Policy includes several inbuilt value-added services: home physiotherapy (B4), home nursing (B5), compassionate care (B6), wellness/teleconsultation (B17), high-end diagnostics (B15).",
+    "optional": false
+  },
+  "source_file": "Elder_Care_Policy_Wordings_9d18315430.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:45:05.899Z"
+}

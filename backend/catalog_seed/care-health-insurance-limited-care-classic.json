@@ -1,0 +1,173 @@
+{
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Care Classic",
+  "uin": "CHIHLIP26048V022526",
+  "sum_insured_options": "Not specified in document",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day (base); upgradeable to Single Private AC Room via optional rider",
+    "note": "Base plan: 1% of SI per day. Optional Benefit 'Room Rent and ICU Modification' upgrades to Single Private AC Room (only for SI < ₹5L). Associate Medical Expenses are pro-rated if higher room is taken.",
+    "optional": false
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day (base); upgradeable to no limit via optional rider",
+    "note": "Base plan: 2% of SI per day. Optional Benefit 'Room Rent and ICU Modification' upgrades to no limit (only for SI < ₹5L).",
+    "optional": false
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% (age 61+ at first policy issuance)",
+    "note": "Mandatory 20% co-pay if insured/eldest insured is 61 years or above at first policy issuance. Can be waived via Optional Benefit: Copayment Waiver. Additional 20% co-pay if treatment taken outside Smart Select network hospitals (if Smart Select opted).",
+    "optional": false
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract & Advance Technology Methods sub-limited; amounts per Policy Schedule",
+    "note": "Cataract treatment and Advance Technology Methods (robotic surgery, HIFU, etc.) have sub-limits as per Policy Schedule. Optional Benefit 'Sub-Limit on Specified Diseases' adds further sub-limits on knee replacement, hernia, hysterectomy, BPH, renal stones, cardiovascular, cancer, etc. Optional Benefit 'Waiver of Sub-limits on Cataract & Advance Technology Methods' can remove those sub-limits.",
+    "optional": false
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (base); optional deductible available",
+    "note": "No deductible in base plan. Optional Benefit: Deductible Option allows policyholder to choose a deductible (aggregate basis per policy year) in exchange for premium discount. Amount as per Policy Schedule.",
+    "optional": false
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "All illnesses excluded for first 30 days from policy commencement except accidents. Not applicable if insured has continuous coverage for more than 12 months.",
+    "optional": false
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (reducible to 24 months via optional add-on)",
+    "note": "Base PED waiting period is 36 months. Optional Cover 5 'Reduction in PED Wait Period' reduces it to 24 months. Optional Benefit 'Instant Cover' waives PED waiting for Diabetes/Hypertension/Hyperlipidimia/Asthma (only at first policy issuance).",
+    "optional": false
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Specific diseases include arthritis, ENT surgeries, BPH, cataract, D&C, fissure/fistula/piles, genito-urinary surgery, hernia, hysterectomy, internal tumours/cysts, kidney/gall stones, myomectomy, varicose veins, Parkinson's/Alzheimer's/dementia, and others.",
+    "optional": false
+  },
+  "maternity": {
+    "exists": true,
+    "number": 24,
+    "display": "Optional add-on (24-month wait)",
+    "note": "Maternity is excluded from base plan (Excl18). Available as Optional Benefit: Maternity and New Born Baby Cover with 24-month waiting period. Covers delivery, complicated deliveries, C-sections. Limited to 2 living children per insured lifetime. Not available if insured age > 45 at policy start. Limit as per Policy Schedule.",
+    "optional": true
+  },
+  "cumulative_bonus": {
+    "number": 150,
+    "display": "Up to 150% of SI (25%/yr)",
+    "note": "25% flat cumulative addition per claim-free policy year. Maximum cap is 150% of SI. Bonus reduced at same rate if a claim occurs. NCB not considered for Unlimited Automatic Recharge calculation. Alternatively, insured can opt for a small premium discount (₹49 individual/₹99 floater) instead of additional SI at renewal.",
+    "optional": false
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited restorations, 100% of base SI",
+    "note": "Unlimited Automatic Recharge reinstates base SI unlimited times per policy year after base SI, NCB and Additional Accidental SI are exhausted. Can be used for same illness and different illnesses (except Any One Illness condition). Unutilized recharge cannot be carried forward. NCB not included in recharge calculation.",
+    "optional": false
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Pre-hospitalisation medical expenses covered for 60 days prior to admission, for the same condition as the hospitalisation claim.",
+    "optional": false
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Post-hospitalisation medical expenses (consultant fees, diagnostic charges, medicines) covered for 90 days after discharge, for the same condition.",
+    "optional": false
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care treatments covered",
+    "note": "All day-care treatments under general or local anaesthesia in a hospital/day care centre for less than 24 hours that would otherwise require inpatient admission are covered.",
+    "optional": false
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (min 3 consecutive days; some diseases excluded)",
+    "note": "Domiciliary hospitalisation covered up to limit in Policy Schedule. Must continue for more than 3 consecutive days. Excluded diseases: asthma, bronchitis, chronic nephritis, diarrhoea/dysentery, diabetes, epilepsy, hypertension, influenza/cold, psychiatric/psychosomatic disorders, pyrexia of unknown origin, tonsillitis/URTI, arthritis/gout/rheumatism.",
+    "optional": false
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy) covered up to Sum Insured at registered AYUSH hospitals. Claim admissible only if In-patient Care claim is also admissible.",
+    "optional": false
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to limit in Policy Schedule",
+    "note": "Medical expenses of organ donor for transplant surgery covered up to limit specified in Policy Schedule. Pre/post hospitalisation and other expenses of donor not covered.",
+    "optional": false
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered up to limit in Policy Schedule",
+    "note": "Road ambulance covered up to amount specified in Policy Schedule. Air ambulance available as Optional Benefit: Air Ambulance Cover (separate limit in Policy Schedule, cashless only).",
+    "optional": false
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (specific list, limit per Policy Schedule)",
+    "note": "12 listed Advance Technology Methods covered (robotic surgery, stereotactic radio surgery, oral chemotherapy, immunotherapy injections, intra vitreal injections, HIFU, balloon sinuplasty, deep brain stimulation, bronchial thermoplasty, vaporisation of prostate, IONM, stem cell therapy for haematological conditions) up to specified limit. Sub-limits waivable via Optional Benefit: Waiver of Sub-limits on Cataract & Advance Technology Methods.",
+    "optional": false
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered (standard non-medical items excluded per Annexure I)",
+    "note": "Annexure I lists non-medical/consumable items (gloves, masks, nebulisation kits, etc.) as excluded. No optional rider for consumables cover mentioned.",
+    "optional": false
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered (India only; International Second Opinion optional)",
+    "note": "Policy covers medical treatment taken entirely within India. Optional Benefit: International Second Opinion provides worldwide second opinion service (excluding India) but does not cover overseas treatment costs.",
+    "optional": false
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months (5 years)",
+    "note": "After 5 continuous years, no look-back applied. Claims cannot be contested except for proven fraud and permanent exclusions. Moratorium applies to original SI; fresh 5-year period starts from date of SI enhancement for enhanced portion.",
+    "optional": false
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 30 days for all premium payment modes except monthly, where it is 15 days. Coverage not available during grace period unless premium paid in instalments during policy period.",
+    "optional": false
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Free look period of 30 days from date of receipt of policy document. Applicable on new policies only, not on renewals or porting/migration.",
+    "optional": false
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines. Must apply at least 30 days before but not earlier than 60 days from renewal date. Accrued continuity benefits transferred.",
+    "optional": false
+  },
+  "notable_exclusions": {
+    "display": "Consumables/non-medical items, hormone replacement therapy, STDs (except HIV), tobacco/alcohol-related illness, external prosthetics, refractive error <7.5D, domiciliary for 12 listed diseases, Remicade/Avastin outside inpatient",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Deductible Option, Copayment Waiver, Room Rent/ICU Upgrade, Smart Select (network discount), OPD Care, Air Ambulance, Maternity & Newborn, Annual Health Check-up, Instant Cover (PED waiver), PED Wait Reduction (36→24mo), Sub-limits on Diseases, Waiver of Cataract/ATM sub-limits, Disease Management Programs, Home Care, International Second Opinion, Additional SI for Accidental Hospitalisation",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "care-classic---policy-terms--conditions-(effective-from-09-april-2025-).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:39:24.030Z"
+}

@@ -1,0 +1,173 @@
+{
+  "insurer": "ManipalCigna Health Insurance Company Limited",
+  "plan_name": "ManipalCigna Sarvah - Uttam",
+  "uin": "MCIHLIP27040V032627",
+  "sum_insured_options": "₹5L – ₹300L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private AC Room",
+    "note": "Optional upgrade to Any Room or Twin Sharing AC Room available under Room Rent Modification (D.III.9). ICU covered at actuals up to SI.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (up to SI)",
+    "note": "ICU covered at actuals up to Sum Insured by default.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base plan)",
+    "note": "No mandatory co-payment in base plan. Voluntary Co-Payment of 10%, 20%, or 30% available as optional cover (D.III.14). Additional 10% co-pay may apply for prolonged hospitalisation beyond 10 days without timely intimation; 20% for organ transplants at non-network hospitals without required intimation.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits (base)",
+    "note": "No disease-wise sub-limits in base plan. Multifocal lenses and Femto Laser for cataract excluded (E.II.16). Organ donor complication support capped at 25% of BSI or ₹2L. Durable Medical Equipment (optional) capped at ₹1L/year. Maternity (optional) capped at 20% of BSI up to ₹5L.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None (base plan)",
+    "note": "Optional aggregate deductible (₹10K–₹10L) or daily deductible (₹1K–₹5K/day) available under D.III.13.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents or if continuously covered for more than 12 months.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Standard PED waiting period is 36 months. Reducible via portability/migration credits. Sarathi/Sarathi 2.0 optional covers reduce waiting to 30 days for declared Asthma, Diabetes, Dyslipidemia, Obesity, Hypertension.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Standard specific disease waiting period is 24 months (e.g. cataract, hernia, knee replacement, stones, etc.). Extendable to 36 months via optional cover D.III.16.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (36mo wait)",
+    "note": "Covered up to 20% of BSI subject to max ₹5L per delivery; max 2 deliveries/terminations lifetime. Includes newborn expenses and first-year vaccinations within maternity SI. 36-month continuous coverage required before availing.",
+    "optional": true,
+    "exists": true,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Up to 1500% of BSI",
+    "note": "Gullak (Guaranteed Cumulative Bonus) is an optional cover: 100% of BSI added per policy year irrespective of claims, up to maximum 1500% of BSI. No bonus if policy not renewed within grace period.",
+    "optional": true,
+    "number": 1500
+  },
+  "restoration": {
+    "display": "Unlimited, 100% BSI (same & unrelated)",
+    "note": "Optional cover (D.III.5): 100% of BSI restored unlimited times per year for same or unrelated illness/injury. Triggers only after SI (including Gullak) is exhausted; not available for first claim. Unutilised restored amount lapses at year end.",
+    "optional": true,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "90 days",
+    "note": "Pre-hospitalisation expenses covered for 90 days prior to admission, up to SI.",
+    "optional": false,
+    "number": 90
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days post discharge, up to SI.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures",
+    "note": "All medically necessary day-care treatments covered up to SI.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Covered up to SI. Pre/post-hospitalisation expenses covered for 30 days each. Restoration does not apply. Certain conditions excluded (asthma, COPD, diabetes, hypertension, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment covered up to SI in recognised AYUSH hospitals. Pleasure/rejuvenation therapies excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ harvesting expenses, donor pre/post-hospitalisation (30 days each), donor screening (once/year for successful transplant), and donor complication support (25% of BSI up to ₹2L, independent limit) all covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to SI (road); Air ambulance optional up to ₹10L",
+    "note": "Road ambulance covered up to SI (D.I.6). Air ambulance is an optional cover (D.III.4) up to ₹10L per year, in addition to SI.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 listed modern/advanced procedures (robotic surgery, oral chemo, stereotactic radio surgery, stem cell therapy for haematological conditions, etc.) covered up to SI as inpatient or day care.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on",
+    "note": "Non-medical items and durable medical equipment covered under optional cover D.III.15. Non-medical items up to SI; durable medical equipment up to ₹1L/year.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy coverage is restricted to India only (F.II.5). Treatment outside India is a specific exclusion (E.II.8).",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim or policy can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30 days grace period for annual/half-yearly/quarterly premium modes; 15 days for monthly mode.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period applicable on new policies only; not on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines; continuity credits for PED, specific waiting periods, moratorium and NCB transferred.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Treatment outside India, multifocal/femto-laser cataract lenses, OPD treatment, off-label drug use, adventure sports injuries, dental (unless accident+24hr hosp), external congenital anomaly",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Gullak (cumulative bonus), Restoration, Anant (unlimited SI for cancer/heart/stroke/transplant/accident), Shakti/Surplus Benefit, Sarathi/Sarathi 2.0 (PED waiver), Air Ambulance, Maternity, Personal Accident, TTD, Health Check-up, Non-Medical Items cover, Deductible, Voluntary Co-pay, Room Rent Modification, Personal Accident Plus, OPD (Health 360)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Sarvah-Uttam-TnC.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T14:00:31.404Z"
+}

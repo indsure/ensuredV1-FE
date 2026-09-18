@@ -1,0 +1,173 @@
+{
+  "insurer": "IFFCO TOKIO General Insurance Company Limited",
+  "plan_name": "Health Protector",
+  "uin": "IFFHLIP26041V062526",
+  "sum_insured_options": "Not specified in wording (₹1.5L and above referenced)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap (SI ≥ ₹5L); 1.5–1.75% of SI/day (SI < ₹5L)",
+    "note": "For SI ≥ ₹5L: actuals, no cap. For SI < ₹5L: 1.75% of SI/day in Class A cities, 1.50% elsewhere. Room cap removable for SI < ₹5L on payment of 6% extra premium.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (SI ≥ ₹5L); 2.5–3% of SI/day (SI < ₹5L)",
+    "note": "For SI ≥ ₹5L: actuals. For SI < ₹5L: 3% of SI/day in Class A cities, 2.5% elsewhere. Proportionate deduction does not apply to ICU charges.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None (optional co-pay available)",
+    "note": "No mandatory co-pay in base plan. Optional co-pay of 10%, 20% or 25% can be chosen; once opted cannot be removed during policy period.",
+    "optional": true,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Modern treatments capped at 50% of SI; domiciliary at 20% of SI",
+    "note": "Modern treatment methods covered up to 50% of SI per policy period. Domiciliary hospitalisation capped at 20% of SI. No disease-wise sub-limits on standard hospitalisation for SI ≥ ₹5L.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months of continuous coverage. Reduced by prior continuous coverage under portability/migration.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "12 months",
+    "note": "Cataract, BPH, hysterectomy for menorrhagia/fibromyoma, hernia, hydrocele, fistula, piles, sinusitis, cholelithiasis/cholecystectomy — 12-month waiting period.",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% of base SI (25% yr1, 10%/yr after)",
+    "note": "25% CB after first claim-free year, then 10% per subsequent claim-free year, max 100% of basic SI. CB reduces at accrual rate on a claim. Alternatively, a 5% no-claim discount on premium can be chosen instead.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once per claim, 100% of basic SI",
+    "note": "Basic SI reinstated to full amount after each claim (first reinstatement free; subsequent reinstatements charged pro-rata premium). Not available for listed chronic/critical illnesses, domiciliary hospitalisation, cumulative bonus, or critical illness extension. Reinstated SI not usable for same illness relapse within 45 days.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days prior to hospitalisation for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses covered for 90 days after discharge for the same condition.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (383 listed)",
+    "note": "Specific list of 383 day-care procedures covered (Annexure C). List is dynamic.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (up to 20% of SI)",
+    "note": "Domiciliary hospitalisation covered up to 20% of SI aggregate per policy period. Several conditions excluded from domiciliary cover (asthma, diabetes, hypertension, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment including pre- and post-hospitalisation covered up to the sum insured per policy period.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (within insured's SI)",
+    "note": "Donor hospitalisation expenses covered subject to insured's sub-limits. Donor's room rent limited to 50% of insured's room rent entitlement. Ambulance, pre/post-hosp and daily allowance not payable for donor.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to 1% of SI or ₹2,500, whichever less",
+    "note": "Road ambulance charges per hospitalisation limited to lower of 1% of SI or ₹2,500.",
+    "optional": false,
+    "number": 2500
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (up to 50% of SI)",
+    "note": "12 listed modern treatments (robotic surgery, oral chemo, immunotherapy, stem cell therapy, etc.) covered up to 50% of SI per policy period.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Standard non-medical consumables (gloves, masks, etc.) listed as non-payable in Annexure A List I. No consumables rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit clause restricts all treatment to India only. Claims payable in Indian currency only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim or policy contestable except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30 days grace for renewal and non-monthly instalments; 15 days for monthly instalments. Coverage not available during grace period after policy expiry.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from receipt of policy document at inception only (not on renewals or portability).",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to same product with other insurers permitted with continuity of waiting periods and accrued benefits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, infertility/ART, adventure sports (non-professional too), acupuncture/acupressure, OPD-only procedures converted to IP, intra-articular injections, external congenital defects, 90-day wait for diabetes/hypertension complications",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Higher SI for Critical Illness cover; No-limit room rent/ICU (6% extra premium); Co-payment options (10%/20%/25%)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "individual-health-protector-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:30:01.619Z"
+}

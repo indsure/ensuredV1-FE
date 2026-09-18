@@ -1,0 +1,169 @@
+{
+  "insurer": "SBI General Insurance Company Limited",
+  "plan_name": "SBI General Health Alpha",
+  "uin": "SBIHLIP26038V012526",
+  "sum_insured_options": "Not specified in wording (₹10L mentioned as minimum for Endless SI option)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "As per Policy Schedule",
+    "note": "Room rent limit is specified in the Policy Schedule; actuals/single private AC/twin sharing can be opted via Section 9.1 modifier. Proportionate deduction applies if higher room taken.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Covered (no separate cap stated)",
+    "note": "ICU/ICCU expenses covered under In-Patient Treatment; proportionate deduction does not apply to ICU. Specific limit per Policy Schedule.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (mandatory); Voluntary Co-Pay optional",
+    "note": "No mandatory co-payment in base plan. Voluntary Co-Payment (Section 10.2) can be opted for a premium discount; percentage as per Policy Schedule.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Sub-limits as per Policy Schedule",
+    "note": "Policy wording references sub-limits specified in the Policy Schedule for various benefits (room rent, domiciliary, ambulance, maternity, etc.). Specific disease sub-limits not enumerated in wording itself.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "deductible": {
+    "display": "None (base); Voluntary Deductible optional",
+    "note": "No mandatory deductible in base plan. Voluntary Deductible (Section 10.1) — annual aggregate or per-claim — can be opted for a premium discount.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "First 30 days waiting period for illnesses; not applicable for accidents or if continuously covered for 12+ months.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "Base PED waiting period is 24 months. Can be changed (reduced) via optional Section 9.3 modifier for additional premium.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed specific diseases/procedures (cataract, hernia, joint replacement, etc.) have 24-month waiting period. Reducible to 12 months via optional Section 9.2 modifier.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (24mo wait)",
+    "note": "Maternity & Child Care Cover (Section 3.3) is an optional cover available with Section 3. 24-month waiting period applies; limit as per Policy Schedule; max 2 deliveries; OPD pre/post-natal up to ₹10,000. Waiting period reducible via Section 9.4 modifier.",
+    "optional": true,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "As per Policy Schedule (% per year)",
+    "note": "Cumulative Bonus percentage and maximum are specified in the Policy Schedule. No decrease on claim. Not available if Unlimited Sum Insured opted. Alternatively, a premium discount (Section 11.2) can be chosen instead.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Unlimited restorations, 100% SI (related & unrelated)",
+    "note": "Restore Benefit (Section 3.1h) is an optional cover. Restores Base SI unlimited times per policy year after each claim settlement; available for related and unrelated illness/injury. Cannot be combined with Endless Sum Insured in same year.",
+    "optional": true,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "As per Policy Schedule",
+    "note": "Pre-hospitalisation period (number of days) is specified in the Policy Schedule. Standard coverage for same condition.",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "As per Policy Schedule",
+    "note": "Post-hospitalisation period (number of days) is specified in the Policy Schedule. Standard coverage for same condition.",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "All day-care (2hrs+); dialysis, chemo, angiography covered",
+    "note": "Day Care Treatment covered if admitted 2+ hours; also covers angiography, dialysis, radiotherapy, chemotherapy for cancer.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (inbuilt, 3-day minimum)",
+    "note": "Domiciliary Hospitalization covered under Section 3(d) up to limit in Policy Schedule; condition must continue for at least 3 continuous days.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to Policy Schedule limit",
+    "note": "AYUSH in-patient and day-care treatment covered under Section 3(c) in AYUSH Hospital or AYUSH Day Care Centre.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (optional add-on)",
+    "note": "Organ Donor expenses (Section 3.1d) are an optional Essential Cover; covers in-patient treatment expenses for harvesting organ for insured's use. Donor's pre/post-hospitalisation excluded.",
+    "optional": true,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Optional add-on; limit per Policy Schedule",
+    "note": "Road Ambulance (Section 3.1a) is an optional Essential Cover; limit per hospitalisation as per Policy Schedule. Air Ambulance (Section 3.1b) also optional. Radio Cab (Section 3.1c) also optional.",
+    "optional": true,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Covered (optional add-on)",
+    "note": "Modern Treatments (Section 3.1e) including robotic surgery, oral chemotherapy, stem cell therapy etc. are an optional Essential Cover; limit as per Policy Schedule.",
+    "optional": true,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on",
+    "note": "Consumables Cover (Section 3.1g) is an optional Essential Cover; covers items listed in Annexure II up to limit in Policy Schedule. Without this add-on, consumables are excluded.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional add-on (24mo wait; emergency from day 1)",
+    "note": "Global Cover (Section 6) is an optional cover for in-patient, day-care and OPD treatment outside India. 24-month waiting period except for emergency care. Planned hospitalisation limited to listed critical illnesses. Waiting period reducible via Section 9.5 modifier.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for new individual policies (except those with tenure less than 1 year).",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines; credits for PED, specific waiting periods, moratorium etc. transferable.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Stem cell storage, artificial life maintenance, circumcision (non-medical), vaccination (except post-bite), treatment outside India (unless Global Cover opted), self-medication"
+  },
+  "optional_riders": {
+    "display": "Road/Air Ambulance, Organ Donor, Modern Treatments, Home Health Care, Consumables, Restore Benefit, OPD Cover, Global Cover, Critical Illness, Personal Accident, Maternity & Child Care, Endless SI, Adventure Sports, Gym & Sports Injury"
+  },
+  "source_file": "SBI_General_Health_Alpha_Policy_Wording_New_002_a04e639c0d.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:44:59.446Z"
+}

@@ -1,0 +1,173 @@
+{
+  "insurer": "TATA AIG General Insurance Company Limited",
+  "plan_name": "MediCare Premier",
+  "uin": "TATHLIP26052V052526",
+  "sum_insured_options": "Not specified in wording (tables reference up to ₹3 Crore)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified",
+    "note": "Policy wording does not mention a room rent cap or eligibility tier; shared accommodation daily cash benefit exists as a separate incentive (B18)",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "No ICU sub-limit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Few minor sub-limits",
+    "note": "Maternity capped (₹50k–₹1L), ambulance per-hospitalisation limits, hearing aid ₹10k/3yr, bariatric covered with conditions; no disease-wise sub-limits on main hospitalisation",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "PED waiting period is 24 months of continuous coverage (Code-Excl01)",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Specified disease/procedure list (cataract, hernia, joint replacement, etc.) has 24-month waiting period (Code-Excl02)",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (36mo wait)",
+    "note": "Inbuilt benefit B21; limit ₹50k (up to ₹50L SI) or ₹1L (₹75L+ SI); girl child gets 20% extra; excludes pre/post-natal care and voluntary termination",
+    "optional": false,
+    "number": 36,
+    "exists": true
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr)",
+    "note": "Option 1: 50% of SI added per claim-free year, max 100%; reduced by 50% of SI after a claim. Option 2: discount on renewal premium (alternative selection)",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% SI",
+    "note": "Restored SI usable for unrelated illness anytime, or related illness after 45 days from discharge; not available for first claim of the year; not applicable for B13/B31",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days before admission (B2)",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days (up to ₹50L SI); 200 days (₹75L+ SI)",
+    "note": "90 days for SI up to ₹50L; 200 days for SI ₹75L–₹3Cr; plus up to 15 home physiotherapy sessions for ₹75L+ SI",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "B4 covers all day-care treatments requiring less than 24 hrs due to technological advancement",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "B6 covers domiciliary hospitalisation if treatment exceeds 3 days and patient cannot be moved or no hospital room available",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "B8 covers AYUSH inpatient and day-care treatment; assessed per AYUSH insurance guidelines/benchmark rates",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "B5 covers medical and surgical expenses of organ donor for harvesting, when insured is the recipient",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹5,000–₹30,000/hospitalisation",
+    "note": "Tiered by SI: ₹5k (up to ₹50L), ₹7.5k (₹75L), ₹10k (₹1Cr), ₹20k (₹2Cr), ₹30k (₹3Cr) per hospitalisation (B9); air ambulance up to ₹5L or up to SI at network (B28)",
+    "optional": false,
+    "number": 5000
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 modern treatment methods listed (robotic surgery, oral chemo, stem cell for haematological conditions, etc.) covered under B1/B4",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Covered (inbuilt)",
+    "note": "B12 covers specified consumables used during hospitalisation; personal comfort items and external durable devices excluded",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Inbuilt (planned hospitalisation abroad)",
+    "note": "B13 covers planned hospitalisation outside India (diagnosis must be in India); not available for NRIs/OCIs or those who opt out; reimbursement basis",
+    "optional": false,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years, no claim contestable except on grounds of fraud (Section 4, Clause 12)",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "30 days for annual/half-yearly/quarterly/single premium; 15 days for monthly instalment mode",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-compliant portability with continuity of waiting periods and NCB",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Alcoholic pancreatitis, external congenital anomalies, growth hormone therapy, sleep apnoea, STDs, intra-articular injections admission, stem cell (non-haematological)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "No optional riders listed; plan includes inbuilt global cover, consumables, bariatric, maternity, OPD, dental OPD, home care (₹75L+ SI), wellness program",
+    "note": null,
+    "optional": false
+  },
+  "source_file": "tata_aig_medicare_premier_policy_wordings_781aa2fd94.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:45:29.386Z"
+}

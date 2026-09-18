@@ -1,0 +1,173 @@
+{
+  "insurer": "HDFC ERGO",
+  "plan_name": "Maxima",
+  "uin": "HDHHLIP21338V022021",
+  "sum_insured_options": "₹3L (fixed)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified",
+    "note": "Policy wording covers room rent as part of in-patient treatment but no explicit room rent cap or category is stated in the schedule of benefits",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "ICU covered under in-patient treatment but no explicit cap mentioned",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No co-payment clause found in the policy wording",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Maternity, ambulance, daily cash capped",
+    "note": "Maternity: Normal ₹15k, C-section ₹25k; Ambulance: ₹2,000/hosp; Daily cash shared room: ₹500/day max ₹3,000; Daily cash child: ₹300/day max ₹9,000; Dental OPD: ₹1,000/yr; No sub-limits on main in-patient treatment",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No deductible mentioned",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months continuous coverage; no optional reduction mentioned",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, joint replacement, etc.) excluded for 24 months",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (4-yr wait)",
+    "note": "Normal delivery ₹15,000; C-section ₹25,000 (incl. pre/post natal ₹1,500 & infant ₹2,000); limited to 2 deliveries lifetime; does not reduce main SI",
+    "optional": false,
+    "exists": true,
+    "number": 48
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (10%/yr)",
+    "note": "10% of base SI added each renewal irrespective of claims; max 50% of base SI",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days (60 days if pre-notified)",
+    "note": "Standard 30 days; extended to 60 days if medical documents and hospitalisation details provided at least 5 days in advance",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days (90 days if pre-notified)",
+    "note": "Standard 60 days; extended to 90 days if hospitalisation pre-notified with documents at least 5 days in advance",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "Day care procedures under general or local anaesthesia covered",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Covered when hospitalisation not possible on doctor's advice; condition must continue at least 3 days",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (in-patient only)",
+    "note": "AYUSH in-patient treatment covered in recognised AYUSH hospitals; OPD AYUSH not covered",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Harvesting expenses for organ donor covered; donor's pre/post-hosp expenses excluded",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance reimbursed up to ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "No explicit mention of modern/robotic surgery coverage or sub-limits in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables listed as non-medical expenses and excluded; gloves, nebulisation kits, etc. in exclusion list",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment within India only",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days monthly)",
+    "note": "15 days for monthly premium mode; 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; apply at least 30 days before renewal",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Stem cell harvesting, congenital external anomalies, sleep apnoea investigation, spinal manipulation, hearing aids, cochlear implants (non-accident), alopecia treatment, OPD treatment",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Critical Illness lump sum (₹3L), Newborn baby cover",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "maxima-pw-cis-418068097035.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:33:22.025Z"
+}

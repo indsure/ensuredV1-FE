@@ -1,0 +1,173 @@
+{
+  "insurer": "Liberty General Insurance",
+  "plan_name": "HealthPrime Connect",
+  "uin": "LIBHLIP25037V032425",
+  "sum_insured_options": "Not specified in wording (schedule-dependent)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified",
+    "note": "Room rent eligibility not stated in policy wording; likely defined in Policy Schedule",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "ICU charges covered under in-patient expenses but no cap/limit stated in wording; defined in Policy Schedule",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Some sub-limits apply",
+    "note": "Modern treatments capped at 50% of SI; domiciliary hospitalisation capped at 10% of Basic SI; organ donor, laser eye surgery, obesity, infertility, maternity limits per schedule; ambulance per schedule",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible; hospital daily cash and nursing allowance have a 48-hour deductible but that is benefit-specific",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (24 mo on some plans)",
+    "note": "Policy states 36 or 24 months depending on plan chosen; base is 36 months",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "12 months (some 24–36 mo)",
+    "note": "Cataract, hernia, piles etc. 12 mo; joint replacement, calculus diseases 24 mo; obesity surgery, infertility 36 mo",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Covered (24mo wait, family floater only)",
+    "note": "Inbuilt under Part D.17; separate SI from Basic SI; max 2 deliveries lifetime; 24-month waiting period; child care, newborn vaccinations, screening and cord blood banking also included",
+    "optional": false,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% of Basic SI per claim-free year up to 100%; optional Cumulative Bonus Enhancer add-on increases to 25%/yr up to 150%",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of Basic SI",
+    "note": "Restored SI = 100% of Basic SI; triggered after Basic SI + CB exhausted; cannot be used for same illness for which claim was paid in current year; unused amount lapses at year end; total restored SI cannot exceed Basic SI in a year",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "Not specified (per schedule)",
+    "note": "Pre-hospitalisation cover exists but number of days is stated in the Policy Schedule, not in the wording",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "Not specified (per schedule)",
+    "note": "Post-hospitalisation cover exists but number of days is stated in the Policy Schedule, not in the wording",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "Listed procedures (405+ listed)",
+    "note": "Extensive list of 405+ named day-care procedures across specialties covered",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (10% of Basic SI cap)",
+    "note": "Covered if patient cannot be moved or no hospital bed available; condition must last ≥3 days; capped at 10% of Basic SI; several conditions excluded (asthma, diabetes, hypertension etc.)",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to Basic SI",
+    "note": "Inpatient AYUSH treatment covered up to Basic SI; OPD/day care AYUSH excluded; pre/post hospitalisation AYUSH excluded",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (up to schedule limit)",
+    "note": "Donor screening and harvesting expenses covered up to limit in schedule; donor pre/post-hospitalisation not covered",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered (limit per schedule)",
+    "note": "Road ambulance covered; air ambulance via emergency assistance services (cashless, 150km+ from home); exact road ambulance limit in Policy Schedule",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments (robotic surgery, stereotactic radiosurgery, oral chemo, etc.) covered up to 50% of Sum Insured",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Non-medical consumables/external devices explicitly excluded; no consumables rider mentioned",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Optional add-on",
+    "note": "Worldwide coverage available as optional cover; emergency inpatient only; reimbursement in INR; PED excluded for first 36 months; max 180 days/year outside India",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; includes portability/migration credits",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for annual/quarterly/half-yearly; 15 days for monthly instalment; coverage available during grace period if premium paid in instalments",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable only for new individual policies; not on renewals or policies with tenure less than 1 year",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; credits for PED and specific waiting periods transferable",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "STDs/HIV, dental (non-accident), spectacles/hearing aids, external prosthetics, external congenital anomaly, self-harm, OPD (except pre/post-hosp), treatment outside India (unless optional cover)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Cumulative Bonus Enhancer (up to 150%), OPD cover, Critical Illness & PA cover (9 CIs + AD/PTD/PPD), Adventure Sports cover, Worldwide coverage",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Health Prime Connect - Policy Wordings (UIN - LIBHLIP25037V032425) (Effective from 30.09.2024)_06_04_26.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:32:17.372Z"
+}

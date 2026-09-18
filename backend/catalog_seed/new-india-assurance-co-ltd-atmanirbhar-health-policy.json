@@ -1,0 +1,173 @@
+{
+  "insurer": "New India Assurance Co. Ltd.",
+  "plan_name": "Atmanirbhar Health Policy",
+  "uin": "NIAHLIP25036V022425",
+  "sum_insured_options": "₹4L – ₹5L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Room Rent, Boarding, Nursing Expenses up to 1% of Sum Insured per day",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges up to 2% of Sum Insured per day",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "20% on all claims",
+    "note": "20% co-payment applies to every claim; can be waived by paying additional optional premium",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract ₹40k/eye; Modern Tx 50% SI",
+    "note": "Cataract capped at ₹40,000 per eye per year; Modern treatments capped at 50% of Sum Insured",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Except for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (24mo for disability PED)",
+    "note": "36 months for all PEDs except pre-existing disability (24 months) and HIV/AIDS (30-day initial wait only)",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "19 listed conditions including hernia, cataract, hydrocele, varicose veins, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day-care treatments covered; indicative list of procedures provided in Annexure III",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation expenses explicitly excluded under specific exclusions",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient AYUSH treatment covered up to 100% of Sum Insured per policy year",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Hospitalisation for donation of body organs by insured is explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance reimbursed up to ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments covered up to 50% of Sum Insured as inpatient or day care",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables/non-medical items listed in Annexure II are explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Any medical treatment taken outside India is explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months, claims cannot be contested except for fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for annual/non-monthly modes; 15 days for monthly instalment mode",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual policies with term of one year or more",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "As per IRDAI portability guidelines; apply at least 30 days before renewal",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "No overseas treatment, no domiciliary, no organ donor, no maternity, no OPD, no STDs, no stem cell storage, no alternative therapies (acupuncture etc.)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Co-payment waiver (pay extra premium to remove 20% co-pay)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy Clause Atmanirbhar Health Policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:34:41.576Z"
+}

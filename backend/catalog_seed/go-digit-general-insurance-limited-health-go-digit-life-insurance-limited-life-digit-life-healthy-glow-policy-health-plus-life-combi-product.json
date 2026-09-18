@@ -1,0 +1,173 @@
+{
+  "insurer": "Go Digit General Insurance Limited (health) & Go Digit Life Insurance Limited (life)",
+  "plan_name": "Digit Life Healthy Glow Policy (Health Plus Life Combi Product)",
+  "uin": "GODHLIP26044V022526",
+  "sum_insured_options": "Up to ₹3 Crores (plan-dependent; some plans have no restriction)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap (base plans)",
+    "note": "Base plans (Double Wallet, Infinity Wallet, Carry Forward, Worldwide, Early Start, Senior Priority, Even Protect) have no room rent restriction. Optional Cover 21 (Room Rent Modification) allows downgrade to shared/1% of SI etc. in exchange for premium discount. BharatX plan varies.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap (base plans)",
+    "note": "ICU has no restriction in base plans. Optional Cover 21 option 6 caps ICU at 2% of SI if chosen.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base)",
+    "note": "No mandatory co-pay in base plan. Zone-based 10% co-pay applies if insured hospitalised in higher zone without address proof. Optional Cover 2 (Network Hospital Discount) introduces 15–20% co-pay for non-PPN hospitals if opted. Optional Cover 15 (OPD) has 25% co-pay in year 1.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Modern treatments capped at 50% SI; cochlear implant 50% SI; specific injections 5% SI",
+    "note": "Exclusion 35: robotic surgery, oral chemo, HIFU etc. capped at 50% of SI (removable via Optional Cover 6 Advance Care). Exclusion 32c: cochlear implant capped at 50% SI. Exclusion 34: hyaluronic acid/intra-articular injections capped at 5% SI. Optional Cover 17 (Smart Save) adds sub-limits on cataract, knee replacement, angioplasty, hernia, CABG etc. in exchange for premium discount.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible in the base plan.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days (most plans); 7 days (Double/Infinity/Carry Forward/Worldwide/BharatX plans)",
+    "note": "Early Start and Senior Priority plans: 30 days. Double Wallet, Infinity Wallet, Carry Forward, Worldwide Treatment, BharatX: 7 days. Reducible via Optional Cover 3.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (most plans); 12 months (Early Start plan)",
+    "note": "Most plans: 36 months. Early Start plan: 12 months. Reducible via Optional Cover 3 (Waiting Period Modification).",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most plans); 12 months (Early Start plan)",
+    "note": "Most plans: 24 months. Early Start plan: 12 months. Reducible via Optional Cover 3.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Inbuilt wallet (Section 4) – 9-month wait; or Optional Cover 9",
+    "note": "Section 4 Maternity Benefit Wallet: starts at ₹15,000 in year 1, grows by ₹10,000/yr (no claim) up to ₹1,00,000; 9-month waiting period; covers up to 2 deliveries. Optional Cover 9 offers higher limits with waiting period as opted. Only one of Section 4 or OC9 can be chosen. Available on Early Start and BharatX plans; not available on some other plans.",
+    "optional": false,
+    "exists": true,
+    "number": 9
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (base); up to infinite via optional add-on",
+    "note": "Base cumulative bonus: 10% per claim-free year up to 100% (most plans); 50% per year up to 100% (Infinity Wallet); 20% per year up to 100% (Even Protect). BharatX offers options up to 600%+. Optional Cover 20 (Infinite Cumulative Bonus) adds 100% of base SI per claim-free year with no upper cap. Optional Cover 19 protects bonus from reducing on claim.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% SI (base Double Wallet); Unlimited on Infinity Wallet/Carry Forward plans",
+    "note": "Section 6 Sum Insured Back-up: Double Wallet & most plans = once per policy period (related and unrelated illness). Infinity Wallet & Carry Forward plans = unlimited reinstatement (related and unrelated). Early Start, Senior Priority, Even Protect = once per policy period (related illness). BharatX = unlimited or once depending on option. Max single claim cannot exceed base SI.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "30–60 days (plan-dependent)",
+    "note": "Double Wallet: 30 days. Infinity Wallet: 60 days. Carry Forward: 30 days. Worldwide Treatment: 60 days. Early Start: 30 days. Senior Priority: 60 days. Even Protect: 30 days. BharatX: 30–120 days depending on option chosen.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60–180 days (plan-dependent)",
+    "note": "Double Wallet: 60 days. Infinity Wallet: 30 days. Carry Forward: 180 days. Worldwide Treatment: 90 days. Early Start: 60 days. Senior Priority: 60–180 days. Even Protect: 60 days. BharatX: 60–180 days.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "Section 1.2 covers all day-care treatments under general or local anaesthesia in a hospital/day care centre for stay less than 24 hrs due to technological advancement.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (Section 1.9)",
+    "note": "Covered up to sum insured under Section 1. Minimum 3 days of treatment required. Excludes asthma, bronchitis, diabetes, hypertension, epilepsy, arthritis, gout, diarrhoea, cold/flu and several other conditions at home.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI (inpatient in NABH/NQAS-accredited AYUSH hospitals)",
+    "note": "Section 1.10: covers Ayurveda, Unani, Siddha, Homeopathy inpatient treatment. Hospital must have NABH pre-entry or NQAS state-level certificate. OPD and preventive/rejuvenation treatments excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (Section 2)",
+    "note": "Harvesting expenses covered subject to SI availability. Donor's pre/post-hospitalisation covered up to 5% of approved harvesting claim. Subject to specific waiting period. Compliant with Transplantation of Human Organs Act 1994.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "1% of SI/day max up to ₹10,000–₹20,000 (plan-dependent) for road; air ambulance up to SI",
+    "note": "Road ambulance (Section 1.5): limit per policy year as per plan schedule (e.g. Double Wallet: 1% of SI max ₹10,000; Infinity Wallet: 1% of SI max ₹15,000; Early Start: 1% of SI max ₹1,500/yr). Emergency Air Ambulance (Section 3): up to SI. Only for emergency hospitalisations.",
+    "optional": false,
+    "number": 10000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited to 50% of SI (base); 100% via Optional Cover 6",
+    "note": "Exclusion 35 caps robotic surgery, oral chemo, HIFU, deep brain stimulation, immunotherapy injections, intravitreal injections, stereotactic radio surgery, bronchial thermoplasty, IONM, stem cell therapy at 50% of SI. Optional Cover 6 (Advance Care) removes this cap.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider (Optional Cover 1)",
+    "note": "Not covered in base plan (Exclusion 25 – Non-Medical Expenses). Optional Cover 1 (Consumables Cover) covers non-medical/consumable expenses up to a % of SI as per policy schedule.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional (Section 5 – Worldwide Coverage plan)",
+    "note": "Available as a separate plan variant (Worldwide Treatment Plan) covering inpatient hospitalisation and day care outside India up to base SI. Diagnosis must be made in India first. Claims on reimbursement basis; payments in INR at RBI exchange rate. Prior approval required.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 15 days for monthly premium payment and 30 days for all other modes. Coverage available during grace period if premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual health insurance policies only; not on renewals or porting/migration. Refund of premium less proportionate risk premium, medical exam costs and stamp duty.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability permitted as per IRDAI norms. Credits for PED waiting period, specific waiting periods, moratorium and no-claim bonus transferable to acquiring insurer.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Consumables (unless OC1 opted), hormone replacement therapy, cochlear implant 50% SI cap, tobacco-related oral/respiratory cancer, external congenital anomaly, artificial life maintenance",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Consumables, OPD benefit, Maternity & Newborn, Infertility, Infinite Cumulative Bonus, Advance Care (modern tx 100%), Room Rent Modification, Worldwide Coverage, Fast Track (PED day-1/30d), Medical Equipment Cover",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "policy-wordings-digit-life-healthy-glow-policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:26:38.173Z"
+}

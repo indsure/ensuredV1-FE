@@ -1,0 +1,169 @@
+{
+  "insurer": "Go Digit General Insurance Limited",
+  "plan_name": "Digit Health Plus Policy (Revision)",
+  "uin": "GODHLGP21487V032021",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "As opted (limit per day chosen by insured)",
+    "note": "Room rent limit is chosen by the insured at inception and mentioned in Policy Schedule. Proportionate deduction applies if actual room rent exceeds opted limit, except for medicines and consumables.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "As opted (limit per day chosen by insured)",
+    "note": "ICU limit is chosen by the insured at inception and mentioned in Policy Schedule. Same proportionate deduction logic applies.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "0% base; 10–20% if treated in higher zone",
+    "note": "No mandatory co-pay for same-zone treatment. Zone B insured treated in Zone A: 10% co-pay. Zone C insured treated in Zone B: 10%; in Zone A: 20%. OPD section has its own co-pay structure.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Modern treatments capped at 50% of SI",
+    "note": "Robotic surgery, oral chemotherapy, immunotherapy, intravitreal injections, stereotactic radio surgeries, deep brain stimulation, balloon sinuplasty, HIFU, bronchial thermoplasty, green/holmium laser prostate, IONM, stem cell therapy each capped at 50% of SI. Cochlear implant capped at 50% of SI. Bariatric surgery and organ donor have separate sub-limits as opted.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (unless opted)",
+    "note": "Deductible is defined in the policy but no standard deductible is mandated; it is a customer-opted feature mentioned in the Policy Schedule.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day initial waiting period for illnesses; can be reduced as opted and mentioned in Policy Schedule. Not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is as opted by insured and mentioned in Policy Schedule; the standard/default is up to 36 months. Reducible via portability credits.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "As opted (up to 36 months)",
+    "note": "Specific disease waiting period is as opted by insured and mentioned in Policy Schedule; standard maximum is 36 months. Covers arthritis, cataract, hernia, psychiatric illness, bariatric surgery, organ transplant, joint replacement, etc.",
+    "optional": false,
+    "number": 36
+  },
+  "maternity": {
+    "display": "Optional add-on (waiting period as opted)",
+    "note": "Covered under Section 7 if opted. Waiting period as chosen by insured at inception. Limited to 2 living children. Second child covered at a percentage of SI. Ectopic pregnancy covered under main hospitalisation section.",
+    "optional": true,
+    "exists": true,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "As per Policy Schedule (rate/max not specified in wording)",
+    "note": "Cumulative bonus rate and maximum cap are mentioned in Policy Schedule/Certificate of Insurance. Bonus reduces on claim in same proportion as accrued. Alternatively, a 5% No Claim Discount on premium is available.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Once per policy year, 100% SI (unrelated illness only)",
+    "note": "Section 10 Sum Insured Refill: 100% of SI refilled once SI is fully exhausted. Triggered only for hospitalisation unrelated to/not arising from earlier claim in same policy period, unless waived by insurer. Number of refills as per Policy Schedule.",
+    "optional": true,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "As opted (days mentioned in Policy Schedule)",
+    "note": "Pre-hospitalisation period is chosen by insured at inception and stated in Policy Schedule. Covers consultations, investigations and medicines for the same condition.",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "As opted (days mentioned in Policy Schedule)",
+    "note": "Post-hospitalisation period is chosen by insured at inception and stated in Policy Schedule. Alternatively, a lump-sum percentage of claim amount can be opted.",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "Day care procedures under both accidental and illness hospitalisation sections are covered. Treatment normally taken on OPD basis is excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Optional add-on (Section 9)",
+    "note": "Covered under Section 9 if opted. Requires treatment to continue for at least 3 days. Several conditions excluded from domiciliary cover (asthma, diabetes, hypertension, epilepsy, etc.).",
+    "optional": true,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI (inbuilt with Section 1B)",
+    "note": "Section 4 is a mandatory in-built cover with Section 1B. Covers inpatient AYUSH treatment up to SI. Only NABH/NQAS-accredited AYUSH hospitals qualify. OPD and preventive/rejuvenation treatments excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Optional add-on (Section 3)",
+    "note": "Covers harvesting expenses subject to availability of SI under Section 1B. Donor pre/post-hospitalisation covered up to 5% of harvesting claim. Specific waiting period applies.",
+    "optional": true,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "As per Policy Schedule limit per hospitalisation",
+    "note": "Road ambulance covered under Section 1A/1B subject to limit stated in Policy Schedule. Air ambulance covered under Section 5 if opted. Includes transfer between hospitals if medically necessary.",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Sub-limited at 50% of SI",
+    "note": "Robotic surgery, oral chemotherapy, immunotherapy (monoclonal antibody injections), intravitreal injections, stereotactic radio surgeries, deep brain stimulation, balloon sinuplasty, HIFU, bronchial thermoplasty, green/holmium laser prostate vaporisation, IONM, stem cell therapy for haematological conditions — all capped at 50% of SI unless specifically agreed otherwise.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (listed as non-payable)",
+    "note": "Extensive list of non-medical/consumable items in Annexure A are not payable. Sterilised gloves and a few items payable in specific clinical contexts only.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Specific exclusion: any treatment received outside India is not covered under this policy.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes. Coverage not available during grace period except where premium is paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "Not specified",
+    "note": "Free-look period is not explicitly mentioned in the policy wording.",
+    "optional": false,
+    "number": null
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Credits for waiting periods, PED, cumulative bonus and moratorium transferable to acquiring insurer.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Overseas treatment, STIs, sleep disorders/CPAP, tobacco-related oral/respiratory cancer, stem cell transplant (non-bone marrow), defence operations, sexual disorders"
+  },
+  "optional_riders": {
+    "display": "Maternity+Newborn, Infertility (IVF/IUI), Organ Donor, Domiciliary, OPD benefit, Daily Hospital Cash, Critical Illness benefit, Cancer benefit, Air Ambulance, Sum Insured Refill, Long Hospitalisation Cash"
+  },
+  "source_file": "policy-wordings-digit-health-plus-policy-revision.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:26:22.696Z"
+}

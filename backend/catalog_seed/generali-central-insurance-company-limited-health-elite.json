@@ -1,0 +1,173 @@
+{
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Elite",
+  "uin": "GCIHLIP22234V012122",
+  "sum_insured_options": "₹75L – ₹6Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap",
+    "note": "Policy pays Reasonable and Customary Charges for room rent with no stated sub-limit on room category in base cover.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap",
+    "note": "ICU charges covered up to Sum Insured with no separate sub-limit stated.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "20% (age 61–65, first-time entrants); 20% on Medical Treatment Abroad",
+    "note": "Mandatory 20% co-pay for insured persons aged 61–65 entering policy for first time (cannot be waived); 20% co-pay on all Medical Treatment Abroad claims (can be waived via optional add-on).",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract ₹1L/eye; Bariatric ₹10L; Prosthetics ₹10L; Maternity ₹1–2L; Mental health ₹1Cr cap; OPD ₹50k/yr",
+    "note": "Cataract capped at ₹1,00,000 per eye; Bariatric surgery up to ₹10,00,000; Prosthetic devices up to ₹10,00,000; Normal delivery ₹1L, C-section ₹2L; Mental healthcare capped at ₹1Cr; OPD sub-limit ₹50,000/yr; Domiciliary up to 10% of SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible in base plan. Family floater deductible applies on aggregate basis but no fixed rupee deductible is specified.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "PED waiting period is 24 months of continuous coverage from inception.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 36 months (joint replacement, rheumatoid arthritis, gout, osteoporosis)",
+    "note": "24-month wait for cataract, hernia, BPH, hydrocele, fibroids, stones, etc.; 36-month wait for rheumatoid arthritis, gout, joint replacement surgery, age-related osteoarthritis/osteoporosis.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (24 mo wait if both spouses covered; 36 mo if self only)",
+    "note": "Normal delivery + pre/post natal up to ₹1,00,000; C-section + pre/post natal up to ₹2,00,000. Waiting: 24 months if self & spouse both covered, 36 months if only self covered.",
+    "optional": false,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr, reduces on claim)",
+    "note": "CB increases by 10% of base SI per claim-free year, max 100% of base SI. Reduces at same rate if claim made. OPD and Wellness claims do not affect CB.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of base SI (unrelated illness only)",
+    "note": "Restore Sum Insured equal to 100% of base SI triggered once per policy year after full SI + CB exhausted. Cannot be used for same/related illness for which claim was already paid. Not available for maternity claims.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days prior to admission.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (400+ listed) plus any new procedures due to tech advancement",
+    "note": "Extensive list of 400+ day-care procedures in Annexure II; also covers any other surgeries/procedures requiring <24 hrs due to technological advancement.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (up to 10% of SI, min 3 days treatment)",
+    "note": "Domiciliary hospitalisation covered up to 10% of base SI (excluding CB). Several conditions excluded (asthma, diabetes, hypertension, epilepsy, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI (inpatient AYUSH hospitalisation)",
+    "note": "AYUSH (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy) inpatient hospitalisation covered up to Sum Insured. OPD AYUSH excluded under this benefit.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered up to SI",
+    "note": "Organ donor harvesting expenses covered up to Sum Insured when insured is recipient. Donor screening and post-hospitalisation expenses for donor not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Road: ₹50,000; Air: ₹5,00,000",
+    "note": "Road ambulance up to ₹50,000; Air ambulance up to ₹5,00,000 per policy year within India. Abroad ambulance also covered (excl. USA/Canada unless optional cover opted).",
+    "optional": false,
+    "number": 50000
+  },
+  "modern_treatments": {
+    "display": "Covered (up to SI)",
+    "note": "Policy covers all medically necessary treatments including robotic/keyhole surgeries (e.g. CABG via minimally invasive, craniotomy, etc.) up to Sum Insured. No explicit modern treatment sub-limit stated.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (standard exclusion list applies)",
+    "note": "Annexure III lists excluded consumables (gloves, masks, diapers, etc.). No consumables cover rider available.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Inbuilt (listed critical illnesses & emergencies abroad, excl. USA/Canada); USA/Canada optional",
+    "note": "Medical Treatment Abroad (Benefit 2) is inbuilt for listed critical illnesses and emergencies outside India excluding USA & Canada. Extension to USA & Canada available as optional add-on (Benefit 25).",
+    "optional": false,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim/policy contestable except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Grace period is 30 days for all modes except monthly instalment which has 15 days.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period applicable on new policies only, not on renewals or porting.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Not applicable for Medical Treatment Abroad and Maternity waiting periods.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Durable medical equipment (CPAP, glucometer, wheelchair); STDs (non-HIV); external congenital anomaly; stem cell storage; hormone replacement therapy; USA/Canada treatment (base)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Co-pay waiver for Medical Treatment Abroad; Treatment extension to USA & Canada",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "health-elite-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:23:49.634Z"
+}

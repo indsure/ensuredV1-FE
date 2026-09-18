@@ -1,0 +1,173 @@
+{
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "Health Guard",
+  "uin": "BAJHLIP26073V082526",
+  "sum_insured_options": "Not specified in wording (₹3L – ₹1Cr referenced in tables)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Silver: 1% SI/day; Gold/Platinum: Single Pvt AC (3L–7.5L), Any room (10L+)",
+    "note": "Silver Plan capped at 1% of SI per day. Gold & Platinum: SI 3L–7.5L = Single Private AC room; SI 10L+ = any room. Optional room-rent capping discount available (1.5% SI/day up to ₹7,500/day). Proportionate deduction applies if higher room taken.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "At actuals",
+    "note": "ICU charges paid at actual expenses for all plans.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base); Zone co-pay if Zone B/C insured treats in higher zone",
+    "note": "No mandatory co-pay by default. Zone B insured treating in Zone A: 15%; Zone C in Zone A: 20%; Zone C in Zone B: 5%. Voluntary co-pay of 10% or 20% available for premium discount.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract: 20% SI/eye (max ₹1L); Bariatric: 25–50% SI (max ₹5L); Maternity: ₹15k–₹35k",
+    "note": "Cataract capped at 20% of SI per eye, max ₹1,00,000. Bariatric: 25% SI (Silver), 50% SI max ₹5L (Gold/Platinum). Maternity: Normal ₹15k–₹25k, Caesarean ₹25k–₹35k depending on SI slab.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None (base); Voluntary aggregate deductible optional",
+    "note": "No mandatory deductible. Voluntary aggregate deductible options: ₹50,000 / ₹1,00,000 / ₹2,00,000 / ₹3,00,000 available for premium discount. Not applied on maternity/newborn claims.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses; not applicable for accidents. Waived after 12 months continuous coverage.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "36 months continuous coverage from first policy inception. Reducible via portability credit from prior insurer.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "27 listed conditions (cataracts, hernia, fistula, stones, etc.) excluded for 24 months. Joint replacement, vertebral surgery, bariatric, Parkinson's etc. excluded for 36 months.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (Gold & Platinum only; 72-month wait)",
+    "note": "Not covered under Silver Plan. Gold & Platinum: max 2 deliveries/terminations; Normal delivery ₹15k–₹25k, Caesarean ₹25k–₹35k depending on SI. 72-month waiting period from first Health Guard policy inception. Newborn cover included within maternity limit.",
+    "optional": false,
+    "exists": true,
+    "number": 72
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (Silver & Gold: 10%/yr); Platinum: up to 150% (50%+50%+10%×5)",
+    "note": "Silver & Gold: 10% per claim-free year, max 100% over 10 years. Platinum (Super Cumulative Bonus): 50%/yr for first 2 years, then 10%/yr for next 5 years, max 150%. Claim reduces bonus by one slab.",
+    "optional": false,
+    "number": 150
+  },
+  "restoration": {
+    "display": "Once/year, 100% base SI reinstated",
+    "note": "Triggered only after full SI (including cumulative bonus) is exhausted. Applicable once per policy year. For Cancer and Kidney Failure: only once in lifetime of insured; for all other conditions: every year. Platinum plan also has Recharge Benefit (20% SI up to ₹5L) for claim exceeding SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses for 60 days before admission for same illness/injury.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses for 90 days after discharge for same illness/injury.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "Listed procedures (399+ listed in Annexure I)",
+    "note": "Extensive list of day-care procedures covered across ENT, ophthalmology, oncology, urology, orthopaedics, gynaecology, etc. Not all-inclusive; based on listed procedures.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "No domiciliary hospitalisation benefit mentioned in the policy wording.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI (inpatient, govt/accredited hospitals)",
+    "note": "AYUSH inpatient hospitalisation covered up to In-patient Hospitalisation Treatment SI. Must be in government AYUSH hospital or QCI/NABH accredited facility. Minimum 24-hour admission required.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ donor harvesting expenses covered when recipient's inpatient claim is admitted. Donor must comply with Transplantation of Human Organs Act.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹20,000/policy year (road); Air ambulance optional",
+    "note": "Road ambulance: up to ₹20,000 per policy year for emergency transfer to nearest hospital or inter-hospital transfer. Air ambulance available as optional add-on for SI ₹5L and above.",
+    "optional": false,
+    "number": 20000
+  },
+  "modern_treatments": {
+    "display": "Covered up to base SI",
+    "note": "Annexure III lists modern treatments including robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, intravitreal injections, HIFU, deep brain stimulation, etc. Covered up to base SI.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (extensive non-medical items list excluded)",
+    "note": "Annexure II lists non-payable consumables (gloves, masks, syringes, etc.). No consumables cover rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment within India only. No international/overseas treatment cover available.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Grace period is 15 days for monthly instalment premium and 30 days for all other payment modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period for new policies only; not applicable on renewals or portability/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines with continuity of waiting period credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "No overseas treatment; maternity excluded in Silver; IVF/ART excluded; terrorism covered; dental (non-accidental) excluded",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Air ambulance (SI ₹5L+); Voluntary co-pay (10%/20%); Voluntary aggregate deductible; Room rent capping discount",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Health-Guard_PW.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:38:34.290Z"
+}

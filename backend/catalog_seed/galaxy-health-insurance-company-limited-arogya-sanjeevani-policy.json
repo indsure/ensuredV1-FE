@@ -1,0 +1,173 @@
+{
+  "insurer": "Galaxy Health Insurance Company Limited",
+  "plan_name": "Arogya Sanjeevani Policy",
+  "uin": "GHIHLIP26045V012526",
+  "sum_insured_options": "₹50,000 – ₹10L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "If room taken at higher rate, all other expenses (except medicines) reimbursed proportionately",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "Proportionate deduction applies if ICU charges exceed limit",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-pay applies to every admissible claim amount",
+    "optional": false,
+    "number": 5
+  },
+  "sub_limits": {
+    "display": "Cataract capped; modern treatments 50% SI",
+    "note": "Cataract: 25% of SI or ₹40,000 per eye per year, whichever lower; Modern treatments: up to 50% of SI",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Except for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Reducible via portability credits; only declared and accepted PEDs covered after 36 months",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 36 months (joint replacement, osteoarthritis)",
+    "note": "24-month list includes cataract, hernia, hydrocele, piles, etc.; 36-month list includes joint replacement and age-related osteoarthritis/osteoporosis",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under Code Excl 18",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% added per claim-free year; reduced at same rate on claim; alternatively insured may opt No Claim Discount on premium instead",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "For same condition as admissible hospitalisation",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "From date of discharge for same condition",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day-care treatments covered; 24-hour time limit not applicable for day-care",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered (optional rider available)",
+    "note": "Domiciliary hospitalisation excluded; covered only if Galaxy Smart Outpatient rider is opted",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to full sum insured in any AYUSH Hospital",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "No mention of organ donor expenses in policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance only; fixed cap of ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments covered up to 50% of SI; includes robotic surgery, stereotactic radio surgery, oral chemo, immunotherapy, etc.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-medical/consumable items explicitly excluded in Annexure-I List I",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy restricted to India; treatment outside India explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud and permanent exclusions",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "30 days for yearly/half-yearly/quarterly; 15 days for monthly premium payment",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; credits for PED waiting, specific waiting, moratorium transferable",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, domiciliary/OPD (unless rider), overseas treatment, sterility/IVF, gender change, cosmetic surgery, war, nuclear/bio/chemical",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Galaxy Smart Outpatient rider (covers domiciliary & OPD); No Claim Discount (in lieu of Cumulative Bonus)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy Wording (7).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:22:49.914Z"
+}

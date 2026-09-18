@@ -1,0 +1,165 @@
+{
+  "insurer": "IndusInd General Insurance Co. Ltd.",
+  "plan_name": "IndusInd Specially Abled Health Insurance",
+  "uin": "RELHLIP23197V012223",
+  "sum_insured_options": "₹4L – ₹5L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Room rent capped at 1% of Sum Insured per day; proportionate deduction applies if higher room chosen",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges capped at 2% of Sum Insured per day; ICU charges not subject to proportionate deduction",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "20% on all claims",
+    "note": "20% co-pay applies to every claim; waiver available if optional add-on premium is paid",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract ₹40k/eye; Modern Tx 50% SI; AYUSH 50% SI",
+    "note": "Cataract capped at ₹40,000 per eye per year; Modern Treatments capped at 50% of SI; AYUSH capped at 50% of SI",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months (disability PED); 48 months (other PEDs)",
+    "note": "Pre-existing disability covered after 24 months; all other pre-existing conditions (excluding HIV/AIDS) after 48 months",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "19 listed conditions including cataract, hernia, ENT disorders, varicose veins etc. have 24-month waiting period",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days prior to admission",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days from discharge",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures covered",
+    "note": "Extensive indicative list of 537 day-care procedures provided in Annexure III",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation expenses explicitly excluded under specific exclusions",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to 50% of SI",
+    "note": "AYUSH inpatient treatment covered up to 50% of Sum Insured per policy year",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Hospitalisation for donation of body organs by insured and related complications explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance reimbursed up to ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments covered up to 50% of Sum Insured as inpatient or day care",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-medical/consumable items excluded under Annexure II List I",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Any medical treatment taken outside India is explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "96 months (8 years)",
+    "note": "After 8 continuous years no claim can be contested except for proven fraud and permanent exclusions",
+    "optional": false,
+    "number": 96
+  },
+  "grace_period": {
+    "display": "30 days (annual); 15 days (instalments)",
+    "note": "30-day grace period for annual premium; 15-day grace for instalment modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "15 days",
+    "note": "Free-look period of 15 days from receipt of policy document; applicable on new policies only",
+    "optional": false,
+    "number": 15
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to same product of other insurers allowed as per IRDAI guidelines; migration within company also allowed but only on product withdrawal",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Treatment outside India, organ donation, domiciliary hospitalisation, ART for HIV, prosthetics/devices for disability, STDs, stem cell storage, alternative therapies (acupuncture etc.)",
+  "optional_riders": "Co-pay waiver (optional add-on to remove 20% co-payment)",
+  "source_file": "indusind-specially-abled-health-insurance-pw.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:43:52.082Z"
+}

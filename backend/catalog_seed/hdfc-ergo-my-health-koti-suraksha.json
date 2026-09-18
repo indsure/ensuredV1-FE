@@ -1,0 +1,173 @@
+{
+  "insurer": "HDFC ERGO",
+  "plan_name": "my:health Koti Suraksha",
+  "uin": "HDFHLIP21131V012021",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Standard AC Room",
+    "note": "Proportionate deduction applies if higher room taken. Waiver of Room Rent Capping available as optional add-on.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "Not specified (no separate cap stated)",
+    "note": "ICU charges covered as part of Medical Expenses; no explicit separate ICU sub-limit found in base policy.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "20% if treated in higher-tier city than premium paid for",
+    "note": "Tier-based co-pay: Tier 1b policyholders pay 20% in Tier 1a cities; Tier 2 policyholders pay 20% in Tier 1a/1b cities. No co-pay if room rent ≤₹5,000/day or accident. Co-pay also applies during PED waiting period. Waiver of Co-Payment available as optional add-on.",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract ₹75k, Hernia ₹75k, Hysterectomy ₹75k, and 6 more",
+    "note": "Cataract per eye ₹75,000; Benign tumors/cysts ₹75,000; Stone in urinary system ₹75,000; Hernia ₹75,000; Appendicectomy ₹75,000; Hysterectomy ₹75,000; Fissures/Piles/Fistulas ₹75,000; Cellulitis/Abscess ₹75,000. Waiver of Disease Capping available as optional add-on.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None (base); Aggregate Deductible optional",
+    "note": "No base deductible. Aggregate Deductible is an optional add-on (amount per schedule); once opted cannot be removed at renewal.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "36 months continuous coverage. Reducible via optional Waiting Period Modification add-on.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Extensive list including cataract, hernia, joint replacement, etc. Reducible via optional Waiting Period Modification add-on.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard permanent exclusion (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr, irrespective of claims)",
+    "note": "50% of Base SI added per renewal year regardless of claims, up to 100% max. Not applicable if Aggregate Deductible opted. Cumulative Bonus Booster optional add-on can modify the rate.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Optional (Sum Insured Rebound)",
+    "note": "Sum Insured Rebound is an optional add-on: restores SI equal to claim paid, up to Base SI, on subsequent hospitalisation in same policy year. Not available if Aggregate Deductible opted. No inbuilt restoration in base plan.",
+    "optional": true,
+    "ordinal": 2
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days before admission.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "Day care treatment covered under Section 1.A.I.6.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered when patient cannot be moved or no hospital room available.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (in-patient, AYUSH Hospital)",
+    "note": "AYUSH in-patient treatment covered up to limits in policy schedule at recognised AYUSH hospitals.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ donor hospitalisation expenses for harvesting covered; donor's pre/post-hosp excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered (no stated ₹ cap)",
+    "note": "Road ambulance covered for emergency transfer, inter-hospital transfer, and hospital-to-home. No explicit rupee limit stated in wording.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly mention modern/robotic treatments as a named benefit or exclusion.",
+    "optional": false,
+    "exists": false
+  },
+  "consumables": {
+    "display": "Optional add-on",
+    "note": "Non-Medical Expenses cover is an optional add-on (Optional Cover 1 under Section 1). Base policy excludes consumables/non-medical items.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional add-on",
+    "note": "Emergency Medical Expenses (life-threatening, outside India) and Overseas Treatment for Major Illnesses are both optional add-ons.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim contestable except on grounds of fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30 days for yearly/half-yearly/quarterly; 15 days for monthly instalment.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or porting.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; apply at least 30 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, OPD treatment, hearing aids/spectacles, stem cell harvesting, congenital external anomalies, sleep apnoea investigation, alopecia",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Non-Medical Expenses, Aggregate Deductible, Emergency Global Cover, Overseas Treatment, Waiver of Disease Capping, Waiver of Room Rent, Waiting Period Modification, Medical Evacuation, Sum Insured Rebound, Waiver of Co-Payment, CB Booster",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "myhealth-koti-suraksha-pw-327779800227.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:31:56.476Z"
+}

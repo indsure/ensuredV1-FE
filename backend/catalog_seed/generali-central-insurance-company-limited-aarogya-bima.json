@@ -1,0 +1,173 @@
+{
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Aarogya Bima",
+  "uin": "GCIHLIP23052V032223",
+  "sum_insured_options": "₹2L – ₹5L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Co-payment on associated medical expenses (excl. pharmacy, consumables, implants, diagnostics) if room rent exceeds entitled limit; co-payment not applicable for ICU admissions",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "At actuals (no cap)",
+    "note": "No co-payment applies for ICU room even if rent exceeds defined limit; paid at actual expenses",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "10% mandatory on every claim",
+    "note": "Mandatory 10% co-pay on all admissible hospitalisation bills (excl. pre/post-hosp). Optional additional 20% or 30% co-pay available for premium discount. Co-pay not applicable for modern treatment sub-limit procedures.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Modern treatments capped at 50% of SI",
+    "note": "12 modern treatment procedures (robotic surgery, oral chemo, intravitreal injections, deep brain stimulation, etc.) capped at 50% of SI per policy period",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Except accidental hospitalisation; not applicable if continuously covered for more than 12 months",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "No reduction option mentioned; portability credit applicable as per IRDAI norms",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Applies to 16 listed conditions including cataract, hernia, hydrocele, joint replacement, varicose veins, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity explicitly excluded (Excl18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "Cumulative bonus is defined in the policy but no rate or cap is mentioned in the schedule of benefits",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre and post hospitalisation combined capped at 2% of SI per hospitalisation",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Pre and post hospitalisation combined capped at 2% of SI per hospitalisation",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (400+ listed)",
+    "note": "Also covers any other procedures agreed by insurer requiring less than 24 hours hospitalisation due to technological advancement",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation explicitly excluded under specific exclusions (clause aa)",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered (hospitalisation only)",
+    "note": "AYUSH hospitalisation covered for accident and illness; preventive and rejuvenation treatments excluded",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Donor screening, treatment and surgery to remove organs explicitly excluded; donor pre/post hospitalisation also excluded",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "Not covered",
+    "note": "Ambulance is listed in Annexure 1 as a non-payable item",
+    "optional": false,
+    "number": 0
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 modern treatment procedures covered but capped at 50% of SI per policy period; co-payment waived for these procedures",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of consumables/non-medical items excluded in Annexure 1 (gloves, masks, etc.)",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Coverage restricted to India only; treatment outside India explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to original SI; enhanced SI has fresh 60-month period",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "15 days grace for monthly premium; 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "As per IRDAI portability guidelines; apply at least 45 days before renewal",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary hospitalisation, ambulance, OPD, maternity, organ donor, treatment outside India, stem cell storage, congenital external anomalies, dental (non-accidental)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Additional co-payment options (20% or 30%) for premium discount; no other riders mentioned",
+    "note": null,
+    "optional": false
+  },
+  "source_file": "aarogya_bima_policy_wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:22:56.909Z"
+}

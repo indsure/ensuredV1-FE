@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "ReAssure 3.0",
+  "uin": "NBHHLIP26047V012526",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Variant-based (Classic: General Ward; Select: Single Private; Elite: Any room)",
+    "note": "Classic variant eligible for General Ward (co-pay if higher); Select eligible for Single Private Room (co-pay if higher); Elite eligible for all room categories including deluxe/suite without co-pay. Room upgrade triggers proportionate co-payment on entire claim.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "No cap (covered up to Sum Insured)",
+    "note": "No specific ICU sub-limit mentioned; covered as part of hospitalisation expenses up to Sum Insured.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base); room upgrade or HeadsUp/Tiered network breach triggers 20%",
+    "note": "No mandatory co-payment on base plan. Optional co-payment can be chosen (reduces premium). Room upgrade beyond eligible category triggers proportionate co-pay. HeadsUp/Tiered network breach triggers 20%. Prolonged hospitalisation >7 days without intimation triggers 10% additional co-pay.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Modern treatments sub-limited on Classic & Select; no other major sub-limits",
+    "note": "Modern treatments (robotic surgery etc.) have a sub-limit on Classic and Select variants; can be removed via optional Modern Treatments+ add-on. Cataract on Classic & Select covers only Mono-focal Lens. No other disease-wise sub-limits mentioned.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (optional Annual Aggregate Deductible available)",
+    "note": "No inbuilt deductible. Optional Annual Aggregate Deductible can be chosen; cannot be combined with co-payment.",
+    "optional": true,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents covered from day 1. Can be reduced via optional Initial Wait Period Modification add-on.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Standard PED waiting period is 36 months. Can be reduced or increased via optional Pre-Existing Disease Waiting Time Modification (available only at inception, not modifiable at renewal).",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Specific diseases (cataract, hernia, joint replacement, stones, fibroids, haemorrhoids, varicose veins, benign tumours, etc.) have 24-month waiting period. Accidents covered from day 1; cancer covered after 30-day wait. Can be modified via optional Specific Disease Waiting Time Modification.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered (standard exclusion; lawful MTP covered)",
+    "note": "Maternity expenses are a standard exclusion (Excl18). Ectopic pregnancy and lawful medical termination of pregnancy are covered. No optional maternity add-on mentioned in this wording.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 10x Base SI (Booster+, 100% per claim-free year)",
+    "note": "Booster+ carries forward unutilised Base Sum Insured each claim-free year, accumulating up to 10 times the Base Sum Insured. This is the no-claim bonus mechanism; not a traditional % CB.",
+    "optional": false,
+    "number": 1000
+  },
+  "restoration": {
+    "display": "Unlimited, 100% (ReAssure Forever)",
+    "note": "ReAssure Forever triggers after the first paid claim and provides restoration up to Base Sum Insured per claim, unlimited times, for any illness (related or unrelated), for life of the policy as long as renewed without break. Applies only when 'Unlimited Sum Insured' option is not chosen.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days before admission. Can be modified (reduced or increased) via optional Pre-Hospitalisation Modification add-on at inception only.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge. Can be modified via optional Post-Hospitalisation Modification add-on at inception only.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care (2+ hours hospitalisation)",
+    "note": "Covered for procedures requiring less than 24 hours due to technological advancement. Minimum 2 hours hospitalisation required (24 hours for AYUSH).",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Home Care/Domiciliary Treatment covered when doctor advises home treatment or hospital room unavailable. Peritoneal dialysis and chemotherapy at home covered. Medical devices at home not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI (India only, min 24hr admission)",
+    "note": "AYUSH treatment covered in recognised AYUSH hospitals with minimum 24-hour admission. Covered under the same Sum Insured as allopathic treatment.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Hospitalisation expenses of organ donor for harvesting covered when recipient's claim is paid. Expenses for insured donating own organ also covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to policy limit (road); air ambulance in emergencies",
+    "note": "Road ambulance paid up to limit mentioned in policy schedule. Air ambulance covered only in emergencies per hospitalisation. Exact rupee limit not specified in wording; subject to policy schedule.",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Sub-limited on Classic & Select; up to SI on Elite",
+    "note": "12 modern treatments listed (robotic surgery, stereotactic radio surgery, deep brain stimulation, etc.) covered. Classic & Select have a sub-limit; Elite covers up to Sum Insured. Optional Modern Treatments+ add-on removes sub-limit for Classic & Select.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider (Claim Safeguard+)",
+    "note": "Claim Safeguard+ is an optional benefit covering non-payable items listed in Annexure I (Lists I, II, III, IV) including consumables like gloves, nebulisation kit, etc. Subject to Reasonable & Customary Charges.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional (Borderless or International Cover)",
+    "note": "Borderless add-on covers emergency and planned treatments worldwide with co-payment options (0%/20%/30%/40%/50%). Borderless for Specific Illness covers 9 listed conditions globally. International Cover add-on covers emergency hospitalisation, evacuation, OPD, and travel benefits outside India (up to 45 days/trip). Not available to non-Indian citizens/non-permanent residents.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim or policy can be contested except for proven fraud. Applies to original Sum Insured; enhanced SI has fresh 60-month moratorium on enhanced portion.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly premium modes and 15 days for monthly instalment. Coverage available during grace period for instalment-based policies.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document. Applicable on new policies only, not renewals. Pro-rata premium deducted if cancelled; no refund if claim made.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-mandated portability allowed. Credits for PED waiting, specific waiting periods, no-claim bonus and moratorium period transferable to new insurer.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Dental (non-accident/cancer), external congenital anomaly, artificial life maintenance (brain death), conflict/disaster, off-label drug use, personal waiting period (up to 48mo)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Claim Safeguard+, Borderless, Borderless Specific Illness, International Cover, WellConsult+, Personal Accident, Critical Illness, Hospital Daily Cash, Cash-Bag+, NivaBupaOne, HeadsUp, Tiered Network, Modern Treatments+",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "ReAssure30_Policy_Wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:42:27.729Z"
+}

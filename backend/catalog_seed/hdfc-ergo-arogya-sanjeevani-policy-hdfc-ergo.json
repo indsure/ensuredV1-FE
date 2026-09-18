@@ -1,0 +1,165 @@
+{
+  "insurer": "HDFC ERGO",
+  "plan_name": "Arogya Sanjeevani Policy, HDFC ERGO",
+  "uin": "HDFHLIP20175V011920",
+  "sum_insured_options": "Not specified in wording (standard Arogya Sanjeevani range ₹1L–₹5L)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "If actual room rent exceeds limit, all associated medical expenses are proportionately reduced",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "Includes ICU/ICCU bed, monitoring, critical care nursing",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-pay applies to every admissible claim for all insured persons",
+    "optional": false,
+    "number": 5
+  },
+  "sub_limits": {
+    "display": "Cataract capped; modern treatments 50% of SI",
+    "note": "Cataract: lower of 25% of SI or ₹40,000 per eye per year; modern treatments (robotic surgery etc.) capped at 50% of SI",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Waived for accidents; not applicable if continuously covered for 12+ months",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Reduced by prior continuous coverage under portability norms",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "24 months for most listed conditions (cataract, hernia, etc.); 36 months for joint replacement and age-related osteoarthritis/osteoporosis",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% of base SI added each year irrespective of claims; max 50% of base SI",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day-care treatments covered; 24-hour hospitalisation requirement waived",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation and OPD treatment explicitly excluded (Section C, 3.3)",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to sum insured in recognised AYUSH hospitals",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "No mention of organ donor expenses in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance covered up to ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments (robotic surgery, stereotactic radio surgery, stem cell therapy etc.) covered up to 50% of SI",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive List I explicitly excludes consumables like gloves, masks, bandages, diapers etc.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Treatment must be taken within India only (Section C 3.4 and Section D 2.4)",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to enhanced SI from date of enhancement",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (annual); 15 days (monthly)",
+    "note": "30 days for yearly premium mode; 15 days for monthly/quarterly/half-yearly instalment modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; prior coverage credits transferred",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Domiciliary & OPD, maternity, sterility/IVF, overseas treatment, war, nuclear/bio/chemical, refractive error <7.5D, consumables",
+  "optional_riders": "Not specified",
+  "source_file": "arogya-sanjeevani-policy-retail-pw-570443039657.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:31:46.663Z"
+}

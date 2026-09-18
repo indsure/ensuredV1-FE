@@ -1,0 +1,173 @@
+{
+  "insurer": "HDFC ERGO",
+  "plan_name": "Optima Senior",
+  "uin": "HDHHLIP21379V022021",
+  "sum_insured_options": "Not specified",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Shared room (15% copay) or Single room (30% copay)",
+    "note": "No explicit room rent cap in ₹ or % of SI; instead, accommodation type drives mandatory co-payment: 15% for shared/lower, 30% for single/higher. Emergency cardiac/accident in single room attracts only 15%.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "icu": {
+    "display": "Not specified separately",
+    "note": "ICU charges are covered under in-patient treatment; no separate cap or co-payment mentioned for ICU beyond the accommodation co-payment structure.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "15% (shared room) or 30% (single room); 30% for listed surgeries",
+    "note": "15% copay for shared/lower accommodation and all day-care procedures; 30% for single/higher accommodation; 30% for 14 listed illnesses/surgeries (cataract, hysterectomy, CABG, joint replacement, etc.). Copays do not stack for listed-illness claims.",
+    "optional": false,
+    "number": 15
+  },
+  "sub_limits": {
+    "display": "30% copay on cataract, joint replacement, CABG, angioplasty & 10 others",
+    "note": "14 procedures/illnesses attract a 30% co-payment (not a fixed ₹ sub-limit): cataract, hysterectomy, cholecystectomy, TURP, hernia, angiography, arthroscopy, discectomy, mastectomy, joint replacement, PTCA, hydrocele, major organ transplant, CABG.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days (waivable via endorsement)",
+    "note": "Standard 30-day waiting period applies; an endorsement option exists to delete it entirely.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (reducible to 24 or 12 mo via endorsement)",
+    "note": "Base PED waiting is 36 months. Endorsements available to reduce to 24 months or 12 months (paid options).",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (reducible to 12 mo via endorsement)",
+    "note": "Standard 24-month wait for listed conditions (ENT, gynaecological, orthopaedic, GI, urogenital, eye, others). Endorsement options to reduce to 12 months or delete entirely.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "5% non-cumulative discount on renewal premium (claim-free year)",
+    "note": "This is a renewal premium discount, not a sum-insured bonus. No cumulative SI increase mentioned.",
+    "optional": false,
+    "number": 5
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "Day-care procedures under GA or LA in hospital/day-care centre covered; 15% co-payment applies.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (min 3 days)",
+    "note": "Covered when patient cannot be moved to hospital or no room available; treatment must exceed 3 days.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (in-patient only)",
+    "note": "Only in-patient AYUSH treatment in a recognised AYUSH Hospital is covered. OPD AYUSH not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Harvesting expenses of organ donor covered; donor's pre/post-hospitalisation excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000 per hospitalisation",
+    "note": "Emergency ambulance only; non-emergency and non-registered providers excluded.",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly mention modern/robotic treatments as a covered or excluded benefit.",
+    "optional": false,
+    "exists": false
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables (gloves, etc.) are listed as non-medical expenses and explicitly excluded.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment within India only; all payments in INR within India.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), claims cannot be contested except for fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "15 days (monthly); 30 days (other modes)",
+    "note": "15 days for monthly premium payment mode; 30 days for all other payment modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; must apply at least 30 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, treatment outside India, OPD, congenital external anomalies, stem cell harvesting, sleep apnoea investigation, hearing aids/spectacles, non-medical expenses",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Waiting period reduction endorsements (30-day waiver, 24→12mo specific disease, 36→24 or 12mo PED)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "optima-senior-combined-pw-cis-hegi-757265377962.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:33:50.312Z"
+}

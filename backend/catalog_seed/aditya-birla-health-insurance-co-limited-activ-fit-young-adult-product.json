@@ -1,0 +1,173 @@
+{
+  "insurer": "Aditya Birla Health Insurance Co. Limited",
+  "plan_name": "Activ Fit (Young Adult Product)",
+  "uin": "ADIHLIP22008V012223",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "As per Policy Schedule",
+    "note": "Room rent limits are specified in the Policy Schedule/Product Benefit Table, not in the wording itself. Proportionate deduction applies if higher room is chosen.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "As per Policy Schedule",
+    "note": "ICU charges covered up to limits in Policy Schedule/Product Benefit Table; proportionate deductions not applicable for ICU.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Maternity sub-limited (₹40k normal, ₹60k C-section)",
+    "note": "Maternity expenses capped at ₹40,000 per event (normal delivery) and ₹60,000 per event (C-section), inclusive of newborn, vaccination and stem cell preservation. Other benefits up to SI per Policy Schedule.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period as per Policy Schedule; reducible via portability credit.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Extensive list of specific diseases/procedures (cataract, hernia, arthritis, stones, etc.) excluded for 24 months from inception.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (36mo wait); ₹40k normal / ₹60k C-section per event",
+    "note": "Inbuilt cover after 36 months continuous coverage; max 2 lifetime events; includes newborn expenses, vaccination and stem cell preservation within maternity SI. Optional add-on reduces wait to 24 months.",
+    "optional": false,
+    "exists": true,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr)",
+    "note": "No Claim Bonus at 10% of SI per claim-free year, max 100%. Optional Super NCB add-on can provide additional up to 100% on top (reduced by 50% SI on claim).",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited, 100% (Binge Refill)",
+    "note": "Binge Refill restores full SI unlimited times per policy year for any illness/injury including same illness; applies from first claim; refill SI not counted for NCB calculation.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "As per Policy Schedule",
+    "note": "Pre-hospitalisation expenses covered for number of days specified in Policy Schedule/Product Benefit Table.",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "As per Policy Schedule",
+    "note": "Post-hospitalisation expenses covered for number of days specified in Policy Schedule/Product Benefit Table.",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "Day care treatment covered up to SI; OPD treatment excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered if continuing for at least 3 consecutive days and medically necessary. Home Treatment also covered via empanelled providers on cashless basis.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH in-patient hospitalisation and day care covered up to SI at AYUSH hospitals/day care centres; outpatient and treatment outside India excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ donor harvesting expenses covered up to limits in Policy Schedule; screening, pre/post-hosp of donor, and complications from harvesting excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "As per Policy Schedule",
+    "note": "Road ambulance covered for emergency transport to hospital or inter-hospital transfer; limit specified in Policy Schedule. Domestic emergency air ambulance also available under assistance service.",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 listed modern treatments (robotic surgery, oral chemo, stereotactic radiosurgery, HIFU, deep brain stimulation, etc.) covered under in-patient or day care up to SI.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider (Non-Medical Expense Waiver)",
+    "note": "Non-medical/consumable expenses (Annexure I items) are excluded by default. Optional 'Non-Medical Expense Waiver' cover (Section C.IV.w) covers these up to base SI.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial jurisdiction clause restricts all benefits to India only; treatment outside India is a specific exclusion.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days grace for quarterly/half-yearly/annual premium; 15 days for monthly premium mode.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free look period from receipt of policy document for new individual policies; not applicable on renewals or portability/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-mandated portability available; apply at least 30 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Treatment outside India, RFQMR/ECP/EECP/Hyperbaric O2/KTP laser/Cyber knife, external congenital anomalies, stem cell therapy (except haematopoietic BMT)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Super NCB, Travel Protect (domestic), Premium Waiver (CI/PTD), EMI Protection, Non-Medical Expense Waiver, Reduced Maternity Wait (24mo), OPD Expenses",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "20250821T102947.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:37:55.900Z"
+}

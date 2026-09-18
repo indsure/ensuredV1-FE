@@ -1,0 +1,165 @@
+{
+  "insurer": "TATA AIG General Insurance Company Limited",
+  "plan_name": "Model Policy for Persons with Disabilities and HIV/AIDS",
+  "uin": "TATHLIP23190V012223",
+  "sum_insured_options": "₹4L – ₹5L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Proportionate deduction on associated medical expenses if higher room taken",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges capped at 2% of sum insured per day",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "20% on all claims",
+    "note": "Mandatory 20% co-payment applies to every admissible claim",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract ₹40k/eye; Modern treatments 50% SI",
+    "note": "Cataract capped at ₹40,000 per eye per year; modern treatments capped at 50% of SI",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Except claims arising from accident",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 mo (disability PED); 36 mo (other PED/HIV)",
+    "note": "24 months for pre-existing disability; 36 months for all other pre-existing conditions and HIV/AIDS",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, hernia, ENT disorders, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18); ectopic pregnancy covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures covered",
+    "note": "Indicative list of 500+ day-care procedures provided in Annexure III",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation explicitly excluded under specific exclusions",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient AYUSH treatment covered up to full sum insured per policy year",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Hospitalisation for donation of body organs by insured explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance reimbursement capped at ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments covered up to 50% of sum insured",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables (gloves, etc.) listed as non-payable items in Annexure II",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Medical treatment outside India explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years no claim contestable except fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (annual); 15 days (other modes)",
+    "note": "30 days for yearly premium; 15 days for half-yearly/quarterly per Table of Benefits; 30 days per Section 9.1 for half-yearly/quarterly",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "From date of receipt of policy document",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; waiting period credits transferred",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Anti-retroviral therapy (ART) costs, domiciliary treatment, OPD, STDs/venereal disease, prosthetics/devices for disability, treatment outside India, stem cell storage",
+  "optional_riders": "None mentioned",
+  "source_file": "Model_Policy_for_Persons_with_Disabilities_and_HIVAIDS_Tata_AIG_Poliy_Wordings_26cd9652de.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:25:19.351Z"
+}

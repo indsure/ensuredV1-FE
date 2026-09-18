@@ -1,0 +1,173 @@
+{
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Grameen Care Plus",
+  "uin": "CHIHMGP25039V022425",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day (default); upgradeable",
+    "note": "Default room rent is up to 1% of Coverage Amount per day. Optional Benefit 7 (Room Rent Modification) can change this to a higher % or no sub-limit as specified in Certificate of Insurance.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU charges limited to 2% of Coverage Amount per day. Under Optional Benefit 7, ICU is twice the non-ICU % opted.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the base policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Room rent & ICU capped; other benefits per Certificate of Insurance",
+    "note": "Room rent capped at 1% of SI/day and ICU at 2% of SI/day by default. Maternity, reinstatement, and other benefits have coverage amounts per Certificate of Insurance. No explicit disease-wise sub-limits stated beyond room/ICU.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible for Base Benefit 1. Daily Cash Allowance (Optional Benefit 6) has a deductible in days before payment.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day initial waiting period for illnesses under Base Benefit 1. Waivable via Optional Benefit 2.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "Not specified",
+    "note": "The policy does not explicitly state a PED waiting period. PED definition references 36 months prior to commencement but no specific waiting period for PED coverage is stated in the wording.",
+    "optional": false,
+    "number": null
+  },
+  "specific_disease_waiting": {
+    "display": "Not specified",
+    "note": "No specific named-disease waiting period list is provided in the wording beyond the standard 30-day initial waiting period.",
+    "optional": false,
+    "number": null
+  },
+  "maternity": {
+    "display": "Covered (9mo wait)",
+    "note": "Maternity Expenses covered under Base Benefit 1 (Benefit 3.1.4) with 9-month waiting period. Covers normal delivery, C-section, miscarriage. Limited to first two living children. Coverage up to age 45. Waiting period waivable via Optional Benefit 3.",
+    "optional": false,
+    "exists": true,
+    "number": 9
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative bonus or no-claim bonus mentioned in the policy wording.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Once/year, 100% (unrelated illness)",
+    "note": "Coverage Amount reinstated once per Cover Year after exhaustion. Reinstated amount cannot be used for the same illness/injury for which a claim was already admitted. Unutilized reinstated amount cannot be carried forward.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "1 day",
+    "note": "Pre-hospitalization expenses covered for 1 day immediately prior to admission. Extendable via Optional Benefit 4 (Modification of Pre & Post Hospitalization Medical Expenses).",
+    "optional": false,
+    "number": 1
+  },
+  "post_hosp": {
+    "display": "5 days",
+    "note": "Post-hospitalization expenses covered for 5 days after discharge. Extendable via Optional Benefit 4.",
+    "optional": false,
+    "number": 5
+  },
+  "day_care": {
+    "display": "Listed procedures only",
+    "note": "Day care treatment covered only for procedures listed in Annexure-I of the policy.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary Hospitalization is defined but not listed as a covered benefit under any Base or Optional Benefit.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH treatments covered under Base Benefit 1 (Benefit 3.1.6) via cashless or reimbursement up to Coverage Amount, subject to in-patient claim admissibility.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Donor treatment expenses including surgery to remove organs from donor are explicitly excluded (Clause 4.2.2.xvii).",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "Not covered",
+    "note": "Ambulance is listed under Annexure II as a non-medical excluded item (List I, item 67). No ambulance cover benefit is mentioned.",
+    "optional": false,
+    "number": 0
+  },
+  "modern_treatments": {
+    "display": "Covered (listed methods only)",
+    "note": "Advanced technology methods (robotic surgery, stereotactic radio surgery, oral chemotherapy, etc.) covered under In-patient Care and Day Care Treatment. Expenses on advance technology methods other than those listed are excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Non-medical consumables (gloves, masks, etc.) are explicitly excluded per Annexure II. No rider available for consumables cover.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy covers treatment taken entirely within India. Treatment received outside India is explicitly excluded (Clause 4.2.2.xx).",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years (60 months), no look-back applied. Claims not contestable except for proven fraud and permanent exclusions.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes. Coverage not available during grace period unless premium paid in instalments during policy period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from receipt of policy document. Not applicable at renewal.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Apply at least 30 days before but not earlier than 60 days from renewal date.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment, organ donor expenses, domiciliary hospitalisation, treatment outside India, ambulance, consumables, external congenital anomalies",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Accidental Hospitalisation, Waiver of Initial Waiting Period, Waiver of Maternity Waiting Period, Modified Pre/Post-Hosp, Modified Maternity Cover, Daily Cash Allowance, Room Rent Modification",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "grameen-care-plus----micro-insurance-product---t&c-(effective-prior-to-29-september-2024).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:56:51.270Z"
+}

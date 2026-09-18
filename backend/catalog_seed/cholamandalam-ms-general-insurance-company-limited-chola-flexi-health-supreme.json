@@ -1,0 +1,173 @@
+{
+  "insurer": "Cholamandalam MS General Insurance Company Limited",
+  "plan_name": "Chola Flexi Health Supreme",
+  "uin": "CHOHLIP27040V032627",
+  "sum_insured_options": "₹5L – ₹5Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap (Plus/Premiere); ₹2,000/day for SI ≤₹2L (Basic)",
+    "note": "Basic plan: ₹2,000/day room rent limit for SI ₹50k–₹2L; no room limit for SI above ₹2L under Basic; Plus and Premiere plans have no room rent sub-limits.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "Not specified separately",
+    "note": "ICU charges are covered as part of in-patient hospitalisation expenses; no separate ICU sub-limit stated in the policy wording.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording for any age group or plan.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Few sub-limits (ambulance, RTA bonus, maternity, newborn)",
+    "note": "Ambulance capped at 1% of SI (max ₹2,000–₹5,000/hosp by plan); RTA additional SI capped at ₹3L–₹5L; maternity capped at ₹50k–₹1L; newborn cover capped at 10% of SI or ₹50k; no disease-wise sub-limits on core hospitalisation.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate or base deductible mentioned.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (Basic/Plus); 24 months (Premiere)",
+    "note": "Basic and Plus plans: 36 months PED waiting. Premiere plan: 24 months PED waiting. Base value reported is 36 months (Basic/Plus); Premiere offers 24 months.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, joint replacement, etc.) have a 24-month specific waiting period across all plans.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (36-month wait); ₹50k–₹1L limit",
+    "note": "Inbuilt under Plus (₹50,000/delivery) and Premiere (₹1L/delivery) plans after 36 months continuous coverage; limited to first two deliveries. Not available under Basic plan.",
+    "optional": false,
+    "exists": true,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (Basic); up to 100% (Plus/Premiere)",
+    "note": "Basic plan max CB is 50%; Plus and Premiere plans max CB is 100%. Rate per year: 10%–50% per year depending on plan (schedule shows 10%–50% range for Basic and 50%–100% for Plus/Premiere). CB reduces on claim.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Automatic, once/year, 100% of Base SI",
+    "note": "Triggered after Base SI and earned Cumulative Bonus are exhausted/insufficient. Available for subsequent claims in the same policy year. Not applicable for RTA additional SI, maternity, infertility, bariatric surgery, home care, or global hospitalisation claims.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "30 days (Basic); 60 days (Plus/Premiere)",
+    "note": "Basic plan: 30 days pre-hospitalisation. Plus and Premiere plans: 60 days.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days (Basic); 90 days (Plus); 120 days (Premiere)",
+    "note": "Basic: 60 days; Plus: 90 days; Premiere: 120 days post-hospitalisation cover.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care procedures covered up to SI",
+    "note": "Day care procedures covered up to sum insured across all plans.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (with exclusions for listed conditions)",
+    "note": "Domiciliary hospitalisation covered across all plans; excludes asthma, bronchitis, arthritis, diabetes, hypertension, epilepsy, diarrhoea, chronic nephritis, pyrexia of unknown origin.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH hospitalisation and day care covered up to sum insured across all plans in recognised AYUSH hospitals/day care centres.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (harvesting expenses only)",
+    "note": "Organ donor hospitalisation expenses for harvesting covered; donor pre/post-hospitalisation and other treatment not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "1% of SI; max ₹2,000/hosp (Basic/Plus) or ₹5,000/hosp (Premiere)",
+    "note": "Road ambulance: 1% of SI subject to ₹2,000 per hospitalisation for Basic and Plus plans; ₹5,000 per hospitalisation for Premiere plan.",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Covered (up to SI)",
+    "note": "Modern/advanced treatments are covered as part of in-patient hospitalisation expenses; no specific sub-limit stated for robotic surgery or other modern treatments.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Covered under Plus & Premiere plans (inbuilt)",
+    "note": "Consumables cover (Annexure 1 List 1 items) is inbuilt under Plus and Premiere plans; not available under Basic plan. Excludes personal comfort items, external durable devices, and non-medically necessary items.",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Covered under Premiere plan (inbuilt)",
+    "note": "Global hospitalisation cover inbuilt in Premiere plan up to Base SI; diagnosis must be in India; only in-patient and day care expenses covered; reimbursement only. Not available under Basic or Plus plans.",
+    "optional": false,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim or policy can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free look period from date of receipt of policy document for new policies; not applicable on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines; apply at least 45 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Alcoholic cirrhosis (permanent), impotence treatment, gender change, adventure sports (professional), war, nuclear/bio/chem terrorism, external congenital anomalies",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Medical Second Opinion add-on, Flexi OP Care add-on (OPD consultations, diagnostics, dental, pharmacy discounts)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Chola Flexi Health Supreme CHOHLIP27040V032627-Policy Wording wef 09042026.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:20:54.638Z"
+}

@@ -1,0 +1,173 @@
+{
+  "insurer": "Magma General Insurance Limited",
+  "plan_name": "OneHealth Senior",
+  "uin": "MAGHLIP23048V012223",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day (Gold ≤5L); Single Private AC Room (Gold >5L & Platinum)",
+    "note": "Gold plan up to ₹5L: 1% SI/day room, 2% SI/day ICU. Gold >5L and Platinum: Single Private AC Room with proportionate deduction for higher categories.",
+    "optional": false
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day (Gold ≤5L); Actuals (Gold >5L & Platinum)",
+    "note": "Gold plan up to ₹5L: ICU capped at 2% of SI per day. Gold >5L and Platinum: ICU at actuals.",
+    "optional": false
+  },
+  "copayment": {
+    "number": 30,
+    "display": "30% mandatory (waived for accidents; sublimit procedures exempt; joint replacement has additional 30% Gold / 20% Platinum)",
+    "note": "30% co-pay on all admissible claims except accident claims and procedures with defined sublimits. Joint replacement attracts additional co-pay of 30% (Gold) or 20% (Platinum). Optional cover 2.B.2 can reduce co-pay; optional cover 2.B.9 can increase it.",
+    "optional": false
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Cataract (per eye/yr), major surgeries, hernia/hysterectomy/prostate — limits per Product Benefits Table",
+    "note": "Sublimits apply to: cataract (per eye per policy year), major surgeries (cancer, CVA, cardiovascular, renal, intestinal obstruction, bilio-pancreatic, GI, genitourinary), hernia/hysterectomy/prostate procedures. Exact ₹ amounts in Policy Schedule/Product Benefits Table.",
+    "optional": false
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": null,
+    "optional": false
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day initial waiting period for illnesses; not applicable for accidents.",
+    "optional": false
+  },
+  "ped_waiting": {
+    "number": 12,
+    "display": "12 months",
+    "note": "PED waiting period is 12 months (per Section 3.1.1 which states 'excluded until the expiry of 12 months'). Portability/migration credits apply.",
+    "optional": false
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, hysterectomy, stones, osteoarthritis, knee/hip replacement, etc.) excluded for 24 months from policy inception.",
+    "optional": false
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses are explicitly excluded under Section 3.1.18 (Standard Exclusion Excl18). Ectopic pregnancy is covered.",
+    "optional": false
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "Optional cover 2.B.7: 10% of SI per claim-free year, up to 100% of SI. Applicable only on Section 2.A base covers. Forfeited if policy lapses. Not available if optional cover not renewed beyond one year.",
+    "optional": true
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% SI (unrelated illness/injury only)",
+    "note": "Optional cover 2.B.6: 100% recharge of SI once per policy year. Not available for same illness/injury for which a claim was already paid in that year. Not carried forward if unused.",
+    "optional": true
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "Not specified (days per Product Benefits Table)",
+    "note": "Pre-hospitalisation cover exists under Section 2.A.2 but exact number of days is referenced to Policy Schedule/Product Benefits Table, not stated in wording.",
+    "optional": false
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "Not specified (days per Product Benefits Table); 90 days with optional cover 2.B.1 (Gold only)",
+    "note": "Post-hospitalisation cover under Section 2.A.3; exact base days in Policy Schedule/Product Benefits Table. Optional cover 2.B.1 (Gold plan only) extends to 90 days.",
+    "optional": false
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures covered (Annexure III)",
+    "note": "Day care treatment covered under Section 2.A.4 for procedures listed in Annexure III. OPD treatment excluded.",
+    "optional": false
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (min 3 continuous days)",
+    "note": "Domiciliary hospitalisation covered under Section 2.A.6 if treatment continues uninterrupted for at least 3 days and patient cannot be moved to hospital or hospital bed unavailable.",
+    "optional": false
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI (inpatient AYUSH hospitals)",
+    "note": "AYUSH inpatient treatment covered under Section 2.A.7 at government/teaching/registered AYUSH hospitals meeting NABH/NQAS criteria.",
+    "optional": false
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (donor hospitalisation for transplant surgery)",
+    "note": "Section 2.A.13 covers inpatient hospitalisation expenses of organ donor for insured's transplant. Pre/post-hospitalisation and screening of donor excluded.",
+    "optional": false
+  },
+  "ambulance": {
+    "number": null,
+    "display": "Covered up to limit in Policy Schedule (road); air ambulance in Platinum plan",
+    "note": "Road ambulance covered under Section 2.A.5 up to limit in Product Benefits Table. Platinum plan also covers air/helicopter ambulance subject to conditions. Exact ₹ limit not stated in wording.",
+    "optional": false
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (robotic surgery, stereotactic, oral chemo, immunotherapy, etc.)",
+    "note": "Section 2.A.8 covers modern treatments including robotic surgeries, stereotactic radiosurgery, HIFU, balloon sinuplasty, deep brain stimulation, oral chemotherapy, immunotherapy, intra-vitreal injections, bronchial thermoplasty, green/holmium laser prostate, IONM, stem cell therapy for haematological conditions.",
+    "optional": false
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider (Non-payable expense cover 2.B.8)",
+    "note": "Optional cover 2.B.8 covers items listed in Annexure II List I (gloves, consumables, etc.) under inpatient and day care. Not covered in base plan.",
+    "optional": true
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered (India only; treatment outside India excluded per 3.2.23)",
+    "note": "Section 3.2.23 explicitly excludes treatment received outside India. Section 4.2.6 confirms geographical scope is India only.",
+    "optional": false
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium mode)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly premium; 15 days for monthly instalment mode. Coverage not available during grace period.",
+    "optional": false
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Free look period of 30 days from receipt of policy document for new policies only; not applicable on renewals or porting/migration.",
+    "optional": false
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines; apply at least 45 days before but not earlier than 60 days from renewal date.",
+    "optional": false
+  },
+  "notable_exclusions": {
+    "display": "Sleep apnea/snoring, treatment outside India, external congenital anomaly, maternity, hereditary diseases (Haemophilia, Cystic kidneys etc.), OPD treatment, artificial life maintenance",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Enhanced post-hosp (90 days, Gold only), Co-pay reduction, Nursing at home, Hospital daily cash, OPD cover, Recharge of SI (100%), Cumulative bonus (10%/yr up to 100%), Non-payable expense cover, Co-pay increase",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy Wordings – OneHealth Senior (w.e.f. 1st Oct, 2024).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:34:12.875Z"
+}

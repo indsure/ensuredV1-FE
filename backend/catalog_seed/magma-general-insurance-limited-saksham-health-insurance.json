@@ -1,0 +1,173 @@
+{
+  "insurer": "Magma General Insurance Limited",
+  "plan_name": "Saksham Health Insurance",
+  "uin": "MAGHLIP23189V012223",
+  "sum_insured_options": "₹4L – ₹5L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day",
+    "note": "Room Rent, Boarding, Nursing Expenses up to 1% of Sum Insured per day",
+    "optional": false
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges up to 2% of Sum Insured per day",
+    "optional": false
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% on all claims",
+    "note": "Mandatory 20% co-pay on every admissible claim; can be waived by paying additional optional premium",
+    "optional": false
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract ₹40k/eye; Modern Treatments 50% of SI",
+    "note": "Cataract capped at ₹40,000 per eye per year; Modern Treatments capped at 50% of Sum Insured; Room rent and ICU also sub-limited",
+    "optional": false
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": null,
+    "optional": false
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Except claims arising due to accident",
+    "optional": false
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months (disability/HIV); 36 months (other PEDs)",
+    "note": "24 months for pre-existing disability and HIV/AIDS; 36 months for all other pre-existing conditions",
+    "optional": false
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, hernia, hysterectomy, benign tumors, etc.",
+    "optional": false
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under standard exclusion Code-Excl18",
+    "optional": false
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy",
+    "optional": false
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses for 30 days prior to admission",
+    "optional": false
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses for 60 days from date of discharge",
+    "optional": false
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (indicative list of 537 procedures)",
+    "note": "All day care treatments covered; extensive indicative list provided in Annexure III",
+    "optional": false
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation explicitly excluded under specific exclusions",
+    "optional": false
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient AYUSH treatment covered up to 100% of Sum Insured per policy year",
+    "optional": false
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Hospitalisation for donation of body organs by insured explicitly excluded",
+    "optional": false
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance expenses reimbursed up to ₹2,000 per hospitalisation",
+    "optional": false
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments covered up to 50% of Sum Insured as inpatient or day care",
+    "optional": false
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumable items listed in Annexure II List I are explicitly excluded",
+    "optional": false
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Any medical treatment taken outside India is explicitly excluded",
+    "optional": false
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, claims cannot be contested except on grounds of established fraud",
+    "optional": false
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)",
+    "note": "15 days grace for monthly premium payment mode; 30 days for all other modes",
+    "optional": false
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration",
+    "optional": false
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines with continuity of waiting period credits",
+    "optional": false
+  },
+  "notable_exclusions": {
+    "display": "Overseas treatment, organ donor hospitalisation, domiciliary, STDs (non-HIV), stem cell storage, ART for HIV, alternative therapies (acupuncture etc.)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Co-pay waiver (optional add-on to remove mandatory 20% co-payment)",
+    "note": null,
+    "optional": false
+  },
+  "source_file": "Policy Wordings – Saksham Health Insurance (w.e.f. 1st Oct, 2024).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:34:11.795Z"
+}

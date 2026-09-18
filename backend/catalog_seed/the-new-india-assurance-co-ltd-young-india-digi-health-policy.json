@@ -1,0 +1,173 @@
+{
+  "insurer": "THE NEW INDIA ASSURANCE CO. LTD.",
+  "plan_name": "Young India Digi Health Policy",
+  "uin": "NIAHLIP25060V032425",
+  "sum_insured_options": "₹4L, ₹8L, ₹12L (bands mentioned in policy)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single AC Room",
+    "note": "Clause 3.1(a) covers single AC room. If higher room opted, proportionate deduction applies on associate medical expenses. Zone II insured taking treatment in Zone I attracts 10% co-pay.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap stated",
+    "note": "ICU/ICCU charges covered under Clause 3.1(b) with no explicit sub-limit mentioned; covered at actuals subject to sum insured.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "10% if Zone II insured treats in Zone I",
+    "note": "No co-pay for Zone I insured or for accidents. 10% co-pay applies only when Zone II policyholder takes treatment in Zone I cities. No co-pay on sub-limited illnesses.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Cataract, modern treatments, hazardous sports, ARMD, mental illness, genetic disorders, life support, puberty/menopause capped",
+    "note": "Cataract: 10% of SI or ₹50k whichever less. Modern treatments: 5–25% of SI per procedure. Hazardous sports: 10% of SI. Life support: 25% SI/15 days. Puberty/menopause: 25% SI. ARMD: 20% SI. Genetic: 25% SI. Mental illness: 25% SI. Congenital external: 10% of avg SI.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "PED defined as conditions diagnosed or treated within 24 months prior to policy inception. Waiting period is 24 months of continuous coverage.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "12 months (most); 24 months (joint replacement, mental illness, ARMD, genetic)",
+    "note": "90 days for diabetes, hypertension, cardiac conditions. 12 months for cataract, hernia, stones, skin disorders etc. 24 months for joint replacement, osteoarthritis, mental illness, ARMD, genetic diseases, external congenital.",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under Clause 4.4.15 (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (25%/yr)",
+    "note": "25% CB per claim-free year, max 100%. Reduced at same rate if claim made. Option to take premium discount in lieu of CB at renewal.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% — unrelated illness only",
+    "note": "Reinstated SI available once per policy period upon full exhaustion, for illnesses/injuries other than those for which claim was paid. Only for individual SI basis policies. Not available for modern treatments. Unutilised amount not carried forward.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation medical expenses covered up to 60 days prior to admission for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation medical expenses covered up to 90 days from date of discharge for the same condition.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (280+ listed in Annexure I)",
+    "note": "Extensive list of day-care procedures in Annexure I covering ENT, ophthalmology, oncology, urology, gynaecology, orthopaedics, general surgery and others.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Clause 4.4.17 explicitly excludes domiciliary hospitalisation expenses.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient AYUSH treatment (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy) covered up to 100% of SI per policy year under Clause 3.15.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Hospitalisation expenses of donor covered under Clause 3.4, excluding cost of organ itself. Combined donor + recipient liability capped at available SI.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "1% of SI, max ₹5,000 per trip",
+    "note": "Road ambulance covered for shifting to hospital or between hospitals, and also for discharge to residence if certified by doctor. Each leg capped at 1% of SI up to ₹5,000.",
+    "optional": false,
+    "number": 5000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (5–25% of SI per procedure)",
+    "note": "12 modern treatments listed under Clause 3.11 with individual sub-limits ranging from 5% SI/₹30k (IONM) to 25% SI/₹2L (deep brain stimulation, robotic surgery etc.). Restoration not available for modern treatments.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables such as gloves, masks, crepe bandages, diapers etc. are explicitly listed under Annexure II List I as non-payable items.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Clause 5.18 and 4.4.27 restrict coverage to treatment within India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim or policy can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes. Coverage not available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for new individual policies of 1 year or more. Not applicable on renewals or porting.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines with credit for PED waiting, specific waiting periods and moratorium.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary hospitalisation, treatment outside India, acupressure/acupuncture/magnetic therapy, external prosthetics/hearing aids, CPAP/BIPAP at home, vaccination, self-inflicted injury",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None mentioned in policy wording",
+    "note": "No optional riders or add-on covers described in the policy document.",
+    "optional": false
+  },
+  "source_file": "Policy clause Young India.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:43:34.636Z"
+}

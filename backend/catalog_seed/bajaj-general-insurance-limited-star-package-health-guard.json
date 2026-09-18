@@ -1,0 +1,173 @@
+{
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "Star Package – Health Guard",
+  "uin": "BAJHLIP25037V022425",
+  "sum_insured_options": "₹3L – ₹1Cr (Health Guard section)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day (Silver); Single Private Room (Gold/Platinum ≤7.5L); Any room (Gold/Platinum ≥10L)",
+    "note": "Silver plan: 1% of SI per day excluding cumulative bonus. Gold/Platinum with SI 3L–7.5L: single private AC room. Gold/Platinum SI 10L+: any room. Optional room-rent capping discount available (1.5% of SI/day up to ₹7,500) for Gold/Platinum.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "At actuals",
+    "note": "ICU expenses paid at actual charges as provided by the hospital for all plans.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base); zone-based co-pay if Zone B/C insured treats in higher zone",
+    "note": "No mandatory co-pay on base plan. Voluntary co-pay of 10% or 20% available for premium discount. Zone B insured treating in Zone A: 15% co-pay; Zone C in Zone A: 20%; Zone C in Zone B: 5%. Loss of Baggage section has mandatory 10% co-pay.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract capped at 20% of SI/eye (max ₹1L); Bariatric 25–50% of SI; Maternity fixed limits; Joint Replacement CI sub-limit ₹5L",
+    "note": "Cataract: 20% of SI per eye max ₹1L. Bariatric: 25% SI (Silver), 50% SI max ₹5L (Gold/Platinum). Maternity: ₹15k/₹25k normal, ₹25k/₹35k caesarean depending on SI. Critical Illness Joint Replacement sub-limited to ₹5L if SI >₹5L.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None (base); voluntary aggregate deductible optional",
+    "note": "No mandatory deductible. Voluntary aggregate deductible options: ₹50,000 / ₹1,00,000 / ₹2,00,000 / ₹3,00,000 available for premium discount. Not applicable on maternity/newborn claims.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses from first policy commencement. Not applicable for accidents. Waived if continuously covered for more than 12 months.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months of continuous coverage. Reduced to extent of prior coverage under portability norms.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Health Guard section has 24-month waiting for listed conditions (cataracts, hernia, fistula, BPH, haemorrhoids, stones, etc.). Hospital Cash section has 12-month waiting for its listed conditions. Additional 36-month waiting for joint replacement, vertebral surgery, bariatric, Parkinson's, genetic disorders.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered – Gold & Platinum plans only (72-month wait)",
+    "note": "Maternity covered under Gold and Platinum plans only. 72-month waiting period from first policy inception. Normal delivery: ₹15k–₹25k; Caesarean: ₹25k–₹35k depending on SI. Max 2 deliveries/terminations. Pre/post-natal (90 days) within maternity limit. Not covered under Silver plan.",
+    "optional": false,
+    "exists": true,
+    "number": 72
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr) – Silver & Gold; Up to 150% – Platinum",
+    "note": "Silver & Gold: 10% of base SI per claim-free year, max 100% over 10 years. Reduced by 10% on a claim year. Platinum: Super Cumulative Bonus – 50%/yr for first 2 years then 10%/yr for next 5 years, max 150% of SI.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/year, 100% of base SI",
+    "note": "Sum Insured Reinstatement: 100% of base SI reinstated once per policy year after full exhaustion of SI including cumulative bonus. Triggered only after complete exhaustion. For Cancer and Kidney Failure, applicable only once in lifetime; for other conditions, every year. Platinum plan also has Recharge Benefit (20% of SI up to ₹5L) if claim exceeds SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation medical expenses covered for 60 days before hospitalisation for the same illness/injury.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation medical expenses covered for 90 days after discharge for the same illness/injury.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "Covered – listed procedures (extensive list in Annexure I)",
+    "note": "Day care procedures covered as per indicative list in Annexure I covering ENT, ophthalmology, oncology, urology, orthopaedics, gynaecology and more.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "No domiciliary hospitalisation benefit mentioned in the Health Guard section wording.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient hospitalisation covered up to the Sum Insured in government or accredited AYUSH hospitals. Minimum 24-hour admission required.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ donor harvesting expenses covered provided the organ is for the insured person and the insured's hospitalisation claim is accepted.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹20,000/policy year",
+    "note": "Road ambulance covered up to ₹20,000 per policy year for emergency transfer to nearest hospital or transfer between hospitals. Payable only when hospitalisation claim is accepted.",
+    "optional": false,
+    "number": 20000
+  },
+  "modern_treatments": {
+    "display": "Covered up to base SI",
+    "note": "Modern treatments per Annexure III (robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, deep brain stimulation, HIFU, balloon sinuplasty, etc.) covered up to base SI subject to policy terms.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (extensive non-medical items list excluded)",
+    "note": "Annexure II lists extensive non-medical/consumable items not payable (gloves, masks, syringes, diapers, crepe bandages, etc.). No optional consumables rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment within India only. No international/overseas cover available.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested on grounds of non-disclosure/misrepresentation except proven fraud and permanent exclusions.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes. Continuity benefits maintained during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free look period from date of receipt of policy document for new individual policies only. Not applicable on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Must apply at least 30 days before but not earlier than 60 days from renewal date.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "No overseas treatment; external congenital anomalies; growth hormone therapy; refractive error <7.5D; mental illness has 24-mo wait; no domiciliary cover",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Air Ambulance (SI ≥5L); Voluntary co-pay (10%/20% for premium discount); Voluntary aggregate deductible; Room rent capping discount; Zone-based premium",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Star-Package_PW.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:28:00.714Z"
+}

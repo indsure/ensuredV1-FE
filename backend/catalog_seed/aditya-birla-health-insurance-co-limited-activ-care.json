@@ -1,0 +1,169 @@
+{
+  "insurer": "Aditya Birla Health Insurance Co. Limited",
+  "plan_name": "Activ Care",
+  "uin": "ADIHLIP21062V022021",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "As per Policy Schedule/Benefit Table",
+    "note": "Room rent limits are specified in the Policy Schedule/Product Benefit Table, not in the wording itself. A Room Upgrade optional cover is available. Proportionate deduction applies if higher room is taken.",
+    "optional": false,
+    "ordinal": null
+  },
+  "icu": {
+    "display": "Covered; no proportionate deduction",
+    "note": "ICU charges covered; proportionate deductions explicitly not applicable for ICU. Specific limit per Policy Schedule/Benefit Table.",
+    "optional": false,
+    "ordinal": null
+  },
+  "copayment": {
+    "display": "Age 61+ at entry: co-pay as per Benefit Table",
+    "note": "Co-payment applies per claim if age at entry of insured (or eldest in floater) is 61 years or above at inception of first policy. Percentage as per Product Benefit Table/Policy Schedule. Additional 15% co-pay if PPN Discount option chosen and treatment taken outside Preferred Provider Network.",
+    "optional": false,
+    "number": null
+  },
+  "sub_limits": {
+    "display": "Sub-limits for listed illnesses per Benefit Table",
+    "note": "Section C.I.(j) specifies sub-limits for listed illnesses/conditions as per Policy Schedule/Product Benefit Table. Specific amounts not stated in wording.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "Pre-existing diseases covered after 24 months of continuous coverage from inception.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, joint replacement etc.) have 24-month waiting period; joint replacement has 36-month waiting under Standard Plan.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses are a standard exclusion (Excl18). Ectopic pregnancy is covered. No optional maternity add-on mentioned.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% of SI",
+    "note": "No Claim Bonus accrues each claim-free year; maximum cap is 50% of Sum Insured. On a claim, NCB reduces by 10% of SI. Alternatively, insured can opt for No Claim Discount on premium instead of NCB.",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Once/year, up to SI (unrelated illness only)",
+    "note": "Reload of Sum Insured available once per Policy Year for subsequent claims only; not available for same illness/injury for which a prior claim was admitted in that year. Applies to in-patient and day care claims. An 'Unlimited Reload' optional cover is referenced in the sequence of utilisation clause.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "As per Policy Schedule",
+    "note": "Pre-hospitalisation expenses covered; number of days as specified in Policy Schedule/Product Benefit Table (not stated in wording text).",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "As per Policy Schedule",
+    "note": "Post-hospitalisation expenses covered; number of days as specified in Policy Schedule/Product Benefit Table (not stated in wording text).",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (Annexure II)",
+    "note": "Extensive list of 586+ procedures in Annexure II covered. List is indicative and subject to update.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (min 3 days; conditions apply)",
+    "note": "Domiciliary hospitalisation covered subject to minimum 3 consecutive days and medical necessity. Several conditions excluded (asthma, diabetes, hypertension, epilepsy etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (in-patient & OPD)",
+    "note": "AYUSH in-patient hospitalisation covered up to limits in Policy Schedule. AYUSH OPD also covered under OPD benefit. Treatment must be within India.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (harvesting expenses only)",
+    "note": "Medical expenses for organ harvesting from donor covered up to limits in Policy Schedule. Screening, pre/post-hospitalisation of donor, organ transport not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered up to Policy Schedule limit",
+    "note": "Road ambulance covered to nearest hospital for emergency and inter-hospital transfers if medically necessary. Specific rupee limit per Policy Schedule/Benefit Table. Air ambulance covered under Domestic/International Emergency Assistance (inbuilt additional benefit).",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "Policy wording excludes certain specific treatments (RF ablation unless pre-approved, RFQMR, ECP, EECP, Hyperbaric Oxygen, KTP Laser, Cyber Knife, Femto laser, SMILE surgery, bioabsorbable implants, chelation therapy). No explicit modern treatments coverage clause found.",
+    "optional": false,
+    "exists": null
+  },
+  "consumables": {
+    "display": "Not covered (standard exclusion)",
+    "note": "Non-medical/consumable expenses listed in Annexure I are excluded. Consumables waived only for Home Treatment (C.I.k) and Nursing at Home (C.IV.w) optional benefit to the extent specified.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Emergency assistance only (not treatment)",
+    "note": "International Emergency Assistance (air ambulance/evacuation) is an inbuilt benefit for travel outside India up to 90 days. Treatment costs outside India are excluded (Section D.II.50). No optional global treatment cover mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 30 days for quarterly, half-yearly and annual premium modes; 15 days for monthly premium mode.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Free-look period of 30 days from receipt of policy document for new individual policies. Not applicable on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines with continuity of waiting period credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Parkinson's disease, STDs (non-HIV), external congenital anomalies, stem cell therapy, treatment outside India, dental (non-accident), hearing aids/spectacles, sleep apnea devices"
+  },
+  "optional_riders": {
+    "display": "Room Upgrade, PPN Discount (15% co-pay at non-PPN), Nursing at Home, Lifestyle Support Equipment, Portable Medical Equipment, Advance Health Check-up"
+  },
+  "source_file": "20250407T104705.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:38:01.649Z"
+}

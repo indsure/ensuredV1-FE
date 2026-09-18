@@ -1,0 +1,173 @@
+{
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Enhance High Deductible Health Insurance",
+  "uin": "RHIHLIP21372V022021",
+  "sum_insured_options": "₹3L (illustrated); range not fully specified",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private Room (AC)",
+    "note": "Ratable proportion of associate medical expenses applies if higher room category is chosen",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "No explicit ICU sub-limit mentioned; covered under hospitalisation expenses",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "20% (entry age 61+)",
+    "note": "Applies to each and every claim for insured persons whose entry age is 61 years or above; on individual policy applies to that individual, on floater applies to all insured persons if eldest member's entry age is 61+",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "No sub-limits stated",
+    "note": "No disease-wise or procedure-wise monetary sub-limits found in the policy wording beyond the deductible and room rent proportionality",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "₹50,000 (illustrated)",
+    "note": "Aggregate deductible; exact options not listed in wording but ₹50,000 used in premium illustration. After 4 continuous years, policyholder may opt to remove deductible at renewal subject to conditions.",
+    "optional": false,
+    "number": 50000
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing disease waiting period is 36 months of continuous coverage; reducible via portability credits",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Named ailments (cataract, hernia, joint replacement, ENT disorders, kidney stones, varicose veins, etc.) excluded for 24 months",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard permanent exclusion (Code Excl18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "Cumulative bonus is defined in the policy but no specific rate or maximum percentage is stated in the wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation medical expenses covered for 30 days prior to admission",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation medical expenses covered for 60 days after discharge",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (541 listed)",
+    "note": "Extensive list of 541 day-care procedures covered as per Annexure I",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is explicitly excluded under Clause 4.2(xv)",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment covered under Benefit 6 up to Sum Insured for in-patient care at registered AYUSH hospitals within India",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ donor medical expenses covered under Benefit 3 up to the amount specified in Policy Schedule for eligible donors under Transplantation of Human Organs Act",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Not covered",
+    "note": "Ambulance/travel/transportation expenses are explicitly excluded under Clause 4.2(x)",
+    "optional": false,
+    "number": 0
+  },
+  "modern_treatments": {
+    "display": "Covered (listed methods only)",
+    "note": "12 specific advance technology methods covered under Clause 3.1(d) including robotic surgery, stereotactic radiosurgery, oral chemotherapy, etc. Other advance technology methods are excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Non-medical/consumable items are excluded per Annexure II (List I, II, III, IV); gloves, ECG electrodes, nebulisation kits etc. excluded",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Optional (major illnesses only)",
+    "note": "Benefit 5 'Enhance Anywhere' covers treatment outside India for 5 major illnesses (Cancer, Benign Brain Tumour, Major Organ/Bone Marrow Transplant, Heart Valve Replacement, CABG) on reimbursement basis; must be specified in Policy Schedule",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years no look-back applies; claims cannot be contested except for proven fraud and permanent exclusions",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes. Coverage not available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-compliant portability; apply at least 30 days before but not earlier than 60 days from renewal date",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Ambulance, domiciliary hospitalisation, OPD, maternity, consumables, non-listed advance tech, RMO/surcharges, tobacco/alcohol-related illness",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Everyday Care (OPD helpline, wellness discounts), Expert Opinion (major illnesses), Enhance Anywhere (overseas treatment for 5 major illnesses)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "enhance---t&c-(effective-from-12-september-2024-).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:36:19.258Z"
+}

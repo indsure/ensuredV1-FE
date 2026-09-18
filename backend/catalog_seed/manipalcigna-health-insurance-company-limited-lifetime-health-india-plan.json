@@ -1,0 +1,169 @@
+{
+  "insurer": "ManipalCigna Health Insurance Company Limited",
+  "plan_name": "Lifetime Health India Plan",
+  "uin": "MCIHLIP27041V022627",
+  "sum_insured_options": "₹50L – ₹300L (as per health check-up table; exact SI range not explicitly stated in wording)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "As per SI slab (room category linked to SI)",
+    "note": "Room category entitlement is linked to Sum Insured1 as per Policy Schedule; proportionate deduction applies if higher room taken. Exact category (e.g. single private) not specified in wording — depends on SI opted. ManipalCigna Health 360 add-on can modify room rent limit.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Covered (no separate cap stated)",
+    "note": "ICU charges covered under Hospitalisation Expenses; no specific sub-limit mentioned. Associated Medical Expenses proportionate deduction does not apply to ICU.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base); 10% if intimation delayed >10 days; 20% for organ transplant at non-network without intimation",
+    "note": "No mandatory co-payment on every claim. Conditional co-payments: 10% additional if hospitalisation not intimated within 10 days; 20% for organ transplant at non-network hospital without required intimation/biopsy. No zonal co-payment if lower-zone insured treats in higher zone.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Domiciliary capped at 10% of Base SI; few others",
+    "note": "Domiciliary Expenses capped at 10% of Base Sum Insured1. Bariatric Surgery (optional Health+) capped at ₹5L. Air Ambulance (optional Health+) capped at ₹10L. Medical Devices (optional Health+) capped at ₹2L per 3 years. No disease-wise sub-limits on core hospitalisation benefits.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "Optional: ₹25K / ₹50K / ₹1L / ₹2L / ₹3L / ₹4L / ₹5L / ₹10L",
+    "note": "Annual aggregate deductible; optional at policy level. No deductible if not opted.",
+    "optional": true,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "PED waiting period is 24 months of continuous coverage from first policy inception (Excl01). Reducible via portability/migration credits.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions include cataract, hernia, piles, varicose veins, kidney/biliary stones, joint replacement, BPH, hydrocele, sinusitis, tonsils, gastric ulcer, cysts/polyps, PCOD, genito-urinary surgery, etc. Not applicable for accidents.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (ManipalCigna Lifetime Plus)",
+    "note": "Maternity, newborn, first-year vaccination, infertility, surrogacy and oocyte donor cover available only via optional 'ManipalCigna Lifetime Plus' add-on. Waiting period and limits as per that add-on's terms. Base policy excludes maternity (Excl18).",
+    "optional": true,
+    "exists": true,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not inbuilt; available via optional Lifetime Plus add-on",
+    "note": "Base India Plan does not include a cumulative/no-claim bonus. Cumulative Bonus on India SI1 is available only by opting the 'ManipalCigna Lifetime Plus' add-on. Rate and maximum not specified in this wording.",
+    "optional": true,
+    "number": null
+  },
+  "restoration": {
+    "display": "Unlimited restorations, partial or full SI",
+    "note": "Restoration triggers every time Base SI1 is completely or partially utilised. Restored amount not available for same illness/same insured person in same policy year (including complications). Available for unrelated illnesses of same insured and any illness of other insured members. Unlimited times per year.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days prior to admission.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All medically necessary day-care treatments/surgeries requiring less than 24 hours due to technological advancement are covered.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (up to 10% of Base SI)",
+    "note": "Domiciliary hospitalisation covered when patient cannot be transferred or hospital bed unavailable; minimum 3 days treatment required. Several conditions excluded (asthma, diabetes, hypertension, epilepsy, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI (inpatient only)",
+    "note": "AYUSH inpatient hospitalisation covered up to Sum Insured1. Excludes pleasure/rejuvenation services like Panchakarma, detoxification.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (harvesting expenses up to SI)",
+    "note": "Inpatient hospitalisation expenses for organ harvesting from donor covered up to SI1. Excludes donor screening, organ acquisition cost, donor post-op complications, stem cell donation (except bone marrow transplant), organ transport.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "At actuals (reasonable & customary)",
+    "note": "Road ambulance covered at reasonable and customary charges up to SI1; no fixed rupee cap stated. Air ambulance available as optional Health+ add-on up to ₹10L.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI (listed procedures)",
+    "note": "11 listed modern/advanced treatments covered (e.g. oral chemotherapy, immunotherapy injections, stereotactic radiosurgery, robotic surgery, HIFU, deep brain stimulation, etc.) under inpatient or day-care. Robotic/Cyber Knife also separately covered. Only listed procedures covered.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional (Health+ add-on)",
+    "note": "Non-medical items (List I consumables) are excluded from base plan. Coverage for non-medical items and medical devices available only via optional 'Health+' package. Non-medical items under Health+ covered up to SI1; medical devices up to ₹2L per 3 years.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered (India Plan); Worldwide Emergency via optional Lifetime Plus",
+    "note": "India Plan geographical scope restricted to India. Worldwide Medical Emergency Hospitalisation available only via optional 'ManipalCigna Lifetime Plus' add-on.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly premium modes and 15 days for monthly mode. Coverage not available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period for new policies only; not applicable on renewals or portability/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines; accrued waiting period credits transferred.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Treatment outside India, OPD expenses, dental (non-accident), external congenital anomaly, infertility/ART, maternity (base), non-listed modern treatments, off-label drug use"
+  },
+  "optional_riders": {
+    "display": "Health+ (air ambulance, non-medical items, bariatric, hospi cash, concierge, tele-consult), Women+ (cancer screening/vaccination, gynaec consults), Lifetime Plus (maternity, cumulative bonus, worldwide emergency), Critical Illness add-on, Personal Accident Plus, Health 360 (OPD, room upgrade, restoration)"
+  },
+  "source_file": "LifetimeHealth-India-Plan-TnC.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:59:54.109Z"
+}

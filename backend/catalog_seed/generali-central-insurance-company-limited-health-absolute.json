@@ -1,0 +1,173 @@
+{
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Absolute",
+  "uin": "GCIHLIP26043V032526",
+  "sum_insured_options": "₹3L – ₹1 Crore",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap (up to SI)",
+    "note": "Policy covers reasonable and customary charges for room rent up to sum insured; no explicit room rent sub-limit stated in schedule of benefits",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap (up to SI)",
+    "note": "ICU charges covered up to sum insured; no separate ICU sub-limit specified",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "20% (entry age 61+)",
+    "note": "Mandatory 20% co-pay applies to all insured persons aged 61 years and above at first entry into Health Absolute policy; continues at all subsequent renewals",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract, Lasik, Bariatric capped",
+    "note": "Cataract: 10% of SI per eye (max ₹75k–₹2L depending on plan); Lasik: ₹30k–₹1L; Bariatric: 50% of SI max ₹5L–₹10L; maternity sub-limits also apply",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (voluntary deductible optional)",
+    "note": "No compulsory deductible; voluntary deductible available as an option",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "PED waiting period is 24 months continuous coverage from first inception; no optional reduction mentioned",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (some 36 months)",
+    "note": "24-month wait for cataract, hernia, BPH, hydrocele, stones, etc.; 36-month wait for rheumatoid arthritis, joint replacement, Lasik, gout, osteoporosis",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (24–36 mo wait)",
+    "note": "Inbuilt; 24-month wait if both spouses covered (3 annual premiums), 36-month wait if only female covered (4 annual premiums); sub-limits vary by plan: normal ₹25k–₹1L, caesarean ₹25k–₹2L",
+    "optional": false,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr)",
+    "note": "50% of SI added per claim-free year; reduces at same rate if claim made; max 100% of SI",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% (same or new illness)",
+    "note": "Restore SI equal to 100% of base SI triggered on second claim in same policy year; available for same or new illness under sections 2.1–2.4; once per policy year; not for maternity",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "60 days pre-hospitalisation cover across all three plans",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days (Classic) / 120 days (Platinum) / 180 days (Signature)",
+    "note": "Classic: 90 days; Platinum: 120 days; Signature: 180 days",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care (530+ listed + others)",
+    "note": "Extensive listed day-care procedures in Annexure I; also covers any other procedure requiring <24 hrs due to technology advancement",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (Home Health Care up to 20% of SI)",
+    "note": "Home Health Care covered up to 20% of SI via empanelled provider on cashless basis; standard domiciliary hospitalisation definition also included",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (reimbursement, AYUSH hospital)",
+    "note": "Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy covered on reimbursement basis at registered AYUSH hospitals; OPD AYUSH excluded",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered up to SI",
+    "note": "Harvesting expenses of organ donor covered up to sum insured; donor screening and pre/post-hospitalisation for donor excluded",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹1,500–₹5,000 per hospitalisation",
+    "note": "Classic: ₹1,500; Platinum: ₹2,000; Signature: ₹5,000 per hospitalisation",
+    "optional": false,
+    "number": 1500
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 modern treatments listed (robotic surgery, oral chemo, stereotactic radiosurgery, deep brain stimulation, etc.) covered up to sum insured as inpatient or day care",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (standard exclusion list applies)",
+    "note": "Annexure III lists 67+ non-medical/consumable items excluded; gloves, masks, etc. not payable",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Optional (Signature plan, 36-mo wait, listed conditions)",
+    "note": "Medical Treatment Abroad available only under Signature plan (SI ₹50L+) after 36 months continuous coverage; limited to 8 specific conditions/surgeries; paid in INR",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for all modes except monthly premium where grace period is 15 days",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability applicable for waiting periods; not applicable for maternity, infertility, bariatric surgery continuity",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "External congenital anomaly, STDs (non-HIV), stem cell storage, hormone replacement therapy, treatment outside India (except Signature add-on), intentional self-injury",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Voluntary deductible; Medical Treatment Abroad (Signature plan only, inbuilt after 36 mo); Infertility cover (inbuilt after 36 mo); Bariatric surgery (inbuilt after 36 mo)",
+    "note": null,
+    "optional": false
+  },
+  "source_file": "health-absolute-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-18T05:23:45.143Z"
+}

@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "Aspire",
+  "uin": "NBHHLIP26049V022526",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap (any room up to SI)",
+    "note": "Base plan has no room rent cap; optional Room Type Modification add-on allows choosing Shared Room or Standard Single Room with co-payment if higher room taken",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap (up to SI)",
+    "note": "ICU always paid up to Sum Insured irrespective of room type chosen",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base plan)",
+    "note": "Optional Co-Payment benefit available; also optional Room Type Modification triggers co-pay (10-25%) if higher room chosen; Borderless optional benefit has 0-50% co-pay options",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits",
+    "note": "Modern treatments, ambulance, organ donor all paid up to Base Sum Insured; no disease-wise monetary sub-limits found in wording",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None (base plan)",
+    "note": "Annual Aggregate Deductible available as optional add-on",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents covered from day 1",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "12 months (variant-dependent)",
+    "note": "PED waiting period is 12/24/36 months depending on variant selected; best achievable is 12 months; can be further modified via optional PED Waiting Time Modification add-on",
+    "optional": false,
+    "number": 12
+  },
+  "specific_disease_waiting": {
+    "display": "12 months (variant-dependent)",
+    "note": "Specific disease/procedure waiting is 12 or 24 months depending on variant; best achievable is 12 months",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Covered via M-iracle benefit (waiting period variant-dependent)",
+    "note": "M-iracle covers antenatal, delivery, IVF, surrogacy, adoption, infertility; waiting period and SI as per variant; applicable in India only; M-iracle SI works like Booster+",
+    "optional": false,
+    "exists": true,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 10x Base SI (Booster+)",
+    "note": "Unutilized Base SI carries forward each year up to 10x Base SI (max accumulation depends on entry age and variant); this is Booster+ benefit inbuilt",
+    "optional": false,
+    "number": 1000
+  },
+  "restoration": {
+    "display": "Unlimited, 100% (ReAssure+ / ReAssureX)",
+    "note": "ReAssure+ or ReAssureX provides unlimited restoration equal to Base SI per claim, triggered after first paid claim in policy life; stays for life on continuous renewal; max per single claim = Base SI",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses for same condition covered for 60 days before admission",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses for same condition covered for 180 days after discharge",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "Hospitalisation of 2 hours or more covered; all day-care treatments included",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Home Care/Domiciliary Treatment covered when doctor advises and active treatment with daily monitoring; pre/post hospitalisation benefit also applies",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (India only, min 24hr admission)",
+    "note": "AYUSH treatment covered in India only at recognised AYUSH hospitals; minimum 24-hour admission required",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Donor harvesting expenses covered when insured undergoes transplant; also covers insured's own organ donation expenses",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to Base SI (road & air)",
+    "note": "Road ambulance up to Base Sum Insured; Air ambulance in emergencies up to Base Sum Insured; payable only if hospitalisation claim is paid",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to Base SI",
+    "note": "12 listed modern treatments including robotic surgery, immunotherapy, stem cell therapy, HIFU, oral chemotherapy etc. covered up to Base Sum Insured",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional (Safeguard / Safeguard+)",
+    "note": "Safeguard covers List I non-payable items; Safeguard+ covers Lists I-IV; both are optional add-ons",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional (Borderless)",
+    "note": "Borderless optional benefit covers emergency and planned treatments worldwide; co-payment options 0-50%; not available to non-Indian citizens/non-permanent residents",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage no claim contestable except for proven fraud; portability/migration credits count",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days grace for annual/half-yearly/quarterly; 15 days for monthly instalment; coverage not available during grace period except for instalment-paying policies",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from receipt of policy document; applicable on new policies only, not renewals",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-mandated portability; credits for PED waiting, specific waiting, NCB and moratorium transferable",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "External congenital anomaly, dental (non-accident/cancer), refractive error <7.5D, conflict/war/terrorism, artificial life maintenance (brain dead), personal waiting period up to 48mo",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Safeguard/Safeguard+ (consumables), Borderless (global cover), M-iracle (maternity), WellConsult OPD, Personal Accident, Hospital Cash, Cash-Bag, Annual Aggregate Deductible, Co-Payment, Future Ready",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Aspire_Policy_Wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:42:30.266Z"
+}

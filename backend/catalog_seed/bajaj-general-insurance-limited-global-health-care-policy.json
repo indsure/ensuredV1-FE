@@ -1,0 +1,165 @@
+{
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "Global Health Care Policy",
+  "uin": "BAJHLIP23209V022223",
+  "sum_insured_options": "₹37.5L–₹3.75Cr (Domestic); USD 1L–USD 10L (International)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap (Domestic); Single Private AC Room (International)",
+    "note": "Domestic cover: room rent at actuals with no sub-limit. International cover: capped at Single Private Air-Conditioned Room (Deluxe/suites excluded).",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "At actuals",
+    "note": "Both Domestic and International covers pay actual ICU charges with no sub-limit.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base); 20% on Dental Plan (optional)",
+    "note": "No co-payment on core inpatient/outpatient benefits. Mandatory 20% co-payment applies only on the optional Dental Plan Benefits (international cover).",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Few minor sub-limits",
+    "note": "Domestic: Living donor costs ₹5,000; AYUSH capped per plan tier; Rehabilitation ₹50,000; Air Ambulance per schedule. International: Living donor USD 30k/50k; Rehabilitation USD 750/2,300; Repatriation of mortal remains USD 13,500; Inpatient cash USD 175/night max 25 nights; Out-patient plan capped per tier. Core inpatient benefit up to full SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (base); optional USD 500 or USD 1,000 (International)",
+    "note": "No mandatory deductible. Optional aggregate deductible of USD 500 or USD 1,000 available on International inpatient benefits with corresponding premium discount.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses from first policy commencement; waived for accidents and after 12 months continuous coverage.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing disease waiting period is 36 months of continuous coverage. Reducible via portability credit from prior continuous coverage.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "35 listed conditions (cataract, hernia, joint replacement, etc.) have a 24-month waiting period. Reducible via portability.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered (standard exclusion)",
+    "note": "Maternity is a standard exclusion (Excl18) for both domestic and international covers. Ectopic pregnancy is covered. Routine maternity/delivery/newborn care explicitly excluded under international cover as well.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (20%/yr, domestic only)",
+    "note": "20% of domestic base SI added per claim-free year; maximum 100% of base SI. Reduced by 20% in the year following a claim. Applicable to domestic cover only; no cumulative bonus mentioned for international cover.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No sum insured restoration/reset benefit mentioned anywhere in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "60 days (Domestic); 45 days (International)",
+    "note": "Domestic cover: 60 days pre-hospitalisation. International cover: 45 days pre-hospitalisation.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days (Domestic); 90 days (International)",
+    "note": "Domestic cover: 180 days post-hospitalisation. International cover: 90 days post-hospitalisation.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "Listed procedures covered",
+    "note": "Extensive list of 390+ day-care procedures in Annexure I covered under both domestic and international plans.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is defined in the policy but no benefit clause covers it; it is not listed in the Table of Benefits for either domestic or international cover.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI (Domestic only)",
+    "note": "AYUSH inpatient hospitalisation covered under domestic plan up to the inpatient SI (with plan-tier sub-limits: ₹5L–₹7.5L). Not covered under international plan.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (living donor costs)",
+    "note": "Living donor medical costs for organ harvesting covered: ₹5,000 (domestic); USD 30,000/50,000 (international, plan-dependent). Animal organs and 3D-printed organs excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to Sum Insured",
+    "note": "Local road ambulance covered up to SI for both domestic and international plans. Air ambulance also covered (domestic: up to schedule limit; international Imperial: USD 7,500; Imperial Plus: up to inpatient SI with medical evacuation).",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "Modern treatments per Annexure III (robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, HIFU, deep brain stimulation, etc.) covered up to sum insured under both domestic and international plans.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Non-medical consumables listed in Annexure II are explicitly excluded. Medical consumables used during hospitalisation/surgery are covered as part of inpatient treatment but standalone consumables cover/rider is not offered.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Inbuilt (worldwide excl. or incl. USA)",
+    "note": "International inpatient cover is a core part of the policy (Part B). Geographical area is worldwide outside India, with USA inclusion/exclusion as a plan option. Both Imperial and Imperial Plus plans include international cover.",
+    "optional": false,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no look-back applied and claims cannot be contested except for proven fraud and permanent exclusions.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes. Coverage available during grace period if premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for new policies only (not applicable on renewals or portability/migration).",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted per IRDAI guidelines. Migration within Bajaj General also allowed. Note: portability/migration for Global Health Care Policy requires existing policy to cover both domestic and international health.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Maternity (excl. ectopic), dental (excl. accident inpatient), OPD mental illness, hair loss treatment, sleep disorders (excl. obstructive sleep apnoea inpatient), medical error treatment, external congenital anomalies",
+  "optional_riders": "Dental Plan (international): dental treatment, dental surgery, periodontics outside India (20% co-pay); Optional aggregate deductible USD 500/1,000 on international inpatient",
+  "source_file": "Global-Health-Care_PW.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:27:26.755Z"
+}

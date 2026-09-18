@@ -1,0 +1,173 @@
+{
+  "insurer": "The New India Assurance Co. Ltd.",
+  "plan_name": "Jan Arogya Bima Policy",
+  "uin": "NIAHLIP25045V032425",
+  "sum_insured_options": "₹5,000 per person",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified (up to SI)",
+    "note": "Policy covers room rent as part of hospitalisation expenses; no explicit cap or sub-limit stated in wording. SI is only ₹5,000 per person.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "ICU defined but no separate cap mentioned; covered under hospitalisation expenses.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No co-payment clause found in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No explicit sub-limits stated",
+    "note": "No disease-wise or procedure-wise sub-limits mentioned beyond the overall SI of ₹5,000 per person.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No deductible clause applicable to this policy.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases excluded for 36 months from first policy inception; no optional reduction mentioned.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "12 months (cataract, hernia, etc.)",
+    "note": "12-month wait for cataract, hernia, hydrocele, BPH, hysterectomy, fistula, piles, sinusitis, congenital internal diseases. 90-day wait for diabetes, hypertension, cardiac conditions. 36-month wait for mental illness, ARMD, genetic disorders, external congenital diseases.",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under Excl18; only ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration or reset benefit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation medical expenses covered for 30 days prior to admission.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation medical expenses covered for 60 days after discharge.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures covered",
+    "note": "Day-care treatment covered for procedures requiring less than 24 hours due to technological advancement; specific listed procedures (dialysis, chemotherapy, eye surgery, etc.) explicitly included.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (with exclusions)",
+    "note": "Domiciliary hospitalisation covered but excludes 12 specific conditions including asthma, diabetes, hypertension, epilepsy, psychiatric disorders, etc.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient treatment covered up to 100% of Sum Insured per policy year.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "No mention of organ donor expense cover in the policy wording.",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "Not covered",
+    "note": "Ambulance is listed under List I (items not covered). Ambulance equipment also excluded.",
+    "optional": false,
+    "number": 0
+  },
+  "modern_treatments": {
+    "display": "Covered (up to SI)",
+    "note": "12 modern treatments listed including robotic surgery, stereotactic radio surgery, oral chemotherapy, intravitreal injections, stem cell therapy (haematological), etc., covered as inpatient or day care.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables such as gloves, masks, nebuliser kits, etc. are listed under non-payable items (List I). Consumables cost is listed as a coverage head (3.1C) but standard non-medical consumables are excluded via Annexure I.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Treatment outside geographical limits of India is explicitly excluded (clause 4.4.27).",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim contestable except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 15 days for monthly premium mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document; applicable to new policies of 1 year or more.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines with continuity of waiting period credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, ambulance, dental (non-accident), external prosthetics, acupuncture, vaccination, overseas treatment, war, NBC weapons, RFQMR/ECP/EECP/hyperbaric oxygen",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None mentioned",
+    "note": "No optional riders or add-on covers described in the policy wording.",
+    "optional": false
+  },
+  "source_file": "Policy Clause Jan Arogya Bima Policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:35:07.619Z"
+}

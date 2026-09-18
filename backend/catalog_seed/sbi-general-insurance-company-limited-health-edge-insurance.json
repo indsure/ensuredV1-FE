@@ -1,0 +1,173 @@
+{
+  "insurer": "SBI General Insurance Company Limited",
+  "plan_name": "Health Edge Insurance",
+  "uin": "SBIHLIP23173V012223",
+  "sum_insured_options": "₹3L – ₹25L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "At actuals up to SI (base); 2% of SI/day optional modifier",
+    "note": "Base plan covers room rent at actuals up to Sum Insured. An optional base cover modifier caps room rent at 2% of SI per day.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "At actuals up to SI (base); 4% of SI/day optional modifier",
+    "note": "Base plan covers ICU at actuals up to Sum Insured. Optional modifier caps ICU at 4% of SI per day.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base); 10% or 20% optional",
+    "note": "Co-payment is an optional add-on (D.15); once opted it cannot be removed at renewal. OPD cover (D.9) has its own 50% co-pay on professional fees and 30% on diagnostics/pharmacy.",
+    "optional": true,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Bariatric up to ₹50K; AYUSH up to SI; ambulance ₹3,000/hosp; health check-up ₹5,000",
+    "note": "Bariatric surgery sub-limited to ₹50,000 (optional modifier). Emergency road ambulance ₹3,000 per hospitalisation. Stay Fit health check-up ₹5,000. Main inpatient, day care, modern treatments covered up to full SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Waived for accidents; also waived after 24 months continuous coverage.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "Reducible via portability credit from prior continuous coverage.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Covers listed conditions e.g. cataract, hernia, joint replacement, gallbladder, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (48mo wait); ₹25K normal / ₹50K C-section",
+    "note": "Section D.12.1 Women Care Benefit; 48-month waiting period; max 2 deliveries lifetime; pre-natal and post-natal (8 weeks) included.",
+    "optional": true,
+    "exists": true,
+    "number": 48
+  },
+  "cumulative_bonus": {
+    "display": "Up to 200% of base SI (50%/yr, optional)",
+    "note": "Booster Benefit is an optional add-on (D.10); 50% of base SI added per claim-free year, max 200% of base SI; reduces at same rate if claim made.",
+    "optional": true,
+    "number": 200
+  },
+  "restoration": {
+    "display": "Unlimited, 100% of SI (optional)",
+    "note": "Section D.5 Unlimited Refill is an optional add-on; triggered from first claim; covers both related and unrelated illnesses; each refill up to 100% of base SI.",
+    "optional": true,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "Minimum 2 hours admission; includes angiography, dialysis, radiotherapy, chemotherapy.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is explicitly excluded under Specific Exclusion VIII.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Section C.8; inpatient AYUSH in recognised AYUSH hospitals; sub-limit as per policy schedule (shown as 'up to SI' in benefit table).",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly mention organ donor expense cover.",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹3,000 per hospitalisation",
+    "note": "Section C.5; covers transfer to nearest hospital, hospital-to-hospital, and hospital-to-home.",
+    "optional": false,
+    "number": 3000
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "Section C.7 lists 12 modern/advanced procedures including robotic surgery, oral chemo, stem cell therapy etc.; covered as inpatient or day care up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider (Claims Safeguard D.8)",
+    "note": "Non-payable consumables (List I items) are excluded by default; optional Claims Safeguard benefit D.8 waives this exclusion.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional (D.13)",
+    "note": "Section D.13 Global Treatment covers listed serious illnesses/procedures treated outside India; 36-month waiting period; reimbursement only; Unlimited Refill not applicable.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim can be contested except on grounds of fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for annual/half-yearly/quarterly; 15 days for monthly instalment. Coverage not available during grace period except where instalment premium is paid.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable to new individual policies with tenure of 1 year or more.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Apply at least 30 days before renewal; credits for PED, waiting periods, moratorium transferred.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary hospitalisation, external congenital anomaly, vaccination, home visit fees, treatment outside India (base), circumcision, OPD (base)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Unlimited Refill, Booster Benefit, Maternity+Newborn, Critical Illness (60 CIs), Global Treatment, OPD Cover, Hospital Daily Cash, Claims Safeguard, Accidental Death, Vector Borne, Wellness",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Health_Edge_Insurance_Policy_wording_75e1ad1343.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:44:32.161Z"
+}
