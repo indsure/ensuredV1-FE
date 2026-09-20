@@ -236,6 +236,9 @@ export interface ComparisonRow {
 export interface Side {
   insurer: string | null;
   plan_name: string | null;
+  /** "" for a product with no named tiers. Classic and Elite are different products and the
+   *  result has to say which is which, or three columns read identically. */
+  variant?: string | null;
   uin: string | null;
   sum_insured_options: string | null;
   confidence: string;
@@ -317,12 +320,16 @@ function winnersFor(def: AxisDef, data: AxisDatum[]): boolean[] {
   return out;
 }
 
-const nameOf = (p: WordingProfile): string | null =>
-  p.plan_name || p.insurer || null;
+const nameOf = (p: WordingProfile): string | null => {
+  const base = p.plan_name || p.insurer || null;
+  const variant = typeof (p as any).variant === "string" ? (p as any).variant.trim() : "";
+  return base && variant ? `${base} (${variant})` : base;
+};
 
 const sideOf = (p: WordingProfile): Side => ({
   insurer: p.insurer,
   plan_name: p.plan_name,
+  variant: typeof (p as any).variant === "string" ? (p as any).variant : "",
   uin: p.uin,
   sum_insured_options: p.sum_insured_options,
   confidence: p.confidence,

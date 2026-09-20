@@ -28,6 +28,7 @@ export interface ComparisonRow {
 export interface ComparisonSide {
   insurer: string | null;
   plan_name: string | null;
+  variant?: string | null;
   uin: string | null;
   sum_insured_options: string | null;
   confidence: string;
@@ -55,5 +56,7 @@ export interface CompareResponse {
 }
 
 export function sideName(s: ComparisonSide, fallback = "Plan"): string {
-  return s.plan_name || s.insurer || fallback;
+  const base = s.plan_name || s.insurer || fallback;
+  const variant = typeof s.variant === "string" ? s.variant.trim() : "";
+  return variant ? `${base} (${variant})` : base;
 }

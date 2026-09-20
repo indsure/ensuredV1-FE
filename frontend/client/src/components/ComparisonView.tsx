@@ -60,8 +60,11 @@ export default function ComparisonView({ data }: { data: ComparisonResult }) {
       {/* Verdict banner */}
       <div className="rounded-2xl bg-[#0B1120] text-white p-6 md:p-8">
         <p className="text-[11px] uppercase tracking-[0.2em] font-black text-[#5eead4] mb-2">Our verdict</p>
+        {/* text-white on the tie heading is load-bearing. This card is navy, and an h2 with no
+            colour class inherits navy from the base stylesheet, so the heading rendered
+            invisible. The winner branch sets its colour explicitly; the tie branch did not. */}
         {v.winner_index < 0 ? (
-          <h2 className="text-2xl font-black mb-1">It's a close call</h2>
+          <h2 className="text-2xl font-black mb-1 text-white">It's a close call</h2>
         ) : (
           <h2 className="text-2xl md:text-3xl font-black mb-1 flex items-center gap-2 flex-wrap">
             <Crown className="h-7 w-7" style={{ color: SIDE_PALETTE[v.winner_index % SIDE_PALETTE.length].accent }} />
