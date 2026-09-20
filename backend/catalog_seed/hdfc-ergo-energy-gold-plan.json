@@ -1,0 +1,132 @@
+{
+  "variant": "Gold Plan",
+  "sum_insured_options": "₹2L, ₹3L, ₹5L, ₹10L, ₹20L, ₹25L, ₹50L",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Policy wording does not specify a room rent cap; shared accommodation benefit waives non-medical expense exclusion if shared room chosen at network hospital"
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "ICU covered under in-patient treatment but no specific cap mentioned"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "Optional 20% co-pay",
+    "note": "20% co-pay applies only if opted and mentioned in policy schedule; no mandatory co-pay by default. No co-pay if Tier 2 insured treats in Tier 1."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Ambulance ₹2,000/hosp; HbA1C ₹750/claim",
+    "note": "Ambulance capped at ₹2,000 per hospitalisation; HbA1C checkup benefit capped at ₹750 per claim (max 2/year). No other disease-wise sub-limits stated."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day initial waiting period implied; Diabetes (Type1/Type2, IFG, IGT) and Hypertension covered from day 1"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "PED waiting period 24 months; Diabetes (T1/T2, IFG, IGT) and Hypertension explicitly excluded from PED waiting"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Listed conditions (ENT, gynaecological, orthopaedic, GI, urogenital, eye, benign tumours etc.) excluded for 24 months"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity explicitly excluded under Standard Exclusion Excl18; ectopic pregnancy covered"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% of base SI added each claim-free renewal; max 100% of base SI; irrespective of claims"
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once/yr, 100% of base SI",
+    "note": "Restore benefit: 100% of basic SI restored once per policy year on complete or partial utilisation; single claim cannot exceed basic SI + cumulative bonus; restored SI usable for all in-patient claims"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No domiciliary hospitalisation benefit mentioned in policy"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (in-patient only)",
+    "note": "AYUSH in-patient treatment covered in AYUSH Hospital; OPD AYUSH not covered"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Harvesting surgery costs covered; donor pre/post-hospitalisation excluded"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation"
+  },
+  "modern_treatments": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "No explicit mention of modern/robotic surgery cover in policy wording"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-medical/consumable items excluded per Annexure I"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment within India only"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, OPD treatment, treatment outside India, pancreatic islet transplant, stem cell harvesting, dental (unless hospitalised), congenital external anomalies, sleep apnoea investigation",
+  "optional_riders": "Optional 20% co-payment (reduces premium); Wellness Programme with premium discount up to 25% on renewal",
+  "insurer": "HDFC ERGO",
+  "plan_name": "Energy",
+  "uin": "HDFHLIP26048V052526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "energy-combined-pw-cis-919573709506.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:00:26.971Z"
+}

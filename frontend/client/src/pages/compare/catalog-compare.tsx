@@ -25,8 +25,23 @@ import { VehicleInsuranceComparer } from "@/components/VehicleInsuranceComparer"
 
 const MAX_PLANS = 4;
 
+/**
+ * A plan's identity. plan_key is uin for a product with no variants and uin:variant for one
+ * that has them, so Classic and Elite are separate selectable rows.
+ *
+ * Falls back to uin because the frontend deploys independently of the API: a build that has
+ * this change can be served against a backend that does not return plan_key yet, and must keep
+ * working rather than keying everything on undefined.
+ */
+const keyOf = (i: { plan_key?: string; uin: string }) => i.plan_key || i.uin;
+
 interface CatalogItem {
+  // plan_key is the identity, not uin. Variants of one product share a UIN, so keying on uin
+  // would make Classic and Elite the same row. plan_key is uin, or uin:variant where there
+  // are variants, and it is what /api/compare/from-catalog expects back.
+  plan_key?: string;
   uin: string;
+  variant?: string;
   insurer: string;
   plan_name: string;
   product_type: string;
@@ -67,7 +82,7 @@ function AddPlanPicker({
     const out: [string, CatalogItem[]][] = [];
     for (const [insurer, items] of Object.entries(grouped)) {
       const fi = items.filter(
-        (i) => !exclude.has(i.uin) && (!q || i.plan_name.toLowerCase().includes(q) || insurer.toLowerCase().includes(q))
+        (i) => !exclude.has(keyOf(i)) && (!q || i.plan_name.toLowerCase().includes(q) || insurer.toLowerCase().includes(q))
       );
       if (fi.length) out.push([insurer, fi]);
     }
@@ -78,7 +93,7 @@ function AddPlanPicker({
   const insurers = useMemo(
     () =>
       Object.entries(grouped)
-        .map(([insurer, items]) => [insurer, items.filter((i) => !exclude.has(i.uin))] as [string, CatalogItem[]])
+        .map(([insurer, items]) => [insurer, items.filter((i) => !exclude.has(keyOf(i)))] as [string, CatalogItem[]])
         .filter(([, items]) => items.length > 0)
         .sort((a, b) => a[0].localeCompare(b[0])),
     [grouped, exclude],
@@ -91,13 +106,13 @@ function AddPlanPicker({
 
   const planRow = (it: CatalogItem) => (
     <button
-      key={it.uin}
+      key={keyOf(it)}
       type="button"
-      onClick={() => add(it.uin)}
+      onClick={() => add(keyOf(it))}
       className="w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-[var(--color-cream-main)] cursor-pointer transition-colors"
     >
       <span className="min-w-0">
-        <span className="block text-sm font-semibold text-[var(--color-navy-900)] truncate">{it.plan_name}</span>
+        <span className="block text-sm font-semibold text-[var(--color-navy-900)] truncate">{it.plan_name}{it.variant ? ` (${it.variant})` : ""}</span>
         {it.sum_insured_options && it.sum_insured_options !== "Not specified" && (
           <span className="block text-[11px] text-[var(--color-text-muted)] truncate">{it.sum_insured_options}</span>
         )}
@@ -193,7 +208,7 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
       <span className="inline-block text-xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
         {String.fromCharCode(65 + index)}
       </span>
-      <p className="font-bold text-[var(--color-navy-900)] leading-tight truncate">{item.plan_name}</p>
+      <p className="font-bold text-[var(--color-navy-900)] leading-tight truncate">{item.plan_name}{item.variant ? ` (${item.variant})` : ""}</p>
       <p className="text-xs text-[var(--color-text-muted)] truncate">{item.insurer}</p>
       {item.sum_insured_options && item.sum_insured_options !== "Not specified" && (
         <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5 truncate">{item.sum_insured_options}</p>
@@ -257,9 +272,9 @@ function HealthCatalogCompare() {
     return g;
   }, [catalog]);
 
-  const byUin = useMemo(() => {
+  const byKey = useMemo(() => {
     const m: Record<string, CatalogItem> = {};
-    for (const it of catalog) m[it.uin] = it;
+    for (const it of catalog) m[keyOf(it)] = it;
     return m;
   }, [catalog]);
 
@@ -335,7 +350,7 @@ function HealthCatalogCompare() {
             <div className="bg-white rounded-2xl border border-[var(--color-border-light)] p-5 shadow-sm">
               <div className="flex flex-wrap gap-3 items-stretch">
                 {selected.map((uin, i) =>
-                  byUin[uin] ? <PlanCard key={uin} item={byUin[uin]} index={i} onRemove={() => removePlan(uin)} /> : null
+                  byKey[uin] ? <PlanCard key={uin} item={byKey[uin]} index={i} onRemove={() => removePlan(uin)} /> : null
                 )}
                 {selected.length < MAX_PLANS && (
                   <AddPlanPicker grouped={grouped} exclude={excludeSet} onAdd={addPlan} />

@@ -1,173 +1,138 @@
 {
+  "variant": "",
+  "sum_insured_options": "₹4 lacs, ₹5 lacs",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day",
+    "note": "Room rent, boarding and nursing expenses capped at 1% of sum insured per day"
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges capped at 2% of sum insured per day"
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% on all claims",
+    "note": "Mandatory 20% co-payment on every claim; can be waived by paying additional optional premium"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract ₹40k/eye; Modern treatments 50% of SI",
+    "note": "Cataract capped at ₹40,000 per eye per year; modern treatments capped at 50% of SI; ambulance ₹2,000 per hospitalisation"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "All illnesses except accidents; not applicable if continuously covered for more than 12 months"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months (disability/HIV); 36 months (other PEDs)",
+    "note": "24 months for pre-existing disability and HIV/AIDS; 36 months for all other pre-existing conditions"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "19 listed conditions including cataract, hernia, ENT disorders, calculi, varicose veins, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity explicitly excluded under standard exclusion Excl18; ectopic pregnancy is covered"
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (537 listed procedures)",
+    "note": "All day-care treatments covered; indicative list of 537 procedures provided in Annexure III"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation expenses explicitly excluded under specific exclusion 11"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to 100% of SI",
+    "note": "AYUSH inpatient treatment covered up to 100% of sum insured in AYUSH hospitals or day care centres"
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Hospitalisation for donation of body organs explicitly excluded under specific exclusion 2"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance reimbursement capped at ₹2,000 per hospitalisation"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments covered up to 50% of sum insured; includes robotic surgery, stereotactic radiosurgery, stem cell therapy, oral chemotherapy, etc."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-medical/consumable items excluded in Annexure II List I (gloves, masks, etc.)"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Any medical treatment taken outside India explicitly excluded under specific exclusion 1"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim contestable except on grounds of established fraud"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly)",
+    "note": "15 days grace period for monthly premium payment mode; 30 days for all other modes"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI norms; apply at least 30 days before renewal"
+  },
+  "notable_exclusions": "Treatment outside India, organ donation, domiciliary hospitalisation, STDs (except HIV/AIDS), stem cell storage, ART for HIV, cosmetic/reconstructive prosthetics for disability",
+  "optional_riders": "Co-payment waiver (additional premium to waive mandatory 20% co-pay)",
   "insurer": "Aditya Birla Health Insurance Co. Limited",
   "plan_name": "Ekam Suraksha",
   "uin": "ADIHLIP23203V012223",
-  "sum_insured_options": "₹4L – ₹5L",
-  "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
-  "room_rent": {
-    "display": "1% of SI/day",
-    "note": "Room Rent, Boarding, Nursing Expenses all-inclusive up to 1% of Sum Insured per day",
-    "optional": false,
-    "ordinal": 3
-  },
-  "icu": {
-    "display": "2% of SI/day",
-    "note": "ICU/ICCU charges all-inclusive up to 2% of Sum Insured per day",
-    "optional": false,
-    "ordinal": 3
-  },
-  "copayment": {
-    "display": "20% on all claims",
-    "note": "Mandatory 20% co-payment on every admissible claim; can be waived by paying additional optional premium",
-    "optional": false,
-    "number": 20
-  },
-  "sub_limits": {
-    "display": "Cataract ₹40k/eye; Modern Tx 50% SI",
-    "note": "Cataract capped at ₹40,000 per eye per year; Modern treatments capped at 50% of Sum Insured; Ambulance ₹2,000 per hospitalisation",
-    "optional": false,
-    "ordinal": 1
-  },
-  "deductible": {
-    "display": "None",
-    "note": null,
-    "optional": false,
-    "number": 0
-  },
-  "initial_waiting": {
-    "display": "30 days",
-    "note": "Except claims arising from accident",
-    "optional": false,
-    "number": 30
-  },
-  "ped_waiting": {
-    "display": "24 months (disability/HIV); 36 months (others)",
-    "note": "24 months for pre-existing disability and HIV/AIDS; 36 months for all other pre-existing conditions",
-    "optional": false,
-    "number": 24
-  },
-  "specific_disease_waiting": {
-    "display": "24 months",
-    "note": "Listed conditions include cataract, hernia, ENT disorders, calculi, varicose veins, hysterectomy, etc.",
-    "optional": false,
-    "number": 24
-  },
-  "maternity": {
-    "display": "Not covered",
-    "note": "Maternity expenses explicitly excluded under standard exclusion Excl18; only ectopic pregnancy covered",
-    "optional": false,
-    "exists": false,
-    "number": null
-  },
-  "cumulative_bonus": {
-    "display": "Not specified",
-    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
-    "optional": false,
-    "number": null
-  },
-  "restoration": {
-    "display": "Not covered",
-    "note": "No restoration/reset benefit mentioned in the policy wording",
-    "optional": false,
-    "ordinal": 0
-  },
-  "pre_hosp": {
-    "display": "30 days",
-    "note": null,
-    "optional": false,
-    "number": 30
-  },
-  "post_hosp": {
-    "display": "60 days",
-    "note": null,
-    "optional": false,
-    "number": 60
-  },
-  "day_care": {
-    "display": "All day-care (listed procedures)",
-    "note": "All day-care treatments covered; indicative list of 537+ procedures provided in Annexure III",
-    "optional": false,
-    "exists": true
-  },
-  "domiciliary": {
-    "display": "Not covered",
-    "note": "Domiciliary hospitalisation expenses explicitly excluded under specific exclusions",
-    "optional": false,
-    "exists": false
-  },
-  "ayush": {
-    "display": "Covered up to 100% of SI",
-    "note": "Inpatient AYUSH treatment covered up to 100% of Sum Insured in recognised AYUSH hospitals/day care centres",
-    "optional": false,
-    "exists": true
-  },
-  "organ_donor": {
-    "display": "Not covered",
-    "note": "Hospitalisation for donation of body organs by insured and related complications explicitly excluded",
-    "optional": false,
-    "exists": false
-  },
-  "ambulance": {
-    "display": "₹2,000/hospitalisation",
-    "note": "Road ambulance reimbursement capped at ₹2,000 per hospitalisation",
-    "optional": false,
-    "number": 2000
-  },
-  "modern_treatments": {
-    "display": "Sub-limited (50% of SI)",
-    "note": "12 listed modern treatments (robotic surgery, oral chemo, stem cell therapy, etc.) covered up to 50% of Sum Insured",
-    "optional": false,
-    "exists": true
-  },
-  "consumables": {
-    "display": "Not covered",
-    "note": "Extensive list of non-medical/consumable items excluded under Annexure II List I (gloves, masks, etc.)",
-    "optional": false,
-    "exists": false
-  },
-  "global_cover": {
-    "display": "Not covered",
-    "note": "Any medical treatment taken outside India is explicitly excluded",
-    "optional": false,
-    "exists": false
-  },
-  "moratorium": {
-    "display": "60 months",
-    "note": "After 60 continuous months of coverage, claims cannot be contested except on grounds of established fraud",
-    "optional": false,
-    "number": 60
-  },
-  "grace_period": {
-    "display": "30 days (15 days for monthly)",
-    "note": "15 days grace for monthly premium mode; 30 days for all other modes",
-    "optional": false,
-    "number": 30
-  },
-  "free_look": {
-    "display": "30 days",
-    "note": "Applicable on new policies only; not on renewals or porting/migration",
-    "optional": false,
-    "number": 30
-  },
-  "portability": {
-    "display": "Allowed",
-    "note": "IRDAI-compliant portability with continuity of waiting period credits",
-    "optional": false,
-    "exists": true
-  },
-  "notable_exclusions": {
-    "display": "Overseas treatment, domiciliary hospitalisation, organ donor hospitalisation, ART for HIV, STDs (non-HIV), stem cell storage, alternative therapies",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "Co-payment waiver (additional premium)",
-    "note": "Only one optional add-on mentioned: waiver of the mandatory 20% co-payment on payment of additional premium",
-    "optional": true
-  },
   "source_file": "20250407T111611.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:25:48.987Z"
+  "extracted_at": "2026-09-20T07:51:21.410Z"
 }

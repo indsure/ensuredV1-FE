@@ -1,173 +1,141 @@
 {
-  "insurer": "Acko General Insurance Limited",
-  "plan_name": "Acko Health III",
-  "uin": "ACKHLIP27040V012627",
-  "sum_insured_options": "Not specified in wording",
+  "variant": "",
+  "sum_insured_options": "Not specified in wording; as per Schedule",
   "confidence": "medium",
-  "product_type": "comprehensive_health_indemnity",
   "room_rent": {
+    "ordinal": 0,
     "display": "As per Schedule",
-    "note": "Room category specified in the Schedule; exact cap/category not stated in wording",
-    "optional": false,
-    "ordinal": 0
+    "note": "Room category specified in the Schedule; wording does not fix a cap or category"
   },
   "icu": {
-    "display": "Covered; limit as per Schedule",
-    "note": "ICU/CCU/HDU charges covered; specific cap not stated in wording",
-    "optional": false,
-    "ordinal": 0
+    "ordinal": 0,
+    "display": "As per Schedule",
+    "note": "ICU/CCU/HDU charges covered; specific limit per Schedule"
   },
   "copayment": {
-    "display": "None (base); optional co-pay add-on available",
-    "note": "Base plan has no mandatory co-pay. Optional co-pay add-on (2.12.14) gives premium discount. Co-pay also triggered if First Notification (2.12.12) or Preferred Provider (2.12.13) conditions are breached.",
-    "optional": false,
-    "number": 0
+    "number": 0,
+    "display": "None (base)",
+    "note": "No mandatory co-pay in base cover. Optional co-pay available (2.12.14) for premium discount. Co-pay also triggered if First Notification (2.12.12) or Preferred Provider Network (2.12.13) conditions are breached, as per Schedule."
   },
   "sub_limits": {
-    "display": "No standard sub-limits; Schedule may specify",
-    "note": "Wording does not list disease-wise sub-limits in base cover; underwriting may impose specific sub-limits via Schedule (4.12)",
-    "optional": false,
-    "ordinal": 0
+    "ordinal": 3,
+    "display": "Few/minor sub-limits",
+    "note": "Most benefits covered up to base SI. Specific sub-limits (e.g. ambulance, evacuation, preventive health check-up ₹900 reimbursement cap) as per Schedule. Underwriting-based sub-limits may apply per 4.12."
   },
   "deductible": {
-    "display": "None (base); optional deductible add-on available",
-    "note": "Floater Deductible (2.12.15) and Individual Deductible (2.12.16) are optional add-ons; base plan has no deductible",
-    "optional": false,
-    "number": 0
+    "number": 0,
+    "display": "None (base)",
+    "note": "No deductible in base cover. Optional Floater Deductible (2.12.15) and Individual Deductible (2.12.16) available."
   },
   "initial_waiting": {
+    "number": 30,
     "display": "30 days",
-    "note": "Waivable via optional add-on 2.12.6 (Initial 30 Days Waiting Period Waiver)",
-    "optional": false,
-    "number": 30
+    "note": "Waivable via optional benefit 2.12.6 (Initial 30 Days Waiting Period Waiver)"
   },
   "ped_waiting": {
-    "display": "As per Schedule (months)",
-    "note": "PED defined as conditions diagnosed/treated within 36 months prior to policy start; waiting period in months as per Schedule; reducible via portability",
-    "optional": false,
-    "number": null
+    "number": 36,
+    "display": "36 months",
+    "note": "PED defined as diagnosed/treated within 36 months prior to policy commencement; waiting period in months as per Schedule"
   },
   "specific_disease_waiting": {
-    "display": "As per Schedule (months)",
-    "note": "Extensive list of specified diseases (cataract, hernia, arthritis, kidney, etc.); waiting period in months per Schedule; removable via optional add-ons 2.12.2 or 2.12.3",
-    "optional": false,
-    "number": null
+    "number": null,
+    "display": "As per Schedule",
+    "note": "Extensive list in 3.1.2 (cataract, hernia, arthritis, kidney, ENT, GI, etc.); waiting period in months per Schedule. Waivable via optional benefits 2.12.2 (Comprehensive) or 2.12.3 (Essential)."
   },
   "maternity": {
-    "display": "Not covered",
-    "note": "Maternity (childbirth, C-section, miscarriage, MTP) explicitly excluded under 3.1.16; ectopic pregnancy is an exception and is covered",
-    "optional": false,
     "exists": false,
-    "number": null
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity (childbirth, C-section, miscarriage, MTP) explicitly excluded under 3.1.16. Ectopic pregnancy is an exception and is covered."
   },
   "cumulative_bonus": {
-    "display": "Optional; rate & cap as per Schedule",
-    "note": "Cumulative Bonus (2.12.8) and No Claim Bonus SI (2.12.9) are optional add-ons; Inflation Protect SI (2.12.5) also optional; no inbuilt bonus in base plan",
-    "optional": true,
-    "number": null
+    "number": null,
+    "display": "Optional; cap per Schedule",
+    "note": "Cumulative Bonus (2.12.8) is an optional benefit; fixed % of base SI added each renewal up to cap in Schedule. No-Claim Bonus SI (2.12.9) also optional, capped at base SI. Inflation Protect SI (2.12.5) also optional. Rates and caps per Schedule."
   },
   "restoration": {
-    "display": "Optional; unlimited if specified in Schedule",
-    "note": "Restore Sum Insured (2.12.11) is an optional add-on; can restore multiple times if Schedule specifies unlimited; not available for first claim in policy year; covers related and unrelated illnesses as per Schedule",
-    "optional": true,
-    "ordinal": 5
+    "ordinal": 0,
+    "display": "Optional; unlimited if specified",
+    "note": "Restore Sum Insured (2.12.11) is an optional benefit. If opted, restores SI after exhaustion; can be unlimited if Schedule specifies; available for related/unrelated illnesses as per Schedule. Not available for first claim in policy year."
   },
   "pre_hosp": {
-    "display": "As per Schedule (days)",
-    "note": "Number of days specified in the Schedule; exact number not stated in wording",
-    "optional": false,
-    "number": null
+    "number": null,
+    "display": "As per Schedule",
+    "note": "Number of days specified in Schedule"
   },
   "post_hosp": {
-    "display": "As per Schedule (days)",
-    "note": "Number of days specified in the Schedule; exact number not stated in wording",
-    "optional": false,
-    "number": null
+    "number": null,
+    "display": "As per Schedule",
+    "note": "Number of days specified in Schedule"
   },
   "day_care": {
-    "display": "Listed day-care procedures covered",
-    "note": "List hosted on Acko website; AYUSH day care also covered",
-    "optional": false,
-    "exists": true
+    "exists": true,
+    "display": "Listed day-care procedures",
+    "note": "List hosted on Acko website; AYUSH day care also covered"
   },
   "domiciliary": {
+    "exists": true,
     "display": "Covered",
-    "note": "Covered if treatment at home due to inability to move or non-availability of beds; must continue ≥3 consecutive days; reimbursement basis only",
-    "optional": false,
-    "exists": true
+    "note": "Covered if treatment at home due to inability to move or non-availability of beds; minimum 3 consecutive days; reimbursement only"
   },
   "ayush": {
-    "display": "Covered (in-patient & day care)",
-    "note": "AYUSH in-patient treatment covered under 2.10; AYUSH day care also covered under 2.3",
-    "optional": false,
-    "exists": true
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH treatment covered under base SI (2.10); day care AYUSH also covered (2.3)"
   },
   "organ_donor": {
+    "exists": true,
     "display": "Covered",
-    "note": "Donor's in-patient hospitalization for organ harvesting covered within insured's base SI; donor pre/post-hosp, screening, transport costs excluded",
-    "optional": false,
-    "exists": true
+    "note": "Donor's in-patient hospitalization for organ harvesting covered within insured's inpatient SI; donor pre/post-hosp, screening, transport not covered"
   },
   "ambulance": {
-    "display": "Covered up to Schedule limit",
-    "note": "Road ambulance and emergency evacuation (domestic) covered; exact ₹ limit per Schedule",
-    "optional": false,
-    "number": null
+    "number": null,
+    "display": "Up to limit in Schedule",
+    "note": "Road ambulance covered for emergency transport; limit per Schedule"
   },
   "modern_treatments": {
-    "display": "Covered (up to SI)",
-    "note": "12 modern treatments listed including robotic surgery, stereotactic radiosurgery, oral chemotherapy, stem cell therapy etc.; covered under base SI",
-    "optional": false,
-    "exists": true
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "12 listed modern treatments covered under 2.11 including robotic surgery, stereotactic radiosurgery, oral chemo, immunotherapy, stem cell therapy etc."
   },
   "consumables": {
-    "display": "Optional add-on",
-    "note": "Waiver of Non-payable Medical Expenses (2.12.1) is an optional benefit covering consumables/non-payables; not inbuilt in base plan",
-    "optional": true,
-    "exists": true
+    "exists": true,
+    "display": "Optional rider",
+    "note": "Non-payable/consumables covered only if optional benefit 2.12.1 (Waiver of Non-payable Medical Expenses) is opted; not covered in base"
   },
   "global_cover": {
-    "display": "Optional add-on",
-    "note": "Worldwide In-Patient Hospitalization (2.12.7) is an optional benefit; base plan excludes treatment outside India",
-    "optional": true,
-    "exists": true
+    "exists": true,
+    "display": "Optional",
+    "note": "Worldwide In-Patient Hospitalization (2.12.7) is an optional benefit; extends inpatient cover outside India; payment in INR at RBI rate"
   },
   "moratorium": {
+    "number": 60,
     "display": "60 months",
-    "note": "After 60 continuous months no claim contestable except fraud; applies from enhancement date for enhanced SI portion",
-    "optional": false,
-    "number": 60
+    "note": "After 60 continuous months, no claim/policy contestable on non-disclosure/misrepresentation except fraud; enhanced SI has separate 60-month clock"
   },
   "grace_period": {
-    "display": "30 days (renewal); 15–30 days (instalments)",
-    "note": "30 days for renewal and quarterly/half-yearly/annual instalments; 15 days for monthly instalments; no coverage for claims during renewal grace period",
-    "optional": false,
-    "number": 30
+    "number": 30,
+    "display": "30 days",
+    "note": "30 days for renewal and for quarterly/half-yearly/annual instalment payments; 15 days for monthly instalments. No claim liability during renewal grace period."
   },
   "free_look": {
+    "number": 30,
     "display": "30 days",
-    "note": "Only at inception; not applicable at renewals or porting",
-    "optional": false,
-    "number": 30
+    "note": "Only at inception, not at renewal or porting"
   },
   "portability": {
+    "exists": true,
     "display": "Allowed",
-    "note": "As per IRDAI guidelines; waiting periods reduced by prior continuous coverage; apply 30–60 days before renewal",
-    "optional": false,
-    "exists": true
+    "note": "As per IRDAI guidelines; waiting periods reduced by prior continuous coverage; apply 30-60 days before renewal"
   },
-  "notable_exclusions": {
-    "display": "Maternity, STDs (except HIV), sleep disorders, hormonal therapy, substance abuse, dental (non-accident), external congenital anomaly, OPD, self-harm",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "Consumables waiver, Worldwide cover, Restore SI, Cumulative Bonus, No Claim Bonus SI, Inflation Protect SI, Co-pay, Deductible, Specific illness WP waiver, Doctor-on-call",
-    "note": null,
-    "optional": true
-  },
+  "notable_exclusions": "Maternity/childbirth, STDs (except HIV), hormonal therapies, sleep disorders, dental (non-accident), self-harm, OPD, external prosthetics, substance abuse, professional adventure sports",
+  "optional_riders": "Consumables waiver, worldwide inpatient, restore SI, cumulative bonus, no-claim bonus SI, inflation protect SI, co-pay, deductible, 30-day waiver, specific illness WP waiver, preferred network, first notification discount, doctor-on-call, value-added services",
+  "insurer": "ACKO General Insurance Limited",
+  "plan_name": "Acko Health III",
+  "uin": "ACKHLIP27040V012627",
+  "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy_Wordings_ACKO_Health_III_de395d1997.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-18T05:16:58.094Z"
+  "extracted_at": "2026-09-20T07:50:59.677Z"
 }

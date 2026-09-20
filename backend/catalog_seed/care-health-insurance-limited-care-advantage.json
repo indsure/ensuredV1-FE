@@ -1,173 +1,139 @@
 {
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (illustrations show ₹25,00,000; actual options per policy schedule)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "Clause 3.1.1(iii)(a) explicitly states 'no sub-limit' on Room/Boarding and nursing expenses. Optional Cover 8 can restrict this to Single Private Room if opted."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "Clause 3.1.1(iii)(b) explicitly states 'no sub-limit' on ICU charges."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base)",
+    "note": "No mandatory co-payment in base policy. Optional Cover 6 allows insured to voluntarily opt a co-payment for premium discount. Optional Cover 4 (Smart Select) imposes 20% co-pay if treatment taken outside listed hospitals."
+  },
+  "sub_limits": {
+    "ordinal": 5,
+    "display": "No sub-limits",
+    "note": "No disease-wise or procedure sub-limits stated in the base policy wording."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (base)",
+    "note": "Optional Cover 3 allows policyholder to opt a deductible for a premium discount; deductible amount per policy schedule."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents."
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "36 months (24 mo with Optional Cover 5)",
+    "note": "Base PED waiting period is 36 months. Optional Cover 5 reduces it to 24 months."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "15 categories of specific diseases/procedures listed (e.g. cataract, hernia, joint replacement, arthritis, ENT surgeries, etc.) have a 24-month waiting period."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a permanent exclusion (Code Excl18). No optional maternity cover offered in this product."
+  },
+  "cumulative_bonus": {
+    "number": 150,
+    "display": "Up to 50% (base NCB) + up to 100% (NCB Super add-on)",
+    "note": "Base Benefit 5: 10%/yr, max 50% of SI. Optional Cover 1 (NCB Super): additional 50%/yr, max 100% of SI, cumulative max 150% combined. In event of claim, bonus reduces at same rate it accrued."
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once/yr, 100% of base SI (same & different illness)",
+    "note": "Benefit 6 (Automatic Recharge): reinstates base SI once per policy year after full exhaustion; usable for same or different illness. Optional Cover 11 (Unlimited Automatic Recharge) extends this to unlimited times."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Optional Cover 13 can extend this period as specified in policy schedule."
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Optional Cover 13 can extend this period as specified in policy schedule."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures (541 procedures in Annexure I)"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary Hospitalization is defined in the policy but no benefit clause covers it as an inbuilt or optional benefit."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Benefit 7: AYUSH treatment covered up to Sum Insured at AYUSH hospitals; must be inpatient-admissible claim."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Benefit 4: Medical expenses of organ donor covered up to amount in policy schedule."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered (limit per policy schedule)",
+    "note": "Benefit 3: Road ambulance covered up to amount specified in policy schedule. Optional Cover 2 adds Air Ambulance cover."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Clause 3.1.1(iv) lists 12 advance technology methods (robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, stem cell therapy, etc.) covered under Benefit 1."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Annexure II lists non-medical/consumable items as excluded. No optional consumables cover offered."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Clause 6.1.7(a) states policy covers only medical treatment taken entirely within India."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 5 continuous years, no look-back except for proven fraud and permanent exclusions."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity (excl.), infertility/ART, domiciliary not covered, hazardous sports (professional), tobacco/alcohol-related illness, hormone replacement therapy, external congenital anomaly",
+  "optional_riders": "NCB Super (50%/yr extra bonus), Air Ambulance, Deductible option, Smart Select (network discount), PED wait reduction to 24mo, Co-pay option, Annual Health Check-up, Room Rent cap to Single Private, Daily Allowance, Accidental SI doubler, Unlimited Recharge, Unlimited e-Consultations, Pre-Post Hosp period extension",
   "insurer": "Care Health Insurance Limited",
   "plan_name": "Care Advantage",
   "uin": "CHIHLIP27062V052627",
-  "sum_insured_options": "Not specified in wording (illustrations show ₹25L)",
-  "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
-  "room_rent": {
-    "display": "No cap",
-    "note": "Base plan has no sub-limit on room/boarding. Optional Cover 8 can restrict to Single Private Room for a discount.",
-    "optional": false,
-    "ordinal": 5
-  },
-  "icu": {
-    "display": "No cap",
-    "note": "Policy explicitly states no separate restriction on ICU charges.",
-    "optional": false,
-    "ordinal": 5
-  },
-  "copayment": {
-    "display": "None (base); 20% if Smart Select opted and non-network hospital used",
-    "note": "No mandatory co-pay in base plan. Optional Cover 6 allows voluntary co-pay for premium discount. Optional Cover 4 (Smart Select) imposes 20% co-pay for non-network hospitals.",
-    "optional": false,
-    "number": 0
-  },
-  "sub_limits": {
-    "display": "No sub-limits",
-    "note": "No disease-wise or procedure sub-limits stated in base policy wording.",
-    "optional": false,
-    "ordinal": 5
-  },
-  "deductible": {
-    "display": "None (optional add-on available)",
-    "note": "Deductible is Optional Cover 3; not applicable in base plan.",
-    "optional": false,
-    "number": 0
-  },
-  "initial_waiting": {
-    "display": "30 days",
-    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
-    "optional": false,
-    "number": 30
-  },
-  "ped_waiting": {
-    "display": "36 months",
-    "note": "Reducible to 24 months via Optional Cover 5 (paid add-on).",
-    "optional": false,
-    "number": 36
-  },
-  "specific_disease_waiting": {
-    "display": "24 months",
-    "note": "Applies to listed conditions including cataract, hernia, joint replacement, ENT surgeries, etc.",
-    "optional": false,
-    "number": 24
-  },
-  "maternity": {
-    "display": "Not covered",
-    "note": "Maternity is a permanent exclusion (Excl18). Ectopic pregnancy is covered.",
-    "optional": false,
-    "exists": false,
-    "number": null
-  },
-  "cumulative_bonus": {
-    "display": "Up to 50% (10%/yr)",
-    "note": "Base NCB: 10% per claim-free year, max 50%. Optional Cover 1 (NCB Super) adds 50%/yr up to 100% additional, totalling up to 150% combined — only if add-on opted.",
-    "optional": false,
-    "number": 50
-  },
-  "restoration": {
-    "display": "Once/yr, 100% (same or different illness)",
-    "note": "Automatic Recharge reinstates base SI once per year after full exhaustion; usable for same or different illness. Unlimited recharge available via Optional Cover 11.",
-    "optional": false,
-    "ordinal": 4
-  },
-  "pre_hosp": {
-    "display": "30 days",
-    "note": "Extendable via Optional Cover 13 (Pre-Post Hospitalisation Expenses Modification).",
-    "optional": false,
-    "number": 30
-  },
-  "post_hosp": {
-    "display": "60 days",
-    "note": "Extendable via Optional Cover 13.",
-    "optional": false,
-    "number": 60
-  },
-  "day_care": {
-    "display": "Listed procedures (541 listed)",
-    "note": "Annexure I lists 541 day-care procedures across specialties.",
-    "optional": false,
-    "exists": true
-  },
-  "domiciliary": {
-    "display": "Covered",
-    "note": "Domiciliary hospitalisation covered under standard definition when patient cannot be moved or no hospital room available.",
-    "optional": false,
-    "exists": true
-  },
-  "ayush": {
-    "display": "Covered up to SI",
-    "note": "AYUSH treatment covered up to Sum Insured at registered AYUSH hospitals; subject to same waiting periods.",
-    "optional": false,
-    "exists": true
-  },
-  "organ_donor": {
-    "display": "Covered",
-    "note": "Organ donor's harvesting surgery expenses covered up to SI; post-harvesting expenses excluded.",
-    "optional": false,
-    "exists": true
-  },
-  "ambulance": {
-    "display": "Covered (limit per policy schedule)",
-    "note": "Road ambulance covered; exact rupee limit specified in policy schedule, not in wording. Air ambulance available as Optional Cover 2.",
-    "optional": false,
-    "number": null
-  },
-  "modern_treatments": {
-    "display": "Covered (up to SI)",
-    "note": "12 listed advance technology methods covered under Benefit 1 including robotic surgery, stereotactic radiosurgery, oral chemo, stem cell therapy etc.",
-    "optional": false,
-    "exists": true
-  },
-  "consumables": {
-    "display": "Not covered",
-    "note": "Annexure II lists non-medical/consumable items as excluded (gloves, nebuliser kit, etc.). No rider available to cover them.",
-    "optional": false,
-    "exists": false
-  },
-  "global_cover": {
-    "display": "Not covered",
-    "note": "Policy explicitly covers medical treatment taken entirely within India only.",
-    "optional": false,
-    "exists": false
-  },
-  "moratorium": {
-    "display": "60 months",
-    "note": "After 5 continuous years no look-back except fraud and permanent exclusions.",
-    "optional": false,
-    "number": 60
-  },
-  "grace_period": {
-    "display": "30 days (15 days for monthly mode)",
-    "note": "30 days for annual/half-yearly/quarterly; 15 days for monthly premium mode.",
-    "optional": false,
-    "number": 30
-  },
-  "free_look": {
-    "display": "30 days",
-    "note": "Applicable on new policies only; not on renewals or portability.",
-    "optional": false,
-    "number": 30
-  },
-  "portability": {
-    "display": "Allowed",
-    "note": "IRDAI portability norms apply; apply at least 30 days before renewal.",
-    "optional": false,
-    "exists": true
-  },
-  "notable_exclusions": {
-    "display": "Maternity, hormone replacement therapy, tobacco/alcohol-related illness, external congenital anomaly, hair loss, external prosthetics, non-listed advance tech methods",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "NCB Super (100% bonus), Air Ambulance, Deductible, Smart Select, PED wait reduction (24mo), Co-pay option, Health Check-up, Room Rent cap, Daily Allowance, Accidental SI top-up, Unlimited Recharge, E-Consultations, Pre-Post hosp extension",
-    "note": null,
-    "optional": true
-  },
   "source_file": "care-advantage---policy-terms-&-condition-(effective-from-02-jun-2026).pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:39:52.315Z"
+  "extracted_at": "2026-09-20T07:54:02.365Z"
 }

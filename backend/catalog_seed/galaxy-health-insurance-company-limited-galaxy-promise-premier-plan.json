@@ -1,0 +1,135 @@
+{
+  "variant": "Premier Plan",
+  "sum_insured_options": "₹3L, ₹4L, ₹5L, ₹7.5L, ₹10L, ₹15L, ₹20L, ₹25L",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day (max ₹7,500–₹10,000)",
+    "note": "For SI 3L–10L: 1% of SI up to ₹7,500/day; for SI 15L–25L: 1% of SI up to ₹10,000/day. Proportionate deductions apply on associated medical expenses if higher room chosen."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (actuals)",
+    "note": "ICU charges covered as part of in-patient treatment; no separate sub-limit stated for Premier Plan."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment mentioned for Premier Plan."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract capped; Bariatric capped; Robotic surgery sub-limits",
+    "note": "Cataract: ₹25,000–₹50,000 depending on SI. Bariatric: ₹2L–₹3L. Robotic surgeries: sub-limits per procedure category. Newborn: 10% of SI up to ₹50,000. Road ambulance: ₹2,500/hosp, ₹5,000/yr."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No inbuilt deductible. Deductible is not available as optional cover for Premier Plan."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "36 months for 1-year and 2-year policy terms; 36 months for 3-year term as well. No PED buy-back option available for Premier Plan."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "24 months for 1-year and 2-year terms; 18 months for 3-year term. Covers cataract, ENT, thyroid, hernia, joint replacements, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Delivery expenses and Assisted Reproduction Treatment are not available under Premier Plan. Newborn baby cover is available subject to conditions."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100%",
+    "note": "25% of SI after first claim-free year; 10% of SI for every subsequent claim-free year; max 100%. Bonus reduced at same rate as accrual on claim. Alternatively, No Claim Discount of 4% (SI 3L–4L), 2% (SI 5L–7.5L), 1% (SI 10L–25L) in lieu of CB."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "Automatic restoration is not available under Premier Plan."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Covered for illness requiring hospitalisation but treated at home for >3 days. Several conditions excluded (asthma, bronchitis, diabetes, hypertension, etc.)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH hospitalisation covered up to sum insured. Yoga & Naturopathy require prior company approval."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Organ donor expenses benefit is only available under Signature Plan."
+  },
+  "ambulance": {
+    "number": 2500,
+    "display": "₹2,500/hospitalisation, ₹5,000/yr",
+    "note": "Road ambulance: up to ₹2,500 per hospitalisation, max ₹5,000 per policy year. Air ambulance not covered under Premier Plan."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited",
+    "note": "Robotic surgeries: up to ₹4L–₹7L depending on procedure. Other modern treatments (immunotherapy, stem cell, intravitreal, deep brain stimulation, etc.) subject to sub-limits (e.g., 30% of SI for several categories)."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Consumables cover (List I items) is not available under Premier Plan as inbuilt or optional."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Territorial limit is India only. No international cover available."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, claims cannot be contested except for proven fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "No maternity/delivery, no ART/surrogacy, no organ donor expenses, no air ambulance, no restoration, no consumables, no home care treatment, no hospice care",
+  "optional_riders": "None available for Premier Plan",
+  "insurer": "Galaxy Health Insurance Company Limited",
+  "plan_name": "Galaxy Promise",
+  "uin": "GHIHLIP25035V012425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Policy Wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:57:50.310Z"
+}

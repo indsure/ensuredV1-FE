@@ -1,173 +1,145 @@
 {
+  "variant": "",
+  "sum_insured_options": "₹2L, ₹3L, ₹4L, ₹5L, ₹7L, ₹10L (as indicated by cardiac check-up tiers and premium illustrations)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "Single Private Room or 1% of SI/day",
+    "note": "Policy Schedule specifies either 'Single Private Room' or 'up to 1% of SI per day'. If room opted is higher than eligible, Associate Medical Expenses are pro-rated proportionally. NCB does not enhance room rent eligibility."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "Up to 2% of SI/day or no sub-limit",
+    "note": "Policy Schedule specifies either '2% of SI per day' or 'no sub-limit' for ICU charges. NCB does not enhance ICU eligibility."
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% (standard); 30% at age 71+",
+    "note": "Co-payment as specified in Policy Schedule applies on each claim for Benefits 1–5. Increases by 10% per claim in the policy year following insured (or eldest floater member) attaining age 71. If age at first policy issuance is 70 or below, insured can waive the additional 10% co-pay on payment of extra premium."
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Cataract, knee replacement, hernia, hysterectomy, BPH, renal stones, cerebrovascular, cancer, renal complications, bone fractures capped per Policy Schedule",
+    "note": "Named ailments/procedures (Clause 3.1.1(iii)(c)) have sub-limits specified in the Policy Schedule. All related expenses (pre/post/hospitalisation) count toward the sub-limit."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional)",
+    "note": "Deductible is an optional feature; if opted, it applies to Benefits 1–5 before insurer liability commences. Base policy has no mandatory deductible."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illness treatment from first policy commencement date; not applicable for accidents."
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Pre-existing diseases excluded for 24 months of continuous coverage from inception. Portability credits reduce this period."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Listed conditions (e.g. cataract, hernia, hysterectomy, BPH, kidney stones, varicose veins, cancer, MI, renal failure, etc.) excluded for 24 months. If PED waiting period is longer, the longer applies."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity (childbirth, complicated deliveries, C-sections, miscarriage, MTP) is a permanent standard exclusion (Code Excl18). No inbuilt or optional maternity benefit is offered under this product."
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% of SI (10%/yr)",
+    "note": "10% flat cumulative increase per claim-free policy year; maximum 50% of SI. Reduced by 10% of SI after a claim year but never below base SI. Alternatively, insured may opt for a small premium discount (₹49 individual / ₹99 floater) instead of additional SI."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% SI (unrelated illness only)",
+    "note": "Automatic Recharge reinstates up to 100% of base SI once per policy year after SI and NCB are fully exhausted. Recharge can only be used for a different illness/injury than the one that triggered exhaustion (unrelated). Unused recharge cannot be carried forward."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Pre-hospitalisation medical expenses for 30 days prior to admission, for the same condition, reimbursement only."
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Post-hospitalisation medical expenses for 60 days after discharge, for the same condition, reimbursement only."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures (Annexure I, 541 procedures)",
+    "note": "Day care treatment covered up to SI; must be from the listed procedures in Annexure I."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Domiciliary hospitalisation covered (reimbursement only) if treatment exceeds 3 consecutive days. Excludes 12 specific conditions (asthma, bronchitis, diabetes, hypertension, epilepsy, etc.)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH in-patient treatment covered up to SI via cashless or reimbursement, provided linked to an admitted hospitalisation claim under Benefit 1."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Expenses related to donor treatment including surgery to remove organs from the donor are permanently excluded (Clause 4.2(a)(12))."
+  },
+  "ambulance": {
+    "number": null,
+    "display": "Up to limit in Policy Schedule",
+    "note": "Ambulance cover amount specified in Policy Schedule; covers transport to nearest hospital or between hospitals in emergency. Exact rupee limit not stated in wording text."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (listed advanced technology methods only)",
+    "note": "Covers: Uterine Artery Embolization, HIFU, Balloon Sinuplasty, Deep Brain Stimulation, Oral Chemotherapy, Immunotherapy (monoclonal antibody injections), Intravitreal injections, Robotic surgeries, Stereotactic radiosurgeries, Bronchial Thermoplasty, Vaporisation of prostate (green/holmium laser), IONM, Stem cell therapy (haematopoietic for bone marrow transplant). Other advanced technology methods are excluded."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumable items (gloves, masks, ECG electrodes, nebulisation kits, etc.) are listed in Annexure II as excluded. No optional consumables rider offered."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy covers only medical treatment taken entirely within India. International Second Opinion (Optional Benefit 2) is available but covers only a second medical opinion, not treatment costs abroad."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 5 continuous years, no look-back applied except for proven fraud and permanent exclusions. Moratorium applies separately to enhanced SI from date of enhancement."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium payment mode; 30 days for all other modes. Coverage not available during grace period."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines; apply at least 30 days before but not earlier than 60 days from renewal date."
+  },
+  "notable_exclusions": {
+    "display": "Maternity, organ donor surgery, non-listed advanced tech methods, external congenital anomaly, STDs (non-HIV), dental/eye/ear routine, sleep disorder devices, cochlear implants, tobacco/alcohol-related illness, pre-existing conditions listed in Clause 4.2(a)(24)"
+  },
+  "optional_riders": {
+    "display": "OPD Care (consultations/diagnostics/pharmacy), International Second Opinion, Home Care (qualified nurse post-discharge), Active Health Check-up (3x/yr), Deductible option"
+  },
   "insurer": "Care Health Insurance Limited",
   "plan_name": "Care Heart",
   "uin": "CHIHLIP26053V032526",
-  "sum_insured_options": "₹2L – ₹10L (illustrations show ₹3L; schedule-driven)",
-  "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
-  "room_rent": {
-    "display": "Single Private Room or 1% of SI/day (schedule-driven)",
-    "note": "Policy Schedule specifies either 'Single Private Room' or 'up to 1% of SI per day'; NCB does not count toward room rent limit. Proportionate deduction on associate medical expenses if higher room opted.",
-    "optional": false,
-    "ordinal": 3
-  },
-  "icu": {
-    "display": "Up to 2% of SI/day or no sub-limit (schedule-driven)",
-    "note": "Policy Schedule states either '2% of SI per day' or 'no sub-limit' for ICU charges; NCB excluded from ICU limit calculation.",
-    "optional": false,
-    "ordinal": 3
-  },
-  "copayment": {
-    "display": "20% per claim (age ≤70); 30% from age 71+",
-    "note": "Illustrations show 20% co-pay for new entrants up to age 70; additional 10% co-pay kicks in from the renewal after insured turns 71. Waiver of the age-71 loading available on payment of extra premium if age at first policy ≤70.",
-    "optional": false,
-    "number": 20
-  },
-  "sub_limits": {
-    "display": "Cataract, knee replacement, hernia, hysterectomy, BPH, renal stones, cerebrovascular, cancer, renal complications, bone fractures — all capped per schedule",
-    "note": "Clause 3.1.1(iii) lists 10 named ailments/procedures with individual sub-limits specified in the Policy Schedule (e.g. example of ₹50,000 sub-limit cited). Advanced technology methods also subject to Benefit 1 limits.",
-    "optional": false,
-    "ordinal": 1
-  },
-  "deductible": {
-    "display": "Optional; amount per schedule",
-    "note": "Deductible is optional and applies to Benefits 1–5 in aggregate or per claim as specified in Policy Schedule. Base plan has no mandatory deductible.",
-    "optional": true,
-    "number": 0
-  },
-  "initial_waiting": {
-    "display": "30 days",
-    "note": "30-day waiting period (Excl03) for illness treatment from first policy commencement; not applicable for accidents.",
-    "optional": false,
-    "number": 30
-  },
-  "ped_waiting": {
-    "display": "24 months",
-    "note": "Pre-existing diseases excluded for 24 months of continuous coverage from inception (Excl01). Portability credit reduces this period.",
-    "optional": false,
-    "number": 24
-  },
-  "specific_disease_waiting": {
-    "display": "24 months",
-    "note": "Listed conditions (cataract, hernia, hysterectomy, BPH, joint replacement, ENT surgeries, varicose veins, kidney stones, cancer, cardiac conditions, etc.) excluded for 24 months (Excl02). Portability credit applies.",
-    "optional": false,
-    "number": 24
-  },
-  "maternity": {
-    "display": "Not covered (excluded)",
-    "note": "Maternity expenses including childbirth, C-section and lawful termination of pregnancy are permanently excluded under Excl18.",
-    "optional": false,
-    "exists": false,
-    "number": null
-  },
-  "cumulative_bonus": {
-    "display": "Up to 50% (10%/yr)",
-    "note": "10% flat cumulative NCB per claim-free policy year; capped at 50% of SI. Reduced by 10% of SI in a claim year but total SI never falls below base SI. Alternatively, insured may opt for a small premium discount (₹49/₹99) instead of NCB.",
-    "optional": false,
-    "number": 50
-  },
-  "restoration": {
-    "display": "Once/yr, 100% SI (unrelated illness only)",
-    "note": "Automatic Recharge reinstates up to 100% of base SI once per policy year after SI + NCB exhausted. Available only for claims not related to any illness/injury already claimed that year. Unused recharge lapses at year end.",
-    "optional": false,
-    "ordinal": 3
-  },
-  "pre_hosp": {
-    "display": "30 days",
-    "note": "Pre-hospitalisation expenses covered for 30 days prior to admission for the same condition, subject to inpatient claim being admitted.",
-    "optional": false,
-    "number": 30
-  },
-  "post_hosp": {
-    "display": "60 days",
-    "note": "Post-hospitalisation expenses covered for 60 days after discharge for the same condition.",
-    "optional": false,
-    "number": 60
-  },
-  "day_care": {
-    "display": "Listed day-care procedures (541 listed in Annexure I)",
-    "note": "Day Care Treatment covered for procedures listed in Annexure I; general out-patient treatment excluded.",
-    "optional": false,
-    "exists": true
-  },
-  "domiciliary": {
-    "display": "Covered (up to SI)",
-    "note": "Domiciliary Hospitalisation covered under Benefit 5 via reimbursement up to SI, subject to treatment exceeding 3 consecutive days and inpatient claim being admissible. Several diseases (asthma, diabetes, hypertension, etc.) excluded from domiciliary cover.",
-    "optional": false,
-    "exists": true
-  },
-  "ayush": {
-    "display": "Covered up to SI (inpatient)",
-    "note": "AYUSH inpatient treatment covered under Benefit 3 up to SI via cashless or reimbursement, linked to an accepted inpatient hospitalisation claim.",
-    "optional": false,
-    "exists": true
-  },
-  "organ_donor": {
-    "display": "Not covered",
-    "note": "Specific exclusion 4.2(a)(12) excludes all expenses related to donor treatment including surgery to remove organs from the donor in transplant cases.",
-    "optional": false,
-    "exists": false
-  },
-  "ambulance": {
-    "display": "Covered up to schedule limit",
-    "note": "Ambulance cover under Benefit 4 up to amount specified in Policy Schedule; linked to accepted inpatient claim. Exact rupee limit not stated in wording — schedule-driven.",
-    "optional": false,
-    "number": null
-  },
-  "modern_treatments": {
-    "display": "Covered (listed advanced technology methods)",
-    "note": "Clause 3.1.1(iv) covers 12 specified advanced technology methods (robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy injections, HIFU, deep brain stimulation, etc.) under Benefit 1. Other advanced technology methods explicitly excluded.",
-    "optional": false,
-    "exists": true
-  },
-  "consumables": {
-    "display": "Not covered",
-    "note": "Annexure II lists extensive non-medical/consumable items (gloves, masks, ECG electrodes, nebulisation kit, etc.) as excluded. No consumables cover rider mentioned.",
-    "optional": false,
-    "exists": false
-  },
-  "global_cover": {
-    "display": "Not covered (India only)",
-    "note": "Policy explicitly covers medical treatment taken entirely within India only (Clause 6.1.7(a)). International Second Opinion is an optional benefit but does not cover overseas treatment costs.",
-    "optional": false,
-    "exists": false
-  },
-  "moratorium": {
-    "display": "60 months",
-    "note": "After 5 continuous years (60 months) no look-back applied except for proven fraud and permanent exclusions. Moratorium applies separately to enhanced SI from date of enhancement.",
-    "optional": false,
-    "number": 60
-  },
-  "grace_period": {
-    "display": "30 days",
-    "note": "Grace period is 15 days for monthly premium mode and 30 days for all other modes. Coverage not available during grace period except where premium paid in instalments during policy period.",
-    "optional": false,
-    "number": 30
-  },
-  "free_look": {
-    "display": "30 days",
-    "note": "30-day free look period from date of receipt of policy document for new individual policies; not applicable on renewals or porting/migration.",
-    "optional": false,
-    "number": 30
-  },
-  "portability": {
-    "display": "Allowed",
-    "note": "Portability to other insurers permitted as per IRDAI guidelines with continuity credit for PED and specific waiting periods.",
-    "optional": false,
-    "exists": true
-  },
-  "notable_exclusions": {
-    "display": "Organ donor surgery, non-listed advanced tech methods, STDs (except HIV), sleep disorder instruments, cochlear implants, tobacco/alcohol-related illness, alopecia, Remicade/Avastin injections, maternity",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "OPD Care, International Second Opinion, Home Care (nursing), Active Health Check-up (3x/yr)",
-    "note": null,
-    "optional": true
-  },
   "source_file": "care-heart---policy-terms-and-conditions-(effective-from-03-september-2025).pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:39:19.893Z"
+  "extracted_at": "2026-09-20T07:54:41.923Z"
 }

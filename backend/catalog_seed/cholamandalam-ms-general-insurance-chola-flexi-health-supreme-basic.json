@@ -1,0 +1,128 @@
+{
+  "variant": "Basic",
+  "sum_insured_options": "₹5/7.5/10/15/20/25 Lakhs",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 2,
+    "display": "₹2,000/day (SI ≤2L); no limit above ₹2L",
+    "note": "Room rent capped at ₹2,000/day for SI options ₹50k, ₹1L, ₹2L; no room limit for SI above ₹2L. Basic plan SI starts at ₹5L so effectively no room limit for all available SI options."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "No ICU sub-limit mentioned for Basic plan."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment stated for Basic plan."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits",
+    "note": "Ambulance capped at 1% of SI max ₹2,000/hosp; New Born Baby capped at 10% of SI max ₹50,000; no disease-wise sub-limits otherwise."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity cover not available under Basic plan."
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50%",
+    "note": "Maximum cumulative bonus 50% under Basic plan; rate and reduction % not explicitly stated per year."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% of Base SI",
+    "note": "Automatic restoration of Base SI when Base SI and Cumulative Bonus exhausted/insufficient; available once per policy year; not applicable for RTA claims."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care up to SI"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Covered up to SI; excludes listed conditions (asthma, diabetes, hypertension etc.)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Harvesting expenses covered; donor pre/post-hosp not covered."
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "1% of SI, max ₹2,000/hosp"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)",
+    "note": "No explicit exclusion of modern/robotic treatments; covered under inpatient hospitalisation."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Consumables cover not available under Basic plan; available under Plus and Premiere."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Global Hospitalisation cover not available under Basic plan."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Domiciliary excluded for asthma, diabetes, hypertension, epilepsy etc.; alcoholic cirrhosis permanent exclusion; impotency treatment; change-of-gender; adventure sports",
+  "optional_riders": "Medical Second Opinion add-on, Flexi OP Care add-on (OPD cover)",
+  "insurer": "Cholamandalam MS General Insurance",
+  "plan_name": "Chola Flexi Health Supreme",
+  "uin": "CHOHLIP27040V032627",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Chola Flexi Health Supreme CHOHLIP27040V032627-Policy Wording wef 09042026.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:56:25.376Z"
+}

@@ -1,0 +1,135 @@
+{
+  "variant": "Plan A",
+  "sum_insured_options": "₹2 Lakh, ₹3 Lakh, ₹5 Lakh",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day",
+    "note": "Up to 1% of Sum Insured per day for non-ICU room. If higher room opted, co-payment applies on Associated Medical Expenses (excl. pharmacy, consumables, implants, diagnostics). ICU at actuals with no co-payment."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "At actuals",
+    "note": "No cap on ICU room rent; no co-payment applies for ICU admission."
+  },
+  "copayment": {
+    "number": 10,
+    "display": "10% mandatory on every claim",
+    "note": "10% mandatory co-payment on each admissible hospitalisation bill (excluding pre/post hospitalisation). Lifelong. Additional room-rent co-payment (15%) may also apply if higher room opted."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Modern treatments capped at 50% SI",
+    "note": "12 listed modern treatment procedures (robotic surgery, oral chemo, intravitreal injections, etc.) capped at 50% of SI per policy period. No other disease-wise sub-limits stated."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "16 listed conditions including cataract, hernia, hydrocele, joint replacement, stones, varicose veins, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity explicitly excluded (Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "No cumulative bonus mentioned in the policy wording."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Pre and post hospitalisation combined capped at 2% of SI per hospitalisation."
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Pre and post hospitalisation combined capped at 2% of SI per hospitalisation."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures (400+ listed)",
+    "note": "Extensive list of 400+ procedures covered; also any other procedure agreed by insurer requiring <24 hrs due to technology advancement."
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation explicitly excluded under specific exclusions (clause aa)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (hospitalisation)",
+    "note": "AYUSH hospitalisation for accident and illness covered. Preventive/rejuvenation treatments excluded."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Donor screening, treatment and surgery expenses explicitly excluded."
+  },
+  "ambulance": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Ambulance listed as a non-payable item in Annexure 1 (List I, item 67). No ambulance benefit mentioned."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 modern treatment procedures covered but capped at 50% of SI per policy period. Co-payment waived for these procedures."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Consumables (gloves, etc.) listed as non-payable in Annexure 1."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Coverage restricted to India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly instalment; 30 days for all other modes."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Domiciliary hospitalisation, OPD, maternity, organ donor, ambulance, consumables, overseas treatment, stem cell storage, infertility/ART",
+  "optional_riders": "Optional co-payment of 20% or 30% (premium discount); long-term policy discount (2yr: 5%, 3yr: 10%); family discount 5%",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Aarogya Bima",
+  "uin": "GCIHLIP23052V032223",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "aarogya_bima_policy_wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:57:34.148Z"
+}

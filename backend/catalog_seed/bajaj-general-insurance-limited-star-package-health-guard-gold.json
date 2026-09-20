@@ -1,0 +1,132 @@
+{
+  "variant": "Gold",
+  "sum_insured_options": "Not specified in wording (schedule-dependent; SI bands 3L–7.5L and 10L+ affect room entitlement)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private Room (SI 3L–7.5L); Any room (SI 10L+)",
+    "note": "SI 3L–7.5L: single private AC room; SI 10L and above: any room category. Proportionate deduction if higher room taken."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "At actuals",
+    "note": "Actual ICU expenses payable"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base)",
+    "note": "Voluntary co-pay of 10% or 20% available for premium discount; zone-based co-pay applies if Zone B/C insured treats in Zone A"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract 20% of SI/eye max ₹1L; Bariatric 50% of SI max ₹5L; Maternity sub-limits apply",
+    "note": "Cataract: 20% of SI per eye max ₹1L; Bariatric: 50% of SI max ₹5L; Maternity: ₹15k/₹25k normal, ₹25k/₹35k caesarean by SI band"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (base)",
+    "note": "Voluntary aggregate deductible of ₹50,000/₹1,00,000/₹2,00,000/₹3,00,000 available for premium discount; not applied on maternity claims"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "27 listed conditions including cataracts, hernia, fistula, mental illness, chronic kidney disease, Alzheimer's etc."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 72,
+    "display": "Covered (72mo wait)",
+    "note": "Max 2 deliveries/terminations; normal delivery ₹15k (SI≤7.5L)/₹25k (SI>7.5L); caesarean ₹25k/₹35k; 90-day post-natal covered within maternity limit; newborn covered within maternity SI"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% of base SI per claim-free year, max 100% over 10 years; reduced by 10% after a claim year"
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% base SI",
+    "note": "Triggered only after full SI + cumulative bonus exhausted; once per policy year; for Cancer and Kidney Failure only once in lifetime"
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures (Annexure I)"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No domiciliary cover mentioned for Health Guard section"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH hospitalisation covered up to Sum Insured in government or accredited AYUSH hospitals"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Harvesting expenses for organ donor covered subject to Transplantation Act compliance"
+  },
+  "ambulance": {
+    "number": 20000,
+    "display": "₹20,000/policy year",
+    "note": "Road ambulance; covers transfer to nearest hospital and inter-hospital transfer"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to base SI",
+    "note": "Annexure III list including robotic surgery, stereotactic radiosurgery, oral chemotherapy etc."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical consumables listed in Annexure II are excluded; medical consumables within hospitalisation covered"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "No treatment outside India; no domiciliary; 72-mo maternity wait; 36-mo joint replacement/vertebral/bariatric wait; no IVF/infertility",
+  "optional_riders": "Air ambulance (SI ≥5L), voluntary co-pay 10%/20%, voluntary aggregate deductible, room rent capping discount",
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "Star Package - Health Guard",
+  "uin": "BAJHLIP25037V022425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Star-Package_PW.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:54:05.641Z"
+}

@@ -1,0 +1,129 @@
+{
+  "variant": "Family Floater",
+  "sum_insured_options": "₹3L, ₹5L, ₹10L, ₹15L, ₹20L, ₹25L, ₹50L, ₹100L",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "Policy wording does not impose any room rent sub-limit; room and boarding covered as part of in-patient treatment without a stated cap."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "ICU charges covered under in-patient treatment with no stated sub-limit."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (optional 10% or 20%)",
+    "note": "No mandatory co-payment. Co-payment of 10% or 20% is an optional benefit; once opted it cannot be removed."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Ambulance ₹2,000/hosp; Air ambulance ₹2.5L/hosp",
+    "note": "Ambulance capped at ₹2,000 per hospitalisation; emergency air ambulance capped at ₹2.5L per hospitalisation. Daily cash for shared accommodation is a fixed benefit (₹800/day up to ₹4,800 for 3L-15L; ₹1,000/day up to ₹6,000 for 20L+). No disease-wise sub-limits on main indemnity cover."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional aggregate deductible)",
+    "note": "No mandatory deductible. Optional aggregate deductible of ₹25K/₹50K/₹1L can be opted at inception; applies on floater basis."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, hernia, joint replacement, cholecystectomy, sinusitis, GERD, calculus diseases, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Optional add-on (Parenthood)",
+    "note": "Maternity is excluded from base plan (Excl18). Available via 'Parenthood' add-on covering maternity, embryo storage and IVF with 2-year waiting period."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (50%/yr)",
+    "note": "Multiplier Benefit: 50% of Base SI added each renewal irrespective of claims, capped at 100% of Base SI. Available on floater basis for all insured persons."
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once/yr, 100% of Base SI (floater)",
+    "note": "Restore Benefit: 100% of Base SI restored once per policy year on complete or partial utilisation; available on floater basis. Unlimited Restore (optional) allows unlimited restorations."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (min 3 days treatment)"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (in-patient AYUSH only)"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (harvesting expenses only)"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance ₹2,000 per hospitalisation. Emergency air ambulance up to ₹2.5L per hospitalisation (within India only)."
+  },
+  "modern_treatments": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly list modern/robotic treatments as a named benefit; covered under general in-patient treatment if medically necessary."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider (Protector Rider)",
+    "note": "Base plan excludes items in List I (consumables/non-medical). 'Protector Rider' add-on covers IRDAI-listed excluded items."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional (Critical Advantage rider)",
+    "note": "Base plan covers India only. 'Critical Advantage rider' covers planned treatment abroad for 8 major illnesses."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly instalment)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity (base), treatment outside India, sleep apnoea, external congenital anomalies, consumables (List I), alcoholic cirrhosis (permanent), OPD treatment",
+  "optional_riders": "Unlimited Restore, Parenthood (maternity+IVF), Protector Rider (consumables), Critical Advantage (overseas), ABCD Chronic Care, Optima Wellbeing (OPD), Personal Accident Rider, Hospital Daily Cash, my:health Critical Illness",
+  "insurer": "HDFC ERGO",
+  "plan_name": "Optima Restore",
+  "uin": "HDFHLIP26055V102526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "PolicyWordings_OptimaRestore-811520192624.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:01:41.599Z"
+}

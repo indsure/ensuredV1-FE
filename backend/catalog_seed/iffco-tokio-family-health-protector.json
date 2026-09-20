@@ -1,0 +1,131 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording; policy references SI bands (below ₹7L, ₹7L and above, ₹3L minimum for reinstatement, up to ₹25L+ for health check-up tiers)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1.25–1.5% of SI/day (no cap for SI ≥₹7L)",
+    "note": "For SI <₹7L: 1.5% of SI/day in Class A cities, 1.25% elsewhere. For SI ≥₹7L (excl. CI top-up): no room rent cap. ICU: 2.5% (Class A) / 2% (others) for SI <₹7L; no cap for SI ≥₹7L. Room rent cap can be removed for SI <₹7L on payment of 6% additional premium."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2–2.5% of SI/day (no cap for SI ≥₹7L)",
+    "note": "For SI <₹7L: 2.5% of SI/day in Class A cities, 2% elsewhere. No cap for SI ≥₹7L. Optional extension available to remove cap for SI <₹7L at 6% extra premium."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (optional 10%/20%/25%)",
+    "note": "No mandatory co-pay by default. Optional co-pay of 10%, 20% or 25% can be chosen; once opted cannot be removed during policy period."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Domiciliary capped at 20% of SI; modern treatments at 50% of SI",
+    "note": "Domiciliary hospitalisation sub-limit: 20% of SI. Modern treatments: up to 50% of SI. Service charges: max 0.5% of SI per hospitalisation. No disease-wise monetary sub-limits otherwise."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12 months (some conditions 24 months)",
+    "note": "12-month wait: tonsillitis surgery, tympanoplasty, fistula/piles, carcinoma, varicose veins, ligament tears. 24-month wait: cataract, BPH, hernia, hydrocele, sinusitis, gallstones, IVD disorders, knee/joint replacement, chronic renal failure, fibroids, hysterectomy, benign growths/cysts."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of base SI",
+    "note": "25% of base SI after first claim-free year, then 10% per subsequent claim-free year, max 100% of base SI. Reduces at accrual rate on claim. Alternatively, a 5% No Claim Discount on base premium can be chosen at renewal instead of CB."
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once per claim, full base SI reinstated",
+    "note": "Basic SI reinstated to extent of claim paid after each claim. First reinstatement free; subsequent reinstatements charged pro-rata premium. Reinstated SI available for same illness (except chronic diseases listed) and other illnesses. Not available for domiciliary, CI extension, or cumulative bonus. Unutilised reinstated SI cannot be carried forward."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed procedures (383 listed in Annexure C)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to 20% of SI",
+    "note": "Several conditions excluded from domiciliary cover including asthma, diabetes, hypertension, epilepsy, arthritis, critical illness etc."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH hospitalisation including pre/post hospitalisation covered up to SI limit per policy period."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (within insured's SI)",
+    "note": "Donor hospitalisation expenses covered within insured's SI/extended SI. Donor room rent limited to 50% of insured's room rent entitlement. Ambulance, pre/post hosp and daily allowance not payable for donor."
+  },
+  "ambulance": {
+    "number": 2500,
+    "display": "Up to ₹2,500 per hospitalisation",
+    "note": "1% of SI or ₹2,500, whichever is lower, per hospitalisation."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited to 50% of SI",
+    "note": "12 modern treatment types covered (robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, HIFU, deep brain stimulation, etc.) up to 50% of SI."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-payable consumables in Annexure A List I (gloves, masks, diapers, etc.)."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Territorial limit clause restricts all treatment to India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (renewal); 15 days for monthly instalments"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, sterility/IVF, external congenital anomalies, OPD-only procedures converted to inpatient, acupuncture/acupressure, intra-articular injections, adventure sports (non-professional), war/nuclear",
+  "optional_riders": "Higher SI for Critical Illness (equal to base SI); No-limit room rent/ICU extension (6% extra premium); Co-pay options (10%/20%/25%)",
+  "insurer": "IFFCO TOKIO",
+  "plan_name": "Family Health Protector",
+  "uin": "IFFHLIP26042V062526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "policy-wordingfhpv-8.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:02:07.546Z"
+}

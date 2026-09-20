@@ -1,0 +1,134 @@
+{
+  "variant": "Elite Plan",
+  "sum_insured_options": "₹5L, ₹7.5L, ₹10L, ₹15L, ₹20L, ₹25L, ₹50L",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Deluxe room (SI 5L–20L); Any room (SI 25L–50L)",
+    "note": "SI 5L–20L: up to Deluxe room. SI 25L–50L: any room. Proportionate deductions apply on associated medical expenses if higher room chosen. Optional Room Rent Enhancement add-on available to upgrade to any room for SI 5L–20L."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (actuals)",
+    "note": "ICU charges covered as part of in-patient treatment; no separate sub-limit stated."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment mentioned for Elite Plan."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract capped; Bariatric capped; Rehab/Pain capped",
+    "note": "Cataract: ₹60,000–₹75,000. Bariatric: ₹2.5L–₹5L. Rehabilitation & Pain Management: up to ₹25,000/yr. Road ambulance: ₹5,000/hosp, ₹10,000/yr. Air ambulance: 10% of SI up to ₹2.5L. Newborn: 10% of SI up to ₹1L."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (inbuilt)",
+    "note": "No inbuilt deductible. Optional aggregate deductible (₹25K/₹50K/₹1L) or per-claim deductible (₹5K/₹10K) available at additional premium with premium discounts."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "36 months for 1-year and 2-year terms; 36 months for 3-year term. No PED buy-back option for Elite Plan."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "24 months for 1-year and 2-year terms; 18 months for 3-year term."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Delivery expenses and Assisted Reproduction Treatment not available under Elite Plan. Newborn baby cover available subject to conditions."
+  },
+  "cumulative_bonus": {
+    "number": 150,
+    "display": "Up to 150%",
+    "note": "50% of SI after first claim-free year; 25% of SI for every subsequent claim-free year; max 150%. Bonus reduced at same rate as accrual on claim. Alternatively, No Claim Discount of 3% (SI 5L–7.5L), 1% (SI 10L–50L) in lieu of CB."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% SI (unrelated illness only)",
+    "note": "Sum insured reset once per policy year for different/unrelated illness only. Modern treatments and accidents not covered under restoration. Unutilised reset not carried forward."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Covered for illness requiring hospitalisation but treated at home for >3 days. Several conditions excluded (asthma, bronchitis, diabetes, hypertension, etc.)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH hospitalisation covered up to sum insured. Yoga & Naturopathy require prior company approval."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Organ donor expenses benefit is only available under Signature Plan."
+  },
+  "ambulance": {
+    "number": 5000,
+    "display": "₹5,000/hospitalisation, ₹10,000/yr",
+    "note": "Road ambulance: up to ₹5,000 per hospitalisation, max ₹10,000 per policy year. Air ambulance: 10% of SI up to ₹2.5L per policy year."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "All modern treatments covered up to sum insured under Elite Plan (no sub-limits as in Premier Plan)."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Optional rider",
+    "note": "Consumables (List I items) available as optional add-on for Elite Plan at additional premium."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Territorial limit is India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "No maternity/delivery, no ART/surrogacy, no organ donor expenses, no home care treatment, no hospice care, no sleep disorder cover, restoration for unrelated illness only",
+  "optional_riders": "Room Rent Enhancement (any room), Consumables, Hospital Cash, Aggregate/Per-claim Deductible, Premium Promise, Personal Accident (AD&PTD)",
+  "insurer": "Galaxy Health Insurance Company Limited",
+  "plan_name": "Galaxy Promise",
+  "uin": "GHIHLIP25035V012425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Policy Wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:57:50.395Z"
+}

@@ -1,0 +1,145 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (options mentioned in Policy Schedule); Unlimited SI option available (>INR 3 crore)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "As opted (room type or ₹ limit per day per Policy Schedule)",
+    "note": "Room rent limit and type are chosen by insured and stated in Policy Schedule. If limit exceeded, proportionate deduction applies on entire bill except medicines/consumables. No cap option may be available depending on what is opted."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (covered up to SI)",
+    "note": "ICU charges covered as part of hospitalisation cover up to Sum Insured; no separate sub-limit stated in wording."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base); Zone-based co-pay may apply",
+    "note": "No mandatory co-pay on base policy. Zone-based co-pay applies if insured in Zone B/C seeks treatment in higher zone (10%-20%). OPD section has optional co-pay basis. No age-based co-pay mentioned."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits: modern treatments 50% SI, Cochlear implant 50% SI, some injections 5% SI",
+    "note": "Modern/new-age treatments (robotic surgery, oral chemo, etc.) capped at 50% of SI unless Section 24 Advance Care opted (upgrades to 100%). Cochlear implant capped at 50% SI. Hyaluronic acid/intra-articular injections capped at 5% SI. Smart Save (Section 29) adds disease-wise SI caps if opted. No cataract/hernia sub-limit in base wording."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (base); optional aggregate or per-claim deductible available",
+    "note": "Deductible is optional and chosen by insured; stated in Policy Schedule. Base policy has no mandatory deductible."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day initial waiting period for illnesses; waived for accidents. Can be reduced as per Policy Schedule option."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (as opted; reducible)",
+    "note": "PED waiting period as opted by insured and mentioned in Policy Schedule. Standard is 36 months; portability credits apply. FastTrack (Section 27) covers listed PEDs after 30 days if declared and accepted."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "As opted per Policy Schedule (standard up to 36 months)",
+    "note": "Specific disease waiting period as opted and stated in Policy Schedule. Standard list includes arthritis, cataract, hernia, joint replacement, bariatric surgery, organ transplant, psychiatric illness, etc. Wording states 'as opted by You and specified in the Policy Schedule'."
+  },
+  "maternity": {
+    "exists": true,
+    "number": null,
+    "display": "Optional add-on (waiting period as opted in Policy Schedule)",
+    "note": "Section 6 Maternity Benefit & New Born Baby Cover is optional. Waiting period chosen by insured and stated in Policy Schedule. Covers delivery, complications, lawful termination; limited to 2 childbirth events. New born covered up to 90 days. Pre/post-natal expenses covered only if leading to hospitalisation unless specifically opted."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "As per Policy Schedule (e.g. 10%/yr up to 50% shown in example)",
+    "note": "Cumulative Bonus rate and maximum cap stated in Policy Schedule. Example in wording shows 10% per claim-free year up to 50%. Alternatively, No Claim Discount on premium can be chosen instead. Cumulative Bonus Protection (Section 28) available as optional add-on to prevent reduction on claim."
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once or multiple per year, 100% SI (related or unrelated as opted)",
+    "note": "Section 12 Sum Insured Refill Benefit is optional. Refills 100% of utilised SI. Can be for related or unrelated hospitalisation as opted. For related hospitalisation, 45-day cooling-off applies. Number of refills per year as per Policy Schedule."
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "As opted per Policy Schedule",
+    "note": "Pre-hospitalisation period (number of days) chosen by insured and stated in Policy Schedule. Covers consultations, investigations, medicines for same condition."
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "As opted per Policy Schedule",
+    "note": "Post-hospitalisation period (number of days) chosen by insured and stated in Policy Schedule. Alternatively, Post Hospitalisation Lumpsum Benefit (Section 2) can be opted instead of reimbursement."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered",
+    "note": "Day care procedures under general or local anaesthesia in hospital/day care centre covered under Section 1A and 1B."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (optional Section 5)",
+    "note": "Section 5 Home (Domiciliary) Hospitalization is optional. Requires condition to continue at least 3 days. Excludes listed conditions (asthma, diabetes, hypertension, etc.)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI (inpatient, NABH/NQAS accredited AYUSH hospitals)",
+    "note": "Section A9 AYUSH Cover included under Section 1A. Covers inpatient treatment in Ayurveda, Unani, Siddha, Homeopathy. AYUSH hospital must have NABH pre-entry or NQAS state-level certificate. OPD and non-curative/preventive treatments excluded."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (optional Section 3)",
+    "note": "Section 3 Organ Donor is optional. Covers harvesting expenses subject to SI under Section 1A. Donor pre/post-hospitalisation up to 5% of harvesting claim. Specific waiting period applies."
+  },
+  "ambulance": {
+    "number": null,
+    "display": "As per Policy Schedule limit per hospitalisation",
+    "note": "Road ambulance (Section A5/B5) covered for emergency hospitalisations; limit per hospitalisation stated in Policy Schedule. Emergency Air Ambulance (Section 4) also available as optional cover within India. Advanced Heart Ambulance (Section 23) optional for cardiac arrest."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited to 50% SI (base); upgradeable to 100% SI via Section 24",
+    "note": "12 modern/new-age treatments (robotic surgery, oral chemo, stereotactic radio surgery, etc.) covered up to 50% of SI by default (Exclusion 37). Section 24 Advance Care (optional) removes this cap and covers up to 100% SI."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional (Section 10 Consumable Cover)",
+    "note": "Section 10 Consumable Cover is optional. Covers non-medical/consumable expenses (per Annexure A) incurred during hospitalisation that are otherwise excluded. Without this section, non-medical expenses (Exclusion 25) apply."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional (additional premium; Asia / Worldwide excl. or incl. USA & Canada)",
+    "note": "Geographical limits can be extended to Asia, Worldwide excl. USA & Canada, or Worldwide incl. USA & Canada on payment of additional premium. Additional co-pay applies for treatment outside India. Prior approval required."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium mode)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly modes and 15 days for monthly mode. Coverage not available during grace period except where instalment premium is paid."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Free look period of 30 days from receipt of policy document for new policies only (not renewals or portability)."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI norms. Credits for waiting periods, PED, NCB, moratorium transferable."
+  },
+  "notable_exclusions": {
+    "display": "Hazardous sports (professional), tobacco-related oral/respiratory cancer, predictive genome testing, external congenital anomaly, stem cell transplant (non-bone marrow), artificial life maintenance"
+  },
+  "optional_riders": {
+    "display": "Consumable Cover, OPD Benefit, Maternity & Newborn, Infertility, Domiciliary, Organ Donor, Air Ambulance, Critical Illness Benefit, Critical Illness Hospitalisation, Cancer Benefit, Cancer Hospitalisation, Woman Cancer Benefit, Sum Insured Refill, SI Multiplier, Advance Care (modern treatments 100%), FastTrack (PED cover from 30 days), Smart Save (sub-limits + premium discount), Cumulative Bonus Protection, Daily Hospital Cash, Loss of Income, Long Hospitalisation Cash, Support Plus, Health Checkup from Day 1, Global Cover extension"
+  },
+  "insurer": "Go Digit General Insurance Ltd.",
+  "plan_name": "Digit Health Care Plus",
+  "uin": "GODHLIP27048V052627",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "policy-wordings-digit-health-care-plus-policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:59:39.284Z"
+}

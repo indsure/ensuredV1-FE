@@ -1,0 +1,130 @@
+{
+  "variant": "Premiere Plan",
+  "sum_insured_options": "₹25 lakhs, ₹50 lakhs, ₹1 crore",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "Up to SI; no room rent sub-limit mentioned for Premiere Plan"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "No ICU sub-limit specified; covered up to SI"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (age-based co-pay if first entry at 60+)",
+    "note": "No mandatory co-pay for entry below 60. 20% for entry age 60-64, 25% for 65-69, 30% for 70-74, 40% for 75+ (first-time entrants only)"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract capped at 10% of SI, max ₹1L/eye; maternity sub-limits",
+    "note": "Cataract: 10% of SI/eye, max ₹1L/eye. Maternity: normal ₹40,000-₹50,000; LSCS ₹60,000-₹1,00,000 depending on SI. Domiciliary 10% of SI. Emergency evacuation 5% of SI. OPD limit applies."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "Voluntary deductible available as optional; base has none"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "50% liability in 3rd year, 100% from 4th year onwards"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (most listed conditions); 36 months for joint replacement/organ transplant"
+  },
+  "maternity": {
+    "exists": true,
+    "number": 36,
+    "display": "Covered (36mo wait for self / 24mo for spouse)",
+    "note": "Normal delivery ₹40,000-₹50,000; LSCS ₹60,000-₹1,00,000 (varies by SI). Pre-natal 90 days & post-natal 45 days hospitalisation covered. Newborn baby cover + vaccination up to ₹5,000 included."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100%",
+    "note": "50% of SI added per claim-free year; max 100% of base SI. OPD claims (Benefit 13) do not affect bonus."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% of SI",
+    "note": "Triggered only after full SI + cumulative bonus exhausted. Cannot be used for same illness already claimed or maternity."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures (Annexure I)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to 10% of SI",
+    "note": "Several conditions excluded; minimum 3-day treatment required"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (govt/accredited hospitals only)",
+    "note": "Inpatient only under Benefit 17; OPD allopathic covered under Benefit 13"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Actuals (network); ₹5,000 non-network",
+    "note": "Actual expenses for network hospitalisation; ₹5,000 cap for non-network"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Consumables listed in Annexure III excluded"
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Covered (inbuilt, 36mo wait, listed conditions only)",
+    "note": "Benefit 18: covers 8 specific major procedures abroad (e.g. CABG, organ transplant, bone marrow transplant) after 36 months continuous Premiere Plan coverage. Reimbursement in INR only. 15-day prior notice required."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Stem cell storage, external congenital anomaly, STDs (non-HIV), hormone replacement therapy, non-prescribed drugs, refractive error <7.5D, infertility/ART",
+  "optional_riders": "Voluntary deductible (discount on premium); child vaccination benefit (₹5,000/yr up to age 12) inbuilt",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Total",
+  "uin": "GCIHLIP25037V062425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "health-total-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:58:53.094Z"
+}

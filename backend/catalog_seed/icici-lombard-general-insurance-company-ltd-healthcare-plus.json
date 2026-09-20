@@ -1,0 +1,141 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "low",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Policy wording does not specify any room rent cap or entitlement; Schedule (Part a) would contain specifics."
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "ICU charges are listed as reimbursable but no cap or limit is stated in the wording."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No co-payment clause found in the wording; deductible applies per claim instead."
+  },
+  "sub_limits": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Specified Treatments (cataract, dialysis, chemotherapy, etc.) are listed but no sub-limits/caps are stated in the wording; Schedule may contain them."
+  },
+  "deductible": {
+    "number": null,
+    "display": "Not specified",
+    "note": "A deductible is referenced and applies per claim, but the amount is stated in Part a of the Schedule, not in the wording."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; 90-day waiting for hypertension, diabetes, cardiac conditions."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Pre-existing diseases excluded for 36 months from first policy inception."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Listed conditions include cataract, hernia, hydrocele, joint replacements, stones, arthritis, sinusitis, skin tumours, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard permanent exclusion (Excl18); ectopic pregnancy is the only exception."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the wording."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration or reinstatement benefit mentioned in the wording."
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Pre-hospitalisation expenses are defined but the number of days is not stated in the wording; Schedule would specify."
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Post-hospitalisation expenses are defined but the number of days is not stated in the wording; Schedule would specify."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed only",
+    "note": "Day care treatment covered for specified procedures (Specified Treatments list); general day care not explicitly broadened."
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary Hospitalisation is explicitly listed as a permanent exclusion."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered",
+    "note": "AYUSH hospitals and AYUSH day care centres are included in definitions; in-patient AYUSH treatment appears covered under the main benefit."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Costs of donor screening or treatment including surgery to remove organs from a donor are explicitly excluded."
+  },
+  "ambulance": {
+    "number": 0,
+    "display": "Not covered",
+    "note": "Ambulance charges are explicitly listed as a permanent exclusion (item xix)."
+  },
+  "modern_treatments": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "No mention of modern/robotic treatments in the wording."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-payable consumables (gloves, nebuliser kit, etc.) per IRDAI list; no consumables cover rider mentioned."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Cover is restricted to India; treatment outside geographical scope is excluded. International cover possible only by written endorsement."
+  },
+  "moratorium": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Moratorium period not explicitly stated in the wording."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes."
+  },
+  "free_look": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Free-look period referenced in cancellation clause but duration not stated in the wording."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to another insurer allowed; apply at least 30 days before renewal."
+  },
+  "notable_exclusions": "Ambulance charges, domiciliary hospitalisation, organ donor costs, sleep disorders/apnoea, dental (non-accident), cochlear implants (non-accident), external congenital anomalies",
+  "optional_riders": "Not specified",
+  "insurer": "ICICI Lombard General Insurance Company Ltd.",
+  "plan_name": "Healthcare Plus",
+  "uin": "ICIHLGP21390V032021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "health-care-plus8c0007ff45fd68ff8a0df0055fa762ab.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:01:38.566Z"
+}

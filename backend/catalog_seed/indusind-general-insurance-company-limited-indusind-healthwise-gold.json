@@ -1,0 +1,134 @@
+{
+  "variant": "Gold",
+  "sum_insured_options": "Not specified in wording; refer Policy Schedule",
+  "confidence": "low",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Room rent limit not stated in wording; specified in Policy Schedule per plan"
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "ICU limit not stated in wording; specified in Policy Schedule per plan"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None stated",
+    "note": "No mandatory co-payment mentioned in wording for Gold plan"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Modern treatments capped at 50% SI",
+    "note": "Modern treatments sub-limited to 50% of SI; domiciliary capped at 10% of SI; day care listed procedures only; Critical illness has additional SI equal to base SI"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No deductible stated for Gold plan"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Wording states 24/48 months as specified in Policy Schedule; best (lowest) is 24 months"
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12 months",
+    "note": "Cataract, hernia, BPH, hysterectomy, dialysis, gastric ulcers etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl 18)"
+  },
+  "cumulative_bonus": {
+    "number": 20,
+    "display": "Up to 20% (5%/yr)",
+    "note": "5% renewal discount per claim-free year, max 20%; forfeited on claim"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in wording"
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Number of days specified in Policy Schedule"
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Number of days specified in Policy Schedule"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed procedures only",
+    "note": "Only procedures listed in Annexure D are covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (10% of SI cap)",
+    "note": "Requires 3+ continuous days; several conditions excluded"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Donor in-patient hospitalisation expenses covered; pre/post-hosp for donor excluded"
+  },
+  "ambulance": {
+    "number": null,
+    "display": "Up to limit in Policy Schedule",
+    "note": "Reasonable and customary charges up to limit specified in Policy Schedule"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)"
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Covered (inbuilt)",
+    "note": "Medicines, drugs and consumables covered under in-patient benefit; non-medical consumables per Annexure A excluded"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded"
+  },
+  "moratorium": {
+    "number": 96,
+    "display": "96 months (8 years)"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "free_look": {
+    "number": 15,
+    "display": "15 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Overseas treatment, STDs, sleep apnea, external congenital anomaly, hearing aids/spectacles, RMO/service charges, circumcision, self-injury",
+  "optional_riders": "Critical illness cover (inbuilt on Gold – 10 listed CIs, additional SI equal to base SI); daily hospitalisation allowance; nursing allowance; recovery benefit; accompanying person expenses",
+  "insurer": "IndusInd General Insurance Company Limited",
+  "plan_name": "IndusInd HealthWise",
+  "uin": "RELHLIP22185V042122",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "revised-indusind-healthwise-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:03:39.249Z"
+}

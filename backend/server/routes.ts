@@ -3642,12 +3642,16 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     // Powers the public /compare catalog experience (lead-gen funnel). The
     // global IP rate limiter still applies.
     try {
+      // plan_key is what /api/compare/from-catalog expects back. It equals the uin for a
+      // product with no named variants and uin:variant for one that has them, so Classic and
+      // Elite arrive as two selectable rows rather than one row hiding both.
       const { rows } = await pool.query(
-        `SELECT uin, insurer, plan_name, product_type, sum_insured_options, confidence, status
+        `SELECT plan_key, uin, variant, insurer, plan_name, product_type,
+                sum_insured_options, confidence, status
            FROM policy_catalog
           WHERE is_active = true
             AND product_type = 'comprehensive_health_indemnity'
-          ORDER BY insurer, plan_name`
+          ORDER BY insurer, plan_name, variant`
       );
       return res.json({ policies: rows });
     } catch (err: any) {
@@ -3660,22 +3664,33 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     // PUBLIC: deterministic compare of pre-extracted catalog profiles. No AI
     // call, no user data. Bounded to 2..4 plans; global rate limiter applies.
     const body = req.body ?? {};
-    // Accept { uins: [...] } (2..4) or legacy { uin_a, uin_b }.
+    // Accept { uins: [...] } (2..4) or legacy { uin_a, uin_b }. Since migration 023 the entries
+    // are plan_keys ("UIN" for a product with no variants, "UIN:Elite" for one that has them),
+    // but a bare UIN is still honoured and resolves to the base variant. That keeps saved
+    // comparison_reports and any un-updated client working.
     const raw: any[] = Array.isArray(body.uins) ? body.uins : [body.uin_a, body.uin_b];
-    const uins = [...new Set(raw.filter((u: any) => typeof u === "string" && u.length > 0))];
-    if (uins.length < 2) return res.status(400).json({ error: "Pick at least two different policies" });
-    if (uins.length > 4) return res.status(400).json({ error: "Compare up to 4 policies at a time" });
+    const keys = [...new Set(raw.filter((u: any) => typeof u === "string" && u.length > 0))];
+    if (keys.length < 2) return res.status(400).json({ error: "Pick at least two different policies" });
+    if (keys.length > 4) return res.status(400).json({ error: "Compare up to 4 policies at a time" });
     try {
       const { rows } = await pool.query(
-        `SELECT uin, profile FROM policy_catalog WHERE uin = ANY($1::text[]) AND is_active = true`,
-        [uins]
+        `SELECT plan_key, uin, variant, profile
+           FROM policy_catalog
+          WHERE is_active = true
+            AND (plan_key = ANY($1::text[]) OR (variant = '' AND uin = ANY($1::text[])))`,
+        [keys]
       );
-      const byUin: Record<string, WordingProfile> = {};
-      for (const r of rows) byUin[r.uin] = r.profile as WordingProfile;
+      const byKey: Record<string, WordingProfile> = {};
+      for (const r of rows) {
+        byKey[r.plan_key] = r.profile as WordingProfile;
+        // A bare UIN only ever resolves to the variant-less row, never to one of several
+        // variants, so a legacy caller can't be silently handed the wrong tier.
+        if (r.variant === "") byKey[r.uin] = r.profile as WordingProfile;
+      }
       const profiles: WordingProfile[] = [];
-      for (const u of uins) {
-        if (!byUin[u]) return res.status(404).json({ error: "A selected policy was not found in the catalog" });
-        profiles.push(byUin[u]);
+      for (const k of keys) {
+        if (!byKey[k]) return res.status(404).json({ error: "A selected policy was not found in the catalog" });
+        profiles.push(byKey[k]);
       }
       const result = compareMany(profiles);
       return res.json({ result });

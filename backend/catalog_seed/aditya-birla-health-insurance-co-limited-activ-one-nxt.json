@@ -1,0 +1,147 @@
+{
+  "variant": "NXT",
+  "sum_insured_options": "₹2L, ₹3L, ₹4L, ₹5L, ₹7L, ₹10L, ₹15L, ₹20L, ₹25L, ₹50L, ₹75L, ₹1Cr, ₹2Cr, ₹3Cr, ₹4Cr, ₹5Cr, ₹6Cr",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap – actuals up to SI",
+    "note": "Inbuilt default is actuals up to Sum Insured. Optional add-on allows downgrade to Single Private Room or Shared Accommodation (Room Rent Type Options) for a premium discount.",
+    "optional": false
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap – actuals up to SI",
+    "note": "ICU/ICCU charges covered at actuals up to Sum Insured.",
+    "optional": false
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base); 10% if treated outside Preferred Provider Network (optional PPN add-on)",
+    "note": "No mandatory co-pay on base plan. If optional PPN Discount cover is opted, a 10% co-pay applies on claims at non-PPN hospitals."
+  },
+  "sub_limits": {
+    "ordinal": 5,
+    "display": "No sub-limits",
+    "note": "All in-patient, day care, modern treatments, AYUSH, organ donor, domiciliary, home health care covered at actuals up to Sum Insured. Chronic Care optional cover has a combined sub-limit of ₹5L or SI whichever is lower.",
+    "optional": false
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (base); optional Per Claim Deductible of ₹15,000 or ₹25,000 available",
+    "note": "No deductible inbuilt. Optional Per Claim Deductible of ₹15,000 or ₹25,000 can be opted at inception only.",
+    "optional": false
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (reducible via optional add-on)",
+    "note": "Base PED waiting period is 36 months. Optional 'Reduction in Pre-Existing Disease Waiting Period' cover can reduce this; exact reduced period as per Policy Schedule."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (reducible to 12 months via optional add-on)",
+    "note": "Standard specific disease/procedure waiting period is 24 months. Optional 'Reduction in Specific Disease Waiting Period' cover reduces it to 12 months."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses are a standard exclusion (Excl18). Ectopic pregnancy is covered under standard hospitalization."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% via HealthReturns™",
+    "note": "HealthReturns™ (inbuilt) allows earning up to 100% of annual premium back based on health activity and Healthy Heart Score. Super Credit (optional) adds up to 100% of Base SI irrespective of claims."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited, 100% of Base SI",
+    "note": "Super Reload is inbuilt: restores Base Sum Insured unlimited times per policy year once Base SI (and Super Credit if applicable) is exhausted. Each reload capped at Base SI. Available from 2nd claim onwards (1st claim triggers first reload).",
+    "optional": false
+  },
+  "pre_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Pre-hospitalisation expenses covered for up to 90 days prior to admission."
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for up to 180 days from discharge."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care treatments covered",
+    "note": "All day-care treatments covered at actuals up to Sum Insured."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered if treatment continues for at least 3 consecutive days and patient cannot be moved or room unavailable."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH in-patient treatment covered at actuals up to Sum Insured in recognised AYUSH hospitals/day care centres."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Organ donor hospitalisation expenses for harvesting covered up to SI, subject to recipient's claim being admissible. Donor's pre/post-hosp and organ transport excluded."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "At actuals (per hospitalisation)",
+    "note": "Road ambulance (domestic) covered at actuals up to Sum Insured per hospitalisation for emergency transfer or hospital-to-home."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Listed modern procedures (robotic surgery, stereotactic radio surgery, oral chemotherapy, intra-vitreal injections, deep brain stimulation, etc.) covered at actuals up to SI during in-patient/day-care treatment."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider (Claim Protect)",
+    "note": "Non-medical/consumable expenses (all 4 lists in Annexure I) are excluded by default. Optional 'Claim Protect (Non-Medical Expense Waiver)' add-on covers them.",
+    "optional": true
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered (base); no global cover option mentioned in this variant's wording",
+    "note": "The policy wording references claims outside India procedures but the Product Benefit Table for NXT does not list a global cover optional benefit. Treatment outside India is excluded per D.2.8 unless specified in Policy Schedule."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly premium; 15 days for monthly premium. Coverage available during grace period if premium paid by instalments."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "30-day free-look period from receipt of policy document for new individual policies. Not applicable on renewals or portability."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines, with continuity of waiting periods and moratorium."
+  },
+  "notable_exclusions": "Maternity, sterility/IVF, change-of-gender, cosmetic surgery, dental (except accident), hearing aids/spectacles, RFQMR/ECP/EECP/Hyperbaric O2/Cyber Knife/Femto Laser/Bioabsorbable implants",
+  "optional_riders": "Claim Protect (consumables waiver), Room Rent downgrade, Per Claim Deductible, PPN Discount (10%), Critical Illness (20 CIs), Personal Accident (AD+PTD+PPD), Super Credit, Chronic Care Day-1, Chronic Mgmt OPD, Cancer Booster, Durable Equipment, Compassionate Visit, 2nd Medical Opinion, Annual Cancer Screening, Annual Health Check-up, Reduced Waiting Periods",
+  "insurer": "ADITYA BIRLA HEALTH INSURANCE CO. LIMITED",
+  "plan_name": "Activ One",
+  "uin": "ADIHLIP24097V012324",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "policy-document.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:52:20.314Z"
+}

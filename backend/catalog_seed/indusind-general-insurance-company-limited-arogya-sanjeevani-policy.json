@@ -1,0 +1,131 @@
+{
+  "variant": "",
+  "sum_insured_options": "₹50,000 to ₹10,00,000 (in multiples of ₹50,000)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "If room taken at higher rate, all other expenses (except medicines) reimbursed proportionately"
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "Proportionate deduction on other expenses if ICU rate exceeds limit"
+  },
+  "copayment": {
+    "number": 5,
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-payment on every admissible claim"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract capped; modern treatments 50% of SI",
+    "note": "Cataract: 25% of SI or ₹40,000 per eye per year (whichever lower); listed modern treatments (robotic surgery etc.) capped at 50% of SI; ambulance ₹2,000 per hospitalisation"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Table of benefits mentions 4 years (48 months) for declared PEDs; Section 6.1 states 36 months; 36 months used as per main policy wording"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (some 36 months)",
+    "note": "24-month wait for cataract, hernia, hydrocele, piles, ENT disorders etc.; 36-month wait for joint replacement and age-related osteoarthritis/osteoporosis"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl 18); ectopic pregnancy is covered"
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% of SI",
+    "note": "5% added per claim-free year; reduced at same rate if claim made; max 50%"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in policy wording"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation and OPD treatment explicitly excluded (Section 7.18)"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to sum insured in recognised AYUSH hospitals"
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "No mention of organ donor expenses in policy wording"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited to 50% of SI",
+    "note": "12 listed modern treatments (robotic surgery, stereotactic radio surgery, oral chemotherapy, stem cell therapy etc.) covered up to 50% of SI"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Consumables listed in Annexure-A List I are excluded; no optional rider available"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded (Section 7.19 and 10.7)"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (annual); 15 days (monthly)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Domiciliary/OPD, maternity, infertility/IVF, overseas treatment, refractive error <7.5D, cosmetic surgery, adventure sports injuries",
+  "optional_riders": "None mentioned",
+  "insurer": "IndusInd General Insurance Company Limited",
+  "plan_name": "Arogya Sanjeevani Policy",
+  "uin": "RELHLIP21001V012021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "arogya-sanjeevani-policy-indusind-general-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:02:30.628Z"
+}

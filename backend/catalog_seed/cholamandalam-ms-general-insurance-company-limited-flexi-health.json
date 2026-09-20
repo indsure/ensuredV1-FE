@@ -1,173 +1,131 @@
 {
+  "variant": "",
+  "sum_insured_options": "Rs. 50,000; Rs. 1 Lakh; Rs. 2 Lakhs; Rs. 3 Lakhs; Rs. 5 Lakhs; Rs. 7.5 Lakhs; Rs. 10 Lakhs; Rs. 15 Lakhs; Rs. 20 Lakhs; Rs. 25 Lakhs",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "No cap (SI >2L); ₹2,000/day (SI ≤2L)",
+    "note": "Room rent capped at Rs.2,000/day for SI of Rs.50,000, Rs.1L and Rs.2L. No room rent limit for SI above Rs.2 Lakhs."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "No separate ICU sub-limit mentioned; covered under inpatient hospitalisation expenses at actuals."
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% (Tier 2 premium, Tier 1 hospital)",
+    "note": "20% co-payment applies only when insured is rated/premium paid for Tier 2 location but treatment taken in a Tier 1 location hospital. Not applicable on Daily Care Benefit, Compassionate Travel, Repatriation of Mortal Remains, and Medical Second Opinion."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Ambulance capped; Recharge benefit capped by SI slab",
+    "note": "Ambulance capped at 1% of SI max Rs.2,000/hospitalisation. Recharge benefit for related claims has defined limits per SI slab (e.g. Rs.75,000 for 3L SI). Additional RTA SI capped at 25% of SI max Rs.3L. New Born Baby cover capped at 10% of SI max Rs.50,000. No disease-wise sub-limits on main inpatient cover for SI above Rs.2L."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, hernia, BPH, varicose veins, joint replacement, stones, etc. Does not apply to accident claims."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is explicitly excluded (Code-Excl18). New Born Baby cover (inpatient from Day 1, up to 10% of SI max Rs.50,000) is available if mother covered for 12 continuous months."
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% (10%/yr)",
+    "note": "10% increase per claim-free year; maximum 50% of SI. Reduced by 10% in the event of a claim. Reduction does not reduce base SI."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% (unrelated only)",
+    "note": "100% restoration of SI once per policy year for unrelated illness/injury claims only, triggered on exhaustion or insufficiency of SI and cumulative bonus. Not available for RTA claims, pre/post-hosp, or additional covers. Separate Recharge Benefit (once/yr, defined limits) available for related claims."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "539+ listed day-care procedures"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Covered if patient cannot be moved to hospital or no hospital bed available; condition must continue at least 3 days. Certain ailments excluded (asthma, diabetes, hypertension, etc.). Cashless not available."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Covers inpatient and day-care AYUSH treatment (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy) in recognised AYUSH hospitals/day care centres."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Covers harvesting expenses of legal organ donor. Donor's pre/post-hosp and other treatment not covered."
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "Up to ₹2,000/hospitalisation",
+    "note": "1% of SI subject to maximum Rs.2,000 per hospitalisation."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)",
+    "note": "Day care list includes robotic/laparoscopic and advanced procedures; no explicit modern treatment sub-limit stated."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered (base); Optional via Home Care add-on",
+    "note": "Non-medical consumables explicitly excluded (Annexure 2). Home Care Treatment add-on covers a defined list of consumables for home care treatment."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Territorial limit is India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, STDs, hearing aids/eyeglasses, dental (unless GA+hospitalisation), external congenital anomalies, impotence treatment, non-medical consumables (Annexure 2)",
+  "optional_riders": "Medical Second Opinion (WLMC), Flexi OP Care (OPD consultations/diagnostics, 4 plans), Home Care Treatment (daily limit Rs.1,000–10,000, listed conditions)",
   "insurer": "Cholamandalam MS General Insurance Company Limited",
   "plan_name": "Flexi Health",
   "uin": "CHOHLIP24145V062526",
-  "sum_insured_options": "₹50,000 – ₹25 Lakhs",
-  "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
-  "room_rent": {
-    "display": "₹2,000/day (SI ≤2L); No cap above",
-    "note": "Room rent capped at ₹2,000/day for SI of ₹50,000, ₹1L and ₹2L. No room rent limit for SI above ₹2 Lakhs.",
-    "optional": false,
-    "ordinal": 3
-  },
-  "icu": {
-    "display": "Not specified",
-    "note": "Policy covers ICU charges as part of in-patient hospitalisation but no separate ICU sub-limit or cap is stated.",
-    "optional": false,
-    "ordinal": 0
-  },
-  "copayment": {
-    "display": "20% (Tier-2 premium, Tier-1 hospital)",
-    "note": "20% co-payment applies only when insured is covered under Tier-2 location premium but seeks treatment in a Tier-1 location hospital. Not applicable on Daily Care Benefit, Compassionate Travel, Repatriation of Mortal Remains, and Medical Second Opinion.",
-    "optional": false,
-    "number": 20
-  },
-  "sub_limits": {
-    "display": "Room rent capped for low SI; ambulance capped",
-    "note": "Room rent ₹2,000/day for SI ≤₹2L; ambulance up to 1% of SI max ₹2,000/hospitalisation; recharge benefit has defined limits per SI slab; no disease-wise sub-limits otherwise.",
-    "optional": false,
-    "ordinal": 3
-  },
-  "deductible": {
-    "display": "None",
-    "note": null,
-    "optional": false,
-    "number": 0
-  },
-  "initial_waiting": {
-    "display": "30 days",
-    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
-    "optional": false,
-    "number": 30
-  },
-  "ped_waiting": {
-    "display": "36 months",
-    "note": "Pre-existing disease waiting period is 36 months from inception. No optional reduction add-on mentioned.",
-    "optional": false,
-    "number": 36
-  },
-  "specific_disease_waiting": {
-    "display": "24 months",
-    "note": "Specified diseases/procedures (cataract, hernia, BPH, varicose veins, stones, joint replacement, etc.) excluded for first 24 months. Not applicable for accidents.",
-    "optional": false,
-    "number": 24
-  },
-  "maternity": {
-    "display": "Not covered",
-    "note": "Maternity is explicitly excluded under General Exclusions (Code-Excl18). Ectopic pregnancy is covered.",
-    "optional": false,
-    "exists": false,
-    "number": null
-  },
-  "cumulative_bonus": {
-    "display": "Up to 50% (10%/yr)",
-    "note": "10% increase per claim-free year; maximum cumulative bonus capped at 50% of SI. Reduced by 10% on a claim year.",
-    "optional": false,
-    "number": 50
-  },
-  "restoration": {
-    "display": "Once/yr, 100% (unrelated only)",
-    "note": "100% SI restoration once per policy year for unrelated illnesses/injuries when SI and cumulative bonus are exhausted. Separate recharge benefit for related claims (limited amounts). Restoration not available for RTA claims or for basic covers other than in-patient hospitalisation.",
-    "optional": false,
-    "ordinal": 3
-  },
-  "pre_hosp": {
-    "display": "30 days",
-    "note": "Pre-hospitalisation expenses covered for 30 days prior to hospitalisation.",
-    "optional": false,
-    "number": 30
-  },
-  "post_hosp": {
-    "display": "60 days",
-    "note": "Post-hospitalisation expenses covered for 60 days after discharge.",
-    "optional": false,
-    "number": 60
-  },
-  "day_care": {
-    "display": "539+ listed day-care procedures",
-    "note": "Extensive list of 539+ day-care procedures covered as per Annexure 1. Policy states list is illustrative and not exhaustive.",
-    "optional": false,
-    "exists": true
-  },
-  "domiciliary": {
-    "display": "Covered (with exclusions)",
-    "note": "Domiciliary hospitalisation covered but excludes specific conditions: asthma, bronchitis, arthritis, diabetes, hypertension, epilepsy, nephritis, diarrhoea, pyrexia of unknown origin, etc. Cashless not available.",
-    "optional": false,
-    "exists": true
-  },
-  "ayush": {
-    "display": "Covered up to SI",
-    "note": "AYUSH (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy) hospitalisation and day-care covered up to sum insured in recognised AYUSH hospitals/day-care centres.",
-    "optional": false,
-    "exists": true
-  },
-  "organ_donor": {
-    "display": "Covered",
-    "note": "Organ donor's hospitalisation expenses for harvesting covered. Donor's pre/post-hospitalisation and other treatment not covered.",
-    "optional": false,
-    "exists": true
-  },
-  "ambulance": {
-    "display": "Up to 1% of SI, max ₹2,000/hospitalisation",
-    "note": "Emergency road ambulance covered up to 1% of SI subject to maximum ₹2,000 per hospitalisation.",
-    "optional": false,
-    "number": 2000
-  },
-  "modern_treatments": {
-    "display": "Not specified",
-    "note": "Policy does not explicitly mention modern/robotic treatments as a named benefit or exclusion. Day-care list includes some advanced procedures (stereotactic radiosurgery, robotic-assisted procedures implied). No specific modern treatment clause found.",
-    "optional": false,
-    "exists": false
-  },
-  "consumables": {
-    "display": "Not covered (base); covered under Home Care add-on",
-    "note": "Non-medical consumables (gloves, diapers, etc.) are explicitly excluded under Annexure 2 in the base policy. The Home Care Treatment add-on covers a defined list of consumables for home care treatment.",
-    "optional": true,
-    "exists": false
-  },
-  "global_cover": {
-    "display": "Not covered",
-    "note": "Territorial limits restrict coverage to India only. No international/overseas treatment cover available.",
-    "optional": false,
-    "exists": false
-  },
-  "moratorium": {
-    "display": "60 months",
-    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
-    "optional": false,
-    "number": 60
-  },
-  "grace_period": {
-    "display": "15 days (monthly); 30 days (others)",
-    "note": "Grace period is 15 days for monthly premium mode and 30 days for quarterly, half-yearly and annual modes.",
-    "optional": false,
-    "number": 30
-  },
-  "free_look": {
-    "display": "30 days",
-    "note": "30-day free-look period from date of receipt of policy document for new policies. Not applicable on renewals or porting/migration.",
-    "optional": false,
-    "number": 30
-  },
-  "portability": {
-    "display": "Allowed",
-    "note": "Portability to other insurers allowed as per IRDAI norms with continuity of waiting period credits.",
-    "optional": false,
-    "exists": true
-  },
-  "notable_exclusions": {
-    "display": "Maternity, STDs, impotence treatment, circumcision (non-medical), hearing aids/eyeglasses, external congenital anomalies, non-medical consumables",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "Medical Second Opinion (WLMC), Flexi OP Care (OPD consultations/diagnostics), Home Care Treatment add-on",
-    "note": null,
-    "optional": true
-  },
   "source_file": "Flexi Health CHOHLIP24145V062526-Policywording.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-18T05:21:14.931Z"
+  "extracted_at": "2026-09-20T07:56:36.827Z"
 }

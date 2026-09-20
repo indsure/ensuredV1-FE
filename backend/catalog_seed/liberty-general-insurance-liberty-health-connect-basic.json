@@ -1,0 +1,132 @@
+{
+  "variant": "Basic",
+  "sum_insured_options": "Not specified in wording (see Policy Schedule)",
+  "confidence": "low",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap (default)",
+    "note": "Base policy has no room rent cap. Optional 'Room Rent limit' add-on caps at 1% of SI or ₹5,000/day (whichever lower) with proportionate deduction on other expenses."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (default)",
+    "note": "Base policy has no ICU cap. Optional 'Room Rent limit' add-on caps ICU at 2% of SI or ₹7,500/day (whichever lower)."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (default)",
+    "note": "Optional Co-Pay add-on allows insured to voluntarily opt 5%, 10% or 20% co-pay on every claim."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract optional cap; domiciliary 10% of SI",
+    "note": "Domiciliary hospitalisation capped at 10% of Basic SI inbuilt. Optional 'Cataract Capping' add-on (age 50+) caps cataract at ₹25k–₹40k per eye depending on SI. Modern surgeries covered under optional add-on at 50% of SI."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "PED waiting is 36 months or 24 months as per plan in schedule. Optional 'PED Protector' add-on (age ≤50) reduces Diabetes & Hypertension waiting: Basic plan does not qualify for PED Protector (shown as NA in table)."
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12–36 months (condition-specific)",
+    "note": "Same tiered waiting periods as other variants: 12-month, 24-month, and 36-month lists as specified in policy wording."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Code Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "Inbuilt Loyalty Perk: 10% of Basic SI per claim-free year, max 100%. Optional 'Super Booster' add-on increases to 50%/yr up to 150% of Basic SI."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% of SI (unrelated only)",
+    "note": "Restored SI = 100% of Basic SI, triggered when Basic SI + Loyalty Perk exhausted. Cannot be used for same illness in current year. Optional 'Reload of Sum Insured' add-on waives same-illness restriction."
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "As per Schedule",
+    "note": "Number of days not specified in wording."
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "As per Schedule",
+    "note": "Number of days not specified in wording."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (listed + others)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (10% of SI cap)",
+    "note": "Several conditions excluded from domiciliary cover."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to Basic SI",
+    "note": "Inpatient AYUSH only; OPD/day care AYUSH excluded."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Up to limit in Schedule; donor pre/post-hospitalisation excluded."
+  },
+  "ambulance": {
+    "number": null,
+    "display": "As per Schedule"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Optional add-on (50% of SI)",
+    "note": "Covered only via optional 'Modern Surgeries limit' add-on."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional add-on (Zero Deduct cover)"
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional add-on",
+    "note": "Emergency inpatient care outside India; reimbursement in INR; max 180 days."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity (excl. ectopic), STDs/HIV, dental (non-accidental), external congenital anomaly, OPD treatment, treatment outside India (unless Global Cover add-on), self-inflicted injury",
+  "optional_riders": "Zero Deduct (consumables), Vector Borne Disease benefit, Super Booster (CB up to 150%), EMI Protector, PED Protector (N/A for Basic), Global Cover, Domestic Travel Plus, Reload of SI, Co-Pay, Modern Surgeries, Cataract Capping, Room Rent limit",
+  "insurer": "Liberty General Insurance",
+  "plan_name": "Liberty Health Connect",
+  "uin": "LIBHLIP24108V042324",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "LIBHLIP24108V042324 - Liberty Health Connect Revision  - Policy Wordings - Effective from 30092024.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:04:46.088Z"
+}

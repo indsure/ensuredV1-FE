@@ -1,173 +1,138 @@
 {
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (refer Policy Schedule)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified (base); 1% of SI/day up to ₹5,000 optional",
+    "note": "Base policy wording does not cap room rent; Room Rent Modification Option (optional add-on, Section B-III-13) introduces 1% of Basic SI/day up to ₹5,000. Base inbuilt value is unclear/no cap stated.",
+    "optional": false
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "Not specified (base); 2% of SI/day up to ₹10,000 optional",
+    "note": "Base policy does not cap ICU; Room Rent Modification Option (optional, Section B-III-13) introduces 2% of Basic SI/day up to ₹10,000.",
+    "optional": false
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (Tier 1 premium); 20% if Tier 2 insured treats in Tier 1 city",
+    "note": "No co-pay for Tier 1 premium payers. 20% co-pay applies if Tier 2 premium payer avails treatment in Tier 1 cities. Optional Co-Payment add-on (Section B-III-14) can add further co-pay. Co-pay waived for room up to ₹2,500/day or accident treatment."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits; maternity, dental, external aids capped",
+    "note": "Maternity (optional) capped per Schedule; Outpatient Dental (optional) capped; External Medical Aids (optional) capped; Major Illness Hospitalization Expenses capped at additional Basic SI. Core hospitalisation has no stated disease-wise sub-limits."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No base deductible. Global Health Cover (optional) has USD 100 deductible per claim."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; waived for accidents. Waiting Period Modification Option (optional) can reduce this."
+  },
+  "ped_waiting": {
+    "number": 48,
+    "display": "48 months",
+    "note": "Standard PED waiting period is 48 months. Waiting Period Modification Option (optional add-on) may reduce this as per Schedule of Coverage."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, gallbladder, joint replacement, etc.) have 24-month waiting period. Waiting Period Modification Option can reduce this."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 48,
+    "display": "Optional add-on (48mo wait)",
+    "note": "Parent and Child Care Cover – Basic or Booster (optional). Covers delivery, termination (up to 2 deliveries/terminations lifetime), pre/post-natal OPD. Booster also covers infertility treatment up to 50% of normal delivery SI. 48-month waiting period unless modified by optional Waiting Period Modification Option."
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% of Basic SI (5%/yr)",
+    "note": "5% of Basic SI added per claim-free year, up to 50% max. Reduced at same rate on claim. Extended Cumulative Bonus optional add-on can increase the rate/cap as per Schedule."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered (base); Sum Insured Rebound optional",
+    "note": "No automatic restoration inbuilt. Sum Insured Rebound (optional, Section B-III-6) adds back claim amount paid (up to Basic SI) for subsequent hospitalisations in same policy year. Not a full unlimited restoration.",
+    "optional": true
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (inpatient AYUSH hospitals only)"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Donor hospitalisation for harvesting covered; donor pre/post-hosp excluded."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered (at actuals)",
+    "note": "Road ambulance covered for emergency transfer, hospital-to-hospital, hospital-to-home. No stated rupee cap in base policy."
+  },
+  "modern_treatments": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly mention modern/robotic treatments as a named benefit. Medically necessary treatments are covered under general hospitalisation cover but no specific modern treatment clause found."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider",
+    "note": "Non-Medical Expenses Cover (optional, Section B-III-10) covers consumables/non-medical items up to limit in Schedule. Base policy excludes non-medical expenses."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional add-on",
+    "note": "Global Health Cover (Section B-III-18) is optional. Covers hospitalisation and listed benefits outside India with USD 100 deductible per claim. Claims reimbursed in INR."
+  },
+  "moratorium": {
+    "number": 96,
+    "display": "96 months (8 years)",
+    "note": "After 8 continuous years, no claim can be contested except fraud and permanent exclusions."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "30 days for annual/yearly/half-yearly/quarterly; 15 days for monthly instalment. No coverage during grace period."
+  },
+  "free_look": {
+    "number": 15,
+    "display": "15 days",
+    "note": "Applicable on new policies only, not on renewals or portability."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "OPD treatment, stem cell harvesting, external congenital anomalies, sleep apnoea investigation, circumcision (unless medically necessary), hearing aids/spectacles (base), non-allopathic except AYUSH inpatient",
+  "optional_riders": "Sum Insured Rebound, Parent & Child Care (Basic/Booster), Air Ambulance, Major Illness Hospitalisation, Major Illness Benefit, Non-Medical Expenses, Room Rent Modification, Co-Payment, Extended Cumulative Bonus, Global Health Cover, Hospital Cash, E-Opinion, Surrogacy & Oocyte Donor, Waiting Period Modification, Recovery Benefit, Outpatient Dental, External Medical Aids",
   "insurer": "HDFC ERGO",
   "plan_name": "my:health Suraksha",
   "uin": "HDFHLIP24079V072324",
-  "sum_insured_options": "Not specified in wording",
-  "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
-  "room_rent": {
-    "display": "No cap (base); 1% of SI/day up to ₹5,000 optional",
-    "note": "Base policy has no room rent sub-limit mentioned. Room Rent Modification Option (optional add-on) caps at 1% of Basic SI per day up to ₹5,000/day with proportionate deduction.",
-    "optional": false,
-    "ordinal": 5
-  },
-  "icu": {
-    "display": "No cap (base); 2% of SI/day up to ₹10,000 optional",
-    "note": "Base policy has no ICU cap. Room Rent Modification Option (optional) caps ICU at 2% of Basic SI per day up to ₹10,000/day.",
-    "optional": false,
-    "ordinal": 5
-  },
-  "copayment": {
-    "display": "None (base); 20% if Tier-2 insured treats in Tier-1 city",
-    "note": "No mandatory co-pay on base plan. Tier-2 premium payers face 20% co-pay for treatment in Tier-1 cities. Optional Co-Payment add-on also available.",
-    "optional": false,
-    "number": 0
-  },
-  "sub_limits": {
-    "display": "No sub-limits on base plan",
-    "note": "Base inpatient cover has no disease-wise sub-limits. Optional Room Rent Modification introduces room/ICU caps. Organ donor excludes pre/post-hosp expenses.",
-    "optional": false,
-    "ordinal": 5
-  },
-  "deductible": {
-    "display": "None",
-    "note": "No base deductible. Global Health Cover optional add-on has USD 100 deductible per claim.",
-    "optional": false,
-    "number": 0
-  },
-  "initial_waiting": {
-    "display": "30 days",
-    "note": "Standard 30-day waiting period for illnesses; waived for accidents. Not applicable if continuously covered for 12+ months.",
-    "optional": false,
-    "number": 30
-  },
-  "ped_waiting": {
-    "display": "48 months",
-    "note": "Standard PED waiting period is 48 months. Waiting Period Modification Option (optional add-on) may reduce this as per Schedule of Coverage.",
-    "optional": false,
-    "number": 48
-  },
-  "specific_disease_waiting": {
-    "display": "24 months",
-    "note": "Listed conditions (cataract, hernia, joint replacement, etc.) have 24-month waiting period. Waiting Period Modification Option can reduce this.",
-    "optional": false,
-    "number": 24
-  },
-  "maternity": {
-    "display": "Optional add-on (48mo wait)",
-    "note": "Maternity not covered in base plan. Available via Parent and Child Care Cover – Basic or Booster optional add-on with 48-month waiting period. Covers delivery, C-section, termination, pre/post-natal OPD. Booster also covers infertility treatment up to 50% of normal delivery SI.",
-    "optional": true,
-    "exists": true,
-    "number": 48
-  },
-  "cumulative_bonus": {
-    "display": "Up to 50% (5%/yr)",
-    "note": "5% of Basic SI added per claim-free year, up to 50% max. Reduced at same rate on claim. Extended Cumulative Bonus optional add-on can increase the rate/cap as per Schedule.",
-    "optional": false,
-    "number": 50
-  },
-  "restoration": {
-    "display": "Once/yr up to Basic SI (Sum Insured Rebound)",
-    "note": "Optional Sum Insured Rebound add-on restores an amount equal to the claim paid (up to Basic SI) on subsequent hospitalisation in same year. Not unlimited; chemo/dialysis limited to once in policy lifetime. Not inbuilt.",
-    "optional": true,
-    "ordinal": 3
-  },
-  "pre_hosp": {
-    "display": "60 days",
-    "note": "Pre-hospitalisation expenses covered for 60 days before admission, provided inpatient claim is admissible.",
-    "optional": false,
-    "number": 60
-  },
-  "post_hosp": {
-    "display": "180 days",
-    "note": "Post-hospitalisation expenses covered for 180 days after discharge, provided inpatient claim is admissible.",
-    "optional": false,
-    "number": 180
-  },
-  "day_care": {
-    "display": "All day-care procedures covered",
-    "note": "Day Care Treatment covered in Hospital or Day Care Centre under general inpatient cover terms.",
-    "optional": false,
-    "exists": true
-  },
-  "domiciliary": {
-    "display": "Covered",
-    "note": "Domiciliary Hospitalisation covered when patient cannot be moved to hospital or no room available, as prescribed by treating doctor.",
-    "optional": false,
-    "exists": true
-  },
-  "ayush": {
-    "display": "Covered (inpatient only)",
-    "note": "AYUSH inpatient treatment covered in AYUSH Hospital for Ayurveda, Unani, Siddha, Homeopathy, Yoga & Naturopathy. Procedure must not be doable on outpatient basis.",
-    "optional": false,
-    "exists": true
-  },
-  "organ_donor": {
-    "display": "Covered",
-    "note": "Organ donor hospitalisation expenses for harvesting covered when insured is recipient. Pre/post-hosp expenses of donor excluded.",
-    "optional": false,
-    "exists": true
-  },
-  "ambulance": {
-    "display": "Covered (actuals)",
-    "note": "Road ambulance covered for emergency transfer, hospital-to-hospital, and hospital-to-home (same city). No explicit rupee cap stated in wording.",
-    "optional": false,
-    "number": 999999
-  },
-  "modern_treatments": {
-    "display": "Not specified",
-    "note": "Policy wording does not explicitly mention modern/robotic treatments as a named benefit or exclusion. Covered implicitly under general medical expenses if medically necessary.",
-    "optional": false,
-    "exists": null
-  },
-  "consumables": {
-    "display": "Optional rider",
-    "note": "Non-Medical Expenses cover is an optional add-on (Section B-III-10) that covers consumables/non-medical items up to limit in Schedule. Base plan excludes non-medical expenses.",
-    "optional": true,
-    "exists": true
-  },
-  "global_cover": {
-    "display": "Optional add-on",
-    "note": "Global Health Cover (Section B-III-18) is an optional add-on covering treatment outside India for listed sections. USD 100 deductible per claim applies. Reimbursement in INR only.",
-    "optional": true,
-    "exists": true
-  },
-  "moratorium": {
-    "display": "96 months (8 years)",
-    "note": "After 8 continuous years, no claim can be contested except for proven fraud and permanent exclusions. Sub-limits, co-pays and deductibles still apply.",
-    "optional": false,
-    "number": 96
-  },
-  "grace_period": {
-    "display": "30 days",
-    "note": "30-day grace period for annual/half-yearly/quarterly renewals; 15 days for monthly instalments. No coverage during grace period.",
-    "optional": false,
-    "number": 30
-  },
-  "free_look": {
-    "display": "15 days",
-    "note": "15-day free-look period on new policies only; not applicable on renewals or portability.",
-    "optional": false,
-    "number": 15
-  },
-  "portability": {
-    "display": "Allowed",
-    "note": "Portability to other insurers allowed as per IRDAI guidelines. Apply at least 45 days before renewal.",
-    "optional": false,
-    "exists": true
-  },
-  "notable_exclusions": {
-    "display": "OPD treatment, stem cell harvesting, congenital external anomalies, sleep apnoea investigation, spinal manipulation, alopecia/baldness treatment, external prosthetics/aids",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "Sum Insured Rebound, Global Health Cover, Maternity (Basic/Booster), Air Ambulance, Non-Medical Expenses, Major Illness Benefit, Extended Cumulative Bonus, Room Rent Modification, Co-Payment, Hospital Cash, E-Opinion",
-    "note": null,
-    "optional": true
-  },
   "source_file": "myhealth-suraksha---pww-533762769949.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:32:31.653Z"
+  "extracted_at": "2026-09-20T08:01:06.199Z"
 }

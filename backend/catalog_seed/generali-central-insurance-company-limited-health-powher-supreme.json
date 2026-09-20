@@ -1,0 +1,130 @@
+{
+  "variant": "Supreme",
+  "sum_insured_options": "₹25L, ₹50L, ₹75L, ₹1Cr",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap (actuals)",
+    "note": "Any room at actuals as per Schedule of Benefits"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "At actuals",
+    "note": "ICU at actuals as per Schedule of Benefits"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (voluntary co-pay optional)",
+    "note": "No mandatory co-pay; optional voluntary co-pay of 10%, 20%, or 30% available"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "LASIK ₹1L, Cataract ₹1L/eye, Bariatric ₹5L, Road Ambulance ₹4k",
+    "note": "LASIK up to ₹1,00,000; Cataract up to ₹1,00,000 per eye; Bariatric up to ₹5,00,000; Road ambulance ₹4,000 per hospitalisation; Air ambulance up to ₹3,00,000/yr"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (some conditions 36 months)",
+    "note": "24 months for most listed conditions; 36 months for joint replacement and osteoarthritis/osteoporosis"
+  },
+  "maternity": {
+    "exists": true,
+    "number": 24,
+    "display": "Covered (24mo wait)",
+    "note": "Normal delivery up to ₹1,25,000; Caesarean up to ₹2,00,000; max 2 events lifetime; surrogate mother covered with conditions"
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% (10%/yr)",
+    "note": "10% per claim-free year; max 50% of base SI; reduces at same rate on claim"
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once/yr, 100%",
+    "note": "100% of base SI restored once per policy year for second claim; available for same or new illness"
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "530 listed day-care procedures"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (Home Health Care)",
+    "note": "Up to 20% of SI; cashless via empanelled provider; pre-authorisation required"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy; in-patient at AYUSH hospital only"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "ambulance": {
+    "number": 4000,
+    "display": "₹4,000/hospitalisation (road); Air ambulance ₹3L/yr",
+    "note": "Road ambulance ₹4,000 per hospitalisation; Air ambulance up to ₹3,00,000 per policy year"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy etc. covered up to SI"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Standard non-payable items list (Annexure III) excludes gloves, masks, etc."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India excluded per Section 6.2.15"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Treatment outside India, commercial/traditional surrogacy, stem cell storage (inbuilt exclusion waived for newborn benefit), external congenital anomaly, venereal disease (non-HIV)",
+  "optional_riders": "Critical Illness lump sum (21 conditions, SI up to ₹20L), Personal Accident (AD/PTD/PPD, SI up to ₹20L), Voluntary Co-payment (10%/20%/30%)",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health PowHER",
+  "uin": "GCIHLIP24180V012324",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "health-powher-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:58:28.005Z"
+}

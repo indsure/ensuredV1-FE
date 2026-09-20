@@ -1,0 +1,132 @@
+{
+  "variant": "Joy Today",
+  "sum_insured_options": "₹3,00,000 (illustrated; exact options not fully specified in wording)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private Room with A.C.",
+    "note": "If a higher room category is chosen, Associate Medical Expenses are pro-rated in proportion to the difference in room rent."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (actuals)",
+    "note": "ICU charges covered as part of hospitalisation expenses; no specific sub-limit mentioned for ICU."
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% (entry age ≥60)",
+    "note": "Special Condition 2: 20% co-payment applies if entry age of insured (or eldest insured for floater) is ≥60 years at first policy issuance."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits",
+    "note": "Maternity (Benefit 4) and Newborn (Benefit 5) have limits as per Policy Schedule. Ambulance has a specified limit per Policy Schedule. No broad disease-wise sub-limits mentioned beyond these."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, hernia, joint replacement, ENT disorders, BPH, varicose veins, etc."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 9,
+    "display": "Covered (9mo wait)",
+    "note": "Benefit 4: Maternity cover with 9-month waiting period for Joy Today. Insured must be ≤45 years. Limit as per Policy Schedule. Pre-natal and post-natal expenses included. Voluntary termination before 12 weeks not covered. Ectopic pregnancy covered under Benefit 1."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (optional)",
+    "note": "No Claim Bonanza is an optional cover (Optional Cover 1). Provides 100% of SI after 3 consecutive claim-free years. Inbuilt cumulative bonus not mentioned; this is entirely optional.",
+    "optional": true
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (extensive listed procedures)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered under Benefit 1 conditions (patient unable to be moved or no hospital room available)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Benefit 7: AYUSH treatments covered up to Sum Insured at recognised AYUSH hospitals within India, subject to in-patient admissibility."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Exclusion 4.2(b)(xi): All expenses related to donor treatment including surgery to remove organs from donor are excluded."
+  },
+  "ambulance": {
+    "number": null,
+    "display": "As per Policy Schedule",
+    "note": "Benefit 3: Ambulance cover up to amount specified in Policy Schedule for emergency transport to nearest hospital."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)",
+    "note": "Benefit 1(d): Advance Technology Methods including robotic surgery, stereotactic radiosurgery, oral chemotherapy, intra-vitreal injections, deep brain stimulation, etc. covered under Benefit 1."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Annexure II lists non-medical/consumable items (gloves, masks, etc.) as excluded. No optional consumables rider mentioned."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Exclusion 4.2(b)(xiv): Treatment received outside India is excluded."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Organ donor surgery, OPD treatment, overseas treatment, infertility/IVF, external congenital anomaly, ectopic pregnancy (under maternity only), tobacco/alcohol-related illness",
+  "optional_riders": "No Claim Bonanza (100% SI after 3 claim-free years)",
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Joy",
+  "uin": "RHIHLIP21373V022021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "joy----t&c-(effective-from-12-september-2024-).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:55:38.029Z"
+}

@@ -1,0 +1,134 @@
+{
+  "variant": "Secure Basic",
+  "sum_insured_options": "Not specified in wording (refer schedule)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Room rent limit not stated in wording; sub-limits table implies differential billing applies. Refer policy schedule."
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "ICU charges covered under in-patient benefit but no specific cap stated in wording."
+  },
+  "copayment": {
+    "number": 10,
+    "display": "10% non-network; 10% age 60+",
+    "note": "10% co-pay on all admissible claims in non-network hospitals; 10% co-pay for insured above 60 years irrespective of network/non-network."
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Many sub-limits apply",
+    "note": "Cataract ₹20k/eye, Hysterectomy ₹35k, Gall bladder ₹35k, Piles ₹20k, Fissure/Fistula/Sinus ₹20k, Nasal septum ₹20k, Angiography ₹15k, PTCA ₹80k, Appendectomy ₹30k, D&C ₹10k, Hernia ₹35k, DNS ₹35k, Renal stone ₹35k, TURP ₹75k, CABG ₹1L, TKR ₹80k, THR ₹80k and more."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Policy states 36 months or 24 months depending on plan; Secure Basic plan not explicitly mapped to 24mo in wording text, defaulting to 36 months as stated standard."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (most); 48 months (obesity surgery)",
+    "note": "Most listed conditions have 24-month wait; surgical treatment of obesity has 48-month wait."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). No optional maternity cover mentioned."
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% of SI",
+    "note": "10% or 25% per claim-free year up to 50% or 100% depending on plan; Secure Basic assumed lower tier (50% max). Enhanced CB up to 150% available as optional add-on."
+  },
+  "restoration": {
+    "ordinal": 2,
+    "display": "Once/yr, 100% (optional)",
+    "note": "Reload of Sum Insured is an optional cover; triggers after original SI + CB exhausted; available for in-patient claims only; cannot be carried forward."
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Period not stated in wording; refer policy schedule."
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Period not stated in wording; refer policy schedule."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No domiciliary hospitalisation benefit mentioned in wording."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to basic SI",
+    "note": "Inpatient AYUSH treatment covered up to basic Sum Insured; OPD/day-care AYUSH excluded."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No organ donor expense benefit mentioned in wording."
+  },
+  "ambulance": {
+    "number": null,
+    "display": "Covered (limit per schedule)",
+    "note": "Emergency local road ambulance covered; maximum liability as per schedule (amount not stated in wording)."
+  },
+  "modern_treatments": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "No explicit modern/robotic treatment benefit mentioned; day-care list covers many procedures but no specific modern treatment clause."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Standard excluded items list explicitly excludes gloves, consumables etc."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy valid only within India; treatment outside India excluded."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (non-monthly); 15 days (monthly)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "STDs/HIV, dental (non-accident), OPD treatment, treatment outside India, external congenital anomaly, prosthetics/external devices, refractive error <7.5D",
+  "optional_riders": "Reload of Sum Insured, Enhanced Cumulative Bonus (up to 150%), Waiver of Sub-limits",
+  "insurer": "Liberty General Insurance",
+  "plan_name": "Secure Health Connect",
+  "uin": "LIBHLIP21503V022021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Secure Health Connect_Policy Wordings_ LIBHLIP21503V022021(Effective from 07.01.2026)_06_04_26.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:04:42.882Z"
+}

@@ -1,0 +1,122 @@
+{
+  "variant": "Optima Secure Global",
+  "sum_insured_options": "₹100/200 Lakhs",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap (At Actuals)"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (At Actuals)"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (₹10,000 per claim deductible for overseas claims)",
+    "note": "Per claim deductible of ₹10,000 applies for each overseas claim"
+  },
+  "sub_limits": {
+    "ordinal": 5,
+    "display": "No sub-limits",
+    "note": "All covers up to Sum Insured; overseas claims capped at Base SI + Plus Benefit"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional aggregate deductible for India claims)",
+    "note": "Optional aggregate deductible from ₹10K to ₹25L for India claims only"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (reducible to 12mo via optional channel-level add-on)"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered (Parenthood add-on available)"
+  },
+  "cumulative_bonus": {
+    "number": 0,
+    "display": "Not covered (Plus Benefit instead)",
+    "note": "Plus Benefit (50% of BSI/yr up to 100%) is inbuilt"
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once/yr, 100% of Base SI",
+    "note": "Triggers on partial or complete exhaustion; India only for restoration"
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days (India only)"
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days (India only)"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (India only)"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered up to SI (road & air ambulance)"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)"
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Inbuilt (Protect Benefit, optional to remove)"
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Inbuilt (Emergency treatments outside India)",
+    "note": "Global Health Cover (Emergency Treatments Only) inbuilt; planned treatments not covered overseas"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, planned overseas treatments, oncological diseases overseas, orthopaedic conditions overseas (except fractures), congenital external anomalies, OPD treatment",
+  "optional_riders": "Aggregate deductible, Overseas Travel Secure, Emergency Air Ambulance, Daily Cash for Shared Room, PED wait modification, Critical Illness add-on, Parenthood add-on",
+  "insurer": "HDFC ERGO",
+  "plan_name": "my: Optima Secure",
+  "uin": "HDFHLIP26058V082526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "PolicyWordings_myOptimaSecure-76673175551.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:02:11.072Z"
+}

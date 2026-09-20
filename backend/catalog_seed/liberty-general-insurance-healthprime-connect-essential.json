@@ -1,0 +1,135 @@
+{
+  "variant": "Essential",
+  "sum_insured_options": "Not specified in wording (refer schedule)",
+  "confidence": "low",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Limit as per Policy Schedule; wording defers to schedule for this variant"
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Limit as per Policy Schedule"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in wording"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Modern treatments capped at 50% SI",
+    "note": "Modern treatments sub-limited to 50% of SI; domiciliary capped at 10% of SI; other specific limits per schedule"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No aggregate deductible; hospital daily cash has 48-hr deductible"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Wording states 36 or 24 months as per plan; Essential assumed 36 months (confirm in schedule)"
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12 months",
+    "note": "12-month list (cataract, hernia, etc.), 24-month list, 36-month list also apply"
+  },
+  "maternity": {
+    "exists": true,
+    "number": 24,
+    "display": "Covered (24mo wait)",
+    "note": "Family floater only; max 2 deliveries lifetime; limit per schedule; includes child care, newborn vaccinations, stem cell banking allowance"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "Optional CB Enhancer available: 25%/yr up to 150% of SI"
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% SI",
+    "note": "Restored SI usable only for different illness/disease not claimed in current year; cannot exceed Basic SI; unutilised amount lapses"
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Days as per Policy Schedule"
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Days as per Policy Schedule"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed procedures (405 listed)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (10% of SI cap)",
+    "note": "Min 3 days treatment; several conditions excluded (asthma, diabetes, hypertension, etc.)"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Inpatient only (min 24 hrs); OPD/day care AYUSH excluded; no pre/post-hosp AYUSH"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Screening and harvesting expenses; donor pre/post-hosp not covered"
+  },
+  "ambulance": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Road ambulance covered; limit as per Policy Schedule; air ambulance via emergency assistance (cashless, 150km+ from home)"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed procedures including robotic surgery, stereotactic radiosurgery, oral chemotherapy, etc."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No consumables cover mentioned in wording"
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional add-on",
+    "note": "Emergency care outside India; reimbursement in INR; max 180 days/yr; PED excluded for first 36 months"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "STDs/HIV, dental (unless accident), spectacles/hearing aids, external prosthetics, external congenital anomaly, OPD (except pre/post-hosp)",
+  "optional_riders": "CB Enhancer (up to 150% SI), OPD cover, Critical Illness & PA cover, Worldwide cover, Adventure Sports cover",
+  "insurer": "Liberty General Insurance",
+  "plan_name": "HealthPrime Connect",
+  "uin": "LIBHLIP25037V032425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Health Prime Connect - Policy Wordings (UIN - LIBHLIP25037V032425) (Effective from 30.09.2024)_06_04_26.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:04:03.264Z"
+}

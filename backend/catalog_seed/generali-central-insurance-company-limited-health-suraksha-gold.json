@@ -1,0 +1,130 @@
+{
+  "variant": "Gold",
+  "sum_insured_options": "₹50,000; ₹1L; ₹1.5L (children up to 25 yrs only); ₹2L; ₹2.5L; ₹3L; ₹3.5L; ₹4L; ₹4.5L; ₹5L; ₹6L; ₹7.5L; ₹8L; ₹9L; ₹10L",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day (SI ≤1.5L); No cap for SI ≥2L",
+    "note": "For SI ₹50k–₹1.5L: 1% of SI/day non-ICU, 2% ICU, capped at 35% of SI per claim. For SI ₹2L+: actuals."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day (SI ≤1.5L); No cap for SI ≥2L",
+    "note": "For SI ₹50k–₹1.5L: 2% of SI/day. For SI ₹2L+: actuals."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base); zone co-pay if treating in higher zone",
+    "note": "No mandatory co-pay on room rent. Zone co-pay: 10% if Zone 2 policyholder treats in Zone 1; 20% if Zone 3 treats in Zone 1/2."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract capped; modern treatments 50% of SI",
+    "note": "Cataract: 10% of SI per eye (min ₹15k, max ₹50k). Modern treatments (robotic surgery etc.): 50% of SI per policy period. No other disease-wise sub-limits for Gold."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12–36 months (varies by condition)",
+    "note": "12 mo: gastric ulcers, urinary/biliary stones, ear/tonsil surgery. 24 mo: cataract, hernia, hydrocele, BPH, sinuses, DNS, fistula, haemorrhoids, hysterectomy, tumours/cysts, varicose veins etc. 36 mo: organ transplant, joint replacement (degenerative)."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% (10%/yr)",
+    "note": "10% increase per claim-free year; reduces by 10% per claim year; max 50% of base SI."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% (SI ≥3L)",
+    "note": "Recharge benefit: 100% of basic SI reinstated once per policy year after full exhaustion of SI + cumulative bonus. Available for SI ≥₹3L. Applicable for same or different ailment. Not carried forward."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days, at actuals"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days, at actuals"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation/treatment is specifically excluded."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (hospitalisation)",
+    "note": "AYUSH hospitalisation for accident and illness covered. Preventive/rejuvenation treatments excluded."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Harvesting surgery costs covered under recipient's policy. Donor screening, pre/post-hosp for donor not covered."
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments (robotic surgery, oral chemo, deep brain stimulation, etc.) capped at 50% of SI per policy period."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Standard consumables list (Annexure 2) excluded. No optional rider mentioned."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy covers treatment in India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly instalment)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Domiciliary treatment, OPD, dental (non-accidental), maternity, infertility/ART, stem cell storage, treatment outside India, hazardous sports (professional)",
+  "optional_riders": "Not specified in wording",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Suraksha",
+  "uin": "GCIHLIP25017V052425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "health-surkasha-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:58:55.497Z"
+}

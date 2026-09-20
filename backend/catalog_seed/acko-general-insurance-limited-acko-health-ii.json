@@ -1,169 +1,141 @@
 {
+  "variant": "",
+  "sum_insured_options": "Not specified in wording; as per Schedule",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "As per Schedule",
+    "note": "Room category and rent limit specified in the policy schedule; proportional deduction applies if higher room availed"
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "As per Schedule",
+    "note": "ICU/CCU/HDU charges covered as per limits in policy schedule"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base)",
+    "note": "No mandatory co-pay in base plan; optional co-pay available under Basic Benefit Option 3.3.8 for premium discount; co-pay also triggered if First Notification (3.3.6) or Preferred Provider Network (3.3.7) conditions are breached"
+  },
+  "sub_limits": {
+    "ordinal": 0,
+    "display": "As per Schedule",
+    "note": "Sub-limits on specific medical expenses may be specified in the Schedule; wording does not enumerate fixed sub-limits in the base text"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (base)",
+    "note": "Aggregate deductible available as optional Super Top-up (Basic Benefit Option 3.3.9); no deductible in base plan"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Can be waived via optional Basic Benefit Option 3.3.16"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "As per standard Excl01; reduced by prior continuous coverage under portability/migration"
+  },
+  "specific_disease_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Standard specific disease waiting period; can be reduced via optional Basic Benefit Options 3.3.12 (Comprehensive) or 3.3.13 (Essential); reduced waiting period as per Schedule"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity excluded under standard Excl18; ectopic pregnancy in-patient only is covered"
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Optional; rate/max as per Schedule",
+    "note": "Cumulative Bonus (3.3.3) is an optional Basic Benefit Option; percentage and cap specified in Schedule; no impact on accrual even if claim made"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Optional; conditions as per Schedule",
+    "note": "Restore Sum Insured (3.3.2) is optional; available for related or related+unrelated conditions as per Schedule; does not trigger on first claim; unlimited restorations possible if Schedule so specifies"
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "As per Schedule",
+    "note": "Pre-hospitalisation expenses covered; number of days specified in Schedule"
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "As per Schedule",
+    "note": "Post-hospitalisation expenses covered; number of days specified in Schedule"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (listed on website)",
+    "note": "Day care treatment covered; list available at acko.com/gi"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (min 3 consecutive days)",
+    "note": "Reimbursement basis only; treating doctor must confirm medical necessity in writing"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (in-patient only)",
+    "note": "AYUSH in-patient treatment covered up to SI; OPD AYUSH not covered"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "In-patient hospitalization expenses of organ donor covered; pre/post-hosp of donor, donor screening, organ acquisition costs excluded"
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Reasonable costs covered",
+    "note": "Road ambulance and public transport for emergency covered at reasonable/customary charges; limit as per Schedule"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)",
+    "note": "12 listed modern treatments covered including robotic surgery, stereotactic radiosurgery, oral chemotherapy, intravitreal injections etc."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional (Waiver of non-payable expenses add-on)",
+    "note": "Non-payable/consumable expenses (Annexure 1 list including gloves, masks etc.) excluded by default; covered if Basic Benefit Option 3.3.10 (Waiver of non-payable expenses) is opted"
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional add-on",
+    "note": "Worldwide in-patient hospitalization available as optional Basic Benefit Option 3.3.1; payment in INR at RBI exchange rate"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to original SI; enhanced SI has fresh 60-month period"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly instalment; 30 days for quarterly/half-yearly/annual; no claims for injury/accident during grace period"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable at inception only; not on renewals or porting"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "As per IRDAI portability guidelines; application must be received 30 days before but not earlier than 60 days from renewal date"
+  },
+  "notable_exclusions": "Maternity, dental (non-accident), hormone replacement therapy, sleep disorders, substance abuse, war/nuclear, external congenital anomaly, OPD (unless add-on opted)",
+  "optional_riders": "Restore SI, Cumulative Bonus, NCB SI, Super Top-up, Worldwide cover, Waiver of non-payables, All medically necessary hospitalization, OPD services, Daily hospital cash, Accidental death/disability, Co-pay, Inflation Protect SI",
   "insurer": "Acko General Insurance Limited",
   "plan_name": "Acko Health II",
   "uin": "ACKHLIP26036V012526",
-  "sum_insured_options": "Not specified in wording",
-  "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
-  "room_rent": {
-    "display": "As per Schedule",
-    "note": "Room category and rent limits are specified in the policy schedule; proportional deduction applies if higher room availed. Exact category not stated in wording.",
-    "optional": false,
-    "ordinal": 0
-  },
-  "icu": {
-    "display": "As per Schedule",
-    "note": "ICU/CCU/HDU charges covered; specific limits defined in policy schedule, not in wording document.",
-    "optional": false,
-    "ordinal": 0
-  },
-  "copayment": {
-    "display": "None (base); optional co-pay discount available",
-    "note": "No mandatory co-pay in base plan. Optional co-pay (3.3.8) gives premium discount. Co-pay also triggered if First Notification (3.3.6) or Preferred Provider Network (3.3.7) conditions are breached.",
-    "optional": false,
-    "number": 0
-  },
-  "sub_limits": {
-    "display": "As per Schedule",
-    "note": "Wording allows sub-limits to be specified in the Schedule; no specific disease sub-limits stated in the wording itself. Underwriting conditions may apply sub-limits.",
-    "optional": false,
-    "ordinal": 0
-  },
-  "deductible": {
-    "display": "None (base); Super Top-up option available",
-    "note": "No deductible in base plan. Optional Super Top-up (3.3.9) adds an aggregate deductible as specified in schedule.",
-    "optional": false,
-    "number": 0
-  },
-  "initial_waiting": {
-    "display": "30 days",
-    "note": "Standard 30-day waiting period (Excl03). Can be waived via optional benefit 3.3.16.",
-    "optional": false,
-    "number": 30
-  },
-  "ped_waiting": {
-    "display": "36 months",
-    "note": "PED waiting period as per schedule; definition uses 36-month look-back. Exact waiting period confirmed in schedule.",
-    "optional": false,
-    "number": 36
-  },
-  "specific_disease_waiting": {
-    "display": "As per Schedule (up to 36 months)",
-    "note": "Specific illness waiting period up to 36 months per Excl02. Can be reduced via optional benefits 3.3.12 (Comprehensive) or 3.3.13 (Essential).",
-    "optional": false,
-    "number": 36
-  },
-  "maternity": {
-    "display": "Not covered (standard exclusion)",
-    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy for in-patient only is covered. No optional maternity add-on mentioned.",
-    "optional": false,
-    "exists": false,
-    "number": null
-  },
-  "cumulative_bonus": {
-    "display": "Optional; rate & max per Schedule",
-    "note": "Cumulative Bonus (3.3.3) is an optional basic benefit option. Rate and maximum cap specified in schedule. No claim impact on accrual.",
-    "optional": true,
-    "number": null
-  },
-  "restoration": {
-    "display": "Optional; unlimited or once, related/unrelated per Schedule",
-    "note": "Restore Sum Insured (3.3.2) is optional. Conditions (related or related+unrelated) and number of restorations specified in schedule. Does not trigger on first claim of year.",
-    "optional": true,
-    "ordinal": 0
-  },
-  "pre_hosp": {
-    "display": "Covered; days as per Schedule",
-    "note": "Pre-hospitalisation expenses covered (3.2.4); exact number of days specified in policy schedule.",
-    "optional": false,
-    "number": null
-  },
-  "post_hosp": {
-    "display": "Covered; days as per Schedule",
-    "note": "Post-hospitalisation expenses covered (3.2.4); exact number of days specified in policy schedule.",
-    "optional": false,
-    "number": null
-  },
-  "day_care": {
-    "display": "All day-care procedures covered",
-    "note": "Day care treatment covered (3.2.3); list available at acko.com/gi.",
-    "optional": false,
-    "exists": true
-  },
-  "domiciliary": {
-    "display": "Covered (min 3 days)",
-    "note": "Domiciliary hospitalisation covered (3.2.7) if treatment continues for at least 3 consecutive days; reimbursement basis only.",
-    "optional": false,
-    "exists": true
-  },
-  "ayush": {
-    "display": "Covered (in-patient only)",
-    "note": "AYUSH in-patient treatment covered (3.2.10) up to sum insured; OPD AYUSH not covered.",
-    "optional": false,
-    "exists": true
-  },
-  "organ_donor": {
-    "display": "Covered",
-    "note": "Organ donor in-patient hospitalisation expenses covered (3.2.8) up to insured's sum insured; pre/post-hosp of donor not covered.",
-    "optional": false,
-    "exists": true
-  },
-  "ambulance": {
-    "display": "Covered (reasonable costs)",
-    "note": "Road ambulance covered (3.2.5) at reasonable and customary charges; no fixed rupee cap stated in wording.",
-    "optional": false,
-    "number": 999999
-  },
-  "modern_treatments": {
-    "display": "Covered (up to SI)",
-    "note": "12 modern treatments listed in 3.2.11 covered for in-patient/day care; no sub-limit stated in wording.",
-    "optional": false,
-    "exists": true
-  },
-  "consumables": {
-    "display": "Optional add-on (Waiver of non-payable expenses)",
-    "note": "Non-payable/consumable expenses (Annexure 1) excluded by default; covered if optional benefit 3.3.10 (Waiver of non-payable expenses) is opted.",
-    "optional": true,
-    "exists": true
-  },
-  "global_cover": {
-    "display": "Optional add-on",
-    "note": "Worldwide in-patient hospitalisation (3.3.1) available as optional basic benefit option; base policy covers India only.",
-    "optional": true,
-    "exists": true
-  },
-  "moratorium": {
-    "display": "60 months",
-    "note": "After 60 continuous months of coverage (including portability/migration), claims cannot be contested except for fraud.",
-    "optional": false,
-    "number": 60
-  },
-  "grace_period": {
-    "display": "30 days (annual/renewal); 15 days (monthly instalment)",
-    "note": "30-day grace period for renewal and quarterly/half-yearly/annual instalments; 15 days for monthly instalments.",
-    "optional": false,
-    "number": 30
-  },
-  "free_look": {
-    "display": "30 days",
-    "note": "30-day free-look period at inception only; not applicable on renewals or porting.",
-    "optional": false,
-    "number": 30
-  },
-  "portability": {
-    "display": "Allowed",
-    "note": "Portability permitted as per IRDAI guidelines (Section 5.2.13).",
-    "optional": false,
-    "exists": true
-  },
-  "notable_exclusions": {
-    "display": "Maternity, hormone replacement therapy, sleep disorders, substance abuse/cancer in tobacco users, dental, external prosthetics, war/nuclear/bio/chem"
-  },
-  "optional_riders": {
-    "display": "Restore SI, Cumulative Bonus, NCB SI, Super Top-up, Worldwide cover, Waiver of non-payables, OPD cover, Daily Hospital Cash, Accidental Death/Disability, Co-pay discount"
-  },
   "source_file": "Policy_Wordings_Acko_Health_II_63fc0c985c.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-18T05:17:16.205Z"
+  "extracted_at": "2026-09-20T07:50:58.997Z"
 }

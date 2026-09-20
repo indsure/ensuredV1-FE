@@ -1,0 +1,136 @@
+{
+  "variant": "Health Care Supreme – Vital",
+  "sum_insured_options": "₹5,00,000 (Plan A), ₹8,00,000 (Plan B), ₹10,00,000 (Plan C)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "Policy wording lists room rent as covered under hospitalisation expenses up to Sum Insured with no stated cap on room category or daily limit."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "ICU charges covered under hospitalisation expenses up to Sum Insured; no separate sub-limit stated."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No co-payment clause mentioned in the policy wording."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "OPD, Maternity, Air Ambulance, Organ Donor, Physiotherapy, Recovery benefit sub-limited",
+    "note": "Hospitalisation SI has no disease-wise sub-limits; however OPD, Maternity, Air Ambulance, Organ Donor, Physiotherapy and Recovery benefit each have separate plan-specific monetary caps."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No deductible mentioned."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses from first policy commencement."
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "PED waiting period is 24 months of continuous coverage from first policy inception."
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12 months",
+    "note": "Listed conditions (cataracts, hernia, fistula, piles, etc.) have 12-month waiting period; joint replacement, DNS surgery, congenital internal diseases, Parkinson's, laser eye correction have 24-month waiting."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 24,
+    "display": "Covered (24mo wait)",
+    "note": "Inbuilt cover; limited to 2 deliveries/terminations lifetime; limit varies by plan (Plan A ₹25,000, Plan B ₹30,000, Plan C ₹35,000); both spouses must be covered under same policy."
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% (10%/yr, max 5 yrs)",
+    "note": "10% increase per claim-free year; maximum 50% of base SI; reduced by 10% on a claim year."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100%",
+    "note": "100% of hospitalisation SI reinstated once per policy period after full exhaustion; only for subsequent claims not related to the illness that triggered exhaustion."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care",
+    "note": "Indicative list of 130 procedures provided; any procedure requiring <24 hrs due to technology also covered."
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is defined in the policy but not listed as a covered benefit under Section C."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient hospitalisation covered within overall hospitalisation SI; must be in government AYUSH hospital."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (lump sum)",
+    "note": "Lump sum as per plan schedule; Plan A ₹50,000, Plan B ₹80,000, Plan C ₹1,00,000."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "At actuals (within SI)",
+    "note": "Road ambulance reimbursed at actuals within overall hospitalisation SI. Air ambulance covered separately up to plan-specific limit (Plan A ₹50,000, Plan B ₹80,000, Plan C ₹1,00,000)."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "11 listed modern treatments (robotic surgery, oral chemo, HIFU, etc.) covered up to base SI."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumable items listed in Annexure II are explicitly excluded."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded for medical expenses section; PA and CI cover events worldwide but payment in India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Treatment outside India, IVF/ART, ectopic pregnancy under maternity (covered under hospitalisation), external appliances, non-medical consumables, refractive error <7.5D",
+  "optional_riders": "Ancillary Expenses (daily allowance + ICU allowance), Critical Illness cover (15 CIs), Personal Accident cover (Death/PTD/PPD/TTD)",
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "Health Care Supreme",
+  "uin": "BAJHLIP23210V042223",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Health-Care-Supreme_PW.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:53:00.036Z"
+}

@@ -1,173 +1,144 @@
 {
+  "variant": "",
+  "sum_insured_options": "₹3,00,000 (illustrated); actual options per Policy Schedule",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day OR Room Category (Twin Sharing or Single Private AC)",
+    "note": "Policy Schedule specifies which applies: Room Rent = 1% of SI/day, OR Room Category 1 = Twin Sharing, OR Room Category 2 = Single Private AC. Pro-rata deduction on associate expenses if higher room taken."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day OR no limit",
+    "note": "ICU Charges Option 1 = 2% of Benefit 1 SI per day; ICU Charges Option 2 = no limit. Policy Schedule specifies which applies."
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20%–30% (as per Policy Schedule); +10% at age 71+",
+    "note": "Co-payment per claim as specified in Policy Schedule (illustration shows 20%/30%). Increases by 10% per claim year after insured/eldest turns 71. Waiver of age-71 loading available on extra premium if first policy issued at age ≤70. Co-pay not applicable on Benefit 2, 3, 5, 7, 9, Optional Cover 2 & 3."
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Cataract, knee replacement, hernia, hysterectomy, BPH, renal stones, CVD, cancer, renal complications, bone fractures capped",
+    "note": "Named Ailments/Procedures (Clause 3.1.1(c)(iii)) have sub-limits specified in Schedule of Benefits. Domiciliary capped at 10% of SI. Dialysis capped per sitting."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "As per Policy Schedule (may be nil or specified amount)",
+    "note": "Deductible is applicable on all Benefits except Benefit 7 & 9. Actual amount per Policy Schedule. Illustrations show plans with co-pay; deductible amount not explicitly stated in wording text."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses from first policy commencement; accidents exempt."
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Pre-existing diseases covered after 24 months of continuous coverage. Portability credit applicable."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, joint replacement, BPH, hysterectomy, kidney stones, varicose veins, cancer, etc.) excluded for 24 months from first policy date."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a permanent exclusion (Excl18). Ectopic pregnancy is covered under Benefit 1."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Cumulative Bonus is defined in the policy but no rate or cap is stated in the wording text provided."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/year, up to 100% of SI (unrelated illness/injury only)",
+    "note": "Benefit 7: Recharge of Sum Insured activated once SI is fully exhausted; not available for same illness/injury already claimed in that policy year. Cannot be carried forward. Not applicable to Optional Covers."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for the period immediately prior to admission; no expenses before Policy Start Date. Exact number of days per Schedule of Benefits (wording references 'pre-defined number of days'; illustration context suggests 30 days)."
+  },
+  "post_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Post-hospitalisation expenses covered for pre-defined days after discharge; no expenses incurred 30+ days after Policy End Date. Exact days per Schedule of Benefits."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures (541 listed in Annexure I)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to 10% of SI",
+    "note": "Benefit 6: Domiciliary Hospitalization covered up to 10% of SI; must exceed 3 consecutive days. Several chronic conditions excluded (asthma, diabetes, hypertension, epilepsy, etc.)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Benefit 10: AYUSH treatments covered up to Sum Insured via cashless or reimbursement at registered AYUSH hospitals; admissible only if Benefit 1 in-patient claim is also admissible."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Expenses related to donor treatment including surgery to remove organs from donor are permanently excluded (Clause 4.2(i)(12))."
+  },
+  "ambulance": {
+    "number": null,
+    "display": "Up to limit in Schedule of Benefits",
+    "note": "Benefit 5: Reasonable and Customary Charges for road ambulance to nearest hospital in emergency; exact rupee limit per Schedule of Benefits."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (listed advanced technology methods only)",
+    "note": "Clause 3.1.1(d) covers 12 specified advanced technology methods (robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, HIFU, deep brain stimulation, etc.). Other advance technology methods are excluded."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Benefit 2: Consumable Allowance (fixed daily amount, inbuilt)",
+    "note": "Benefit 2 pays a fixed amount per 24-hour period of in-patient hospitalisation (from day 4 to day 7 max per illness). Not applicable for first 3 days or beyond 7 consecutive days. Amount per Schedule of Benefits."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy explicitly covers medical treatment taken entirely within India only (Clause 6.1.6(a) and Specific Exclusion 15)."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 5 continuous years, no look-back except for proven fraud and permanent exclusions. Applies to original SI; fresh 5-year period on enhanced SI for the enhanced portion."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes. Coverage not available during grace period unless premium paid in instalments during policy period."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; apply at least 30 days before renewal."
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment, maternity, organ donor expenses, non-allopathic (except AYUSH inpatient), treatment outside India, 16 permanent pre-existing conditions (e.g. DVT, varicose veins, retinal detachment), Remicade/Avastin injections, multifocal lens"
+  },
+  "optional_riders": {
+    "display": "Optional Cover 1: Good Health+ (OPD consultations & pharmacy discounts); Optional Cover 2: Home Care (nurse hire ₹1,000/day up to 45 days/yr); Optional Cover 3: Health Check+ (enhanced annual health check-up)"
+  },
   "insurer": "Care Health Insurance Limited",
   "plan_name": "Care Freedom",
   "uin": "CHIHLIP26052V032526",
-  "sum_insured_options": "₹3,00,000 (as per illustrations; exact range not fully specified in wording)",
-  "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
-  "room_rent": {
-    "display": "1% of SI/day OR Twin Sharing OR Single Private AC Room",
-    "note": "Policy Schedule specifies which applies: Room Rent = 1% of SI/day, or Room Category 1 (Twin Sharing), or Room Category 2 (Single Private AC). If higher room taken, Associate Medical Expenses are pro-rated.",
-    "optional": false,
-    "ordinal": 3
-  },
-  "icu": {
-    "display": "2% of SI/day OR No limit (as per schedule)",
-    "note": "ICU Charges Option 1 = 2% of Benefit 1 SI per day; ICU Charges Option 2 = no limit. Policy Schedule specifies which applies.",
-    "optional": false,
-    "ordinal": 3
-  },
-  "copayment": {
-    "display": "As per Policy Schedule (e.g. 20%/30%); +10% at age 71+",
-    "note": "Co-payment percentage is specified in Policy Schedule. Increases by 10% per claim in policy year following insured (or eldest floater member) turning 71. Waiver of age-71 loading available on payment of extra premium. Co-payment not applicable on Benefit 2, 3, 5, 7, 9, Optional Cover 2 & 3.",
-    "optional": false,
-    "number": 20
-  },
-  "sub_limits": {
-    "display": "Cataract, Knee Replacement, Hernia, Hysterectomy, BPH, Renal stones, Cardiovascular, Cancer, Renal complications, Bone fractures capped",
-    "note": "Named Ailments/Procedures (Clause 3.1.1(c)(iii)) have sub-limits as specified in Policy Schedule. Domiciliary Hospitalization capped at 10% of SI.",
-    "optional": false,
-    "ordinal": 1
-  },
-  "deductible": {
-    "display": "As per Policy Schedule",
-    "note": "Deductible amount is specified in Policy Schedule. Applies to aggregate of all claims. Not applicable on Benefit 7 (Recharge) and Benefit 9 (Health Check-up).",
-    "optional": false,
-    "number": null
-  },
-  "initial_waiting": {
-    "display": "30 days",
-    "note": "Standard 30-day waiting period for illnesses from first policy commencement date; not applicable for accidents.",
-    "optional": false,
-    "number": 30
-  },
-  "ped_waiting": {
-    "display": "24 months",
-    "note": "Pre-existing diseases covered after 24 months of continuous coverage. Reducible via portability credit.",
-    "optional": false,
-    "number": 24
-  },
-  "specific_disease_waiting": {
-    "display": "24 months",
-    "note": "Specific diseases/procedures (e.g. cataract, hernia, joint replacement, BPH, kidney stones, cancer, etc.) excluded for 24 months from first policy date. Not applicable for accidents.",
-    "optional": false,
-    "number": 24
-  },
-  "maternity": {
-    "display": "Not covered",
-    "note": "Maternity is a permanent exclusion (Code Excl18). Ectopic pregnancy is covered. Lawful termination and miscarriage (unless accidental) excluded.",
-    "optional": false,
-    "exists": false,
-    "number": null
-  },
-  "cumulative_bonus": {
-    "display": "Not specified",
-    "note": "Cumulative Bonus is defined in the policy but no specific rate or maximum percentage is stated in the wording provided.",
-    "optional": false,
-    "number": null
-  },
-  "restoration": {
-    "display": "Once/year, up to 100% SI (unrelated illness/injury)",
-    "note": "Benefit 7: Recharge of Sum Insured reinstates up to 100% of SI once SI is fully exhausted. Not available for same illness/injury already claimed in that policy year. Cannot be carried forward. Not applicable to Optional Covers.",
-    "optional": false,
-    "ordinal": 3
-  },
-  "pre_hosp": {
-    "display": "As per Policy Schedule",
-    "note": "Pre-hospitalisation expenses covered for a pre-defined number of days (not explicitly stated as a number in the wording; amount subject to Schedule of Benefits).",
-    "optional": false,
-    "number": null
-  },
-  "post_hosp": {
-    "display": "As per Policy Schedule",
-    "note": "Post-hospitalisation expenses covered for a pre-defined number of days immediately after discharge (not explicitly stated as a number in the wording; amount subject to Schedule of Benefits).",
-    "optional": false,
-    "number": null
-  },
-  "day_care": {
-    "display": "Listed day-care procedures (Annexure I, 541 procedures)",
-    "note": "Day Care Treatment covered up to SI. Extensive list in Annexure I covering cardiology, ENT, gastroenterology, gynaecology, oncology, urology, orthopaedics, ophthalmology and more.",
-    "optional": false,
-    "exists": true
-  },
-  "domiciliary": {
-    "display": "Covered up to 10% of SI",
-    "note": "Benefit 6: Domiciliary Hospitalization covered up to 10% of SI for treatment exceeding 3 consecutive days. Several chronic conditions excluded (asthma, diabetes, hypertension, epilepsy, etc.).",
-    "optional": false,
-    "exists": true
-  },
-  "ayush": {
-    "display": "Covered up to SI",
-    "note": "Benefit 10: AYUSH (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy) covered up to SI via cashless or reimbursement at registered AYUSH hospitals, subject to in-patient care admissibility under Benefit 1.",
-    "optional": false,
-    "exists": true
-  },
-  "organ_donor": {
-    "display": "Not covered",
-    "note": "Expenses related to donor treatment including surgery to remove organs from donor are permanently excluded (Clause 4.2(i)(12)).",
-    "optional": false,
-    "exists": false
-  },
-  "ambulance": {
-    "display": "As per Schedule of Benefits",
-    "note": "Benefit 5: Ambulance cover for emergency transportation to nearest hospital. Limit specified in Schedule of Benefits. Necessity must be certified by treating doctor.",
-    "optional": false,
-    "number": null
-  },
-  "modern_treatments": {
-    "display": "Covered (listed advanced technology methods)",
-    "note": "Clause 3.1.1(d) covers 12 specified advanced technology methods including robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, HIFU, deep brain stimulation, stem cell therapy (haematopoietic), etc. Other advance technology methods excluded.",
-    "optional": false,
-    "exists": true
-  },
-  "consumables": {
-    "display": "Daily allowance per 24hrs hospitalisation (Benefit 2)",
-    "note": "Benefit 2 (Consumable Allowance) pays a fixed amount per completed 24-hour period of in-patient hospitalisation, not payable for first 3 days and capped at 7 consecutive days per illness/accident. Amount per Schedule of Benefits. No co-payment or deductible on this benefit.",
-    "optional": false,
-    "exists": true
-  },
-  "global_cover": {
-    "display": "Not covered",
-    "note": "Policy explicitly covers only medical treatment taken within India (Clause 6.1.6(a)). Treatment outside India is a permanent exclusion (Clause 4.2(i)(15)).",
-    "optional": false,
-    "exists": false
-  },
-  "moratorium": {
-    "display": "60 months",
-    "note": "After 5 continuous years (60 months) no look-back applied. Claims not contestable except for proven fraud and permanent exclusions. Moratorium applies to original SI; fresh 5-year period starts on SI enhancement for enhanced portion.",
-    "optional": false,
-    "number": 60
-  },
-  "grace_period": {
-    "display": "30 days (15 days for monthly mode)",
-    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes. Coverage not available during grace period unless premium paid in instalments during policy period.",
-    "optional": false,
-    "number": 30
-  },
-  "free_look": {
-    "display": "30 days",
-    "note": "Applicable on new individual policies only; not on renewals or porting/migration.",
-    "optional": false,
-    "number": 30
-  },
-  "portability": {
-    "display": "Allowed",
-    "note": "Portability to other insurers permitted as per IRDAI guidelines. Must apply at least 30 days before but not earlier than 60 days from renewal date.",
-    "optional": false,
-    "exists": true
-  },
-  "notable_exclusions": {
-    "display": "Organ donor costs, OPD treatment, treatment outside India, RMO/surcharges, multifocal lens, Remicade/Avastin, 16 permanent pre-existing conditions (e.g. DVT, varicose veins, retinal detachment)",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "Good Health+ (OPD consultations & pharmacy discounts), Home Care (nurse hiring ₹1,000/day), Health Check+ (enhanced health check-up panels)",
-    "note": null,
-    "optional": true
-  },
   "source_file": "care-freedom----t&c-(effective-from-3-september-2025-).pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:39:15.560Z"
+  "extracted_at": "2026-09-20T07:54:39.495Z"
 }

@@ -1,0 +1,134 @@
+{
+  "variant": "Mini",
+  "sum_insured_options": "₹4L, ₹5L",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day or No cap (choosable)",
+    "note": "Policyholder selects either 1% of SI per day or No Capping at inception. Proportionate deduction applies if room taken above selected limit."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2x selected Room Rent limit or No cap",
+    "note": "ICU = 2 times the Room Rent selected; if No Capping chosen for room, ICU also has no cap."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (20% if aged 61–65 at first entry)",
+    "note": "Mandatory 20% co-pay applies only to insured persons aged 61+ at first policy issuance; applies on all subsequent renewals too."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract 20% of SI max ₹1L/eye; LASIK per schedule; Modern Tx 50% SI max ₹5L; Bariatric 50% SI max ₹5L; GRS ₹1L lifetime",
+    "note": "Cataract: 20% of SI subject to max ₹1L; LASIK: ₹30,000/₹50,000 for both eyes (Mini); Modern treatments: 50% SI max ₹5L; Bariatric: 50% SI max ₹5L after 36 months; Gender Reassignment Surgery: ₹1L lifetime; Screening & Vaccinations: ₹20,000 per policy period."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "Voluntary deductible (₹10,000/₹25,000/₹50,000) available as optional add-on."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 12,
+    "display": "12 months (1 or 2 year options available)",
+    "note": "Policy schedule specifies 1 or 2 year PED waiting period options. For portability/migration policies only 2-year option available."
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12 or 24 months (listed conditions); 36 months (joint replacement/osteoporosis)",
+    "note": "Most named ailments (cataract, hernia, etc.) have 12 or 24 month wait per schedule choice; joint replacement/osteoporosis 36 months."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Optional add-on (36-month wait)",
+    "note": "Maternity is an optional cover; Mini plan supports sub-limits A and B only (Normal ₹20k/₹30k; Caesarean ₹30k/₹50k); 36-month continuous coverage required; portability/migration not applicable."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (25%/yr)",
+    "note": "CB increases 25% per claim-free year up to 100% of SI; reduces at same rate if claim made. Optional Cumulative Bonus Booster (100%/yr up to 500%) available separately."
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once/yr, 100% of base SI",
+    "note": "Triggered on second claim in same policy year (same or new illness); excludes maternity claims; Chemotherapy/Dialysis usable once in lifetime."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30, 60, or 90 days (per schedule choice)",
+    "note": "Mini plan offers 30/60/90 days pre-hospitalisation cover as per chosen option in schedule."
+  },
+  "post_hosp": {
+    "number": 45,
+    "display": "60, 90, or 120 days (per schedule choice)",
+    "note": "Mini plan offers 60/90/120 days post-hospitalisation cover as per chosen option in schedule."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "530 listed day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered (base); Home Health Care optional",
+    "note": "Domiciliary hospitalisation is specifically excluded (4.2.3). Home Health Care (up to 20% of SI) is an optional cover."
+  },
+  "ayush": {
+    "exists": false,
+    "display": "Optional add-on (up to SI)",
+    "note": "AYUSH/Alternative Treatment is an optional cover; covers inpatient AYUSH hospitalisation up to SI."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "ambulance": {
+    "number": 0,
+    "display": "Optional (₹1,000–₹2,000/hosp)",
+    "note": "Road Ambulance is an optional cover; Mini plan limits ₹1,000/₹1,500/₹2,000 per hospitalisation. No inbuilt ambulance cover."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited: 50% of SI, max ₹5L/yr",
+    "note": "12 listed modern treatments covered as inpatient or day care; capped at 50% of SI subject to max ₹5L per policy year."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Optional rider (up to 15% of admissible claim)",
+    "note": "Non-Medical & Consumable Expenses Cover is an optional add-on; covers List-I items up to 15% of admissible claim amount."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded (4.2.4); territorial limit is India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly instalment)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Domiciliary hospitalisation, OPD (except inbuilt OPD benefit), dental (unless injury), STDs other than HIV, external congenital anomaly, stem cell storage, treatment outside India",
+  "optional_riders": "Maternity, Road Ambulance, Air Ambulance, Daily Hospital Cash, Convalescence Benefit, Accompanying Person, Accidental Death, Critical Illness Booster, Accident Booster, Non-Medical & Consumables, Home Health Care, AYUSH, Cumulative Bonus Booster, Voluntary Co-Pay, Voluntary Deductible",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "D.I.Y Health",
+  "uin": "GCIHLIP26046V022526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "diy-health-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:58:10.538Z"
+}

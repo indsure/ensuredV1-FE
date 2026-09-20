@@ -1,0 +1,135 @@
+{
+  "variant": "Neo",
+  "sum_insured_options": "₹5L, ₹7.5L, ₹10L, ₹15L, ₹20L, ₹25L, ₹1Cr, ₹2Cr",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "Any room (no cap)",
+    "note": "Room rent is 'Any Room' as per Schedule of Benefits. Optional Room Rent Modification rider allows downgrade to Single Private A/C, Shared, or General Ward for premium discount."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (covered up to SI)",
+    "note": "ICU charges covered as part of inpatient treatment up to sum insured; no separate sub-limit stated."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment on base covers. Voluntary co-payment (10%/20%/30%/40%/50%) available as optional cover for premium discount. OPD benefit has 20% co-pay on reimbursement claims."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits: Home Care 10% SI, Bariatric ₹3-7L, Newborn 10% SI, Nano 25% SI",
+    "note": "Most covers up to SI. Sub-limits apply to: Home Care Treatment (10% SI or ₹5L), Bariatric Surgery (₹3L for SI 5-15L; ₹6L for 20-100L; ₹7L for 200L), Newborn Baby (10% SI or ₹2.5L/₹5L), Nanotechnology (25% SI). Optional Sub-limits cover available for specific diseases."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory deductible. Voluntary Aggregate Deductible available as optional cover for premium discount."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (reducible to 24 or 12 mo via optional add-on)",
+    "note": "Base PED waiting period is 36 months. Optional cover allows reduction to 24 or 12 months on payment of additional premium at inception only."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (reducible to 12 mo via optional add-on)",
+    "note": "24-month waiting for listed conditions (cataract, ENT, hernia, joint replacement, etc.). Optional cover reduces to 12 months."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 24,
+    "display": "Optional add-on (2yr wait for couple; 4yr for single woman)",
+    "note": "Delivery Expenses optional cover: Normal up to ₹25K (SI 5L), ₹50K (SI 7.5-15L), ₹1L (SI 20L+); Caesarean double those limits. Waiting: both self & spouse covered 2 yrs continuously, or insured woman alone 4 yrs. Max 2 deliveries lifetime."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of SI per year",
+    "note": "100% of SI bonus if no claim in previous year; 25% of SI if claim made. Not cumulative — applies each year independently. Enhanced Multiplier 3X or 10X optional cover provides additional cumulative bonus up to 3x or 10x SI."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited, 100% of SI",
+    "note": "Automatic restoration of 100% SI each time for unlimited number of times, for same or different illness including accidents. Triggers on partial or full utilization."
+  },
+  "pre_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered up to SI"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Covered for illness requiring >3 days treatment at home. Excludes asthma, bronchitis, diabetes, hypertension, epilepsy, psychiatric disorders, etc."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to SI. Yoga & Naturopathy require prior approval."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (donor complications + insured donation)",
+    "note": "Donor: redo surgery/ICU complications covered (in addition to SI). Insured as donor: covered up to SI. 24-month waiting period. Stem cell donation excluded except bone marrow."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered up to SI",
+    "note": "Road ambulance covered up to sum insured for transport to hospital, between hospitals, and hospital to residence (same city). Air ambulance optional cover up to 10% of SI."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Robotic surgery, immunotherapy, stem cell therapy, intravitreal injections (max 3/eye/period), deep brain stimulation, balloon sinuplasty, bronchial thermoplasty, stereotactic radio surgeries, oral chemotherapy, etc."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional add-on (68 items + admission/record/insurance processing charges)",
+    "note": "Consumables cover is an optional add-on for Neo Plan. Covered up to SI when admissible inpatient/day care claim exists."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Territorial limit is India only. Accidental Death & PTD optional cover applies worldwide."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim contestable except for proven fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)",
+    "note": "30 days for annual/half-yearly/quarterly/2/4/12 instalment modes; 15 days for monthly mode."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Permanent exclusions for disclosed diseases (Excl 38); venereal diseases; dental unless accident; refractive error <7.5D; EECP/chelation/hyperbaric O2; erectile dysfunction; hazardous sports",
+  "optional_riders": "Insta Care (PED from day 31 for ABCD), Enhanced Multiplier 3X/10X, Delivery Expenses, ART, Consumables, High-End Diagnostics, Air Ambulance, OPD Benefit (Silver/Gold/Platinum/Diamond), Accidental Death & PTD, Preferred Partner Network, Voluntary Deductible/Co-pay, Sub-limits, Advance Access",
+  "insurer": "Galaxy Health Insurance Company Limited",
+  "plan_name": "Galaxy Marvel",
+  "uin": "GHIHLIP26042V012526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Policy Wording (6).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:57:19.572Z"
+}

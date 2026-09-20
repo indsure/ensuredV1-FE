@@ -1,0 +1,123 @@
+{
+  "variant": "Senior Priority Plan",
+  "sum_insured_options": "Up to INR 3 Crores",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private AC Room",
+    "note": "Room rent restricted to Single Private AC Room for Senior Priority Plan"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "Zone-based 10% co-pay if hospitalized in higher zone than declared"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Room: Single Private AC; road ambulance 1% SI max ₹10k; modern treatments 50% SI",
+    "note": "Road ambulance 1% SI max INR 10,000; modern treatments 50% SI unless Advance Care opted"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered (inbuilt)",
+    "note": "Section 4 not applicable; Optional Cover 9 available"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100%",
+    "note": "20% of SI per claim-free year up to 100%"
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% (related illness)",
+    "note": "Sum Insured Back-up: once per policy period for related illness"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 10000,
+    "display": "1% of SI, max ₹10,000"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "Optional Cover 6 upgrades to 100% SI"
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Room capped at Single Private AC; consumables not inbuilt; tobacco-related oral/respiratory cancer excluded; hormone replacement therapy excluded",
+  "optional_riders": "Consumables Cover, Network Hospital Discount, Waiting Period Modification, OPD Benefit, Advance Care, Maternity & Newborn, Infertility, Daily Hospital Cash, Medical Equipment Cover",
+  "insurer": "Go Digit General Insurance Ltd.",
+  "plan_name": "Digit Health Insurance Policy",
+  "uin": "GODHLIP25039V022425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "policy-wordings-digit-health-insurance-policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:00:25.963Z"
+}

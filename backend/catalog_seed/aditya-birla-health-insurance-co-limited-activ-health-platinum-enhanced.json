@@ -1,0 +1,129 @@
+{
+  "variant": "Platinum Enhanced",
+  "sum_insured_options": "Not specified in wording; refer Policy Schedule",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private A/C Room",
+    "note": "Proportionate deduction applies if higher room category is taken. ICU charges exempt from proportionate deduction."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "ICU charges covered; proportionate deductions not applicable for ICU."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "Mandatory co-pay as per Policy Schedule (waivable via optional add-on); zone-based co-pay applies",
+    "note": "Mandatory co-payment percentage specified in Policy Schedule; waiver available as optional cover. Zone-based co-pay: 10%/15%/25% for treatment in higher zone."
+  },
+  "sub_limits": {
+    "ordinal": 5,
+    "display": "No sub-limits",
+    "note": "Sub-limits on specific diseases apply only to Platinum Essential plan; Enhanced plan does not carry the same disease-wise sub-limits per wording."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Portability credits apply."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Optional add-on",
+    "note": "Maternity Expenses available as optional cover with 48-month waiting period; up to ₹75,000 (normal) or ₹1,00,000 (C-section) per event, max 2 events."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of SI",
+    "note": "Accrues on claim-free years; max 100% of SI. HealthReturns up to 100% of premium (excl. optional covers)."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited, 100% SI",
+    "note": "Super Reload available: unlimited reloads during Policy Year for any illness/injury including same illness. Each reload capped at base SI."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Exact days per Policy Schedule."
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Exact days per Policy Schedule."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Minimum 3 consecutive days; certain conditions excluded."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered up to limits in Policy Schedule"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical consumables excluded; HealthReturns can be used for non-payable items."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Optional add-on",
+    "note": "International Coverage for Major Illnesses available as optional cover (Section C.V.36) for Enhanced plan."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Parkinson's/Alzheimer's, sleep apnea, alopecia, hearing aids/spectacles, dental (non-accident), IVF/ART, non-allopathic (except AYUSH inbuilt), cosmetic surgery",
+  "optional_riders": "Waiver of Mandatory Co-pay, Maternity Expenses, OPD Expenses, Hospital Cash, Personal Accident (AD/PTD), Critical Illness Cover, International Coverage for Major Illnesses, PPN Discount, Surrogacy/Oocyte complications",
+  "insurer": "Aditya Birla Health Insurance Co. Limited",
+  "plan_name": "Activ Health",
+  "uin": "ADIHLIP26042V062526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "20260427T053449.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:52:10.331Z"
+}

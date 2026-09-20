@@ -417,6 +417,63 @@ export function buildComparison(a: WordingProfile, b: WordingProfile): Compariso
   return compareMany([a, b]);
 }
 
+/**
+ * Catalogue ingestion prompt: the same axes, but one profile PER VARIANT.
+ *
+ * A plan sold as Classic / Select / Elite is filed under one UIN, so a single profile has to
+ * pick one variant's value for every ranked axis and is then wrong for the others. Measured on
+ * 2026-09-20, 42 of 220 comparable plans carried variant language on a ranked axis, and that is
+ * a floor: a plan whose extraction silently chose one variant looks clean and is not counted.
+ *
+ * Deliberately separate from buildExtractionPrompt(). That one is used by the agent's paid
+ * upload compare (services/wordingCompare.ts) and returns a single flat profile; changing its
+ * shape would break that path for no benefit to it.
+ */
+export function buildVariantExtractionPrompt(): string {
+  const axisLines = AXES.map((d) => `    - "${d.key}": ${d.prompt}`).join("\n");
+  return `You are an IRDAI-licensed health-insurance policy analyst. You are given the FULL POLICY WORDING text of ONE health-insurance product. Many Indian health products are sold in several NAMED VARIANTS under a single UIN, and those variants often differ on the clauses that decide whether a plan is any good. Extract ONE PROFILE PER VARIANT.
+
+Return ONLY a single JSON object (no markdown, no commentary). Shape:
+{
+  "insurer": string|null,            // company name, e.g. "HDFC ERGO"
+  "plan_name": string|null,          // the product name WITHOUT the variant, e.g. "ReAssure 3.0"
+  "uin": string|null,                // the UIN if present. All variants share it.
+  "product_type": "comprehensive_health_indemnity" | "critical_illness" | "personal_accident" | "top_up" | "hospital_cash" | "travel" | "group" | "other",
+                                     // Classify honestly. Only use comprehensive_health_indemnity for an
+                                     // ordinary indemnity hospitalisation plan. If this document is not
+                                     // that, say so and return a single variant with null axes.
+  "variants": [
+    {
+      "variant": string,             // the variant's name EXACTLY as the wording spells it, e.g.
+                                     // "Classic", "Elite", "Platinum", "Plan B". Use "" (empty
+                                     // string) if this product genuinely has no named variants.
+      "sum_insured_options": string|null,
+      "confidence": "high"|"medium"|"low",
+      // every axis below, holding the value FOR THIS VARIANT:
+${axisLines}
+    }
+  ]
+}
+
+Rules for variants, read these carefully:
+- A variant is a NAMED tier the wording itself names: Classic/Select/Elite, Silver/Gold/Platinum, Plan A/Plan B, Essential/Premium. If the document names them, split on them.
+- Do NOT split on sum insured bands. "Single private room for SI 3L-7.5L, any room for SI 10L+" is ONE variant whose room_rent note explains the band. Splitting on bands would multiply the catalogue for no gain.
+- Do NOT split on optional add-ons or riders. Those are already handled by the "optional" flag on each axis.
+- If the product has no named variants, return EXACTLY ONE entry with "variant": "".
+- Every variant entry must carry the COMPLETE set of axes. Do not omit an axis from one variant because it matches another; repeat the value.
+- Each variant's values must be the values that apply TO THAT VARIANT. This is the entire point. If maternity is covered on Gold and Platinum but not Silver, then Silver's maternity has exists=false and Gold's has exists=true. Never write a combined answer like "covered on Gold only" into a variant's ranked field.
+- Keep "plan_name" free of the variant name. The variant belongs in "variant".
+
+Rules for the axis values, unchanged:
+- "display" must be SHORT and customer-facing (a 40+ insurance agent reads it aloud). No legalese.
+- Populate the SPECIFIC ranking field named in each axis instruction ("number", "ordinal", or "exists"). If a value is genuinely not found, set that field to null and "display" to "Not specified".
+- BASELINE FIRST (critical for fairness): within a variant, always report the value of the BASE / INBUILT / DEFAULT cover in the ranking field. If a better value is ONLY achievable by buying a paid optional cover / rider / add-on, you MUST still put the INBUILT value in the ranking field, set "optional": false, and mention the optional upgrade in "note". Only set "optional": true and use the optional value when the benefit is ENTIRELY optional (no inbuilt version exists at all).
+- For ordinal axes, use EXACTLY the integer scale described (higher = better).
+- Numbers must be plain numbers (months as months, days as days, % as the number, Rs as the rupee amount), never strings.
+- Do NOT invent values. Base everything on the wording text provided.
+- Output strictly valid JSON.`;
+}
+
 /** Build the Gemini extraction prompt from the axis registry (kept in sync). */
 export function buildExtractionPrompt(): string {
   const axisLines = AXES.map((d) => `  - "${d.key}": ${d.prompt}`).join("\n");

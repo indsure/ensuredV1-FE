@@ -1,0 +1,145 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording; as per Policy Schedule/Certificate of Insurance",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "As opted; proportionate deduction if exceeded",
+    "note": "Room rent limit is chosen by insured and stated in Policy Schedule. If actual room rent exceeds opted limit, all charges (except medicines/consumables) are reduced proportionately. No cap option may be available but not confirmed in wording."
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "As opted per Policy Schedule",
+    "note": "ICU covered; specific limit as opted by insured and mentioned in Policy Schedule. No fixed rate stated in wording."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base); zone-based co-pay applies",
+    "note": "No mandatory co-pay on base policy. However, zone-based co-pay applies: 10% if Zone B insured treated in Zone A; 10% if Zone C insured treated in Zone B; 20% if Zone C insured treated in Zone A. OPD benefit has 25% co-pay in Year 1, 10% on first renewal, nil from second renewal."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Some sub-limits apply",
+    "note": "Modern treatments (robotic surgery, oral chemo, immunotherapy, intravitreal injections, etc.) capped at 50% of SI unless otherwise stated. Cochlear implant capped at 50% of SI. Bariatric surgery and psychiatric illness have limits as per Policy Schedule. Maternity has separate SI limit."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No aggregate deductible mentioned in wording; deductible concept defined but no mandatory deductible imposed."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day initial waiting period for illnesses; can be reduced as opted and mentioned in Policy Schedule."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (as opted)",
+    "note": "PED waiting period as opted by insured and specified in Policy Schedule; standard is up to 36 months. Portability credits apply."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "As opted (up to 36 months)",
+    "note": "Specific disease waiting period as opted by insured and mentioned in Policy Schedule. List includes arthritis, cataracts, hernia, psychiatric illness, bariatric surgery, organ transplant, joint replacement, etc. Wording references 'as opted' without fixing a single number; 24 months used as typical minimum."
+  },
+  "maternity": {
+    "exists": true,
+    "number": null,
+    "display": "Optional add-on (waiting period as opted)",
+    "note": "Section 7 Maternity Benefit & Newborn Baby Cover is optional. Waiting period as opted by insured and stated in Policy Schedule. Covers delivery, complications, lawful termination; limited to 2 living children. Newborn covered up to 90 days. Fresh waiting period on porting or SI enhancement."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "As per Policy Schedule",
+    "note": "Cumulative bonus accrues on no-claim years; rate and maximum cap as mentioned in Policy Schedule. Alternatively, 5% No Claim Discount on premium may be offered. Bonus reduces on claim in same proportion as accrued."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once per policy year, 100% (unrelated cause)",
+    "note": "Section 10 Sum Insured Refill Benefit is optional. Refills 100% of SI once exhausted. Default trigger: unrelated cause only (unless waived by insurer). Number of refills as per Policy Schedule. Floater basis for floater policies."
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "As opted per Policy Schedule",
+    "note": "Pre-hospitalisation expenses covered for number of days as opted by insured and stated in Policy Schedule. Covers consultations, investigations, medicines for same condition."
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "As opted per Policy Schedule",
+    "note": "Post-hospitalisation expenses covered for number of days as opted by insured and stated in Policy Schedule. Alternatively, a lump-sum percentage of claim amount may be opted."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered",
+    "note": "Day care procedures covered under Section 1A and 1B for accident and illness respectively."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Optional (Section 9)",
+    "note": "Home/Domiciliary Hospitalisation is an optional cover (Section 9). Requires treatment to continue for at least 3 days. Several conditions excluded (asthma, diabetes, hypertension, epilepsy, etc.)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI (inbuilt with Section 1B)",
+    "note": "Section 4 AYUSH cover is mandatory inbuilt with Section 1B (Accidental & Illness Hospitalisation). Covers inpatient AYUSH treatment up to SI. Only NABH/NQAS accredited AYUSH hospitals eligible."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Optional (Section 3)",
+    "note": "Organ Donor cover is optional under Section 3. Covers harvesting expenses subject to SI under Section 1B. Donor pre/post-hosp covered up to 5% of harvesting claim. Specific waiting period applies."
+  },
+  "ambulance": {
+    "number": null,
+    "display": "As per Policy Schedule limit",
+    "note": "Road ambulance covered under Section 1A5 and 1B5. Maximum liability per hospitalisation as stated in Policy Schedule. Air ambulance also available as optional Section 5."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "Modern treatments including robotic surgery, oral chemotherapy, immunotherapy (monoclonal antibody injections), intravitreal injections, stereotactic radio surgeries, bronchial thermoplasty, HIFU, deep brain stimulation, etc. covered up to 50% of SI unless specifically agreed otherwise in Policy Schedule."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered (listed as non-payable)",
+    "note": "Consumables such as gloves (unsterilised), bandages, syringes, needles, etc. are listed as non-payable in Annexure A. Sterilised gloves payable. No consumables rider mentioned."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Specific exclusion: any treatment received outside India is not covered (Exclusion 23)."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes. Coverage not available during grace period except where premium paid in instalments."
+  },
+  "free_look": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Free-look period not explicitly mentioned in the policy wording."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Credits for waiting periods, PED, cumulative bonus, moratorium transferable to acquiring insurer."
+  },
+  "notable_exclusions": {
+    "display": "Treatment outside India, STIs, sleep disorders/CPAP, stem cell (non-bone marrow), sexual disorders, defence operations, tobacco-related oral/respiratory cancer"
+  },
+  "optional_riders": {
+    "display": "OPD benefit, Infertility/IVF cover, Organ donor, Maternity & newborn, Air ambulance, Domiciliary hospitalisation, Sum insured refill, Daily hospital cash, Critical illness benefit, Cancer benefit, Bariatric surgery, Psychiatric illness"
+  },
+  "insurer": "Go Digit General Insurance Ltd.",
+  "plan_name": "Digit Health Plus Policy (Revision)",
+  "uin": "GODHLGP21487V032021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "policy-wordings-digit-health-plus-policy-revision.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:59:58.338Z"
+}

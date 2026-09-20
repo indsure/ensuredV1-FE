@@ -1,0 +1,135 @@
+{
+  "variant": "15L-35L",
+  "sum_insured_options": "₹15 Lakh, ₹20 Lakh, ₹25 Lakh, ₹30 Lakh, ₹35 Lakh",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private Room",
+    "note": "Room rent capped at Single Private Room for SI 15L-35L"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (up to SI)",
+    "note": "ICU charges covered up to Sum Insured; no separate ICU cap stated"
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% (age 61+ at first issuance)",
+    "note": "Mandatory 20% co-pay for insured persons aged 61 years and above at time of first policy issuance; waivable via optional Mandatory Co-pay Waiver add-on"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract: 10% of SI max ₹1.5L/eye; LASIK: ₹50K both eyes",
+    "note": "Cataract capped at 10% of SI max ₹1.5 Lakh per eye; LASIK capped at ₹50,000 for both eyes; Bariatric Surgery capped at 50% of SI max ₹7.5 Lakh"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (base); optional voluntary deductible available",
+    "note": "No inbuilt deductible; optional voluntary deductible of ₹50K/75K/1 Lakh available"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Optional ABCD PED cover (Asthma, BP, Cholesterol, Diabetes) waives PED wait to 30 days for those conditions"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (listed conditions); 36 months (others)",
+    "note": "24-month wait for cataract, hernia, BPH, hydrocele, etc.; 36-month wait for rheumatoid arthritis, joint replacement, LASIK, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18); ectopic pregnancy is covered"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (50%/yr)",
+    "note": "CB increases 50% per claim-free year up to 100% of SI; reduces at same rate on claim. Optional CB Booster add-on can extend to 500% or 1000%"
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once/yr, 100% of base SI",
+    "note": "Triggered on second claim in policy year; available for same or new illness; excludes CB; available once per policy year"
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Schedule shows 60/90 days for 15L-35L band; 60 days is the lower/base option"
+  },
+  "post_hosp": {
+    "number": 120,
+    "display": "120 days",
+    "note": "Schedule shows 120/150 days for 15L-35L band; 120 days is the lower/base option"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (Home Health Care up to 20% of SI)",
+    "note": "Home Health Care covered up to 20% of SI via empanelled provider on cashless basis only"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH hospitalisation covered up to Sum Insured; preventive/rejuvenation and OPD excluded"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Harvesting expenses covered; donor screening, pre/post-hosp for donor excluded"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000/hospitalisation",
+    "note": "Emergency road ambulance ₹2,000 per hospitalisation for 15L-35L plans"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Robotic surgery, stereotactic radio surgery, oral chemo, immunotherapy, etc. covered up to SI"
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional add-on (up to 15% of admissible claim)",
+    "note": "Consumables/Non-Medical Expenses Cover available as optional add-on; covers List I items up to 15% of admissible claim"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy covers treatment within India only; treatment outside India is a specific exclusion"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly instalment)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Treatment outside India, external congenital anomaly, STDs (non-HIV), stem cell storage, hormone replacement therapy, infertility complications, dental (unless injury-related)",
+  "optional_riders": "Voluntary Deductible, Consumables Cover, CB Booster (500%/1000%), Critical Illness Booster, PED ABCD Cover, Accident Care (AD/PTD/PPD), Mandatory Co-pay Waiver",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Xtra",
+  "uin": "GCIHLIP26044V012526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "health-xtra-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:59:28.251Z"
+}

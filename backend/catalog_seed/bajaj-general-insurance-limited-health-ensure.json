@@ -1,173 +1,128 @@
 {
+  "variant": "",
+  "sum_insured_options": "₹50,000; ₹75,000; ₹1 lakh; ₹1.5 lakh; ₹2 lakh; ₹3 lakh; ₹4 lakh; ₹5 lakh; ₹10 lakh (inferred from sub-limit table)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day or ₹5,000 (lower)",
+    "note": "Optional add-on upgrades to Single Private AC Room up to ₹10,000/day (SI ≥5L only); ICU then at actuals"
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day or ₹10,000 (lower)",
+    "note": "Upgraded to actuals if Room Rent Upgradation optional cover is purchased"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (mandatory); voluntary 10% or 20% available for discount",
+    "note": "Zone B policyholders treated in Zone A cities bear 20% co-pay (not applicable for accidental hospitalisation). Voluntary co-pay of 10%/20% can be opted for premium discount."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract sub-limited by SI band",
+    "note": "Cataract per eye: ₹20,000 (SI ≤1L), ₹30,000 (SI 1.5L–3L), ₹40,000 (SI 4L–10L). No other procedure sub-limits stated."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12–36 months (condition-specific)",
+    "note": "12 mo: gastric/duodenal ulcers, varicose veins, hydrocele, undescended testes, skin surgery, fistulae/fissure; 24 mo: cataract, hernia, sinuses, haemorrhoids, stones, ENT surgery, BPH, mental illness, Parkinson's, Alzheimer's, tumours/cysts, hysterectomy etc.; 36 mo: joint replacement, vertebral column surgery, deviated nasal septum, gout/rheumatism, hypertrophied turbinate, refractive error >7.5D"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18); ectopic pregnancy is covered"
+  },
+  "cumulative_bonus": {
+    "number": 25,
+    "display": "Up to 25% (5%/yr)",
+    "note": "Base inbuilt: 5% per claim-free year, max 25%. Optional Cumulative Bonus Enhancement add-on raises rate to 25%/yr and max to 200% of SI (for SI ≥5L)"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered (inbuilt)",
+    "note": "Sum Insured Reinstatement (100% of base SI, once per year) is an optional paid add-on available for SI ≥5L; lifetime limit for cancer and kidney failure requiring dialysis"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed procedures (399+ listed) plus any procedure <24 hrs due to tech advances"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is defined in the policy but no coverage clause exists for it under the operative sections"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI (inpatient, govt/accredited hospitals)"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (harvesting expenses)"
+  },
+  "ambulance": {
+    "number": 1000,
+    "display": "₹1,000 per hospitalisation"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to base SI",
+    "note": "12 listed modern treatments including robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, intravitreal injections etc."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive non-medical/consumables exclusion list (Annexure II); gloves, ECG electrodes, masks etc. not payable"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded for all covers except Personal Accident (worldwide accident cover, payment in India)"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly instalment)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity (except ectopic), treatment outside India, OPD treatment, dental (unless accidental), external appliances, congenital external anomalies, sterility/IVF, vaccination",
+  "optional_riders": "Room Rent Upgradation (Single Private AC, SI≥5L), Cumulative Bonus Enhancement (25%/yr, max 200%), Sum Insured Reinstatement (SI≥5L), Double SI for Cancer (SI≥5L), Personal Accident (200% SI for death/PTD)",
   "insurer": "Bajaj General Insurance Limited",
   "plan_name": "Health Ensure",
   "uin": "BAJHLIP24149V062324",
-  "sum_insured_options": "₹50,000 – ₹10L (mentioned SI slabs: ₹50k, ₹75k, ₹1L, ₹1.5L, ₹2L, ₹3L, ₹4L, ₹5L, ₹10L)",
-  "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
-  "room_rent": {
-    "display": "1% of SI/day or ₹5,000 (lower)",
-    "note": "Optional upgrade to Single Private AC Room (≤₹10,000/day) available for SI ≥₹5L at extra premium",
-    "optional": false,
-    "ordinal": 3
-  },
-  "icu": {
-    "display": "2% of SI/day or ₹10,000 (lower)",
-    "note": "Optional Room Rent Upgradation cover changes ICU to actuals",
-    "optional": false,
-    "ordinal": 3
-  },
-  "copayment": {
-    "display": "None (base); 20% if Zone B insured treats in Zone A; voluntary 10%/20% for discount",
-    "note": "Zone B policyholders pay 20% co-pay for treatment in Zone A cities (not applicable for accidental hospitalisation). Voluntary co-pay of 10% or 20% can be opted for premium discount.",
-    "optional": false,
-    "number": 0
-  },
-  "sub_limits": {
-    "display": "Cataract capped (₹20k–₹40k per eye by SI slab)",
-    "note": "Cataract: ₹20,000/eye for SI ≤₹1L; ₹30,000/eye for SI ₹1.5L–₹3L; ₹40,000/eye for SI ₹4L–₹10L",
-    "optional": false,
-    "ordinal": 3
-  },
-  "deductible": {
-    "display": "None",
-    "note": "No mandatory deductible in base plan; deductible concept defined but not imposed by default",
-    "optional": false,
-    "number": 0
-  },
-  "initial_waiting": {
-    "display": "30 days",
-    "note": "Waived for accidents; not applicable if continuously covered >12 months",
-    "optional": false,
-    "number": 30
-  },
-  "ped_waiting": {
-    "display": "24 months",
-    "note": "Reduced to extent of prior continuous coverage under portability",
-    "optional": false,
-    "number": 24
-  },
-  "specific_disease_waiting": {
-    "display": "12–36 months (varies by condition)",
-    "note": "12 mo: gastric ulcers, varicose veins, hydrocele, etc. 24 mo: cataract, hernia, sinuses, mental illness, etc. 36 mo: joint replacement, deviated nasal septum, gout, etc.",
-    "optional": false,
-    "number": 12
-  },
-  "maternity": {
-    "display": "Not covered",
-    "note": "Maternity explicitly excluded (Excl18); ectopic pregnancy is covered",
-    "optional": false,
-    "exists": false,
-    "number": null
-  },
-  "cumulative_bonus": {
-    "display": "Up to 25% (5%/yr)",
-    "note": "Base: 5% per claim-free year, max 25%. Optional Cumulative Bonus Enhancement add-on raises rate to 25%/yr, max 200% of SI.",
-    "optional": false,
-    "number": 25
-  },
-  "restoration": {
-    "display": "Once/yr, 100% base SI (optional add-on)",
-    "note": "Sum Insured Reinstatement is an optional paid cover (SI ≥₹5L). Triggered only after full SI + CB exhausted; once per policy year; lifetime limit for cancer and kidney failure requiring dialysis; 15-day gap required for same insured.",
-    "optional": true,
-    "ordinal": 3
-  },
-  "pre_hosp": {
-    "display": "30 days",
-    "note": "For same illness/injury as hospitalisation; inpatient claim must be admitted",
-    "optional": false,
-    "number": 30
-  },
-  "post_hosp": {
-    "display": "60 days",
-    "note": "For same illness/injury as hospitalisation; inpatient claim must be admitted",
-    "optional": false,
-    "number": 60
-  },
-  "day_care": {
-    "display": "Listed procedures (399 listed)",
-    "note": "Indicative list of ~399 procedures in Annexure I; other <24hr procedures due to technology also covered",
-    "optional": false,
-    "exists": true
-  },
-  "domiciliary": {
-    "display": "Not covered",
-    "note": "Domiciliary hospitalisation is defined but no coverage section exists for it in operative parts",
-    "optional": false,
-    "exists": false
-  },
-  "ayush": {
-    "display": "Covered up to SI (inpatient, govt/accredited hospitals)",
-    "note": "Requires ≥24hr admission in government or accredited AYUSH hospital; room rent same cap as allopathy",
-    "optional": false,
-    "exists": true
-  },
-  "organ_donor": {
-    "display": "Covered",
-    "note": "Harvesting expenses covered; donor pre/post-hospitalisation excluded; must comply with Transplantation of Human Organs Act",
-    "optional": false,
-    "exists": true
-  },
-  "ambulance": {
-    "display": "₹1,000 per hospitalisation",
-    "note": "Also covers transfer between hospitals; payable only when life-threatening emergency certified and inpatient/day-care claim admitted",
-    "optional": false,
-    "number": 1000
-  },
-  "modern_treatments": {
-    "display": "Covered up to base SI",
-    "note": "12 modern treatments listed in Annexure III including robotic surgery, stereotactic radiosurgery, oral chemotherapy, etc.",
-    "optional": false,
-    "exists": true
-  },
-  "consumables": {
-    "display": "Not covered",
-    "note": "Extensive non-medical/consumables exclusion list in Annexure II (gloves, diapers, ECG electrodes, etc.); no rider available",
-    "optional": false,
-    "exists": false
-  },
-  "global_cover": {
-    "display": "Not covered",
-    "note": "Treatment outside India explicitly excluded for all health covers; Personal Accident cover is worldwide but payment in India only",
-    "optional": false,
-    "exists": false
-  },
-  "moratorium": {
-    "display": "60 months",
-    "note": "After 60 continuous months no claim contestable except fraud and permanent exclusions; resets on SI enhancement for enhanced portion",
-    "optional": false,
-    "number": 60
-  },
-  "grace_period": {
-    "display": "30 days (15 days for monthly)",
-    "note": "30 days for annual/quarterly/half-yearly; 15 days for monthly instalment",
-    "optional": false,
-    "number": 30
-  },
-  "free_look": {
-    "display": "30 days",
-    "note": "Applicable on new policies only; not on renewals or portability/migration",
-    "optional": false,
-    "number": 30
-  },
-  "portability": {
-    "display": "Allowed",
-    "note": "As per IRDAI portability guidelines; apply at least 30 days before renewal",
-    "optional": false,
-    "exists": true
-  },
-  "notable_exclusions": {
-    "display": "No overseas treatment, no maternity, no domiciliary, no OPD, no consumables, no infertility/IVF, no external appliances, no vaccination",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "Room Rent Upgrade (Single AC, ≥₹5L SI), CB Enhancement (25%/yr, max 200%), SI Reinstatement, Double SI for Cancer, Personal Accident",
-    "note": null,
-    "optional": true
-  },
   "source_file": "Health_Ensure_PW.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:27:43.205Z"
+  "extracted_at": "2026-09-20T07:53:21.722Z"
 }

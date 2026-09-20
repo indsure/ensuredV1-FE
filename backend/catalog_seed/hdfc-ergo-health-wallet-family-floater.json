@@ -1,0 +1,136 @@
+{
+  "variant": "Family Floater",
+  "sum_insured_options": "₹3L, ₹5L, ₹10L, ₹15L, ₹20L, ₹25L, ₹50L per policy per policy year (floater)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "Policy covers in-patient treatment including hospital room rent/boarding with no stated cap or sub-limit on room category."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "ICU charges covered under in-patient treatment with no stated cap."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording for family floater plans."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Recovery benefit ₹10k; Ambulance ₹2k/hosp; Worldwide Emergency 50% SI up to ₹20L",
+    "note": "No disease-wise sub-limits on main in-patient cover. Recovery benefit capped at ₹10,000. Ambulance capped at ₹2,000 per hospitalisation. Worldwide Emergency Care capped at 50% of SI up to ₹20L."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional deductible available)",
+    "note": "Base plan has no deductible. Optional deductible of ₹2L, ₹3L, ₹5L, or ₹10L (₹10L only for SI ≥ ₹20L) can be chosen on floater basis. Recovery benefit not applicable if deductible is opted."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Waived for accidents; not applicable after 12 months continuous coverage."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Reduced by prior continuous coverage under portability norms."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, hernia, joint replacement, cholecystectomy, GERD, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (50%/yr)",
+    "note": "Multiplier Benefit: 50% of basic SI added per policy year irrespective of claims, maximum 100% of basic SI. Applied at floater/policy level."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% of basic SI",
+    "note": "Restore Benefit triggers when basic SI + Multiplier Benefit is fully exhausted. In a family floater, restored SI is available to all insured persons. Cannot be used for the same illness already claimed by the same insured person in that year (other family members can claim for same illness). Applies once per policy year."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Covered when patient cannot be moved to hospital or no room available. Treatment must exceed 3 days for first 3 days to be covered."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH treatment in recognised AYUSH hospitals covered up to sum insured."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Medical and surgical expenses for organ harvesting covered when insured is the recipient. Donor's pre/post-hospitalisation expenses excluded."
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation"
+  },
+  "modern_treatments": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly mention modern/robotic treatments as a named benefit."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumable items (gloves, nebuliser kit, etc.) are explicitly excluded per the non-medical expenses list."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Inbuilt (emergency only)",
+    "note": "Worldwide Emergency Care inbuilt: covers emergency hospitalisation abroad for conditions first manifested during travel. Capped at 50% of SI up to ₹20L. Reimbursement only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 5 continuous years no look-back applied except for proven fraud and permanent exclusions."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)",
+    "note": "15 days for monthly premium payment mode; 30 days for all other modes."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or porting/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, OPD treatment, dental (unless hospitalised), congenital external anomalies, stem cell harvesting, hearing aids/spectacles, refractive error <7.5D, alcoholic cirrhosis (permanent)",
+  "optional_riders": "Optional deductible (₹2L/₹3L/₹5L/₹10L); Reserve Benefit (OPD wallet ₹5k–₹25k with 6% annual bonus, on floater basis)",
+  "insurer": "HDFC ERGO",
+  "plan_name": "Health Wallet",
+  "uin": "HDHHLIP21337V022021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "health-wallet-combined-pw-cis-hegi-373014324919.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:00:50.812Z"
+}

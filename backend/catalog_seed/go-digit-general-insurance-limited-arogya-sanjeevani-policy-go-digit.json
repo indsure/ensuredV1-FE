@@ -1,173 +1,132 @@
 {
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (individual or floater basis)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "Room rent capped at 2% of SI per day subject to maximum of ₹5,000/day. Proportionate deduction applies to other expenses if higher room taken."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "ICU/ICCU charges capped at 5% of SI per day subject to maximum of ₹10,000/day."
+  },
+  "copayment": {
+    "number": 5,
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-payment applies to every admissible claim amount."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract capped; modern treatments at 50% SI",
+    "note": "Cataract: 25% of SI or ₹40,000 per eye per year, whichever is lower. Modern/advanced treatments (robotic surgery, etc.): up to 50% of SI. Room rent and ICU also sub-limited."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (some conditions 36 months)",
+    "note": "24-month wait for cataract, hernia, piles, calculi, varicose veins, hysterectomy, etc. 36-month wait for joint replacement and age-related osteoarthritis/osteoporosis."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under standard exclusion Excl18. Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% added per claim-free year; reduced at same rate if claim made. Maximum 50% of SI."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation and OPD treatment explicitly excluded."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to sum insured in recognised AYUSH hospitals."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No mention of organ donor expenses cover in the policy wording."
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance covered up to ₹2,000 per hospitalisation."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (up to 50% of SI)",
+    "note": "12 listed modern treatments including robotic surgery, stereotactic radio surgery, oral chemotherapy, stem cell therapy etc. covered up to 50% of SI."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-payable consumables/non-medical items in Annexures. No consumables cover rider available."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded; territorial limit is India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim/policy contestable except on grounds of established fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, domiciliary/OPD, treatment outside India, war, nuclear/bio/chemical, sterility/infertility, cosmetic surgery, adventure sports (professional)",
+  "optional_riders": "None mentioned",
   "insurer": "Go Digit General Insurance Limited",
   "plan_name": "Arogya Sanjeevani Policy, Go Digit",
   "uin": "GODHLIP24179V022324",
-  "sum_insured_options": "Not specified in wording",
-  "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
-  "room_rent": {
-    "display": "2% of SI/day, max ₹5,000",
-    "note": "Proportionate deduction applies on other expenses if higher room taken, except pharmacy, consumables, implants, diagnostics",
-    "optional": false,
-    "ordinal": 3
-  },
-  "icu": {
-    "display": "5% of SI/day, max ₹10,000",
-    "note": "Proportionate deduction applies if ICU charges exceed limit",
-    "optional": false,
-    "ordinal": 3
-  },
-  "copayment": {
-    "display": "5% on all claims",
-    "note": "Mandatory 5% co-payment applies to every admissible claim for all insured persons",
-    "optional": false,
-    "number": 5
-  },
-  "sub_limits": {
-    "display": "Cataract capped at 25% of SI or ₹40,000/eye; modern treatments at 50% of SI",
-    "note": "Cataract: lower of 25% SI or ₹40,000 per eye per year; modern/advanced procedures (robotic surgery, etc.): up to 50% of SI",
-    "optional": false,
-    "ordinal": 3
-  },
-  "deductible": {
-    "display": "None",
-    "note": null,
-    "optional": false,
-    "number": 0
-  },
-  "initial_waiting": {
-    "display": "30 days",
-    "note": "Accidents exempt; waived if continuously covered for more than 12 months",
-    "optional": false,
-    "number": 30
-  },
-  "ped_waiting": {
-    "display": "36 months",
-    "note": "No reduction option mentioned; portability credits apply",
-    "optional": false,
-    "number": 36
-  },
-  "specific_disease_waiting": {
-    "display": "24 months",
-    "note": "24 months for most listed conditions (hernia, cataract, etc.); 36 months for joint replacement and age-related osteoarthritis/osteoporosis",
-    "optional": false,
-    "number": 24
-  },
-  "maternity": {
-    "display": "Not covered",
-    "note": "Maternity expenses explicitly excluded under standard exclusion Excl18; ectopic pregnancy is covered",
-    "optional": false,
-    "exists": false,
-    "number": null
-  },
-  "cumulative_bonus": {
-    "display": "Up to 50% (5%/yr)",
-    "note": "5% added per claim-free year; reduced at same rate if claim made; max 50% of SI",
-    "optional": false,
-    "number": 50
-  },
-  "restoration": {
-    "display": "Not covered",
-    "note": "No restoration/reset benefit mentioned in the policy",
-    "optional": false,
-    "ordinal": 0
-  },
-  "pre_hosp": {
-    "display": "30 days",
-    "note": null,
-    "optional": false,
-    "number": 30
-  },
-  "post_hosp": {
-    "display": "60 days",
-    "note": null,
-    "optional": false,
-    "number": 60
-  },
-  "day_care": {
-    "display": "All day-care covered",
-    "note": "All day-care treatments covered; time limit of 24 hrs does not apply for day-care",
-    "optional": false,
-    "exists": true
-  },
-  "domiciliary": {
-    "display": "Not covered",
-    "note": "Domiciliary hospitalisation and OPD treatment explicitly excluded",
-    "optional": false,
-    "exists": false
-  },
-  "ayush": {
-    "display": "Covered up to SI",
-    "note": "Inpatient AYUSH treatment covered up to sum insured in recognised AYUSH hospitals",
-    "optional": false,
-    "exists": true
-  },
-  "organ_donor": {
-    "display": "Not specified",
-    "note": "No mention of organ donor expenses in the policy wording",
-    "optional": false,
-    "exists": false
-  },
-  "ambulance": {
-    "display": "₹2,000/hospitalisation",
-    "note": "Road ambulance covered up to ₹2,000 per hospitalisation",
-    "optional": false,
-    "number": 2000
-  },
-  "modern_treatments": {
-    "display": "Sub-limited at 50% of SI",
-    "note": "12 listed modern treatments (robotic surgery, stereotactic radio surgery, etc.) covered up to 50% of SI",
-    "optional": false,
-    "exists": true
-  },
-  "consumables": {
-    "display": "Not covered",
-    "note": "Non-medical/consumable items listed in Annexure A are not payable; no consumables cover rider available",
-    "optional": false,
-    "exists": false
-  },
-  "global_cover": {
-    "display": "Not covered",
-    "note": "Treatment outside India explicitly excluded; territorial limit is India only",
-    "optional": false,
-    "exists": false
-  },
-  "moratorium": {
-    "display": "60 months",
-    "note": "After 60 continuous months no claim contestable except fraud; portability/migration credits count",
-    "optional": false,
-    "number": 60
-  },
-  "grace_period": {
-    "display": "30 days (15 days for monthly mode)",
-    "note": "15 days for monthly premium payment; 30 days for all other modes",
-    "optional": false,
-    "number": 30
-  },
-  "free_look": {
-    "display": "30 days",
-    "note": "Applicable on new policies only; not on renewals or porting/migration",
-    "optional": false,
-    "number": 30
-  },
-  "portability": {
-    "display": "Allowed",
-    "note": "IRDAI-mandated portability with transfer of waiting period credits",
-    "optional": false,
-    "exists": true
-  },
-  "notable_exclusions": {
-    "display": "Domiciliary/OPD, maternity, overseas treatment, infertility/IVF, war, nuclear/bio/chemical attack",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "None mentioned",
-    "note": "No optional riders or add-ons described in the policy wording",
-    "optional": false
-  },
   "source_file": "policy-wordings-arogya-sanjeevani-policy-go-digit.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-18T05:25:46.058Z"
+  "extracted_at": "2026-09-20T07:59:13.082Z"
 }

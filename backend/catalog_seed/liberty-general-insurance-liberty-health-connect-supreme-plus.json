@@ -1,0 +1,125 @@
+{
+  "variant": "Supreme Plus",
+  "sum_insured_options": "Not specified in wording (see Policy Schedule)",
+  "confidence": "low",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap (default)",
+    "note": "Base policy has no room rent cap. Optional 'Room Rent limit' add-on caps at 1% of SI or ₹5,000/day (whichever lower)."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (default)",
+    "note": "Optional 'Room Rent limit' add-on caps ICU at 2% of SI or ₹7,500/day (whichever lower)."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (default)",
+    "note": "Optional Co-Pay add-on: 5%, 10% or 20%."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract optional cap; domiciliary 10% of SI",
+    "note": "Domiciliary capped at 10% of Basic SI. Optional Cataract Capping and Modern Surgeries add-ons available."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months (best achievable)",
+    "note": "PED waiting 36 or 24 months per plan schedule. Supreme Plus qualifies for optional 'PED Protector' (age ≤50): after 1 completed year coverage limited to 30% of SI or ₹2L; after 2 completed years full SI coverage."
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12–36 months (condition-specific)",
+    "note": "Same tiered waiting periods as other variants."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Code Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "Inbuilt Loyalty Perk: 10%/yr up to 100%. Optional Super Booster: 50%/yr up to 150%. Supreme Plus gets annual health check-up (vs every 2 years for other plans)."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% of SI (unrelated only)",
+    "note": "Optional 'Reload of Sum Insured' add-on waives same-illness restriction."
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "As per Schedule"
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "As per Schedule"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (listed + others)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (10% of SI cap)"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to Basic SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": null,
+    "display": "As per Schedule"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Optional add-on (50% of SI)"
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional add-on (Zero Deduct cover)"
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional add-on"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity (excl. ectopic), STDs/HIV, dental (non-accidental), external congenital anomaly, OPD treatment, treatment outside India (unless Global Cover add-on), self-inflicted injury",
+  "optional_riders": "Zero Deduct, Vector Borne Disease, Super Booster (CB up to 150%), EMI Protector, PED Protector (Diabetes & HTN, fastest reduction), Global Cover, Domestic Travel Plus, Reload of SI, Co-Pay, Modern Surgeries, Cataract Capping, Room Rent limit",
+  "insurer": "Liberty General Insurance",
+  "plan_name": "Liberty Health Connect",
+  "uin": "LIBHLIP24108V042324",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "LIBHLIP24108V042324 - Liberty Health Connect Revision  - Policy Wordings - Effective from 30092024.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:04:46.265Z"
+}

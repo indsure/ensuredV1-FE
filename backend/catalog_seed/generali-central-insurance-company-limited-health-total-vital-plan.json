@@ -1,0 +1,131 @@
+{
+  "variant": "Vital Plan",
+  "sum_insured_options": "₹3 lakhs, ₹5 lakhs",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "Up to SI; no room rent sub-limit mentioned for Vital Plan"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "No ICU sub-limit specified; covered up to SI"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (age-based co-pay if first entry at 60+)",
+    "note": "No mandatory co-pay for entry below 60. 20% for entry age 60-64, 25% for 65-69, 30% for 70-74, 40% for 75+ (first-time entrants only)"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract capped at 10% of SI, max ₹1L/eye",
+    "note": "Cataract surgery: 10% of SI per eye, max ₹1,00,000/eye. Maternity sub-limits apply. Domiciliary capped at 10% of SI."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "Voluntary deductible available as optional; base has none"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "50% liability in 3rd year, 100% from 4th year onwards"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (most listed conditions); 36 months for joint replacement/organ transplant"
+  },
+  "maternity": {
+    "exists": true,
+    "number": 36,
+    "display": "Covered (36mo wait for self / 24mo for spouse)",
+    "note": "Normal delivery ₹15,000; LSCS ₹25,000. Pre/post-natal hospitalisation NOT covered under Vital Plan. 4 continuous annual premiums required for self (36 months), 3 for spouse (24 months)."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100%",
+    "note": "50% of SI added per claim-free year; max 100% of base SI. Reduced by 50% of SI in year following a claim."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% of SI",
+    "note": "Triggered only after full SI + cumulative bonus exhausted. Cannot be used for same illness already claimed in that year, or maternity. Unrelated illnesses only effectively."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures (Annexure I)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to 10% of SI",
+    "note": "Several conditions excluded (asthma, diabetes, hypertension, etc.); minimum 3-day treatment required"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (govt/accredited hospitals only)",
+    "note": "Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy; inpatient only; OPD excluded"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 1500,
+    "display": "₹1,500/hospitalisation (network); ₹1,500 non-network",
+    "note": "Fixed limit for Vital Plan regardless of network/non-network"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)",
+    "note": "Day-care list includes robotic/advanced procedures; no explicit modern treatment sub-limit stated"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Consumables/non-medical items listed in Annexure III are excluded"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Medical treatment abroad only available under Premiere Plan"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Stem cell storage, external congenital anomaly, STDs (non-HIV), hormone replacement therapy, non-prescribed drugs, refractive error <7.5D, infertility/ART",
+  "optional_riders": "Voluntary deductible (discount on premium)",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Total",
+  "uin": "GCIHLIP25037V062425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "health-total-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:58:52.923Z"
+}

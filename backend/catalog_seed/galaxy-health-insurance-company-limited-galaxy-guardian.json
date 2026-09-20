@@ -1,173 +1,137 @@
 {
-  "insurer": "Galaxy Health Insurance Company Limited",
-  "plan_name": "Galaxy Guardian",
-  "uin": "GHIHLIP25037V012425",
-  "sum_insured_options": "₹3L – ₹5L",
+  "variant": "",
+  "sum_insured_options": "₹3,00,000; ₹5,00,000",
   "confidence": "high",
-  "product_type": "comprehensive_health_indemnity",
   "room_rent": {
+    "ordinal": 3,
     "display": "1% of SI/day",
-    "note": "Proportionate deduction on associated medical expenses if higher room chosen; not applied on pharmacy, consumables, implants, diagnostics, ICU charges",
-    "optional": false,
-    "ordinal": 3
+    "note": "Applies to both ₹3L and ₹5L SI. Proportionate deduction on associated medical expenses if higher room chosen; not applied on pharmacy, consumables, implants, diagnostics, ICU."
   },
   "icu": {
+    "ordinal": 5,
     "display": "At actuals",
-    "note": "ICU charges covered at actuals as part of inpatient benefit; no separate per-day cap stated for ICU room",
-    "optional": false,
-    "ordinal": 5
+    "note": "ICU charges covered at actuals as part of inpatient treatment; no separate per-day cap stated for ICU room."
   },
   "copayment": {
+    "number": 10,
     "display": "10% on every claim",
-    "note": "Mandatory 10% co-payment applies to every admissible claim amount for all insured persons",
-    "optional": false,
-    "number": 10
+    "note": "Mandatory 10% co-payment on every admissible claim amount, applicable to all insured persons regardless of age."
   },
   "sub_limits": {
-    "display": "Cataract, bariatric, modern treatments, rehab, home care, newborn, OPD capped",
-    "note": "Cataract: ₹25k/₹35k; Bariatric: ₹90k/₹1.5L; Modern treatments: various sub-limits (30% SI for some); Rehab & Pain Mgmt: ₹25k; Home Care: 10% SI; Newborn: 10% SI; OPD: ₹2k/₹3k; Ambulance: ₹1,500/hosp",
-    "optional": false,
-    "ordinal": 1
+    "ordinal": 1,
+    "display": "Cataract, bariatric, modern treatments, rehab, newborn, OPD, ambulance capped",
+    "note": "Cataract: ₹25k (3L SI) / ₹35k (5L SI); Bariatric: ₹90k (3L) / ₹1.5L (5L); Modern treatments: various sub-limits (30% SI for some); Rehab & Pain Mgmt: ₹25k/yr; Newborn: 10% of mother's SI; OPD: ₹2k/₹3k per yr; Ambulance: ₹1,500/hosp, ₹3,000/yr; Home Care: 10% SI."
   },
   "deductible": {
-    "display": "None",
-    "note": null,
-    "optional": false,
-    "number": 0
+    "number": 0,
+    "display": "None"
   },
   "initial_waiting": {
+    "number": 30,
     "display": "30 days",
-    "note": "Not applicable for accidents; waived if continuously covered for more than 12 months",
-    "optional": false,
-    "number": 30
+    "note": "Not applicable for accidents. Waived if continuously covered for more than 12 months."
   },
   "ped_waiting": {
+    "number": 36,
     "display": "36 months",
-    "note": "36 months continuous coverage; reducible via portability credits from prior insurer",
-    "optional": false,
-    "number": 36
+    "note": "36 months continuous coverage from first policy inception. Reduced by prior portability credit."
   },
   "specific_disease_waiting": {
+    "number": 24,
     "display": "24 months",
-    "note": "Covers cataract, ENT, thyroid, hernia, joint replacement, gallbladder, kidney stones, gynaec conditions, varicose veins, and many others; not applicable for accidents",
-    "optional": false,
-    "number": 24
+    "note": "Covers cataract/eye diseases, ENT, thyroid, benign breast, hernia, varicose veins, joint/bone diseases, gallbladder/kidney stones, gynaec diseases, prostate, haemorrhoids, congenital internal defects, and more. Organ transplant: 36 months; Bariatric: 24 months; Newborn cover for mother: 12 months."
   },
   "maternity": {
-    "display": "Not covered",
-    "note": "Maternity is a standard exclusion (Code Excl 18); ectopic pregnancy is covered",
-    "optional": false,
     "exists": false,
-    "number": null
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Code Excl 18). Ectopic pregnancy is covered. Newborn baby cover (up to 10% of mother's SI) is available after 12-month waiting period for the mother."
   },
   "cumulative_bonus": {
+    "number": 50,
     "display": "Up to 50% (10%/yr)",
-    "note": "10% of SI added per claim-free year up to 50% max; reduced at same rate on a claim; mutually exclusive with No Claim Discount — insured must choose one at first purchase",
-    "optional": false,
-    "number": 50
+    "note": "10% of SI added per claim-free year, max 50%. Reduced at same rate on a claim. Alternatively, insured may opt for No Claim Discount (4% on premium for ₹3L SI; 3% for ₹5L SI) instead — choice made at first purchase and maintained for lifetime."
   },
   "restoration": {
+    "ordinal": 0,
     "display": "Not covered",
-    "note": "No restoration/reset benefit mentioned in the policy wording",
-    "optional": false,
-    "ordinal": 0
+    "note": "No restoration/reset benefit mentioned in the policy wording."
   },
   "pre_hosp": {
-    "display": "30 days",
-    "note": null,
-    "optional": false,
-    "number": 30
+    "number": 30,
+    "display": "30 days"
   },
   "post_hosp": {
-    "display": "60 days",
-    "note": null,
-    "optional": false,
-    "number": 60
+    "number": 60,
+    "display": "60 days"
   },
   "day_care": {
-    "display": "All day-care procedures covered",
-    "note": "All day care procedures covered up to sum insured",
-    "optional": false,
-    "exists": true
+    "exists": true,
+    "display": "All day-care procedures covered up to SI"
   },
   "domiciliary": {
-    "display": "Covered (with exclusions)",
-    "note": "Covered up to SI for treatment >3 days; excludes asthma, bronchitis, diabetes, hypertension, epilepsy, psychiatric disorders, arthritis, gout and several other conditions",
-    "optional": false,
-    "exists": true
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Requires treatment >3 days. Excludes asthma, bronchitis, diabetes, epilepsy, hypertension, psychiatric disorders, arthritis, gout, and several other listed conditions."
   },
   "ayush": {
+    "exists": true,
     "display": "Covered up to SI",
-    "note": "Inpatient AYUSH at recognised AYUSH hospitals covered up to SI; Yoga & Naturopathy requires prior approval",
-    "optional": false,
-    "exists": true
+    "note": "Inpatient AYUSH hospitalisation covered up to SI. Yoga & Naturopathy requires prior company approval."
   },
   "organ_donor": {
+    "exists": true,
     "display": "Covered up to SI",
-    "note": "Includes harvesting of donated organ; 36-month waiting period applies",
-    "optional": false,
-    "exists": true
+    "note": "36-month waiting period from first policy inception. Harvesting of donated organ included."
   },
   "ambulance": {
-    "display": "₹1,500/hospitalisation",
-    "note": "Road ambulance: ₹1,500 per hospitalisation, ₹3,000 per policy year; covers transport to hospital, hospital-to-hospital, and hospital-to-home (same city with doctor certificate)",
-    "optional": false,
-    "number": 1500
+    "number": 1500,
+    "display": "₹1,500/hospitalisation; ₹3,000/policy year",
+    "note": "Covers transport to hospital, hospital-to-hospital transfer, and return home (same city, if certified by doctor)."
   },
   "modern_treatments": {
+    "exists": true,
     "display": "Sub-limited",
-    "note": "Robotic surgery for knee/hip replacement capped at ₹4L or SI; some procedures up to SI; others at 30% SI (cyto-reduction, intravitreal injections, oral chemo, etc.)",
-    "optional": false,
-    "exists": true
+    "note": "Robotic surgery for knee/hip replacement up to ₹4L or SI whichever less; other robotic procedures up to 30% SI or up to SI depending on type; immunotherapy, stem cell therapy, intravitreal injections, deep brain stimulation, balloon sinuplasty, oral chemotherapy, etc. — various sub-limits apply."
   },
   "consumables": {
+    "exists": false,
     "display": "Not covered",
-    "note": "Consumables listed in List I are excluded; Lists II–IV items subsumed into room/procedure charges but not separately payable",
-    "optional": false,
-    "exists": false
+    "note": "Extensive list of non-payable consumables (List I–IV) explicitly excluded from coverage."
   },
   "global_cover": {
+    "exists": false,
     "display": "Not covered",
-    "note": "Territorial limit: all treatments must be taken in India (Condition 23)",
-    "optional": false,
-    "exists": false
+    "note": "Territorial limit: all treatments must be taken in India (Condition 23)."
   },
   "moratorium": {
+    "number": 60,
     "display": "60 months",
-    "note": "After 60 continuous months no claim contestable except fraud; applies to original SI; enhanced SI has fresh 60-month period on enhanced portion",
-    "optional": false,
-    "number": 60
+    "note": "After 60 continuous months, no claim/policy contestable except for proven fraud and permanent exclusions."
   },
   "grace_period": {
+    "number": 30,
     "display": "30 days",
-    "note": "15 days for monthly premium mode; 30 days for all other modes; coverage not available during grace period except for instalment payers",
-    "optional": false,
-    "number": 30
+    "note": "15 days for monthly premium mode; 30 days for all other modes. Coverage not available during grace period (except instalment policies)."
   },
   "free_look": {
+    "number": 30,
     "display": "30 days",
-    "note": "Applicable on new policies only; not on renewals or porting/migration",
-    "optional": false,
-    "number": 30
+    "note": "Applicable on new policies only; not on renewals or porting/migration."
   },
   "portability": {
+    "exists": true,
     "display": "Allowed",
-    "note": "IRDAI-compliant portability; apply at least 30 days before but not earlier than 60 days from renewal date",
-    "optional": false,
-    "exists": true
+    "note": "Apply at least 30 days before but not earlier than 60 days from renewal due date. Credits for PED, specific waiting periods, NCB, moratorium transferable."
   },
-  "notable_exclusions": {
-    "display": "Maternity, dental (non-accidental), venereal diseases, erectile dysfunction, vaccination, EECP/chelation/hyperbaric O2, PRP/platelet-rich plasma, biologicals (outpatient)",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "No Claim Discount (in lieu of Cumulative Bonus) — must choose at inception; no other riders mentioned",
-    "note": null,
-    "optional": true
-  },
+  "notable_exclusions": "Maternity, STDs (except HIV/AIDS), dental (unless accidental), congenital external defects, circumcision, erectile dysfunction, chelation/EECP/hyperbaric O2 therapies, PRP/chondrocyte injections, vaccination",
+  "optional_riders": "No optional riders/add-ons mentioned in the policy wording",
+  "insurer": "GALAXY HEALTH INSURANCE COMPANY LIMITED",
+  "plan_name": "Galaxy Guardian",
+  "uin": "GHIHLIP25037V012425",
+  "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy Wording (1).pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-18T05:22:31.192Z"
+  "extracted_at": "2026-09-20T07:56:57.839Z"
 }

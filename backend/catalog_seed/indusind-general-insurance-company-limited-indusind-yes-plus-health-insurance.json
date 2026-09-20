@@ -1,173 +1,137 @@
 {
-  "insurer": "IndusInd General Insurance Company Limited",
-  "plan_name": "IndusInd Yes Plus Health Insurance",
-  "uin": "RELHLGP21006V012021",
-  "sum_insured_options": "Not specified in wording",
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (as per Certificate of Insurance)",
   "confidence": "medium",
-  "product_type": "comprehensive_health_indemnity",
   "room_rent": {
+    "ordinal": 0,
     "display": "Not specified",
-    "note": "Policy wording does not mention any room rent cap or category restriction; room rent is listed as a covered expense but no limit is stated",
-    "optional": false,
-    "ordinal": 0
+    "note": "Policy wording mentions room rent is covered and proportionate deduction applies if higher room chosen, but no explicit cap or category is stated in the wording. Actual limit per Certificate of Insurance."
   },
   "icu": {
-    "display": "Not specified",
-    "note": "ICU charges are listed as a covered expense but no specific cap or limit is mentioned in the wording",
-    "optional": false,
-    "ordinal": 0
+    "ordinal": 5,
+    "display": "No cap (ICU not proportionately reduced)",
+    "note": "Section 6.6 explicitly states ICU charges shall not be proportionately reduced in all cases."
   },
   "copayment": {
+    "number": 0,
     "display": "None",
-    "note": "No mandatory co-payment mentioned in the policy wording; aggregate deductible applies instead",
-    "optional": false,
-    "number": 0
+    "note": "No mandatory co-payment mentioned in the wording. Aggregate deductible applies but that is not a co-pay."
   },
   "sub_limits": {
-    "display": "Modern treatments capped at 50% of SI; maternity capped at ₹1L; ambulance ₹3,500/hosp",
-    "note": "Modern treatments sub-limited to 50% of SI; maternity benefit capped at ₹1 lakh; ambulance capped at ₹3,500 per hospitalisation; no other disease-wise sub-limits found",
-    "optional": false,
-    "ordinal": 3
+    "ordinal": 3,
+    "display": "Maternity capped at ₹1 lakh; Modern treatments capped at 50% of SI",
+    "note": "Maternity benefit limited to ₹1,00,000 per lifetime (max 2 deliveries). Modern treatments capped at 50% of Sum Insured. Other benefits up to Sum Insured."
   },
   "deductible": {
-    "display": "Aggregate deductible applies (amount per Certificate of Insurance)",
-    "note": "An annual aggregate deductible is mandatory; the exact rupee amount is specified in the Certificate of Insurance and not in the policy wording itself",
-    "optional": false,
-    "number": null
+    "number": null,
+    "display": "Aggregate Deductible (amount per Certificate of Insurance)",
+    "note": "An annual Aggregate Deductible applies; the exact rupee amount is specified in the Certificate of Insurance and not fixed in the wording."
   },
   "initial_waiting": {
+    "number": 30,
     "display": "30 days",
-    "note": "30-day waiting period for illnesses; accidents exempt; waived if continuously covered for more than 12 months",
-    "optional": false,
-    "number": 30
+    "note": "First 30 days waiting period for illnesses; accidents exempt."
   },
   "ped_waiting": {
+    "number": 24,
     "display": "24 months",
-    "note": "Pre-existing diseases covered after 24 months of continuous coverage; portability credit applicable",
-    "optional": false,
-    "number": 24
+    "note": "Pre-existing diseases covered after 24 months of continuous coverage."
   },
   "specific_disease_waiting": {
+    "number": 24,
     "display": "24 months",
-    "note": "Listed conditions (ENT, gynaecological, orthopaedic, GI, eye, etc.) have 24-month waiting period; accidents exempt",
-    "optional": false,
-    "number": 24
+    "note": "Listed conditions (cataract, hernia, joint replacement, ENT, gynaecological, orthopaedic, GI, urogenital, etc.) excluded for 24 months."
   },
   "maternity": {
-    "display": "Covered (12mo wait, up to ₹1L, max 2 deliveries)",
-    "note": "Inbuilt benefit; available after 12 months from first policy inception; limited to ₹1 lakh; maximum 2 deliveries or terminations lifetime",
-    "optional": false,
     "exists": true,
-    "number": 12
+    "number": 12,
+    "display": "Covered (12mo wait, ₹1L limit)",
+    "note": "Inbuilt benefit; ₹1,00,000 limit; available after 12 months from first policy inception; max 2 deliveries/terminations lifetime."
   },
   "cumulative_bonus": {
+    "number": null,
     "display": "Not specified",
-    "note": "No cumulative bonus or no-claim bonus mentioned in the policy wording",
-    "optional": false,
-    "number": null
+    "note": "Cumulative Bonus is defined in the policy but no rate or maximum is stated in the wording."
   },
   "restoration": {
+    "ordinal": 0,
     "display": "Not covered",
-    "note": "No restoration or reinstatement of sum insured benefit mentioned in the policy wording",
-    "optional": false,
-    "ordinal": 0
+    "note": "No restoration/reset benefit mentioned in the policy wording."
   },
   "pre_hosp": {
-    "display": "60 days",
-    "note": "Pre-hospitalisation expenses covered for 60 days before admission for the same condition",
-    "optional": false,
-    "number": 60
+    "number": 60,
+    "display": "60 days"
   },
   "post_hosp": {
-    "display": "90 days",
-    "note": "Post-hospitalisation expenses covered for 90 days after discharge for the same condition",
-    "optional": false,
-    "number": 90
+    "number": 90,
+    "display": "90 days"
   },
   "day_care": {
-    "display": "Listed procedures only (Annexure-I)",
-    "note": "Day care coverage limited to the list of procedures specified in Annexure-I of the policy",
-    "optional": false,
-    "exists": true
+    "exists": true,
+    "display": "Listed procedures only (Annexure D)",
+    "note": "Day care coverage limited to the list specified in Annexure D."
   },
   "domiciliary": {
-    "display": "Covered (with exclusions)",
-    "note": "Covered if condition lasts at least 3 days; excludes asthma, bronchitis, epilepsy, influenza, gastroenteritis, arthritis, gout, tonsillitis, and several other conditions",
-    "optional": false,
-    "exists": true
+    "exists": true,
+    "display": "Covered (min 3 days; some diseases excluded)",
+    "note": "Domiciliary hospitalisation covered subject to condition lasting at least 3 days. Asthma, bronchitis, epilepsy, influenza, diarrhoea, arthritis, gout and several others excluded."
   },
   "ayush": {
+    "exists": true,
     "display": "Covered up to SI",
-    "note": "AYUSH treatment covered up to sum insured in excess of aggregate deductible; must be in registered AYUSH hospital or day care centre; no pre/post hospitalisation covered",
-    "optional": false,
-    "exists": true
+    "note": "AYUSH treatment covered up to Sum Insured in AYUSH Hospital or AYUSH Day Care Centre. Pre/post hospitalisation and OPD not covered."
   },
   "organ_donor": {
+    "exists": true,
     "display": "Covered",
-    "note": "Hospitalisation expenses of organ donor covered; pre/post hospitalisation of donor not covered; organ must be for the insured person",
-    "optional": false,
-    "exists": true
+    "note": "Donor hospitalisation expenses covered up to SI; pre/post hospitalisation of donor not covered."
   },
   "ambulance": {
-    "display": "₹3,500 per hospitalisation",
-    "note": "Road ambulance covered up to ₹3,500 per hospitalisation; life-threatening emergency must be certified by medical practitioner",
-    "optional": false,
-    "number": 3500
+    "number": 3500,
+    "display": "₹3,500 per hospitalisation"
   },
   "modern_treatments": {
-    "display": "Sub-limited to 50% of SI",
-    "note": "12 listed modern treatments (robotic surgery, oral chemotherapy, stem cell therapy, etc.) covered up to 50% of sum insured in excess of aggregate deductible",
-    "optional": false,
-    "exists": true
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments (robotic surgery, stereotactic radiosurgery, oral chemotherapy, stem cell therapy, etc.) covered up to 50% of Sum Insured."
   },
   "consumables": {
+    "exists": false,
     "display": "Not covered",
-    "note": "Non-medical/consumable expenses listed in Annexure-II are explicitly excluded; no rider available mentioned",
-    "optional": false,
-    "exists": false
+    "note": "Consumables (gloves, masks, etc.) are listed in Annexure A as non-payable items."
   },
   "global_cover": {
+    "exists": false,
     "display": "Not covered",
-    "note": "Policy explicitly covers treatment within India only; overseas treatment is a listed exclusion",
-    "optional": false,
-    "exists": false
+    "note": "Policy explicitly excludes treatment taken outside India."
   },
   "moratorium": {
-    "display": "96 months (8 years)",
-    "note": "After 8 continuous years, policy cannot be voided for non-disclosure except for proven fraud and permanent exclusions",
-    "optional": false,
-    "number": 96
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months, no look-back applied except for proven fraud and permanent exclusions."
   },
   "grace_period": {
-    "display": "30 days",
-    "note": "Grace period of 30 days after premium due date; coverage not available during grace period but continuity benefits preserved",
-    "optional": false,
-    "number": 30
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)",
+    "note": "15 days grace for monthly premium mode; 30 days for all other modes."
   },
   "free_look": {
-    "display": "15 days",
-    "note": "Free look period of at least 15 days from date of receipt of policy; applicable only to new policies, not renewals",
-    "optional": false,
-    "number": 15
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability."
   },
   "portability": {
-    "display": "Allowed",
-    "note": "Portability as per IRDAI norms; prior coverage credit applicable for PED and time-bound exclusions",
-    "optional": false,
-    "exists": true
+    "exists": true,
+    "display": "Allowed"
   },
-  "notable_exclusions": {
-    "display": "Permanent exclusions: cancer, epilepsy, heart disease, stroke, CKD, Alzheimer's, Parkinson's, Hep B, IBD, avascular necrosis if pre-existing at proposal",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "Not specified",
-    "note": "No optional riders or add-on covers mentioned in the policy wording",
-    "optional": false
-  },
-  "source_file": "group-mediclaim-policy-wordings-for-indusind-yes-plus-health-insurance.pdf",
+  "notable_exclusions": "Overseas treatment, dental (non-accident), external congenital anomaly, infertility/ART, alcoholic cirrhosis (permanent), OPD treatment, non-medical consumables",
+  "optional_riders": "Not specified in wording",
+  "insurer": "IndusInd General Insurance Company Limited",
+  "plan_name": "IndusInd Yes Plus Health Insurance",
+  "uin": "RELHLGP21524V022021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "indusind-yes-plus-health-insurance-pw.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-18T05:31:02.968Z"
+  "extracted_at": "2026-09-20T08:03:15.140Z"
 }

@@ -120,22 +120,16 @@ const client = new BedrockRuntimeClient({
 // product_type, because the worklist contains a few documents that may not be
 // comprehensive health at all, and we want the model to tell us rather than guess.
 const wpMod: any = await import("../../backend/server/types/wordingProfile.ts");
-const buildExtractionPrompt: () => string =
-  wpMod.buildExtractionPrompt ?? wpMod.default?.buildExtractionPrompt;
-if (typeof buildExtractionPrompt !== "function") {
-  console.error("Could not load buildExtractionPrompt from backend/server/types/wordingProfile.ts");
+const buildVariantExtractionPrompt: () => string =
+  wpMod.buildVariantExtractionPrompt ?? wpMod.default?.buildVariantExtractionPrompt;
+if (typeof buildVariantExtractionPrompt !== "function") {
+  console.error("Could not load buildVariantExtractionPrompt from backend/server/types/wordingProfile.ts");
   process.exit(1);
 }
 
-const BASE_PROMPT = buildExtractionPrompt();
-const PROMPT = BASE_PROMPT.replace(
-  '"confidence": "high"|"medium"|"low",',
-  `"confidence": "high"|"medium"|"low",
-  "product_type": "comprehensive_health_indemnity" | "critical_illness" | "personal_accident" | "top_up" | "hospital_cash" | "travel" | "group" | "other",
-                                     // Classify honestly. Only use comprehensive_health_indemnity for an
-                                     // ordinary indemnity hospitalisation plan. If this document is not that,
-                                     // say so and fill the axes with nulls — do not force it.`,
-);
+// One profile per named variant, and the product_type classification, both come from the prompt
+// itself now rather than being patched in here.
+const PROMPT = buildVariantExtractionPrompt();
 
 type Row = { uin: string; size_kb: string; filename: string; pdf: string };
 
@@ -171,7 +165,9 @@ function slugify(insurer: string, plan: string, uin: string): string {
 async function invoke(text: string, modelId: string): Promise<{ body: any; retryId?: string }> {
   const payload = {
     anthropic_version: "bedrock-2023-05-31",
-    max_tokens: 8000,
+    // A three-variant plan repeats every axis three times, so the old 8k ceiling would truncate
+    // and the JSON would not parse.
+    max_tokens: 24000,
     temperature: 0,
     system: PROMPT,
     messages: [{ role: "user", content: [{ type: "text", text }] }],
@@ -252,9 +248,9 @@ async function main() {
         inTok += body?.usage?.input_tokens ?? 0;
         outTok += body?.usage?.output_tokens ?? 0;
 
-        const profile = extractJson(body?.content?.[0]?.text ?? "");
-        const uin = profile.uin || (r.uin !== "UNKNOWN" ? r.uin : null);
-        const ptype = profile.product_type ?? "other";
+        const doc = extractJson(body?.content?.[0]?.text ?? "");
+        const uin = doc.uin || (r.uin !== "UNKNOWN" ? r.uin : null);
+        const ptype = doc.product_type ?? "other";
 
         if (!uin) { console.log(`${tag} — no UIN found, skipped`); markDone(r.filename); skipped++; continue; }
         if (ptype !== "comprehensive_health_indemnity") {
@@ -262,35 +258,76 @@ async function main() {
           markDone(r.filename); skipped++; continue;
         }
 
-        const seed = {
-          ...profile,
-          uin,
-          product_type: ptype,
-          source_file: path.basename(r.pdf),
-          status: "unverified",
-          extracted_by: `bedrock:${MODEL}`,
-          extracted_at: new Date().toISOString(),
-        };
-        const file = path.join(SEED_DIR, `${slugify(profile.insurer, profile.plan_name, uin)}.json`);
-
-        // Re-extracting an existing product can yield a slightly different plan name, and so a
-        // different filename. Two seed files sharing one UIN would both be loaded, last one
-        // winning arbitrarily. Retire the older file instead.
-        for (const other of fs.readdirSync(SEED_DIR).filter((f) => f.endsWith(".json"))) {
-          const otherPath = path.join(SEED_DIR, other);
-          if (otherPath === file) continue;
-          try {
-            if (JSON.parse(fs.readFileSync(otherPath, "utf-8"))?.uin === uin) {
-              fs.renameSync(otherPath, otherPath + ".superseded");
-              console.log(`${tag} — superseded ${other}`);
-            }
-          } catch { /* unreadable seed: leave it alone */ }
+        // One document can describe several products. Classic and Elite share a UIN but differ
+        // on the clauses the comparison ranks, so each becomes its own row.
+        const variants: any[] = Array.isArray(doc.variants) && doc.variants.length
+          ? doc.variants
+          : [];
+        if (!variants.length) {
+          console.log(`${tag} — no variants returned, skipped`);
+          markDone(r.filename); skipped++; continue;
         }
 
-        fs.writeFileSync(file, JSON.stringify(seed, null, 2) + "\n", "utf-8");
+        const written: string[] = [];
+        for (const v of variants) {
+          const variant = typeof v?.variant === "string" ? v.variant.trim() : "";
+          const seed = {
+            ...v,
+            insurer: doc.insurer,
+            plan_name: doc.plan_name,
+            uin,
+            variant,
+            product_type: ptype,
+            source_file: path.basename(r.pdf),
+            status: "unverified",
+            extracted_by: `bedrock:${MODEL}`,
+            extracted_at: new Date().toISOString(),
+          };
+          const file = path.join(
+            SEED_DIR,
+            `${slugify(doc.insurer, [doc.plan_name, variant].filter(Boolean).join(" "), uin)}.json`,
+          );
+
+          // Re-extracting can yield a slightly different plan name, so a different filename. Two
+          // seed files describing the same (uin, variant) would both load and the last would win
+          // arbitrarily. Retire the older file. Matching on the PAIR matters: retiring on uin
+          // alone would have each variant delete its siblings as it was written.
+          for (const other of fs.readdirSync(SEED_DIR).filter((f) => f.endsWith(".json"))) {
+            const otherPath = path.join(SEED_DIR, other);
+            if (otherPath === file) continue;
+            try {
+              const o = JSON.parse(fs.readFileSync(otherPath, "utf-8"));
+              if (o?.uin === uin && (o?.variant ?? "") === variant) {
+                fs.renameSync(otherPath, otherPath + ".superseded");
+              }
+            } catch { /* unreadable seed: leave it alone */ }
+          }
+
+          fs.writeFileSync(file, JSON.stringify(seed, null, 2) + "\n", "utf-8");
+          written.push(variant || "(single)");
+        }
+
+        // A document that used to produce one blank-variant row now produces named ones. The old
+        // row is not superseded by the loop above, because that matches on (uin, variant) and
+        // "Silver" never equals "". Left alone it would survive as a stale duplicate carrying the
+        // single ranked value this whole change exists to remove.
+        if (written.some((w) => w !== "(single)")) {
+          for (const other of fs.readdirSync(SEED_DIR).filter((f) => f.endsWith(".json"))) {
+            const otherPath = path.join(SEED_DIR, other);
+            try {
+              const o = JSON.parse(fs.readFileSync(otherPath, "utf-8"));
+              if (o?.uin === uin && (o?.variant ?? "") === "") {
+                fs.renameSync(otherPath, otherPath + ".superseded");
+                console.log(`${tag} — retired the variant-less row`);
+              }
+            } catch { /* unreadable seed: leave it alone */ }
+          }
+        }
+
         markDone(r.filename);
         done++;
-        console.log(`${tag} — ok  ${profile.insurer ?? "?"} / ${profile.plan_name ?? "?"}  [$${cost().toFixed(2)} so far]`);
+        const label = written.length > 1 ? `${written.length} variants: ${written.join(", ")}` : written[0];
+        console.log(`${tag} — ok  ${doc.insurer ?? "?"} / ${doc.plan_name ?? "?"}  [${label}]  [$${cost().toFixed(2)} so far]`);
 
         if (MAX_USD > 0 && cost() >= MAX_USD) {
           stopped = true;

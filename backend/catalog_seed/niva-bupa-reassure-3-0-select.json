@@ -1,0 +1,131 @@
+{
+  "variant": "Select",
+  "sum_insured_options": "Not specified in wording (refer policy schedule)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "Single Private Room (0% copay); Deluxe/Suite attract copay",
+    "note": "Select: All room categories except Deluxe and Suite = 0% copay; All room categories (incl. Deluxe/Suite) = 0% copay per Annexure V rows — actually Select rows show: 'All Room Categories except deluxe and Suite' = 0%, 'All Room Categories' = 0%, 'General Ward' = 20%, 'Twin Sharing Room' = 40%. This implies eligible room is Single Private Room; downgrading to General Ward or Twin Sharing triggers copay."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap stated",
+    "note": "No specific ICU sub-limit mentioned for Select; covered up to Sum Insured."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (if Single Private Room or above chosen); General Ward 20%, Twin Sharing 40%",
+    "note": "Mandatory copay only if insured chooses a room below eligible category (General Ward 20%, Twin Sharing 40%). No mandatory copay on admissible claim otherwise. HeadsUp/Tiered Network non-compliance triggers 20% copay."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract: Mono-focal lens only; Modern treatments sub-limited",
+    "note": "Select variant covers only Mono-focal Lens for cataract. Modern treatments have a sub-limit (can be removed via optional Modern Treatments+ add-on)."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional Annual Aggregate Deductible available)",
+    "note": "No inbuilt deductible. Optional Annual Aggregate Deductible can be opted."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Can be reduced via optional Initial Wait Period Modification add-on."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Can be reduced or increased via optional Pre-Existing Disease Waiting Time Modification."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Same list as Classic. Can be modified via optional Specific Disease Waiting Time Modification."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered (standard exclusion)",
+    "note": "Maternity expenses are a standard exclusion (Excl18). No inbuilt or optional maternity benefit described for Select variant."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Booster+ (up to 10x Base SI)",
+    "note": "Same Booster+ mechanism as Classic. Unutilised Base SI accumulates up to 10x Base SI."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited (ReAssure Forever)",
+    "note": "Same as Classic. ReAssure Forever triggers after first paid claim, unlimited resets up to Base SI per claim."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Can be modified via optional Pre-Hospitalisation Modification add-on."
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days",
+    "note": "Can be modified via optional Post-Hospitalisation Modification add-on."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (2+ hours hospitalisation)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (min 24hr admission in AYUSH Hospital)"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Road: up to policy limit; Air: emergency only",
+    "note": "Air Ambulance+ add-on available for Select to enhance air ambulance limit."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (removable via Modern Treatments+ add-on)",
+    "note": "Same 12 modern treatments as Classic, covered up to plan sub-limit. Modern Treatments+ add-on available for Select."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider (Claim Safeguard+)"
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional (Borderless or International Cover)"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly instalment)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Dental (non-accident), external congenital anomaly, infertility/ART, refractive error <7.5D, conflict/war/terrorism, brain death life support, off-label drug use",
+  "optional_riders": "Claim Safeguard+, Borderless, Borderless for Specific Illness, International Cover, Modern Treatments+, Air Ambulance+, Personal Accident (Lite/PA/Pro), Hospital Daily Cash, WellConsult+, NivaBupaOne, Cash-Bag+, Critical Illness, HeadsUp, Tiered Network",
+  "insurer": "Niva Bupa",
+  "plan_name": "ReAssure 3.0",
+  "uin": "NBHHLIP26047V012526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "ReAssure30_Policy_Wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:49:20.118Z"
+}

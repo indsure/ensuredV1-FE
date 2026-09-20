@@ -1,0 +1,141 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (micro insurance product)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Policy wording does not specify any room rent cap or entitlement; treatment must be at empanelled Network Providers only."
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "No ICU sub-limit mentioned in the wording."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No co-payment clause found in the wording."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits",
+    "note": "Pre-hosp limited to 1 day, post-hosp to 5 days. Maternity capped to SI. No other explicit disease sub-limits found."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No deductible mentioned."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt."
+  },
+  "ped_waiting": {
+    "number": 0,
+    "display": "Covered from inception",
+    "note": "Policy states pre-existing diseases are covered from inception of the policy subject to exclusions (Clause 4). No separate PED waiting period stated."
+  },
+  "specific_disease_waiting": {
+    "number": null,
+    "display": "Not specified",
+    "note": "No named-disease specific waiting period list found in the wording."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 9,
+    "display": "Covered (9mo wait)",
+    "note": "Normal delivery, C-section, miscarriage, abortion due to accident/emergency covered up to SI at Network Providers. Only first two living children. Pre/post-natal covered if hospitalisation required. 9-month waiting period from first policy inception."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Cumulative Bonus is defined in the policy but no specific rate or maximum is stated in the wording."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/year, 100% (unrelated)",
+    "note": "Reinstatement of Sum Insured available once per Cover Period after SI exhaustion. Reinstated amount cannot be used for same illness/injury already claimed. Available as inbuilt or can be opted at inception/renewal or mid-term on payment of additional premium."
+  },
+  "pre_hosp": {
+    "number": 1,
+    "display": "1 day",
+    "note": "Pre-hospitalisation expenses covered for 1 day immediately prior to admission."
+  },
+  "post_hosp": {
+    "number": 5,
+    "display": "5 days",
+    "note": "Post-hospitalisation expenses covered for 5 days after discharge."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed procedures only",
+    "note": "Day care covered for procedures listed in Annexure-I only."
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is defined but not listed as a covered benefit; claims under Benefit 1 require admission to a Network Provider."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH treatments (Ayurveda, Yoga, Naturopathy, Siddha, Unani, Homeopathy) covered up to SI at registered AYUSH hospitals, subject to in-patient admission being admissible under Benefit 1."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Donor treatment expenses explicitly excluded under Clause 4.2(c)(x)."
+  },
+  "ambulance": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Ambulance is listed as a non-medical excluded item in Annexure II List-I, suggesting it is not covered."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (listed only)",
+    "note": "Advanced technology methods covered under Benefit 1 include: Uterine Artery Embolization, HIFU, Balloon Sinuplasty, Deep Brain Stimulation, Oral chemotherapy, Immunotherapy (monoclonal antibody injection), Intra vitreal injections, Robotic surgeries, Stereotactic radio surgeries, Bronchial Thermoplasty, Vaporisation of prostate, IONM, Stem cell therapy (haematopoietic for bone marrow transplant). Other advanced technology methods explicitly excluded."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumable items listed in Annexure II are excluded."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded under Clause 4.2(c)(xiii)."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 5 continuous years no look-back applied except for proven fraud and permanent exclusions."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes. Coverage not available during grace period."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "30-day free-look period from receipt of policy document. Not available at renewal."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines; apply at least 30 days before renewal."
+  },
+  "notable_exclusions": "Treatment only at empanelled Network Providers; no reimbursement from non-network; OPD excluded; dental/cosmetic excluded; external congenital anomalies (except newborn); STDs; donor expenses",
+  "optional_riders": "Reinstatement of Sum Insured (can be opted at inception, renewal, or mid-term); Personal Accident benefit (Benefit 2) for Primary Insured and Spouse",
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Grameen Care",
+  "uin": "RHIHMGP21370V022021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "grameen-care----t&c-(effective-from-12-september-2024-).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:55:09.326Z"
+}

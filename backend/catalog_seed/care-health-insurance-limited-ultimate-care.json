@@ -1,173 +1,145 @@
 {
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (policy schedule dependent); illustrations show ₹5,00,000 and above; unlimited SI option also mentioned",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "Base policy has no limit on room rent. Optional Benefit 'Room Rent Modification' can downgrade to Single Private AC Room / Twin Sharing / General Ward / ₹3,000/day if opted."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "No separate restriction on ICU charges. Room Rent Modification optional benefit also states no limit on ICU charges."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment in base plan. Optional co-payment can be opted (Clause 3.2.29) for premium discount. Smart Select optional benefit adds 20% co-pay for non-network or reimbursement claims."
+  },
+  "sub_limits": {
+    "ordinal": 5,
+    "display": "No sub-limits",
+    "note": "No disease-wise or procedure sub-limits in base policy wording. All covered treatments paid up to Sum Insured."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No base deductible. Optional Benefit 'Deductible' (Clause 3.2.28) can be opted for premium discount."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day initial waiting period (Excl03). Can be modified via Optional Benefit 'Initial Wait Period Modification'."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Standard PED waiting period is 36 months. Can be reduced via Optional Benefit 'PED Wait Period Modification' or waived for specific conditions via 'Instant Cover'."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Named ailment waiting period of 24 months (Excl02) for listed conditions including cataract, hernia, joint replacement, etc. Can be modified via Optional Benefit 'Named Ailment Wait Period Modification'."
+  },
+  "maternity": {
+    "exists": true,
+    "number": null,
+    "display": "Optional add-on",
+    "note": "Maternity Cover is an optional benefit (Clause 3.2.15). Waiting period as specified in Policy Schedule. Coverage up to specified % of SI per policy year, accumulates up to 3x if no claim. Age 18-45 years. New Born Baby Cover also optional."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (50%/yr)",
+    "note": "50% of SI added per completed claim-free or claim year (bonus accrues even on claim years), capped at 100% of SI. Optional 'Infinity Bonus' adds further 100%/yr unlimited."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited, 100%",
+    "note": "Unlimited Automatic Recharge reinstates full base SI unlimited times per year after exhaustion. Applicable from 2nd claim in a policy year. Can be used for same or different illness. Optional 'Unlimited Automatic Recharge Booster' makes it available from 1st claim in lifetime."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Can be extended via Optional Benefit 'Pre-Post Hospitalization Expenses Modification'."
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Can be extended via Optional Benefit 'Pre-Post Hospitalization Expenses Modification'."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care",
+    "note": "All day-care treatments covered up to Sum Insured."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Covered up to SI for treatment exceeding 3 consecutive days. Excludes 12 listed conditions (asthma, diabetes, hypertension, etc.)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment covered up to SI with minimum 24-hour hospitalisation requirement. In-patient only."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Donor's hospitalisation expenses for organ transplant covered up to SI. Post-harvesting expenses of donor not covered."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "At actuals (up to SI)",
+    "note": "Road, air, and train ambulance covered up to Sum Insured. No separate sub-limit stated."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)",
+    "note": "12 listed advanced technology methods covered including robotic surgery, stereotactic radio surgery, oral chemotherapy, immunotherapy, stem cell therapy (haematological), etc."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider (Claim Shield)",
+    "note": "Optional Benefit 'Claim Shield' (Clause 3.2.11) covers non-medical/consumable items from List I-IV (Annexure I) that are otherwise excluded. Not covered in base plan."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional (Travel Plus)",
+    "note": "Optional Benefit 'Travel Plus' (Clause 3.2.39) covers emergency in-patient and OPD treatment outside India for specified continuous days per policy year. Includes loss of passport, baggage, trip cancellation/interruption."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 5 continuous years, no look-back except for proven fraud and permanent exclusions."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes. Coverage not available during grace period except if premium paid in instalments."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or porting/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "As per IRDAI portability guidelines. Apply at least 30 days before renewal."
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary excl. for 12 conditions (asthma, diabetes, hypertension etc.); hormone replacement therapy; tobacco/alcohol-related illness; stem cell (non-haematological); hazardous sports (professional)"
+  },
+  "optional_riders": {
+    "display": "Infinity Bonus, Unlimited Care, Claim Shield, Instant Cover, PED Wait Modification, Maternity Cover, Cancer Care, Travel Plus, Inflation Shield, Tenure Multiplier, Room Rent Modification, Deductible, Co-payment, OPD benefits"
+  },
   "insurer": "Care Health Insurance Limited",
   "plan_name": "Ultimate Care",
   "uin": "CHIHLIP26058V022526",
-  "sum_insured_options": "Not specified in wording (₹5L shown in illustrations; upper limit not stated)",
-  "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
-  "room_rent": {
-    "display": "No cap",
-    "note": "Base plan has no limit on room rent. Optional 'Room Rent Modification' add-on can restrict to Single Private AC Room, Twin Sharing, General Ward, or General Ward up to ₹3,000/day.",
-    "optional": false,
-    "ordinal": 5
-  },
-  "icu": {
-    "display": "No cap",
-    "note": "No separate restriction on ICU charges under base plan. Room Rent Modification add-on explicitly states no limit on ICU charges even when room rent is restricted.",
-    "optional": false,
-    "ordinal": 5
-  },
-  "copayment": {
-    "display": "None",
-    "note": "No mandatory co-payment in base plan. Optional Co-payment add-on available. Smart Select optional benefit triggers 20% co-pay for non-network or reimbursement claims.",
-    "optional": false,
-    "number": 0
-  },
-  "sub_limits": {
-    "display": "No sub-limits",
-    "note": "No disease-wise or procedure sub-limits mentioned in base plan wording. All advanced technology treatments covered up to SI.",
-    "optional": false,
-    "ordinal": 5
-  },
-  "deductible": {
-    "display": "None",
-    "note": "No base deductible. Optional Deductible add-on available for premium discount.",
-    "optional": false,
-    "number": 0
-  },
-  "initial_waiting": {
-    "display": "30 days",
-    "note": "Standard 30-day initial waiting period for illnesses. Reducible via optional 'Initial Wait Period Modification' add-on.",
-    "optional": false,
-    "number": 30
-  },
-  "ped_waiting": {
-    "display": "36 months",
-    "note": "Base PED waiting period is 36 months. Reducible via optional 'PED Wait Period Modification' add-on or 'Instant Cover' add-on (waives PED wait for select conditions from day 31).",
-    "optional": false,
-    "number": 36
-  },
-  "specific_disease_waiting": {
-    "display": "24 months",
-    "note": "Named ailment waiting period is 24 months for listed conditions (cataract, hernia, joint replacement, etc.). Reducible via optional 'Named Ailment Wait Period Modification' add-on.",
-    "optional": false,
-    "number": 24
-  },
-  "maternity": {
-    "display": "Optional add-on",
-    "note": "Maternity Cover is an optional benefit with a waiting period as specified in Policy Schedule. Covers delivery, pre/post-natal expenses up to a % of SI per year, accumulates up to 3x. New Born Baby Cover also optional.",
-    "optional": true,
-    "exists": true,
-    "number": null
-  },
-  "cumulative_bonus": {
-    "display": "Up to 100% (50%/yr)",
-    "note": "50% of SI added per claim-free year, capped at 100% of SI. No impact on accrual even if claim is made. Optional 'Infinity Bonus' add-on provides additional 100% per year unlimited.",
-    "optional": false,
-    "number": 100
-  },
-  "restoration": {
-    "display": "Unlimited, 100%",
-    "note": "Unlimited automatic recharge of base SI, usable for same or different illness, from 2nd claim onwards in a policy year. Optional 'Unlimited Automatic Recharge Booster' extends this to 1st claim in policy lifetime.",
-    "optional": false,
-    "ordinal": 5
-  },
-  "pre_hosp": {
-    "display": "60 days",
-    "note": "Extendable via optional 'Pre-Post Hospitalization Expenses Modification' add-on.",
-    "optional": false,
-    "number": 60
-  },
-  "post_hosp": {
-    "display": "90 days",
-    "note": "Extendable via optional 'Pre-Post Hospitalization Expenses Modification' add-on.",
-    "optional": false,
-    "number": 90
-  },
-  "day_care": {
-    "display": "All day-care",
-    "note": "All day-care treatments covered up to SI.",
-    "optional": false,
-    "exists": true
-  },
-  "domiciliary": {
-    "display": "Covered",
-    "note": "Covered up to SI for treatment exceeding 3 consecutive days. Excludes 12 listed conditions (asthma, diabetes, hypertension, etc.).",
-    "optional": false,
-    "exists": true
-  },
-  "ayush": {
-    "display": "Covered up to SI",
-    "note": "AYUSH inpatient treatment covered up to SI with minimum 24-hour hospitalisation. India only.",
-    "optional": false,
-    "exists": true
-  },
-  "organ_donor": {
-    "display": "Covered",
-    "note": "Donor's hospitalisation expenses for organ harvesting covered up to SI. Pre/post-hospitalisation for donor not covered.",
-    "optional": false,
-    "exists": true
-  },
-  "ambulance": {
-    "display": "Up to SI (road, air, train)",
-    "note": "Ambulance cover via road, air, or train up to SI. Subject to deductible and co-pay if opted.",
-    "optional": false,
-    "number": 999999
-  },
-  "modern_treatments": {
-    "display": "Covered up to SI",
-    "note": "12 listed advanced technology methods (robotic surgery, stereotactic radio surgery, oral chemotherapy, stem cell therapy for haematological conditions, etc.) covered up to SI.",
-    "optional": false,
-    "exists": true
-  },
-  "consumables": {
-    "display": "Optional rider (Claim Shield)",
-    "note": "Optional 'Claim Shield' benefit makes non-medical/consumable items in IRDAI List I-IV payable for admitted claims.",
-    "optional": true,
-    "exists": true
-  },
-  "global_cover": {
-    "display": "Optional (Travel Plus)",
-    "note": "Optional 'Travel Plus' benefit covers emergency inpatient and OPD treatment outside India for specified continuous days per policy year. Excludes PED unless optional PED cover under Travel Plus is also opted.",
-    "optional": true,
-    "exists": true
-  },
-  "moratorium": {
-    "display": "60 months",
-    "note": "After 5 continuous years, no look-back on claims except for proven fraud and permanent exclusions.",
-    "optional": false,
-    "number": 60
-  },
-  "grace_period": {
-    "display": "30 days",
-    "note": "15 days for monthly premium mode; 30 days for all other modes. Coverage not available during grace period unless premium paid in instalments.",
-    "optional": false,
-    "number": 30
-  },
-  "free_look": {
-    "display": "30 days",
-    "note": "Applicable on new policies only, not on renewals or portability/migration.",
-    "optional": false,
-    "number": 30
-  },
-  "portability": {
-    "display": "Allowed",
-    "note": "IRDAI portability norms apply; apply at least 30 days before renewal.",
-    "optional": false,
-    "exists": true
-  },
-  "notable_exclusions": {
-    "display": "Hormone replacement therapy, tobacco/alcohol-related illness, RMO/surcharges, non-allopathic (except AYUSH inpatient), domiciliary for 12 named conditions, stem cell (except haematological BMT)",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "Infinity Bonus, Unlimited Care, Claim Shield, Instant Cover, PED/Named Ailment/Initial Wait Modification, Maternity, Cancer Care, Travel Plus, OPD packages, Tenure Multiplier, Inflation Shield, Premium Freeze",
-    "note": null,
-    "optional": true
-  },
   "source_file": "ultimate-care---policy-terms-&-conditions-(effective-from-16-january-2026).pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:39:47.783Z"
+  "extracted_at": "2026-09-20T07:56:09.235Z"
 }

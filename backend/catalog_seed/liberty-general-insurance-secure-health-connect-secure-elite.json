@@ -1,0 +1,127 @@
+{
+  "variant": "Secure Elite",
+  "sum_insured_options": "Not specified in wording (refer schedule)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Room rent limit not stated in wording; sub-limits table implies differential billing applies. Refer policy schedule."
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "ICU charges covered under in-patient benefit but no specific cap stated in wording."
+  },
+  "copayment": {
+    "number": 10,
+    "display": "10% non-network; 10% age 60+",
+    "note": "10% co-pay on all admissible claims in non-network hospitals; 10% co-pay for insured above 60 years irrespective of network/non-network."
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Many sub-limits apply",
+    "note": "Cataract ₹30k/eye, Hysterectomy ₹45k, Gall bladder ₹45k, Piles ₹30k, Fissure/Fistula/Sinus ₹30k, Nasal septum ₹30k, Angiography ₹20k, PTCA ₹1.2L, Appendectomy ₹40k, D&C ₹15k, Hernia ₹45k, DNS ₹45k, Renal stone ₹45k, TURP ₹1L, CABG ₹1.5L, TKR ₹1.2L, THR ₹1.2L and more."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Policy states 36 months or 24 months depending on plan; not explicitly mapped for Secure Elite in wording."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (most); 48 months (obesity surgery)"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18)."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of SI",
+    "note": "10% or 25% per claim-free year up to 50% or 100% depending on plan; Secure Elite assumed higher tier (100% max). Enhanced CB up to 150% available as optional add-on."
+  },
+  "restoration": {
+    "ordinal": 2,
+    "display": "Once/yr, 100% (optional)",
+    "note": "Reload of Sum Insured is an optional cover; triggers after original SI + CB exhausted."
+  },
+  "pre_hosp": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Period not stated in wording; refer policy schedule."
+  },
+  "post_hosp": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Period not stated in wording; refer policy schedule."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to basic SI",
+    "note": "Inpatient AYUSH treatment covered up to basic Sum Insured; OPD/day-care AYUSH excluded."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered"
+  },
+  "ambulance": {
+    "number": null,
+    "display": "Covered (limit per schedule)"
+  },
+  "modern_treatments": {
+    "exists": false,
+    "display": "Not specified"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (non-monthly); 15 days (monthly)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "STDs/HIV, dental (non-accident), OPD treatment, treatment outside India, external congenital anomaly, prosthetics/external devices, refractive error <7.5D",
+  "optional_riders": "Reload of Sum Insured, Enhanced Cumulative Bonus (up to 150%), Waiver of Sub-limits",
+  "insurer": "Liberty General Insurance",
+  "plan_name": "Secure Health Connect",
+  "uin": "LIBHLIP21503V022021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Secure Health Connect_Policy Wordings_ LIBHLIP21503V022021(Effective from 07.01.2026)_06_04_26.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:04:42.936Z"
+}

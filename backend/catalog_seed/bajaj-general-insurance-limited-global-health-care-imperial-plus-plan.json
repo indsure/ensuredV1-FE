@@ -1,0 +1,141 @@
+{
+  "variant": "Imperial Plus Plan",
+  "sum_insured_options": "Domestic: INR 1,12,00,000 / 1,87,50,000 / 3,75,00,000; International: USD 300,000 / 500,000 / 1,000,000",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap (at actuals)",
+    "note": "Domestic cover: room rent at actuals with no sub-limit. International cover: Single Private Air-Conditioned Room."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "At actuals",
+    "note": "Both domestic and international: ICU at actual expenses charged by hospital."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment on inpatient claims. 20% co-pay applies only on optional Dental Plan Benefits (international)."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits",
+    "note": "Domestic: AYUSH capped at INR 7.5L, Rehabilitation INR 50,000, Living Donor USD 50,000 (intl). Inpatient cash benefit USD 175/night max 25 nights. Repatriation of mortal remains USD 13,500. Most core inpatient up to SI."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional on international)",
+    "note": "No deductible by default. Optional aggregate deductible of USD 500 or USD 1,000 available on international inpatient benefits for premium discount."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Pre-existing disease waiting period is 36 months of continuous coverage."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "35 listed conditions including cataract, hernia, joint replacement, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered. Routine maternity/delivery/newborn care explicitly excluded under international cover."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (20%/yr)",
+    "note": "Applies to domestic cover SI only. 20% per claim-free year, max 100%. Reduced by 20% if claim made in a year with accumulated bonus."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Domestic cover: 60 days pre-hospitalisation. International cover: 45 days."
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days",
+    "note": "Domestic cover: 180 days post-hospitalisation. International cover: 90 days."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed procedures (Annexure I)",
+    "note": "Extensive list of 390+ day care procedures covered under Annexure I."
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is defined in the policy but not listed as a covered benefit in the Table of Benefits."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (domestic only, sub-limited)",
+    "note": "AYUSH inpatient covered under domestic plan up to INR 7.5L. Not covered under international plan."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (Living Donor costs)",
+    "note": "Living donor medical costs covered: USD 50,000 (international Imperial Plus Plan); INR 5,00,000 (domestic)."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Up to Sum Insured",
+    "note": "Local road ambulance up to SI. Air Ambulance + Medical Evacuation up to inpatient SI (international). Air ambulance up to SI (domestic)."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)",
+    "note": "Modern treatments per Annexure III covered up to SI for both domestic and international."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical items per Annexure II are excluded. Medical consumables used during surgery/hospitalisation are covered as part of inpatient treatment."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Inbuilt (worldwide excl. or incl. USA)",
+    "note": "International inpatient + outpatient cover inbuilt. Additional benefits: medical evacuation, repatriation, emergency treatment outside area of cover, palliative care, inpatient cash benefit, parent accommodation for child."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months, no look-back applied; claims not contestable except for proven fraud and permanent exclusions."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or portability/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability allowed per IRDAI guidelines. Migration/portability for global policy requires existing policy to cover both domestic and international health."
+  },
+  "notable_exclusions": "Maternity, sterility/infertility, dental (except accident inpatient & optional dental plan), external congenital anomalies, hair loss treatment, sleep disorders (non-apnoea), USA treatment exclusion if travel for pre-known condition",
+  "optional_riders": "Dental Plan (international, 20% co-pay): dental treatment, surgery, periodontics outside India; Optional aggregate deductible (USD 500/1000) on international inpatient; Out-patient benefits (OPD, physiotherapy, alt/complementary) inbuilt for intl",
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "Global Health Care",
+  "uin": "BAJHLIP23209V022223",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Global-Health-Care_PW.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:52:55.179Z"
+}

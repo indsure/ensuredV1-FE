@@ -1,173 +1,140 @@
 {
-  "insurer": "Care Health Insurance Limited",
-  "plan_name": "Care Supreme",
-  "uin": "CHIHLIP27061V032627",
-  "sum_insured_options": "₹5L (illustrated); full range not explicitly stated in wording",
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (illustrations show ₹5,00,000; other options available per schedule)",
   "confidence": "high",
-  "product_type": "comprehensive_health_indemnity",
   "room_rent": {
     "ordinal": 5,
     "display": "No cap",
-    "note": "Base plan has no room rent limit. Optional add-on 'Room Rent Modification' can restrict to Single Private AC Room or Twin Sharing Room at lower premium.",
+    "note": "Base policy has no room rent limit. Optional Benefit 'Room Rent Modification' can restrict to Single Private AC Room or Twin Sharing Room if opted; ICU remains uncapped even under that optional benefit.",
     "optional": false
   },
   "icu": {
     "ordinal": 5,
     "display": "No cap",
-    "note": "No separate restriction on ICU charges in base plan. ICU also uncapped even if Room Rent Modification add-on is opted.",
+    "note": "No separate restriction on ICU charges; explicitly stated as 'No limit' in base policy and also under Room Rent Modification optional benefit.",
     "optional": false
   },
   "copayment": {
     "number": 0,
-    "display": "None",
-    "note": "No mandatory co-payment in base plan. Optional co-payment add-on available for premium discount. Smart Select add-on imposes 20% co-pay for non-network hospitals. True Connect add-on imposes 10% co-pay if hospital visited without prior network doctor consult.",
-    "optional": false
+    "display": "None (base)",
+    "note": "No mandatory co-payment in base policy. Optional co-payment can be opted for a premium discount (Clause 3.2.7). Smart Select optional benefit adds 20% co-pay for non-network hospitals. True Connect optional benefit adds 10% co-pay for non-emergency direct hospital visits."
   },
   "sub_limits": {
     "ordinal": 5,
     "display": "No sub-limits",
-    "note": "Policy wording does not specify any disease/procedure-wise sub-limits in the base plan. All covered benefits payable up to Sum Insured.",
+    "note": "No disease-wise or procedure sub-limits found in the base policy wording.",
     "optional": false
   },
   "deductible": {
     "number": 0,
-    "display": "None",
-    "note": "No deductible in base plan. Optional deductible add-on available for premium discount; amount as per Policy Schedule.",
-    "optional": false
+    "display": "None (base)",
+    "note": "No deductible in base policy. Optional Benefit 'Deductible' (Clause 3.2.6) can be opted for a premium discount; applied on aggregate basis per policy year."
   },
   "initial_waiting": {
     "number": 30,
     "display": "30 days",
-    "note": "Standard 30-day initial waiting period for illnesses; accidents covered from day 1.",
-    "optional": false
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt."
   },
   "ped_waiting": {
     "number": 36,
-    "display": "36 months",
-    "note": "Base PED waiting period is 36 months. Optional 'PED Wait Period Modification' add-on can reduce this to a shorter period as per Policy Schedule. 'Instant Cover' add-on waives PED wait for Diabetes/Hypertension/Hyperlipidemia/Asthma from day 31.",
-    "optional": false
+    "display": "36 months (reducible via optional)",
+    "note": "Base PED waiting period is 36 months. Optional Benefit 'PED Wait Period Modification' can reduce this to a shorter period as per policy schedule. 'Instant Cover' optional benefit waives PED wait for Diabetes/Hypertension/Hyperlipidemia/Asthma from day 31."
   },
   "specific_disease_waiting": {
     "number": 24,
     "display": "24 months",
-    "note": "Named ailments (cataract, hernia, joint replacement, ENT surgeries, kidney stones, etc.) have 24-month waiting period. Optional 'Named Ailment Wait Period Modification' add-on can reduce this.",
-    "optional": false
+    "note": "Named ailment waiting period of 24 months for listed conditions (e.g. cataract, hernia, joint replacement, kidney stones, etc.). Optional Benefit 'Named Ailment Wait Period Modification' can reduce this."
   },
   "maternity": {
     "exists": false,
     "number": null,
-    "display": "Not covered",
-    "note": "Maternity is a standard permanent exclusion (Excl18). Ectopic pregnancy is covered. New Born Cover optional add-on available but does not cover maternity expenses per se.",
-    "optional": false
+    "display": "Not covered (standard exclusion)",
+    "note": "Maternity is a permanent standard exclusion (Excl18). No inbuilt or optional maternity benefit is offered under this product."
   },
   "cumulative_bonus": {
     "number": 100,
     "display": "Up to 100% (50%/yr)",
-    "note": "Base plan: 50% of SI added per claim-free year, capped at 100% of SI. No claim impact on accrual. Optional 'Cumulative Bonus Super' add-on provides additional 100%/yr up to 500% of SI over and above base CB.",
-    "optional": false
+    "note": "50% of SI added per claim-free year, capped at 100% of SI. No impact on accrual even if a claim is made. Optional Benefit 'Cumulative Bonus Super' adds an additional 100%/yr up to 500% of SI over and above the base CB."
   },
   "restoration": {
     "ordinal": 5,
     "display": "Unlimited, 100% of base SI",
-    "note": "Unlimited Automatic Recharge reinstates full base SI unlimited times per policy year after base SI + CB + Plus Benefit exhausted. Usable for same or different illnesses.",
+    "note": "Unlimited Automatic Recharge reinstates up to base SI unlimited times per policy year. Usable for same or different illnesses. Triggered only after base SI + CB + CB Super + Plus Benefit are fully exhausted. Cannot be carried forward.",
     "optional": false
   },
   "pre_hosp": {
     "number": 60,
-    "display": "60 days",
-    "note": "Pre-hospitalisation expenses covered for 60 days prior to admission for the same condition.",
-    "optional": false
+    "display": "60 days"
   },
   "post_hosp": {
     "number": 180,
-    "display": "180 days",
-    "note": "Post-hospitalisation expenses covered for 180 days after discharge for the same condition.",
-    "optional": false
+    "display": "180 days"
   },
   "day_care": {
     "exists": true,
-    "display": "All day-care procedures",
-    "note": "All day-care treatments covered up to Sum Insured; no listed-only restriction.",
-    "optional": false
+    "display": "All day-care procedures covered up to SI"
   },
   "domiciliary": {
     "exists": true,
-    "display": "Covered",
-    "note": "Covered up to SI for treatment >3 consecutive days at home. Excludes 12 specified conditions (asthma, diabetes, hypertension, epilepsy, etc.).",
-    "optional": false
+    "display": "Covered up to SI",
+    "note": "Must exceed 3 consecutive days. Excludes 12 listed conditions (asthma, diabetes, hypertension, epilepsy, etc.)."
   },
   "ayush": {
     "exists": true,
     "display": "Covered up to SI",
-    "note": "AYUSH (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy) inpatient treatment covered up to Sum Insured at registered AYUSH hospitals.",
-    "optional": false
+    "note": "Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy covered at AYUSH hospitals; must be admissible under Hospitalization Expenses benefit."
   },
   "organ_donor": {
     "exists": true,
-    "display": "Covered",
-    "note": "Organ donor's harvesting surgery expenses covered up to SI when insured is the recipient. Pre/post-hospitalisation for donor not covered.",
-    "optional": false
+    "display": "Covered up to SI",
+    "note": "Covers donor's surgical expenses for organ transplant. Post-harvesting expenses of donor not covered."
   },
   "ambulance": {
     "number": 999999,
     "display": "Covered up to SI (no separate cap)",
-    "note": "Road ambulance covered up to Sum Insured as part of hospitalisation claim. Air ambulance available as optional add-on with limit as per Policy Schedule.",
-    "optional": false
+    "note": "Road ambulance covered up to SI as part of Hospitalization Expenses. Air Ambulance is an optional benefit with a limit specified in the policy schedule."
   },
   "modern_treatments": {
     "exists": true,
     "display": "Covered up to SI",
-    "note": "12 listed advance technology methods covered (robotic surgery, stereotactic radio surgery, oral chemotherapy, stem cell therapy for haematological conditions, etc.) up to Sum Insured. Other advance technology methods excluded.",
-    "optional": false
+    "note": "12 listed advance technology methods covered (robotic surgery, stereotactic radio surgery, oral chemotherapy, stem cell therapy for haematological conditions, etc.) up to SI. Other advance technology methods excluded."
   },
   "consumables": {
     "exists": true,
     "display": "Optional rider (Claim Shield)",
-    "note": "Non-medical/consumable items from List-I (Annexure I) are excluded by default. Optional 'Claim Shield' add-on makes these payable up to applicable SI.",
-    "optional": true
+    "note": "Optional Benefit 'Claim Shield' (Clause 3.2.17) covers List-I non-medical/consumable items otherwise excluded, up to applicable SI."
   },
   "global_cover": {
     "exists": false,
     "display": "Not covered",
-    "note": "Policy covers medical treatment taken entirely within India only. No international/overseas cover available.",
-    "optional": false
+    "note": "Policy covers medical treatment taken entirely within India only."
   },
   "moratorium": {
     "number": 60,
     "display": "60 months",
-    "note": "After 5 continuous years (60 months), no claim can be contested except for proven fraud and permanent exclusions.",
-    "optional": false
+    "note": "After 5 continuous years, no look-back except for proven fraud and permanent exclusions."
   },
   "grace_period": {
     "number": 30,
-    "display": "30 days",
-    "note": "30 days grace period for annual/half-yearly/quarterly premium modes; 15 days for monthly mode. Coverage not available during grace period (except instalment policies).",
-    "optional": false
+    "display": "30 days (15 days for monthly mode)"
   },
   "free_look": {
     "number": 30,
     "display": "30 days",
-    "note": "30-day free-look period for new policies only; not applicable on renewals or portability/migration.",
-    "optional": false
+    "note": "Applicable on new policies only; not on renewals or portability/migration."
   },
   "portability": {
     "exists": true,
-    "display": "Allowed",
-    "note": "Portability to other insurers allowed as per IRDAI guidelines with continuity of waiting period credits.",
-    "optional": false
+    "display": "Allowed"
   },
-  "notable_exclusions": {
-    "display": "Maternity, infertility/IVF, hormone replacement therapy, tobacco/alcohol-related illness, external congenital anomaly, refractive error <7.5D, non-listed advance tech methods, war/nuclear/bio/chemical",
-    "note": null,
-    "optional": false
-  },
-  "optional_riders": {
-    "display": "Claim Shield (consumables), Air Ambulance, Cumulative Bonus Super, Plus Benefit, Unlimited Care, PED Wait Reduction, Named Ailment Wait Reduction, Instant Cover, Room Rent Modification, Deductible, Co-payment, Smart Select, True Connect, Women Care, Mental Health, Annual Health Check-up, New Born Cover, Wellness, Be-Fit, Health Management Program",
-    "note": null,
-    "optional": true
-  },
+  "notable_exclusions": "Maternity (excl.), infertility/ART, hormone replacement therapy, tobacco/alcohol-related illness, external congenital anomaly, refractive error <7.5D, OPD treatment, external prosthetics/devices",
+  "optional_riders": "Room Rent Modification, PED Wait Reduction, Named Ailment Wait Reduction, Instant Cover (DM/HTN/Asthma/Hyperlipidemia), Deductible, Co-payment, Plus Benefit, Cumulative Bonus Super, Air Ambulance, Claim Shield (consumables), Unlimited Care, Smart Select, True Connect, Women Care, Mental Health Wellbeing, Annual Health Check-up, Be-Fit, Wellness Benefit, New Born Cover, Health Management Program",
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Care Supreme",
+  "uin": "CHIHLIP27061V032627",
+  "product_type": "comprehensive_health_indemnity",
   "source_file": "care-supreme---policy-terms-&-conditions-(effective-from-29-april-2026).pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:39:52.911Z"
+  "extracted_at": "2026-09-20T07:55:10.430Z"
 }
