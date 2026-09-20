@@ -1,0 +1,173 @@
+{
+  "insurer": "Navi General Insurance",
+  "plan_name": "Navi Total Hospitalization",
+  "uin": "NAVHLIP23062V012223",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private A/C Room (no cap within this)",
+    "note": "No room rent limit if occupancy is Single Private A/C Room or lower. Proportionate deduction on associated medical expenses if higher room chosen.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (proportionate deduction not applicable)",
+    "note": "Policy explicitly states proportionate deduction will not apply on ICU charges.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits mentioned",
+    "note": "No disease-wise or procedure-wise sub-limits found in the policy wording.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate or base deductible mentioned.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "6 months",
+    "note": "PED waiting period is only 6 months of continuous coverage from policy inception.",
+    "optional": false,
+    "number": 6
+  },
+  "specific_disease_waiting": {
+    "display": "6 months",
+    "note": "Listed conditions (sinusitis, hernia, kidney stones, haemorrhoids, hysterectomy, etc.) have a 6-month waiting period.",
+    "optional": false,
+    "number": 6
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Only ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration or reset benefit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "90 days",
+    "note": "Pre-hospitalisation expenses covered for 90 days prior to admission.",
+    "optional": false,
+    "number": 90
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures",
+    "note": "All eligible day-care procedures covered under the policy.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered subject to medical certification of inability to be moved or non-availability of hospital room.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Not specified",
+    "note": "No mention of AYUSH treatment coverage in the policy wording.",
+    "optional": false,
+    "exists": false
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ donor hospitalisation expenses for harvesting covered where insured is the recipient.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered (no stated limit)",
+    "note": "Emergency road ambulance covered for transport to hospital or between hospitals for medical reasons; no rupee cap stated.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered (up to SI)",
+    "note": "All 12 listed modern treatments (robotic surgery, oral chemo, stem cell therapy, etc.) covered with no stated sub-limit.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "List I items covered; standard consumables excluded",
+    "note": "Specific List I toiletries/personal comfort items are payable. Standard consumables like gloves, masks, etc. are subsumed into room/procedure charges and not separately payable.",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly restricts coverage to treatment taken within India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years, no look-back applied; claims not contestable except for proven fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (annual); 15 days (monthly instalment)",
+    "note": "30-day grace period for annual premium; 15 days for monthly instalment; 30 days for half-yearly/quarterly.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines; apply at least 45 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment, overseas treatment, external congenital anomaly, self-inflicted injury, hearing aids, contact lenses, preventive vaccinations",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None mentioned in policy wording",
+    "note": "No optional riders or add-on covers described in this policy document.",
+    "optional": false
+  },
+  "source_file": "Navi Total Hospitalization - Policy Wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:28:42.974Z"
+}

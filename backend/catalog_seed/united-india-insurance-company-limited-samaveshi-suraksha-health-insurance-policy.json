@@ -1,0 +1,173 @@
+{
+  "insurer": "United India Insurance Company Limited",
+  "plan_name": "Samaveshi Suraksha Health Insurance Policy",
+  "uin": "UIIHLIP23214V012223",
+  "sum_insured_options": "₹4,00,000 (sample schedule; range not specified in wording)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day, max ₹5,000",
+    "note": "Proportionate deduction applies if higher room taken; associated medical expenses reduced proportionately",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day, max ₹10,000",
+    "note": "ICU/ICCU charges capped at 2% of SI per day subject to ₹10,000 maximum",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "20% on every admissible claim",
+    "note": "Mandatory 20% co-payment on all admissible claims under in-patient, pre/post-hosp and modern treatments; waivable via optional paid add-on",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract capped at 10% of SI, max ₹40,000/eye; modern treatments 50% of SI",
+    "note": "Cataract surgery sub-limit per hospitalisation/surgery; modern treatments (robotic surgery etc.) capped at 50% of SI",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "48 months",
+    "note": "PED waiting 48 months for general diseases; 24 months for pre-existing disability; 30 days for HIV/AIDS. Portability credit applicable.",
+    "optional": false,
+    "number": 48
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "24-month wait for listed conditions (cataract, hernia, hydrocele, piles, etc.); 48-month wait for joint replacement, osteoarthritis, ARMD",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days prior to admission",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days after discharge",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All day care treatments explicitly covered",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation expenses explicitly excluded under specific exclusions",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered (in-patient/day care only)",
+    "note": "AYUSH hospitalisation and day care treatment covered; must be in recognised AYUSH hospital",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Hospitalisation for donation of body organs by insured explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance reimbursement capped at ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited to 50% of SI",
+    "note": "12 listed modern treatments (robotic surgery, oral chemo, stem cell therapy etc.) covered up to 50% of SI",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Non-medical/consumable items listed in Annexure-1 are not payable; no consumables rider available",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy restricted to India only; all treatment must be taken in India",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "96 months (8 years)",
+    "note": "After 8 continuous years no look-back except fraud and permanent exclusions",
+    "optional": false,
+    "number": 96
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30-day grace period for renewal; no coverage during grace period",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "15 days",
+    "note": "15-day free-look period from date of receipt of policy at first inception",
+    "optional": false,
+    "number": 15
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines with continuity credit",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment, domiciliary hospitalisation, maternity, organ donor hospitalisation, ART cost, sleep disorders, hearing aids, dental (unless accident/disease needing hosp)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Waiver of Co-Payment (removes mandatory 20% co-pay)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "20240311_Policy_Wordings_SSHIP.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:34:14.222Z"
+}

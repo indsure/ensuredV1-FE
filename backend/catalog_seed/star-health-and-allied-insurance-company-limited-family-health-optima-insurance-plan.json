@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Family Health Optima Insurance Plan",
+  "uin": "SHAHLIP26046V092526",
+  "sum_insured_options": "₹1L – ₹25L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Standard A/C Room (SI ≥3L); fixed ₹/day for lower SIs",
+    "note": "SI ₹1L: up to ₹2,000/day; SI ₹2L: up to ₹5,000/day; SI ₹3L and above: Single Standard A/C Room. Proportionate deduction applies on associated medical expenses if higher room is taken.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "Not separately capped; covered under in-patient expenses",
+    "note": "ICU charges are listed as covered in-patient expenses without a separate sub-limit beyond room category proportionate deduction rules.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "20% (age 61+ at entry)",
+    "note": "Mandatory 20% co-payment on each and every claim for insured persons aged 61 years and above at entry. Voluntary co-payment option (10% or 20%) available for discount on premium for others.",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract, modern treatments (robotic, deep brain, etc.) capped",
+    "note": "Cataract: per-eye and per-policy-period limits vary by SI (e.g. ₹40k/eye, ₹60k/period at ₹5L SI). Modern treatments (robotic surgery, deep brain stimulation, oral chemo, monoclonal antibody, intravitreal injections, etc.) have SI-linked sub-limits. Organ donor capped at 10% of SI or ₹1L whichever less. Home care treatment capped at 10% of SI.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months of continuous coverage. Reducible via portability credits from prior insurer.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Extensive list including cataract, ENT, thyroid, hernia, joint replacement, gallbladder/kidney stones, gynaec diseases, prostate, varicose veins, transplants, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered (standard exclusion; ART covered separately after 36mo wait)",
+    "note": "Maternity (childbirth, C-section, miscarriage) is excluded under Code Excl 18. Assisted Reproduction Treatment (IUI, IVF, ICSI, TESA/TESE) is covered inbuilt for SI ₹5L+ after 36-month waiting period, up to ₹1L (SI ₹5L) or ₹2L (SI ₹10L+) per 36-month block.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr, SI ≥3L)",
+    "note": "Loyalty Bonus of 10% of expiring SI per year, accumulating up to 100% of SI. Available for SI ₹3L and above. Bonus is available irrespective of claims; only utilized balance carries forward after a claim.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "3 times/yr, 100% each (unrelated illness only)",
+    "note": "Automatic restoration of full SI up to 3 times per policy period upon exhaustion of Limit of Coverage. Restored SI can only be used for illness/disease unrelated to the illness for which the prior claim was made. Not available for Modern Treatments. Available for SI ₹3L and above. Separate Recharge Benefit (once, for same or different illness) also available.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses for 60 days prior to admission for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses for 90 days from date of discharge for the same condition.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All day-care treatments covered up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (with exclusions)",
+    "note": "Domiciliary hospitalisation covered for treatment exceeding 3 days when patient cannot be moved or no hospital room available. Several conditions excluded (asthma, diabetes, hypertension, epilepsy, etc.). Home Care Treatment also covered up to 10% of SI for specified conditions.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH (Ayurveda, Unani, Siddha, Homeopathy) hospitalisation covered up to Sum Insured. Yoga and Naturopathy claims require prior company approval.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (up to 10% of SI or ₹1L, whichever less)",
+    "note": "Organ donor expenses for transplantation where insured is recipient. Donor screening and post-donation complications not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹750/hospitalisation, ₹1,500/policy year (road); Air ambulance 10% of SI",
+    "note": "Road ambulance: ₹750 per hospitalisation, ₹1,500 per policy period. Air ambulance: up to 10% of SI for life-threatening emergencies, available for SI ₹5L and above.",
+    "optional": false,
+    "number": 750
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Modern treatments (robotic surgery, stereotactic radio surgery, deep brain stimulation, bronchial thermoplasty, oral chemotherapy, monoclonal antibody injections, intravitreal injections, IONM, stem cell therapy, uterine artery embolisation, HIFU, vaporisation of prostate, sinuplasty) covered with SI-linked sub-limits per policy period.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables and non-medical items are subsumed into room/procedure charges and not separately payable. No consumables cover rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit is India only. All investigations and treatments must be taken in India.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly instalment)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly premium; 15 days for monthly instalment mode.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Free look period of 30 days from receipt of policy document for new policies only (not applicable on renewals or portability).",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-mandated portability available. Must apply at least 30 days before but not earlier than 60 days from renewal date.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity/childbirth, refractive error <7.5D, dental (non-accident), vaccination, EECP/chelation/hyperbaric O2, PRP/autologous therapies, biologicals (outpatient), circumcision",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Voluntary co-payment (10% or 20% for premium discount)",
+    "note": "Only one optional cover mentioned in the policy wording.",
+    "optional": true
+  },
+  "source_file": "Policy_Family_Health_Optima_Insurance_Plan_V_21_bbe089bd74.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:22:24.044Z"
+}

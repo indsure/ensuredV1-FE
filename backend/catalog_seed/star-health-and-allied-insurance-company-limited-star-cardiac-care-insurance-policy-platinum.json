@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Star Cardiac Care Insurance Policy-Platinum",
+  "uin": "SHAHLIP22033V022122",
+  "sum_insured_options": "₹5L – ₹15L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private AC Room",
+    "note": "Proportionate deduction applies on associated medical expenses if higher room chosen; not applied where hospital doesn't follow differential billing",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "Covered (no separate cap stated)",
+    "note": "ICU charges covered as part of sum insured; no specific daily cap mentioned in policy wording",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract, cardiac devices, modern treatments capped",
+    "note": "Cataract: ₹30k-₹40k/eye depending on SI; Cardiac devices: up to 50% of SI; Modern treatments: procedure-wise sub-limits; Coronary angiogram: ₹20k-₹25k; Heart transplant: up to 200% of SI; Pain management: procedure-wise sub-limits; Rehabilitation: up to 10% of SI",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days (Section 1); 30 days (Section 2)",
+    "note": "Section 1 (non-cardiac): 30-day waiting period for illnesses; Section 2 (cardiac): 30-day waiting period from first commencement; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (Section 1); 30 days (Section 2)",
+    "note": "Section 1 non-cardiac PED: 36 months; Section 2 cardiac PED: only 30 days waiting period applies",
+    "optional": false,
+    "number": 1
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Applies to Section 1 only for listed conditions including cataract, ENT, thyroid, hernia, varicose veins, prostate, transplants, etc. Heart transplantation under Section 2 also has 24-month disease-specific waiting period",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is explicitly excluded under Exclusion Code Excl 18",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% of basic SI per claim-free year; max 100% of basic SI; reduced proportionately on claim; not applicable for Section 3 OPD",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% (unrelated illness only)",
+    "note": "Automatic restoration of 100% of basic SI once per policy period upon exhaustion; only for Section 1 (non-cardiac); cannot be used for same illness, modern treatments, or cardiac ailments; unutilized restored SI cannot be carried forward",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Applicable for both Section 1 and Section 2",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Applicable for both Section 1 and Section 2",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day care procedures covered under both Section 1 and Section 2",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "No domiciliary hospitalisation benefit mentioned in the policy",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient hospitalisation covered up to sum insured under both Section 1 and Section 2; Yoga and Naturopathy subject to prior company approval",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "No organ donor expense benefit mentioned; transplant surgery itself covered under Section 2 for heart transplantation",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "Covered (emergency road ambulance)",
+    "note": "Emergency road ambulance covered when medically necessary; no specific rupee cap stated in policy wording",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Covered for both Section 1 and Section 2 but subject to procedure-wise sub-limits per policy period (e.g. Robotic surgery ₹2.5L-₹4L, Deep Brain Stimulation ₹2.5L-₹4L, Oral Chemo ₹1.25L-₹2.5L, etc.)",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables are listed as items subsumed into room/procedure charges but not separately covered; no consumables rider available",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit clause restricts all treatment to within India only",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days grace for annual/half-yearly/quarterly premium; 15 days for monthly instalment; coverage not available during grace period",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability guidelines apply; must apply at least 30 days before renewal",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, infertility, cosmetic surgery, hazardous sports, EECP/chelation therapy, chondrocyte implantation, PRP injections, circumcision, congenital external defects",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None listed",
+    "note": "No optional riders or add-ons mentioned in the policy wording; wellness reward program offers up to 10% premium discount on renewal",
+    "optional": false
+  },
+  "source_file": "Policy_Star_Cardiac_Care_Insurance_Policy_Platinum_V_6_Web_64fd06faa4.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:24:51.280Z"
+}

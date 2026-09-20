@@ -1,0 +1,173 @@
+{
+  "insurer": "Royal Sundaram General Insurance Co. Limited",
+  "plan_name": "Multiplier Health Insurance Plan",
+  "uin": "RSAHLIP23030V012223",
+  "sum_insured_options": "₹5L – ₹25L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap",
+    "note": "Product Benefits Table explicitly states 'No Room rent capping'",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap",
+    "note": "ICU covered under inpatient care up to Sum Insured; no separate sub-limit stated",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base); optional 5–20%",
+    "note": "No mandatory co-payment on standard claims. 50% co-pay applies during PED waiting period (years 2–3) up to ₹2L sub-limit. Voluntary co-pay of 5/10/15/20% available as optional cover for premium discount. Underwriting co-pay may apply for specific health conditions.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Ambulance ₹5k, Animal bite ₹5k, Evacuation ₹1L; PED interim ₹2L",
+    "note": "Most benefits covered up to full SI. Sub-limits: Ambulance ₹5,000/hosp; Vaccination (animal bite) ₹5,000; Emergency domestic evacuation ₹1,00,000/yr. PED coverage in years 2–3 capped at ₹2L with 50% co-pay. No disease-wise sub-limits on standard inpatient claims.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Base PED waiting period is 36 months. Optional ABCD Benefit add-on covers Asthma, High BP, High Cholesterol & Diabetes from 31st day onwards during PED waiting period.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "16 listed conditions including cataract, hernia, stones, joint replacement, etc. have 24-month waiting period",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under standard exclusion Excl18. Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (20%/yr)",
+    "note": "20% of Base SI added per claim-free year; max 100% of Base SI. No reduction on future claims once earned.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% Base SI",
+    "note": "Flexi Reload restores 100% of Base SI once per policy year after exhaustion of Base SI + NCB. Available even for same illness/same insured. Not available for first claim in the year. Unused reload does not carry forward.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "30 days for day-care procedures",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "90 days for inpatient and domiciliary; 30 days for day-care procedures",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day-care treatments covered up to Sum Insured; pre/post-hosp payable up to 30 days for day-care",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Covered up to SI if treatment continues for 3+ uninterrupted days and hospitalisation was not possible",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to 100% of Sum Insured per policy year",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Inpatient harvesting expenses for organ donor covered within recipient's SI; pre/post-hosp and screening of donor not covered",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹5,000/hospitalisation",
+    "note": "Covers road ambulance and app-based cab to nearest hospital in emergency. Not applicable for day-care procedures.",
+    "optional": false,
+    "number": 5000
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 listed modern treatments (robotic surgery, oral chemo, stem cell therapy, etc.) covered up to Base SI + NCB",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider (Hospital Plus)",
+    "note": "Hospital Plus optional cover provides consumables + mobility devices up to ₹50,000/hospitalisation",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly excludes treatments outside India (E.2.13)",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years no look-back applied; claims not contestable except for proven fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days monthly)",
+    "note": "15 days grace for monthly premium mode; 30 days for quarterly, half-yearly and annual modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Not applicable for policies with tenure less than 1 year or on renewals",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; waiting period credits transferred",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, external congenital anomaly, OPD treatment, treatments outside India, self-inflicted injury, alopecia, artificial life maintenance",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "ABCD Benefit (PED cover from day 31 for Asthma/BP/Cholesterol/Diabetes), Hospital Plus (consumables ₹50k), Voluntary Co-pay (5–20%), Health & Wellness Plus",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy_Document_Multiplier.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:31:32.516Z"
+}

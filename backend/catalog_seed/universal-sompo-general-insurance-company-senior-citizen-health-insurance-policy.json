@@ -1,0 +1,173 @@
+{
+  "insurer": "Universal Sompo General Insurance Company",
+  "plan_name": "Senior Citizen Health Insurance Policy",
+  "uin": "UNIHLIP21412V022021",
+  "sum_insured_options": "Not specified in wording (₹1L–₹5L based on medical test grid)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Room rent capped at 1% of Sum Insured per day or actuals whichever is less; ICU at 2% of SI/day; overall room/ICU limit 25% of SI per illness",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU charges capped at 2% of Sum Insured per day or actuals whichever is less; subject to overall 25% of SI per illness cap",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "10% all claims; 20% PED; 15% day care",
+    "note": "10% co-pay on all hospitalisation claims; 20% on pre-existing disease claims (including portability cases); 15% on day care procedures; no co-pay on packaged hospital charges",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Cataract ₹10k, hernia ₹20k, knee ₹40k, spine ₹40k, others",
+    "note": "Cataract per eye ₹10,000; other eye surgery ₹15,000; tumour/cysts ₹20,000; urinary stones ₹20,000; hernia ₹20,000; appendicectomy ₹20,000; knee ligament ₹40,000; hysterectomy ₹20,000; fissures/piles/fistula ₹15,000; spine ₹40,000; cellulitis/abscess ₹15,000; surgeon fees capped at 25% SI; room/ICU at 25% SI per illness",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "First 30 days waiting period for illnesses; not applicable for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases covered after 36 months of continuous coverage; credits from prior insurer portable",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "List includes cataract, hernia, hydrocele, piles, arthritis, spinal disorders, stones, hysterectomy, skin tumours, dialysis, varicose veins, joint replacements, and others",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (5%/yr)",
+    "note": "Option A: 5% increase in SI per claim-free year up to 50% max; reduced at same rate if claim made. Option B: premium discount instead (up to 10 years). Insured chooses one option.",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed procedures only",
+    "note": "Day care procedures covered as per annexed list; not all day-care procedures",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered up to 50% of SI",
+    "note": "Domiciliary hospitalisation covered up to 50% of Sum Insured or actuals whichever is less",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (AYUSH hospitalisation)",
+    "note": "AYUSH treatment covered under hospitalisation benefit; must be in recognised AYUSH hospital meeting specified criteria",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (hospitalisation expenses)",
+    "note": "Hospitalisation expenses of organ donor during transplant covered subject to sub-limits under head C",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to 1% of SI or ₹1,500",
+    "note": "Reimbursement for road ambulance to nearest hospital; capped at 1% of SI or ₹1,500 or actuals whichever is less",
+    "optional": false,
+    "number": 1500
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly mention modern/robotic treatments as a covered or excluded benefit",
+    "optional": false,
+    "exists": false
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Annexure A lists most consumables as not payable; disposable surgical consumables under head C capped at 7% of SI",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly states benefits payable only for treatment in India",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; includes portability/migration credits",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days monthly)",
+    "note": "15 days grace for monthly premium; 30 days for quarterly/half-yearly/annual premium",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for policies of 1 year or more",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability of waiting period credits and NCB to another insurer permitted as per IRDAI norms",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, dental (OPD), refractive error <7.5D, obesity surgery, cosmetic surgery, addiction treatment, external durable devices, OPD treatment",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Section B Critical Illness cover (optional); Floater extension for spouse; Long-term policy (2/3 yr discount)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "senior-citizen-health-insurance-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:36:33.995Z"
+}

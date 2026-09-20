@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Star Special Care Platinum",
+  "uin": "SHAHLIP26042V012526",
+  "sum_insured_options": "₹3L – ₹5L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day, max ₹5,000",
+    "note": "Room rent capped at 1% of Sum Insured per day subject to maximum of Rs.5,000/- per day. Proportionate deduction applies on associated medical expenses if higher room chosen.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day, max ₹10,000",
+    "note": "ICU/ICCU expenses up to 2% of Sum Insured subject to maximum of Rs.10,000/- per day.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None (voluntary co-pay options available)",
+    "note": "No mandatory co-payment. Policyholder may voluntarily opt for co-payment of 10%, 20%, 30%, 40%, or 50% to presumably reduce premium.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Many significant sub-limits",
+    "note": "Extensive disease/procedure sub-limits: Cardiac (CABG ₹70k-₹80k, PTCA ₹50k-₹75k), Oncology ₹70k-₹1L, Cataract ₹15k-₹20k, Joint Replacement ₹70k-₹1L, Renal Transplant ₹70k-₹1L, Robotic surgery ₹40k-₹50k, Stem cell ₹75k-₹1L, and many more. Modern treatment sub-limits also apply.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "₹1,00,000 – ₹5,00,000 (Defined Limit)",
+    "note": "A 'Defined Limit' (aggregate deductible) applies; insurer's liability begins only when admissible hospitalization expenses exceed the chosen Defined Limit of ₹1L, ₹2L, ₹3L, ₹4L, or ₹5L per policy period. This is a mandatory feature of the product.",
+    "optional": false,
+    "number": 100000
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Expenses for any illness within 30 days from first policy commencement date excluded, except accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases covered after 36 months of continuous coverage. No reducible option mentioned.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "36 months",
+    "note": "Specified diseases/procedures (cataract, hernia, joint replacement, cardiac, ENT, thyroid, etc.) excluded for 36 months of continuous coverage.",
+    "optional": false,
+    "number": 36
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Code Excl 18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No Claim Bonus is referenced in renewal/portability/migration context (credits protected) but no explicit NCB accumulation rate or cap is stated in the policy wording.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "15 days, max ₹5,000",
+    "note": "Pre-hospitalization expenses covered up to 15 days before hospitalization, subject to maximum of Rs.5,000/- per hospitalization. Not applicable for day care claims.",
+    "optional": false,
+    "number": 15
+  },
+  "post_hosp": {
+    "display": "15 days, max ₹5,000",
+    "note": "Post-hospitalization expenses covered up to 15 days after discharge, subject to maximum of Rs.5,000/- per hospitalization. Not applicable for day care claims.",
+    "optional": false,
+    "number": 15
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day care treatments covered up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "No domiciliary treatment benefit mentioned in the policy wording.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient treatment covered up to Sum Insured. Yoga and Naturopathy require prior Company approval.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Organ donor expenses not mentioned as a covered benefit. Transplant surgeries are listed under sub-limits (Coverage 5, item 8) but donor harvesting expenses are not explicitly covered.",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "Not specified",
+    "note": "Road ambulance cover is not mentioned in the policy wording.",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Modern treatments covered but with specific sub-limits per procedure (e.g., Robotic surgery ₹40k-₹50k, Stem cell ₹75k-₹1L, Oral chemo ₹25k-₹40k, Intra-vitreal injections ₹25k-₹40k, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables are listed as items subsumed into room/procedure charges (i.e., not separately payable), and no consumables cover rider is mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit clause states all treatments must be taken in India.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Free look period of 30 days from receipt of policy document for new policies only (not renewals or portability).",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Credits for PED, specific waiting periods, NCB, moratorium transferable.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Defined Limit deductible mandatory; maternity excluded; no domiciliary; no ambulance; no global cover; extensive disease sub-limits; all transplants in 36mo wait",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Voluntary co-payment (10%-50%); Defined Limit options (₹1L–₹5L)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy_Star_Special_Care_Platinum_3f1e4f7e09.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:26:11.369Z"
+}

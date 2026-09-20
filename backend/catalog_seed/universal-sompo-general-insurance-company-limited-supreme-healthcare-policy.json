@@ -1,0 +1,173 @@
+{
+  "insurer": "Universal Sompo General Insurance Company Limited",
+  "plan_name": "Supreme Healthcare Policy",
+  "uin": "UNIHLIP25030V012425",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap",
+    "note": "Base plan has no room rent limit. Optional Benefit 'Room Rent Modification' can restrict to Single Private AC Room or Twin Sharing Room if opted.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap",
+    "note": "No separate restriction on ICU charges under base plan. Also no ICU cap under Room Rent Modification optional benefit.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment in base plan. Optional co-payment benefit available for premium discount. Smart Select optional benefit imposes 20% co-pay for non-network hospitals.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits",
+    "note": "Policy wording does not specify any disease-wise or procedure-wise sub-limits in the base plan. Payment terms mention sub-limits generically but none are listed for this product.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No deductible in base plan. Optional Benefit 'Deductible' available for premium discount.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Base PED waiting period is 36 months. Optional Benefit 'PED Wait Period Modification' can reduce this; 'Instant Cover' add-on waives PED wait for Diabetes/Hypertension/Hyperlipidemia/Asthma.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Named ailment waiting period is 24 months for listed conditions (cataract, hernia, etc.). Optional Benefit 'Named Ailment Wait Period Modification' can reduce this.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered (excluded)",
+    "note": "Maternity is a permanent exclusion (Excl18) under the base plan. Ectopic pregnancy is covered. No optional maternity add-on mentioned in this wording.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr)",
+    "note": "50% flat increase per claim-free year, max 100% of SI. No reduction on claim. Optional 'Cumulative Bonus Super' adds further 100%/yr up to 500% of SI.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited, 100% of SI",
+    "note": "Unlimited Automatic Recharge reinstates full base SI unlimited times per year after exhaustion. Usable for same or different illnesses.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days prior to admission for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge for the same condition.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures",
+    "note": "All day-care treatments covered up to SI.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Covered up to SI for treatment exceeding 3 consecutive days at home. Certain conditions (asthma, diabetes, hypertension, etc.) excluded under domiciliary.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment covered up to SI at registered AYUSH hospitals, subject to hospitalisation claim being admissible.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ donor's harvesting surgery expenses covered up to SI. Pre/post-hospitalisation for donor not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to SI (no separate cap)",
+    "note": "Road ambulance covered up to SI as part of hospitalisation claim. Air ambulance available as optional add-on with limit as per policy schedule.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 listed advance technology methods (robotic surgery, stereotactic radio surgery, oral chemotherapy, stem cell therapy, etc.) covered up to SI.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider (Claim Shield)",
+    "note": "Optional Benefit 'Claim Shield' covers List-I non-medical/consumable items otherwise excluded, up to applicable SI.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy covers medical treatment taken entirely within India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim/policy contestable except for established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30 days for annual/half-yearly/quarterly modes; 15 days for monthly mode.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for new policies only.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines with continuity of waiting period credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity (except ectopic), hormone replacement therapy, tobacco/alcohol-related illness, external congenital anomaly, refractive error <7.5D, non-listed advance tech methods",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Room Rent Modification, PED/Named Ailment Wait Reduction, Instant Cover, Deductible, Co-payment, Cumulative Bonus Super, Air Ambulance, Claim Shield, Inflation Shield, Critical Illness Add-on SI, Plus Benefit, Women Care, Mental Health, Wellness, Be-Fit, Annual Health Check-up",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "supreme-healthcare-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:36:43.631Z"
+}

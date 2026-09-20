@@ -1,0 +1,173 @@
+{
+  "insurer": "The Oriental Insurance Company Limited",
+  "plan_name": "Mediclaim Insurance Policy (Individual)",
+  "uin": "OICHLIP446V032021",
+  "sum_insured_options": "₹1L – ₹10L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Proportionate deduction applies if higher room taken; medicines, consumables, implants, diagnostics exempt from proportionate clause",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": null,
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None (voluntary 10% or 20% for premium discount)",
+    "note": "Mandatory co-pay is 0%; optional co-pay of 10% or 20% available for premium discount on SI ₹2L and above",
+    "optional": true,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Modern treatments sub-limited; domiciliary capped at 20% SI/₹50k",
+    "note": "Robotic surgery, oral chemo, immunotherapy, intra-vitreal injections, stereotactic radio surgery, bronchial thermoplasty etc. each capped at 10–25% of SI subject to ₹50k–₹1L per policy period; domiciliary hospitalisation capped at 20% SI max ₹50k; daily hospital cash 0.1% SI/day max 6 days; ambulance ₹2k or 1% SI whichever less",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Accidents exempt; waived after 12 months continuous coverage",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "48 months",
+    "note": "Reducible via portability credit from prior continuous coverage",
+    "optional": false,
+    "number": 48
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 12 months (some ENT/PCOD); 4 years (joint replacement, osteoporosis)",
+    "note": "1 yr: ENT disorders, PCOD; 2 yrs: hernia, hydrocele, cataract, piles, sinusitis, gallbladder, calculus etc.; 4 yrs: joint replacement, osteoporosis, congenital internal diseases; 90 days: hypertension, diabetes",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Not covered (standard plan); covered in Diamond Plan",
+    "note": "Maternity excluded under standard policy (ExcI 018); covered to extent specified only in Diamond Plan variant; ectopic pregnancy covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "Policy mentions health check-up benefit after 3 claim-free years but no cumulative bonus on SI is described in the wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (Appendix I) + any other with prior TPA approval",
+    "note": "116 listed procedures in Appendix I; other day-care treatments covered with prior written approval",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (20% SI, max ₹50k)",
+    "note": "Excludes treatments lasting ≤3 days and 11 listed diseases (asthma, diabetes, hypertension, etc.)",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI (in-patient only)",
+    "note": "In-patient AYUSH hospitalisation covered up to SI in recognised AYUSH hospitals; day-care AYUSH also covered",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (in-patient hospitalisation expenses)",
+    "note": "Covers donor's in-patient hospitalisation; excludes organ acquisition cost, donor screening, pre/post-hosp of donor, complications post-harvesting",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000 or 1% of SI per hospitalisation (aggregate ₹4,000/policy)",
+    "note": "Lower of ₹2,000 or 1% of SI per hospitalisation; aggregate cap ₹4,000 per policy period",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Robotic surgery, stereotactic radio surgery, bronchial thermoplasty, oral chemo, immunotherapy, intra-vitreal injections, IONM, stem cell therapy etc. covered with per-policy-period sub-limits of 10–25% SI subject to ₹50k–₹1L caps",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Annexure I lists 68+ non-medical/consumable items explicitly excluded (gloves, diapers, masks, etc.); Lists II–IV subsume certain items into room/procedure charges",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered (India only; OMP available separately)",
+    "note": "All treatment must be in India; overseas cover available via separate Oriental Overseas Mediclaim Policy (OMP)",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "96 months (8 years)",
+    "note": "After 8 continuous years no look-back except fraud and permanent exclusions; applies separately to enhanced SI portions",
+    "optional": false,
+    "number": 96
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "No coverage during grace period; diseases contracted in break period treated as PED",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "15 days",
+    "note": null,
+    "optional": false,
+    "number": 15
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Apply at least 45 days before renewal; continuity benefits transferred as per IRDAI portability norms",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment, overseas treatment, maternity (standard plan), 16 pre-existing disease categories permanently excluded, refractive error <7.5D, infertility/ART, consumables list",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Personal Accident cover (up to ₹10L, worldwide); Voluntary co-payment (10%/20% for premium discount)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Mediclaim_Insurance_Policy_Individual_Policy_Wordings_1_9533ad3b04.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:33:31.236Z"
+}

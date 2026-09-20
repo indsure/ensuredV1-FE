@@ -1,0 +1,173 @@
+{
+  "insurer": "Royal Sundaram General Insurance Co. Ltd",
+  "plan_name": "Lifeline",
+  "uin": "RSAHLIP24146V032324",
+  "sum_insured_options": "₹2L – ₹150L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap",
+    "note": "Policy covers room rent up to Sum Insured with no stated per-day cap or room-type restriction in the product benefit table",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap",
+    "note": "ICU charges covered under Inpatient Care up to Sum Insured; no separate sub-limit stated",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (standard); 20% for international critical illness treatment",
+    "note": "No mandatory co-pay on domestic claims. 20% co-pay applies specifically to International Treatment for 11 specified Critical Illnesses (Section 3.17 / Elite Plan). Risk-based co-pay up to 30% may be applied at underwriting for specific conditions.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Modern treatments capped at 50% of SI; maternity sub-limits by plan",
+    "note": "Modern treatments (robotic surgery, etc.) capped at 50% of SI. Maternity: ₹2L–₹6.25L depending on SI. Ambulance: ₹3,000–₹10,000. Animal bite vaccination: ₹2,500–₹7,500. Emergency domestic evacuation: ₹3L (Elite). Worldwide emergency: 50% of SI up to ₹20L. No sub-limits on standard inpatient diseases.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (optional top-up deductible available)",
+    "note": "Base plan has no deductible. Optional top-up on annual aggregate basis with deductible of ₹1/2/3/4/5/10L available. Worldwide Emergency Hospitalization has USD 1,000 deductible per hospitalisation.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses from first policy commencement; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months (Elite); 36 months (Classic/Supreme)",
+    "note": "Classic and Supreme plans: 36 months. Elite plan: 24 months. Best achievable inbuilt value is 24 months on Elite plan.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "16 listed conditions (cataract, hernia, stones, knee/hip replacement, etc.) have 24-month waiting period across all plans",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (Elite plan only, 36mo wait)",
+    "note": "Inbuilt only on Elite plan; sub-limit ₹2L–₹6.25L depending on SI; max 2 deliveries lifetime; both spouses must be on same floater; 36-month waiting period",
+    "optional": false,
+    "exists": true,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (Classic) / Up to 100% (Supreme & Elite)",
+    "note": "Classic: 10% per claim-free year up to 50%. Supreme & Elite: 20% per claim-free year up to 100%. Bonus not reduced for future claims once earned.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/year, 100% of Base SI",
+    "note": "Re-load of 100% of Base SI once per policy year. Not available for same illness/same insured person (unrelated illness or different insured member for same illness). Not available for worldwide emergency or international critical illness benefits. Optional Supreme Plus/Elite Plus add-on includes 'Refresh' for same illness same person (once in policy lifetime).",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "30 days (Classic) / 60 days (Supreme & Elite)",
+    "note": "Classic: 30 days pre-hospitalisation. Supreme: 60 days. Elite: 60 days. Best inbuilt value is 60 days.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "60 days (Classic) / 90 days (Supreme) / 180 days (Elite)",
+    "note": "Classic: 60 days. Supreme: 90 days. Elite: 180 days. Best inbuilt value is 180 days.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All day-care procedures covered up to Sum Insured across all plans",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Covered if treatment continues for uninterrupted 3+ days and hospitalisation would otherwise be required. Pre-hosp expenses payable; post-hosp not payable under domiciliary claims.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to Sum Insured",
+    "note": "Inpatient AYUSH treatment covered up to 100% of Sum Insured per policy year across all plans",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Inpatient harvesting expenses for organ donor covered within recipient's Sum Insured. Pre/post-hosp and screening expenses of donor not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹3,000 (Classic) / ₹5,000 (Supreme) / ₹10,000 (Elite)",
+    "note": "Per hospitalisation limit. Supreme Plus and Elite Plus add app-based cab facility as additional ambulance cover.",
+    "optional": false,
+    "number": 10000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 modern treatments (robotic surgery, stereotactic radio surgery, oral chemotherapy, etc.) covered up to 50% of Sum Insured per policy period",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables (gloves, etc.) are explicitly listed as non-payable in Annexure I (List I). No rider available to cover them.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Inbuilt on Elite (excl. US/Canada); optional to add US/Canada",
+    "note": "Elite plan includes Worldwide Emergency Hospitalisation (50% of SI up to ₹20L, USD 1,000 deductible) and International Treatment for 11 Critical Illnesses (up to SI, 20% co-pay), both excluding US & Canada. Option to include US & Canada by paying additional premium at inception.",
+    "optional": false,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years (60 months) no look-back applied; claims not contestable except for proven fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy. Not applicable for policies with tenure less than one year or on renewals.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines; waiting period credits transferred",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Hereditary conditions (Crohn's, Haemophilia, etc.), sleep disorders, sexual problems, STDs, alopecia, ADHD, circumcision, external congenital anomaly, ancillary hospital charges",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Top-up (aggregate deductible), Hospital Cash, US/Canada global cover, Supreme Plus (Refresh SI, Bariatric, Mobility Devices, PED life-threat cover), Elite Plus (IVF, 3 extra CI for intl. treatment)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy_Document_Lifeline.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:31:30.620Z"
+}

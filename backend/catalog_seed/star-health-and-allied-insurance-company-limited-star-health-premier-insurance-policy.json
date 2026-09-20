@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Star Health Premier Insurance Policy",
+  "uin": "SHAHLIP22226V012122",
+  "sum_insured_options": "₹10L – ₹1Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day or ₹20,000/day (lower)",
+    "note": "Associated medical expenses subject to proportionate deduction if higher room chosen; no proportionate deduction for hospitals not following differential billing",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "Covered (no separate cap stated)",
+    "note": "ICU charges covered under general hospitalisation expenses; no specific ICU sub-limit mentioned in policy wording",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "20% (entry age above 65)",
+    "note": "20% co-payment applies to each and every claim for insured persons whose age at entry is above 65 years",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract, Modern Treatments, Bariatric, Rehab/Pain Mgmt capped",
+    "note": "Cataract: ₹50k–₹60k/eye; Modern treatments: 50% of SI; Bariatric: ₹2.5L–₹5L; Rehab & Pain Management: 10% of SI; Hospice Care: 10% of SI up to ₹5L; Home Care: 10% of SI up to ₹5L",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Not applicable for accidents; waived after 12 months continuous coverage",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "Coverage after 24 months of continuous coverage; subject to declaration and acceptance",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, ENT, thyroid, hernia, joint replacements, gallbladder, kidney stones, gynaec diseases, prostate, varicose veins, transplants, congenital internal diseases, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity (Code Excl 18) is a standard exclusion; childbirth, C-sections, miscarriage expenses excluded except ectopic pregnancy",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (20%/yr)",
+    "note": "20% of sum insured per claim-free year; max 100%; partial/nil utilisation of SI does not reduce bonus; full utilisation of SI and cumulative bonus resets bonus to nil",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100%",
+    "note": "Automatic restoration of 100% of SI once per policy year; triggers on partial or full utilisation of limit of coverage; restored SI usable for all subsequent claims in the policy year; unutilised restored SI cannot be carried forward",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": null,
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": null,
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (with exclusions)",
+    "note": "Covered for treatment exceeding 3 days; excludes asthma, bronchitis, diabetes, hypertension, epilepsy, psychiatric disorders, arthritis, gout and several other conditions",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "In-patient and day care AYUSH treatment (except Yoga and Naturopathy) covered up to sum insured; also covered under domiciliary and home care",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "In-patient hospitalisation expenses for organ donor covered; complications requiring redo surgery or ICU for donor also covered; additional SI up to the sum insured over and above limit of coverage",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Road: covered (no stated ₹ cap); Air: ₹2.5L/hosp, ₹5L/yr",
+    "note": "Road ambulance covered for transport to hospital, between hospitals, and hospital to home if certified medically necessary; air ambulance up to ₹2,50,000 per hospitalisation and ₹5,00,000 per policy year",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments covered up to 50% of sum insured per policy period including pre/post hospitalisation; includes robotic surgery, stereotactic radio surgery, oral chemotherapy, stem cell therapy for haematological conditions, etc.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Covered (inbuilt)",
+    "note": "Non-medical/consumable items listed in List I are covered as part of sum insured when there is an admissible claim; includes gloves, nebulisation kit, masks, crepe bandage, etc.",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit clause restricts all investigations and treatments to India only",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for annual/half-yearly/quarterly; 15 days for monthly instalment; coverage not available during grace period except for instalment policies",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-compliant portability; apply at least 30 days before but not earlier than 60 days from renewal date",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, infertility, congenital external defects, refractive error <7.5D, dental, circumcision, chelation/hyperbaric/EECP therapies, PRP injections, biologicals (OPD)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None mentioned in policy wording",
+    "note": "No optional riders or add-ons described in the policy document",
+    "optional": false
+  },
+  "source_file": "Policy_Star_Health_Premier_Insurance_Policy_V_7_676175d548.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:25:46.819Z"
+}

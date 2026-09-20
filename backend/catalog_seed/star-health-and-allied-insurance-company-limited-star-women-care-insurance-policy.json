@@ -1,0 +1,172 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Star Women Care Insurance Policy",
+  "uin": "SHAHLIP23132V022223",
+  "sum_insured_options": "₹5L – ₹1Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day (₹5L); Any Room except suite (₹10L–₹25L); Any Room (₹50L–₹1Cr)",
+    "note": "For ₹5L SI: 1% of SI per day. For ₹10L, ₹15L, ₹20L, ₹25L: Any room except suite or above. For ₹50L and ₹1Cr: Any room. Proportionate deduction on associated medical expenses if higher room chosen.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "Not separately capped; covered under hospitalisation expenses",
+    "note": "ICU charges are listed as a covered expense under Section II(4) without a separate sub-limit; effectively at actuals within SI.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Several sub-limits: Bariatric surgery, Modern treatments (30–50% SI), Pain mgmt, ART, Delivery, Ante-natal, Miscarriage",
+    "note": "Bariatric: ₹2.5L–₹5L; Modern treatments: 30–50% of SI per procedure; Pain management: up to 10% SI; ART: ₹50K–₹3L/yr; Delivery: ₹25K–₹1L; Ante-natal: ₹2.5K–₹5K/yr; Miscarriage lump sum: ₹25K–₹40K. Core hospitalisation has no sub-limits.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "PED waiting period is 24 months of continuous coverage from first policy inception.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions (cataract, ENT, thyroid, hernia, joint replacement, spine, gallbladder, uterine diseases, etc.) have 24-month waiting period.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (12–24mo wait depending on SI)",
+    "note": "Delivery expenses covered up to ₹25K–₹1L per delivery (max 2 deliveries lifetime). Waiting period: 24 months for ₹5L–₹10L SI; 12 months for ₹15L and above. Ante-natal care, in-utero fetal surgery, miscarriage due to accident, ART also covered with sub-limits.",
+    "optional": false,
+    "number": 12
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (20%/yr)",
+    "note": "20% of expiring SI added per claim-free year; maximum 100% of SI. Partial claim does not reduce bonus; full SI + full bonus utilisation resets bonus to nil.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% for any subsequent claim",
+    "note": "Automatic restoration of 100% of SI once per policy year upon partial or full utilisation of limit of coverage. Restored SI can be used for all subsequent hospitalisations in the policy year. Unutilised restored SI cannot be carried forward. Restoration does not form part of SI and does not impact cumulative bonus.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days before admission for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses covered for 90 days after discharge for the same condition.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All day-care procedures are covered under Section II(5).",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "No domiciliary hospitalisation benefit mentioned in the policy wording.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH treatment covered up to SI per year. Yoga and Naturopathy are excluded from AYUSH coverage.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "In-patient hospitalisation expenses for organ transplant from donor to recipient insured covered. Donor's complications requiring redo surgery/ICU also covered up to SI (additional SI over limit of coverage, usable by donor only).",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered (road); Air ambulance up to 10% of SI/yr (₹10L+ SI only)",
+    "note": "Road ambulance: covered for transport to hospital, between hospitals, or home (if certified). Air ambulance: up to 10% of SI per year for life-threatening emergencies; available only for SI ₹10L and above.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (30–50% of SI per procedure)",
+    "note": "Robotic surgery, deep brain stimulation, oral chemotherapy, immunotherapy, intra-vitreal injections, stereotactic radio surgery, bronchial thermoplasty, HIFU, balloon sinuplasty, vaporisation of prostate, IONM, stem cell therapy covered with sub-limits: 50% SI for ₹5L, 40% SI for ₹10L–₹20L, 30% SI for ₹25L–₹1Cr.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Covered (List I items payable if admissible claim)",
+    "note": "68 non-medical/consumable items listed in List I are payable if there is an admissible hospitalisation claim. This is inbuilt.",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit clause (Condition 23) restricts all investigations and treatments to India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly instalment)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly premium; 15 days for monthly instalment. Coverage not available during grace period except for instalment payers.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for new policies only (not on renewals or portability).",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines; apply at least 30 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Yoga/Naturopathy, change-of-gender, cosmetic surgery, adventure sports (professional), EECP/chelation/hyperbaric O2, PRP/platelet injections, reversal of sterilisation, external congenital anomalies (except newborn cover)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Lump sum on first diagnosis of Cancer (₹5L–₹25L; individual SI basis; available at inception only)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy_Star_Women_Care_Insurance_Policy_V_10_df1ca05df6.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:26:33.420Z"
+}

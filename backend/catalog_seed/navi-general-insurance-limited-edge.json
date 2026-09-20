@@ -1,0 +1,173 @@
+{
+  "insurer": "Navi General Insurance Limited",
+  "plan_name": "Edge",
+  "uin": "NAVHLIP25035V012425",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single room (proportionate deduction above)",
+    "note": "Policy covers single room; if higher room category is occupied, proportionate deduction applies on associated medical expenses in addition to room rent difference.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (covered up to SI)",
+    "note": "ICU charges covered under Section 3.1 with no separate sub-limit mentioned; subject to sum insured.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits",
+    "note": "No disease-wise or procedure-wise monetary sub-limits found in the wording. All covered benefits are up to the Base Sum Insured.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate or base deductible mentioned.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing disease waiting period is 36 months across all plans (A, B, C). No optional reduction mentioned.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Specified disease/procedure waiting period is 24 months across all plans.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 200% of BSI (25%/yr)",
+    "note": "Guaranteed Bonus accrues at 25% of Base Sum Insured per year, up to a maximum of 200% of BSI. Applies on renewal without claim requirement.",
+    "optional": false,
+    "number": 200
+  },
+  "restoration": {
+    "display": "Unlimited, 100% of BSI",
+    "note": "Automatic restoration of Base Sum Insured up to 100%, unlimited number of times per policy year. Restored SI can be used for all subsequent claims including same illness.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "90 days",
+    "note": "Pre-hospitalisation medical expenses covered for 90 days prior to hospitalisation.",
+    "optional": false,
+    "number": 90
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation medical expenses covered for 180 days after discharge.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures",
+    "note": "Day Care Treatment for all eligible procedures covered under Section 3.1.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered for at least 3 consecutive days, up to Base Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient treatment covered up to Base Sum Insured at recognised AYUSH hospitals. Pre/post-hospitalisation not covered for AYUSH.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Living donor harvesting expenses covered up to Base Sum Insured when insured is the recipient.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered up to SI (road); Air ambulance ₹5L",
+    "note": "Road ambulance covered up to Base Sum Insured (no separate cap stated). Air ambulance covered up to ₹5 lakh separately (does not reduce Base SI).",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "All 12 listed modern treatments (robotic surgery, oral chemo, intra-vitreal injections, etc.) covered under Section 3.1 up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Covered (inbuilt)",
+    "note": "Non-payable items under List I are covered under Section 3.11 as an inbuilt benefit, subject to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded (Section 4.2.10). Coverage limited to India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years, no look-back on claims except for proven fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30-day grace period for annual renewal. For monthly instalments, 15 days; for half-yearly/quarterly, 30 days.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment, maternity, external congenital anomaly, treatment outside India, hearing aids, cosmetic surgery, self-inflicted injury",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None mentioned in wording",
+    "note": "No optional riders or add-ons described in this policy wording.",
+    "optional": false
+  },
+  "source_file": "Edge - Policy Wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:28:03.575Z"
+}

@@ -28,7 +28,7 @@ const pillars = [
     // not any more: most entries are now read out of the filed wordings by a model and marked
     // unverified until reviewed. The differentiator that survives is the SOURCE — the document
     // insurers file with the regulator, not the brochure — so the claim now rests on that.
-    body: "A wording-level database of 161 health insurance plans across 19 insurers, built from the documents insurers file with the regulator rather than from brochures: every room-rent clause, co-pay clause, sub-limit and waiting period, taken out of the filed wording itself. That is the document the exclusions actually live in, and it is not the one a price comparison reads.",
+    body: "A wording-level database of 220 health insurance plans across 29 insurers, built from the documents insurers file with the regulator rather than from brochures: every room-rent clause, co-pay clause, sub-limit and waiting period, taken out of the filed wording itself. That is the document the exclusions actually live in, and it is not the one a price comparison reads.",
   },
   {
     n: "02",
@@ -59,9 +59,10 @@ const pillars = [
   },
 ];
 
-/* claim-source: counted in the live policy_catalog on 2026-09-18, which is
-   161 active rows of product_type 'comprehensive_health_indemnity' across
-   19 insurers. It read 69/10 on 2026-08-31 and 112/11 on 2026-09-17.
+/* claim-source: counted in the live policy_catalog on 2026-09-20, which is
+   220 active rows of product_type 'comprehensive_health_indemnity' across
+   29 insurers. It read 69/10 on 2026-08-31, 112/11 on 2026-09-17 and
+   161/19 on 2026-09-18.
    Excluded from the count: 3 top-ups, 2 fixed-benefit plans, and 24
    deactivated Bajaj filings that are one product registered per state.
 
@@ -79,8 +80,8 @@ const pillars = [
    figure. Nothing in the codebase substantiates that number, so it has
    been replaced with a second structural zero rather than restated. */
 const stats = [
-  { value: 161, suffix: "", label: "Plans indexed", accent: "var(--lob-health)" },
-  { value: 19, suffix: "", label: "Insurers covered", accent: "var(--lob-life)" },
+  { value: 220, suffix: "", label: "Plans indexed", accent: "var(--lob-health)" },
+  { value: 29, suffix: "", label: "Insurers covered", accent: "var(--lob-life)" },
   { value: 0, suffix: "", label: "Commission earned, ever", accent: "var(--lob-motor)" },
   { value: 0, suffix: "", label: "Leads sold, ever", accent: "var(--lob-home)" },
 ];

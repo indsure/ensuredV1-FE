@@ -1,0 +1,172 @@
+{
+  "insurer": "Zurich Kotak General Insurance Company (India) Limited",
+  "plan_name": "Health 360",
+  "uin": "ZUKHLIP25038V012425",
+  "sum_insured_options": "Not specified in wording (plan schedule required)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap (default); room restriction optional",
+    "note": "Base plan has no room rent limit ('No limit' as per wording). Optional covers allow restriction to Single Private AC Room or Shared Room with premium discount. Cap on Room Rent optional cover also available for Silver plan 5L SI.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap (up to SI)",
+    "note": "ICU covered up to Sum Insured opted; proportionate deductions not applied for ICU charges.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (mandatory); zone-based & Smart Select co-pay optional",
+    "note": "No mandatory co-pay on base plan. Zone-based co-pay applies if treatment taken in higher zone (10-20%). Smart Select optional cover imposes 20% co-pay for non-listed hospitals. Voluntary co-pay optional add-on also available.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Bariatric surgery sub-limited; most covers up to SI",
+    "note": "Bariatric surgery, road ambulance, air ambulance, global cover, maternity, critical illness, personal accident, home care treatment, shared accommodation benefit, hospital daily cash, convalescence benefit, essential equipment cover all have limits as per policy schedule. Core hospitalisation has no disease-wise sub-limits.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (optional add-on available)",
+    "note": "Deductible is an optional cover; if opted, applies as aggregate deductible per policy year on hospitalisation expenses, road ambulance, consumables, double cover and air ambulance.",
+    "optional": true,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents or if continuously covered for more than 12 months.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Base PED waiting period is 36 months. Optional cover 'Pre-existing Diseases Waiting Period Modification' can reduce this to a shorter period as per policy schedule; available only at first inception.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Specified disease/procedure waiting period is 24 months. Optional cover 'Specified disease/procedure Waiting Period Modification' reduces it to 12 months; available only at first inception.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (24mo wait)",
+    "note": "Maternity Benefit is an optional cover with 24-month waiting period from inception of the benefit. Covers delivery (including C-section), lawful termination, pre/post-natal expenses, newborn baby cover and vaccination expenses up to limits in policy schedule. Max 2 deliveries across all policy periods. Permanent exclusion 3.5(15) deleted for this benefit.",
+    "optional": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr inbuilt); up to 1000% with optional booster",
+    "note": "Inbuilt: 50% per claim-free year, max 100% of base SI. Optional Cumulative Bonus Booster adds flat 100% per claim-free year, up to 10x base SI (1000%). Booster is an optional paid cover.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited, 100% of base SI",
+    "note": "Inbuilt unlimited restoration up to base SI, triggered after full exhaustion of base SI + cumulative bonus + cumulative bonus booster (if any) + double cover (if any). Applicable for related and unrelated illnesses except for 'Any One Illness' condition (same illness within 45 days). Restoration does not apply to first claim in the policy year.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "As per policy schedule",
+    "note": "Number of days for pre-hospitalisation cover is specified in the policy schedule, not stated in the wording text itself.",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "As per policy schedule",
+    "note": "Number of days for post-hospitalisation cover is specified in the policy schedule, not stated in the wording text itself.",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "Day care treatment covered for medically necessary procedures under general or local anaesthesia in less than 24 hours due to technological advancement.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (inbuilt)",
+    "note": "Domiciliary hospitalisation covered for minimum 3 consecutive days. Certain conditions excluded (asthma, bronchitis, diabetes, hypertension, epilepsy, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment covered as inpatient or day care in recognised AYUSH hospitals. Covered under base plan up to sum insured.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "In-patient hospitalisation expenses for organ donor harvesting covered. Pre/post-hospitalisation for donor, organ acquisition costs and donor complications post-harvesting excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "As per policy schedule",
+    "note": "Road ambulance covered up to limit specified in policy schedule. Air ambulance also covered up to limit in policy schedule for emergency life-threatening conditions.",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Covered (up to SI)",
+    "note": "12 modern/advanced treatment methods covered including robotic surgery, stereotactic radio surgery, oral chemotherapy, immunotherapy, stem cell therapy (haematopoietic), HIFU, deep brain stimulation, etc. up to limit specified in policy schedule.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Covered (inbuilt)",
+    "note": "Non-medical/consumable items listed in Annexure II List I covered as inbuilt benefit within base SI and cumulative bonus. Unlimited restoration, double cover and cumulative bonus booster not applicable for this benefit.",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional add-on (not for Silver/Gold plan)",
+    "note": "Global Cover optional; covers planned treatment (diagnosis in India, treatment abroad) and emergency care outside India. Available up to age 65, residents of India only. 2-year waiting period (no wait for accidental emergencies). Capped at base SI up to max INR 2 crore. Not available for Silver and Gold plans.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of fraud and permanent exclusions.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "Grace period of 30 days for annual/quarterly/half-yearly premium. 15 days for monthly instalment premium. Coverage not available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Free look period of 30 days from date of receipt of policy document for new policies only (not renewals or portability).",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines; apply at least 30 days before but not earlier than 60 days from renewal date.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary excl: asthma, diabetes, hypertension, epilepsy, psychiatric disorders; hormone replacement therapy; alopecia; OPD treatment; treatment outside India (unless global cover opted)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Global Cover, Cumulative Bonus Booster, Double Cover, Maternity Benefit, Critical Illness Cover, Personal Accident Cover, PED waiting period reduction, Specific disease waiting reduction, Deductible, Voluntary Co-pay, Cash Bag, Step Up Benefit, One Plus Benefit, Convalescence Benefit, Home Nursing, Hospital Daily Cash, Daily Cash for Child, Compassionate Visit, Essential Equipment Cover, Smart Select, Room Category Modification",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Health_360_Policy_Wordings_FY_24_25_v1_06022025_6e8f3d3b36_922a215c71_98b5adf727.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:37:31.550Z"
+}

@@ -1,0 +1,173 @@
+{
+  "insurer": "Narayana Health Insurance Limited",
+  "plan_name": "Narayana Aditi",
+  "uin": "NHIHLIP26044V052526",
+  "sum_insured_options": "₹5L – ₹1Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "General Ward (base); Private Room optional",
+    "note": "Base plan (Plan 1 & 2) covers General Ward only. Private Room or at-actuals available via optional 'Room Category Modification Option' or inbuilt in Plus/Prime plans.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "icu": {
+    "display": "Covered up to SI",
+    "note": "ICU charges covered as part of inpatient care up to Sum Insured; no separate sub-limit or cap stated in the wording.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (non-intimation 10% if intimation missed)",
+    "note": "Zero mandatory co-payment on all base benefits. A 10% co-payment applies only if required intimation timelines are not met (non-intimation co-pay). Global Health Cover (optional) carries a mandatory 10% co-pay.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Non-surgical procedures sub-limited; Surrogate/Oocyte donor ₹5L cap",
+    "note": "Sub-limit for Non-Surgery or Non-Surgical Procedures (equal to or less than Base SI, selectable). In-patient hospitalisation for Surrogate Mother and Oocyte Donor each capped at ₹5L. No sub-limits on surgical inpatient care.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (optional aggregate deductible up to ₹5L)",
+    "note": "Base plan has nil deductible. Optional aggregate deductible of ₹25k/₹50k/₹1L/₹2L/₹3L/₹4L/₹5L can be chosen. Daily deductible of ₹2,000/day also available as optional cover.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses. Can be reduced to nil via pre-policy health check-up (Option 2) subject to underwriting.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Standard PED waiting period is 36 months. Can be reduced to 24/12/0 months via pre-policy or post-policy health check-up subject to underwriting outcomes.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Standard specific disease/procedure waiting period is 24 months. Can be reduced to 12 months or nil via health check-up subject to underwriting. Nil if Option 2 (pre-policy check-up) is chosen, unless specified in schedule.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered (standard maternity excluded)",
+    "note": "Maternity is a standard exclusion (Excl18). However, in-patient hospitalisation for Surrogate Mother (complications only, up to ₹5L) is available as optional cover (Section 4.12) for 3-year policies. Normal maternity/delivery not covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (25% or 50%/yr via AccumulatePlus)",
+    "note": "AccumulatePlus optional cover adds 25% or 50% of Base SI per renewal year (irrespective of claims) up to 100% of Base SI. Not available if Non-Surgical sub-limit is in effect. Not available inbuilt in Plan 1 or Plan 2.",
+    "optional": true,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited, 100% (Revive – optional/inbuilt in Plus & Prime)",
+    "note": "Revive benefit restores Base SI unlimited times per policy year upon complete or partial utilisation. Triggered after first claim. Not available if Non-Surgical sub-limit is in effect. Optional in Plan 1 & 2; inbuilt in Plus & Prime.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for up to 60 days before admission.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days (180 days optional)",
+    "note": "Base cover is 90 days post-discharge. Extendable to 180 days via optional cover 'Enhance Post-Hospitalisation Medical Expenses' (inbuilt in Plus & Prime plans).",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care (280+ listed procedures)",
+    "note": "Comprehensive list of day-care procedures in Annexure 3 covering ENT, ophthalmology, oncology, urology, gynaecology, general surgery, orthopaedics, paediatric surgery and others.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Optional add-on",
+    "note": "Domiciliary hospitalisation is an optional cover (Section 4.10), available only at Preferred Provider Network. Several conditions excluded (asthma, diabetes, hypertension, etc.).",
+    "optional": true,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Alternative/AYUSH treatments (Ayurveda, Unani, Sidha, Homeopathy) covered as inpatient at recognised AYUSH hospitals up to Sum Insured (Section 3.8).",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Living organ donor inpatient expenses for harvesting covered up to Sum Insured (Section 3.5), subject to conditions.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered up to SI",
+    "note": "Domestic road ambulance covered up to Sum Insured (Section 3.6). Emergency air ambulance available as optional cover up to Sum Insured.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "Section 3.9 covers robotic surgeries, stereotactic radiosurgery, oral chemotherapy, immunotherapy, deep brain stimulation, HIFU, balloon sinuplasty, etc. Consumables for robotic surgery excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on (Non-Medical Expenses Cover)",
+    "note": "List-I non-medical/consumable items (gloves, masks, diapers, etc.) excluded by default. Covered if optional 'Non-Medical Expenses Cover' (Section 4.8) is opted at selected provider network.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional (emergency only, 10% co-pay)",
+    "note": "Global Health Cover (Section 4.2) covers emergency inpatient treatment outside India up to Base SI or ₹1Cr (whichever lower). Planned treatments, cancer, orthopaedic diseases (except fractures/injuries) excluded. 10% mandatory co-pay.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no look-back applied; claims not contestable except for proven fraud and permanent exclusions.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 30 days for yearly/half-yearly/quarterly premium modes and 15 days for monthly instalment mode.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Free-look period of 30 days from receipt of policy document, applicable only at inception (not on renewals or porting).",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines; continuity credits for waiting periods transferred.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment, hormone replacement therapy, sleep disorders, STIs (non-HIV), external congenital anomaly, dental (non-accident), non-network hospitals (except emergencies), maternity",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Global cover (emergency), AccumulatePlus (NCB), Revive (restoration), Domiciliary, Air ambulance, Non-medical expenses, Room upgrade, Personal accident, Hospital daily cash, Surrogate/Oocyte donor cover",
+    "note": null,
+    "optional": false
+  },
+  "source_file": "Aditi_Policy_Wording_1_0c8662e67b.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:27:35.383Z"
+}

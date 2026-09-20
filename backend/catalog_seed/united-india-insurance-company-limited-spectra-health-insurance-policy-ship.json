@@ -1,0 +1,173 @@
+{
+  "insurer": "United India Insurance Company Limited",
+  "plan_name": "Spectra Health Insurance Policy (SHIP)",
+  "uin": "UIIHLIP26044V012526",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day (SI ≥5L: 1% or Single AC room, higher)",
+    "note": "For SI < ₹5L: 1% of SI per day. For SI ≥ ₹5L: 1% of SI or Single Occupancy Standard AC Room, whichever is higher. Proportionate deduction applies if higher room taken.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day (<₹5L); Actuals (≥₹5L)",
+    "note": "For SI < ₹5L: 2% of SI per day. For SI ≥ ₹5L: actuals.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "10% (age of entry above 60)",
+    "note": "10% co-payment on all admissible claims under base covers for persons with age of entry above 60 years.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Cataract: 10% of SI or ₹50,000/eye",
+    "note": "Cataract surgery capped at 10% of Sum Insured or ₹50,000 per eye, whichever is lower.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months of continuous coverage. Reducible via portability credit.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (Table A); 36 months (Table B)",
+    "note": "Table A (24 mo): cataract, hernia, cardiac surgeries, benign tumours, etc. Table B (36 mo): joint replacement, osteoarthritis, ARMD.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard permanent exclusion (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 20% (10%/yr, max 2 slabs)",
+    "note": "CB increases by 10% per claim-free year up to maximum 20% of SI. Alternatively, policyholder may choose No Claim Discount (2.5%/yr up to 5% premium discount) instead.",
+    "optional": false,
+    "number": 20
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre- and post-hospitalisation combined subject to maximum 10% of SI.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Pre- and post-hospitalisation combined subject to maximum 10% of SI.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All day-care treatments as per definition covered under in-patient hospitalisation benefit.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is a specific permanent exclusion (Clause IV.C.3). Home Care Treatment is covered only for epidemic/pandemic up to 10% of SI or ₹30,000, whichever is lower.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered (in AYUSH hospitals)",
+    "note": "AYUSH treatment in recognised AYUSH hospitals/day care centres is covered under the operative clause as hospitalisation.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "In-patient hospitalisation expenses for organ donor's harvesting procedure covered; pre/post-hosp and screening of donor excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,500/event; ₹5,000/policy period",
+    "note": "Road ambulance covered up to ₹2,500 per event and ₹5,000 per policy period.",
+    "optional": false,
+    "number": 2500
+  },
+  "modern_treatments": {
+    "display": "Covered (up to SI)",
+    "note": "12 listed modern treatments including robotic surgery, oral chemotherapy, stem cell therapy (haematological), etc. covered as part of in-patient hospitalisation.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Non-medical/consumable items listed in Annexure-1 are excluded. Sterilised gloves and some items payable in specific clinical contexts but general consumables not covered.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy territorial limit is India only; all treatment must be taken in India.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim/policy contestable except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly; 15 days for monthly instalment.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; waiting period credits transferred.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary hospitalisation, OPD treatment, all sleep disorders, external congenital anomalies, hearing aids, multi-focal/toric lenses, RFQMR/ECP/EECP therapies",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Daily Cash Allowance on Hospitalisation (₹500–₹2,000/day based on SI)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy Wordings - SHIP.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:34:57.567Z"
+}

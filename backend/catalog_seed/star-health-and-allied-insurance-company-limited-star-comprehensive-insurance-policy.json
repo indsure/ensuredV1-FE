@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Star Comprehensive Insurance Policy",
+  "uin": "SHAHLIP26044V092526",
+  "sum_insured_options": "₹5L – ₹1Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private A/C Room",
+    "note": "Room rent capped at Private Single A/C Room (most economical single occupancy AC room); proportionate deduction applies on associated medical expenses if higher room is taken.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (actuals)",
+    "note": "ICU charges are explicitly listed as covered without a separate sub-limit; proportionate deduction does not apply to ICU charges per policy wording.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "10% (age 61+ at entry)",
+    "note": "10% co-payment on every claim for insured persons who enter the policy at age 61 or above. No co-payment for those who entered before 61 and renew continuously.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Modern treatments sub-limited; maternity, bariatric, home care capped",
+    "note": "Modern treatments (robotic surgery, deep brain stimulation, oral chemo, monoclonal antibody, intravitreal injections, etc.) have SI-linked sub-limits. Bariatric: ₹2.5L–₹5L. Home care: 10% of SI up to ₹5L. Maternity: fixed limits per SI slab. OPD consultation: small fixed limits.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Base PED waiting period is 36 months. Reducible to 12 months via optional paid 'Buy Back of PED Waiting Period' add-on available only at first purchase.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Extensive list including cataract, ENT, thyroid, hernia, joint replacements, gallbladder, kidney stones, varicose veins, uterine diseases, prostate, hydrocele, haemorrhoids, transplants, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (24mo wait)",
+    "note": "Inbuilt cover for normal delivery (₹15k–₹1L), C-section (₹20k–₹1L), newborn cover up to ₹1L–₹2L, vaccination up to ₹5k–₹10k. 24-month waiting period. Available only when both self and spouse are covered for 24 continuous months.",
+    "optional": false,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% of SI",
+    "note": "For SI ₹5L: 50% per claim-free year up to 100%. For SI ₹7.5L and above: 100% per claim-free year, max 100% of basic SI. Bonus reduces proportionately on claims.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% (same & unrelated illness)",
+    "note": "Automatic restoration of 100% of basic SI once per policy period upon full exhaustion of basic SI and cumulative bonus. Restored SI can be used even for the same illness/disease for which prior claim was made.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": null,
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care procedures",
+    "note": "All day-care treatments covered up to sum insured.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered for illness exceeding 3 days. Several conditions excluded (asthma, bronchitis, diabetes, hypertension, epilepsy, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH in-patient treatment covered up to sum insured. Yoga and Naturopathy require prior company approval.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Donor hospitalisation expenses covered up to basic SI (additional over limit of coverage). Donor's complications requiring redo surgery/ICU also covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "At actuals (road); Air ambulance ₹2.5L/hosp",
+    "note": "Road ambulance at actuals for transport to hospital, between hospitals, or home (same city with doctor certificate). Air ambulance up to ₹2.5L per hospitalisation, max ₹5L per policy period.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Covered but with SI-linked sub-limits per procedure per policy period (e.g. robotic surgery, deep brain stimulation, oral chemo, monoclonal antibody injections, intravitreal injections, stem cell transplant, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Non-medical consumables (gloves, syringes, etc.) are subsumed into room/procedure charges per the annexure but not separately payable as a benefit; no consumables rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy territorial limit is India only. Personal accident section (II.23) applies worldwide but health treatment is India-only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days grace for annual/half-yearly/quarterly premium; 15 days for monthly instalment. Coverage available during grace period if premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or portability.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-compliant portability; credits for PED waiting, specific waiting periods, moratorium transferred to new insurer.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Cochlear implants, CPAP/BIPAP, hearing aids, wheelchairs; EECP/chelation/hyperbaric O2; PRP/platelet injections; biologicals (outpatient); circumcision/preputioplasty",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Buy Back of PED Waiting Period (36mo→12mo, first purchase only)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy_Star_Comprehensive_Insurance_Policy_V_21_3a414ab104.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:25:17.925Z"
+}

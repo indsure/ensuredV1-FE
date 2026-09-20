@@ -1,0 +1,173 @@
+{
+  "insurer": "THE ORIENTAL INSURANCE COMPANY LIMITED",
+  "plan_name": "Happy Family Floater Policy 2021",
+  "uin": "OICHLIP23134V052223",
+  "sum_insured_options": "₹1L – ₹50L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Proportionate deduction applies if higher room taken. Optional add-on available to enhance room rent limit by 50% or 100% for Gold/Diamond/Platinum plans.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "Applies across all plans (Silver, Gold, Diamond, Platinum).",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "10% (Silver plan); None (Gold/Diamond/Platinum)",
+    "note": "Compulsory 10% co-pay on every claim under Silver plan. Waiver available on payment of extra premium. Additionally, 20% co-pay for persons aged 65-70 under Silver/Gold plans.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Advanced treatments sub-limited; ambulance, maternity, domiciliary capped",
+    "note": "Robotic surgery, oral chemo, immunotherapy, intravitreal injections, deep brain stimulation etc. have per-policy-period sub-limits. Maternity capped at 2.5% of SI. Domiciliary capped (Silver: 10% SI max ₹25k; others max ₹50k). Ambulance per-illness and per-policy caps.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned in the base policy.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Except for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "48 months",
+    "note": "PED waiting period is 48 months of continuous coverage. Reducible via portability credit.",
+    "optional": false,
+    "number": 48
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most listed conditions)",
+    "note": "Most listed conditions (cataract, hernia, hydrocele, BPH, etc.) have 2-year wait. Some (ENT benign disorders, polycystic ovary) have 1-year wait. Joint replacement 4 years, osteoporosis 5 years. Hypertension/diabetes 90 days.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (24mo wait, Diamond & Platinum only)",
+    "note": "Limited to 2.5% of SI per delivery; max 2 deliveries/terminations in lifetime. Not available under Silver or Gold plans. New born baby cover also included up to 90 days.",
+    "optional": false,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No Claim Discount was discontinued under HFF-2015 and is not offered as a standard ongoing benefit under HFF-2021. A one-time NCD credit from previous HFF policy is allowed on first renewal only.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Optional; 50% or 100% of SI (Silver & Gold only)",
+    "note": "Restoration is an optional paid add-on available only under Silver and Gold plans. Aggregate restored amount capped at 50%/100% of SI as opted. Not available under Diamond or Platinum plans.",
+    "optional": true,
+    "ordinal": 2
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days prior to admission.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days from discharge.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (Appendix I) + others with prior approval",
+    "note": "Appendix I lists 180 day-care procedures. Other day-care treatments require prior written approval from Company/TPA.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (with exclusions)",
+    "note": "Covered but excludes treatments lasting 3 days or less and 10 specified conditions (asthma, bronchitis, diabetes, hypertension, etc.). Capped at 10% of SI (Silver) or ₹50,000 (Gold/Diamond/Platinum).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH treatment covered up to sum insured in recognised AYUSH hospitals.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Donor hospitalisation expenses covered up to full SI when insured is recipient. Lump sum 10% of SI when insured is donor (after 12 months continuous coverage).",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹1,000–₹5,000/illness; ₹3,000–₹15,000/policy period",
+    "note": "Silver: ₹1,000/illness, max ₹3,000/policy period. Gold: ₹2,000/illness, max ₹6,000. Diamond: ₹3,000/illness, max ₹8,000. Platinum: ₹5,000/illness, max ₹15,000. All subject to 1% of SI cap.",
+    "optional": false,
+    "number": 5000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "12 advanced/modern treatments covered (robotic surgery, oral chemo, immunotherapy, intravitreal injections, etc.) but with per-policy-period sub-limits ranging from ₹40,000 to ₹2,00,000 depending on SI slab.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-medical consumables (gloves, masks, diapers, etc.) explicitly excluded in Appendix Lists I–IV. No optional rider for consumables mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Optional (SAARC countries only)",
+    "note": "Policy can be extended to SAARC countries on written request before travel; no extra premium. No cashless outside India; reimbursement only. Not available for other international destinations.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "96 months (8 years)",
+    "note": "After 8 continuous years, no look-back except for proven fraud and permanent exclusions. Applies separately to enhanced SI portions.",
+    "optional": false,
+    "number": 96
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "No coverage during grace period. Diseases contracted during break treated as PED.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "15 days",
+    "note": "Applicable on new policies and as a one-time option for first-time renewals into HFF-2021. Not applicable on subsequent renewals.",
+    "optional": false,
+    "number": 15
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Apply at least 45 days before renewal date as per IRDAI guidelines.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Sarcoidosis, many cancers, epilepsy, heart ailments, stroke, IBD, CKD, Hepatitis B, Alzheimer's, Parkinson's permanently excluded if pre-disclosed; OPD (except Platinum); dental (unless injury); spectacles/hearing aids; hormone therapy",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Restoration of SI (Silver/Gold), Personal Accident (worldwide), Life Hardship Survival Benefit (critical illness lump sum), Waiver of proportionate deduction, Waiver of Silver co-pay, SAARC extension",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Happy_Family_Floater_2021_policy_wordings_1_e31b8d9fe9.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:33:11.788Z"
+}

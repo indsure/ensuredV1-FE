@@ -1,0 +1,172 @@
+{
+  "insurer": "Universal Sompo General Insurance Company",
+  "plan_name": "Complete Healthcare Insurance",
+  "uin": "UNIHLIP25036V042425",
+  "sum_insured_options": "Not specified in wording (schedule-dependent)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified (schedule-dependent)",
+    "note": "Room rent limit is mentioned as per Policy Schedule; no explicit cap stated in wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified (schedule-dependent)",
+    "note": "ICU charges covered under inpatient benefit; specific limit not stated in wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "None (base); optional co-pay add-on available",
+    "note": "Base plan has no mandatory co-pay. C5 add-on: 10% if treated at non-tiered network. C22 add-on: agreed co-pay as per schedule.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Modern treatments sub-limited; optional disease sub-limits add-on",
+    "note": "Modern treatments capped (e.g. Robotic Surgery 50% of SI up to ₹5L, Oral Chemo 10% up to ₹1L). Optional C4 add-on introduces disease-wise sub-limits (cataract, hernia, ENT, etc.) in exchange for premium discount.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Reducible to 12 months via optional C11 add-on (PED Waiting Period Waiver)",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "12 months",
+    "note": "Covers listed conditions e.g. cataract, hernia, ENT, joint replacement etc.",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Covered (36mo wait)",
+    "note": "Inbuilt under Section I C14; limit as per schedule; only for spouse; first 2 deliveries; age 18-45. Optional C8 add-on reduces wait to 24 months.",
+    "optional": false,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (10%/yr) for SI ≤10L; up to 100% (20%/yr) for SI 15L–50L",
+    "note": "Plans Basic/Essential/Privilege/Digi-Pro: 10%/yr up to 50%. Plans Plus/Premier/Executive: 20%/yr up to 100%. Bonus reduced on claim.",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of base SI (unrelated illness)",
+    "note": "Restored SI usable for different illness only (same-illness restriction lifted for floater family members). Optional C10 add-on removes the unrelated-illness restriction.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "30 days (60 days with prior intimation)",
+    "note": "Standard 30 days; extended to 60 days if medical documents and hospitalization details provided 5 days in advance. Optional C6 add-on extends base to 90 days.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days (90 days with prior intimation)",
+    "note": "Standard 60 days; extended to 90 days if prior intimation given. Optional C7 add-on extends to 120 days.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (Annexure C)",
+    "note": "Extensive list of named procedures covered; not all day-care automatically covered",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered up to 20% of base SI",
+    "note": "Allopathic only; condition must last ≥3 days; 12 named conditions excluded (asthma, diabetes, hypertension etc.)",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (no sub-limit by % or amount)",
+    "note": "Inpatient AYUSH covered; limit as per schedule; cannot claim allopathic for same illness simultaneously",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (harvesting expenses)",
+    "note": "Donor pre/post-hospitalisation not covered under base; optional C18 add-on covers donor pre/post-hosp expenses",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "As per schedule per hospitalisation",
+    "note": "Limit specified in Policy Schedule; inter-hospital transfer also covered if prescribed by doctor",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "12 modern treatments covered with individual caps (e.g. Robotic Surgery 50% of SI up to ₹5L; Oral Chemo 10% up to ₹1L)",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on (C9)",
+    "note": "Non-medical/consumable items in List-I excluded by default; covered up to schedule limit via C9 add-on",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional add-on (C20)",
+    "note": "Covers inpatient/day-care outside India up to SI; diagnosis must be in India; prior written approval required; max 180 consecutive days",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "30 days for quarterly/half-yearly/annual; 15 days for monthly instalment",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; apply at least 45 days before renewal",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment (base), treatment outside India (base), refractive error <7.5D, domiciliary for 12 named conditions, dental/cosmetic, war/nuclear",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Personal Accident, Critical Illness, Hospital Daily Cash, Sub-limits, Global Cover, PED waiver (12mo), Consumables, Maternity wait reduction, Obesity/Infertility cover, Premium Waiver",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "chi-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:35:27.542Z"
+}
