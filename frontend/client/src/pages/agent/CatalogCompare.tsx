@@ -120,7 +120,7 @@ function AddPlanPicker({
               ) : (
                 filtered.map(([insurer, items]) => (
                   <div key={insurer}>
-                    <div className="px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-slate-400">{insurer}</div>
+                    <div className="sticky top-0 z-10 bg-white px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-slate-400">{insurer}</div>
                     {items.map(planRow)}
                   </div>
                 ))
@@ -134,7 +134,7 @@ function AddPlanPicker({
                 >
                   <ChevronLeft className="h-3.5 w-3.5" /> All insurers
                 </button>
-                <div className="px-3 pt-2 pb-1 text-sm font-bold text-slate-600">{openInsurer}</div>
+                <div className="sticky top-0 z-10 bg-white px-3 pt-2 pb-1 text-sm font-bold text-slate-600">{openInsurer}</div>
                 {drilledPlans.map(planRow)}
               </>
             ) : insurers.length === 0 ? (
