@@ -150,7 +150,12 @@ function pdfText(pdf: string): string {
     encoding: "utf-8",
     maxBuffer: 256 * 1024 * 1024,
   });
-  return out.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").slice(0, MAX_CHARS);
+  // Do NOT collapse runs of spaces. `-layout` encodes table columns AS runs of spaces, so
+  // collapsing them destroys every benefit table in the document: a tier grid becomes a row of
+  // numbers with nothing tying each one to its plan. That is why variants of Global Health Care,
+  // Health Care Supreme and IndusInd Health Global all extracted identically. Tabs are safe to
+  // normalise (pdftotext emits none in -layout mode) and 3+ blank lines carry no meaning.
+  return out.replace(/\t/g, " ").replace(/\n{3,}/g, "\n\n").slice(0, MAX_CHARS);
 }
 
 function slugify(insurer: string, plan: string, uin: string): string {
