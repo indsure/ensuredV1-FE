@@ -1,5 +1,5 @@
 {
-  "variant": "Silver",
+  "variant": "",
   "sum_insured_options": "Not specified in wording; refer Policy Schedule",
   "confidence": "low",
   "room_rent": {
@@ -15,17 +15,17 @@
   "copayment": {
     "number": 0,
     "display": "None stated",
-    "note": "No mandatory co-payment mentioned in wording for Silver plan"
+    "note": "No mandatory co-payment mentioned in wording for Gold plan"
   },
   "sub_limits": {
     "ordinal": 3,
     "display": "Modern treatments capped at 50% SI",
-    "note": "Modern treatments sub-limited to 50% of SI; domiciliary capped at 10% of SI; day care listed procedures only"
+    "note": "Modern treatments sub-limited to 50% of SI; domiciliary capped at 10% of SI; day care listed procedures only; Critical illness has additional SI equal to base SI"
   },
   "deductible": {
     "number": 0,
     "display": "None",
-    "note": "No deductible stated for Silver plan"
+    "note": "No deductible stated for Gold plan"
   },
   "initial_waiting": {
     "number": 30,
@@ -122,7 +122,7 @@
     "display": "Allowed"
   },
   "notable_exclusions": "Overseas treatment, STDs, sleep apnea, external congenital anomaly, hearing aids/spectacles, RMO/service charges, circumcision, self-injury",
-  "optional_riders": "Daily hospitalisation allowance; nursing allowance; recovery benefit; accompanying person expenses",
+  "optional_riders": "Critical illness cover (inbuilt on Gold – 10 listed CIs, additional SI equal to base SI); daily hospitalisation allowance; nursing allowance; recovery benefit; accompanying person expenses",
   "insurer": "IndusInd General Insurance Company Limited",
   "plan_name": "IndusInd HealthWise",
   "uin": "RELHLIP22185V042122",
@@ -130,5 +130,6 @@
   "source_file": "revised-indusind-healthwise-policy-wording.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:03:39.125Z"
+  "extracted_at": "2026-09-20T08:03:39.249Z",
+  "variant_note": "Sold in named plans (Standard, Silver, Gold). The wording points to \"Section 7 Coverage Summary\" for the differences, and that section is absent from the document, so the plans cannot be told apart here. Confirm against the policy schedule."
 }

@@ -1,6 +1,6 @@
 {
-  "variant": "Individual",
-  "sum_insured_options": "₹3L, ₹5L, ₹10L, ₹15L, ₹20L, ₹25L, ₹50L per insured person per policy year",
+  "variant": "",
+  "sum_insured_options": "₹3L, ₹5L, ₹10L, ₹15L, ₹20L, ₹25L, ₹50L per policy per policy year (floater)",
   "confidence": "high",
   "room_rent": {
     "ordinal": 5,
@@ -15,7 +15,7 @@
   "copayment": {
     "number": 0,
     "display": "None",
-    "note": "No mandatory co-payment mentioned in the policy wording for individual plans."
+    "note": "No mandatory co-payment mentioned in the policy wording for family floater plans."
   },
   "sub_limits": {
     "ordinal": 3,
@@ -25,7 +25,7 @@
   "deductible": {
     "number": 0,
     "display": "None (optional deductible available)",
-    "note": "Base plan has no deductible. Optional deductible of ₹2L, ₹3L, ₹5L, or ₹10L (₹10L only for SI ≥ ₹20L) can be chosen. Recovery benefit not applicable if deductible is opted."
+    "note": "Base plan has no deductible. Optional deductible of ₹2L, ₹3L, ₹5L, or ₹10L (₹10L only for SI ≥ ₹20L) can be chosen on floater basis. Recovery benefit not applicable if deductible is opted."
   },
   "initial_waiting": {
     "number": 30,
@@ -51,12 +51,12 @@
   "cumulative_bonus": {
     "number": 100,
     "display": "Up to 100% (50%/yr)",
-    "note": "Multiplier Benefit: 50% of basic SI added per policy year irrespective of claims, maximum 100% of basic SI."
+    "note": "Multiplier Benefit: 50% of basic SI added per policy year irrespective of claims, maximum 100% of basic SI. Applied at floater/policy level."
   },
   "restoration": {
     "ordinal": 3,
     "display": "Once/yr, 100% of basic SI",
-    "note": "Restore Benefit triggers when basic SI + Multiplier Benefit is fully exhausted. Restored SI cannot be used for the same illness/disease already claimed in that year (except by a different family member in floater). Applies once per insured per policy year."
+    "note": "Restore Benefit triggers when basic SI + Multiplier Benefit is fully exhausted. In a family floater, restored SI is available to all insured persons. Cannot be used for the same illness already claimed by the same insured person in that year (other family members can claim for same illness). Applies once per policy year."
   },
   "pre_hosp": {
     "number": 60,
@@ -124,7 +124,7 @@
     "display": "Allowed"
   },
   "notable_exclusions": "Maternity, OPD treatment, dental (unless hospitalised), congenital external anomalies, stem cell harvesting, hearing aids/spectacles, refractive error <7.5D, alcoholic cirrhosis (permanent)",
-  "optional_riders": "Optional deductible (₹2L/₹3L/₹5L/₹10L); Reserve Benefit (OPD wallet ₹5k–₹25k with 6% annual bonus)",
+  "optional_riders": "Optional deductible (₹2L/₹3L/₹5L/₹10L); Reserve Benefit (OPD wallet ₹5k–₹25k with 6% annual bonus, on floater basis)",
   "insurer": "HDFC ERGO",
   "plan_name": "Health Wallet",
   "uin": "HDHHLIP21337V022021",
@@ -132,5 +132,5 @@
   "source_file": "health-wallet-combined-pw-cis-hegi-373014324919.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:00:50.694Z"
+  "extracted_at": "2026-09-20T08:00:50.812Z"
 }

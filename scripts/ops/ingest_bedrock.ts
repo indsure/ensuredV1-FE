@@ -161,6 +161,11 @@ function pdfText(pdf: string): string {
 function slugify(insurer: string, plan: string, uin: string): string {
   const s = `${insurer ?? ""}-${plan ?? ""}`
     .toLowerCase()
+    // Tiers are routinely distinguished by punctuation alone: IndusInd Health Global sells Elite,
+    // Elite+, Royal and Royal+. Stripping "+" collapsed four variants onto two filenames and the
+    // plus tiers silently overwrote the base ones, so half the product vanished with no error.
+    // Spell the character out before the non-alphanumeric sweep removes it.
+    .replace(/\+/g, " plus ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return s.length > 3 ? s : `product-${uin.toLowerCase()}`;
@@ -271,6 +276,24 @@ async function main() {
         if (!variants.length) {
           console.log(`${tag} — no variants returned, skipped`);
           markDone(r.filename); skipped++; continue;
+        }
+
+        // Two variants whose names differ only by punctuation slugify to one filename, and the
+        // second silently overwrites the first: a whole tier disappears with no error and the
+        // catalogue looks merely incomplete rather than wrong. Refuse the document instead, so
+        // this shows up as a failure to fix rather than as data nobody knows is missing.
+        const slugs = new Map<string, string>();
+        let collision = "";
+        for (const v of variants) {
+          const name = typeof v?.variant === "string" ? v.variant.trim() : "";
+          const slug = slugify(doc.insurer, [doc.plan_name, name].filter(Boolean).join(" "), uin);
+          if (slugs.has(slug)) collision = `"${slugs.get(slug)}" and "${name}" both map to ${slug}`;
+          slugs.set(slug, name);
+        }
+        if (collision) {
+          failures.push(`${r.filename}: variant filename collision — ${collision}`);
+          console.log(`${tag} — FAILED: variant filename collision — ${collision}`);
+          continue;
         }
 
         const written: string[] = [];

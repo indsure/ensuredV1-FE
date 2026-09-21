@@ -1,5 +1,5 @@
 {
-  "variant": "Premier",
+  "variant": "",
   "sum_insured_options": "Not specified in wording; refer Policy Schedule",
   "confidence": "low",
   "room_rent": {
@@ -127,5 +127,6 @@
   "source_file": "20250407T104705.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:51:43.854Z"
+  "extracted_at": "2026-09-20T07:51:43.804Z",
+  "variant_note": "Sold in named plans (Standard, Classic, Premier). The policy wording defers every benefit limit to the Product Benefit Table, which is not part of this document, so the differences between the plans cannot be shown here. Confirm the plan limits against the policy schedule."
 }

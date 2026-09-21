@@ -1,5 +1,5 @@
 {
-  "variant": "Individual",
+  "variant": "",
   "sum_insured_options": "₹3L, ₹5L, ₹10L, ₹15L, ₹20L, ₹25L, ₹50L, ₹100L",
   "confidence": "high",
   "room_rent": {
@@ -15,17 +15,17 @@
   "copayment": {
     "number": 0,
     "display": "None (optional 10% or 20%)",
-    "note": "No mandatory co-payment. Co-payment of 10% or 20% is an optional benefit that can be opted at inception; once opted it cannot be removed."
+    "note": "No mandatory co-payment. Co-payment of 10% or 20% is an optional benefit; once opted it cannot be removed."
   },
   "sub_limits": {
     "ordinal": 3,
     "display": "Ambulance ₹2,000/hosp; Air ambulance ₹2.5L/hosp",
-    "note": "Ambulance capped at ₹2,000 per hospitalisation; emergency air ambulance capped at ₹2.5L per hospitalisation. Daily cash for shared accommodation is a fixed benefit. No disease-wise sub-limits on main indemnity cover."
+    "note": "Ambulance capped at ₹2,000 per hospitalisation; emergency air ambulance capped at ₹2.5L per hospitalisation. Daily cash for shared accommodation is a fixed benefit (₹800/day up to ₹4,800 for 3L-15L; ₹1,000/day up to ₹6,000 for 20L+). No disease-wise sub-limits on main indemnity cover."
   },
   "deductible": {
     "number": 0,
     "display": "None (optional aggregate deductible)",
-    "note": "No mandatory deductible. Optional aggregate deductible of ₹25K/₹50K/₹1L can be opted at inception."
+    "note": "No mandatory deductible. Optional aggregate deductible of ₹25K/₹50K/₹1L can be opted at inception; applies on floater basis."
   },
   "initial_waiting": {
     "number": 30,
@@ -49,12 +49,12 @@
   "cumulative_bonus": {
     "number": 100,
     "display": "Up to 100% (50%/yr)",
-    "note": "Multiplier Benefit: 50% of Base SI added each renewal irrespective of claims, capped at 100% of Base SI."
+    "note": "Multiplier Benefit: 50% of Base SI added each renewal irrespective of claims, capped at 100% of Base SI. Available on floater basis for all insured persons."
   },
   "restoration": {
     "ordinal": 4,
-    "display": "Once/yr, 100% of Base SI",
-    "note": "Restore Benefit: 100% of Base SI restored once per policy year on complete or partial utilisation of existing SI + Multiplier. Unlimited Restore (optional add-on) allows unlimited restorations."
+    "display": "Once/yr, 100% of Base SI (floater)",
+    "note": "Restore Benefit: 100% of Base SI restored once per policy year on complete or partial utilisation; available on floater basis. Unlimited Restore (optional) allows unlimited restorations."
   },
   "pre_hosp": {
     "number": 60,
@@ -125,5 +125,5 @@
   "source_file": "PolicyWordings_OptimaRestore-811520192624.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:01:41.493Z"
+  "extracted_at": "2026-09-20T08:01:41.599Z"
 }

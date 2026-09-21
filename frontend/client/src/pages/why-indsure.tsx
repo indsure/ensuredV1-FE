@@ -71,7 +71,9 @@ const pillars = [
 
    Counting rows, not products: a plan sold as Classic and Elite is two entries in the picker
    and two things a customer can be compared into, so two is the honest count. */
-const FALLBACK_COUNTS = { plans: 294, insurers: 29 };
+// Shown only if the live count cannot be fetched. Refresh it after a catalogue load so a failed
+// request still shows something close to the truth rather than a number from months ago.
+const FALLBACK_COUNTS = { plans: 288, insurers: 29 };
 
 const buildStats = (c: { plans: number; insurers: number }) => [
   { value: c.plans, suffix: "", label: "Plans indexed", accent: "var(--lob-health)" },

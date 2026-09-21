@@ -26,7 +26,22 @@ dotenv.config({ path: path.resolve(REPO_ROOT, ".env") });
 
 const DRY = process.argv.includes("--dry-run");
 const { Pool } = pkg;
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+// `?sslmode=require` in DATABASE_URL is honoured by pg >= 8.15 and switches on full certificate
+// verification, overriding the ssl option below and failing on the Supabase pooler's self-signed
+// chain. Strip it so the explicit config applies: still TLS, just no chain verification.
+function connectionString() {
+  const raw = process.env.DATABASE_URL;
+  if (!raw) return raw;
+  try {
+    const u = new URL(raw);
+    u.searchParams.delete("sslmode");
+    return u.toString();
+  } catch {
+    return raw;
+  }
+}
+
+const pool = new Pool({ connectionString: connectionString(), ssl: { rejectUnauthorized: false } });
 
 // Canonical spelling per company. Order matters only in that the first match wins.
 //

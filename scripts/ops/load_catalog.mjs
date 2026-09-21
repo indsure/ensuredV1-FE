@@ -13,8 +13,26 @@ dotenv.config({ path: path.resolve(REPO_ROOT, '.env') });
 dotenv.config();
 
 const { Pool } = pkg;
+
+// DATABASE_URL carries `?sslmode=require`. Since pg 8.15 that string is honoured and turns on full
+// certificate verification, which beats the `ssl` option below and fails against the Supabase
+// pooler's self-signed chain ("self-signed certificate in certificate chain") on every single row.
+// Strip the parameter so the explicit ssl config is what actually applies: we still connect over
+// TLS, we just do not verify the chain, which is the behaviour this script always had.
+function connectionString() {
+  const raw = process.env.DATABASE_URL;
+  if (!raw) return raw;
+  try {
+    const u = new URL(raw);
+    u.searchParams.delete('sslmode');
+    return u.toString();
+  } catch {
+    return raw;
+  }
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: connectionString(),
   ssl: { rejectUnauthorized: false },
 });
 
@@ -32,6 +50,11 @@ async function run() {
   console.log(`Loading ${files.length} seed file(s) from catalog_seed/…\n`);
 
   let ok = 0, skipped = 0;
+  // Every (uin, variant) this run loaded. Retiring a seed FILE never used to retire its catalogue
+  // ROW, so a product collapsed back from three variants to one kept all three live in the
+  // database and the collapse looked like it had silently failed. The seed directory is the
+  // source of truth: anything active here that no seed describes is stale.
+  const loadedUins = [], loadedVariants = [];
   for (const file of files) {
     let seed;
     try {
@@ -71,11 +94,48 @@ async function run() {
         ]
       );
       console.log(`  ✓ ${seed.insurer} / ${seed.plan_name}  [${seed.uin}]`);
+      loadedUins.push(seed.uin);
+      loadedVariants.push(typeof seed.variant === 'string' ? seed.variant.trim() : '');
       ok++;
     } catch (e) {
       console.error(`  ✗ ${file}: DB error — ${e.message}`);
       skipped++;
     }
+  }
+
+  // Reconcile activation against the seed directory, in this order.
+  //
+  // First revive anything a seed describes: a row can have been deactivated by the supersede pass
+  // below on an earlier run, and if that product has since been collapsed back to a single row it
+  // must come back. This is only safe because the two other reasons a row is deactivated are both
+  // re-applied every run: the supersede pass runs immediately after this, and the Bajaj regional
+  // clones are retired by fix_catalog_names.mjs, which MUST be run after every load anyway.
+  const revived = await pool.query(
+    `UPDATE policy_catalog p
+        SET is_active = true, updated_at = NOW()
+       FROM unnest($1::text[], $2::text[]) AS s(uin, variant)
+      WHERE p.uin = s.uin AND p.variant = s.variant AND p.is_active = false
+      RETURNING p.uin`,
+    [loadedUins, loadedVariants],
+  );
+
+  // Then retire anything no seed describes any more, which is how a collapsed variant disappears.
+  const orphaned = await pool.query(
+    `UPDATE policy_catalog p
+        SET is_active = false, updated_at = NOW()
+      WHERE p.is_active = true
+        AND NOT EXISTS (
+          SELECT 1 FROM unnest($1::text[], $2::text[]) AS s(uin, variant)
+           WHERE s.uin = p.uin AND s.variant = p.variant
+        )
+      RETURNING p.uin, p.variant`,
+    [loadedUins, loadedVariants],
+  );
+  if (revived.rowCount) console.log(`\nRevived ${revived.rowCount} row(s) that a seed still describes.`);
+  if (orphaned.rowCount) {
+    console.log(`Retired ${orphaned.rowCount} row(s) with no seed file:`);
+    orphaned.rows.slice(0, 12).forEach((r) => console.log(`  ${r.uin}${r.variant ? ` (${r.variant})` : ''}`));
+    if (orphaned.rowCount > 12) console.log(`  … and ${orphaned.rowCount - 12} more`);
   }
 
   // A product that used to be one catalogue row is several once its variants are extracted. The

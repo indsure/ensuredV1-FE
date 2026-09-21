@@ -1,5 +1,5 @@
 {
-  "variant": "Royal",
+  "variant": "Elite+",
   "sum_insured_options": "Global SI: USD 1.5L / 2.5L / 5L / 7.5L / 10L; India Cover (optional): INR 1.5Cr / 2.5Cr / 4.5Cr / 6.5Cr / Unlimited",
   "confidence": "medium",
   "room_rent": {
@@ -19,8 +19,8 @@
   },
   "sub_limits": {
     "ordinal": 3,
-    "display": "Gene Therapy sub-limited; all other illnesses at SI",
-    "note": "Royal plan covers ALL illnesses (not just Specified Illnesses). Gene Therapy: 50% of Global SI or USD 5L whichever lower; lifetime 100% of Global SI. India Cover (if opted): Gene Therapy 50% of India Base SI; OPD INR 50k; Medical Equipment DME INR 5L, SME INR 2L; Home Care INR 25L; Rehabilitation INR 50k."
+    "display": "Gene Therapy sub-limited; most covers at SI",
+    "note": "Elite+ plan covers only Specified Illnesses (same list as Elite). Gene Therapy: 50% of Global SI or USD 5L whichever lower; lifetime 100% of Global SI. India Cover (if opted): Gene Therapy 50% of India Base SI; OPD INR 50k; Medical Equipment DME INR 5L, SME INR 2L; Home Care INR 25L; Rehabilitation INR 50k."
   },
   "deductible": {
     "number": 0,
@@ -34,7 +34,7 @@
   "ped_waiting": {
     "number": 12,
     "display": "36 months (reducible to 12 mo via optional add-on)",
-    "note": "Default PED waiting period is 36 months. Optional add-on (3.3.3) allows reduction to 24 or 12 months."
+    "note": "Default PED waiting period is 36 months. Optional add-on (3.3.3) allows reduction to 24 or 12 months at additional premium."
   },
   "specific_disease_waiting": {
     "number": 24,
@@ -101,8 +101,8 @@
   },
   "global_cover": {
     "exists": true,
-    "display": "Inbuilt (All illnesses covered abroad)",
-    "note": "Royal plan covers ALL illnesses for treatment abroad, not just Specified Illnesses. Cashless via empanelled service providers. Gene Therapy sub-limited."
+    "display": "Inbuilt (Specified Illnesses only)",
+    "note": "Elite+ covers Specified Illnesses abroad (same scope as Elite). Cashless via empanelled service providers."
   },
   "moratorium": {
     "number": 60,
@@ -129,5 +129,5 @@
   "source_file": "indusind-global-health-pw.pdf",
   "status": "unverified",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-21T10:54:14.911Z"
+  "extracted_at": "2026-09-21T10:54:14.772Z"
 }
