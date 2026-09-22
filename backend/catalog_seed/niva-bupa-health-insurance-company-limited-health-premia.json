@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "Health Premia",
+  "uin": "MAXHLIP21176V022021",
+  "sum_insured_options": "₹1L – ₹3Cr (Individual/Family Floater: ₹5L–₹3Cr; Family First: ₹1L–₹15L per person)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private Room (Gold/Platinum) or capped (Silver FF)",
+    "note": "Individual/Family Floater Silver & Gold: no cap except Suite/above excluded; Platinum: no cap except Suite/above. Family First Silver: ₹3,000/day or Shared Room (Option 1) or ₹5,000/day or Single Private Room (Option 2). Gold/Platinum FF: up to SI except Suite/above.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (up to Sum Insured)",
+    "note": "ICU charges covered up to Sum Insured across all plans; no separate ICU sub-limit stated.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (Zone 1); 20% for Zone 2 cities",
+    "note": "Zone 2 pricing option applies 20% co-pay for treatment in Mumbai (incl. Navi Mumbai & Thane), Delhi NCR, Kolkata & Gujarat. International OPD cover also has 20% co-pay. No age-based mandatory co-pay.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Few sub-limits: HIV ₹50k, Mental disorders ₹50k–₹1L, LASER ₹50k–₹1L, Robotic surgery ₹1L (select), Maternity plan-wise",
+    "note": "HIV/AIDS: ₹50,000; Mental disorders: ₹50,000 (Silver/Gold) or ₹1,00,000 (Platinum) on specific conditions; LASER surgery: ₹50,000 (Gold) or ₹1,00,000 (Platinum); Robotic surgeries (non-listed): ₹1,00,000; Maternity: ₹35,000–₹2,00,000 by plan; Emergency ambulance non-network: ₹2,000/event. Most other benefits up to SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No standard deductible in base plan; deductible framework exists in policy but no fixed amount mandated in base cover.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period for all illnesses except accidents from day 1.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "PED waiting period is 24 months of continuous coverage from first policy inception. Portability credit applicable.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "12 months",
+    "note": "Listed specific diseases/procedures (cataract, hernia, osteoarthritis, kidney disease, etc.) have 12-month waiting period. Accidents covered from day 1; cancer after 30-day wait.",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Covered (24mo wait); ₹35k–₹2L by plan",
+    "note": "Inbuilt benefit under Family Floater and Family First policies only (not Individual). 24 months continuous coverage required. Limits: Family First Silver ₹35,000, Gold ₹50,000, Platinum ₹1,00,000; Individual/FF Silver ₹40,000–₹80,000, Gold ₹75,000–₹1,00,000, Platinum ₹2,00,000 (worldwide excl. USA/Canada). Max 2 pregnancies/terminations lifetime.",
+    "optional": false,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr); up to 200% with optional Enhanced Loyalty",
+    "note": "Base: 10% of Base SI per claim-free year, max 100% of Base SI. Optional Enhanced Loyalty Additions (paid add-on) increases rate to 20%/yr, max 200% of Base SI.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of Base SI (same & different illness)",
+    "note": "Re-fill benefit reinstates up to 100% of Base SI once per policy year. Available for same and different illness. Not available under Family First Policy.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "90 days",
+    "note": "Pre-hospitalisation expenses covered for up to 90 days preceding admission, up to Sum Insured.",
+    "optional": false,
+    "number": 90
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for up to 180 days following discharge, up to Sum Insured.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (Annexure III, 536 procedures)",
+    "note": "Only procedures listed in Annexure III are covered as day care. OPD treatment and diagnostic services not included under this benefit.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (min 3 consecutive days)",
+    "note": "Domiciliary hospitalisation covered up to Sum Insured if patient cannot be moved to hospital or no hospital bed available. Minimum 3 consecutive days required.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI (inpatient in AYUSH hospital)",
+    "note": "Ayurveda, Unani, Siddha, Homeopathy inpatient treatment covered up to Sum Insured in recognised AYUSH hospitals. Pre/post-hosp also covered for AYUSH only.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (living donor harvesting expenses)",
+    "note": "Medical expenses for living organ donor's inpatient treatment for organ harvesting covered up to Sum Insured. Stem cell donation excluded except bone marrow transplant.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Network: up to SI; Non-network: ₹2,000/event",
+    "note": "Road ambulance covered up to Sum Insured at network hospitals. At non-network hospitals, capped at ₹2,000 per event. One transfer per hospitalisation.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered (₹1L sub-limit on select robotic surgeries)",
+    "note": "12 modern treatments listed including robotic surgery, stereotactic radiosurgery, oral chemotherapy, etc. Robotic surgeries (except prostatectomy, cardiac, partial nephrectomy, malignancy) capped at ₹1,00,000.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (listed exclusions in Annexure VII)",
+    "note": "Gloves, masks, consumables listed in Annexure VII are explicitly excluded or subsumed into room/procedure charges. No consumables rider available.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Inbuilt (Gold: 1 trip 15 days; Platinum: 45 days/trip); USA/Canada optional",
+    "note": "Gold plan: emergency hospitalisation outside India (excl. USA/Canada), single trip max 15 days, SI up to ₹30L. Platinum: annual multi-trip max 45 days/trip, SI up to ₹1Cr. Optional Enhanced Geographical Scope adds USA & Canada. Specified Illness cover outside India also inbuilt under Gold/Platinum.",
+    "optional": false,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly premium modes and 15 days for monthly instalment mode. Coverage available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for new policies (not applicable on renewals).",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability permitted as per IRDAI norms. Credits for PED waiting, specific waiting periods, cumulative bonus and moratorium transferable to new insurer.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Hormone replacement therapy, sleep disorders, STIs (non-HIV), ancillary hospital charges, external congenital anomaly, circumcision (non-medical), artificial life maintenance",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Personal Accident (up to ₹1Cr), Critical Illness (20 conditions, up to ₹1Cr), Enhanced Loyalty (200% CB), Hospital Cash, Health Coach, International extension (double SI/extra trips), USA & Canada scope",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Health-Premia-Policy-Wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:40:34.853Z"
+}

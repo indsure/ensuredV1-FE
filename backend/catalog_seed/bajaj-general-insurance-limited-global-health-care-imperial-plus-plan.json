@@ -1,0 +1,132 @@
+{
+  "variant": "Imperial Plus Plan",
+  "sum_insured_options": "Domestic: INR 112L, 187.5L, 375L; International: USD 300K, 500K, 1,000K",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap (at actuals)",
+    "note": "Domestic cover: room rent at actuals with no sub-limit. International cover: Single Private Air-Conditioned Room."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "At actuals",
+    "note": "Both domestic and international ICU covered at actual expenses."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment on core covers. 20% co-pay applies only on optional Dental Plan Benefits (international). Optional deductible on international inpatient."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits",
+    "note": "Domestic: AYUSH capped at INR 7.5L, Living donor INR 5K, Rehabilitation INR 50K. International: Living donor USD 50K, Rehabilitation USD 2,300, Repatriation of mortal remains USD 13,500, Inpatient cash USD 175/night max 25 nights. Core inpatient up to SI."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional on international)",
+    "note": "No mandatory deductible. Optional aggregate deductible of USD 0/500/1000 on international inpatient benefits."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "35 listed conditions including cataract, hernia, joint replacement, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered. Routine maternity/delivery/newborn care also excluded under international cover."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of domestic SI",
+    "note": "20% per claim-free year on domestic SI; max 100%. Reduced by 20% after a claim year."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days (domestic); 45 days (international)"
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days (domestic); 90 days (international)"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures (Annexure I)"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is defined but not listed as a covered benefit."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to sub-limit (domestic only)",
+    "note": "AYUSH inpatient covered under domestic plan up to INR 7.5L. Not covered under international plan."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (Living donor costs)",
+    "note": "Domestic: up to INR 5,000. International: up to USD 50,000."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "At actuals (up to SI)",
+    "note": "Local road ambulance up to SI. Air Ambulance + Medical Evacuation up to inpatient SI (international). Includes medical repatriation and repatriation of mortal remains (USD 13,500)."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Robotic surgery, stereotactic radiosurgery, oral chemo, immunotherapy, etc. as per Annexure III."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical items listed in Annexure II are excluded. Medical consumables used during surgery are covered as part of inpatient treatment."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Inbuilt (worldwide excl. or incl. USA)",
+    "note": "International inpatient and outpatient cover inbuilt. Includes emergency treatment outside area of cover (up to 6 weeks/trip) if Excluding USA option chosen. Medical repatriation and mortal remains repatriation also included."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, infertility/IVF, cosmetic surgery, dental (except accident inpatient), external congenital anomalies, OPD mental illness, AYUSH excluded internationally, laser eye treatment",
+  "optional_riders": "Dental Plan (international) with 20% co-pay; optional aggregate deductible (USD 500/1000) on international inpatient; outpatient benefits (OPD, physiotherapy, alt/complementary) inbuilt for international",
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "Global Health Care",
+  "uin": "BAJHLIP23209V022223",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Global-Health-Care_PW.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-21T10:51:55.865Z"
+}

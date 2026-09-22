@@ -1,0 +1,173 @@
+{
+  "insurer": "ManipalCigna Health Insurance Company Limited",
+  "plan_name": "ManipalCigna ProHealth Prime (Protect & Advantage Plans)",
+  "uin": "MCIHLIP26036V022526",
+  "sum_insured_options": "₹3L – ₹1Cr (Protect: ₹3L–₹1Cr; Advantage: ₹5L–₹1Cr)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private AC Room",
+    "note": "Upgradeable to Any Room via Enhance Plus / Enhance / Freedom optional packages. Assure package limits to 1% of SI/day.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (up to SI)",
+    "note": "ICU covered up to Sum Insured opted. Assure package limits to 2% of SI/day.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (zone-based co-pay may apply)",
+    "note": "No mandatory co-pay on base plan. Zone-based co-pay applies if treatment taken in higher zone: Zone II insured in Zone I = 10%; Zone III insured in Zone II = 10%, in Zone I = 20%. Insured can opt Zone I premium to avoid this.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits (base); Assure package adds sub-limits",
+    "note": "Base plan has no disease sub-limits. Optional Assure package (Protect plan, SI ≤₹5L) caps: Hernia/Hysterectomy/BPH/Stones ₹50k–₹65k, Cataract ₹20k–₹30k/eye, Knee replacement ₹80k–₹1L/knee, Bone fracture ₹2L–₹2.5L. Modern treatments capped at 50% SI for SI <₹5L (base plan).",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None (optional ₹10,000 or ₹25,000)",
+    "note": "No inbuilt deductible. Optional deductible of ₹10,000 or ₹25,000 on aggregate per policy year available. ₹25,000 deductible locked for 4 years once opted.",
+    "optional": true,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months (SI ≥₹7.5L); 36 months (SI <₹7.5L)",
+    "note": "PED waiting period is 24 months for Sum Insured ₹7.5L and above; 36 months for Sum Insured below ₹7.5L. Reducible via portability credits.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions include cataract, hernia, knee replacement, varicose veins, stones, BPH, hydrocele, fissure/fistula/piles, CSOM, sinusitis, tonsils, gastric ulcer, cysts/polyps, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (36mo wait)",
+    "note": "Covered under Enhance Plus (Protect) or Enhance (Advantage) optional packages. Up to 10% of SI subject to max ₹1L per delivery; max 2 deliveries/terminations lifetime. Waiting period 36 months. Includes newborn cover and first-year vaccinations.",
+    "optional": true,
+    "exists": true,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Up to 200% (25%/yr)",
+    "note": "25% of SI added per claim-free policy year; max 200% of SI. Optional Cumulative Bonus Booster (50%/yr, max 200%) replaces base CB. ManipalCigna Prime Plus add-on offers Supreme Bonus of 100%/yr up to 800% of base SI.",
+    "optional": false,
+    "number": 200
+  },
+  "restoration": {
+    "display": "Unlimited, 100% – same & unrelated",
+    "note": "100% SI restored unlimited times per policy year for same or unrelated illnesses, once base SI + CB is exhausted. Not available for first claim in the year. Not applicable for Bariatric Surgery, Air Ambulance, OPD, Daily Cash, Maternity, Infertility, Health Check-up.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered up to 60 days before admission, up to Sum Insured.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered up to 180 days after discharge, up to Sum Insured.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care (up to SI)",
+    "note": "All medically necessary day-care procedures covered up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (up to 10% of SI)",
+    "note": "Domiciliary hospitalisation covered up to 10% of Sum Insured; minimum 3 days treatment required. Pre/post-hospitalisation up to 30 days each. Restoration not available.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH in-patient and day-care treatment covered up to Sum Insured. Excludes pleasure/rejuvenation treatments like Panchakarma.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (over & above SI)",
+    "note": "Donor hospitalisation expenses covered; complications up to 30 days post-discharge covered up to 25% of SI subject to max ₹2L, over and above Sum Insured. Donor screening covered once per year for successful transplant.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to SI (road); Air ambulance up to ₹10L over SI",
+    "note": "Road ambulance covered up to Sum Insured. Air ambulance covered up to SI subject to max ₹10L, over and above Sum Insured, for life-threatening emergencies within India.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered (up to SI for SI ≥₹5L; 50% SI for SI <₹5L)",
+    "note": "Listed modern treatments (robotic surgery, stereotactic radio surgery, oral chemo, immunotherapy, intravitreal injections, deep brain stimulation, etc.) covered. For SI <₹5L: up to 50% of SI. For SI ≥₹5L: up to SI. Assure package caps at 10% of SI.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional cover (Non-Medical Items)",
+    "note": "Non-medical/consumable items (Annexure III List I) covered as optional cover D.IV.1. Reduces Sum Insured when claimed.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional (Freedom package)",
+    "note": "Worldwide Emergency Hospitalisation with Outpatient Cover available under Freedom optional package for Indian residents. Covers emergency in-patient and OPD outside India up to Sum Insured, over and above SI. Claims settled in Indian rupees.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly premium modes; 15 days for monthly instalment mode. Coverage not available during grace period unless premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period on new policies only (not on renewals or portability). Refund of premium less proportionate risk premium and medical examination/stamp duty costs.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines with continuity of waiting period credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Multifocal/femto-laser cataract lenses, CPAP/CAPD devices, external congenital anomaly, non-allopathic (non-AYUSH) treatments, circumcision (non-medical), sleep apnea instruments",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Enhance Plus/Enhance (maternity+room upgrade+HMB), Freedom (worldwide emergency), Assure (sub-limits+1%SI room), Non-Medical Items, Deductible, Infertility, Personal Accident, CB Booster, Critical Illness Add-on, ManipalCigna Prime Plus",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "ProHealthPrime-P-A-Plan-TnC.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T14:00:12.271Z"
+}

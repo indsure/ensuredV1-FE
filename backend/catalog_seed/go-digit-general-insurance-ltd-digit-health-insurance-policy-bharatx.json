@@ -1,0 +1,130 @@
+{
+  "variant": "BharatX",
+  "sum_insured_options": "Up to INR 3 Crores",
+  "confidence": "low",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap (default) or modular choice",
+    "note": "BharatX is modular; default is no restriction; customer picks coverages; room rent can be modified via Optional Cover 21"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (default)"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (default)",
+    "note": "Zone-based 10% co-pay if hospitalized in higher zone than declared; modular plan may vary"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Modular; modern treatments 50% SI (waivable); road ambulance 1% SI max ₹10k",
+    "note": "Depends on coverages chosen; modern treatments 50% SI unless Advance Care opted"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 7,
+    "display": "7 days or 30 days",
+    "note": "BharatX shows both 7 days and 30 days options in plan chart; customer chooses"
+  },
+  "ped_waiting": {
+    "number": 12,
+    "display": "12 months or 36 months",
+    "note": "BharatX shows both 3 years and 1 year options; best achievable is 12 months"
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12 months or 24 months",
+    "note": "BharatX shows both 2 years and 1 year options; best achievable is 12 months"
+  },
+  "maternity": {
+    "exists": true,
+    "number": 9,
+    "display": "Optional (Section 4 or OC9)",
+    "note": "BharatX is modular; Section 4 Maternity Wallet or Optional Cover 9 can be chosen; 9-month wait for Section 4"
+  },
+  "cumulative_bonus": {
+    "number": 600,
+    "display": "Up to 600% (modular options)",
+    "note": "BharatX plan chart shows cumulative bonus options ranging from 5% up to 25% per year with max up to 600%; exact rate depends on option chosen"
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited or once/yr (modular)",
+    "note": "BharatX shows unlimited reinstatement or once per policy period options; depends on chosen coverage"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 to 120 days (modular)",
+    "note": "BharatX plan chart shows 30/60/90/120 days options"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 to 180 days (modular)",
+    "note": "BharatX plan chart shows 60/90/120/180 days options; pre-hosp always less than post-hosp"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 10000,
+    "display": "1% of SI, max ₹10,000",
+    "note": "0.25% of SI max INR 10,000 shown in plan chart for BharatX"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "Optional Cover 6 upgrades to 100% SI"
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider"
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional (modular)",
+    "note": "Worldwide Coverage available as modular choice in BharatX; not available if NRI Benefit opted"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Fully modular plan; exclusions depend on coverages chosen; consumables not inbuilt; tobacco-related oral/respiratory cancer excluded; hormone replacement therapy excluded",
+  "optional_riders": "All 25 optional covers available; customer picks and chooses coverages including Consumables, OPD, Maternity, Infertility, Advance Care, Medical Equipment, NRI Benefit, Infinite Cumulative Bonus",
+  "insurer": "Go Digit General Insurance Ltd.",
+  "plan_name": "Digit Health Insurance Policy",
+  "uin": "GODHLIP25039V022425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "policy-wordings-digit-health-insurance-policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:00:26.157Z"
+}

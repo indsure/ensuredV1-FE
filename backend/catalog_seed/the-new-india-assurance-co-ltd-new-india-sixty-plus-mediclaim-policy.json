@@ -1,0 +1,173 @@
+{
+  "insurer": "The New India Assurance Co. Ltd.",
+  "plan_name": "New India Sixty Plus Mediclaim Policy",
+  "uin": "NIAHLIP25049V032425",
+  "sum_insured_options": "₹2L – ₹5L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Room rent capped at 1% of Sum Insured per day; ICU at 2% of SI per day. Room rent sub-limit capped at 25% of SI+Bonus per illness.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU charges capped at 2% of Sum Insured per day, included within 25% of SI+Bonus per illness limit.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "10% mandatory on all claims",
+    "note": "10% co-pay applies on all admissible claims. Not applicable for claims under section 3.2 (specified surgeries). Optional voluntary extra 10% co-pay available for premium discount.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Many sub-limits: cataract, CABG, joint replacement, cancer, etc.",
+    "note": "Section 3.2 caps: cataract ₹15k–₹25k, CABG ₹1.5L–₹2.75L, joint replacement ₹80k–₹1.5L, major cancer surgery ₹1.4L–₹2.75L, PTCA ₹75k–₹1.5L, organ transplant ₹1.5L–₹3L, and many more. Modern treatments also sub-limited (3.14). Section 3.1 sub-limits: room 25%, surgeon fees 25%, consumables/medicines 50% of SI+Bonus per illness.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months of continuous coverage. No reduction option mentioned.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 90 days (diabetes, hypertension, cardiac)",
+    "note": "90-day wait: diabetes, hypertension, cardiac conditions. 24-month wait: cataract, hernia, piles, fissure, fistula, hydrocele, stones, etc. 36-month wait: joint replacement (degenerative), ARMD, mental illness, genetic disorders, congenital external diseases.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under standard exclusion Excl18.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Cumulative Bonus Buffer carried forward only",
+    "note": "No fresh accrual of cumulative bonus under this policy. Only existing Cumulative Bonus Buffer from prior policies is protected and carried forward. No new no-claim bonus accrues.",
+    "optional": false,
+    "number": 0
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days, subject to max 10% of SI combined with post-hospitalisation.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days, subject to max 10% of SI combined with pre-hospitalisation.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed procedures only (Annexure I)",
+    "note": "Day care covered for procedures listed in Annexure I; not all day-care procedures.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is explicitly excluded under section 4.4.17.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient AYUSH treatment covered up to 100% of Sum Insured per policy year.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (within surgery sub-limit)",
+    "note": "Donor hospitalisation expenses covered under section 3.11, but limited to the major organ transplant sub-limit in section 3.2 (₹1.5L–₹3L). Cost of organ itself excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "1% of SI per hospitalisation",
+    "note": "Ambulance charges covered up to 1% of Sum Insured per hospitalisation for emergency admission or inter-hospital transfer.",
+    "optional": false,
+    "number": 5000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Modern treatments covered under section 3.14 with individual sub-limits: robotic surgery up to 10% of SI (max ₹50k), oral chemotherapy up to 50% of SI (max ₹2.5L), intravitreal injections up to 25% of SI (max ₹1L), etc.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables like gloves, masks, etc. are listed in Annexure II List I as non-payable items. Surgical consumables/disposables in section 3.1.3 are covered only as part of hospitalisation up to 50% of SI sub-limit.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment only within India (section 5.11). Treatment outside India is excluded (section 4.4.28).",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "Grace period is 15 days for monthly premium mode and 30 days for all other modes. Coverage not available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for new policies of 1 year or more.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary hospitalisation, treatment outside India, sleep apnoea, RFQMR/ECP/EECP/hyperbaric oxygen, acupressure/acupuncture, dental (unless accident), vaccination, venereal disease, suicide attempt injuries",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Voluntary extra 10% co-pay (total 20%) for premium discount",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy Clause New India Sixty Plus Mediclaim Policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:35:36.815Z"
+}

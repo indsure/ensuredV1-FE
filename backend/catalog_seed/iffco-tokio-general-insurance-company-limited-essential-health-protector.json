@@ -1,0 +1,145 @@
+{
+  "variant": "",
+  "sum_insured_options": "5 lakhs and above (exact options not specified in wording; tables reference 5L, 10L, 15L, 25L bands)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "2% of SI/day or Single Standard AC Room (SI ≥10L); 1.5%/1.25% of SI/day for SI <10L (Class A/other cities)",
+    "note": "For SI ≥10L: 2% of SI per day or Single Standard AC Room, whichever is less. For SI <10L: Class A cities 1.5% of SI/day; other cities 1.25% of SI/day. Service charges capped at 0.5% of SI per hospitalisation."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "3% of SI/day (SI ≥10L); 2.5%/2% of SI/day for SI <10L (Class A/other cities)",
+    "note": "For SI ≥10L: 3% of SI per day or actual, whichever is less. For SI <10L: Class A cities 2.5%; other cities 2% of SI per day."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (voluntary co-pay options available)",
+    "note": "No mandatory co-payment. Voluntary co-pay options of 10%, 20% or 25% available at policyholder's choice; once opted cannot be removed during policy period."
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Cataract, ENT, Hernia, Hysterectomy, Piles, Knee Ligament, Joint Replacement, PIVD capped",
+    "note": "Cataract: ₹50k-₹1L/eye by SI band; ENT disorders: 10% of basic SI up to ₹1.5L; Hernia: 10% up to ₹1.5L/site; Hysterectomy: 10% up to ₹2L; Piles/Fissure/Fistula: 10% up to ₹1.5L; Knee Ligament: 10% up to ₹2L; Joint Replacement: 20% up to ₹3L/replacement; PIVD/spinal: 20% up to ₹3L. Modern treatments capped at 50% of SI."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": null
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Waived for accidents; not applicable if continuously covered for more than 12 months."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Reduced by prior continuous coverage under portability/migration norms."
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12 months (some conditions 24 months)",
+    "note": "12-month wait: Tonsillitis/Adenoids surgery, Tympanoplasty/Septoplasty, Fistula/Piles, Carcinoma/Sarcoma, Varicose Veins, Ligament/Meniscus tears. 24-month wait: Cataract, BPH, Hernia, Hydrocele, Sinusitis, Gallstones, PIVD/Spondylitis, Knee/Joint Replacement, Chronic Renal Failure, Benign growths/Cysts, Uterine Fibroids, Hysterectomy."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18). Ectopic pregnancy is covered. Gender Reassignment Surgery is covered as an additional benefit (24-month wait, up to 50% of basic SI max ₹4L)."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of basic SI",
+    "note": "25% of basic SI after first claim-free year, then 10% per subsequent claim-free year, max 100% of basic SI. Reduces at accrual rate on claim. Alternatively, policyholder may opt for 5% No Claim Discount on premium instead."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/year, 100% of basic SI",
+    "note": "100% of basic SI reinstated once per policy year after exhaustion. Not available for relapses within 45 days, domiciliary/home care, or for 11 listed critical/chronic conditions (cancer, CABG, stroke, etc.). Reinstated SI cannot be used for the same claim that triggered reinstatement."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses for same condition, within SI limit."
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses for same condition, within SI limit."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures (380 listed in Annexure C)",
+    "note": "Extensive list of 380 day-care procedures covered. Also covers hospitalisation >12 hours but <24 hours at insurer's discretion with prior authorisation."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (with exclusions)",
+    "note": "Covered up to SI for medically necessary cases. Excluded for 13 specific conditions including asthma, diabetes, hypertension, epilepsy, arthritis, critical illnesses, etc."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH hospitalisation in AYUSH hospitals or day care centres covered including pre/post hospitalisation expenses."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (within insured's sub-limits)",
+    "note": "Donor hospitalisation expenses covered subject to insured's applicable sub-limits and SI. Donor room rent limited to 50% of insured's room rent entitlement. Ambulance, pre/post hospitalisation and daily allowance not payable for donor."
+  },
+  "ambulance": {
+    "number": 10000,
+    "display": "Actuals or ₹10,000/hospitalisation, whichever is less",
+    "note": "Road ambulance only; within policy SI limit. Payable only on admissible hospitalisation claim."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (up to 50% of SI)",
+    "note": "12 modern treatment procedures covered (robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, deep brain stimulation, etc.) up to 50% of SI per policy period."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider (Consumable Cover extension)",
+    "note": "Available as paid optional extension. Covers a defined list of consumables (gloves, crepe bandage, diaper, splint, knee braces, etc.); several items remain non-payable even under extension. Once opted, cannot be removed at renewal."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Territorial limit clause restricts all treatment to India only. Emergency Assistance Services available within India (150+ km from home) only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim or policy contestable except on grounds of established fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "30 days for renewal and non-monthly installment modes; 15 days for monthly installment mode. Coverage available during grace period only for installment-mode policies."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable at inception only, not on renewals or porting/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to same product with other insurers allowed with continuity of waiting periods and accrued bonus, subject to IRDAI norms."
+  },
+  "notable_exclusions": {
+    "display": "Maternity, dental (OPD), spectacles/hearing aids, OPD procedures converted to IP, intra-articular injections, physiotherapy (standalone), adventure sports (non-professional), 90-day wait for diabetes/hypertension aggravated diseases"
+  },
+  "optional_riders": {
+    "display": "Consumable Cover extension; Voluntary Co-payment (10%/20%/25%); No Claim Discount (5% premium discount) as alternative to Cumulative Bonus"
+  },
+  "insurer": "IFFCO TOKIO General Insurance Company Limited",
+  "plan_name": "Essential Health Protector",
+  "uin": "IFFHLIP25040V022425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "wordings_EHP.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:02:44.216Z"
+}

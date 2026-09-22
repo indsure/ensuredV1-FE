@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Arogya Sanjeevani Policy, Star Health And Allied Insurance Co Ltd.",
+  "uin": "SHAHLIP26045V042526",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "If room taken at higher rate, all other expenses (except medicines) reimbursed proportionately",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "Proportionate deduction applies if ICU charges exceed limit",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-pay applies to every claim for all insured persons",
+    "optional": false,
+    "number": 5
+  },
+  "sub_limits": {
+    "display": "Cataract capped at 25% of SI or ₹40,000/eye; modern treatments up to 50% of SI",
+    "note": "Cataract: lower of 25% SI or ₹40,000 per eye per year; listed modern/day-care procedures capped at 50% SI; road ambulance ₹2,000 per hospitalisation",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Waived for accidents; waived if prior continuous coverage exceeds 12 months",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Only PEDs declared and accepted by insurer are covered after 36 months; no optional reduction available",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (some 36 months)",
+    "note": "24-month list: benign ENT, tonsillectomy, adenoidectomy, mastoidectomy, tympanoplasty, hysterectomy, benign tumours/cysts, BPH, cataract, gastric ulcer, gout, hernia, hydrocele, non-infective arthritis, piles/fissures/fistula, pilonidal sinus/sinusitis, prolapsed IVD, calculi, varicose veins, internal congenital anomalies. 36-month list: joint replacement, age-related osteoarthritis & osteoporosis",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under Code Excl 18; ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (5%/yr, reduces on claim)",
+    "note": "5% added per claim-free year; reduced at same rate if claim made; max 50% of SI",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "For same condition as hospitalisation; inpatient claim must be admissible",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "For same condition as hospitalisation; inpatient claim must be admissible",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care treatments covered",
+    "note": "All day-care treatments listed as covered; listed modern procedures also covered as day-care up to 50% SI",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation and OPD treatment explicitly excluded under specific exclusion 21",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to full Sum Insured in recognised AYUSH hospitals",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "No mention of organ donor expenses in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance covered up to ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited to 50% of SI",
+    "note": "12 listed modern treatments (robotic surgery, stereotactic radio surgery, oral chemo, immunotherapy, HIFU, balloon sinuplasty, deep brain stimulation, intravitreal injections, bronchial thermoplasty, green/holmium laser prostate, IONM, stem cell therapy) covered up to 50% of SI",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-medical consumables (gloves, masks, etc.) explicitly excluded in Annexure-A List I; no consumables rider available",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit clause restricts all treatment to India only",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to original SI; enhanced SI has fresh 60-month period for enhanced portion",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for yearly/half-yearly/quarterly; 15 days for monthly premium mode",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Apply at least 30 days before but not earlier than 60 days from renewal date; credits for PED, specific waiting periods, moratorium transferred",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary/OPD, maternity, sterility/infertility, treatment outside India, war, nuclear/bio/chemical attack, permanent exclusions per schedule",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None mentioned",
+    "note": "No optional riders or add-ons described in the policy wording",
+    "optional": false
+  },
+  "source_file": "Policy_Arogya_Sanjeevani_Insurance_Policy_V_12_84d133b97f.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:21:00.133Z"
+}

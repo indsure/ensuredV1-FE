@@ -1,0 +1,132 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (individual or floater basis)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "Room rent capped at 2% of SI per day subject to maximum of ₹5,000/day. Proportionate deduction applies to other expenses if higher room taken."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "ICU/ICCU charges capped at 5% of SI per day subject to maximum of ₹10,000/day."
+  },
+  "copayment": {
+    "number": 5,
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-payment applies to every admissible claim amount."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract capped; modern treatments at 50% SI",
+    "note": "Cataract: 25% of SI or ₹40,000 per eye per year, whichever is lower. Modern/advanced treatments (robotic surgery, etc.): up to 50% of SI. Room rent and ICU also sub-limited."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (some conditions 36 months)",
+    "note": "24-month wait for cataract, hernia, piles, calculi, varicose veins, hysterectomy, etc. 36-month wait for joint replacement and age-related osteoarthritis/osteoporosis."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under standard exclusion Excl18. Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% added per claim-free year; reduced at same rate if claim made. Maximum 50% of SI."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation and OPD treatment explicitly excluded."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to sum insured in recognised AYUSH hospitals."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No mention of organ donor expenses cover in the policy wording."
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance covered up to ₹2,000 per hospitalisation."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (up to 50% of SI)",
+    "note": "12 listed modern treatments including robotic surgery, stereotactic radio surgery, oral chemotherapy, stem cell therapy etc. covered up to 50% of SI."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-payable consumables/non-medical items in Annexures. No consumables cover rider available."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded; territorial limit is India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim/policy contestable except on grounds of established fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, domiciliary/OPD, treatment outside India, war, nuclear/bio/chemical, sterility/infertility, cosmetic surgery, adventure sports (professional)",
+  "optional_riders": "None mentioned",
+  "insurer": "Go Digit General Insurance Limited",
+  "plan_name": "Arogya Sanjeevani Policy, Go Digit",
+  "uin": "GODHLIP24179V022324",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "policy-wordings-arogya-sanjeevani-policy-go-digit.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:59:13.082Z"
+}

@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "RISE",
+  "uin": "NBHHLIP25041V012425",
+  "sum_insured_options": "Not specified",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Twin Sharing Room (default)",
+    "note": "Optional upgrade to General Ward, Single Private Room, or All Room Category available. Upgrading to higher category triggers 20–30% co-payment on associated medical expenses. ICU always paid up to SI.",
+    "optional": false,
+    "ordinal": 2
+  },
+  "icu": {
+    "display": "No cap (up to SI)",
+    "note": "ICU admission always paid up to Sum Insured regardless of room category opted.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "20% for out-of-tiered-network hospitals",
+    "note": "Flat 20% co-pay applies if treatment taken outside Rise-Tiered Network. Additional co-pay if higher room category chosen. No co-pay within tiered network. 'No Co-Pay Network' add-on can remove the network co-pay.",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Modern treatments capped at ₹50,000/claim",
+    "note": "All 12 listed modern treatments (robotic surgery, immunotherapy, etc.) subject to ₹50,000 per claim sub-limit inbuilt. Optional 'Modern Treatment+' add-on removes this cap.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (optional Annual Aggregate Deductible available)",
+    "note": "Annual Aggregate Deductible is an optional add-on; cannot be combined with co-payment.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Accidents covered from day 1. Not applicable after 12 months of continuous coverage.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Optional 'Pre-Existing Disease Waiting Time Modification' add-on can reduce or increase this; only available at policy inception.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Applies to listed conditions (cataract, hernia, joint replacement, etc.). Accidents covered from day 1; cancer covered after 30-day wait. Optional modification available at inception only.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered (standard exclusion)",
+    "note": "Maternity expenses are a standard exclusion (Excl18). Ectopic pregnancy is covered. IVF/ART also excluded.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr)",
+    "note": "Loyalty Bonus: 10% of expiring Base SI added each policy year, accumulates up to 100% of Base SI.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% (same or different illness)",
+    "note": "Re-fill adds Base SI once per policy year on complete or partial utilisation, for any illness. Optional 'ReAssure Forever' upgrade provides unlimited restorations (each up to Base SI) triggered by first paid claim, but replaces Re-fill.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Covers consultations, medicines, physiotherapy, diagnostics for same condition as hospitalisation.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Covers expenses for same condition after discharge.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "Covered (2-hour minimum stay)",
+    "note": "Hospitalisation considered from 2 hours; day-care procedures under general/local anaesthesia covered.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Home Care/Domiciliary treatment covered with doctor's advice and daily monitoring. Medical/ambulatory devices at home not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (min 24-hr stay in AYUSH hospital)",
+    "note": "AYUSH treatment in recognised AYUSH hospitals covered; minimum 24-hour admission required.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Harvesting expenses for donor covered when insured's transplant claim is paid; also covers insured if they donate an organ.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance up to ₹2,000 per hospitalisation; paid only if hospitalisation claim is admitted.",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (₹50,000/claim inbuilt)",
+    "note": "12 listed modern treatments covered with ₹50,000/claim cap. Optional 'Modern Treatment+' removes cap, covers up to SI.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider (Safeguard / Safeguard+)",
+    "note": "Safeguard covers List I non-payables; Safeguard+ covers Lists I–IV. Both are optional paid add-ons.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy covers Allopathic and AYUSH treatments in India only; all claims payable in India in INR.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim/policy contestable except for proven fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for annual/quarterly/half-yearly; 15 days for monthly instalments. Coverage available during grace period for instalment payers.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only, not renewals.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Credits for PED, specific waiting periods, NCB and moratorium transferable to another insurer.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment, dental (non-accident), external congenital anomaly, refractive error <7.5D, conflict/disaster, investigation-only admissions, artificial life maintenance",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Hospital Cash, Personal Accident, Safeguard/Safeguard+, Health Checkup, Co-Payment, Annual Aggregate Deductible, Room Type Modification, Modern Treatment+, ReAssure Forever, Return/Return+, Smart Cash+, No Co-Pay Network",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Rise_Policy_Wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:41:53.850Z"
+}

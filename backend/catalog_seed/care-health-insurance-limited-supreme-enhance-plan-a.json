@@ -1,0 +1,137 @@
+{
+  "variant": "Plan A",
+  "sum_insured_options": "Not specified in wording (illustrations show ₹10,00,000; deductible options available)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private AC Room",
+    "note": "Eligible room is Single Private AC Room (inbuilt). Optional Benefit 3.2.2 allows upgrade to Twin Sharing Room or No Limit for additional premium."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "ICU charges have no separate restriction under the base policy."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment mentioned for Plan A."
+  },
+  "sub_limits": {
+    "ordinal": 5,
+    "display": "No sub-limits",
+    "note": "Plan A has no disease/procedure sub-limits in the base cover. Optional Benefit 3.2.8 can add a sub-limit on Advance Technology Methods if opted."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "Optional; aggregate basis per policy year",
+    "note": "Deductible is optional and applied on aggregate basis for all claims in a policy year under Plan A. Amount chosen by policyholder and shown in Policy Schedule."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (reducible via optional add-on)",
+    "note": "Default PED waiting period is 36 months. Optional Benefit 3.2.6 (PED Wait Period Modification) can reduce this to a shorter period as per Policy Schedule."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (reducible via optional add-on)",
+    "note": "Named ailment waiting period is 24 months. Optional Benefit 3.2.7 can reduce this. List includes cataract, hernia, joint replacement, ENT surgeries, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a permanent exclusion (Excl18) under this policy."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of SI",
+    "note": "10% flat per completed policy year; max 100% of SI. No impact on accrual even if claim is made."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited, 100% of base SI",
+    "note": "Unlimited Automatic Recharge reinstates up to base SI unlimited times per policy year after base SI is exhausted. Usable for same or different illnesses. Cumulative Bonus not included in recharge calculation."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Claim documents to be submitted within 30 days after completion of 180 days from discharge."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Covered up to SI via reimbursement only; must exceed 3 consecutive days. Excludes 12 specific conditions (asthma, diabetes, hypertension, etc.)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment covered if claim is admissible under In-patient Care; treatment must be within India."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Donor's medical expenses for organ transplant surgery covered up to SI. Pre/post-hospitalisation for donor not covered."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered up to SI",
+    "note": "Road ambulance covered up to Sum Insured (no separate sub-limit stated). Air Ambulance is an optional benefit."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "12 listed Advance Technology Methods (robotic surgery, stereotactic radio surgery, oral chemo, etc.) covered up to SI. Optional Benefit 3.2.8 can impose a sub-limit if opted."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumable items are listed in Annexure I as excluded. No optional rider for consumables mentioned."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional add-on",
+    "note": "Optional Benefit 3.2.1 covers planned and emergency hospitalisation outside India up to SI specified in Policy Schedule. Restricted to In-patient Care and Day Care Treatment only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months (5 years)",
+    "note": "After 5 continuous years, no claim can be contested except for proven fraud and permanent exclusions."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, sterility/infertility, hormone replacement therapy, tobacco/alcohol-related illness, hazardous sports (professional), external congenital anomaly, refractive error <7.5D",
+  "optional_riders": "Global Coverage, Room Rent Modification (Twin/No Limit), Daily Cash Allowance, Air Ambulance, International Second Opinion, PED Wait Period Modification, Named Ailment Wait Period Modification, Advance Technology Methods sub-limit, Unlimited Care",
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Supreme Enhance",
+  "uin": "CHIHLIP25036V012425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "supreme-enhance---policy-terms-and-conditions.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:55:50.822Z"
+}

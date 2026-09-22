@@ -1,0 +1,139 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (illustrations show ₹3,00,000; policy schedule determines actual SI)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "Single Private AC Room or 1% of SI/day (per Policy Schedule)",
+    "note": "Policy Schedule specifies either 'Single Private AC Room' or 'up to 1% of SI per day'. For SI>=5L with Optional Benefit: Room Rent and ICU Modification, room rent can be upgraded to No Sub-limit. NCB/NCBS amounts excluded from room rent limit calculation."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "Up to 2% of SI/day",
+    "note": "Default is 2% of SI per day. For SI>=5L with Optional Benefit: Room Rent and ICU Modification, ICU becomes No Sub-limit. Policy Schedule specifies applicable limit."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base); 10% extra if eldest insured >70 yrs with Voluntary Co-pay opted",
+    "note": "No mandatory co-payment by default. Optional Benefit: Voluntary Co-payment allows insured to choose a co-pay. If entry/renewal age >70 yrs, additional 10% co-pay applies over selected co-pay. Optional Benefit: Smart Select adds 20% co-pay for non-Annexure III hospitals."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few optional sub-limits (cataract, knee, cancer, etc.)",
+    "note": "Base plan has no disease sub-limits inbuilt. Optional Benefit: Sub-limit on Specified Diseases (cataract, total knee replacement, CVA/CVD, cancer, renal diseases, long bone fractures) and Optional Benefit: Sub-limit on Advance Technology Methods and Optional Benefit: Sub-Limit on Hospitalization related Expenses can add sub-limits if opted."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional deductible available)",
+    "note": "No mandatory deductible. A Deductible Option can be opted as per Policy Schedule."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses from first policy commencement date; accidents exempt."
+  },
+  "ped_waiting": {
+    "number": 12,
+    "display": "12 months",
+    "note": "PED waiting period is 12 months from inception of first policy. Optional Benefit: Increase in PED Waiting Period can extend this. Optional Benefit: Instant Cover waives PED waiting for Diabetes/Hypertension/Hyperlipidemia/Asthma at first issuance."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Listed conditions (arthritis, ENT surgeries, BPH, cataract, hernia, varicose veins, Parkinson's, Alzheimer's, etc.) have 24-month waiting period. If longer PED waiting applies, the longer period prevails."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard permanent exclusion (Code Excl18). Ectopic pregnancy is covered under hospitalization."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (25%/yr)",
+    "note": "NCB accrues at 25% flat per claim-free year, capped at 100% of SI. Reduced at same rate on claim. Optional Benefit: No Claim Bonus Super adds additional 50%/yr up to 100% of SI on top of NCB. Optional Benefit: Modification of No Claim Bonus reduces NCB to 10%/yr capped at 50%."
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once/yr, 100% of base SI (same & different illness)",
+    "note": "Automatic Recharge reinstates base SI once per policy year after full exhaustion of SI+NCB+NCBS+additional SIs. Usable for same or different illness. Optional Benefit: Unlimited Automatic Recharge extends this to unlimited times. Optional Benefit: Termination of Automatic Recharge removes this benefit."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Pre-hospitalization expenses covered for 60 days prior to admission. Optional Benefit: Modification of Pre/Post Hospitalization reduces this to 30 days."
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Post-hospitalization expenses covered for 90 days after discharge; claim documents within 30 days after 90-day period. Optional Benefit: Modification reduces this to 60 days."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (>3 consecutive days; reimbursement only)",
+    "note": "Domiciliary hospitalization covered up to SI via reimbursement only. Certain diseases (asthma, bronchitis, diabetes, hypertension, epilepsy, etc.) excluded under this benefit."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy) covered up to SI via cashless or reimbursement, subject to in-patient claim being admissible."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Organ donor medical expenses covered up to SI for harvesting surgery when insured is the recipient. Pre/post-hospitalization for donor not covered."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered (limit per Policy Schedule)",
+    "note": "Road ambulance covered up to limit specified in Policy Schedule. Air Ambulance available as Optional Benefit with separate limit."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI (12 listed procedures)",
+    "note": "Advance Technology Methods (robotic surgery, stereotactic radio surgery, oral chemotherapy, immunotherapy, HIFU, deep brain stimulation, etc.) covered up to SI inbuilt. Optional Benefit: Sub-limit on Advance Technology Methods can cap these if opted."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumable items listed in Annexure I are excluded. No optional rider for consumables cover identified in this wording."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy covers medical treatment taken entirely within India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 5 continuous years, no claim can be contested except for proven fraud and permanent exclusions."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 30 days for annual/half-yearly/quarterly premium; 15 days for monthly installment mode. Coverage not available during grace period unless premium paid in installments."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or porting/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, hormone replacement therapy, tobacco/alcohol-related illness, external congenital anomaly, alopecia, mental retardation, domiciliary for asthma/diabetes/hypertension/epilepsy etc.",
+  "optional_riders": "Room Rent & ICU Modification, Unlimited Auto Recharge, OPD Care, OPD Consultation & Therapy, NCB Super, Voluntary Co-pay, Smart Select, Air Ambulance, Instant Cover (PED waiver), Disease Management Programs, Additional SI for Accident/Critical Illness",
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Senior Health Advantage",
+  "uin": "CHIHLIP22223V012122",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "senior-health-advantage---policy-terms-and-conditions-(effective-from-29-september-2024-).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:55:43.696Z"
+}

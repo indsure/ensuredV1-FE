@@ -1,0 +1,172 @@
+{
+  "insurer": "Navi General Insurance Limited",
+  "plan_name": "Navi Health",
+  "uin": "NAVHLIP27036V032627",
+  "sum_insured_options": "Not specified in wording (₹1Cr, ₹2Cr, ₹3Cr options referenced for room upgrade)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private A/C Room",
+    "note": "No cap if occupancy is Single Private A/C Room or lower. Proportionate deduction applies if higher room chosen. Optional 'Any Room Upgrade' available for SI of ₹1Cr, ₹2Cr, ₹3Cr.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap",
+    "note": "ICU charges covered under Section 3.1 with no separate sub-limit mentioned in the wording.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Maternity capped at ₹30,000; Newborn ₹10,000; Air Ambulance ₹5L; OPD ₹5,000/₹10,000",
+    "note": "Maternity sub-limit ₹30,000 (optional cover); Newborn Baby ₹10,000; Air Ambulance ₹5L; OPD benefit ₹5,000 individual/₹10,000 floater. Core hospitalisation has no disease-wise sub-limits.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period as per policy schedule; standard IRDAI portability credit applies.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Specific disease/procedure waiting period as per Section 4.1.2; exact months subject to Policy Schedule but standard is 24 months.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on, ₹30,000 limit, 36-month wait",
+    "note": "Covered under Section 3.13 as optional cover; limit ₹30,000 for delivery/termination (max 2 events lifetime); 36-month continuous coverage wait; Newborn Baby benefit ₹10,000 additional.",
+    "optional": true,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Guaranteed Bonus (rate per Policy Schedule)",
+    "note": "Guaranteed Bonus accrues each year regardless of claims; exact percentage and maximum cap specified in Policy Schedule, not stated in wording. This is an optional cover (Section 3.10).",
+    "optional": true,
+    "number": null
+  },
+  "restoration": {
+    "display": "Automatic, up to 100%, multiple times",
+    "note": "Section 3.12: Automatic restoration of Base Sum Insured up to 100% for number of times as per Policy Schedule. Restoration for same ailment only for subsequent distinct claims (not within 45-day Any One Illness window). Number of restorations per year per Policy Schedule.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "Not specified (days per Policy Schedule)",
+    "note": "Pre-hospitalisation expenses covered under Section 3.2; exact number of days not stated in wording, referenced to Policy Schedule.",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "Not specified (days per Policy Schedule)",
+    "note": "Post-hospitalisation expenses covered under Section 3.3; exact number of days not stated in wording, referenced to Policy Schedule.",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "Section 3.1 covers Day Care Treatment for all eligible procedures under general or local anaesthesia.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Optional add-on",
+    "note": "Section 3.7: Domiciliary Hospitalisation is an optional cover; requires Medical Practitioner certification; minimum 3 consecutive days.",
+    "optional": true,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Optional add-on, up to SI",
+    "note": "Section 3.6: AYUSH inpatient treatment is an optional cover; reduces Sum Insured; pre/post-hospitalisation also covered.",
+    "optional": true,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Optional add-on",
+    "note": "Section 3.8: Organ Donor harvesting expenses covered as optional cover; reduces Sum Insured.",
+    "optional": true,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "At actuals (road); Air Ambulance ₹5L optional",
+    "note": "Section 3.4: Emergency road ambulance covered at actuals (no fixed cap stated). Section 3.16: Air Ambulance up to ₹5L as optional cover.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "Section 3.1 explicitly covers Modern Treatments (robotic surgery, oral chemo, stereotactic, etc.) under inpatient hospitalisation with no separate sub-limit stated.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on (Non-payable expenses cover)",
+    "note": "Section 3.14: Non-payable/consumable items (List I of Annexure I) covered as optional add-on; reduces Sum Insured.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Section 5.2.7 and 4.2.10 explicitly restrict coverage to India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "Section 5.1.14: After 5 continuous years no look-back applies; claims not contestable except for proven fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "Section 5.1.9: 30-day grace period for annual renewal. Monthly instalment grace is 15 days.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Section 5.1.11: 30-day free-look period for new policies only; not applicable on renewals or porting.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Section 5.1.8: Portability allowed as per IRDAI guidelines.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "External congenital anomaly, OPD (unless add-on), war/nuclear/bio/chemical, self-inflicted injury, treatment outside India, sterility/infertility",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "AYUSH, Domiciliary, Organ Donor, Maternity+Newborn, Non-payable items, Air Ambulance, Guaranteed Bonus, OPD benefit, Accidental Death, Room Upgrade, Restoration",
+    "note": null,
+    "optional": false
+  },
+  "source_file": "navi_health_policy_wordings_26_27.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:28:54.253Z"
+}

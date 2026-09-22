@@ -1,0 +1,165 @@
+{
+  "insurer": "The New India Assurance Co. Ltd.",
+  "plan_name": "Paripoorna Mediclaim Ayush Bima",
+  "uin": "NIAHLIP26073V012526",
+  "sum_insured_options": "₹10L – ₹20L (mentioned in cataract sub-limit table; full range not specified)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Proportionate deduction on associate medical expenses if higher room chosen; not applied on pharmacy, implants, diagnostics",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "Includes ICU bed, monitoring devices, critical care nursing and intensivist charges",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "30% or 50% (as opted)",
+    "note": "Co-payment is mandatory and chosen at inception: either 70% insurer/30% insured or 50%/50%",
+    "optional": false,
+    "number": 30
+  },
+  "sub_limits": {
+    "display": "Cataract, ARMD, mental illness, genetic, puberty/menopause, life support capped",
+    "note": "Cataract: ₹1L (10L SI) / ₹1.5L (20L SI); ARMD: 10% SI max ₹75k; Mental illness: 25% SI; Genetic: 25% SI; Puberty/menopause: 25% SI; Life support: 10% SI max 15 days; Modern treatments: 25% SI each",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Waived for accidents; not applicable after 12 months continuous coverage",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "Reducible via portability credit from prior continuous coverage",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Hernia, cataract, hydrocele, stones, joint replacement, mental illness, ARMD, genetic disorders etc.; Diabetes & hypertension: 90 days",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18); ectopic pregnancy covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% added per claim-free year; reduced at same rate if claim made; option to convert to premium discount instead",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in policy",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed procedures only",
+    "note": "Annexure I lists ~226 specific day care procedures",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Explicitly excluded under clause 4.4.17",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient hospitalisation under Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy covered up to full SI per policy year",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Donor hospitalisation expenses covered (excluding cost of organ) within recipient's SI",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "0.5% of SI per event",
+    "note": "For emergency transfer to hospital or inter-hospital transfer",
+    "optional": false,
+    "number": 5000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (25% of SI each)",
+    "note": "12 procedures listed including robotic surgery, oral chemo, immunotherapy, stereotactic radiosurgery, stem cell therapy etc.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Gloves, masks, consumables listed under non-payable items in Annexure II List I",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment only within India (clause 5.18); treatment outside India excluded (4.4.27)",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "Coverage not available during grace period",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "As per IRDAI portability norms",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Domiciliary treatment, treatment outside India, maternity, acupressure/acupuncture/magnetic therapy, external prosthetics/hearing aids, CPAP/BIPAP home equipment, vaccination",
+  "optional_riders": "Co-payment ratio choice (30% or 50%) at inception; premium discount in lieu of cumulative bonus at renewal",
+  "source_file": "PMAB POLICY CLAUSE UPDATED.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:35:49.129Z"
+}

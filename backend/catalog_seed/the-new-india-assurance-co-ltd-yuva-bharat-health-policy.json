@@ -1,0 +1,173 @@
+{
+  "insurer": "The New India Assurance Co. Ltd.",
+  "plan_name": "Yuva Bharat Health Policy",
+  "uin": "NIAHLIP25059V042425",
+  "sum_insured_options": "₹5L – ₹1Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single AC (₹5L–15L SI); Deluxe AC (₹25L–1Cr SI)",
+    "note": "SI ₹5L/10L/15L: Single AC room; SI ₹25L/50L/75L/1Cr: Deluxe AC room. Proportionate deduction applies if higher room chosen.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (at actuals)",
+    "note": "ICU/ICCU charges covered; no separate sub-limit stated in policy wording.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "10% if Zone II insured treats in Zone I",
+    "note": "Zone I insured: no co-pay. Zone II insured taking treatment in Zone I cities: 10% co-pay. No co-pay for accidents or sub-limited treatments.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Cataract, modern treatments, congenital external, mental illness, ARMD, genetic disorders capped",
+    "note": "Cataract: ₹50k–₹1.5L per eye by SI band; modern treatments: procedure-wise caps; congenital external: 10% of avg SI; mental illness/genetic/ARMD/puberty: 20–25% of SI; hazardous sports: 10% of SI up to ₹3L; artificial life maintenance: 25% SI/15 days.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months",
+    "note": "PED waiting period is 24 months of continuous coverage. No optional reduction mentioned.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "12 months (most listed conditions); 24 months (some)",
+    "note": "Most specific diseases (hernia, cataract, stones, etc.) have 12-month wait; joint replacement, osteoarthritis, mental illness (F01-F29/F60-F79), ARMD, genetic disorders, congenital external: 24 months. Diabetes/hypertension/cardiac: 90 days.",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Covered (Platinum plan only, 24mo wait)",
+    "note": "Inbuilt only in Platinum plan; limit ₹25,000–₹50,000 (single baby) by SI band; max 2 claims lifetime; enhanced limit available as optional add-on at extra premium.",
+    "optional": false,
+    "number": 24,
+    "exists": true
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (25%/yr); Guaranteed CB in Gold/Platinum",
+    "note": "25% per claim-free year, max 100%. On claim, CB reduces at same rate. Gold/Platinum: Guaranteed CB — no reduction on claim. Option to take premium discount instead of CB.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% (unrelated only) — Base; Twice/yr in Gold/Platinum",
+    "note": "Base plan: reinstatement once per policy period for unrelated illness/injury only, after full SI exhaustion. Gold/Platinum: double reinstatement (twice per policy period) for unrelated conditions. Not available for modern treatments (3.12). Individual SI basis only.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": null,
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (280+ listed in Annexure I)",
+    "note": "Extensive list of 280 day-care procedures in Annexure I covered.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Clause 4.4.17 explicitly excludes domiciliary hospitalisation expenses.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to 100% of SI",
+    "note": "Ayurveda, Yoga & Naturopathy, Unani, Siddha, Homeopathy covered up to 100% of SI per policy year.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (hospitalisation expenses of donor)",
+    "note": "Donor hospitalisation expenses covered (excluding cost of organ and pre/post-hosp) within available SI.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹5,000–₹20,000 per illness (by SI band)",
+    "note": "Road ambulance: ₹5,000 (₹5L–15L SI) to ₹20,000 (₹1Cr SI). Air ambulance covered under Gold/Platinum: ₹50,000–₹2,00,000 by SI band.",
+    "optional": false,
+    "number": 20000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (procedure-wise caps)",
+    "note": "12 modern treatments covered (robotic surgery, stereotactic radiosurgery, oral chemo, etc.) with procedure-specific and SI-band-based sub-limits per policy period.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables (gloves, etc.) are in List I (not payable) or subsumed into room/procedure charges per Annexure II. No rider available.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Clause 4.4.27 and 5.18 explicitly restrict coverage to India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim/policy contestable except on grounds of fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly instalment)",
+    "note": "30 days for annual/half-yearly/quarterly; 15 days for monthly instalment mode. Coverage not available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual policies with term ≥1 year; not on renewals or porting.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; credit for PED waiting, specific waiting, moratorium transferable.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary hospitalisation, treatment outside India, acupressure/acupuncture, OPD procedures, vaccination, RFQMR/ECP/EECP/hyperbaric O2",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Enhanced maternity limit (Platinum add-on); Gold plan adds PA benefit, critical care lump sum, air ambulance, guaranteed CB, double reinstatement",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy Clause Yuva Bharat Health Policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:35:50.756Z"
+}

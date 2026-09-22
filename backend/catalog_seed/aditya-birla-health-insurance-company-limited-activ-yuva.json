@@ -1,0 +1,145 @@
+{
+  "variant": "",
+  "sum_insured_options": "₹5L, ₹10L, ₹15L, ₹20L, ₹25L, ₹50L, ₹1Cr, Unlimited",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap – any room",
+    "note": "Product Benefit Table states 'Actuals up to Sum Insured (Any Room)'. Optional add-on (Room Rent Type Option C.14.3) can downgrade to Single Private A/C Room or Shared Accommodation if chosen."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap – actuals up to SI",
+    "note": "Product Benefit Table: ICU Charges covered at actuals up to Sum Insured."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base policy)",
+    "note": "No mandatory co-payment on inpatient claims. A 10% additional co-pay applies if hospitalisation exceeds 7 days without timely intimation (E.3.C). A 20% co-pay applies on OPD reimbursement claims when cashless is unavailable (optional OPD cover C.14.8). 20% additional co-pay for organ transplant non-compliance (E.3.D)."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits",
+    "note": "Durable Equipment Cover (optional) capped at ₹5L; Compassionate Visit (optional) capped at ₹50,000; Maternity (optional) capped at ₹1L/₹1.5L/₹2L; Newborn (optional) capped at ₹50k/₹1L/₹2L; Income Protect (optional) ₹50k/₹1L lump sum. Base inpatient benefits have no sub-limits beyond SI."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No deductible in base policy. HealthReturns can be used to pay a deductible if one is opted, but no deductible is mandated."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses; accidental hospitalisation exempt."
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Standard PED waiting period is 24 months. Optional cover C.14.2 can reduce to 12 months (1 year) for an additional premium paid for 2 consecutive years."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Standard specific disease/procedure waiting period is 24 months. Optional cover C.14.1 can reduce to 12 months (1 year) for an additional premium paid for 2 consecutive years."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 36,
+    "display": "Optional add-on (min 1yr wait)",
+    "note": "Worldwide Yuva Maternity Cover (C.14.9) is an optional cover. Waiting period options: 3 years, 2 years, or 1 year. Covers normal/C-section delivery (1 event), pre/post-natal 180 days each, ARS (IVF/IUI/ICSI/GIFT/ZIFT), egg freezing up to 30% of maternity SI, adoption up to ₹50k. Maternity SI options: ₹1L/₹1.5L/₹2L. Claims do not impact base SI."
+  },
+  "cumulative_bonus": {
+    "number": 1000,
+    "display": "Up to 1000% (100%/yr)",
+    "note": "Yuva Credit: 100% of Base SI added per continuous renewal, up to maximum 1000% (10X) accumulation. Accrues regardless of claims. Not applicable if Unlimited SI opted."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited refills, 100% of Base SI",
+    "note": "Yuva Reload: First claim in policy life gets 2X Base SI. All subsequent claims get unlimited refill up to 100% of Base SI each time, for related and unrelated illnesses. Not applicable if Unlimited SI opted."
+  },
+  "pre_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Pre-hospitalisation expenses covered for 90 days prior to admission."
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures",
+    "note": "All day-care treatments covered at actuals up to SI; no minimum time limit applies for day-care."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered at actuals up to SI; minimum 3 consecutive days required."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment covered at actuals up to SI; minimum 24-hour admission required at registered AYUSH hospital/day-care centre."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Organ donor hospitalisation expenses for harvesting covered at actuals up to SI. Pre/post-hospitalisation and logistics for donor not covered."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "At actuals up to SI",
+    "note": "Road and air ambulance (domestic only) covered at actuals up to Sum Insured. Air ambulance for emergency evacuation within India only."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Listed modern treatments (robotic surgery, stem cell therapy for haematological conditions, HIFU, balloon sinuplasty, deep brain stimulation, intra-vitreal injections, oral chemotherapy, stereotactic radio surgeries, bronchial thermoplasty, IONM, etc.) covered at actuals up to SI."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Inbuilt (Claim Protect benefit)",
+    "note": "Claim Protect (Non-Medical Expense Waiver, C.5) covers all four lists of non-medical/consumable expenses (Annexure I) as an inbuilt benefit. This waives the standard non-medical expense exclusion."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional (maternity only)",
+    "note": "Worldwide Yuva Maternity Cover (C.14.9) provides global coverage for maternity expenses. General hospitalisation is geographically restricted to India (D.2.8). No optional global inpatient cover available."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim can be contested except on grounds of established fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 30 days for all premium payment modes except monthly, where it is 15 days."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "30-day free-look period from receipt of policy document for new individual policies. Not applicable on renewals or porting/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines with continuity of waiting period credits."
+  },
+  "notable_exclusions": {
+    "display": "RFQMR, ECP/EECP, hyperbaric oxygen, KTP/femto laser, bioabsorbable implants, Infliximab/Rituximab/Avastin/Lucentis, RF ablation probe, off-label drug use, hormone replacement therapy, growth hormone therapy, external congenital anomaly"
+  },
+  "optional_riders": {
+    "display": "PED waiting reduction (24→12mo), Specific disease waiting reduction (24→12mo), Room rent type option, Yuva Health Check-up, Lifestyle Management Program, Durable Equipment Cover (up to ₹5L), Compassionate Visit, OPD Cover (up to 5X base premium), Worldwide Yuva Maternity Cover, Newborn Baby Cover, Income Protect Cover, FitForward Premium (Basic/Elite/Ultra)"
+  },
+  "insurer": "ADITYA BIRLA HEALTH INSURANCE COMPANY LIMITED",
+  "plan_name": "Activ Yuva",
+  "uin": "ADIHLIP27047V012627",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "20260508T222950402.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:52:17.754Z"
+}

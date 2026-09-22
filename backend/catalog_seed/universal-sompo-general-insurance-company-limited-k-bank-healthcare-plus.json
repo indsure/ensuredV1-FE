@@ -1,0 +1,173 @@
+{
+  "insurer": "Universal Sompo General Insurance Company Limited",
+  "plan_name": "K Bank Healthcare Plus",
+  "uin": "UNIHLIP25035V032425",
+  "sum_insured_options": "Not specified",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified",
+    "note": "Policy covers room, boarding and nursing expenses but no explicit room rent cap or category is mentioned in the wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "ICU charges are defined and covered but no explicit cap or sub-limit is stated.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "20% (age 56+)",
+    "note": "A co-payment of 20% applies on each and every claim for insured persons above 55 years of age.",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Package charges capped at 75% of SI; maternity up to 5% of SI",
+    "note": "Hospitalisation under agreed package charges restricted to 75% of SI; maternity/newborn treatment up to 5% of SI; no other explicit disease-wise sub-limits stated.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases excluded for 36 months from first policy inception; portability credits applicable.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "12 months",
+    "note": "Listed conditions (cataract, hernia, piles, arthritis, joint replacement, stones, etc.) excluded for 12 months.",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Covered (9-month wait)",
+    "note": "Maternity expenses covered after 9 months from policy inception; newborn treatment up to 5% of SI; ectopic pregnancy covered; miscarriage due to accident covered.",
+    "optional": false,
+    "number": 9,
+    "exists": true
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "Cumulative bonus is defined in the policy but no rate or maximum percentage is stated in the wording.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration or reinstatement benefit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Medical expenses incurred in the 30 days immediately prior to hospitalisation are covered.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Medical expenses incurred in the 60 days immediately after discharge are covered.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures covered",
+    "note": "Specific day-care procedures listed (dialysis, chemotherapy, radiotherapy, eye surgery, lithotripsy, D&C, tonsillectomy) plus technologically advanced procedures requiring less than 24 hours.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered when patient cannot be moved to hospital or no room is available.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered",
+    "note": "AYUSH treatment and AYUSH hospitals are defined and included within the policy scope.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Cost of organ harvesting is explicitly listed as a covered medical expense.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹1,000/policy period",
+    "note": "Ambulance charges limited to ₹1,000 per policy period for admissible claims.",
+    "optional": false,
+    "number": 1000
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "Robotic surgery and other modern/advanced treatments are not explicitly mentioned or listed.",
+    "optional": false,
+    "exists": false
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Annexure A lists a large number of consumables/non-medical items explicitly excluded (gloves, masks, nebuliser kits, etc.).",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Specific exclusion: treatment taken outside the geographical limits of India is excluded.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim can be contested except for proven fraud and permanent exclusions.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "15 days grace for monthly premium mode; 30 days for quarterly/half-yearly/annual modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for policies of one year or more.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability permitted as per IRDAI norms; credits for PED waiting, specific waiting periods and moratorium transferable.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Treatment outside India, large consumables list (gloves/masks/nebulisers), adventure sports injuries, infertility/IVF, gender change",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Personal Accident Death Cover (optional add-on for account holder, spouse, children)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "karnataka-bank-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:36:06.973Z"
+}

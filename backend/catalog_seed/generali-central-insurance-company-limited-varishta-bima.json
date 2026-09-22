@@ -1,0 +1,141 @@
+{
+  "variant": "",
+  "sum_insured_options": "₹2,00,000 / ₹3,00,000 / ₹4,00,000 / ₹5,00,000 / ₹7,50,000 / ₹10,00,000",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Policy wording covers room rent and boarding expenses but does not specify any cap or room category entitlement."
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "ICU charges are defined and covered as part of hospitalisation but no specific cap or limit is stated."
+  },
+  "copayment": {
+    "number": 50,
+    "display": "50% for PED claims; 25% for all other claims (waivable)",
+    "note": "50% co-pay on PED-related hospitalisation claims is mandatory and cannot be waived. 25% co-pay on all other hospitalisation claims can be waived by paying an additional 20% loading on standard premium. Both apply lifelong. Co-payments do not apply to pre/post-hospitalisation expenses or to listed sub-limit procedures."
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "CABG, PTCA, Cataract, Knee/Hip Replacement capped; Modern treatments 50% of SI",
+    "note": "Sub-limits apply to: CABG, PTCA, Cataract (per eye), Total Knee Replacement (per knee), Total Hip Replacement (per hip) — amounts vary by SI slab. Modern treatments (robotic surgery, oral chemo, immunotherapy, intravitreal injections, etc.) capped at 50% of SI per policy period."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No aggregate deductible applicable."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Except for accidental hospitalisation. Not applicable if continuously covered for more than 12 months."
+  },
+  "ped_waiting": {
+    "number": 12,
+    "display": "12 months",
+    "note": "12 months continuous coverage from first policy inception. 50% co-pay applies on PED claims even after waiting period expires."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, glaucoma, hernia, varicose veins, thyroid diseases, prostate diseases, kidney calculi, joint/bone diseases, tumours/cysts, and others. Not applicable for accidental claims."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses are explicitly excluded under standard exclusion Excl18. Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Cumulative bonus is defined in the policy but no specific rate or maximum accumulation is mentioned in the wording."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration or reinstatement of sum insured benefit mentioned in the policy."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Pre and post-hospitalisation combined expenses are capped at 2% of SI, maximum ₹10,000 per hospitalisation."
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Pre and post-hospitalisation combined expenses are capped at 2% of SI, maximum ₹10,000 per hospitalisation."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures covered",
+    "note": "Extensive list of 409 day-care procedures covered. Also covers any other surgeries/procedures agreed by insurer requiring less than 24 hours hospitalisation due to technological advancement."
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation is explicitly excluded under specific exclusion (y)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (hospitalisation for accident/illness)",
+    "note": "AYUSH hospitalisation for accident and illnesses covered. Preventive and rejuvenation treatments which are non-curative are not covered."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Donor screening, treatment and surgery to remove organs from donor are explicitly excluded. Donor pre/post-hospitalisation also excluded."
+  },
+  "ambulance": {
+    "number": 1000,
+    "display": "₹1,000 per hospitalisation",
+    "note": "Road ambulance charges reimbursed up to ₹1,000 per hospitalisation on production of original bills."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited to 50% of SI",
+    "note": "12 listed modern treatments (robotic surgery, oral chemotherapy, immunotherapy-monoclonal antibody, intravitreal injections, deep brain stimulation, balloon sinuplasty, uterine artery embolization, HIFU, stereotactic radiosurgery, bronchial thermoplasty, vaporisation of prostate, IONM, stem cell therapy for haematological conditions) covered up to 50% of SI per policy period. Co-payments do not apply to these claims."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-medical consumables and items explicitly excluded in Annexure 2."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Coverage is restricted to India only. All treatments must be taken in India and claims payable in Indian Rupees."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days grace period for monthly instalment premium; 30 days for all other cases (quarterly, half-yearly, annual). Coverage not available during grace period except where premium paid in instalments during policy period."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new individual health insurance policies only; not on renewals or porting/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Application must be made at least 45 days before but not earlier than 60 days from renewal date."
+  },
+  "notable_exclusions": "Domiciliary hospitalisation, OPD treatment, maternity, organ donor expenses, treatment outside India, congenital external anomalies, stem cell storage, dental (unless accidental), durable medical equipment",
+  "optional_riders": "25% co-pay waiver (20% additional premium loading)",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Varishta Bima",
+  "uin": "GCIHLIP26045V052526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "varishta-bima-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:59:22.535Z"
+}

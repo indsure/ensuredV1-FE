@@ -1,0 +1,165 @@
+{
+  "insurer": "SBI General Insurance Company Limited",
+  "plan_name": "Arogya Sanjeevani Policy, SBI General Insurance Company Limited",
+  "uin": "SBIHLIP20180V011920",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "If room taken at higher rate, all other expenses (except medicines) reimbursed proportionately",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "Proportionate deduction applies if ICU charges exceed limit",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-pay applies to every admissible claim amount",
+    "optional": false,
+    "number": 5
+  },
+  "sub_limits": {
+    "display": "Cataract capped; modern treatments 50% of SI",
+    "note": "Cataract: 25% of SI or ₹40,000 per eye per year, whichever lower; Modern treatments: up to 50% of SI",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Except for accidents; not applicable if continuously covered for 12+ months",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Reducible via portability credit from prior continuous coverage",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 36 months (joint replacement, osteoporosis)",
+    "note": "24mo: cataract, hernia, hydrocele, piles, ENT, calculi, varicose veins etc.; 36mo: joint replacement, age-related osteoarthritis/osteoporosis",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18); ectopic pregnancy covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% added per claim-free year; reduced at same rate on claim; max 50% of SI",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "For same condition as hospitalisation",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "From date of discharge, for same condition",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day-care treatments covered; time limit of 24 hrs does not apply",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation explicitly excluded (Section 7.18)",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to sum insured in recognised AYUSH hospitals",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "No mention of organ donor expenses in policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance covered up to ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited to 50% of SI",
+    "note": "Robotic surgery, stereotactic radio surgery, oral chemo, immunotherapy, intravitreal injections etc. covered up to 50% of SI",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Gloves, consumables listed in Annexure-A List I as non-payable items",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded (Section 7.19 and 10.7)",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to original SI; fresh 60mo for enhanced SI",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "15 days for monthly premium mode; 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "For new individual policies with tenure of 1 year or more",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; credits for PED, specific waiting periods transferable",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Domiciliary, OPD, maternity, infertility/IVF, overseas treatment, refractive error <7.5D, obesity surgery (conditional), gender change",
+  "optional_riders": "Not specified",
+  "source_file": "Arogya_Sanjeevani_Policy_Wording_KEN_034037d936.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:36:35.040Z"
+}

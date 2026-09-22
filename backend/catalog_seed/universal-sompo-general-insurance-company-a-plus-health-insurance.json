@@ -1,0 +1,173 @@
+{
+  "insurer": "Universal Sompo General Insurance Company",
+  "plan_name": "A Plus Health Insurance",
+  "uin": "UNIHLIP26040V022526",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private AC Room (Basic); plan-dependent",
+    "note": "Basic plan: Single Private AC Room. Silver/Gold/Diamond: room category as per sum insured opted and policy schedule. Optional Room Rent Modification add-on available for Silver/Gold/Diamond to downgrade to Twin Sharing (with ₹500/day cash benefit) or upgrade with 20% co-pay.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "Covered (no explicit cap stated)",
+    "note": "ICU charges covered as part of inpatient treatment; no specific sub-limit or percentage cap mentioned in wording.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base); 20% if room upgraded above Twin Sharing (optional add-on); 10% deductible on Global Cover",
+    "note": "No mandatory co-pay on base plan. 20% co-pay applies only if Room Rent Modification add-on is opted and insured chooses room above Twin Sharing. Global Cover (Diamond only) has 10% deductible on sum insured per claim.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Modern treatments capped at 25% SI (Silver/Gold/Diamond) or 50% SI (Basic); Psychiatric illness sub-limit as per schedule",
+    "note": "Modern treatments: 25% of SI for Silver/Gold/Diamond, 50% of SI for Basic plan. Psychiatric illness has a sub-limit as mentioned in policy schedule. No other explicit disease-wise sub-limits stated.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (base); optional ₹25,000 or ₹50,000 aggregate deductible for Silver/Gold/Diamond",
+    "note": "Base plan has no deductible. Optional aggregate deductible of ₹25,000 or ₹50,000 available for Silver/Gold/Diamond plans to reduce premium; once opted cannot be removed.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "First 30 days waiting period for illnesses; not applicable for accidents. Waived if continuously covered for more than 12 months.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (reducible to 12 months via paid add-on for Silver/Gold/Diamond)",
+    "note": "Base PED waiting period is 36 months. Optional 'Pre-Existing Disease Waiting Period Waiver' add-on reduces it to 12 months for Silver/Gold/Diamond plans. Not available for Basic plan.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most conditions); 36 months (joint replacement, osteoporosis, HIV, ARMD, genetic disorders)",
+    "note": "24-month list includes cataract, hernia, hydrocele, stones, piles, fissures, skin disorders, renal failure, etc. 36-month list includes joint replacement (degenerative), osteoarthritis/osteoporosis, HIV, ARMD, genetic diseases.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (36-month wait); not available for Basic plan",
+    "note": "Maternity cover is an optional paid add-on. 36-month waiting period applies from first policy inception. Limited to 2 living children. Sum insured as per policy schedule. Spouse must also be covered unless waived.",
+    "optional": true,
+    "exists": true,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Up to 200% (Diamond); up to 100% (Silver/Gold); not available for Basic",
+    "note": "Silver: 20% per claim-free year, max 100%. Gold: 50% per claim-free year, max 100%. Diamond: 50% per claim-free year, max 200%. Bonus lost in claim year but resumes next claim-free year. Alternatively, a premium discount option (NCD) is available.",
+    "optional": false,
+    "number": 200
+  },
+  "restoration": {
+    "display": "Once/year, 100% of base SI (Silver/Gold/Diamond only)",
+    "note": "Auto Restore Benefit restores up to 100% of base sum insured once per policy year upon complete or partial utilisation of base SI. Triggered by first admitted claim; available for subsequent claims. Unutilised restored amount not carried forward. Not available for Basic plan.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "As per policy schedule (days not specified in wording)",
+    "note": "Pre-hospitalisation expenses covered for number of days as mentioned in the policy schedule. Exact number of days not stated in the policy wording document.",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "As per policy schedule (days not specified in wording)",
+    "note": "Post-hospitalisation expenses covered for number of days as mentioned in the policy schedule. Exact number of days not stated in the policy wording document.",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "Listed day-care procedures only (Annexure I)",
+    "note": "Covers a defined list of day-care procedures as per Annexure I. OPD treatment on outpatient basis is not included.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (Silver/Gold/Diamond); not covered for Basic plan",
+    "note": "Domiciliary hospitalisation covered if treatment exceeds 3 days and conditions under definition are met. Not applicable for Basic plan.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to inpatient SI",
+    "note": "AYUSH inpatient treatment covered up to the inpatient treatment sum insured in recognised AYUSH hospitals.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (Silver/Gold/Diamond); not covered for Basic plan",
+    "note": "Medical and surgical expenses of organ donor for harvesting covered when insured is the recipient. Not applicable for Basic plan.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered up to limit in policy schedule (Silver/Gold/Diamond); not covered for Basic plan",
+    "note": "Road ambulance and inter-hospital transfer covered subject to limit specified in policy schedule. Not applicable for Basic plan. Air ambulance covered under Assistance Services (150+ km from home).",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Sub-limited: 50% of SI (Basic) or 25% of SI (Silver/Gold/Diamond)",
+    "note": "12 listed modern treatments covered including robotic surgery, stereotactic radiosurgery, oral chemotherapy, etc. Sub-limit applies: 50% of SI for Basic plan, 25% of SI for Silver/Gold/Diamond plans.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on (Non-Medical Items cover)",
+    "note": "Non-medical/consumable items covered via optional 'Non-Medical Items' add-on as per List 1 of Annexure 2, up to limit in schedule. Not available for Basic plan.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Inbuilt for Diamond plan only (up to SI, 10% deductible, diagnosis must be in India)",
+    "note": "Global Cover available only under Diamond plan. Covers treatment outside India for up to 180 consecutive days. 10% deductible on SI applies per claim. Diagnosis must be made in India and referred by a medical practitioner.",
+    "optional": false,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "15 days (monthly); 30 days (quarterly/half-yearly/annual)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Free look period of 30 days from date of receipt of policy document for new policies only; not applicable on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Request must be made at least 30 days before but not earlier than 60 days from renewal date.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD excluded (Basic/Silver/Gold); treatment outside India (non-Diamond); psychiatric illness sub-limited; specific ICD codes excluded per schedule disclosure",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "PED waiver (12mo), Maternity cover, Non-medical items, Hospital cash (Basic), Room rent modification, Aggregate deductible, Diabetes/Hypertension Day1 OPD (Diamond)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "a-plus-health-insurance-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:35:20.246Z"
+}

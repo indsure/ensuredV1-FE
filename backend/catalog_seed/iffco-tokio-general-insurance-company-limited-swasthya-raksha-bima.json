@@ -1,0 +1,141 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day",
+    "note": "Normal room capped at 1% of SI per day; ICU at 2% of SI per day. Associated medical expenses (except pharmacy, implants, diagnostics) proportionally capped if higher room chosen."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day",
+    "note": "ICU/Therapeutic Unit expenses capped at 2% of Sum Insured per day."
+  },
+  "copayment": {
+    "number": 35,
+    "display": "35% if treated in Zone A city",
+    "note": "35% co-pay applies when insured takes treatment in a Zone A city (as defined in the policy). No co-pay for Zone B."
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Cataract, piles/fistula, hernia, knee/hip replacement, cancer, etc. capped",
+    "note": "Cataract: 5% SI max ₹15,000; Piles/Fistula/Fissure/Tonsillitis/Sinusitis: 8% SI max ₹25,000; BPH/Hernia: 8% SI max ₹30,000; Knee/Hip replacement/Cancer/Renal failure: 30% SI max ₹1,00,000; Appendicitis/Gall bladder/Hysterectomy: 10% SI max ₹25,000. Domiciliary: 20% SI aggregate. Modern treatments: 50% SI. Daily allowance ₹150/day. Ambulance ₹750/claim."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": null
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Waived for accidents; not applicable if continuously covered for more than 12 months."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "PED waiting period is 36 months of continuous coverage. Reduced by prior continuous coverage under portability norms."
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12 months (some 24 months)",
+    "note": "12-month wait: Tonsillitis/Adenoids, Gastric/Duodenal Ulcer, Cysts/Nodules/Polyps, Breast lumps. 24-month wait: Cataract, BPH, Hysterectomy for Menorrhagia/Fibromyoma, Hernia, Hydrocele, Fistula, Piles, Sinusitis, Cholelithiasis/Cholecystectomy, Spondylosis/Spondylitis, IVDP, Knee/Joint/Hip replacement, Osteoarthritis, Varicose Veins/Ulcers."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Code Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Policy mentions cumulative bonus in context of grace period and portability but does not define the rate or maximum in the wording provided."
+  },
+  "restoration": {
+    "ordinal": 2,
+    "display": "Optional paid reinstatement",
+    "note": "Sum insured can be reinstated after a claim by paying additional premium (deducted from claim amount). Reinstated SI not available for same illness relapse within 45 days, chronic diseases listed (cancer, CABG, stroke, etc.), or domiciliary hospitalisation. Not a free automatic restoration."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days preceding hospitalisation."
+  },
+  "post_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Post-hospitalisation expenses up to 7% of hospitalisation expenses (excl. room rent), max ₹7,500, for 30 days after discharge."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed procedures (383 listed)",
+    "note": "Day care procedures covered as per Annexure B list (dynamic list on website). Treatment normally on OPD basis not included."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to 20% of SI",
+    "note": "Domiciliary hospitalisation covered up to 20% of SI aggregate. Several diseases excluded from domiciliary cover (asthma, diabetes, hypertension, epilepsy, etc.)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (hospitalisation in AYUSH hospitals/day care centres)",
+    "note": "AYUSH hospitalisation including pre/post hospitalisation expenses covered in recognised AYUSH hospitals or AYUSH day care centres."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (within insured's SI)",
+    "note": "Hospitalisation expenses of organ donor covered within insured person's sub-limits and SI. No ambulance, pre/post hospitalisation or daily allowance for donor."
+  },
+  "ambulance": {
+    "number": 750,
+    "display": "₹750/claim",
+    "note": "Road ambulance charges limited to ₹750 or actual, whichever is less, per claim."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (up to 50% of SI)",
+    "note": "12 modern treatments covered (robotic surgery, oral chemo, immunotherapy, HIFU, deep brain stimulation, etc.) up to 50% of SI per policy period."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-payable consumables/non-medical items in Annexure A List I (gloves, masks, diapers, etc.) explicitly excluded."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Territorial limit clause restricts all medical treatment to India only. Emergency assistance services also limited to within India (150km+ from home)."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim/policy contestable except on grounds of established fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (renewal); 15 days (monthly instalment)",
+    "note": "Grace period: 15 days for monthly instalments, 30 days for other instalments and renewal. Coverage not available during grace period after policy expiry."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "30-day free look period from receipt of policy document at inception only (not on renewals or porting/migration)."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to same product of other insurers allowed with continuity of waiting periods, cumulative bonus, and moratorium to extent of previous SI."
+  },
+  "notable_exclusions": "Maternity, sterility/infertility, OPD treatment, adventure sports (professional & non-professional), acupressure/acupuncture/magnetic therapy, intra-articular injections, Cytotron/RFQMR/EECP/chelation/hyperbaric O2 therapy, external congenital anomalies, 35% co-pay Zone A",
+  "optional_riders": "Not specified in wording",
+  "insurer": "IFFCO-TOKIO GENERAL INSURANCE COMPANY LIMITED",
+  "plan_name": "Swasthya Raksha Bima",
+  "uin": "IFFHLIP21326V022021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "policy_wording_srb_2020.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:02:24.699Z"
+}

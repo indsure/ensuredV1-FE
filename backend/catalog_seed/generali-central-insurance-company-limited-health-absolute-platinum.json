@@ -1,0 +1,130 @@
+{
+  "variant": "Platinum",
+  "sum_insured_options": "₹15L, ₹20L, ₹25L, ₹30L, ₹35L",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "Up to Sum Insured; no room rent sub-limit specified"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "Up to Sum Insured; no ICU sub-limit specified"
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% (age 61+ at first entry)",
+    "note": "Applies to insured persons aged 61 years and above being covered for the first time; continues at renewal"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract, Lasik, Bariatric capped",
+    "note": "Cataract: 10% of SI max ₹1,50,000/eye; Lasik: up to ₹50,000 both eyes (after 3yr wait); Bariatric: 50% SI max ₹7.5L; Maternity and infertility sub-limits apply"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "Voluntary deductible available as optional"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (some 36 months)",
+    "note": "24 months for cataract, hernia, hydrocele, etc.; 36 months for rheumatoid arthritis, joint replacement, Lasik, gout, osteoporosis"
+  },
+  "maternity": {
+    "exists": true,
+    "number": 24,
+    "display": "Covered (24mo wait if both spouses covered)",
+    "note": "Normal delivery: ₹40,000 (15L SI), ₹50,000 (20-35L SI); C-section: ₹60,000 (15L), ₹1,00,000 (20-35L); 24mo wait if both spouses covered, 36mo if only female covered"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100%",
+    "note": "50% added per claim-free year; reduces at same rate if claim made; max 100% of SI"
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once/yr, 100% of base SI",
+    "note": "Triggered on second claim in policy year; available for same or new illness; cannot be used for maternity"
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 120,
+    "display": "120 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures (530+ listed)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Home Health Care up to 20% of SI via empanelled provider on cashless basis"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (reimbursement only)",
+    "note": "Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy; in-patient AYUSH hospital only; up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000/hospitalisation"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "12 listed modern treatments including robotic surgery, oral chemo, intravitreal injections, stem cell therapy etc."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-medical/consumable items excluded (Annexure III)"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Medical Treatment Abroad not applicable under Platinum plan"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "No global cover; external congenital anomaly excluded; STDs (non-HIV) excluded; infertility covered but IVF/ART excluded (only hospitalization-based treatment)",
+  "optional_riders": "Voluntary deductible available; Emergency Medical Evacuation covered (up to 5% of SI)",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Absolute",
+  "uin": "GCIHLIP26043V032526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "health-absolute-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:58:13.364Z"
+}

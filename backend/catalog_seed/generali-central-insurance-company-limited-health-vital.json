@@ -1,0 +1,145 @@
+{
+  "variant": "",
+  "sum_insured_options": "₹5 Lac, ₹10 Lac, ₹15 Lac",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 2,
+    "display": "₹5K/day (5L SI); ₹10K/day (10L & 15L SI)",
+    "note": "Fixed daily cap varies by SI band. ICU at 1.5x normal room limit. Proportionate deduction applies if higher room taken."
+  },
+  "icu": {
+    "ordinal": 2,
+    "display": "1.5x normal room limit/day",
+    "note": "E.g. ₹7,500/day for 5L SI; ₹15,000/day for 10L & 15L SI"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording"
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Many sub-limits: cataract, maternity, cancer, cardiac, joint replacement, etc.",
+    "note": "23 disease/procedure categories sub-limited per policy year (e.g. cataract ₹25K-₹50K, normal delivery ₹25K-₹50K, CABG ₹1.5L-₹2L, joint replacement ₹1.5L-₹2.5L). Modern treatments capped at 50% of SI or disease sub-limit, whichever lower."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No aggregate deductible mentioned"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Waived for accidents; not applicable if continuously covered for 12+ months"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Reduced by prior continuous coverage under portability norms"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (most); 36 months (joint replacement, osteoarthritis, maternity, bariatric)",
+    "note": "20 conditions at 24 months (cataract, hernia, hysterectomy, etc.); 4 conditions at 36 months"
+  },
+  "maternity": {
+    "exists": true,
+    "number": 36,
+    "display": "Covered (36mo wait)",
+    "note": "Sub-limited per schedule (normal delivery ₹25K-₹50K, C-section ₹30K-₹60K by SI). Max 2 lifetime claims. Pre/post-natal excluded. Portability/migration not applicable."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of SI",
+    "note": "10% added per claim-free year; reduced by 10% per claim year; max 100%"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Up to SI; disease sub-limits apply"
+  },
+  "post_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Up to SI; disease sub-limits apply"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "530 listed day-care procedures",
+    "note": "Plus any other procedures agreed by insurer requiring <24hr hospitalisation due to technology advancement"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No domiciliary hospitalisation benefit mentioned"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI (disease sub-limits apply)",
+    "note": "Must be in AYUSH Hospital; preventive/rejuvenation and OPD excluded"
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No organ donor expense benefit mentioned"
+  },
+  "ambulance": {
+    "number": 3000,
+    "display": "₹3,000/event (5L SI); ₹5,000/event (10L & 15L SI)",
+    "note": "Over and above disease sub-limits but subject to SI availability; covers transfer to hospital, hospital-to-hospital, and discharge home if medically required"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (disease sub-limit or 50% of SI, whichever lower)",
+    "note": "12 listed procedures including robotic surgery, stereotactic radiosurgery, oral chemotherapy, stem cell therapy (hematopoietic), etc."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider",
+    "note": "Consumables/Non-Medical Expenses Cover available as optional add-on for additional premium; covers List I items from Annexure II"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy explicitly states treatment must be taken in India only (Section 7.1.7)"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to original SI; enhanced SI has fresh 60-month period"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly instalment)",
+    "note": "30 days for annual/quarterly/half-yearly; 15 days for monthly instalment mode"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable at inception only, not on renewals or porting"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "As per IRDAI portability guidelines; maternity and bariatric surgery benefits not portable"
+  },
+  "notable_exclusions": {
+    "display": "Treatment outside India, external congenital anomaly, STDs (non-HIV), stem cell storage, OPD treatment, dental (unless injury), durable medical equipment post-discharge"
+  },
+  "optional_riders": {
+    "display": "Consumables/Non-Medical Expenses Cover"
+  },
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Vital",
+  "uin": "GCIHLIP25038V022425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "health-vital-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:58:53.559Z"
+}

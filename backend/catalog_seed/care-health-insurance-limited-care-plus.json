@@ -1,0 +1,142 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (illustrations show ₹3,00,000; policy schedule determines actual SI)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day (upgradable to Single Private AC Room via optional rider)",
+    "note": "Base cover: 1% of SI per day. Optional Benefit 'Room Rent Modification' upgrades to Single Private AC Room (only for SI < ₹5L). If room taken is higher than eligible, ratable proportion of associate medical expenses borne by insured."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day (upgradable to no limit via optional rider)",
+    "note": "Base cover: 2% of SI per day. Optional Benefit 'Room Rent Modification' upgrades ICU to no limit (only for SI < ₹5L)."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base); 20% if non-network hospital under Smart Select add-on; optional co-pay for age 61+",
+    "note": "No mandatory co-pay in base policy. Optional Benefit 'Smart Select' imposes 20% co-pay for non-network hospitals. Optional Benefit 'Co-Payment Option' applies co-pay to insured persons aged 61+ as specified in policy schedule."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits; room rent and ICU capped; specific disease sub-limits possible per schedule",
+    "note": "Room rent capped at 1% SI/day; ICU at 2% SI/day (base). Disease/procedure sub-limits may apply as per policy schedule. Domiciliary hospitalization excludes certain diseases (asthma, diabetes, hypertension, etc.)."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional deductible available)",
+    "note": "No deductible in base policy. Optional Benefit 'Deductible Option' allows insured to opt for a deductible (amount per policy schedule) in exchange for premium discount; applied on aggregate basis per policy year."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Pre-existing diseases covered after 36 months of continuous coverage. Portability credits apply."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Listed conditions include arthritis, ENT surgeries, BPH, cataract, D&C, fissure/fistula/piles, GU surgery, hernia, hysterectomy, tumours/cysts, kidney/gall stones, myomectomy, varicose veins, Parkinson's/Alzheimer's/dementia."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 24,
+    "display": "Optional add-on (24mo wait)",
+    "note": "Optional Benefit 'Maternity and New Born Baby Cover'; 24-month waiting period; max 2 living children per insured lifetime; primary insured or spouse only; age limit 45 years at policy start; limit as per policy schedule."
+  },
+  "cumulative_bonus": {
+    "number": 200,
+    "display": "Up to 200% of SI (50%/yr)",
+    "note": "50% of base SI added per claim-free year (or if total claims ≤25% of base SI). Max 200% of SI. Bonus reduced at same rate if claims exceed 25% of base SI. Unlimited Automatic Recharge and Inflation Shield not counted for CB calculation."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited, 100% of base SI",
+    "note": "Unlimited Automatic Recharge: base SI reinstated unlimited times per policy year after base SI + Cumulative Bonus + Inflation Shield exhausted. Can be used for same illness (except Any One Illness condition). Available for hospitalisation, pre/post-hosp, ambulance, domiciliary, and maternity benefits."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care treatments covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (reimbursement only)",
+    "note": "Covered up to amount in policy schedule. Excludes asthma, bronchitis, chronic nephritis, diarrhoea/dysentery, diabetes, epilepsy, hypertension, influenza/cough/cold, psychiatric disorders, pyrexia of unknown origin, tonsillitis/URTI, arthritis/gout/rheumatism."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Ayurveda, Yoga, Naturopathy, Siddha, Unani, Homeopathy covered up to sum insured as per policy schedule; requires in-patient admission at recognised AYUSH hospital."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Medical expenses of donor for organ transplant surgery covered up to amount in policy schedule. Post-harvest expenses of donor not covered."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered (limit per policy schedule)",
+    "note": "Road ambulance covered up to amount specified in policy schedule. Air ambulance also covered as separate benefit up to amount in policy schedule."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (listed procedures up to SI)",
+    "note": "Advance technology methods covered: uterine artery embolization, HIFU, balloon sinuplasty, deep brain stimulation, oral chemotherapy, immunotherapy (monoclonal antibody injections), intravitreal injections, robotic surgeries, stereotactic radio surgeries, bronchial thermoplasty, vaporisation of prostate (green/holmium laser), IONM, stem cell therapy (haematopoietic for bone marrow transplant). Other advance technology methods excluded."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumable items listed in Annexure I are excluded. No optional rider for consumables mentioned."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy covers medical treatment taken entirely within India. International Second Opinion is available as optional benefit but is not treatment cover."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 5 continuous years, no look-back applies except for proven fraud and permanent exclusions. Moratorium applies to base SI; fresh 5-year period starts from date of SI enhancement for enhanced portion."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new individual health insurance policies only, not on renewals or porting/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Apply to new insurer at least 30 days before but not earlier than 60 days from renewal date. Continuity benefits for waiting periods transferred as per IRDAI guidelines."
+  },
+  "notable_exclusions": {
+    "display": "Consumables/non-medical items (Annexure I), STDs (except HIV-related), hormone replacement therapy, tobacco/alcohol-related illness, experimental treatments, external prosthetics, cosmetic surgery"
+  },
+  "optional_riders": {
+    "display": "Maternity & New Born Cover, Daily Allowance, Smart Select (network discount+20% co-pay outside network), Deductible Option, Co-Payment Option (age 61+), Room Rent Modification (SI<5L), International Second Opinion"
+  },
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Care Plus",
+  "uin": "CHIHLIP22047V012122",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care-plus----policy-terms-and-conditions-(effective-from-29-september-2024-).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:54:41.108Z"
+}

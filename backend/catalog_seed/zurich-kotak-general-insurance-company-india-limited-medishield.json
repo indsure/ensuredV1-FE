@@ -1,0 +1,173 @@
+{
+  "insurer": "Zurich Kotak General Insurance Company (India) Limited",
+  "plan_name": "MediShield",
+  "uin": "ZUKHLIP25056V022425",
+  "sum_insured_options": "₹4L – ₹5L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Room rent capped at 1% of Sum Insured per day; proportionate deductions apply if higher room taken",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges capped at 2% of Sum Insured per day",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "20% on all claims",
+    "note": "Mandatory 20% co-pay on every claim; can be waived by paying additional optional premium",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract ₹40k/eye; Modern treatments 50% of SI",
+    "note": "Cataract capped at ₹40,000 per eye per year; modern treatments capped at 50% of SI; room rent and ICU also sub-limited",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Except claims arising from accident",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (24mo for disability)",
+    "note": "36 months for all PEDs except pre-existing disability (24 months) and HIV/AIDS (30-day initial wait only)",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "19 listed conditions including cataract, hernia, piles, varicose veins, benign tumors, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity explicitly excluded under Excl18; ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days prior to admission",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days from discharge",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care (537 listed procedures)",
+    "note": "All day-care treatments covered; indicative list of 537 procedures provided",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation expenses explicitly excluded under Section 8 exclusion 26",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient AYUSH treatment covered up to 100% of Sum Insured per policy year",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Hospitalisation for donation of body organs by insured explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance reimbursed up to ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments covered up to 50% of Sum Insured including robotic surgery, stereotactic radio surgery, stem cell therapy etc.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive non-payable consumables list (Annexure II List I) explicitly excluded; gloves, masks, nebuliser kits etc. not covered",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Any medical treatment taken outside India explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to first policy SI; enhanced SI has fresh 60-month count",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30 days for annual/quarterly/half-yearly premium; 15 days for monthly instalment premium",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only, not renewals",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines with continuity of waiting period credits",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary treatment, overseas treatment, organ donor hospitalisation, STDs, stem cell storage, ART for HIV, OPD, dental (non-injury)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Co-pay waiver (additional premium)",
+    "note": "Only one optional add-on mentioned: waiver of 20% co-payment on payment of additional premium",
+    "optional": true
+  },
+  "source_file": "Medi_Shield_Policy_Wording_Website_8e198d20ed_4d3b6f0d4f_1_19cee63faa_ed5c8b352c.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:37:52.163Z"
+}

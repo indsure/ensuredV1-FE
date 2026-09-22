@@ -1,0 +1,173 @@
+{
+  "insurer": "Universal Sompo General Insurance Company Limited",
+  "plan_name": "Indian Bank Healthcare Plus",
+  "uin": "UNIHLIP25016V042425",
+  "sum_insured_options": "Not specified",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified",
+    "note": "Policy covers room, boarding and nursing expenses as per hospital but no explicit room rent cap or category mentioned in wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "ICU charges defined and covered but no explicit cap or sub-limit stated",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "20% (age above 55)",
+    "note": "20% co-payment applies on each and every claim for insured persons above 55 years of age",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Maternity 5% of SI; package charges 75% of SI",
+    "note": "Maternity capped at 5% of SI; hospitalization under package charges capped at 75% of SI; specific disease waiting list is extensive",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "36 months continuous coverage required; reducible via portability credits",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "12 months",
+    "note": "12-month waiting for listed conditions including cataract, hernia, piles, joint replacement, stones, etc.",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Covered (9mo wait), up to 5% of SI",
+    "note": "Maternity expenses covered after 9 months from policy inception; capped at 5% of sum insured; newborn treatment also covered within this limit",
+    "optional": false,
+    "exists": true,
+    "number": 9
+  },
+  "cumulative_bonus": {
+    "display": "Health check-up after 3 claim-free years",
+    "note": "No traditional cumulative bonus on SI mentioned; only health check-up reimbursement up to 1% of average SI after 3 claim-free policy years",
+    "optional": false,
+    "number": 0
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration or reinstatement benefit mentioned in policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures covered",
+    "note": "Specific day-care procedures listed including dialysis, chemotherapy, radiotherapy, eye surgery, lithotripsy, D&C, tonsillectomy; also covers procedures requiring less than 24 hrs due to technological advances",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalization covered when patient cannot be moved to hospital or no room available",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered",
+    "note": "AYUSH treatment covered; AYUSH hospital and day care centre definitions included in policy",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Cost of organ harvesting explicitly listed as a covered medical expense",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹1,000 per policy period",
+    "note": "Road ambulance charges limited to Rs. 1,000 per policy period per admissible claim",
+    "optional": false,
+    "number": 1000
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "No explicit mention of modern/robotic treatments coverage or sub-limits in policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-medical consumables explicitly excluded (Annexure A); gloves, masks, etc. not payable",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Treatment outside geographical limits of India is a specific exclusion",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; portability/migration credits count",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "15 days grace for monthly premium mode; 30 days for quarterly/half-yearly/annual modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document for policies of 1 year or more",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; waiting period credits transferable",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Treatment outside India, adventure sports injuries, OPD not covered, no global cover, consumables excluded, package charges capped at 75% SI",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Personal Accident Death Cover (optional add-on)",
+    "note": "PA death cover pays 100% SI for account holder, 50% for spouse, 20%/10% for children on accidental death",
+    "optional": true
+  },
+  "source_file": "indianbank-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:35:43.776Z"
+}

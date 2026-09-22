@@ -1,0 +1,144 @@
+{
+  "variant": "",
+  "sum_insured_options": "1L, 2L, 3L, 4L, 5L, 7L, 10L, 20L, 25L, 50L, 100L, 200L, 300L, 600L (individual basis)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private Room (or 1% of SI/day depending on plan schedule)",
+    "note": "Policy Schedule specifies either 'Single Private Room' or 'up to 1% of SI per day'. If room chosen exceeds eligible category, Associate Medical Expenses are pro-rated. Optional Benefit 5 (Room Rent Modification) removes all room/ICU limits for SI ≥5L.",
+    "optional": false
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "Up to 2% of SI/day (or no sub-limit per schedule)",
+    "note": "Policy Schedule specifies either '2% of SI per day' or 'no sub-limit' for ICU charges. No Claims Bonus does not form part of SI for ICU calculation. Optional Benefit 5 removes ICU cap.",
+    "optional": false
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (20% mandatory if age 61+ at first policy issuance)",
+    "note": "Mandatory 20% co-pay per claim for insured persons aged 61+ at first policy issuance. Optional Co-Payment benefit (Optional Benefit 2) allows voluntary co-pay for premium discount. Global Coverage (Benefit 12) carries additional 10% co-pay."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits; room/ICU caps per schedule; day-care list-based",
+    "note": "Room rent and ICU charges are sub-limited per policy schedule. Day care treatment limited to listed procedures (Annexure I). Chemotherapy/radiotherapy and dialysis covered up to SI. No disease-wise monetary sub-limits beyond room/ICU noted."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional deductible available)",
+    "note": "Deductible is an optional benefit (Optional Benefit 1) applied on aggregate basis per policy year; reduces premium. Not inbuilt."
+  },
+  "initial_waiting": {
+    "number": 90,
+    "display": "90 days",
+    "note": "No illness claims within 90 days of first policy commencement; accident claims exempt. Waived if continuous coverage >12 months."
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "36 months (24 months with Optional Benefit 8)",
+    "note": "Standard PED waiting period is 36 months. Optional Benefit 8 (Reduction of PED Wait Period) reduces it to 24 months; available only at inception."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Applicable only for Operation Mediclaim plan (Excl02). Listed conditions include arthritis, cataract, hernia, ENT surgeries, BPH, D&C, varicose veins, kidney/gall stones, fibroids, hysterectomy, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a permanent exclusion (Code Excl18) under this policy. Ectopic pregnancy is also excluded except as noted."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of SI",
+    "note": "50% after 1st claim-free year, 25% after 2nd, 25% after 3rd; max 100% of SI. Reduced at same rate if claim occurs. Forfeited if policy lapses."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited restorations, 100% of SI",
+    "note": "Optional Benefit 3 (Unlimited Automatic Recharge): unlimited reinstatements of SI during policy year, but only for claims unrelated to any illness/injury for which a claim has already been admitted that year. Available only as optional add-on for SI >1L and ≤50L.",
+    "optional": true
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days prior to admission, for same condition as inpatient claim."
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days after discharge, for same condition as inpatient claim."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed procedures only (Annexure I)",
+    "note": "Day care treatment covered only for procedures listed in Annexure I to policy terms. List varies by plan opted."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered where patient cannot be moved to hospital or no room available in hospital."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH treatment (Ayurveda, Siddha, Yoga, Naturopathy, Unani, Homeopathy) covered up to SI at registered AYUSH hospitals, linked to accepted inpatient claim under Benefit 1."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to policy schedule limit",
+    "note": "Organ donor medical expenses covered up to limit in policy schedule, linked to accepted inpatient claim. Pre/post-hospitalisation expenses for donor not covered."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered (limit per policy schedule)",
+    "note": "Road ambulance covered up to amount specified in policy schedule. Air ambulance is a separate optional benefit (Optional Benefit 7)."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (listed advanced technology methods)",
+    "note": "Covered: Uterine Artery Embolization, HIFU, Balloon Sinuplasty, Deep Brain Stimulation, Oral Chemotherapy, Immunotherapy (monoclonal antibody injections), Intravitreal injections, Robotic surgeries, Stereotactic radiosurgeries, Bronchial Thermoplasty, Vaporisation of prostate (green/holmium laser), IONM, Stem cell therapy for haematological conditions."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumable items listed in Annexure II are excluded. No consumables cover rider mentioned."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Inbuilt (SI ≥100L, 10% co-pay, 45 days/trip)",
+    "note": "Benefit 12 (Global Coverage): inpatient and day care hospitalisation outside India covered up to SI for SI ≥100L. Mandatory 10% co-pay. Coverage for 45 continuous days per trip, 90 days cumulative per year. Room Rent Modification (OB5) not applicable for global claims."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 5 continuous years, no claim can be contested except for proven fraud and permanent exclusions. Applies to original SI; fresh 5-year period on enhanced SI."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes. Coverage not available during grace period."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or porting/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines, with continuity of waiting period credits."
+  },
+  "notable_exclusions": "Maternity, STDs (except HIV-related as defined), external congenital anomalies, mental retardation, sleep disorder instruments, tobacco/alcohol-related illness, cosmetic surgery, hazardous sports (professional), OPD-only procedures",
+  "optional_riders": "Deductible option, Co-payment option, Unlimited Automatic Recharge, International Second Opinion, Room Rent Modification (no room cap), Additional SI for Accidental Hospitalisation, Air Ambulance Cover, PED wait period reduction (36→24 months)",
+  "insurer": "Care Health Insurance",
+  "plan_name": "Super Mediclaim",
+  "uin": "RHIHLIP21374V022021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "super-mediclaim---policy-terms-and-conditions-(effective-from-29-september-2024-).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:55:47.390Z"
+}

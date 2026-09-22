@@ -1,0 +1,139 @@
+{
+  "variant": "",
+  "sum_insured_options": "₹5,00,000 / ₹7,50,000 / ₹10,00,000 / ₹15,00,000 / ₹20,00,000 (inferred from deductible/sublimit tables)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Standard A/C Room",
+    "note": "Covered up to Standard A/C room (single occupancy AC with attached washroom, excluding suite). Proportionate deduction applies if higher room taken."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "At actuals",
+    "note": "ICU expenses paid at actuals as per policy wording Section C1(b)."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base)",
+    "note": "No mandatory co-pay in base policy. Optional voluntary co-pay of 5%/10%/15%/20% available for premium discount. If 'Cashless Discount' optional cover is opted, 20% co-pay applies on reimbursement claims."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract capped at 10% of SI, max ₹50,000/eye",
+    "note": "Inbuilt cataract sub-limit: 10% of SI per eye, max ₹50,000. Optional 'Procedure/Disease Sublimit' cover adds caps on cardiac, joints, hernia, calculi, hysterectomy, gall bladder, spine, cancer, kidney, liver, infectious conditions."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (base)",
+    "note": "No mandatory deductible. Optional voluntary aggregate deductible of ₹10,000–₹3,00,000 available for premium discount."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses; not applicable for accidents."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "36 months continuous coverage required for PED. Portability credit applicable."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "24-month waiting for listed conditions including cataract, hernia, calculi, hysterectomy, organ transplant, arthroplasty, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "CB increases 10% of base SI per claim-free year, max 100%. Reduces at same rate on claim. Optional 'Super Cumulative Bonus' add-on offers up to 200% at 25%/yr or 100% at 50%/yr."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered (base)",
+    "note": "Sum Insured Reinstatement is an optional add-on. Options: once per year or unlimited times per year. Not available for organ donor or modern treatment claims."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (extensive listed + others)",
+    "note": "Extensive indicative list in Annexure I; any procedure requiring <24 hrs due to technology also covered."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (with exclusions)",
+    "note": "Covered up to SI; must exceed 3 days. Excludes asthma, diabetes, hypertension, epilepsy, arthritis, vector-borne diseases, and several other conditions."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH hospitalisation covered up to In-patient SI. Minimum 24-hour admission required. Comfort/leisure treatments excluded."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Harvesting expenses covered up to In-patient SI. Pre/post-hospitalisation for donor not covered. Reinstatement benefit not applicable."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "At actuals (up to SI)",
+    "note": "Road ambulance covered at reasonable & customary charges up to In-patient SI for emergency transfer and inter-hospital transfer."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "12 listed modern treatments covered up to In-patient SI. CB and reinstatement not applicable for this cover."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical items listed in Annexure II are excluded. Medical consumables during hospitalisation are covered as part of treatment."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy covers treatment within India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim contestable except fraud and permanent exclusions."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for quarterly/half-yearly/annual premium; 15 days for monthly instalment."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable at inception only, not on renewals or porting."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "As per IRDAI portability guidelines; apply at least 30 days before renewal."
+  },
+  "notable_exclusions": "Maternity, infertility/IVF, overseas treatment, refractive error <7.5D, cosmetic surgery, dental (non-accidental), war, self-inflicted injury, addiction treatment",
+  "optional_riders": "Sum Insured Reinstatement (once/unlimited), Super Cumulative Bonus (up to 200%), Procedure/Disease Sublimits, Accidental Death Cover, Cashless Discount (with 20% reimb. co-pay), No Claim Discount",
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "AapKe Liye- Madhya Pradesh & Chhattisgarh",
+  "uin": "BAJHLIP26047V012526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Aapke_Liye-Madhya_Pradesh_Chhattisgarh_Policy_Wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:52:39.188Z"
+}

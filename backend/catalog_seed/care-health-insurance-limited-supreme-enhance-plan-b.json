@@ -1,0 +1,138 @@
+{
+  "variant": "Plan B",
+  "sum_insured_options": "Depends on active base policy; Plan B provides top-up over base policy sub-limits",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified (top-up over base policy sub-limit)",
+    "note": "Plan B Benefit 1 (Proportionate Charges Cover) covers room rent and associated medical expenses over and above the sub-limit applicable in the active base policy. The base policy sub-limit acts as deductible."
+  },
+  "icu": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Plan B does not separately specify ICU eligibility; it operates as a top-up over the base policy."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment mentioned for Plan B."
+  },
+  "sub_limits": {
+    "ordinal": 0,
+    "display": "Depends on base policy",
+    "note": "Plan B covers over and above base policy sub-limits (room rent proportionate charges and cataract). The base policy sub-limits act as deductibles."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "Base policy sub-limit acts as deductible (per claim basis)",
+    "note": "Deductible is the sub-limit as per the active base policy, applied on a per-claim basis. Plan B cannot be opted without an active base policy."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard waiting periods apply as per base policy terms."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "PED waiting period as per base policy terms applies."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Named ailment waiting period as per base policy terms applies."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a permanent exclusion."
+  },
+  "cumulative_bonus": {
+    "number": 0,
+    "display": "Not applicable",
+    "note": "Cumulative Bonus is not mentioned for Plan B."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not applicable",
+    "note": "Unlimited Automatic Recharge is a Plan A feature; not mentioned for Plan B."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Pre-hospitalisation cover applies as per base policy terms."
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Post-hospitalisation cover applies as per base policy terms."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Covered (as per base policy terms)"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "Plan B wording does not mention domiciliary hospitalisation cover."
+  },
+  "ayush": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "Plan B wording does not separately mention AYUSH cover."
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "Plan B wording does not separately mention organ donor cover."
+  },
+  "ambulance": {
+    "number": 0,
+    "display": "Not specified",
+    "note": "Plan B wording does not separately mention ambulance cover."
+  },
+  "modern_treatments": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "Plan B wording does not separately mention modern/advance technology treatment cover."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumable items excluded per Annexure I."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Global Coverage optional benefit is not applicable for Plan B."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months (5 years)",
+    "note": "Standard moratorium period applies."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Cannot be used without active base policy; only covers proportionate room rent charges and cataract treatment over base policy sub-limits; maternity excluded",
+  "optional_riders": "Benefit 1: Proportionate Charges Cover, Benefit 2: Cataract Treatment Cover (any combination can be opted)",
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Supreme Enhance",
+  "uin": "CHIHLIP25036V012425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "supreme-enhance---policy-terms-and-conditions.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:55:50.890Z"
+}

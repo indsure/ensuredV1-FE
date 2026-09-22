@@ -1,0 +1,172 @@
+{
+  "insurer": "ManipalCigna Health Insurance Company Limited",
+  "plan_name": "ManipalCigna Sarvah - Param",
+  "uin": "MCIHLIP26038V022526",
+  "sum_insured_options": "₹5L – ₹300L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private AC Room",
+    "note": "Optional upgrade to Any Room or Twin Sharing AC Room available under Room Rent Modification (D.III.5). Proportionate deduction on Associated Medical Expenses if higher room availed.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (up to Sum Insured)",
+    "note": "ICU covered up to full Sum Insured; no separate sub-limit.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (mandatory); Voluntary Co-pay optional",
+    "note": "No mandatory co-payment. Optional Voluntary Co-Payment of 10%, 20%, or 30% can be chosen. Proportionate room rent deduction applies if higher room category availed.",
+    "optional": true,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits (base cover)",
+    "note": "No disease-wise sub-limits on base cover. Donor complication benefit capped at 25% of Base SI up to ₹2L. Maternity capped at 20% of Base SI up to ₹1L (optional). Durable Medical Equipment capped at ₹1L (optional). Air Ambulance capped at ₹5L (optional).",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None (optional deductible available)",
+    "note": "No inbuilt deductible. Optional Aggregate Deductible (₹10K–₹10L) or Daily Deductible (₹1K–₹5K/day) can be chosen under D.III.9.",
+    "optional": true,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "No waiting period (base); 30 days if Pratiksha opted",
+    "note": "Base plan has NO initial 30-day waiting period. If optional 'Pratiksha' cover is opted, a 30-day initial waiting period applies.",
+    "optional": false,
+    "number": 0
+  },
+  "ped_waiting": {
+    "display": "No waiting period (base); 36 months if Pratiksha opted",
+    "note": "Base plan has NO PED waiting period. If optional 'Pratiksha' cover is opted, standard PED waiting applies (up to 36 months). Personal waiting period up to 36 months may apply based on underwriting.",
+    "optional": false,
+    "number": 0
+  },
+  "specific_disease_waiting": {
+    "display": "No waiting period (base); 24 months if Pratiksha opted",
+    "note": "Base plan has NO specific disease waiting period. If optional 'Pratiksha' cover is opted, 24-month specific disease/procedure waiting period applies for listed conditions (cataract, hernia, knee replacement, etc.).",
+    "optional": false,
+    "number": 0
+  },
+  "maternity": {
+    "display": "Optional add-on (36mo wait)",
+    "note": "Maternity & New Born Hospitalization Expenses available as optional cover (D.III.4). Covered up to 20% of Base SI, max ₹1L per delivery; max 2 deliveries/terminations lifetime. 36-month waiting period. New born and first-year vaccinations included within maternity SI.",
+    "optional": true,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Up to 1500% of Base SI",
+    "note": "Gullak (Guaranteed Cumulative Bonus): 100% of Base SI added each policy year regardless of claims, up to maximum 1500% of Base SI.",
+    "optional": false,
+    "number": 1500
+  },
+  "restoration": {
+    "display": "Unlimited, 100% (same & unrelated illness)",
+    "note": "100% of Base SI restored unlimited times per policy year for same or unrelated illness/injury. Triggers only after Base SI + Gullak exhausted. Does not apply to first claim in the year. Restored SI not carried forward.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "90 days",
+    "note": "Pre-hospitalisation expenses covered up to 90 days before admission, up to Sum Insured.",
+    "optional": false,
+    "number": 90
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered up to 180 days after discharge, up to Sum Insured.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures",
+    "note": "All medically necessary day-care treatments covered up to Sum Insured. OPD treatment excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary Hospitalization covered up to Sum Insured; minimum 3 consecutive days treatment required.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH (Ayurveda, Yoga, Naturopathy, Unani, Siddha, Homeopathy) in-patient and day-care treatment covered up to Sum Insured. Pleasure/rejuvenation therapies excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Donor hospitalisation expenses covered up to Sum Insured. Donor complication benefit (up to 30 days post-discharge) covered up to 25% of Base SI, max ₹2L, over and above Base SI. Donor screening cost covered once per year for successful transplant.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to Sum Insured",
+    "note": "Road ambulance reimbursed at Reasonable & Customary charges up to Sum Insured. Air Ambulance available as optional cover (D.III.3) up to ₹5L in addition to Base SI.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 listed modern/advanced procedures (robotic surgery, stereotactic radio surgery, oral chemotherapy, intra-vitreal injections, stem cell therapy for haematological conditions, etc.) covered up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider",
+    "note": "Coverage for Non-Medical Items (consumables from Annexure III List-1) available as optional cover (D.III.11A) up to Sum Insured. Not covered under base plan.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy geographical scope is India only. All claims settled in India in Indian rupees.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30 days grace period for annual/quarterly/half-yearly premium; 15 days for monthly mode. Coverage not available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period on new policies. Proportionate risk premium and medical examination/stamp duty costs deducted on refund.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Apply at least 30 days before renewal date.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "No global cover; multifocal/femto-laser cataract lenses excluded; refractive error <7.5D excluded; external congenital anomaly excluded; non-allopathic (non-AYUSH) treatments excluded",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Personal Accident, TTD, Air Ambulance, Maternity+NewBorn, Room Rent Modification (Any/Twin), Surplus Benefit, Shakti, Anant (unlimited CI cover), Deductible, Voluntary Co-pay, Non-Medical Items+DME, Pratiksha (waiting periods)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Sarvah-Param-TnC.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:41:00.273Z"
+}

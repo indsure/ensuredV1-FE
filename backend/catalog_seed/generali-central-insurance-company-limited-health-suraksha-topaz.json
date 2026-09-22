@@ -1,0 +1,132 @@
+{
+  "variant": "Topaz",
+  "sum_insured_options": "₹1L; ₹2L; ₹3L; ₹4L; ₹5L; ₹6L; ₹7.5L; ₹8L; ₹9L; ₹10L",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day (non-ICU)",
+    "note": "ICU: no cap. If non-ICU room rent exceeds 1% of SI/day, co-payment applies on associated medical expenses (excl. pharmacy, consumables, implants, diagnostics) per co-payment table. Co-pay ranges 0%–25% depending on SI and room rent chosen."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (ICU)",
+    "note": "No co-payment for ICU admission even if ICU charges exceed any limit."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "0% base; room-upgrade co-pay 0–25%; zone co-pay up to 20%",
+    "note": "Room rent co-pay on associated medical expenses (not pharmacy/consumables/implants/diagnostics) if non-ICU room exceeds 1% of SI/day. Zone co-pay: 10% (Zone 2 treating in Zone 1), 20% (Zone 3 treating in Zone 1/2)."
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Many sub-limits (see Annexure 1)",
+    "note": "Disease-wise sub-limits apply per Annexure 1: cataract ₹10k–₹30k/eye, CABG ₹80k–₹1.5L, PTCA ₹40k–₹1.2L, knee/hip replacement ₹40k–₹1.2L, hysterectomy ₹20k–₹45k, dialysis ₹10k–₹20k, transplant ₹80k–₹1.5L, and more. Modern treatments: 50% of SI."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12–36 months (varies by condition)",
+    "note": "12 mo: gastric ulcers, urinary/biliary stones, ear/tonsil surgery. 24 mo: cataract, hernia, hydrocele, BPH, sinuses, DNS, fistula, haemorrhoids, hysterectomy, tumours/cysts, varicose veins etc. 36 mo: organ transplant, joint replacement (degenerative)."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% (10%/yr)",
+    "note": "10% increase per claim-free year; reduces by 10% per claim year; max 50% of base SI."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% (SI ≥3L)",
+    "note": "Recharge benefit: 100% of basic SI reinstated once per policy year after full exhaustion. Available for SI ≥₹3L. Applicable for same or different ailment."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days, up to 1% of SI",
+    "note": "Pre-hospitalisation expenses capped at 1% of SI (excl. cumulative bonus)."
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days, up to 1% of SI",
+    "note": "Post-hospitalisation expenses capped at 1% of SI (excl. cumulative bonus)."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation/treatment is specifically excluded."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (hospitalisation)",
+    "note": "AYUSH hospitalisation for accident and illness covered. Preventive/rejuvenation treatments excluded."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Harvesting surgery costs covered under recipient's policy. Subject to transplant sub-limit in Annexure 1."
+  },
+  "ambulance": {
+    "number": 750,
+    "display": "₹750/hospitalisation; ₹1,500 overall per policy period"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments capped at 50% of SI per policy period. Proportionate room rent deduction also applies."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Standard consumables list (Annexure 2) excluded."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy covers treatment in India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly instalment)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Domiciliary treatment, OPD, dental (non-accidental), maternity, infertility/ART, stem cell storage, treatment outside India, many disease sub-limits apply",
+  "optional_riders": "Not specified in wording",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Suraksha",
+  "uin": "GCIHLIP25017V052425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "health-surkasha-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:58:55.680Z"
+}

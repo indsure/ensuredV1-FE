@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "Health+",
+  "uin": "NBHHLIP24135V012324",
+  "sum_insured_options": "Not specified",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Not specified",
+    "note": "Room rent eligibility is referenced as per Policy Schedule; specific category/limit not stated in wording text",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "ICU charges covered under inpatient care but specific cap not stated in wording; subject to Policy Schedule",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "As per Policy Schedule",
+    "note": "Co-payment percentage is specified in Policy Schedule/Certificate of Insurance; not stated in wording. Does not apply to ambulance or sub-limit claims.",
+    "optional": false,
+    "number": null
+  },
+  "sub_limits": {
+    "display": "Many sub-limits (cataract, knee, CABG, angioplasty, hernia, etc.)",
+    "note": "Annexure III lists sub-limits: e.g. Cataract ₹26,000/eye, TKR unilateral ₹1,09,000, CABG ₹1,45,000, Angioplasty ₹1,45,000, Hernioplasty ₹18,000–₹43,000, Hip replacement ₹1,09,000–₹29,000, Hysterectomy ₹72,000, Valve replacement ₹1,09,000, and more",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "Not specified",
+    "note": "Deductible is defined in the policy but actual amount is per Policy Schedule; not stated in wording",
+    "optional": false,
+    "number": null
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing disease waiting period is 36 months; reducible via portability credits",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "36 months",
+    "note": "Specific waiting period defined as up to 36 months for specified diseases/treatments (Section 2.1.41)",
+    "optional": false,
+    "number": 36
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses are explicitly excluded under Standard Exclusion Code-Excl18; ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "Cumulative bonus is defined in the policy (Section 2.1.7) but rate and maximum are not stated in the wording; subject to Policy Schedule",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not specified",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days before admission",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days after discharge",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed procedures only",
+    "note": "Day care covered for procedures listed in Annexure IV (536 listed procedures)",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Home Care/Domiciliary Treatment covered up to limit in Policy Schedule; medical/ambulatory devices at home not covered",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Not covered",
+    "note": "AYUSH treatment is explicitly excluded under Specific Exclusion 4.2.6; policy covers Allopathic treatment only per Preamble",
+    "optional": false,
+    "exists": false
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Living donor harvesting expenses covered under Section 3.7; donor's hospital stay, screening, pre/post-hosp expenses excluded",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered (limit per Policy Schedule)",
+    "note": "Emergency ground ambulance within India covered; non-network provider capped at amount in Policy Schedule; one transfer per hospitalisation",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "12 modern treatments covered (Section 3.3); robotic surgeries capped at ₹1 lakh except prostatectomy, cardiac, nephrectomy, malignancy cases",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Annexure I lists extensive non-payable consumables (gloves, nebulisation kit, masks, etc.); no consumables rider mentioned",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy covers treatments in India only (Preamble); all claims payable in India in Indian Rupees only (Section 5.2.6)",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim/policy contestable except for established fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes; coverage available during grace period",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual policies only, not on renewals",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI norms; credits for PED, specific waiting periods, moratorium transferable",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "AYUSH treatments, OPD, sleep disorders, STIs (non-HIV), external congenital anomaly, dental (non-accident/cancer), multifocal lens, conflict/disaster",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Not specified",
+    "note": "No optional riders or add-ons mentioned in the policy wording",
+    "optional": false
+  },
+  "source_file": "Healthplus_Policy_Wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:41:46.790Z"
+}

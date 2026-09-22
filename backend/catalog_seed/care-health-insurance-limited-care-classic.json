@@ -1,0 +1,133 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (refer Policy Schedule)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day (upgradeable to Single Private AC Room via optional rider)",
+    "note": "Base cover is 1% of SI per day. Optional Benefit: Room Rent and ICU Modification upgrades to Single Private AC Room for SI < 5 Lakhs only."
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day (upgradeable to no limit via optional rider)",
+    "note": "Base cover is 2% of SI per day. Optional Benefit: Room Rent and ICU Modification upgrades to no limit for SI < 5 Lakhs only."
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% (age 61+ at first policy issuance)",
+    "note": "20% co-pay applies if insured/eldest insured is 61+ at first policy issuance. Additional 20% co-pay if Smart Select opted and treatment taken outside Annexure III hospitals. Optional Benefit: Copayment Waiver can waive the age-based 20%."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract and Advance Technology Methods sub-limited (amounts per Policy Schedule)",
+    "note": "Cataract treatment and Advance Technology Methods (robotic surgery, HIFU, etc.) have sub-limits per Policy Schedule. Optional Benefit: Sub-Limit on Specified Diseases adds further sub-limits on knee replacement, hernia, hysterectomy, BPH, renal stones, cardiovascular, cancer, etc. Optional Benefit: Waiver of Sub-limits on Cataract & Advance Technology Methods can remove those sub-limits."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional deductible available)",
+    "note": "No deductible by default. Optional Benefit: Deductible Option allows aggregate deductible for premium discount; amount per Policy Schedule."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "36 months (reducible to 24 months via optional cover)",
+    "note": "Standard PED waiting period is 36 months. Optional Cover: Reduction in PED Wait Period reduces it to 24 months. Optional Benefit: Instant Cover waives PED waiting for Diabetes/Hypertension/Hyperlipidimia/Asthma."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Applies to listed conditions including arthritis, ENT surgeries, BPH, cataract, hernia, hysterectomy, kidney stones, varicose veins, Parkinson's/Alzheimer's, etc."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 24,
+    "display": "Optional add-on (24-month wait)",
+    "note": "Optional Benefit: Maternity and New Born Baby Cover; 24-month waiting period; covers delivery and newborn expenses up to limit in Policy Schedule; max 2 living children; available only if primary insured or spouse delivers; age limit 45 years at policy start."
+  },
+  "cumulative_bonus": {
+    "number": 150,
+    "display": "Up to 150% of SI (25%/yr)",
+    "note": "25% flat added per claim-free policy year on cumulative basis; max 150% of SI. Reduced at same rate if claim occurs. NCB not counted for Unlimited Automatic Recharge calculation."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited restorations, 100% of base SI",
+    "note": "Unlimited Automatic Recharge reinstates base SI unlimited times per policy year after base SI, NCB and Additional Accidental SI exhausted. Can be used for same or different illnesses (except Any One Illness condition). Unutilized recharge cannot be carried forward."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (up to limit in Policy Schedule)",
+    "note": "Must exceed 3 consecutive days. Excludes 12 listed conditions (asthma, bronchitis, diabetes, hypertension, epilepsy, etc.) for domiciliary claims."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Covered up to Sum Insured via cashless or reimbursement. Requires valid AYUSH practitioner and registered AYUSH hospital. Domiciliary AYUSH limited to AYUSH Treatment sub-limit."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (up to limit in Policy Schedule)",
+    "note": "Covers donor's medical expenses for organ transplant surgery. Post-harvest expenses of donor not covered."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered (limit per Policy Schedule)",
+    "note": "Road ambulance covered up to amount in Policy Schedule. Air Ambulance available as optional add-on."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (per Policy Schedule)",
+    "note": "12 listed Advance Technology Methods (robotic surgery, stereotactic radio surgery, HIFU, oral chemo, immunotherapy injections, etc.) covered up to specified sub-limit. Optional Benefit: Waiver of Sub-limits on Cataract & Advance Technology Methods removes sub-limits."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumable items listed in Annexure I are excluded. No optional rider for consumables mentioned."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered (India only)",
+    "note": "Policy covers medical treatment taken entirely within India. Optional Benefit: International Second Opinion available for second opinion only, not treatment."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months (5 years)"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Tobacco/alcohol-related illness, hormone replacement therapy, STDs (except HIV), external prosthetics, refractive error <7.5D, non-allopathic (except AYUSH benefit), cosmetic surgery, hazardous sports",
+  "optional_riders": "Deductible Option, Copayment Waiver, Room Rent & ICU Upgrade, Smart Select (network discount), OPD Care, Air Ambulance, Maternity & Newborn, Instant Cover (PED waiver), PED Wait Reduction to 24mo, Sub-Limit on Specified Diseases, Waiver of Sub-limits on Cataract & ATM, Disease Management Programs, Home Care, Annual Health Check-up, International Second Opinion, Additional SI for Accidental Hospitalization",
+  "insurer": "Care Health Insurance Limited",
+  "plan_name": "Care Classic",
+  "uin": "CHIHLIP26048V022526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "care-classic---policy-terms--conditions-(effective-from-09-april-2025-).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:54:20.311Z"
+}

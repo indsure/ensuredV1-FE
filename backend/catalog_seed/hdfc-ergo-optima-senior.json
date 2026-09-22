@@ -1,0 +1,141 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Policy wording does not specify a room rent cap. Co-payment structure references 'Shared Accommodation' (15% copay) vs 'Single occupancy or higher' (30% copay), implying room choice is unrestricted but drives copay level."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "ICU charges are listed as covered under In-patient Treatment with no stated sub-limit."
+  },
+  "copayment": {
+    "number": 15,
+    "display": "15% (shared room) / 30% (single/higher room); 30% for listed illnesses/surgeries; 15% for day care",
+    "note": "Mandatory copay on every claim: 15% if shared accommodation, 30% if single occupancy or higher. Exception: 15% applies for acute cardiac/accident in single room if shared unavailable. 30% copay for 14 listed illnesses/surgeries (cataract, hysterectomy, cholecystectomy, TURP, hernia, angiography, arthroscopy, PID-discectomy, mastectomy, joint replacement, PTCA, hydrocele, major organ transplant, CABG). Day care: 15% flat. If illness-specific 30% copay applies, accommodation copay does not stack."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "30% copay on 14 procedures (cataract, joint replacement, CABG, etc.)",
+    "note": "No fixed rupee sub-limits stated, but 30% mandatory copay acts as an effective cap on 14 listed illnesses/surgeries including cataract, joint replacement, PTCA, CABG, major organ transplant, hysterectomy, cholecystectomy, hernia, hydrocele, mastectomy, arthroscopy, angiography, TURP, PID-discectomy."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": null
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Endorsement option available to delete this waiting period entirely."
+  },
+  "ped_waiting": {
+    "number": 12,
+    "display": "36 months (reducible to 24 or 12 months via endorsement)",
+    "note": "Base is 36 months. Endorsements allow reduction to 24 months or 12 months, or full deletion. Best achievable is deletion (0 months) but lowest stated option is 12 months."
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "24 months (reducible to 12 months or deleted via endorsement)",
+    "note": "Base is 24 months for listed conditions. Endorsements allow reduction to 12 months or full deletion."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "5% no-claim discount on renewal premium (non-cumulative)",
+    "note": "Policy offers a 5% non-cumulative discount on renewal premium after each claim-free year. This is a premium discount, not a sum insured bonus. No cumulative SI bonus described."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": null
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": null
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered",
+    "note": "Day care procedures covered; 15% copay applies."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (min 3 days)",
+    "note": "Domiciliary treatment covered for periods exceeding 3 days where hospitalisation is not possible or room unavailable."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (in-patient only)",
+    "note": "AYUSH in-patient treatment covered in recognised AYUSH hospitals. Out-patient AYUSH not covered."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Harvesting expenses for organ donor covered. Donor's pre/post-hospitalisation expenses excluded."
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation",
+    "note": "Emergency ambulance only; non-emergency and non-registered providers excluded."
+  },
+  "modern_treatments": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly mention modern/robotic treatments as a named benefit."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Consumables (gloves, etc.) are listed as non-medical expenses and excluded. In-patient treatment definition mentions consumables but the non-medical expenses annexure excludes them."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment within India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim can be contested except on grounds of established fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)",
+    "note": "30 days for non-monthly payment modes; 15 days for monthly instalment mode."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or porting/migration."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; apply at least 30 days before renewal."
+  },
+  "notable_exclusions": "Maternity (except ectopic), congenital external anomalies, stem cell harvesting, sleep apnoea investigation, OPD treatment, hearing aids/spectacles, vaccination, non-medical expenses, treatment outside India",
+  "optional_riders": "Waiting period waivers via endorsement (30-day, 24-month specific disease, 36-month PED — reducible or deletable)",
+  "insurer": "HDFC ERGO",
+  "plan_name": "Optima Senior",
+  "uin": "HDHHLIP21379V022021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "optima-senior-combined-pw-cis-hegi-757265377962.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:01:17.634Z"
+}

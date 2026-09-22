@@ -1,0 +1,172 @@
+{
+  "insurer": "Zurich Kotak General Insurance Company (India) Limited",
+  "plan_name": "LiveWise",
+  "uin": "ZUKHLIP25037V022425",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap (default)",
+    "note": "Base plan has no room rent cap. Optional add-on 2.B.11 allows downgrade to Single Private AC Room or Shared Room for a premium discount.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap (up to SI)",
+    "note": "ICU covered up to Sum Insured opted; proportionate deductions not applied for ICU charges.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base plan)",
+    "note": "No mandatory co-pay in base plan. Zone II insured treating in Zone I bears 10% co-pay. Optional Smart Select (2.B.10) adds 20% co-pay for non-listed hospitals. Voluntary co-pay available as optional add-on (2.B.13).",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits",
+    "note": "No disease-wise or procedure-wise monetary sub-limits found in the policy wording. All covered benefits payable up to Total Sum Insured.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None (base plan)",
+    "note": "Optional deductible available under 2.B.12; amount chosen by policyholder and specified in Policy Schedule.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Optional add-on 2.B.8 allows reduction to a shorter period (specific period mentioned in Policy Schedule); available only at first purchase.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Optional add-on 2.B.9 reduces this to 12 months; available only at first purchase. List includes cataract, hernia, joint replacement, BPH, varicose veins, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (discount-based)",
+    "note": "Maternity hospitalisation excluded under base plan (Excl18). Optional 2.B.5.3 Maternity Benefit provides up to ₹25,000 discount within network and 20% discount on gynaec/diagnostics/pharmacy; not a full indemnity cover. Ectopic pregnancy covered under base plan.",
+    "optional": true,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr)",
+    "note": "Base Cumulative Bonus: 50% per claim-free year, max 100% of Base SI. Optional Cumulative Bonus Booster (2.B.3) adds 100%/yr up to 500% of Base SI additionally.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited, 100% of Base SI",
+    "note": "Inbuilt Unlimited Restoration Benefit (2.A.4): restores Base SI unlimited times per year after full exhaustion of Base SI + Cumulative Bonus + Booster + Double Cover. Usable for related and unrelated illnesses.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days preceding admission.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures",
+    "note": "Day Care Treatment covered as per definition (technological advancement enabling <24hr procedures).",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Covered under 2.A.1.6 for minimum 3 consecutive days. Excludes asthma, bronchitis, diabetes, hypertension, epilepsy, influenza, arthritis, and several other listed conditions.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH in-patient and day care treatment covered under 2.A.1.5 up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "In-patient hospitalisation expenses for organ harvesting from donor covered under 2.A.1.7. Screening, pre/post-hosp for donor, and organ acquisition costs excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to limit in Policy Schedule",
+    "note": "Road ambulance covered up to limit specified in Policy Schedule. Air ambulance available as optional add-on (2.B.7).",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Covered (up to SI)",
+    "note": "12 listed modern treatments covered under 2.A.1.3 including robotic surgery, stereotactic radio surgery, oral chemotherapy, stem cell therapy etc. Other modern treatments excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider",
+    "note": "Consumables Cover available as optional add-on (2.B.4) covering non-medical items in Annexure II List 1 for medically necessary hospitalisation.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy covers treatment in India only; all claims must have cause of action in India.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim contestable except on grounds of fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30 days grace for annual/quarterly/half-yearly premium; 15 days for monthly instalment. Coverage not available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; apply at least 30 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Hormone replacement therapy, RMO/surcharges, external prosthetics, alopecia, mental retardation, non-allopathic (excl. AYUSH), Remicade/Avastin OPD, military ops",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Double Cover, Consumables, Air Ambulance, Cumulative Bonus Booster, OPD Benefit, Dental Benefit, Maternity Benefit, Get Fit, Wellness, Annual Health Check-up, Smart Select, Deductible, Voluntary Co-pay, Room Category Modification, PED/Specific Disease WP reduction",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy_wording_Live_Wise_Website_96b79ee970_3_dd13e2474e_014547c095.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:38:02.044Z"
+}

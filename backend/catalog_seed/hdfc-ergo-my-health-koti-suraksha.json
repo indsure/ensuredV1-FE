@@ -1,0 +1,134 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (refer Policy Schedule)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Standard AC Room",
+    "note": "Proportionate deduction applies if higher room taken. Optional cover 'Waiver of Room Rent Capping' removes this cap."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (actuals)",
+    "note": "ICU charges covered as part of Medical Expenses with no separate sub-limit stated in wording."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base); 20% if Tier 1b/2 insured treats in higher tier city",
+    "note": "No mandatory co-pay for Tier 1a policyholders. Tier 1b policyholders pay 20% co-pay if treated in Tier 1a cities; Tier 2 policyholders pay 20% co-pay if treated in Tier 1a or 1b cities. Co-pay also applies during PED waiting period. Optional 'Waiver of Co-Payment' cover available."
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Cataract, hernia, appendicectomy, hysterectomy, others capped at ₹75,000",
+    "note": "8 procedure sub-limits at ₹75,000 each: Cataract/eye, Benign tumors/cysts/nodules/polyps, Stone in urinary system, Hernia, Appendicectomy, Hysterectomy, Fissures/Piles/Fistulas, Cellulitis/Abscess. Optional 'Waiver of Disease Capping' removes all sub-limits."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "Optional Aggregate Deductible cover available at inception only; amount per Policy Schedule."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Optional 'Waiting Period Modification Option' can reduce this; modified period per Policy Schedule."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Applies to listed conditions (cataract, hernia, joint replacement, etc.). Optional 'Waiting Period Modification Option' can reduce this."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard permanent exclusion (Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of Base SI",
+    "note": "50% of Base SI added per renewal year irrespective of claims, up to 100% maximum. Not applicable if Aggregate Deductible opted. Optional 'Cumulative Bonus Booster' can enhance the rate."
+  },
+  "restoration": {
+    "ordinal": 2,
+    "display": "Sum Insured Rebound (optional)",
+    "note": "No inbuilt restoration. Optional 'Sum Insured Rebound' cover adds back claim amount paid (up to Base SI) for subsequent hospitalisations in same policy year. Not available if Aggregate Deductible opted. Chemo/dialysis: once in policy lifetime."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Covered when patient cannot be moved to hospital or no room available."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (in-patient in AYUSH Hospital)",
+    "note": "Ayurveda, Unani, Siddha, Homeopathy, Yoga & Naturopathy covered for in-patient care in AYUSH Hospital up to limits in Policy Schedule."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Harvesting expenses of organ donor covered when insured is recipient. Donor's pre/post-hospitalisation excluded."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "At actuals",
+    "note": "Road ambulance covered at actuals for each admissible claim (emergency transfer, hospital-to-hospital, hospital-to-home within same city)."
+  },
+  "modern_treatments": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly list modern/robotic treatments as a named benefit. Standard medical expenses are covered; no specific modern treatment clause found."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider",
+    "note": "Non-Medical Expenses cover is an optional add-on (Optional Cover 1 under Section 1). By default, non-medical/consumable expenses are excluded."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional",
+    "note": "Two optional covers: 'Emergency Medical Expenses' (life-threatening situations outside India) and 'Overseas Treatment' (major illnesses outside India). Both require additional premium."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "30 days for yearly/half-yearly/quarterly; 15 days for monthly instalment."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, OPD treatment, hearing aids/spectacles, stem cell harvesting, congenital external anomalies, sleep apnoea investigation, vaccination, alopecia treatment",
+  "optional_riders": "Non-Medical Expenses cover, Aggregate Deductible, Emergency Medical Expenses (global), Overseas Treatment, Waiver of Disease Capping, Waiver of Room Rent Capping, Waiting Period Modification, Medical Evacuation, Sum Insured Rebound, Waiver of Co-Payment, Cumulative Bonus Booster",
+  "insurer": "HDFC ERGO",
+  "plan_name": "my:health Koti Suraksha",
+  "uin": "HDFHLIP21131V012021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "myhealth-koti-suraksha-pw-327779800227.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:00:54.434Z"
+}

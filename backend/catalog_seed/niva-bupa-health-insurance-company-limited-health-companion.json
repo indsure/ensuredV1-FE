@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "Health Companion",
+  "uin": "NBHHLIP26051V092526",
+  "sum_insured_options": "Not specified in document",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Shared Room (Variant 2023); No cap (Variant 2022)",
+    "note": "Variant 2023: capped at Shared Room; 20% co-payment if higher room chosen. Variant 2022 appears to have no room cap. Pro-rata applies to associated medical expenses if higher room taken.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "No separate ICU sub-limit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "20% if higher room than Shared Room (Variant 2023 only)",
+    "note": "Applies only under Variant 2023 when insured opts for a room category above Shared Room. No mandatory co-pay otherwise.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Vaccination ₹5,000; Ambulance ₹2,000 road / ₹2.5L air",
+    "note": "Vaccination for animal bite capped at ₹5,000. Road ambulance ₹2,000/hospitalisation, air ambulance ₹2,50,000. NCB sub-limits do not increase. No disease-wise sub-limits found beyond these.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (optional Annual Aggregate Deductible available)",
+    "note": "Annual Aggregate Deductible is an optional cost-sharing feature; no mandatory deductible in base plan.",
+    "optional": true,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents covered from day 1.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases excluded for 36 months from first policy inception. Reducible via portability credits.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, joint replacement, fibroids, etc.) excluded for 24 months. Accidents covered from day 1; cancer after 30-day wait.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses are a standard exclusion (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (20%/yr)",
+    "note": "20% of base SI added per claim-free year; maximum 100%. Sub-limits do not increase with NCB.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% – same or different illness",
+    "note": "Refill benefit adds an amount equal to base SI once per policy year after first claim is paid (even partial utilisation). Applies for any illness (same or different).",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days before admission for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge for the same condition.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care (2+ hours admission)",
+    "note": "Procedures requiring less than 24 hours due to technological advancement are covered; minimum 2-hour admission required.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Home Care/Domiciliary Treatment covered when doctor advises home treatment with continuous active monitoring. Pre & post hospitalisation benefit also applies.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (min 24-hr admission in AYUSH hospital)",
+    "note": "AYUSH treatment covered in recognised AYUSH hospitals with minimum 24-hour admission. India only.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Harvesting expenses of donor covered when insured undergoes transplant. Also covers insured's own organ donation expenses.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation (road); ₹2,50,000 (air)",
+    "note": "Road ambulance ₹2,000 per hospitalisation; air ambulance ₹2,50,000 for emergency only. Registered ambulance mandatory. Payable only when hospitalisation claim is paid.",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Covered (12 listed procedures)",
+    "note": "Covers robotic surgeries, oral chemotherapy, immunotherapy, stem cell therapy, HIFU, balloon sinuplasty, stereotactic radio surgery, deep brain stimulation, intravitreal injections, bronchial thermoplasty, IONM, vaporisation of prostate.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-medical consumables (gloves, masks, etc.) explicitly excluded in Annexure I.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy covers treatments in India only; expenses outside India explicitly excluded.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim can be contested except for established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30-day grace period for annual/half-yearly/quarterly premium; 15 days for monthly instalment. Coverage available during grace period only if premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual policies only, not on renewals. Pro-rata premium refunded if no claim made.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-mandated portability; credits for PED waiting, specific waiting periods, NCB and moratorium transferable to new insurer.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, OPD treatment, infertility/IVF, external congenital anomaly, dental (non-accident), refractive error <7.5D, personal waiting period up to 48mo, self-inflicted injury",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Hospital Cash (daily benefit up to 30 days), Personal Accident (AD + PTD + PPD), Annual Aggregate Deductible",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Health-Companion-Variant2022-PolicyWording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T14:01:03.111Z"
+}

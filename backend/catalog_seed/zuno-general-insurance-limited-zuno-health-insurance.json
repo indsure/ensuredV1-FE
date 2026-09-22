@@ -1,0 +1,173 @@
+{
+  "insurer": "Zuno General Insurance Limited",
+  "plan_name": "Zuno Health Insurance",
+  "uin": "ZUNHLIP26040V052526",
+  "sum_insured_options": "Not specified in wording (variants: Silver, Gold, Platinum)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private Room (Gold/Platinum); 1% SI/day (Silver ≤₹2L)",
+    "note": "Silver SI up to ₹2L: 1% of SI/day. Silver SI above ₹2L and all Gold & Platinum: Standard Single Private Room. Proportionate deduction applies if higher room chosen.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (Gold/Platinum); 2% SI/day (Silver ≤₹2L)",
+    "note": "Silver SI up to ₹2L: 2% of SI per day. Silver SI above ₹2L and all Gold & Platinum: no capping on ICU accommodation.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "20% (age 61+)",
+    "note": "Compulsory 20% co-payment for each insured person aged above 60 years on every claim. Optional voluntary co-pay of 10% or 20% available for insured aged 60 or below in exchange for premium discount.",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Organ donor: Gold ₹1L, Platinum ₹2L; Ambulance capped; Maternity capped",
+    "note": "Organ donor: Gold ₹1L, Platinum ₹2L. Ambulance: Silver ₹1,500, Gold ₹3,000, Platinum ₹10,000. Maternity: Gold ₹50,000, Platinum ₹2L. Critical illness add-on: Gold 50% SI, Platinum 100% SI. Main hospitalisation covered up to SI with no disease-wise sub-limits beyond these.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents or if continuously covered for more than 12 months.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months (Platinum); 36 months (Silver/Gold)",
+    "note": "Silver and Gold: 36 months. Platinum: 24 months. Best (lowest) achievable is 24 months on Platinum variant.",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, ENT surgeries, joint replacement, etc.) excluded for 24 months of continuous coverage. Diabetes, hypertension, cardiac conditions have a 90-day waiting period if not pre-existing.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (48mo wait) – Gold ₹50K, Platinum ₹2L; Not covered in Silver",
+    "note": "Inbuilt in Gold (₹50,000) and Platinum (₹2,00,000) variants. 48 months continuous coverage required. Max 2 deliveries. Not available in Silver variant.",
+    "optional": false,
+    "exists": true,
+    "number": 48
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (Gold/Platinum); Up to 50% (Silver)",
+    "note": "Silver: 10% per claim-free year, max 50%. Gold & Platinum: 50% per claim-free year, max 100%. Bonus reduces at same rate on a claim year.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/year, 100% – unrelated illness only (Gold/Platinum inbuilt)",
+    "note": "Inbuilt in Gold and Platinum: 100% SI restored once per policy year for unrelated illness/disease only. Not triggered on first claim. Optional add-on available for Silver variant. Gold/Platinum also have optional 'Recharge' cover (Optional Cover 3) which allows restoration even for same illness.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "30 days (Silver), 60 days (Gold), 90 days (Platinum)",
+    "note": "Varies by variant. Best available is 90 days on Platinum.",
+    "optional": false,
+    "number": 90
+  },
+  "post_hosp": {
+    "display": "60 days (Silver), 90 days (Gold), 180 days (Platinum)",
+    "note": "Varies by variant. Best available is 180 days on Platinum.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All treatments meeting the day care definition are covered up to sum insured via cashless or reimbursement.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Covered up to sum insured via reimbursement only. Pre and post domiciliary hospitalization expenses also covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment in AYUSH hospitals or AYUSH day care centres covered up to sum insured.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered – Gold ₹1L, Platinum ₹2L; Not in Silver",
+    "note": "Harvesting expenses for organ donor covered. Gold: up to ₹1,00,000; Platinum: up to ₹2,00,000. Not applicable in Silver variant.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹1,500 (Silver), ₹3,000 (Gold), ₹10,000 (Platinum) per year",
+    "note": "Per policy year limits. Covers road ambulance to nearest hospital or inter-hospital transfer in emergency.",
+    "optional": false,
+    "number": 10000
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "All modern methods of treatment authorised by Indian Medical Council covered up to sum insured under Benefit 1.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables such as gloves, masks, nebuliser kits, ECG electrodes etc. are listed as excluded items in Appendix List I. IV fluids, injection administration charges and consumables used during surgery/treatment are covered under Benefit 1.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy covers medical treatment taken entirely within India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years (60 months), no claim can be contested except for proven fraud and permanent exclusions.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (annual/quarterly/half-yearly); 15 days (monthly)",
+    "note": "30 days grace for annual, half-yearly and quarterly premium payments; 15 days for monthly instalment payments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual policies only; not on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines. Apply at least 30 days before but not earlier than 60 days from renewal date.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Permanent exclusions: cancer, epilepsy, heart ailments, stroke, CKD, Hepatitis B, Parkinson's, psoriasis, avascular necrosis if pre-existing at proposal. STDs, newborns <91 days, external congenital anomalies, stem cell storage.",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Critical illness cover (Silver), Restoration (Silver), Recharge/same-illness restoration (Gold/Platinum), Voluntary co-pay 10%/20% discount",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Zuno_Health_Insurance_policy_wording_V_1_5_9bbbe898b2.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:37:03.165Z"
+}

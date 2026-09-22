@@ -1,0 +1,134 @@
+{
+  "variant": "Platinum",
+  "sum_insured_options": "₹3L, ₹5L, ₹7.5L, ₹10L and above (refer schedule)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private Room (SI 3L–7.5L); Any room (SI 10L+)",
+    "note": "SI 3L–7.5L: Single Private AC room. SI 10L and above: any room category. Proportionate deduction applies if higher room taken."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "At actuals",
+    "note": "Actual ICU expenses paid as provided by hospital."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base); zone co-pay may apply",
+    "note": "No mandatory co-pay on base plan. Zone B: 15% if treated in Zone A; Zone C: 20% in Zone A, 5% in Zone B. Voluntary 10%/20% co-pay option available."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract 20% of SI/eye (max ₹1L); Bariatric 50% of SI (max ₹5L); Maternity sub-limits",
+    "note": "Cataract: 20% of SI per eye, max ₹1,00,000. Bariatric: 50% of SI, max ₹5L. Maternity: Normal ₹15K/₹25K, Caesarean ₹25K/₹35K depending on SI band."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "Voluntary aggregate deductible of ₹50,000/₹1,00,000/₹2,00,000/₹3,00,000 available as optional cost-sharing."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Waived for accidents. Not applicable after 12 months continuous coverage."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Reduced to extent of prior continuous coverage under portability norms."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "List of 27 conditions including cataract, hernia, piles, stones, etc. Also 36-month wait for joint replacement, vertebral surgery, bariatric, Parkinson's, genetic disorders, etc."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 72,
+    "display": "Covered (72mo wait)",
+    "note": "Max 2 deliveries/terminations. Normal delivery ₹15K (SI ≤7.5L)/₹25K (SI >7.5L); Caesarean ₹25K/₹35K. Pre/post-natal hospitalisation (90 days post-delivery) within maternity limit. Newborn covered within maternity SI."
+  },
+  "cumulative_bonus": {
+    "number": 150,
+    "display": "Up to 150% via Super CB (50%+50%+10%×5)",
+    "note": "Super Cumulative Bonus: 50% of base SI/yr for first 2 claim-free years, then 10%/yr for next 5 years; max 150% of base SI. Reduced by one slab after a claim year."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% of base SI + Recharge Benefit",
+    "note": "Sum Insured Reinstatement: 100% of base SI once per year after full SI exhausted. Additionally, Recharge Benefit: 20% of SI (up to ₹5L) if claim exceeds limit of indemnity, once per year. Cancer/Kidney Failure reinstatement: once in lifetime."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed procedures (399+ listed in Annexure I)"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No domiciliary hospitalisation benefit mentioned in policy wording."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient hospitalisation covered up to In-patient Hospitalisation Treatment SI."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 20000,
+    "display": "₹20,000/policy year",
+    "note": "Road ambulance up to ₹20,000 per policy year. Air ambulance available as optional add-on for SI ≥5L."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to base SI",
+    "note": "Annexure III list including robotic surgery, stereotactic radiosurgery, oral chemo, immunotherapy, etc."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical items listed in Annexure II are excluded."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy covers treatment within India only."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "No global cover; no domiciliary; non-medical consumables excluded; maternity 72-month wait; treatment outside India excluded",
+  "optional_riders": "Air Ambulance (SI ≥5L); Voluntary co-pay (10%/20%); Voluntary aggregate deductible (₹50K–₹3L); Room rent cap discount option",
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "Health Guard",
+  "uin": "BAJHLIP26073V082526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Health-Guard_PW.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:53:20.333Z"
+}

@@ -1,0 +1,125 @@
+{
+  "variant": "Optima Lite",
+  "sum_insured_options": "₹5/7.5 Lakhs",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of Base SI/day",
+    "note": "Inbuilt cap at 1% of Base SI per day; ICU at 2% of Base SI per day"
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of Base SI/day"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None"
+  },
+  "sub_limits": {
+    "ordinal": 5,
+    "display": "No sub-limits (beyond room rent cap)",
+    "note": "Room rent and ICU capped; all other covers up to SI"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional aggregate deductible available)",
+    "note": "Optional aggregate deductible from ₹10K to ₹10L"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (reducible to 12mo via optional channel-level add-on)"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered (Parenthood add-on available)"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% of Base SI per year irrespective of claims, max 100%"
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited times, 100% of Base SI",
+    "note": "Unlimited Automatic Restore; triggers on partial or complete exhaustion"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Reduced from standard 60 days; inbuilt modification for Optima Lite"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Reduced from standard 180 days; inbuilt modification for Optima Lite"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered up to SI (road ambulance)"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)"
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional (Protect Benefit)",
+    "note": "Protect Benefit is optional for Optima Lite"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "India only plan"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, congenital external anomalies, stem cell harvesting, cosmetic surgery, OPD treatment, hearing aids/spectacles",
+  "optional_riders": "Aggregate deductible, Protect Benefit, Emergency Air Ambulance, Daily Cash for Shared Room, PED wait modification, Critical Illness add-on, Parenthood add-on",
+  "insurer": "HDFC ERGO",
+  "plan_name": "my: Optima Secure",
+  "uin": "HDFHLIP26058V082526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "PolicyWordings_myOptimaSecure-76673175551.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:02:11.378Z"
+}

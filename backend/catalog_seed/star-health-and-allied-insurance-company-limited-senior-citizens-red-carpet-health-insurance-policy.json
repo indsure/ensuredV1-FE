@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Senior Citizens Red Carpet Health Insurance Policy",
+  "uin": "SHAHLIP26041V082526",
+  "sum_insured_options": "₹1L – ₹25L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day (up to ₹10,000/day for higher SIs)",
+    "note": "₹1L–₹5L: 1% of SI/day; ₹7.5L–₹10L: ₹6,000/day; ₹15L: ₹7,000/day; ₹20L: ₹8,500/day; ₹25L: ₹10,000/day. Proportionate deduction on associated expenses if higher room chosen.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day (actuals for ₹15L–₹25L)",
+    "note": "₹1L–₹10L: up to 2% of SI per day; ₹15L–₹25L: actuals",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "30% on all claims",
+    "note": "Mandatory 30% co-payment applies to all claims for all insured persons",
+    "optional": false,
+    "number": 30
+  },
+  "sub_limits": {
+    "display": "Many significant sub-limits",
+    "note": "Cataract, CVA/cardiovascular/cancer/renal/long bone fractures, all major surgeries, and all modern treatments (robotic surgery, oral chemo, intravitreal injections, etc.) are subject to per-person per-policy-period caps. Surgeon/consultant fees capped at 25% of SI; other surgical expenses capped at 50% of SI per hospitalisation.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "12 months",
+    "note": "PED waiting period is 12 months of continuous coverage from first policy inception",
+    "optional": false,
+    "number": 12
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Extensive list including cataract, ENT, thyroid, hernia, joint replacements, gallbladder, kidney stones, gynaec conditions, prostate, varicose veins, transplants, congenital internal diseases, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Code Excl 18); ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No sum insured restoration/reset benefit mentioned in the policy",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days prior to hospitalisation for the same condition",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "7% of hospitalisation expenses",
+    "note": "Post-hospitalisation covered as 7% of hospitalisation expenses (nursing, surgeon, diagnostics, medicines) subject to per-SI caps: ₹1L–₹7.5L: ₹5,000; ₹10L–₹15L: ₹7,000; ₹20L–₹25L: ₹10,000",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All day care procedures are covered under this policy",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (Home Care Treatment)",
+    "note": "Home Care Treatment covered up to 10% of SI, max ₹50,000 per policy year, for specified conditions only (fever, UTI, asthma, gastroenteritis, IV chemo, palliative care, etc.)",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient hospitalisation covered up to Sum Insured; Yoga and Naturopathy require prior company approval",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "Organ donor expenses not mentioned in the policy wording; transplant-related surgeries are excluded under specific disease waiting period (24 months)",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹600–₹1,500/hospitalisation (SI-dependent)",
+    "note": "Emergency road ambulance: ₹1L–₹4L SI: ₹600/hosp (₹1,200/policy); ₹5L–₹10L: ₹1,000/hosp (₹2,000/policy); ₹15L–₹25L: ₹1,500/hosp (₹3,000/policy)",
+    "optional": false,
+    "number": 1500
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Modern treatments covered (robotic surgery, oral chemo, intravitreal injections, deep brain stimulation, balloon sinuplasty, stereotactic radiosurgery, stem cell therapy, etc.) but subject to per-person per-policy-period sub-limits varying by SI",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "68-item non-medical/consumables list explicitly excluded (List I); items subsumed into room/procedure charges also not separately payable",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit: all treatments must be taken in India",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim can be contested except on grounds of established fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for annual/quarterly/half-yearly; 15 days for monthly instalment mode",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-compliant portability; credits for PED, specific waiting periods, NCB, moratorium transferable",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "30% co-pay all claims; transplants (24mo wait); cochlear implants; dental (non-accident); EECP/chelation/hyperbaric O2; biologicals (outpatient); vaccination; refractive error <7.5D",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None mentioned in policy wording",
+    "note": "No optional riders or add-on covers described in this policy document",
+    "optional": false
+  },
+  "source_file": "Policy_Senior_Citizens_Red_Carpet_Policy_V_19_293f3b97b4.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:23:49.402Z"
+}

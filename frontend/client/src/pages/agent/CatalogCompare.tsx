@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
-import { Loader2, Scale, Zap, Upload, Search, Plus, X, ArrowRight } from "lucide-react";
+import { Loader2, Scale, Zap, Upload, Search, Plus, X, ArrowRight, ChevronRight, ChevronLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import ComparisonShareBar from "@/components/agent/ComparisonShareBar";
 import ComparisonView, { SIDE_PALETTE } from "@/components/ComparisonView";
@@ -8,8 +8,23 @@ import { type ComparisonResult } from "@/lib/wordingProfile";
 
 const MAX_PLANS = 4;
 
+/**
+ * A plan's identity. plan_key is uin for a product with no variants and uin:variant for one
+ * that has them, so Classic and Elite are separate selectable rows.
+ *
+ * Falls back to uin because the frontend deploys independently of the API: a build that has
+ * this change can be served against a backend that does not return plan_key yet, and must keep
+ * working rather than keying everything on undefined.
+ */
+const keyOf = (i: { plan_key?: string; uin: string }) => i.plan_key || i.uin;
+
 interface CatalogItem {
+  // plan_key is the identity, not uin. Variants of one product share a UIN, so keying on uin
+  // would make Classic and Elite the same row. plan_key is uin, or uin:variant where there
+  // are variants, and it is what /api/compare/from-catalog expects back.
+  plan_key?: string;
   uin: string;
+  variant?: string;
   insurer: string;
   plan_name: string;
   product_type: string;
@@ -29,12 +44,17 @@ function AddPlanPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  // Two-level browse: the catalogue is ~100 plans, so the closed state lists insurers and you
+  // drill into one. Typing bypasses both levels and searches every plan at once.
+  const [openInsurer, setOpenInsurer] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const reset = () => { setOpen(false); setQuery(""); setOpenInsurer(null); };
+
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setQuery(""); }
+      if (ref.current && !ref.current.contains(e.target as Node)) reset();
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
@@ -45,14 +65,43 @@ function AddPlanPicker({
     const out: [string, CatalogItem[]][] = [];
     for (const [insurer, items] of Object.entries(grouped)) {
       const fi = items.filter(
-        (i) => !exclude.has(i.uin) && (!q || i.plan_name.toLowerCase().includes(q) || insurer.toLowerCase().includes(q))
+        (i) => !exclude.has(keyOf(i)) && (!q || i.plan_name.toLowerCase().includes(q) || insurer.toLowerCase().includes(q))
       );
       if (fi.length) out.push([insurer, fi]);
     }
     return out;
   }, [grouped, exclude, query]);
 
-  const add = (uin: string) => { onAdd(uin); setOpen(false); setQuery(""); };
+  const insurers = useMemo(
+    () =>
+      Object.entries(grouped)
+        .map(([insurer, items]) => [insurer, items.filter((i) => !exclude.has(keyOf(i)))] as [string, CatalogItem[]])
+        .filter(([, items]) => items.length > 0)
+        .sort((a, b) => a[0].localeCompare(b[0])),
+    [grouped, exclude],
+  );
+
+  const searching = query.trim().length > 0;
+  const drilledPlans = openInsurer ? insurers.find(([n]) => n === openInsurer)?.[1] ?? [] : [];
+
+  const add = (uin: string) => { onAdd(uin); reset(); };
+
+  const planRow = (it: CatalogItem) => (
+    <button
+      key={keyOf(it)}
+      type="button"
+      onClick={() => add(keyOf(it))}
+      className="w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50 cursor-pointer transition-colors"
+    >
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-slate-800 truncate">{it.plan_name}{it.variant ? ` (${it.variant})` : ""}</span>
+        {it.sum_insured_options && it.sum_insured_options !== "Not specified" && (
+          <span className="block text-[11px] text-slate-400 truncate">{it.sum_insured_options}</span>
+        )}
+      </span>
+      <Plus className="h-4 w-4 text-slate-300 flex-shrink-0" />
+    </button>
+  );
 
   return (
     <div className="relative w-full sm:w-auto" ref={ref}>
@@ -80,29 +129,47 @@ function AddPlanPicker({
             </div>
           </div>
           <div className="max-h-80 overflow-y-auto py-1">
-            {filtered.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-slate-400">No more plans found.</div>
+            {searching ? (
+              filtered.length === 0 ? (
+                <div className="px-4 py-6 text-center text-sm text-slate-400">No plans match that.</div>
+              ) : (
+                filtered.map(([insurer, items]) => (
+                  <div key={insurer}>
+                    <div className="sticky top-0 z-10 bg-white px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-slate-400">{insurer}</div>
+                    {items.map(planRow)}
+                  </div>
+                ))
+              )
+            ) : openInsurer ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setOpenInsurer(null)}
+                  className="w-full text-left px-3 py-2 flex items-center gap-1.5 text-sm font-bold text-slate-600 hover:text-[#0D9488] border-b border-slate-100 cursor-pointer transition-colors"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> All insurers
+                </button>
+                <div className="sticky top-0 z-10 bg-white px-3 pt-2 pb-1 text-sm font-bold text-slate-600">{openInsurer}</div>
+                {drilledPlans.map(planRow)}
+              </>
+            ) : insurers.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-slate-600">No more plans available.</div>
             ) : (
-              filtered.map(([insurer, items]) => (
-                <div key={insurer}>
-                  <div className="px-3 pt-2 pb-1 text-xs font-black uppercase tracking-wider text-slate-400">{insurer}</div>
-                  {items.map((it) => (
-                    <button
-                      key={it.uin}
-                      type="button"
-                      onClick={() => add(it.uin)}
-                      className="w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50 cursor-pointer transition-colors"
-                    >
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-slate-800 truncate">{it.plan_name}</span>
-                        {it.sum_insured_options && it.sum_insured_options !== "Not specified" && (
-                          <span className="block text-[11px] text-slate-400 truncate">{it.sum_insured_options}</span>
-                        )}
-                      </span>
-                      <Plus className="h-4 w-4 text-slate-300 flex-shrink-0" />
-                    </button>
-                  ))}
-                </div>
+              insurers.map(([insurer, items]) => (
+                <button
+                  key={insurer}
+                  type="button"
+                  onClick={() => setOpenInsurer(insurer)}
+                  className="w-full text-left px-3 py-3 flex items-center justify-between gap-2 hover:bg-slate-50 cursor-pointer transition-colors"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-slate-800 truncate">{insurer}</span>
+                    <span className="block text-sm text-slate-600">
+                      {items.length} plan{items.length === 1 ? "" : "s"}
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
+                </button>
               ))
             )}
           </div>
@@ -120,7 +187,7 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
       <span className="inline-block text-xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
         {String.fromCharCode(65 + index)}
       </span>
-      <p className="font-bold text-slate-800 leading-tight truncate">{item.plan_name}</p>
+      <p className="font-bold text-slate-800 leading-tight truncate">{item.plan_name}{item.variant ? ` (${item.variant})` : ""}</p>
       <p className="text-xs text-slate-400 truncate">{item.insurer}</p>
       {item.sum_insured_options && item.sum_insured_options !== "Not specified" && (
         <p className="text-[11px] text-slate-400 mt-0.5 truncate">{item.sum_insured_options}</p>
@@ -166,9 +233,9 @@ export default function CatalogCompare() {
     return g;
   }, [catalog]);
 
-  const byUin = useMemo(() => {
+  const byKey = useMemo(() => {
     const m: Record<string, CatalogItem> = {};
-    for (const it of catalog) m[it.uin] = it;
+    for (const it of catalog) m[keyOf(it)] = it;
     return m;
   }, [catalog]);
 
@@ -229,7 +296,7 @@ export default function CatalogCompare() {
           <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-2 shadow-sm">
             <div className="flex flex-wrap gap-3 items-stretch">
               {selected.map((uin, i) =>
-                byUin[uin] ? <PlanCard key={uin} item={byUin[uin]} index={i} onRemove={() => removePlan(uin)} /> : null
+                byKey[uin] ? <PlanCard key={uin} item={byKey[uin]} index={i} onRemove={() => removePlan(uin)} /> : null
               )}
               {selected.length < MAX_PLANS && (
                 <AddPlanPicker grouped={grouped} exclude={excludeSet} onAdd={addPlan} />

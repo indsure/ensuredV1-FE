@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Smart Health Pro",
+  "uin": "SHAHLIP23172V012223",
+  "sum_insured_options": "₹5L – ₹1Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private A/C Room",
+    "note": "Optional upgrade to Any Room available for SI ≥ ₹10L; downgrade to Shared Accommodation also optional",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "Up to Sum Insured",
+    "note": "No separate cap; ICU charges covered up to SI",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "New Born (10% of SI, max ₹2L); Home Care (10% of SI, max ₹5L); Air Ambulance (10% of SI)",
+    "note": "New Born Baby capped at 10% of SI (max ₹2L); Home Care Treatment capped at 10% of SI (max ₹5L); Air Ambulance 10% of SI. Core hospitalisation, AYUSH, modern treatments, day care all up to full SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible in the base plan",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Reducible to 24 or 12 months via optional paid add-on (first purchase only, subject to underwriter approval)",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Applies to listed conditions: cataract, ENT, thyroid, hernia, joint replacement, gallbladder/kidney stones, gynaec diseases, prostate, varicose veins, transplants, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses are excluded under Code Excl 18; ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr)",
+    "note": "50% of SI per claim-free year, max 100% of SI inbuilt. Optional Cumulative Bonus Booster (SI ≥ ₹10L) raises max to 600%.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100%",
+    "note": "Inbuilt: automatic restoration once by 100% upon partial/full utilisation; usable for same or different illness in subsequent hospitalisation. Optional Unlimited Restoration add-on available for unlimited restorations up to 100% each time.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days prior to admission",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All day-care procedures covered up to sum insured",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Covered for treatment exceeding 3 days; excludes asthma, bronchitis, diabetes, hypertension, epilepsy, psychiatric disorders and several other listed conditions",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Ayurveda, Unani, Siddha, Homeopathy covered up to SI in AYUSH hospitals; Yoga and Naturopathy excluded",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "Organ donor expenses not explicitly mentioned in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "Up to Sum Insured",
+    "note": "Road ambulance covered up to SI per policy period; air ambulance up to 10% of SI per policy year",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 listed modern treatments (robotic surgery, stereotactic radio surgery, oral chemotherapy, intra vitreal injections, etc.) covered up to SI",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on",
+    "note": "68 non-medical consumable items (List I) covered only if Optional Cover Section III-4 is purchased; excluded by default (Code Excl 37)",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit restricts all treatment to India only",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim contestable except on grounds of fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; apply at least 30 days before renewal",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, yoga/naturopathy, circumcision, congenital external defects, chelation/EECP/hyperbaric O2 therapies, PRP injections, biologicals (outpatient)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Cumulative Bonus Booster (up to 600%), Any Room upgrade, PED waiting reduction (36→24/12mo), Consumables cover, Unlimited Restoration",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy_Smart_Health_Pro_V_3_51c653ee1a.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:24:15.688Z"
+}

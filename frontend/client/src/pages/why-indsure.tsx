@@ -5,6 +5,8 @@ import { Database, Cpu, Share2, ShieldOff, ArrowRight, Quote } from "lucide-reac
 import { AnimatedNumber, Reveal, Stagger, RevealItem } from "@/components/motion";
 import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
 import { useSEO } from "@/hooks/use-seo";
+import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 /* ============================================================
    WHY INDSURE
@@ -24,7 +26,11 @@ const pillars = [
     accent: "var(--lob-health)",
     wash: "var(--lob-health-wash)",
     lead: "We read what insurers file, not what they advertise.",
-    body: "A wording-level database of 69 health insurance plans across 10 insurers, hand-built rather than scraped: every room-rent clause, co-pay clause, sub-limit and waiting period, taken out of the policy documents insurers actually file. That takes months of work most comparison sites will not do.",
+    // "hand-built rather than scraped" was true when the catalog was assembled by hand. It is
+    // not any more: most entries are now read out of the filed wordings by a model and marked
+    // unverified until reviewed. The differentiator that survives is the SOURCE — the document
+    // insurers file with the regulator, not the brochure — so the claim now rests on that.
+    body: "A wording-level database of {PLANS} health insurance plans across {INSURERS} insurers, built from the documents insurers file with the regulator rather than from brochures: every room-rent clause, co-pay clause, sub-limit and waiting period, taken out of the filed wording itself. That is the document the exclusions actually live in, and it is not the one a price comparison reads.",
   },
   {
     n: "02",
@@ -55,24 +61,53 @@ const pillars = [
   },
 ];
 
-/* claim-source: counted from backend/catalog_seed/*.json on 2026-08-31 —
-   69 plan files across 10 insurer prefixes (adityabirla, bajaj, care,
-   hdfc, indusind, manipalcigna, nia, nivabupa, sbi, tataaig). The page
-   previously said 63, which was a stale count. /compare renders the same
-   two figures live from the catalog (catalog-compare.tsx:268), so check
-   them against each other whenever the catalog grows.
+/* The two figures come from the catalogue itself, the same source /compare reads, because
+   hand-editing them went stale four times in three weeks: 69/10, then 112/11, then 161/19,
+   then 220/29, each wrong within a day of being written. A page whose whole argument is that
+   our claims are checkable should not be the one carrying a number nobody checked.
 
-   The strip used to carry "50+ risk checks per audit" as its third
-   figure. Nothing in the codebase substantiates that number, so it has
-   been replaced with a second structural zero rather than restated. */
-const stats = [
-  { value: 69, suffix: "", label: "Plans indexed", accent: "var(--lob-health)" },
-  { value: 10, suffix: "", label: "Insurers covered", accent: "var(--lob-life)" },
+   The fallback is only for a failed request. It is deliberately the last known true value
+   rather than a round number, so a stale figure is at least a figure that was once real.
+
+   Counting rows, not products: a plan sold as Classic and Elite is two entries in the picker
+   and two things a customer can be compared into, so two is the honest count. */
+// Shown only if the live count cannot be fetched. Refresh it after a catalogue load so a failed
+// request still shows something close to the truth rather than a number from months ago.
+const FALLBACK_COUNTS = { plans: 288, insurers: 29 };
+
+const buildStats = (c: { plans: number; insurers: number }) => [
+  { value: c.plans, suffix: "", label: "Plans indexed", accent: "var(--lob-health)" },
+  { value: c.insurers, suffix: "", label: "Insurers covered", accent: "var(--lob-life)" },
   { value: 0, suffix: "", label: "Commission earned, ever", accent: "var(--lob-motor)" },
   { value: 0, suffix: "", label: "Leads sold, ever", accent: "var(--lob-home)" },
 ];
 
+/* The strip used to carry "50+ risk checks per audit" as its third figure. Nothing in the
+   codebase substantiates that number, so it was replaced with a second structural zero
+   rather than restated. */
+
+
 export default function WhyIndSure() {
+  const [counts, setCounts] = useState(FALLBACK_COUNTS);
+
+  useEffect(() => {
+    let alive = true;
+    apiFetch("/api/compare/catalog")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const list = d?.policies;
+        if (!alive || !Array.isArray(list) || list.length === 0) return;
+        setCounts({
+          plans: list.length,
+          insurers: new Set(list.map((p: any) => p.insurer).filter(Boolean)).size,
+        });
+      })
+      .catch(() => { /* keep the fallback; a marketing page must not break on a failed fetch */ });
+    return () => { alive = false; };
+  }, []);
+
+  const stats = buildStats(counts);
+
   useSEO({
     title: "Why IndSure: The Catalog, The Engine, The Business Model | IndSure",
     description:
@@ -184,7 +219,9 @@ export default function WhyIndSure() {
                     </p>
 
                     <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                      {p.body}
+                      {p.body
+                        .replace("{PLANS}", String(counts.plans))
+                        .replace("{INSURERS}", String(counts.insurers))}
                     </p>
                   </article>
                 </RevealItem>

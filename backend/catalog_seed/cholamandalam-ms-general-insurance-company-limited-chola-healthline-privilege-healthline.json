@@ -1,0 +1,126 @@
+{
+  "variant": "Privilege Healthline",
+  "sum_insured_options": "₹5/7.5/10/15/20/25 Lakhs",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single AC room",
+    "note": "Single occupancy AC room allowed for all SI options under Privilege Healthline"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "ICU charges covered up to SI; no separate sub-limit stated"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No age-based co-pay. 20% co-pay applies if treatment in Tier 1 hospital but premium paid for Tier 2 location."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Maternity capped at ₹1L/delivery",
+    "note": "Maternity benefit capped at ₹1 lakh per delivery (up to 2 deliveries lifetime). No other disease sub-limits."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "maternity": {
+    "exists": true,
+    "number": 36,
+    "display": "Covered (36mo wait, 3 renewals)",
+    "note": "Covered after 3 consecutive renewals (36 months); max ₹1 lakh per delivery; up to 2 deliveries lifetime; includes pre/post-natal and newborn cover"
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% of SI per claim-free year, maximum 50% of SI; reduced by 50% of SI on a claim year"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "Double Sum Insured available for Critical Illness/Accident claims only (not a general restoration)"
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (max 7 days/yr per insured)"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 5000,
+    "display": "₹5,000 per hospitalisation"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)",
+    "note": "Day care procedures list includes modern procedures; no explicit modern treatment sub-limit stated"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical/consumables excluded per Annexure 2; Home Care Treatment add-on covers some consumables optionally"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy covers treatment within India only"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "STDs, self-injury, war, nuclear, circumcision, vaccination (non-bite), durable medical equipment, external congenital anomalies, refractive error <7.5D",
+  "optional_riders": "Medical Second Opinion, Flexi OP Care (OPD), Home Care Treatment; Extended Hospitalisation Allowance ₹10,000 (10+ days) & Double SI for CI/Accident inbuilt",
+  "insurer": "Cholamandalam MS General Insurance Company Limited",
+  "plan_name": "Chola Healthline",
+  "uin": "CHOHLIP24153V062526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Chola Healthline CHOHLIP24153V062526-Policywording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:56:28.256Z"
+}

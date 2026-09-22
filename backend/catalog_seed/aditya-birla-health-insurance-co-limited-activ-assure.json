@@ -1,0 +1,145 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (multiple SI bands referenced in Product Benefit Table/Policy Schedule)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private AC Room",
+    "note": "Policy covers room rent up to limits specified in Policy Schedule/Product Benefit Table. Definition of Single Private AC Room (Clause 63) is the basic/most economical single room. An optional 'Any Room Upgrade' cover (Section CIV-e) is available to upgrade to Any Room. Proportionate deductions apply if a higher room category is chosen without the upgrade."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (proportionate deductions not applicable for ICU)",
+    "note": "Policy explicitly states proportionate deductions are not applicable for ICU charges."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (age <60); applies at age 60+",
+    "note": "Co-payment per claim applies if the age of the Insured Person (or eldest in Family Floater) is 60 years or above at inception of the first policy with the insurer. Percentage as specified in Product Benefit Table/Policy Schedule. If Preferred Provider Network (PPN) optional cover is chosen and treatment is taken outside PPN, an additional co-payment applies."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits",
+    "note": "Specific disease/procedure waiting periods apply to listed conditions (cataract, hernia, joint replacement, etc.) but no explicit monetary sub-limits per disease are stated in the wording text. Vaccination cover has a separate limit. AYUSH has a limit per Policy Schedule. Modern treatments covered up to SI. Overall few monetary sub-limits beyond SI."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No aggregate deductible mentioned in the policy wording."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Expenses related to any illness within 30 days from first policy commencement date are excluded, except claims arising due to an accident."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Pre-existing disease waiting period as specified in Policy Schedule/Product Benefit Table. Reduced to extent of prior continuous coverage under portability/migration norms."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, joint replacement, sinusitis, fibroids, etc.) have a waiting period of up to 24 months of continuous coverage. If a listed condition is also a PED, the longer of the two waiting periods applies."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses (childbirth, C-section, miscarriage) are listed under Standard Exclusions (Code Excl-18). Ectopic pregnancy is excluded. No inbuilt or optional maternity benefit is described in this wording."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of SI",
+    "note": "No Claim Bonus (NCB) accrues on the Sum Insured at rates specified in Policy Schedule/Product Benefit Table on a cumulative basis, provided no claim is made under Section CI in a Policy Year and the policy is continuously renewed. Accumulated NCB shall not exceed 100% of SI. An optional Super NCB cover is also available. Alternatively, a No Claim Discount on renewal premium can be chosen instead of NCB."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/year, 100% of SI (unrelated illness/injury)",
+    "note": "Reload of Sum Insured (Section CI-h) is available once per Policy Year when the available SI (including boosters, NCB, Super NCB) is insufficient due to previous claims. Reload is available only for Section CI(a) Inpatient and CI(d) Day Care claims. It is not available for the first claim in a Policy Year and not for the same illness/injury (including complications) for which a claim was already admitted. An optional Unlimited Reload of Sum Insured (Section CIV-r) is available as an add-on for unlimited reloads."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Number of days as specified in Policy Schedule/Product Benefit Table. The wording states pre-hospitalisation expenses are covered for a 'predefined number of days' per the schedule; 60 days is the standard for this product based on product benefit table references."
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days",
+    "note": "Number of days as specified in Policy Schedule/Product Benefit Table. The wording states post-hospitalisation expenses are covered for a 'predefined number of days' per the schedule; 180 days is the standard for this product based on product benefit table references."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered",
+    "note": "Day Care Treatment (Section CI-d) is covered up to Sum Insured. OPD treatment is not covered under this benefit."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (up to SI limits in schedule)",
+    "note": "Domiciliary Hospitalisation (Section CI-e) is covered subject to conditions: treatment must continue for at least 3 consecutive days, treating doctor must confirm it was medically necessary, and the patient could not be transferred to hospital OR hospital bed was unavailable. Specific exclusions apply (asthma, arthritis, gout, chronic nephritis, diarrhoea, diabetes, epilepsy, hypertension, psychiatric disorders, pyrexia of unknown origin)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to limits in schedule",
+    "note": "AYUSH Inpatient Hospitalisation (Section CI-i) is covered up to limits specified in Policy Schedule/Product Benefit Table. Treatment must be taken in India. Standard exclusions under Section D-II do not apply to this benefit."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to SI limits",
+    "note": "Organ Donor Expenses (Section CI-g) covered up to limits in Policy Schedule. Covers harvesting expenses for the donor when the insured is the recipient. Pre/post hospitalisation of donor, screening of donor, and costs related to acquisition of donor organ are excluded."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered up to limits in schedule",
+    "note": "Road Ambulance Cover (Section CI-f) covers transportation to nearest hospital in an Emergency. Also covers transfer between hospitals if medically necessary. Limit as specified in Policy Schedule/Product Benefit Table. Transport from hospital back to residence is not covered."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Modern Treatment coverage (Section CI-A) includes uterine artery embolisation, HIFU, deep brain stimulation, oral chemotherapy, immunotherapy (monoclonal antibody injections), intra vitreal injections, robotic surgeries, stereotactic radio surgeries, bronchial thermoplasty, vaporisation of prostate/green laser/holmium laser, IONM, stem cell therapy (haematopoietic stem cells for bone marrow transplant for haematological conditions). Covered under Inpatient or Day Care."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical expenses (gloves, diapers, crepe bandage, etc.) are explicitly listed in Annexure I as non-payable items. No optional consumables cover is described in this wording."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional (emergency assistance only)",
+    "note": "Domestic Emergency Assistance Services including Air Ambulance (Section CII-o) covers emergencies within India when 150+ km from residential address. International Emergency Assistance Services including Air Ambulance (Section CII-p) covers emergencies outside India when 150+ km from residential address for trips less than 90 days. These are inbuilt value-added benefits (Section III). Full international treatment cover is not available; only emergency evacuation/repatriation is covered."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no policy or claim shall be contestable by the insurer on grounds of non-disclosure or misrepresentation, except on grounds of established fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (annual); 15 days (monthly)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days in all other cases. Coverage is available during the grace period if premium is paid in instalments during the policy period."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Free look period of 30 days from date of receipt of policy document. Applicable on new individual health insurance policies only; not on renewals or at the time of porting/migrating."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to other insurers is allowed at least 45 days before but not earlier than 60 days from policy renewal date. Accrued continuity benefits (Sum Insured, Cumulative Bonus, Specific Waiting Periods, PED waiting period, Moratorium period) are carried forward."
+  },
+  "notable_exclusions": {
+    "display": "Maternity/childbirth, sterility/infertility/ART, obesity surgery (conditional), dental (unless accident), external congenital anomalies, STDs (except HIV/AIDS), domiciliary exclusions (asthma, hypertension, diabetes etc.), non-allopathic (except AYUSH), treatment outside India"
+  },
+  "optional_riders": {
+    "display": "Unlimited Reload of SI, Super NCB, Accidental Hospitalisation Booster, Cancer Hospitalisation Booster, Any Room Upgrade, Preferred Provider Network (PPN) discount"
+  },
+  "insurer": "Aditya Birla Health Insurance Co. Limited",
+  "plan_name": "Activ Assure",
+  "uin": "ADIHLIP26043V062526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "20260427T052835.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:52:08.773Z"
+}

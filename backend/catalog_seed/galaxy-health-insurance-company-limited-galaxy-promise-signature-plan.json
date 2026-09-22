@@ -1,0 +1,134 @@
+{
+  "variant": "Signature Plan",
+  "sum_insured_options": "₹5L, ₹7.5L, ₹10L, ₹15L, ₹20L, ₹25L, ₹50L, ₹1Cr",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Deluxe room (SI 5L–20L); Any room (SI 25L–1Cr)",
+    "note": "SI 5L–20L: up to Deluxe room. SI 25L–1Cr: any room. Optional Room Rent Enhancement add-on available to upgrade to any room for SI 5L–20L. Proportionate deductions apply on associated medical expenses if higher room chosen."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (actuals)",
+    "note": "ICU charges covered as part of in-patient treatment; no separate sub-limit stated."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment mentioned for Signature Plan."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Bariatric capped; Delivery capped; ART capped; some others",
+    "note": "Bariatric: ₹3L–₹6L. Delivery: 10% of SI up to ₹2L. ART: ₹1L–₹5L. Home care: 10% of SI up to ₹5L. Hospice: 10% of SI up to ₹5L. Cataract: actuals. Newborn: 10% of SI up to ₹2.5L–₹5L. Road ambulance: actuals. Rehab & Pain: sub-limits or 20% of SI."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (inbuilt)",
+    "note": "No inbuilt deductible. Optional aggregate deductible (₹25K/₹50K/₹1L) or per-claim deductible (₹5K/₹10K) available at additional premium."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (reducible to 12 or 24 mo via optional PED Buy Back)",
+    "note": "Base: 36 months for 1-year and 2-year terms; 25 months for 3-year term. Optional PED Buy Back add-on can reduce to 12 or 24 months. Optional Insta Care Cover waives PED waiting for Asthma, Hypertension, Cholesterol from 31st day."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "24 months for 1-year and 2-year terms; 18 months for 3-year term."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 24,
+    "display": "Covered (24mo wait for ART; 2yr wait for delivery)",
+    "note": "Delivery expenses: 10% of SI up to ₹2L; requires 2 years continuous coverage (both spouses) or 4 years (insured woman alone). Max 2 deliveries lifetime. ART: waiting period 24 months. Surrogacy and Oocyte Donor also covered. In-Utero Fetal Surgery covered up to SI."
+  },
+  "cumulative_bonus": {
+    "number": 500,
+    "display": "Up to 500%",
+    "note": "100% of SI after first claim-free year; 25% of SI for every subsequent claim-free year; max 500%. Bonus not reduced until utilised in a claim; only utilised portion reduced at renewal. Alternatively, No Claim Discount of 4% (SI 5L–7.5L), 2% (SI 10L–1Cr) in lieu of CB."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited, 100% SI (same & different illness)",
+    "note": "Unlimited automatic restoration for any illness/disease/injury including same illness and modern treatments and accidents. Reset up to 100% each time. Available on partial or full utilisation. Unutilised reset not carried forward to next year."
+  },
+  "pre_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Covered for illness requiring hospitalisation but treated at home for >3 days. Several conditions excluded (asthma, bronchitis, diabetes, hypertension, etc.). Additionally, Home Care Treatment benefit covers 14 specific conditions up to 10% of SI or ₹5L."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH hospitalisation covered up to sum insured. Yoga & Naturopathy require prior company approval."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (donor complications + insured donation)",
+    "note": "Donor: additional SI up to basic SI for redo surgery/ICU complications. Insured as donor: covered up to SI. 24-month waiting period. Stem cell donation excluded except bone marrow transplant."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Road: Actuals; Air: 10% of SI",
+    "note": "Road ambulance at actuals per hospitalisation. Air ambulance: 10% of SI per policy year (no stated monetary cap for Signature Plan)."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "All modern treatments covered up to sum insured. Includes robotic surgery, immunotherapy, stem cell therapy, intravitreal injections, deep brain stimulation, oral chemotherapy, etc."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Inbuilt (List I items)",
+    "note": "Consumables (List I items including gloves, nebuliser kit, oxygen cylinder, etc.) covered inbuilt up to sum insured for admissible in-patient/day care claims."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Territorial limit is India only. No international cover available."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Commercial surrogacy excluded; reversal of sterilisation excluded; cosmetic surgery excluded; hazardous sports excluded; no global cover",
+  "optional_riders": "PED Buy Back (12/24 mo), Insta Care Cover (31st day for Asthma/BP/Cholesterol), Room Rent Enhancement, Hospital Cash, Aggregate/Per-claim Deductible, Personal Accident (AD&PTD)",
+  "insurer": "Galaxy Health Insurance Company Limited",
+  "plan_name": "Galaxy Promise",
+  "uin": "GHIHLIP25035V012425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Policy Wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:57:50.471Z"
+}

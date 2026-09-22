@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Medi Classic Insurance Policy (Individual)",
+  "uin": "SHAHLIP26047V092526",
+  "sum_insured_options": "₹1.5L – ₹15L (base); ₹3L – ₹25L (Gold Plan)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "Base plan: 2% of Basic SI per day up to ₹5,000 for all SI slabs. Gold Plan (optional): up to ₹5,000/day for SI ₹3L, Private Single A/c Room for SI ₹4L–₹25L.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "Covered (no separate cap stated)",
+    "note": "ICU charges are listed as covered under in-patient expenses; no specific daily cap mentioned beyond room proportionate deduction rules.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "10% (age 61+ at entry)",
+    "note": "10% co-payment on each claim for insured persons who enter the policy at age 61 or above. Not applicable for those who entered before 61 and renew continuously. Not applicable for Patient Care and Hospital Cash optional covers.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Cataract, modern treatments capped",
+    "note": "Cataract: ₹12,000–₹40,000 per eye depending on SI. Modern treatments (robotic surgery, deep brain stimulation, oral chemo, immunotherapy, etc.) have per-procedure sub-limits. Room rent proportionate deduction applies to associated medical expenses.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Not applicable on renewal.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Standard 36-month PED waiting period. Reducible via portability credits from prior continuous coverage.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Covers cataract, ENT diseases, thyroid, hernia, joint replacements, gallbladder, kidney stones, gynaec conditions, prostate, varicose veins, transplants, congenital internal diseases, and more.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity (Code Excl 18) is a standard exclusion. Childbirth, C-section, miscarriage expenses excluded. Ectopic pregnancy is covered. New Born Baby cover available under Gold Plan optional add-on (from day 16, up to 10% of SI or ₹50,000, after 12 months continuous mother coverage).",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 25% (5%/yr)",
+    "note": "Base plan: 5% of Basic SI per claim-free year, max 25%. Gold Plan (optional): 25% in year 2, +20%/yr thereafter, max 100%. Bonus reduced proportionately on claim.",
+    "optional": false,
+    "number": 25
+  },
+  "restoration": {
+    "display": "Once/yr, 200% of Basic SI",
+    "note": "Automatic restoration of Basic SI by 200% once per policy period upon exhaustion of limit of coverage. Restored SI usable only for unrelated illness/disease. Not available for Modern Treatments. Gold Plan also includes Super Restoration (additional 100% once for any illness including related).",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Base plan: up to 60 days, capped at 7% of hospitalisation expenses subject to max ₹5,000 per hospitalisation. Gold Plan: up to 60 days, no such sub-cap mentioned.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day care treatments covered up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (Home Care Treatment)",
+    "note": "Home Care Treatment covered up to 10% of Basic SI for specified conditions (fever, UTI, asthma, gastroenteritis, IV chemo, palliative cancer, vertigo, diabetic foot, IVDP, post-surgery care, etc.). Domiciliary hospitalisation (>3 days) covered under Gold Plan optional add-on with exclusions for chronic conditions like asthma, diabetes, hypertension, etc.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to Basic SI",
+    "note": "Ayurveda, Unani, Siddha, Homeopathy covered for inpatient hospitalisation up to Basic SI. Yoga and Naturopathy require prior company approval.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (Gold Plan only)",
+    "note": "Organ donor inpatient hospitalisation expenses covered under Gold Plan optional add-on. Donor screening and post-donation complications excluded. Not available under base plan.",
+    "optional": true,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹750/hospitalisation (base); ₹2,000 (Gold)",
+    "note": "Base plan: ₹750 per hospitalisation, max ₹1,500 per policy period. Gold Plan (optional): ₹2,000 per hospitalisation.",
+    "optional": false,
+    "number": 750
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Covered but with specific sub-limits per procedure per policy period (e.g. robotic surgery, deep brain stimulation, oral chemo, immunotherapy, stem cell therapy, etc.). Limits vary by SI slab. Not available under Automatic Restoration.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables/non-medical items are explicitly listed as subsumed into room/procedure charges and not separately payable. No consumables rider available.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly states all treatments must be taken in India (Territorial Limit clause).",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for annual/quarterly/half-yearly premium; 15 days for monthly instalment. Coverage not available during grace period unless premium paid in instalments during policy period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-compliant portability with transfer of PED waiting period credits, specific waiting period credits, NCB, and moratorium credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, dental (non-accidental), refractive error <7.5D, infertility/IVF, circumcision, congenital external defects, vaccination, CPAP/BIPAP, spectacles/hearing aids, chelation/hyperbaric therapy",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Gold Plan (higher SI, Private room, organ donor, domiciliary, super restoration, RTA benefit, newborn cover, shared accommodation bonus, higher cumulative bonus up to 100%), Patient Care, Hospital Cash",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy_Medi_Classic_Insurance_Policy_Individual_V_24_efeec2343d.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:22:59.206Z"
+}

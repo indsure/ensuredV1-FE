@@ -1,0 +1,133 @@
+{
+  "variant": "Support Plus",
+  "sum_insured_options": "Not specified in wording (refer Product Benefits Table)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "No cap on room rent; reasonable and necessary charges reimbursed. No proportionate deduction."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "At actuals",
+    "note": "No cap on ICU charges."
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% (age 61+)",
+    "note": "Mandatory 20% co-pay if insured is aged 61+ at Policy Inception Date. Zone-based co-pay also applicable. Optional cover 17 can waive mandatory co-pay."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract ₹35k/eye/yr; psychiatric sub-limits",
+    "note": "Cataract: ₹35,000 per eye per Policy Year. Specified psychiatric disorders: ₹50,000 cumulative sub-limit with 36-month wait. IVF, Bariatric, Lasik, Psychiatric covered up to limits in Product Benefits Table."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "Aggregate Deductible and Per Claim Deductible available as optional covers."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Can be reduced to 7 days if opted. Optional cover 19 or 35 (Insta Cover) can reduce further."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Optional cover 18 allows reduction. Insta Cover (optional cover 35) can reduce to Day 1 for declared/accepted conditions."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "List of 17 conditions. Optional cover 28 allows reduction."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered (inbuilt)",
+    "note": "Available as Optional Cover 7 (48-month wait) or Optional Cover 30 (12-month wait, 3-yr policy only)."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% of SI per year, max 100%. Bonus Booster optional cover upgrades to 20%/yr up to 100%."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Unlimited, 100% (unrelated only)",
+    "note": "100% recharge unlimited times from 2nd claim onwards for unrelated illness/injury. Optional cover 13 extends to same/related illness."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Default per policy; exact days per Product Benefits Table. Optional cover 9 upgrades to 60 days."
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Default per policy; exact days per Product Benefits Table. Optional cover 9 upgrades to 90 days; optional cover 23 upgrades to 180 days if cover 9 also opted."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (listed in Annexure III)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (min 3 days)"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (inpatient expenses)"
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered (limit per Product Benefits Table)",
+    "note": "Road ambulance per hospitalisation. Air ambulance as optional cover 16."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional cover (Non-payable expense cover)",
+    "note": "Optional cover 12."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional",
+    "note": "Global Cover (optional cover 21) up to SI or ₹50L whichever lower. Worldwide Emergency Hospitalization (optional cover 10) up to 50% SI max ₹10L with ₹2L deductible."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium payment mode."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Sleep apnea, genetic/hereditary disorders, external congenital anomaly, dental (non-accident), OPD (unless optional), war/terrorism",
+  "optional_riders": "Critical Illness lump sum, Personal Accident, Aggregate/Per Claim Deductible, Voluntary Co-pay, Maternity (48mo wait), OPD cover, Global cover, Air ambulance, Non-payable items, Recharge for same illness, Bonus Booster, Insta Cover",
+  "insurer": "Magma General Insurance",
+  "plan_name": "OneHealth",
+  "uin": "MAGHLIP27039V072627",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Policy Wordings – OneHealth (w.e.f. 27th May, 2026).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:05:11.282Z"
+}

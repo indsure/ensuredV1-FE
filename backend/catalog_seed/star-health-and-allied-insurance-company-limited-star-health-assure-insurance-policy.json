@@ -1,0 +1,169 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Star Health Assure Insurance Policy",
+  "uin": "SHAHLIP26048V032526",
+  "sum_insured_options": "₹5L – ₹2Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day (SI ₹5L–₹7.5L); Any Room except Suite (SI ₹10L+)",
+    "note": "For SI of ₹5L and ₹7.5L: up to 1% of SI per day. For SI ₹10L and above: any room except suite or above category.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "At actuals",
+    "note": "ICU/Operation Theatre charges payable at actuals up to Sum Insured for all SI options.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "10% (age 61+ at entry)",
+    "note": "10% co-payment on each and every claim for insured persons whose age at entry is 61 years and above. No co-payment for those entering below 61.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Several sub-limits: Delivery 10% SI, Home Care 10% SI (max ₹5L), ART capped, Rehab/Pain 20% SI, Air Ambulance 10% SI",
+    "note": "Delivery expenses: 10% of SI. Home Care Treatment: 10% of SI max ₹5L. Assisted Reproduction Treatment: ₹1L–₹4L by SI slab. New Born Baby: ₹2L–₹4L by SI slab. Chronic Severe Refractory Asthma: 10% SI max ₹5L. Rehabilitation & Pain Management: up to 20% SI. Air Ambulance: 10% SI. Modern Treatment: up to SI (no sub-limit). No sub-limits on core inpatient, day care, AYUSH.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (optional aggregate deductible available)",
+    "note": "No mandatory deductible. Optional aggregate deductible of ₹50,000 or ₹1,00,000 available with premium discount (35%–55% discount depending on SI and deductible chosen).",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses from first policy commencement. Not applicable for accidents or on subsequent renewals with continuous coverage.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (30 months for 3-year policy term)",
+    "note": "For 1-year and 2-year policy terms: 36 months. For 3-year policy term: 30 months. Reducible via portability credits.",
+    "optional": false,
+    "number": 30
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "24-month waiting period for listed conditions including cataract, ENT diseases, thyroid, hernia, joint replacements, gallbladder, kidney stones, gynaecological diseases, prostate, varicose veins, transplants, congenital internal diseases, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (24-month wait, up to 10% of SI)",
+    "note": "Delivery expenses (normal and caesarean) covered up to 10% of SI. Waiting period: 24 months from first inception. Maximum 2 deliveries lifetime. Both self and spouse must be covered for 24 continuous months. Pre/post-hospitalisation not applicable for this section. In Utero Fetal Surgery also covered after 24-month wait. Assisted Reproduction Treatment covered with sub-limits after 24-month wait.",
+    "optional": false,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (25%/yr)",
+    "note": "25% of Sum Insured added per claim-free year, maximum up to 100% of Sum Insured. Partial claim does not reduce bonus; full SI + full bonus utilisation resets bonus to zero.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited, 100% each time",
+    "note": "Sum Insured restored unlimited times per policy year, up to 100% each time. Triggers on partial or full utilisation of SI. Restored SI can be used for same or different illness/subsequent hospitalisation. Max payable per single claim under restoration is the SI. Continuous illness within 45 days treated as same hospitalisation.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Medical expenses incurred up to 60 days before hospitalisation for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Medical expenses incurred up to 180 days after discharge for the same condition.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All day care treatments covered up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (>3 days, specific conditions excluded)",
+    "note": "Domiciliary hospitalisation covered for treatment exceeding 3 days where patient cannot be moved or no hospital room available. Excludes asthma, bronchitis, chronic nephritis, diarrhoea, dysenteries, diabetes, epilepsy, hypertension, influenza, cough/cold, psychiatric disorders, PUO <10 days, tonsillitis, URTI, arthritis, gout, rheumatism.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient hospitalisation covered up to Sum Insured. Yoga and Naturopathy claims subject to prior company approval.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Inpatient hospitalisation expenses for organ transplantation from donor to recipient insured covered up to SI. Donor complications requiring redo surgery/ICU covered as additional SI (over and above limit of coverage, up to SI). Additional SI usable by donor only.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "At actuals (road); Air ambulance up to 10% of SI",
+    "note": "Road ambulance at actuals for transport to hospital, hospital-to-hospital transfer, or hospital to residence (same city, if certified). Air ambulance up to 10% of SI per policy year for emergency where ground transport not feasible.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 listed modern treatments covered including robotic surgery, stereotactic radio surgery, oral chemotherapy, immunotherapy (monoclonal antibody injections), intra vitreal injections, deep brain stimulation, bronchial thermoplasty, HIFU, balloon sinuplasty, green/holmium laser prostate, IONM, stem cell therapy for haematological conditions. Covered as inpatient or day care up to SI.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Covered (inbuilt, List I items)",
+    "note": "Non-medical/consumable items as per List I (68 items including gloves, nebuliser kit, oxygen mask, crepe bandage, diapers, thermometer, splint, knee braces, etc.) are payable if there is an admissible inpatient/day care claim.",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit: all investigations and treatments must be taken in India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested on grounds of non-disclosure or misrepresentation, except established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes. Coverage available during grace period if premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free look period from date of receipt of policy document for new policies (not applicable on renewals or porting). Refund of premium less proportionate risk premium, medical examination costs and stamp duty.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Credits for PED waiting, specific waiting periods, moratorium, NCB transferable. Application to be made at least 30 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "EECP/chelation/hyperbaric O2 therapy, biologicals (outpatient), PRP/platelet injections, autologous SVF, experimental therapies, dental (non-accidental), spectacles/hearing aids/CPAP, refractive error <7.5D, circumcision (non-medical)"
+  },
+  "optional_riders": {
+    "display": "Optional aggregate deductible (₹50K or ₹1L, premium discount 35–55%); Star Wellness Program (premium discount up to 20% via wellness points)"
+  },
+  "source_file": "Policy_Star_Health_Assure_Insurance_Policy_V_9_c53663e68a.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:25:31.632Z"
+}

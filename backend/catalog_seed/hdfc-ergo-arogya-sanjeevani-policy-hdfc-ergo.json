@@ -1,0 +1,130 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (individual or floater basis)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "Proportionate deduction on associated medical expenses if room rent exceeds limit"
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "Inclusive of ICU/ICCU charges"
+  },
+  "copayment": {
+    "number": 5,
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-pay on every admissible claim"
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Cataract capped; modern treatments at 50% SI",
+    "note": "Cataract: lower of 25% of SI or ₹40,000 per eye per year; listed modern treatments (robotic surgery, etc.) capped at 50% of SI"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (most); 36 months (joint replacement, osteoarthritis)"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18); ectopic pregnancy covered"
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% of base SI per year irrespective of claims, max 50%"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation and OPD explicitly excluded (Section C, 3.3)"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to sum insured"
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "No mention of organ donor expenses in the policy wording"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance only"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments (robotic surgery, stereotactic radio surgery, etc.) covered up to 50% of SI"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of consumables/non-medical items explicitly excluded in Annexure A List I"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded (Section C, 3.4)"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (yearly mode); 15 days (monthly/other modes)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Domiciliary/OPD, maternity, sterility/IVF, cosmetic surgery, obesity surgery, refractive error <7.5D, treatment outside India, war, nuclear/bio/chemical",
+  "optional_riders": "None mentioned",
+  "insurer": "HDFC ERGO",
+  "plan_name": "Arogya Sanjeevani Policy, HDFC ERGO",
+  "uin": "HDFHLIP20175V011920",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "arogya-sanjeevani-policy-retail-pw-570443039657.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:59:56.974Z"
+}

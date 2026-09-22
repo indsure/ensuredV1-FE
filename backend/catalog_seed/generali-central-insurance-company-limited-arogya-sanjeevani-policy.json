@@ -1,0 +1,133 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (standard Arogya Sanjeevani SI bands apply per IRDAI mandate)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "Proportionate deduction on other expenses if higher room taken; pharmacy, consumables, implants, diagnostics excluded from proportionate deduction"
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "Proportionate deductions not applicable for ICU room exceeding defined limit"
+  },
+  "copayment": {
+    "number": 5,
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-payment on every admissible claim amount"
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Cataract capped; modern treatments capped",
+    "note": "Cataract: 25% of SI or ₹40,000 per eye per year (whichever lower); Modern/listed procedures (robotic surgery etc.): 50% of SI aggregate per policy year"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (some conditions 36 months)",
+    "note": "24 months for ENT, cataract, hernia, piles, calculi etc.; 36 months for joint replacement and age-related osteoarthritis/osteoporosis"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18); ectopic pregnancy is covered"
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% added per claim-free year; reduced at same rate if claim made; max 50% of SI"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation/treatment explicitly excluded under specific exclusions (7.19)"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to full sum insured in recognised AYUSH hospitals"
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "No mention of organ donor expenses in the policy wording"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance only; per hospitalisation limit"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI aggregate)",
+    "note": "12 listed modern treatments (robotic surgery, stereotactic radio surgery, stem cell therapy etc.) covered up to 50% of SI for all such claims combined in a policy year"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-medical consumables (gloves, masks, diapers etc.) explicitly excluded under List I of Annexure A"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Territorial limit clause restricts all treatment to India only (specific exclusion 7.20)"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)",
+    "note": "15 days grace for monthly premium; 30 days for quarterly, half-yearly and annual modes"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability/migration"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Domiciliary treatment, OPD, treatment outside India, maternity, infertility/IVF, obesity surgery (conditional), refractive error <7.5D",
+  "optional_riders": "None mentioned in policy wording",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Arogya Sanjeevani Policy",
+  "uin": "GCIHLIP20160V011920",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "arogya-sanjeevani-policy-gci-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:57:35.129Z"
+}

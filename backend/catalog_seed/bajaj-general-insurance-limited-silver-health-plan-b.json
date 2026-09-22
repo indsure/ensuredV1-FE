@@ -1,0 +1,128 @@
+{
+  "variant": "Plan B",
+  "sum_insured_options": "₹3 Lacs / ₹4 Lacs / ₹5 Lacs (Individual & Floater)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private AC Room",
+    "note": "Proportionate deduction applies if higher room taken. Optional add-on can cap to 1% of SI/day (max ₹7,500) for a premium discount."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "At actuals",
+    "note": "ICU charges paid at actuals; proportionate deduction does not apply for ICU."
+  },
+  "copayment": {
+    "number": 10,
+    "display": "10% on all claims",
+    "note": "10% co-pay on every admissible claim. Additional 20% co-pay if non-network hospital (i.e. total 20% on non-network; waivable with 15% loading)."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract capped; domiciliary 10% SI",
+    "note": "Cataract: 10% of SI max ₹40,000 per claim per eye. Domiciliary: max 10% of SI per year. No PED 50% sub-limit (Plan B only)."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 12,
+    "display": "12 months"
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "12 months",
+    "note": "Joint replacement surgery excluded for 36 months (or 36 months from Silver Health inception if switching from Plan A). Listed 25 conditions have 12-month wait."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% of base SI added per claim-free year; max 100% of base SI. Reduced by 10% after a claim year."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned for Plan B."
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed day-care procedures (Annexure I)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to 10% of SI",
+    "note": "Covered for illness requiring >3 days home treatment when hospitalisation not possible. Several conditions excluded (asthma, diabetes, hypertension etc.)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (hospitalisation under AYUSH systems)"
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not specified"
+  },
+  "ambulance": {
+    "number": 1000,
+    "display": "₹1,000 per claim"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to base SI",
+    "note": "12 listed modern treatments including robotic surgery, oral chemo, stem cell therapy etc."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Non-medical consumables listed in Annexure II are excluded."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, joint replacement (36mo wait), 10% co-pay on all claims, no global cover, dental (non-accidental), domiciliary excludes diabetes/hypertension/asthma etc.",
+  "optional_riders": "Room rent capping add-on (1% SI/day, max ₹7,500 – earns premium discount); waiver of non-network co-pay (15% loading)",
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "Silver Health",
+  "uin": "BAJHLIP23213V052223",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Silver-Health_PW.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:53:49.205Z"
+}

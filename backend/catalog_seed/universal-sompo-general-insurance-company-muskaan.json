@@ -1,0 +1,173 @@
+{
+  "insurer": "Universal Sompo General Insurance Company",
+  "plan_name": "MUSKAAN",
+  "uin": "UNIHLIP24104V012324",
+  "sum_insured_options": "Not specified",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "As per opted SI category",
+    "note": "Room rent eligibility is linked to the Sum Insured category as per the Policy Schedule; exact cap not stated in wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Covered (no explicit cap stated)",
+    "note": "ICU charges covered as part of inpatient benefit; no specific sub-limit mentioned in wording",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Optional sub-limit plan available",
+    "note": "An optional sub-limit option exists (in lieu of a discount) capping: Cataract ₹15k/eye, ENT ₹22k, Hernia ₹30k, Appendectomy ₹30k, Hysterectomy ₹30k, Spine ₹60k, Knee ligament ₹60k, Other surgeries ₹37k, etc. If not opted, no sub-limits apply.",
+    "optional": true,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No deductible mentioned in the policy wording",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "First 30 days waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases covered after 36 months of continuous coverage; reducible via portability credits",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "24-month wait for cataract, hernia, piles, stones, skin disorders, etc.; 36-month wait for joint replacement, osteoporosis, genetic diseases, ARMD, stress/psychological disorders",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Pregnancy and childbirth explicitly excluded under specific exclusions",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "Cumulative bonus is defined in the policy but no rate or maximum percentage is stated in the wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "15 days",
+    "note": "Pre-hospitalisation expenses covered for 15 days before admission",
+    "optional": false,
+    "number": 15
+  },
+  "post_hosp": {
+    "display": "30 days",
+    "note": "Post-hospitalisation expenses covered for 30 days after discharge",
+    "optional": false,
+    "number": 30
+  },
+  "day_care": {
+    "display": "Listed day-care procedures covered",
+    "note": "Extensive list of day-care procedures provided in Annexure 1",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (up to 10% of SI)",
+    "note": "Domiciliary hospitalisation covered if treatment exceeds 3 days; capped at 10% of Sum Insured",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (up to limit in schedule)",
+    "note": "AYUSH inpatient treatment covered up to limit specified in Policy Schedule",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "No mention of organ donor expenses in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "Not specified",
+    "note": "Ambulance listed in non-payable items (List I, item 67) suggesting it is not covered as a standalone benefit; no separate ambulance cover clause found",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (up to 50% of SI)",
+    "note": "12 modern treatments (robotic surgery, stereotactic radiosurgery, oral chemotherapy, immunotherapy, etc.) covered up to 50% of Sum Insured",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-payable consumables/non-medical items in Annexures (List I–IV); consumables not covered as a benefit",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Treatment outside geographical limits of India explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 months of continuous coverage, no claim can be contested except for proven fraud and permanent exclusions",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "15 days grace for monthly premium; 30 days for quarterly/half-yearly/annual premium",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; credits for PED and specific waiting periods transferable",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Pregnancy/childbirth, OPD treatment, overseas treatment, adventure sports, STDs, self-inflicted injury, existing disclosed diseases (ICD codes excluded)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Optional sub-limit plan (discounted premium in exchange for procedure-wise caps)",
+    "note": null,
+    "optional": false
+  },
+  "source_file": "muskaan-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:36:14.930Z"
+}

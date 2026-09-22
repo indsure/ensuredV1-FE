@@ -1,0 +1,132 @@
+{
+  "variant": "Double Wallet",
+  "sum_insured_options": "Up to INR 3 Crores",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "No restriction on room rent or category"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "No ICU room rent restriction stated for this plan"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "Zone-based 10% co-pay if hospitalized in higher zone than declared; optional Network Hospital Discount cover may introduce co-pay"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Road ambulance 1% SI max ₹10k; health check-up every 2 yrs; modern treatments 50% SI (waivable)",
+    "note": "Road ambulance capped at 1% of SI max INR 10,000; modern/new-age treatments capped at 50% SI unless Optional Cover 6 Advance Care opted; Smart Save optional cover adds disease sub-limits"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 7,
+    "display": "7 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Can be reduced via Optional Cover 3 waiting period modification"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Can be reduced via Optional Cover 3"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered (inbuilt)",
+    "note": "Section 4 Maternity Benefit Wallet not applicable for Double Wallet plan; Optional Cover 9 Maternity & Newborn Baby Cover available"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100%",
+    "note": "10% of SI per claim-free year up to 100%; or No Claim Discount on premium as alternative"
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% (related illness)",
+    "note": "Sum Insured Back-up: 100% of SI once per policy period for related illness"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Subject to 3-day minimum; certain conditions excluded (asthma, diabetes, hypertension etc.)"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH in NABH/NQAS accredited hospitals only"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Harvesting expenses covered; donor pre/post-hosp up to 5% of harvesting claim"
+  },
+  "ambulance": {
+    "number": 10000,
+    "display": "1% of SI, max ₹10,000",
+    "note": "Road ambulance for emergency only; air ambulance covered up to SI under Section 3"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "Robotic surgery, oral chemo, HIFU etc. capped at 50% SI; Optional Cover 6 Advance Care upgrades to 100% SI"
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider",
+    "note": "Optional Cover 1 Consumables Cover; not inbuilt"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Worldwide Coverage (Section 5) not applicable for Double Wallet plan"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Consumables not covered inbuilt; tobacco-related oral/respiratory cancer excluded; hormone replacement therapy excluded; cosmetic surgery excluded",
+  "optional_riders": "Consumables Cover, Network Hospital Discount, Waiting Period Modification, Sum Insured Multiplier, OPD Benefit, Advance Care (modern tx to 100%), Maternity & Newborn, Infertility, Daily Hospital Cash, Medical Equipment Cover",
+  "insurer": "Go Digit General Insurance Ltd.",
+  "plan_name": "Digit Health Insurance Policy",
+  "uin": "GODHLIP25039V022425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "policy-wordings-digit-health-insurance-policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:00:25.457Z"
+}

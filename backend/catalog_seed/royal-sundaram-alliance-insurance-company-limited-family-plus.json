@@ -1,0 +1,169 @@
+{
+  "insurer": "Royal Sundaram Alliance Insurance Company Limited",
+  "plan_name": "Family Plus",
+  "uin": "RSAHLIP22200V032122",
+  "sum_insured_options": "Individual: ₹2L–₹15L; Floater: ₹3L–₹50L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap",
+    "note": "Policy covers inpatient care up to Sum Insured with no explicit room rent sub-limit mentioned in the Product Benefit Table.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap",
+    "note": "ICU charges covered under inpatient care up to Sum Insured; no separate ICU sub-limit stated.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (standard); up to 20% risk co-pay may apply",
+    "note": "No mandatory co-payment for standard cases. A risk-based co-payment of up to 20% per condition/overall may be applied at underwriting based on health declarations.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Few sub-limits: ambulance ₹4k, AYUSH ₹30k (non-govt), animal bite ₹5k, maternity ₹50k",
+    "note": "Ambulance capped at ₹4,000; AYUSH capped at ₹30,000 in non-government hospitals; vaccination (animal bite) ₹5,000; maternity ₹50,000; emergency evacuation ₹1,00,000. Core inpatient, day care, organ donor, domiciliary covered up to full SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible on the base plan.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Waived for accidents and on continuous renewal.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "36 months continuous coverage required before PED claims are admissible. No optional reduction add-on mentioned.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "17 named conditions (cataract, hernia, stones, diabetes, arthritis, etc.) have a 24-month waiting period from policy commencement.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered (24mo wait, up to ₹50,000, max 2 deliveries)",
+    "note": "Inbuilt benefit; 24-month waiting period; limit ₹50,000 per delivery; max 2 deliveries lifetime; newborn cover and vaccination (₹10,000) included; nutrition allowance ₹10,000 post-discharge.",
+    "optional": false,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (20%/yr)",
+    "note": "20% of individual base SI added per claim-free policy year; maximum 100% of base SI. Bonus not reduced for future claims once earned.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of base SI",
+    "note": "Re-load of 100% of individual base SI triggered once per policy year after base SI + floater SI + NCB are exhausted. Not available for the same illness/same insured in the same year. Not available for optional benefits.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days prior to admission, up to Sum Insured.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses covered for 90 days after discharge, up to Sum Insured.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "Policy explicitly states all day-care procedures are covered; Annexure III provides an illustrative (non-exhaustive) list.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered up to SI",
+    "note": "Covered if treatment continues for at least 3 uninterrupted days and hospitalisation would otherwise have been required. Pre-hosp payable; post-hosp not payable under this benefit.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (govt hospital up to SI; others up to ₹30,000)",
+    "note": "Inpatient AYUSH treatment covered up to full SI in authorised government hospitals; up to ₹30,000 in other hospitals.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered up to SI",
+    "note": "Inpatient harvesting expenses of organ donor covered. Pre/post-hosp, screening and acquisition costs excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹4,000 per hospitalisation",
+    "note": "Road ambulance for emergency transport to nearest adequate hospital.",
+    "optional": false,
+    "number": 4000
+  },
+  "modern_treatments": {
+    "display": "Not specified",
+    "note": "Policy wording does not explicitly mention modern/robotic/advanced treatments as a named benefit or exclusion beyond standard day-care coverage.",
+    "optional": false,
+    "exists": false
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables and non-medical items are excluded per Annexure I (standard IRDAI excluded list). No consumables cover rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly states territorial scope is India only; all claims settled in Indian rupees.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years (60 months) no look-back applied; claims not contestable except for proven fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "30 days for quarterly, half-yearly and annual premium modes; 15 days for monthly mode.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look from date of receipt of policy. Not applicable for policies with tenure less than 1 year or on renewals.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to/from other insurers permitted as per IRDAI guidelines; application required at least 45 days before expiry.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Psychiatric/mental illness, HIV/AIDS, hereditary conditions (9 named), obesity, sleep disorders, speech disorders, stem cell, reproductive medicine/IVF, sexual problems, OPD treatment"
+  },
+  "optional_riders": {
+    "display": "Hospital Cash ₹2,000/day (hospitalization beyond 2 days, up to 30 days)"
+  },
+  "source_file": "Family_Plus_Policy_Document.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:31:14.763Z"
+}

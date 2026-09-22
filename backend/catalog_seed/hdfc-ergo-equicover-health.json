@@ -1,0 +1,138 @@
+{
+  "variant": "",
+  "sum_insured_options": "₹4 lakh, ₹5 lakh",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day",
+    "note": "Room rent capped at 1% of Sum Insured per day; associated medical expenses proportionally capped if higher room taken"
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges capped at 2% of Sum Insured per day"
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% on all claims",
+    "note": "20% co-pay applies to every claim; can be waived by paying additional optional premium"
+  },
+  "sub_limits": {
+    "ordinal": 1,
+    "display": "Cataract ₹40k/eye; Modern treatments 50% of SI",
+    "note": "Cataract capped at ₹40,000 per eye per year; Modern treatments capped at 50% of SI; room rent and ICU also sub-limited"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Except claims arising from accident"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months (disability PED); 36 months (other PEDs)",
+    "note": "24 months for pre-existing disability; 36 months for all other pre-existing conditions except HIV/AIDS"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "19 listed conditions including cataract, hernia, hysterectomy, ENT disorders, calculi, varicose veins etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity explicitly excluded (Excl18); ectopic pregnancy is covered"
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care",
+    "note": "All day-care treatments covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation expenses explicitly excluded under specific exclusions"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient AYUSH treatment covered up to 100% of Sum Insured per policy year"
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Hospitalisation for donation of body organs by insured explicitly excluded"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance reimbursement capped at ₹2,000 per hospitalisation"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments covered up to 50% of Sum Insured as inpatient or day-care"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-medical/consumable items explicitly excluded (Annexure II List I)"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Any medical treatment taken outside India is explicitly excluded"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (annual); 15 days (monthly)",
+    "note": "30 days for yearly premium payment; 15 days for monthly instalment mode"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to same product of other insurers as per IRDAI guidelines"
+  },
+  "notable_exclusions": "Domiciliary treatment, organ donor hospitalisation, treatment outside India, STDs/venereal disease, maternity, ART for HIV, stem cell storage, OPD treatment",
+  "optional_riders": "Co-pay waiver (additional premium to remove 20% co-pay)",
+  "insurer": "HDFC ERGO",
+  "plan_name": "EquiCover Health",
+  "uin": "HDFHLIP23192V012223",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "equicover-health-cis-pw-108534555408.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:00:18.211Z"
+}

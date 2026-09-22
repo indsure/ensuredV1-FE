@@ -1,0 +1,126 @@
+{
+  "variant": "Optima Suraksha",
+  "sum_insured_options": "₹5/10/15/20/25/50 Lakhs",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap (At Actuals)"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (At Actuals)"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No co-payment applicable"
+  },
+  "sub_limits": {
+    "ordinal": 5,
+    "display": "No sub-limits",
+    "note": "All covers up to Sum Insured"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional aggregate deductible available)",
+    "note": "Optional aggregate deductible from ₹10K to ₹25L"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (reducible to 12mo via optional channel-level add-on)",
+    "note": "Optional PED wait modification to 24 or 12 months available at channel level"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered (Parenthood add-on available)",
+    "note": "Maternity excluded under standard exclusions; Parenthood add-on covers maternity with 2yr wait"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% of Base SI per year irrespective of claims, max 100%"
+  },
+  "restoration": {
+    "ordinal": 4,
+    "display": "Once/yr, 100% of Base SI",
+    "note": "Triggers on partial or complete exhaustion; usable for same or different illness"
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered up to SI (road ambulance)"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)",
+    "note": "No specific sub-limit mentioned; covered under hospitalisation expenses"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Protect Benefit (non-medical expenses cover) not available for Optima Suraksha"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "India only plan; no global cover option"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, congenital external anomalies, stem cell harvesting, cosmetic surgery, OPD treatment, hearing aids/spectacles",
+  "optional_riders": "Aggregate deductible, Emergency Air Ambulance, Daily Cash for Shared Room, PED wait modification, Critical Illness add-on, Hospital Cash add-on, Personal Accident rider, Parenthood add-on",
+  "insurer": "HDFC ERGO",
+  "plan_name": "my: Optima Secure",
+  "uin": "HDFHLIP26058V082526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "PolicyWordings_myOptimaSecure-76673175551.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:02:10.762Z"
+}

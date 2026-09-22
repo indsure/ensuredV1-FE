@@ -1,0 +1,131 @@
+{
+  "variant": "",
+  "sum_insured_options": "₹3L / ₹5L / ₹10L / ₹15L / ₹25L / ₹50L / ₹1Cr / ₹2Cr / ₹3Cr / ₹4Cr / ₹5Cr",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private A.C. Room (up to Deluxe Room)",
+    "note": "Default entitlement is Single Private A.C. Room. Optional add-on (3.4.11) allows downgrade to Twin Sharing for a discount. Proportionate deduction applies if higher room chosen."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (ICU not proportionately reduced)",
+    "note": "Policy explicitly states ICU charges shall not be proportionately reduced in all cases."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base policy)",
+    "note": "No mandatory co-payment in base policy. Voluntary co-payment (3.4.1) available as optional add-on for premium discount. DME benefit has mandatory 20% co-pay; Dental OPD under Plan B has mandatory 20% co-pay; OPD reimbursement has 10% co-pay."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits",
+    "note": "Special Treatments capped at 50% of SI for SI <10L, 100% for SI >=10L. Transportation benefit capped at ₹500/hospitalisation. Maternity (optional) has own sub-limit. No sub-limits on standard inpatient, day care, domiciliary."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (base policy)",
+    "note": "Voluntary Aggregate Deductible (3.4.13) available as optional add-on: ₹10,000 / ₹25,000 / ₹50,000 / ₹1,00,000."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses (Excl03). COVID-19 has a 15-day waiting period."
+  },
+  "ped_waiting": {
+    "number": 12,
+    "display": "36 months (reducible to 12 months)",
+    "note": "Default PED waiting period is 36 months. Optional add-on (3.4.9) allows reduction to 24 or 12 months for additional premium."
+  },
+  "specific_disease_waiting": {
+    "number": 12,
+    "display": "24 months (reducible to 12 months)",
+    "note": "Default specific disease waiting period is 24 months (Excl02). Optional add-on (3.4.10) reduces it to 12 months."
+  },
+  "maternity": {
+    "exists": false,
+    "number": 12,
+    "display": "Optional add-on (12 or 24 mo wait)",
+    "note": "Maternity excluded by default (Excl18). Available as paid add-on (3.4.4.1) only for 3-year policies, female members 18-45 yrs. Limits: ₹1L for SI 5L; ₹1L or ₹2L for SI >=10L. Max 2 deliveries/lifetime. Waiting period 12 or 24 months as opted."
+  },
+  "cumulative_bonus": {
+    "number": 0,
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording. A 'Stay Healthy Discount' of up to 10% on renewal premium is available for submitting annual health check-up results, but this is a premium discount, not a SI increase."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/year, 100% of SI (unrelated illness)",
+    "note": "Inbuilt Restore Benefit (3.1.11): restores 100% of SI once per policy year for unrelated illness/injury only. Optional Unlimited Restore (3.4.2.2) upgrades to unlimited restorations; for SI >=10L covers related illness too."
+  },
+  "pre_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (surgical/chemo/radio/dialysis)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (min 3 continuous days)"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI (inpatient AYUSH hospital)"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (harvesting expenses)"
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Covered (within SI, no separate cap stated)",
+    "note": "Road ambulance covered within Sum Insured under Basic Benefit 3.1.9, including intercity (beyond 100km). Air Ambulance available as optional add-on (3.4.3.2)."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (sub-limited for SI <10L)",
+    "note": "12 modern/special treatments listed under 3.1.2 including robotic surgery, stereotactic radio surgery, stem cell therapy etc. Capped at 50% of SI for SI <10L; 100% of SI for SI >=10L."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Optional add-on (Consumables Cover 3.4.2.1)",
+    "note": "Consumables excluded by default (Annexure A List I). Available as paid add-on under Limitless Cover (3.4.2.1)."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Optional add-on (MoreGlobal 3.2.3)",
+    "note": "International treatment excluded by default. MoreGlobal (3.2.3) available as optional More Options Benefit; covers emergency and planned overseas treatment up to SI (planned capped at ₹50L); available up to 45 cumulative days/year. USD 100 deductible per OPD claim."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Peritoneal dialysis, hormone replacement therapy, growth hormone therapy, external congenital anomaly, hazardous activity injuries (professional), spinal manipulation, self-injury/suicide, war/nuclear/bio/chemical attack",
+  "optional_riders": "Unlimited Restore, Consumables Cover, Super Charger (SI top-up), Air Ambulance, Maternity+Newborn, OPD (Plan A/B), Double Cover, MoreGlobal, MoreCover, Home Care, DME/Small Equipment, Voluntary Deductible, PED waiting period reduction",
+  "insurer": "IndusInd General Insurance Company Limited",
+  "plan_name": "IndusInd Health Infinity Insurance",
+  "uin": "RELHLIP23120V042223",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "indusind-health-infinity-pw.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:03:02.494Z"
+}

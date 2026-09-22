@@ -1,0 +1,141 @@
+{
+  "variant": "Plan 1",
+  "sum_insured_options": "₹3L, 4L, 5L, 7.5L, 10L, 15L, 20L, 25L, 30L, 35L, 40L, 45L, 50L, 75L, 1Cr, 2Cr, 3Cr, 4Cr, 5Cr",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private AC Room (SI ≤10L); Actuals (SI >10L)",
+    "note": "For SI 3L–10L: Single Private AC Room. For SI above 10L: at actuals. Options to downgrade to General Ward, Twin Sharing, or 1%/1.5%/2% of SI per day are available."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "At actuals",
+    "note": "ICU expenses paid at actuals for all SI bands."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (base); voluntary co-pay option available",
+    "note": "No mandatory co-pay on base plan. Voluntary co-pay of 5%/10%/15%/20% available for premium discount. International Cover add-on has mandatory 10% co-pay. OPD lab reimbursement without pre-approval has 20% co-pay."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract sub-limited; maternity capped by SI band",
+    "note": "Cataract: 20% of SI max ₹1L/eye for SI ≤10L; actuals for SI >10L. Maternity: ₹50K (SI 5–10L), ₹75K (SI 15–20L), ₹1L (SI >20L); not covered for SI 3–4L. Baby Care: ₹1L (SI ≤4L), ₹5L (SI 5–10L), ₹10L (SI 15–50L), ₹15L (SI >50L). OPD doctor consult sub-limit ₹500 GP/₹1,200 specialist per visit."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "No deductible in base plan. Policy supports optional aggregate or per-claim deductible structures per schedule."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Not applicable for accidents or renewals with 12+ months continuous coverage."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (reducible to 12 mo)",
+    "note": "Default 36 months. Optional reduction to 1 year, 2 years, or 3 years available. Portability credit applicable."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (reducible to 12 mo)",
+    "note": "Default 24 months for 32 listed conditions (cataract, hernia, joint replacement, etc.). Optional reduction to 1 year, 2 years, or 3 years available."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 36,
+    "display": "Covered (36mo wait; not covered for SI 3–4L)",
+    "note": "Inbuilt for SI ≥5L. Limit: ₹50K (SI 5–10L), ₹75K (SI 15–20L), ₹1L (SI >20L). Includes surrogacy and ART complications. Max 2 deliveries/terminations lifetime. Waiting period reduces by 1 year for long-term policy with upfront premium."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (25%/yr for SI 3–4L; 50%/yr for SI ≥5L)",
+    "note": "SI 3–4L: 25% per annum, max 100%. SI 5L+: 50% per annum, max 100%. CB reduces at same rate if claim made; SI not reduced."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited (SI ≥5L); Once (SI <5L)",
+    "note": "Available for same illness. Subsequent hospitalisation must be after 15-day gap from discharge (gap not required for different insured). Reinstated SI usable for inpatient hospitalisation only."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Options to change: 0, 15, 30, 60, 90, 180, 240 days (240 days only for SI ≥5L)."
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Options to change: 0, 15, 30, 60, 90, 180, 240 days (240 days only for SI ≥5L)."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (extensive listed + any tech-advance procedure)",
+    "note": "398+ listed procedures plus any procedure requiring <24 hrs due to technological advancement."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Must exceed 3 days. Excludes asthma, bronchitis, diabetes, hypertension, epilepsy, arthritis, gout, diarrhoea, vector-borne diseases, psychiatric disorders, pyrexia of unknown origin, chronic nephritis."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH hospitalisation ≥24 hrs covered. Comfort treatments (steam bath, oil massage, resort packages) excluded."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Harvesting expenses for donor covered. Pre/post-hospitalisation for donor not covered. Reinstatement/CB not applicable for this cover."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "At actuals (up to SI)",
+    "note": "Road ambulance to nearest hospital with emergency facilities or transfer to higher facility. Payable only if inpatient or day-care claim accepted."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "12 listed modern treatments including robotic surgery, stereotactic radiosurgery, oral chemotherapy, intra-vitreal injections, deep brain stimulation, HIFU, etc."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Inbuilt (up to inpatient SI)",
+    "note": "Consumable Expenses cover (Annexure IV list: gloves, masks, braces, nebulizer kit, ECG electrodes, etc.) included inbuilt up to inpatient SI."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional add-on (emergency only)",
+    "note": "International Cover – Emergency Care Only available as optional cover. Covers inpatient hospitalisation outside India for emergencies occurring abroad. 10% mandatory co-pay. Valid 45 days/single trip, 180 days cumulative/year. CB/reinstatement cannot be used."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months no look-back applied. Claims contestable only for proven fraud or permanent exclusions thereafter."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)",
+    "note": "30 days for all modes except monthly instalment (15 days). Continuity benefits protected if renewed within grace period."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable at inception only, not on renewals or porting."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Apply at least 30 days before renewal, not earlier than 60 days. Accrued waiting period credits transferred per IRDAI guidelines."
+  },
+  "notable_exclusions": "Dental (cosmetic/prosthetic), external medical equipment at home (CPAP, O2 concentrator), congenital external anomalies, growth hormone therapy, infertility/ART (base), change-of-gender, cosmetic surgery, war, terrorism covered",
+  "optional_riders": "Loss of Income Cover (weekly benefit), Major Illness & Accident Multiplier (indemnity, up to 2x SI for 10 critical illnesses/accidents), International Cover – Emergency Care Only",
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "My Health Care Plan",
+  "uin": "BAJHLIP26074V022526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "My-Health-Care-Plan1-PW.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:53:33.121Z"
+}

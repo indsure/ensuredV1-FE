@@ -1,0 +1,173 @@
+{
+  "insurer": "Bajaj General Insurance Limited",
+  "plan_name": "AapKe Liye- Andaman & Nicobar Islands",
+  "uin": "BAJHLIP26064V012526",
+  "sum_insured_options": "₹5L – ₹20L (based on sub-limit table; exact range not fully stated)",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single A/C Room",
+    "note": "Standard A/C room (single occupancy, attached washroom, excludes suite). Proportionate deduction applies if higher room taken.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "At actuals",
+    "note": "ICU expenses paid at actuals as per policy wording.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (base plan)",
+    "note": "No mandatory co-pay in base plan. Voluntary co-pay of 5%/10%/15%/20% available for premium discount. 20% co-pay applies on reimbursement claims if 'Cashless Discount' optional cover is opted.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract: 10% of SI, max ₹50k/eye (inbuilt)",
+    "note": "Inbuilt cataract sub-limit: 10% of SI per eye, max ₹50,000. Optional 'Procedure/Disease Sub-limit' cover adds caps on cardiac, joints, hernia, calculi, hysterectomy, gall bladder, spine, cancer, kidney, liver disease etc.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (base plan)",
+    "note": "Voluntary aggregate deductible of ₹10k–₹3L available as optional discount feature.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "36 months continuous coverage required. Reducible via portability credit from prior insurer.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Covers cataract, hernia, calculi, hysterectomy, organ transplant, varicose veins, arthroplasty, bariatric surgery, and many others listed in Excl02.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered. No optional maternity add-on mentioned.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% of base SI per claim-free year, max 100%. Reduces at same rate on claim. Optional 'Super Cumulative Bonus' add-on offers up to 200% at 25%/yr.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Optional – once or unlimited/yr",
+    "note": "Sum Insured Reinstatement is an optional cover. Options: once per year or unlimited times per year. Not available for organ donor or modern treatment claims. Subsequent hospitalisation must be after 2-day gap (waived for different insured).",
+    "optional": true,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days prior to admission.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days after discharge.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care (indicative list + others)",
+    "note": "Extensive indicative list in Annexure I; any procedure requiring <24 hrs due to technology also covered.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (with exclusions)",
+    "note": "Covered up to SI; must exceed 3 days. Excludes asthma, bronchitis, diabetes, hypertension, epilepsy, arthritis, gastroenteritis, vector-borne diseases, psychiatric disorders, etc.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH hospitalisation (min 24 hrs) covered up to In-patient SI. Comfort treatments (steam bath, sauna, oil massage) excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered up to SI",
+    "note": "Harvesting expenses for organ donor covered up to SI. Pre/post-hospitalisation for donor not covered. Restoration benefit not applicable.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "At actuals (up to SI)",
+    "note": "Road ambulance covered at reasonable & customary charges up to In-patient SI for emergency transfer and inter-hospital transfer.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 listed modern treatments (robotic surgery, oral chemo, stem cell for haematological conditions, etc.) covered up to SI. Cumulative Bonus and Restoration not applicable for this cover.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Non-medical items listed in Annexure II are excluded. No optional consumables rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment within India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim can be contested except for fraud and permanent exclusions.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days for quarterly/half-yearly/annual premium; 15 days for monthly instalment.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable at inception only, not on renewals or porting.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI portability norms apply; apply at least 30 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "No overseas treatment; domiciliary excludes diabetes/hypertension/asthma; external congenital anomalies; CPAP/home equipment; circumcision (non-medical)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Sum Insured Reinstatement (once/unlimited), Super Cumulative Bonus (up to 200%), Disease Sub-limits, No Claim Discount, Cashless Discount, Accidental Death Cover",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "AapKe_Liye-Andaman_Nicobar_Islands_Policy_Wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:31:05.856Z"
+}

@@ -1,0 +1,172 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Young Star Insurance Policy",
+  "uin": "SHAHLIP26043V062526",
+  "sum_insured_options": "₹3L – ₹1Cr",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Private A/C Room",
+    "note": "Hospitalization expenses that vary based on room rent will be considered proportionately if a higher room category is chosen. Associated medical expenses (professional fees, OT charges, procedure charges) are subject to proportionate deduction if room category exceeds eligibility.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "Not specified (no separate cap stated)",
+    "note": "ICU charges are listed as covered under in-patient treatment but no separate sub-limit or cap is mentioned; covered up to Sum Insured.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Modern treatments sub-limited; others at SI",
+    "note": "Sub-limits apply to specific modern treatments: Uterine Artery Embolization & HIFU, Balloon Sinuplasty, Deep Brain Stimulation, Oral Chemotherapy, Intra Vitreal injections, Monoclonal Antibody injections, Robotic Surgeries, Stereotactic Radio Surgeries, Bronchial Thermoplasty, Vaporisation of Prostate, IONM, Stem Cell therapy. All other covered treatments are up to Sum Insured.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible. Hospital Cash Benefit (Gold Plan) has a 1-day deductible but that is benefit-specific, not a policy-level deductible.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period from first policy commencement date for illnesses; not applicable for accidents or on subsequent renewals beyond 12 months.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "12 months",
+    "note": "PED waiting period is 12 months of continuous coverage from first inception. Portability credits can reduce this further.",
+    "optional": false,
+    "number": 12
+  },
+  "specific_disease_waiting": {
+    "display": "12 months",
+    "note": "Specific diseases include ENT & thyroid diseases, hydrocele, hernia, varicocele, piles, fistula, fissure in ano, female reproductive system diseases, calculus diseases of gall bladder/kidney/urinary tract. Not applicable for accidents.",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Gold Plan only – ₹30,000/delivery, 36mo wait",
+    "note": "Delivery expenses up to ₹30,000 per delivery, max 2 deliveries lifetime, available only under Gold Plan. Requires 36-month waiting period from first commencement; both self and spouse must be covered for 36 continuous months. A fresh 24-month wait applies after a claim. Not covered under Silver Plan.",
+    "optional": true,
+    "number": 36
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (20%/yr)",
+    "note": "20% of Basic Sum Insured added per claim-free year, up to maximum 100% of Basic Sum Insured. Reduced at same rate on partial/full claim utilization.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% – all claims",
+    "note": "Automatic restoration of Basic Sum Insured once by 100% upon partial or full utilization of Limit of Coverage. Available for all claims during the policy period. Not available for Modern Treatments. Restored SI cannot be carried forward. Same illness within 45 days treated as same hospitalization.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Medical expenses incurred up to 60 days before hospitalization for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Medical expenses incurred up to 90 days after discharge for the same condition.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care procedures",
+    "note": "All Day Care Treatments covered up to Sum Insured.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (Home Care Treatment)",
+    "note": "Home Care Treatment covered up to 10% of Sum Insured, max ₹5 lakhs per policy year, for specified conditions only (e.g. fever, UTI, asthma, gastroenteritis, IV chemotherapy, etc.). Requires medical practitioner advice and daily monitoring.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient hospitalization covered up to Sum Insured. Yoga and Naturopathy claims require prior company approval.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "Organ donor expenses are not explicitly mentioned in the policy wording.",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "Covered (no stated ₹ cap)",
+    "note": "Road ambulance covered for transport to hospital, hospital-to-hospital transfer, and hospital-to-residence (same city, if certified by doctor). No specific rupee limit stated in the wording; however ambulance is listed in the excluded expenses table (item 67) suggesting it may be subsumed or subject to admissibility conditions. Payable subject to an admissible hospitalization claim.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Modern treatments covered but with specific sub-limits per Sum Insured slab for: Uterine Artery Embolization & HIFU, Balloon Sinuplasty, Deep Brain Stimulation, Oral Chemotherapy, Intra Vitreal injections, Monoclonal Antibody injections, Robotic Surgeries, Stereotactic Radio Surgeries, Bronchial Thermoplasty, Vaporisation of Prostate (Green/Holmium Laser), IONM, Stem Cell therapy (haematopoietic). Vaporisation of Prostate covered up to Sum Insured from ₹15L SI onwards.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables (gloves, nebulisation kit, ECG electrodes, masks, etc.) are listed as excluded expenses. No optional rider for consumables mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit clause states all treatments must be taken in India.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes (quarterly, half-yearly, yearly).",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual health insurance policies only; not on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Credits for PED waiting, specific waiting periods, no-claim bonus, moratorium period transferable to new insurer.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Consumables, dental (non-accidental), spectacles/hearing aids, circumcision, congenital external anomalies, infertility/ART, experimental therapies, EECP/chelation/hyperbaric O2, vaccination",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Gold Plan upgrades: Delivery expenses (₹30k/delivery), Hospital Cash Benefit (₹1,000/day up to 14 days/yr)",
+    "note": "Silver and Gold are plan variants, not separate riders. Gold Plan adds maternity/delivery cover and hospital cash benefit.",
+    "optional": true
+  },
+  "source_file": "Policy_Young_Star_Insurance_Policy_V_12_59f47a25f5.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:26:49.539Z"
+}

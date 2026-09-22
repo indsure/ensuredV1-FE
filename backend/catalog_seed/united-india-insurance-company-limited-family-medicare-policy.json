@@ -1,0 +1,173 @@
+{
+  "insurer": "United India Insurance Company Limited",
+  "plan_name": "Family Medicare Policy",
+  "uin": "UIIHLIP26046V072526",
+  "sum_insured_options": "Not specified in wording (various slabs mentioned; starts below ₹3L up to ₹25L+ implied)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day (<₹5L); 1% or Single AC Room, whichever higher (≥₹5L)",
+    "note": "Proportionate deduction applies on associated medical expenses if higher room taken",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day (<₹5L); Actuals (≥₹5L)",
+    "note": "No cap for SI ≥₹5L",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in base policy",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract: 10% of SI max ₹50k/eye; Mental illness: 25% of SI max ₹3L/yr",
+    "note": "Cataract surgery and specified mental illnesses (schizophrenia, bipolar, depression, OCD, psychosis) are sub-limited",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible on base plan; daily cash optional cover has a 1-day deductible",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Waived for accidents; not applicable after 12 months continuous coverage",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Reducible via portability credits; no optional add-on to reduce further",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (Table A) / 36 months (Table B)",
+    "note": "Table A (24mo): cataract, hernia, hydrocele, piles, calculus, etc. Table B (36mo): joint replacement, ARMD, named mental illnesses, neurodegenerative disorders",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (24mo wait); Normal ₹40k, C-sec ₹60k, max 10% of SI",
+    "note": "Limited to 2 deliveries/terminations lifetime; SI must be above ₹3L; newborn covered up to 90 days at 10% of SI",
+    "optional": true,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 200% of SI (20%/yr first 5 yrs, 10%/yr thereafter)",
+    "note": "Alternatively, policyholder may choose No Claim Discount (up to 50% premium discount) instead of CB; CB reduces by one slab per claim year",
+    "optional": false,
+    "number": 200
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of SI — unrelated illness only",
+    "note": "Restored SI available only for illness unrelated to the claim that triggered restoration; available for SI ≥₹3L; not carried forward",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Combined pre+post capped at 10% of SI",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Combined pre+post capped at 10% of SI",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "As per standard day care definition",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered (excluded)",
+    "note": "Domiciliary hospitalisation explicitly excluded under Specific Permanent Exclusions; Home Care Treatment covered only for epidemic/pandemic up to 10% of SI or ₹30k",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered (in-patient at AYUSH hospital)",
+    "note": "AYUSH treatment covered as per standard definitions; no separate sub-limit stated",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (harvesting expenses + 10% SI lump sum if insured is donor)",
+    "note": "Donor hospitalisation expenses covered; separate lump sum benefit of 10% SI if insured person is the donor (after 12 months continuous coverage)",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,500/event; ₹5,000/policy period",
+    "note": "0.5% of SI per event (max ₹2,500); 1% of SI per policy period (max ₹5,000)",
+    "optional": false,
+    "number": 2500
+  },
+  "modern_treatments": {
+    "display": "Covered (listed procedures up to SI)",
+    "note": "12 listed modern treatments including robotic surgery, oral chemo, stem cell therapy (haematological), HIFU, etc.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (non-medical items excluded per Annexure-1)",
+    "note": "Extensive list of non-payable consumables in Annexure-1; no optional rider for consumables mentioned",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered (India only)",
+    "note": "Policy explicitly limited to India; all treatment must be taken in India",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to original SI; enhanced SI has fresh 60-month period",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Coverage not available during grace period unless premium paid in instalments",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only, not renewals or portability",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-compliant portability with continuity of waiting period credits",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary hospitalisation, OPD treatment, sleep disorders/apnoea, RFQMR/ECP/EECP/hyperbaric O2, external congenital anomalies, hearing aids, growth hormone therapy",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Maternity & Newborn cover, Daily Cash Allowance on hospitalisation",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy Wordings - FMP.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:34:56.970Z"
+}

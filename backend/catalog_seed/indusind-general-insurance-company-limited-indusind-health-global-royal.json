@@ -1,0 +1,133 @@
+{
+  "variant": "Royal",
+  "sum_insured_options": "Global SI: USD 1.5L / 2.5L / 5L / 7.5L / 10L; India Cover (optional): INR 1.5Cr / 2.5Cr / 4.5Cr / 6.5Cr / Unlimited",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap (Any room category)",
+    "note": "India Cover: any room category at actuals. Global Cover: no room sub-limit stated."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "ICU charges not proportionately reduced; covered at actuals within SI."
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% (age 61+ at first entry)",
+    "note": "20% co-pay on assessed claim if insured (or eldest in floater) is aged 61+ at first policy inception. Waiver of co-pay available as optional add-on (3.3.1). Dental cover has mandatory 20% co-pay regardless of age."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Gene Therapy sub-limited; all other illnesses at SI",
+    "note": "Royal plan covers ALL illnesses (not just Specified Illnesses). Gene Therapy: 50% of Global SI or USD 5L whichever lower; lifetime 100% of Global SI. India Cover (if opted): Gene Therapy 50% of India Base SI; OPD INR 50k; Medical Equipment DME INR 5L, SME INR 2L; Home Care INR 25L; Rehabilitation INR 50k."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 90,
+    "display": "90 days (Global); 30 days (India Cover)",
+    "note": "Global Cover: 90-day initial waiting period for illness. India Cover: 30-day initial waiting period. Both waived for accidents."
+  },
+  "ped_waiting": {
+    "number": 12,
+    "display": "36 months (reducible to 12 mo via optional add-on)",
+    "note": "Default PED waiting period is 36 months. Optional add-on (3.3.3) allows reduction to 24 or 12 months."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "24-month waiting for listed conditions. Joint replacement has 36-month wait."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses are a standard exclusion (Excl18). Ectopic pregnancy is covered."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of India Base SI (25%/yr)",
+    "note": "Applicable to India Cover only. 25% per claim-free year; max 100%. Not applicable for Unlimited India Base SI option."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited, 100% (related & unrelated)",
+    "note": "India Cover: Unlimited Reinstatement of India Base SI for related and unrelated illness/injury. Not applicable for Unlimited India Base SI option."
+  },
+  "pre_hosp": {
+    "number": 15,
+    "display": "15 days (Global); 90 days (India Cover)",
+    "note": "Global Cover: up to 15 days from arrival in city of treatment. India Cover: 90 days."
+  },
+  "post_hosp": {
+    "number": 30,
+    "display": "30 days (Global); 180 days (India Cover)",
+    "note": "Global Cover: 30 days. India Cover: 180 days."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (India Cover); Pre/Post-operative day care (Global Cover)"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (India Cover only)",
+    "note": "Domiciliary hospitalisation covered under India Cover within SI. Excludes listed conditions."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI (India Cover only)"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered (India Cover within SI; Global Cover within Global SI)"
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "At actuals within SI",
+    "note": "India Cover: road and air ambulance within SI. Global Cover: included in in-patient treatment."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered within SI (India Cover)",
+    "note": "9 listed modern treatments covered within SI under India Cover."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Covered (listed consumables in Annexure A-List I)",
+    "note": "India Cover: listed consumables covered when prescribed for in-patient/day care treatment."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Inbuilt (All illnesses covered abroad)",
+    "note": "Royal plan covers ALL illnesses for treatment abroad, not just Specified Illnesses. Cashless via empanelled service providers. Gene Therapy sub-limited."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly instalment)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, fertility/IVF, hazardous sports (professional), sleep apnea, external congenital anomaly, hormone replacement therapy, peritoneal dialysis, treatment in India (Global Cover), treatment abroad (India Cover)",
+  "optional_riders": "Waiver of Co-Payment (age 61+), Voluntary Co-Payment (10%/20% discount), Reduced PED Waiting Period (36→24 or 12 months), India Cover (optional add-on)",
+  "insurer": "IndusInd General Insurance Company Limited",
+  "plan_name": "IndusInd Health Global",
+  "uin": "IRDAN103RP0001V01202324",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "indusind-global-health-pw.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-21T10:54:14.911Z"
+}

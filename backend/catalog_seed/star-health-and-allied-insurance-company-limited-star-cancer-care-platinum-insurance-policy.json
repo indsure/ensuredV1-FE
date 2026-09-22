@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Star Cancer Care Platinum Insurance Policy",
+  "uin": "SHAHLIP22031V022122",
+  "sum_insured_options": "₹5L – ₹10L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Single Standard A/C Room",
+    "note": "Proportionate deduction applies on associated medical expenses if higher room chosen; no differential billing hospitals exempt",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "Covered (no separate cap stated)",
+    "note": "ICU charges covered as part of sum insured; no specific ICU sub-limit mentioned beyond room rent proportionality",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "10% (age 61+ at entry)",
+    "note": "10% co-payment on each and every claim for insured persons whose age at entry is 61 years and above; applies to fresh and renewal policies",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Cataract, pain mgmt, modern treatments, hospice, post-hosp, rehab capped",
+    "note": "Cataract: ₹30k-₹40k/eye; Post-hosp: 2% of SI per hospitalisation; Rehab/Pain mgmt: up to 10% of SI; Hospice: 20% of SI lifetime; Modern treatments: procedure-wise sub-limits; Oral chemo/immunotherapy: up to 50% of SI",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Except for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "30 months",
+    "note": "Includes cancer as PED; reducible via portability/migration credit",
+    "optional": false,
+    "number": 30
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions include cataract, ENT, thyroid, hernia, joint replacements, gallbladder, kidney calculi, gynaec diseases, prostate, varicose veins, transplants, congenital internal diseases, and others",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Code Excl 18)",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% of basic SI per claim-free year; max 50% of basic SI; reduced proportionately on claims",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Capped at 2% of basic sum insured per hospitalisation",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": null,
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "No domiciliary hospitalisation benefit mentioned",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH hospitalisation covered up to sum insured; Yoga/Naturopathy subject to prior company approval",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "No organ donor expense benefit mentioned; transplant surgeries are under 24-month specific disease waiting period",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "Covered (limit not specified)",
+    "note": "Emergency road ambulance covered when medically necessary and there is an admissible claim; no rupee cap stated",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Robotic surgery, stereotactic radio surgery, deep brain stimulation, oral chemo (up to 50% SI), immunotherapy, intra-vitreal injections, HIFU, balloon sinuplasty, stem cell therapy, IONM, vaporisation of prostate covered with procedure-wise sub-limits per policy period",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables are listed as items subsumed into room/procedure charges but not separately covered as a benefit; no consumables rider offered",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit: all treatments must be taken in India",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to first policy SI; enhanced SI has separate 60-month count",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "15 days for monthly instalment; 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "As per IRDAI portability guidelines; accrued waiting period credits transferable",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Circumcision, congenital external defects, convalescence, EECP/chelation/hyperbaric O2, PRP injections, biologicals (outpatient), vaccination, spectacles/hearing aids",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Lump-sum cancer benefit for recurrence/metastasis/second malignancy (30mo wait; 50% of SI)",
+    "note": "Section II optional cover; lump sum = 50% of basic SI; ceases after one claim",
+    "optional": true
+  },
+  "source_file": "Policy_Star_Cancer_Care_Platinum_Insurance_Policy_V_8_5a4d8455f6.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:24:50.334Z"
+}

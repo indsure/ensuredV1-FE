@@ -1,0 +1,173 @@
+{
+  "insurer": "Navi General Insurance Limited",
+  "plan_name": "Navi Special Care",
+  "uin": "NAVHLIP24030V012324",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "If higher room taken, proportionate deduction on associated medical expenses applies",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU expenses capped at 2% of Sum Insured per day",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment stated in wording; proportionate deduction applies only if higher room is chosen",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract ₹40,000/eye; Modern treatments 50% of SI",
+    "note": "Cataract capped at ₹40,000 per eye per year; modern treatments capped at 50% of SI",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months (disability); 36 months (others)",
+    "note": "24 months for pre-existing disability; 36 months for all other pre-existing conditions except HIV/AIDS",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "19 listed conditions including hernia, cataract, varicose veins, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity explicitly excluded under standard exclusion Excl18",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days prior to admission",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days after discharge",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day-care treatments covered under inpatient care section",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (Home Care)",
+    "note": "Home Care Treatment covered up to 10% of SI or ₹1 lakh, whichever is lower; prior approval required; domiciliary hospitalisation as defined is excluded per specific exclusion 11",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient treatment covered up to sum insured in recognised AYUSH hospitals",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Hospitalisation for donation of organs by insured is specifically excluded; organ donor harvesting expenses definition exists but donation by insured is excluded",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance reimbursement capped at ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments covered up to 50% of sum insured",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables listed under non-payable items (List I); no rider available",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Any medical treatment taken outside India is specifically excluded",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years no claim can be contested except for proven fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "Coverage not available during grace period",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; waiting period credit transferred",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "No overseas treatment, no maternity, no ART for HIV, no domiciliary hosp, STDs (non-HIV), stem cell storage, alternative therapies",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None mentioned",
+    "note": "No optional riders or add-ons described in the policy wording",
+    "optional": false
+  },
+  "source_file": "NAVI SPECIAL CARE - Policy Wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:28:24.460Z"
+}

@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "ReAssure",
+  "uin": "NBHHLIP26050V042526",
+  "sum_insured_options": "₹3L – ₹100L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap",
+    "note": "Policy covers room rent up to Sum Insured with no stated room rent sub-limit; however if a higher room category than eligible is chosen, associated medical expenses are pro-rated. No specific room category restriction mentioned in base policy wording.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "icu": {
+    "display": "No cap",
+    "note": "ICU charges covered under Inpatient Care up to Sum Insured with no separate sub-limit stated.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment in base policy; co-payment is mentioned as applicable only if specified in Policy Schedule.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Robotic surgery capped at ₹1L (some)",
+    "note": "Most benefits covered up to Sum Insured. Modern treatments have a ₹1L sub-limit on certain robotic surgeries (excludable via Modern Treatment+ add-on). Emergency ambulance capped at ₹2,000/hospitalisation.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No base deductible; deductible applicable only if specified in Policy Schedule.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents covered from day 1.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months of continuous coverage. Reducible via portability credit from prior insurer.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, joint replacement, fibroids, etc.) excluded for 24 months. Accidents covered from day 1; cancer covered after 30-day wait.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses are a standard exclusion (Excl18). Ectopic pregnancy is covered. No optional maternity add-on mentioned.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr)",
+    "note": "Booster Benefit: 50% of Base SI added per claim-free year, max 100% of Base SI. On a claim year, accumulated bonus reduced by 50% of expiring Base SI.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited, 100% of Base SI",
+    "note": "ReAssure benefit triggers from first paid claim and is available for all subsequent claims in the policy year for any/all insured persons. Max per single claim = Base SI. Covers inpatient, day care, domiciliary, AYUSH, modern treatments, organ donor, home care.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days preceding admission, reimbursement basis only.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge, reimbursement basis only.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care (2+ hrs)",
+    "note": "Day care treatment covered if admitted for more than 2 hours; includes angiography, dialysis, radiotherapy, chemotherapy.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered (reimbursement only) if treatment continues for at least 3 consecutive days and patient cannot be moved or hospital bed unavailable.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Ayurveda, Unani, Siddha, Homeopathy covered for inpatient care in AYUSH hospitals up to Sum Insured. Yoga treatment not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Living organ donor's inpatient harvesting expenses covered up to Sum Insured, subject to Transplantation of Human Organs Act compliance.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance covered up to ₹2,000 per hospitalisation. Air ambulance covered up to Sum Insured (cashless) or ₹2.5L (reimbursement).",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (₹1L on some robotic)",
+    "note": "12 modern treatments covered. Most at actuals up to SI; certain robotic surgeries capped at ₹1L unless Modern Treatment+ add-on is purchased.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider (Safeguard/Safeguard+)",
+    "note": "Base policy excludes consumables (List I). Safeguard add-on covers List I non-payables; Safeguard+ covers Lists I–IV. Both are optional paid add-ons.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "All benefits available in India only. Air ambulance also restricted to India. Section 6.29 explicitly excludes treatment outside India.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30 days grace period for annual/non-monthly premium; 15 days for monthly instalment mode. Coverage available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document; applicable on new policies only, not renewals.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability permitted as per IRDAI norms; waiting period credits transferred to new insurer.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, hormone replacement therapy, sleep disorders, STIs (non-HIV), dental, external congenital anomaly, OPD, overseas treatment, circumcision",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Personal Accident Cover, Hospital Cash, Safeguard (consumables + SI inflation), Safeguard+ (enhanced consumables), Modern Treatment+ (removes robotic sub-limit)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "ReAssure-Policy-Wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:42:30.475Z"
+}

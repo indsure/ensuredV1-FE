@@ -1,0 +1,173 @@
+{
+  "insurer": "Raheja QBE General Insurance Company Limited",
+  "plan_name": "Health QuBE",
+  "uin": "RQBHLIP26036V052526",
+  "sum_insured_options": "₹1L – ₹50L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day (No cap on Comprehensive ₹3L+)",
+    "note": "Basic & Super Saver & A la Carte: 1% of SI per day. Comprehensive plan (₹3L–₹50L): No limit. Sub-limit waiver optional add-on available for other plans. For ₹20L+ SI, sub-limits on room are absent in base coverage.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day (No cap on Comprehensive)",
+    "note": "Basic, Super Saver, A la Carte: 2% of SI per day. Comprehensive plan: No limit. Proportionate deductions not applicable for ICU charges.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "20% (entry age 60+); None below 60 (most plans)",
+    "note": "Mandatory 20% co-pay for insured persons whose entry age is 60 years and above. Super Saver plan has inbuilt 20% co-pay for all ages/insured persons. Voluntary 20% co-pay optional add-on available. Section L (Advance Treatment) has 50% co-pay.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract ₹50k/eye, Joint replacement ₹3L/joint, Mental health ₹50k; Doctor fees 25% of SI/claim",
+    "note": "Cataract (incl. lens) ₹50,000/eye; Joint replacement (incl. implants) ₹3,00,000/joint; Schizophrenia/OCD/Psychosis ₹50,000 each; Doctor/Medical Practitioner fees 25% of SI per claim (Basic, Super Saver, A la Carte). Comprehensive plan and ₹20L+ SI: no room/ICU/doctor sub-limits. Sub-limit waiver optional add-on for eligible plans.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible in base plan. Voluntary co-pay option available as add-on.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "First 30 days waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months of continuous coverage. Reduced by prior continuous coverage under portability.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most listed conditions)",
+    "note": "24-month waiting for cataract, hernia, calculus diseases, GERD, varicose veins, joint replacement, ENT surgeries, etc. 36-month waiting for Schizophrenia, Psychosis, Dissociative disorders.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses (childbirth, C-section, miscarriage) are excluded under Section 5.15 (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (5%/yr)",
+    "note": "NCB accrues at 5% of SI per claim-free year, up to 100% of original SI. Alternatively, 1% discount on renewal premium. NCB reduced at same rate if claims made in two consecutive years (above ₹50k or 10% of SI threshold).",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% (unrelated illness only)",
+    "note": "Recharge/Replenish benefit reinstates full original SI once per policy year if SI exhausted. Recharged SI cannot be used for same illness/injury already claimed in that year. Cannot be carried forward.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "30–60 days (plan/SI dependent)",
+    "note": "Basic: 30 days (₹1-2L), 60 days (₹3-50L). Comprehensive: 60 days. Super Saver: 30 days. A la Carte: 60 days (₹1-2L), 30 days (₹3-50L).",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60–90 days (plan/SI dependent)",
+    "note": "Basic: 60 days (₹1-2L), 90 days (₹3-50L). Comprehensive: 90 days. Super Saver: 90 days. A la Carte: 60 days (₹1-2L), 90 days (₹3-50L).",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care (indicative list in Annexure II)",
+    "note": "Day care procedures covered; Annexure II provides an indicative list of 157+ procedures.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (sub-limited by SI band)",
+    "note": "Covered under Section J up to ₹15,000–₹1,50,000 depending on SI band. Treatment must continue for more than 3 consecutive days. Several conditions excluded (asthma, diabetes, hypertension, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (within SI)",
+    "note": "AYUSH treatment covered under inpatient/day care provisions; AYUSH Hospital and Day Care Centre definitions included. No separate sub-limit stated.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (20% of SI)",
+    "note": "Organ donor harvesting expenses covered up to 20% of SI (Basic, Super Saver, A la Carte). Not available under Comprehensive plan per schedule. Pre/post hospitalisation of donor not covered.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹1,000–₹2,500/hospitalisation (SI-based)",
+    "note": "₹1,000 for SI ₹1-2L; ₹1,500 for SI ₹3-9L; ₹2,500 for SI ₹10-50L. Covers home-to-hospital and inter-hospital transfers in emergency.",
+    "optional": false,
+    "number": 2500
+  },
+  "modern_treatments": {
+    "display": "Covered with 50% co-pay (Section L)",
+    "note": "12 listed modern/advance treatments (robotic surgery, stereotactic radio surgery, oral chemotherapy, intravitreal injections, stem cell therapy, etc.) covered under Section L with mandatory 50% co-payment.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional (Non-Medical Expenses rider, cashless only)",
+    "note": "Section H covers non-medical/consumable expenses up to ₹1,000–₹5,000/day (SI-based) but only on cashless claims at network providers. Available inbuilt in Comprehensive and Super Saver plans; not available in Basic/A la Carte base.",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers only medical treatment within India (Section 8.2). OPD treatment outside India also excluded.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free look period from date of receipt of policy at inception only; not applicable on renewals or portability.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI norms. Apply at least 45 days before but not earlier than 60 days from premium due date.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, OPD (unless rider), treatment outside India, dental (unless accident+24hr hosp), refractive error <7.5D, domiciliary for diabetes/asthma/hypertension etc.",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Sub-limit waiver, Voluntary 20% co-pay, Home care treatment, OPD rider",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "policy-wordings-health-Qube-V04 (1).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:30:56.486Z"
+}

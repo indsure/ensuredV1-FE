@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "GoActive",
+  "uin": "NBHHLIP26046V032526",
+  "sum_insured_options": "₹1L – ₹25L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day (no cap for SI ≥3L)",
+    "note": "For SI of 1L and 2L: up to 1% of Base SI per day. For SI of 3L and above: no restriction except Suite or above room category is excluded.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day (no cap for SI ≥3L)",
+    "note": "For SI of 1L and 2L: up to 2% of Base SI per day. For SI of 3L and above: covered up to Sum Insured.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None (Zone 1); 20% for Mumbai/Delhi NCR/Kolkata/Gujarat (Zone 2)",
+    "note": "Zone 2 is an optional lower-premium variant; 20% co-pay applies only for inpatient treatment in those cities. No co-pay under Zone 1.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Robotic surgeries capped at ₹1L (select exceptions)",
+    "note": "Most benefits covered up to Sum Insured. Robotic surgeries (except radical prostatectomy, cardiac, partial nephrectomy, malignancy) capped at ₹1L. Emergency ambulance capped at ₹3,000 per hospitalisation.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (optional add-on: ₹25K–₹10L)",
+    "note": "No inbuilt deductible. Optional Annual Aggregate Deductible available at ₹25,000 / ₹50,000 / ₹1L / ₹2L / ₹3L / ₹5L / ₹10L.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents covered from day 1.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases covered after 36 months of continuous coverage. Portability credits applicable.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, kidney stones, osteoarthritis, etc.) excluded for 24 months. Accidents covered from day 1; cancer after 30-day wait.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard permanent exclusion (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording. I-Protect (optional) increases SI by 10%/yr but is not a no-claim bonus.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of Base SI (different illness only)",
+    "note": "Re-fill benefit reinstates up to 100% of Base SI once per policy year, but only for a different illness/injury than the one that exhausted the SI. Cannot be used for the same illness.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "90 days",
+    "note": "Pre-hospitalisation expenses covered for up to 90 days before admission.",
+    "optional": false,
+    "number": 90
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for up to 180 days after discharge.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "Listed day-care procedures (Annexure VI, 536 procedures)",
+    "note": "Covered up to Sum Insured for procedures listed in Annexure VI.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (min 3 days)",
+    "note": "Domiciliary hospitalisation covered if patient cannot be moved or no hospital bed available; must continue for at least 3 consecutive days. Home Health Care Services also covered via empanelled providers post-hospitalisation.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI (inpatient in AYUSH hospital)",
+    "note": "Ayurveda, Unani, Sidha and Homeopathy covered for inpatient care in recognised AYUSH hospitals. Pre/post-hospitalisation also covered for AYUSH treatment.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (living donor harvesting expenses)",
+    "note": "Medical expenses for living organ donor's inpatient treatment for organ harvesting covered. Stem cell donation excluded except bone marrow transplant.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹3,000 per hospitalisation",
+    "note": "Road ambulance covered up to ₹3,000 per hospitalisation for emergency surface transport.",
+    "optional": false,
+    "number": 3000
+  },
+  "modern_treatments": {
+    "display": "Covered; robotic surgeries sub-limited at ₹1L (select exceptions)",
+    "note": "12 modern treatments listed (robotic surgery, stereotactic radiosurgery, oral chemo, etc.) covered up to SI. Robotic surgeries capped at ₹1L except prostatectomy, cardiac, partial nephrectomy, malignancy.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered (standard exclusion list applies)",
+    "note": "Consumables like gloves, masks, etc. are listed in Annexure II as non-payable items. No optional consumables rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "All benefits available in India only (Section 7.2.VIII). Treatment outside India is a specific exclusion (Section 6.2.XI).",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly premium)",
+    "note": "Grace period is 30 days for annual/other modes and 15 days for monthly premium payment.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document; applicable on new policies, not renewals.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability permitted as per IRDAI norms; credits for PED waiting, specific waiting periods and moratorium transferable.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Overseas treatment, hormone replacement therapy, sleep disorders, STIs (non-HIV), external congenital anomaly, dental (non-accident), circumcision (non-medical)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "I-Protect (10% SI increase/yr), Health Coach (wellness + renewal discount up to 20%), Personal Accident Cover (death/PTD/PPD), Annual Aggregate Deductible",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "goactive-policy-document.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:41:59.434Z"
+}

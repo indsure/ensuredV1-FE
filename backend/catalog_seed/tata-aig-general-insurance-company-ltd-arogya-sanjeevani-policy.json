@@ -1,0 +1,165 @@
+{
+  "insurer": "TATA AIG General Insurance Company Ltd.",
+  "plan_name": "Arogya Sanjeevani Policy",
+  "uin": "TATHLIP20169V011920",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "If room taken at higher rate, all other expenses (except medicines) reimbursed proportionately",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "Proportionate deduction applies if ICU charges exceed this limit",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-pay applies to every admissible claim for all insured persons",
+    "optional": false,
+    "number": 5
+  },
+  "sub_limits": {
+    "display": "Cataract capped at 25% of SI or ₹40,000/eye; modern treatments up to 50% of SI",
+    "note": "Cataract: lower of 25% SI or ₹40,000 per eye per year; listed modern/day-care procedures capped at 50% of SI",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Except for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Only PEDs declared and accepted are covered after 36 months; reducible via portability credit",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most); 36 months (joint replacement, osteoarthritis)",
+    "note": "24-month list includes cataract, hernia, ENT, tumours, etc.; 36-month list includes joint replacement and age-related osteoarthritis/osteoporosis",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under Code-Excl 18",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% added per claim-free year; reduced at same rate if claim made; max 50% of SI",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "For same condition as hospitalisation",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "For same condition as hospitalisation",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care treatments covered",
+    "note": "All day-care procedures covered; listed modern treatments also covered up to 50% of SI",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation explicitly excluded under specific exclusions",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered (in-patient & day care)",
+    "note": "AYUSH in-patient and day-care covered; pre-hosp 30 days and post-hosp 60 days also covered for AYUSH; assessed per Ministry of AYUSH benchmark rates",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "No mention of organ donor expense cover in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance covered up to ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (up to 50% of SI)",
+    "note": "Listed procedures (robotic surgery, oral chemo, immunotherapy, deep brain stimulation, etc.) covered up to 50% of SI",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-medical/consumable items explicitly excluded under Annexure-A List I",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded; all treatment must be within India",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years (including portability/migration), no claim contestable except fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "15 days grace for monthly premium; 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "From date of receipt of policy document",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; waiting period credits transferred",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Domiciliary & OPD, maternity, treatment outside India, sterility/infertility, refractive error <7.5D, existing disclosed diseases (specific ICD codes)",
+  "optional_riders": "Not specified",
+  "source_file": "Arogya_Sanjeevani_Policy_211f044853.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:36:57.184Z"
+}

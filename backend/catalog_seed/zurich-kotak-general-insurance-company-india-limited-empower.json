@@ -1,0 +1,173 @@
+{
+  "insurer": "Zurich Kotak General Insurance Company (India) Limited",
+  "plan_name": "Empower",
+  "uin": "ZUKHLIP25036V012425",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day, max ₹5,000/day",
+    "note": "Associated medical expenses proportionally reduced if room exceeds limit",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges capped at 2% of Sum Insured per day",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "20% on every claim",
+    "note": "20% co-pay on all admissible claims; waived for Cataract, Dialysis & Home Care Treatment",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract ₹25k/eye, Dialysis ₹1k/sitting (5/mo), PED claims 50% of SI",
+    "note": "Cataract: ₹25,000 per eye per year; Dialysis: ₹1,000/sitting up to 5 sessions/month; PED claims capped at 50% of SI; Modern treatments capped at 50% of SI",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "As per Policy Schedule (aggregate basis)",
+    "note": "Deductible applies on aggregate basis for all hospitalisation in a policy year; exact amount in schedule (illustrations show ₹1,00,000)",
+    "optional": false,
+    "number": 100000
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Waived for accidents; not applicable after 12 months continuous coverage",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Reduced by prior continuous coverage under portability; PED claims after waiting period capped at 50% of SI",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "36 months",
+    "note": "18 listed conditions including cataract, hernia, joint replacement, dialysis, Parkinson's, Alzheimer's etc.; longer of PED or specific waiting applies",
+    "optional": false,
+    "number": 36
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity explicitly excluded (Excl18); ectopic pregnancy covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Reimbursement basis only",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Capped at 10% of hospitalisation expenses; reimbursement basis only",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "Medically necessary day-care treatments covered up to SI",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (Home Care Treatment)",
+    "note": "Listed conditions only; prior approval required; reimbursement basis; 13 listed conditions",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient and day-care AYUSH treatment covered up to Sum Insured",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Hospitalisation for donation of body organs by insured explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹10,000/policy year",
+    "note": "Road ambulance only; linked to admissible hospitalisation claim",
+    "optional": false,
+    "number": 10000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited to 50% of SI",
+    "note": "12 listed modern treatments (robotic surgery, oral chemo, stem cell etc.) covered up to 50% of SI",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Extensive list of non-payable consumables in Annexure II; pharmacy and consumables excluded from associated medical expenses",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Claims payable only for treatment in India; overseas treatment explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "Coverage not available during grace period",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only, not renewals or portability",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "As per IRDAI portability guidelines; apply 30-60 days before renewal",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Overseas treatment, organ donor hospitalisation, maternity, infertility, domiciliary OPD, dental (non-accidental), STDs, experimental treatment, consumables",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Not specified in wording",
+    "note": "No optional riders or add-ons described in the policy wording",
+    "optional": false
+  },
+  "source_file": "Empower_Policy_Wording_62ee3d39f7_1_c7f9e45cc1_ce34f58908.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:37:07.075Z"
+}

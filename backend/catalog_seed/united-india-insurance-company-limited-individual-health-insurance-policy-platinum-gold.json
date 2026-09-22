@@ -1,0 +1,173 @@
+{
+  "insurer": "United India Insurance Company Limited",
+  "plan_name": "Individual Health Insurance Policy – Platinum & Gold",
+  "uin": "UIIHLIP26047V072526",
+  "sum_insured_options": "₹50,000 – ₹20,00,000",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Proportionate deduction applies on associated medical expenses if higher room taken. No cap mentioned for Platinum vs Gold — same limit applies to both.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges capped at 2% of Sum Insured per day or actuals, whichever is less.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract, Hernia & Hysterectomy capped (Gold only)",
+    "note": "Gold plan: Cataract up to 25% of SI or ₹40,000/eye (whichever less); Hernia & Hysterectomy up to 25% of SI or ₹1,00,000 (whichever less). Platinum plan has no such sub-limits.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned for base indemnity cover.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Applicable for Gold plan; not explicitly stated as applicable for Platinum but waiting periods section is headed 'Only Applicable for Gold Plan'.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months (Gold only)",
+    "note": "PED waiting period of 36 months applies only to Gold plan. Platinum plan waiting periods section is not mentioned — no PED waiting stated for Platinum.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (Gold only)",
+    "note": "Table A diseases (cataract, hernia, hydrocele, calculus, etc.) have 24-month wait; Table B diseases (joint replacement, ARMD, neurodegenerative) have 36-month wait. Applicable only for Gold plan.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard permanent exclusion (Excl18) for all plans. Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "Cumulative bonus is defined in the policy but no rate or maximum percentage is stated in the policy wording.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered up to 30 days prior to hospitalisation. Combined pre+post capped at 10% of SI for Gold; no such cap for Platinum.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered up to 60 days after discharge. Combined pre+post capped at 10% of SI for Gold; no such cap for Platinum.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care covered",
+    "note": "All day care treatments as per definition are covered under in-patient hospitalisation benefit.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (with limits)",
+    "note": "Covered on reimbursement basis; first 3 days not payable; several diseases excluded (asthma, diabetes, hypertension, etc.); annual limit varies by SI (e.g. ₹45,000 for ₹3L SI, ₹1,00,000 for ₹15L SI).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment covered under in-patient hospitalisation at AYUSH hospitals/day care centres as per definitions; no separate sub-limit stated.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "All hospitalisation expenses for organ donor (excluding cost of organ) covered for transplant to insured person as per Transplantation of Human Organs Act 1994.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,500/person/policy period",
+    "note": "Road ambulance covered up to ₹2,500 per person per policy period. Payable only if hospitalisation claim is admitted.",
+    "optional": false,
+    "number": 2500
+  },
+  "modern_treatments": {
+    "display": "Covered (listed procedures)",
+    "note": "12 specific modern treatments covered including robotic surgery, stereotactic radio surgery, oral chemotherapy, stem cell therapy (hematological), etc. No separate sub-limit stated.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Non-medical/consumable items are listed in Annexure 1 as non-payable. No optional rider for consumables mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly limited to India only; all treatment must be taken in India and claims settled in Indian currency.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim/policy contestable except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes. Coverage not available during grace period unless premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines with continuity of waiting period credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD treatment, maternity, hearing aids, spectacles/contact lenses, stem cell (except bone marrow), RFQMR/ECP/EECP/hyperbaric oxygen, external prosthetics/devices post-discharge, vaccinations",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Daily Cash Allowance (₹500/₹1,000/₹2,000 per day, max ₹5k/₹10k/₹20k per policy period)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "20250708 - Policy Wordings - IHIP.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:34:43.321Z"
+}

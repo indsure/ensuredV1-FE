@@ -1,0 +1,172 @@
+{
+  "insurer": "The Oriental Insurance Company Limited",
+  "plan_name": "Oriental Youth Eco Care Policy",
+  "uin": "OICHLIP24034V012324",
+  "sum_insured_options": "₹3L – ₹100L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "Up to 1% of SI/day (≤₹5L); ₹10k/day (₹7-10L); Actuals (>₹10L)",
+    "note": "Single room cap applies for SI up to 10L; proportionate clause applies if higher room taken",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "Up to ₹10k/day (≤₹5L); ₹20k/day (₹7-10L); Actuals (>₹10L)",
+    "note": "Fixed daily cap for SI up to 10L; actuals for SI above 10L",
+    "optional": false,
+    "ordinal": 2
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Cataract (₹50k/eye ≤10L; ₹1L/eye >10L), AYUSH (25% of SI), Modern Tx (25% of SI ≤10L), Mental illness (50% of SI ≤10L), Domiciliary (10% of SI, max ₹50k)",
+    "note": "Multiple sub-limits: cataract, AYUSH, modern treatments, mental illness, domiciliary hospitalisation, telemedicine, ambulance",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible; 3-day deductible applies only for domiciliary and daily hospital cash",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "12 months",
+    "note": "PED waiting period is 12 months continuous coverage; no optional reduction mentioned",
+    "optional": false,
+    "number": 12
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (most listed conditions); 1 year (ENT/hernia/hydrocele); 90 days (hypertension/diabetes)",
+    "note": "Hypertension and diabetes have 90-day wait if not pre-existing; most surgical conditions 2 years; ENT/hernia 1 year",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Covered under Premium Plan (24mo wait); up to ₹50k-₹1L per delivery",
+    "note": "Premium Plan only; 24-month continuous coverage required; limited to 2 deliveries/terminations lifetime; pre/post-natal OPD not covered; ART also available under Premium Plan with 36mo wait",
+    "optional": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% increase per claim-free year; reduced at same rate if claim made; max 100% of base SI",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No sum insured restoration/reset benefit mentioned in the policy",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "45 days",
+    "note": "Pre-hospitalisation expenses covered for 45 days prior to admission",
+    "optional": false,
+    "number": 45
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses covered for 90 days from discharge",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "Listed procedures only (Appendix I, 180 procedures)",
+    "note": "Day care covered for listed procedures in Appendix I; not all day-care procedures",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (10% of SI, max ₹50k; 3-day deductible)",
+    "note": "Covered if patient cannot be moved or no hospital room available; treatment must exceed 3 days; several diseases excluded (asthma, diabetes, hypertension etc.)",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to 25% of SI",
+    "note": "Inpatient AYUSH treatment covered up to 25% of SI in recognised AYUSH hospitals",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered (both recipient and donor)",
+    "note": "Donor expenses covered when insured is recipient (up to SI); when insured is donor, up to 10% of SI; 12-month continuous coverage required for donor benefit",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Up to ₹5k/trip; ₹15k/policy (≤10L SI); higher for larger SI",
+    "note": "Road ambulance: ₹5k/occurrence, ₹15k/policy period (≤10L); ₹10k/₹20k (15-25L); ₹25k/₹50k (>25L). Air ambulance also covered (10%-25% of SI or actuals) once in policy lifetime",
+    "optional": false,
+    "number": 5000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (25% of SI for ≤10L; actuals for >10L)",
+    "note": "12 listed modern treatments covered including robotic surgery, oral chemo, stem cell therapy etc.; sub-limit applies for SI up to 10L",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables (gloves, syringes etc.) explicitly excluded per Appendix III List I; no rider available",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly covers treatment in India only; overseas treatment excluded (clause 4.38)",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "96 months (8 years)",
+    "note": "After 8 continuous years no look-back except fraud and permanent exclusions; applies separately to enhanced SI portions",
+    "optional": false,
+    "number": 96
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30-day grace period for renewal; no coverage during grace period",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "15 days",
+    "note": "15-day free-look on new policies only; not on renewals or portability",
+    "optional": false,
+    "number": 15
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Apply at least 45 days before renewal; accrued waiting period credits transferred per IRDAI guidelines",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "OPD expenses, dental (unless injury), spectacles/hearing aids, hormone therapy, external congenital anomaly, vaccination, permanently excluded diseases (15 ICD groups incl. cancer, epilepsy, heart disease)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Premium Plan add-on: Daily Hospital Cash (₹500-₹1000/day), Medical Second Opinion, Maternity (₹50k-₹1L), Assisted Reproduction Treatment (₹2L lifetime)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Oriental_Youth_Eco_Care_POLICY_PDF_PDF_1_93bd2ab510.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:33:51.250Z"
+}

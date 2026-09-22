@@ -1,0 +1,135 @@
+{
+  "variant": "Power",
+  "sum_insured_options": "New business: ₹10L, 15L, 20L; Renewal/Call Option: ₹10L, 12L, 15L, 18L, 20L, 24L",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap (actuals / any room)",
+    "note": "No room rent restriction; proportionate deduction not applicable for room"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (actuals)",
+    "note": "ICU charges not proportionately reduced"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (Zone A payers); 20% if Zone B payer treats in Zone A",
+    "note": "Zone-wise co-pay: Zone B premium payers bear 20% co-pay for treatment in Zone A. No mandatory age-based co-pay. Voluntary co-pay optional add-on available."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Vision correction ₹1L; Maternity sub-limited (if opted); OPD prenatal/postnatal ₹10k",
+    "note": "Modern treatment up to 100% BSI; most covers within SI. Maternity is optional add-on."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None",
+    "note": "Voluntary aggregate deductible available as optional add-on (₹10k–₹1L)"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months (reducible to 24 or 12 mo via optional add-on)",
+    "note": "Optional Benefit 3.7.6 can reduce to 24 or 12 months for additional premium"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Covers ENT, gynaecological, orthopaedic, GI, urogenital, eye conditions and listed surgeries"
+  },
+  "maternity": {
+    "exists": true,
+    "number": 24,
+    "display": "Optional add-on; 24mo wait (1-2yr policy); 0/12/24mo wait (3yr+ policy)",
+    "note": "Limit: ₹1L or ₹2L (option) for SI ≥10L; covers normal & C-section, max 2 deliveries; includes newborn & infertility cover within maternity limit"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% of BSI (33.33%/yr)",
+    "note": "Reduces by 33.33% in claim year. Optional Guaranteed CB (Option A) prevents reduction; Option B gives 100%/yr up to 300% of BSI."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited, 100% BSI (related & unrelated)",
+    "note": "Reinstated BSI available unlimited times for both related and unrelated illness/injury after exhaustion of BSI + Extra SI + Cumulative Bonus"
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Extendable to 90 days via optional Convenience Cover add-on"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days",
+    "note": "Extendable to 180 days via optional Convenience Cover add-on"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered within SI",
+    "note": "Min 3 continuous days; excludes asthma, diabetes, hypertension, epilepsy and several other listed conditions"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH hospitalisation covered under main hospitalisation benefit"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered within SI",
+    "note": "Includes donor's pre and post hospitalisation expenses"
+  },
+  "ambulance": {
+    "number": 1500,
+    "display": "₹1,500/hospitalisation (road); intercity ₹20,000",
+    "note": "Air ambulance available as optional add-on (7.5% of BSI or ₹5L whichever higher)"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to 100% of BSI",
+    "note": "Includes robotic surgery, stereotactic radio surgery, stem cell therapy, oral chemo, etc."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional add-on (Consumables Cover)",
+    "note": "List I, II, III, IV items covered if optional Benefit 3.7.3.2 opted; otherwise List I excluded"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy covers treatment within India only; overseas treatment excluded"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Overseas treatment, sleep apnea, external congenital anomaly, hearing aids/spectacles, external durable equipment, OPD treatment, alcoholic cirrhosis (permanent)",
+  "optional_riders": "Short Stay Treatment, Chronic Shield, Guaranteed CB (A/B), Consumables Cover, Double Cover, Change Room Rent, Reduce PED wait, Voluntary Deductible, Voluntary Co-pay, Hospital Cash, Air Ambulance, Convalescence, Vision Correction, Maternity+Newborn+Infertility, Home Care, Companion Cover, Child Care Cover",
+  "insurer": "IndusInd General Insurance Company Limited",
+  "plan_name": "IndusInd HealthGain",
+  "uin": "INIHLIP26040V042526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "revised-indusind-health-gain-policy-wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:03:46.480Z"
+}

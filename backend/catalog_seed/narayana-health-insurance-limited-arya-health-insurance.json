@@ -1,0 +1,173 @@
+{
+  "insurer": "Narayana Health Insurance Limited",
+  "plan_name": "Arya Health Insurance",
+  "uin": "NHIHLIP26043V012526",
+  "sum_insured_options": "₹25L, ₹50L, ₹1Cr, Unlimited",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "No cap at Preferred/Verified Network; Private Room elsewhere",
+    "note": "At actuals (any room) at Preferred Provider Network and Verified Provider Network. Capped at Private Room at Other Provider Network and Non-Network Provider. Pro-rata deduction applies if higher room chosen at non-preferred networks.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (at actuals)",
+    "note": "ICU charges covered under Base Sum Insured with no separate sub-limit mentioned; covered as part of Inpatient Care at actuals.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None (non-intimation co-pay applies if intimation missed)",
+    "note": "No mandatory co-payment on standard claims. Co-pay of 15–30% applies only if Insured Person fails to intimate within required timelines at Other/Non-Network providers. Global Health Cover (optional) carries 10% co-pay.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Surrogate Mother & Oocyte Donor capped at ₹5L each",
+    "note": "In-patient Hospitalisation for Surrogate Mother: max ₹5L; In-patient Hospitalisation for Oocyte Donor: max ₹5L. All other base benefits covered up to full Sum Insured with no disease-wise sub-limits.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None (optional aggregate deductible available)",
+    "note": "Base plan has no deductible. Optional Aggregate Deductible can be chosen: ₹0/₹25k/₹50k/₹1L/₹2L/₹3L/₹4L/₹5L. Can be waived later via 'Waiver of Aggregate Deductible' option.",
+    "optional": true,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period applies. Can be reduced to nil via optional 'Deferred Initial Health Checkup' cover subject to underwriting.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Standard PED waiting is 36 months. Reducible to 24/12/0 months via optional Deferred Health Checkup cover subject to underwriting outcomes.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Standard specific disease/procedure waiting is 24 months. Reducible to 12 months or nil via optional Deferred Health Checkup cover subject to underwriting.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity (Excl18) is a standard exclusion. Surrogate Mother hospitalisation for complications (not delivery) is covered up to ₹5L for 3-year policies. Oocyte Donor hospitalisation for complications covered up to ₹5L.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 400% via AccumulatePlus (optional)",
+    "note": "No inbuilt no-claim bonus. Optional AccumulatePlus adds 50% of Base SI per renewal year irrespective of claims, up to 100%/200%/400% of Base SI depending on option chosen.",
+    "optional": true,
+    "number": 400
+  },
+  "restoration": {
+    "display": "Unlimited restorations (optional Revive)",
+    "note": "Revive is an optional cover. When opted, Base Sum Insured is restored unlimited times per Policy Year upon complete or partial utilisation, for any subsequent admissible claims. No inbuilt restoration in base plan.",
+    "optional": true,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered up to 60 days before admission at Preferred/Verified Provider Network.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days (180 days at Preferred/Verified Network inbuilt for Plan 1)",
+    "note": "Per Annexure 1, Plan 1 (Arya) shows 180 days at Preferred and Verified Provider Network as inbuilt; 90 days at Other/Non-Network. Plan 2 (Arya Plus) shows 90 days at Other Provider Network. Optional 'Enhance Post-Hospitalisation' cover extends to 180 days at additional networks.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care (280+ listed procedures)",
+    "note": "Comprehensive list of day-care treatments in Annexure 3 covering ENT, Ophthalmology, Oncology, Urology, Gynaecology, General Surgery, Orthopaedics, Paediatric Surgery and others.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (at Preferred Provider Network only)",
+    "note": "Domiciliary Hospitalisation covered up to Sum Insured but only at Preferred Provider Network. Several conditions excluded (asthma, diabetes, hypertension, epilepsy, liver disease, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to Sum Insured",
+    "note": "Alternative Treatments (Ayurveda, Unani, Sidha, Homeopathy) covered as inpatient at recognised AYUSH Hospitals up to Base Sum Insured. Yoga excluded from standard AYUSH exclusion.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Living Organ Donor Transplant expenses covered up to Base Sum Insured for harvesting procedure. Stem cell donation (except bone marrow), pre/post-hospitalisation of donor, and organ transport excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "At actuals (up to Sum Insured)",
+    "note": "Domestic Road Ambulance covered at Reasonable and Customary Charges up to Sum Insured. Emergency Air Ambulance also covered up to Sum Insured.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to Sum Insured",
+    "note": "Section 3.11 covers robotic surgeries, stereotactic radio surgeries, deep brain stimulation, oral chemotherapy, immunotherapy, intra-vitreal injections, HIFU, balloon sinuplasty, bronchial thermoplasty, green/holmium laser prostate, IONM, stem cell therapy for haematological conditions.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider (Non-Medical Expenses Cover)",
+    "note": "List-I non-medical/consumable items (gloves, masks, diapers, etc.) are excluded by default. Optional 'Non-Medical Expenses Cover' (Section 4.8) covers these at selected provider networks.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Optional (emergency only, 10% co-pay)",
+    "note": "Optional 'Global Health Cover (Emergency Treatment Only)' covers inpatient, day care, organ donor, modern treatments outside India for emergencies up to Base SI or ₹1Cr whichever is lower. 10% co-pay applies. Planned treatments, cancer, orthopaedic (non-trauma) excluded.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no look-back applied. Claims not contestable except for proven fraud and permanent exclusions.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days grace for yearly/half-yearly/quarterly premium; 15 days for monthly instalment. Coverage available during grace period only if premium paid in instalments.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Free-look period of 30 days from date of receipt of policy at inception only (not on renewals or porting).",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines. Waiting period credits transferred to new insurer.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, dental (non-accident), hormone replacement therapy, STIs (non-HIV), sleep disorders, external congenital anomaly, OPD treatment, non-medical consumables (unless rider opted)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "AccumulatePlus (up to 400% SI), Revive (restoration), Global Health Cover, Personal Accident, Non-Medical Expenses Cover, Access to Other Provider Network, Deferred Health Checkup",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Arya_Policy_Wording_0633a90f69.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:27:38.711Z"
+}

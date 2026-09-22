@@ -1,0 +1,165 @@
+{
+  "insurer": "THE NEW INDIA ASSURANCE CO. LTD",
+  "plan_name": "Universal Health Insurance Policy (APL)",
+  "uin": "NIAHLIP25052V032425",
+  "sum_insured_options": "₹30,000 per person/family",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "0.5% of SI/day",
+    "note": "Room, boarding expenses up to 0.5% of Sum Insured per day",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "1% of SI/day",
+    "note": "ICU charges up to 1% of Sum Insured per day",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the policy wording",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Many sub-limits: 15% SI for surgeon/nursing fees, 15% SI for medicines/OT, ₹15,000 per illness cap",
+    "note": "Section B capped at 15% of SI per illness; Section C capped at 15% of SI per illness; total per illness capped at ₹15,000; overall SI is ₹30,000",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "First 30 days waiting period for illnesses; accidents exempt",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases excluded for 36 months from policy inception",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "12 months",
+    "note": "Cataract, hernia, hydrocele, piles, sinusitis, fistula, BPH, hysterectomy for menorrhagia/fibromyoma, congenital internal disease and related disorders excluded for 12 months",
+    "optional": false,
+    "number": 12
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under Excl18; ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "Not specified",
+    "note": "Pre-hospitalisation expenses are defined but no specific number of days is stated in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "Not specified",
+    "note": "Post-hospitalisation expenses are defined but no specific number of days is stated in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "Listed procedures only",
+    "note": "Specific day-care procedures listed: dialysis, chemotherapy, radiotherapy, eye surgery, lithotripsy, D&C, tonsillectomy, plus others agreed by TPA/Company",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "No domiciliary treatment benefit mentioned in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment covered up to 100% of Sum Insured per policy year",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "No organ donor expense cover mentioned in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "Not covered",
+    "note": "Ambulance is listed under List I (items not covered) in Annexure I",
+    "optional": false,
+    "number": 0
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 modern treatments listed (robotic surgery, oral chemo, intravitreal injections, stem cell therapy etc.) each covered up to Sum Insured",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Gloves, masks, and many consumables explicitly listed under non-payable items in Annexure I List I",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly states all treatments must be taken in India and claims payable in Indian currency only",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage no claim can be contested except on grounds of established fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual policies with term of one year or more; not applicable on renewals or porting",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers allowed as per IRDAI guidelines; migration within company also available",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Ambulance, maternity, dental (cosmetic/wear), spectacles/hearing aids, circumcision, RFQMR/ECP/EECP/hyperbaric O2, venereal disease, suicide injury, war, NBC weapons",
+  "optional_riders": "Not specified",
+  "source_file": "Policy Clause Universal Health Insurance Policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:35:30.799Z"
+}

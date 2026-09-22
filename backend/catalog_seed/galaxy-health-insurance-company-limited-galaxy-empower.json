@@ -1,0 +1,136 @@
+{
+  "variant": "",
+  "sum_insured_options": "₹4 lakhs, ₹5 lakhs",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day",
+    "note": "Proportionate deduction on associated medical expenses if higher room chosen; not applied where hospital doesn't follow differential billing"
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges all-inclusive as provided by hospital"
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% on all claims",
+    "note": "Mandatory 20% co-payment on every admissible claim; optional waiver available on payment of additional premium"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract ₹40,000/eye/yr; Modern treatments 50% SI",
+    "note": "Cataract capped at ₹40,000 per eye per policy year; modern treatments capped at 50% of sum insured"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "90-day waiting period applies for HIV/AIDS benefit basis cover"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months (disability PED); 36 months (other PED)",
+    "note": "PED waiting: 36 months for general diseases, 24 months for pre-existing disability, 90 days for HIV/AIDS"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Covers cataract, ENT, thyroid, hernia, joint replacements, gallbladder, kidney stones, gynaec conditions, varicose veins, and many others"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity explicitly excluded under Code Excl 18; ectopic pregnancy is covered"
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No domiciliary treatment benefit mentioned in the policy wording"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient AYUSH treatment under Ayurveda, Yoga, Naturopathy, Unani, Siddha and Homeopathy covered up to 100% of sum insured per policy year"
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "No organ donor expense benefit mentioned in the policy wording"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation",
+    "note": "Emergency road ambulance only"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited to 50% of SI",
+    "note": "Covers robotic surgery, stereotactic radio surgery, oral chemotherapy, immunotherapy, deep brain stimulation, HIFU, balloon sinuplasty, intravitreal injections, bronchial thermoplasty, green/holmium laser prostate, IONM, stem cell therapy for haematological conditions"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Consumables listed in List I are excluded; items in Lists II-IV subsumed into room/procedure/treatment charges"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Territorial limit: all treatments must be taken in India"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim contestable except fraud and permanent exclusions"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or portability/migration"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, sterility/infertility, dental (unless accident), venereal disease (except HIV), circumcision, congenital external anomalies, obesity surgery (unless criteria met), erectile dysfunction",
+  "optional_riders": "Waiver of 20% co-payment (available on additional premium)",
+  "insurer": "Galaxy Health Insurance Company Limited",
+  "plan_name": "Galaxy Empower",
+  "uin": "GHIHLIP25040V012425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Policy Wording (5).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:56:50.135Z"
+}

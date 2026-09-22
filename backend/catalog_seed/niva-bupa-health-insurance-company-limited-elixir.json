@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "Elixir",
+  "uin": "NBHHLIP23156V012223",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "As per Policy Schedule",
+    "note": "Room rent eligibility/category is referenced but the specific limit/category is defined in the Policy Schedule, not in the wording. Pro-rata clause applies if higher room is chosen.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "ICU charges defined but no specific cap mentioned in wording; likely in Policy Schedule.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "None (base)",
+    "note": "No mandatory co-payment mentioned in the base policy wording. Personal waiting period conditions may apply.",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "Robotic surgery capped at ₹1L (except specified types)",
+    "note": "Robotic surgeries other than Total Radical Prostatectomy, Cardiac surgeries, Partial Nephrectomy, Surgeries for malignancies are capped at ₹1,00,000. Health check-up has a sub-limit per Policy Schedule. Annual health check-up sub-limit as per schedule.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned in base policy.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents covered from day 1.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases covered after 36 months of continuous coverage. No optional reduction mentioned.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, joint replacement, etc.) excluded for 24 months. Accidents covered from day 1; cancer after 30 days.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered (excluded)",
+    "note": "Maternity expenses are a standard exclusion (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr)",
+    "note": "Booster Benefit: 50% of base SI added per claim-free year, max 100% of base SI. Reduced by 50% of expiring base SI if a claim is made.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited, 100% of base SI",
+    "note": "ReAssure benefit: triggered by first paid hospitalisation or domiciliary/home care claim; unlimited restorations up to base SI per claim. Covers related and unrelated illnesses.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days before admission for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "180 days",
+    "note": "Post-hospitalisation expenses covered for 180 days after discharge for the same condition.",
+    "optional": false,
+    "number": 180
+  },
+  "day_care": {
+    "display": "All day-care (2+ hrs)",
+    "note": "Day care covered if admitted for more than 2 hours; includes angiography, dialysis, radiotherapy, chemotherapy.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered subject to doctor's advice and continuous active treatment with daily monitoring.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (in India only)",
+    "note": "AYUSH treatment covered for hospitalisation of 24+ hours in recognised AYUSH hospitals.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Donor hospitalisation expenses for organ harvesting covered when insured's transplant claim is paid.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation (road); Air up to SI (cashless)",
+    "note": "Road ambulance: ₹2,000 per hospitalisation. Air ambulance: up to SI for cashless, ₹2,50,000 for reimbursement, only in emergencies when hospitalisation claim is paid.",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Covered; robotic surgery sub-limited (₹1L except specified)",
+    "note": "12 modern treatments listed including robotic surgery, immunotherapy, stem cell therapy etc. Full SI for specified robotic surgeries; ₹1,00,000 cap for others.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional add-on (Safeguard/Safeguard+)",
+    "note": "Safeguard covers List I non-payable items; Safeguard+ covers Lists I–IV. Both are optional paid add-ons.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy covers treatments in India only as stated in the preamble.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim/policy contestable except for proven fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days grace for annual/half-yearly/quarterly; 15 days for monthly premium mode. Coverage available during grace period for instalment policies.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual policies only, not on renewals.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI norms with credit for waiting periods and no-claim bonus.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, OPD, hormone replacement therapy, sleep disorders, STIs (non-HIV), dental, external congenital anomaly, home medical devices",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Personal Accident (AD/PTD/PPD), Safeguard (consumables + booster protection + SI inflation), Safeguard+ (enhanced consumables cover)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Elixir_PolicyWording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:41:27.360Z"
+}

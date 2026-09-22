@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Special Care Gold",
+  "uin": "SHAHLIP23182V012223",
+  "sum_insured_options": "Not specified in document",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Associated medical expenses subject to proportionate deduction if higher room category chosen; no proportionate deduction for hospitals not following differential billing",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges all inclusive as provided by hospital",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "20% on all claims",
+    "note": "Mandatory 20% co-pay on every claim; waiver available on payment of additional premium",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract ₹40k/eye; Modern treatments 50% of SI",
+    "note": "Cataract capped at ₹40,000 per eye per year; modern treatments (robotic surgery, HIFU, etc.) capped at 50% of sum insured",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Applies to illness claims; accidents exempt; 90-day waiting for HIV/AIDS lump sum benefit",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "24 months (disability PED); 36 months (other PED)",
+    "note": "24 months for pre-existing disability; 36 months for other pre-existing diseases; 90 days for HIV/AIDS",
+    "optional": false,
+    "number": 24
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, hernia, hydrocele, varicose veins, benign tumors, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity explicitly excluded under Code Excl 18",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration or recharge benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses for 30 days prior to date of hospitalisation",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses for 60 days from date of discharge",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "All day care procedures explicitly covered",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "No domiciliary treatment benefit mentioned in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient AYUSH treatment covered up to 100% of sum insured per policy year",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "No mention of organ donor expenses in the policy wording",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Emergency road ambulance capped at ₹2,000 per hospitalisation",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited to 50% of SI",
+    "note": "Covers robotic surgery, stereotactic radio surgery, oral chemotherapy, immunotherapy, stem cell therapy etc., up to 50% of sum insured",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Many consumables subsumed into room/procedure charges per the listed items; no separate consumables cover or rider offered",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit clause restricts all treatment to India only",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim contestable except on grounds of fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (annual); 15 days (monthly)",
+    "note": "30 days grace for yearly premium mode; 15 days for monthly instalment mode",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; apply at least 30 days before renewal",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, sterility/infertility, cosmetic surgery, gender change, obesity surgery, circumcision, external congenital anomalies, experimental therapies, EECP/chelation therapy",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Waiver of 20% co-payment (available on additional premium)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy_Special_Care_Gold_V_5_e9a939e041.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:24:45.934Z"
+}

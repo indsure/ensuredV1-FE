@@ -1,0 +1,134 @@
+{
+  "variant": "",
+  "sum_insured_options": "₹7.5L, ₹10L, ₹15L, ₹25L, ₹50L, ₹100L, ₹200L",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 4,
+    "display": "Single Private Room (₹7.5L–15L); No cap (₹25L+)",
+    "note": "SI ₹7.5L, ₹10L, ₹15L: Single Private Room. SI ₹25L and above: up to SI (no cap)."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (up to SI)",
+    "note": "ICU charges covered up to Sum Insured for all SI options."
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% (age 61+ at first entry); 15% zone co-pay if Zone 2 treats in Zone 1",
+    "note": "Mandatory 20% co-pay applies to all insured persons aged 61+ at first policy issuance, on all subsequent renewals too. Zone 2 policyholders bear 15% co-pay for treatment in Zone 1. Co-pay waiver available as optional add-on."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Maternity sub-limits; Bariatric sub-limits; Emergency evacuation sub-limits",
+    "note": "Maternity: Normal ₹40K–₹1.35L / C-Section ₹60K–₹1.35L depending on SI. Bariatric: ₹3.75L–₹10L depending on SI. Emergency Medical Evacuation: ₹2.5L–₹5L (not available for ₹7.5L–₹15L). OPD: ₹5K–₹10K. Home Healthcare: 25% of SI max ₹10L. Most other covers up to SI."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (inbuilt); Voluntary deductible optional",
+    "note": "No mandatory deductible. Optional voluntary deductible available: ₹10K/₹25K/₹50K for lower SIs, up to ₹5L for higher SIs."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "PED waiting period is 36 months. Reduced by prior continuous coverage under portability."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (most); 36 months (some)",
+    "note": "24 months: cataracts, hernia, BPH, DNS, hydrocele, fistula/haemorrhoids, fibromyoma, tumours/cysts, LASIK, stones, varicose veins, gastric ulcers, ear/tonsil surgery, etc. 36 months: rheumatoid arthritis, gout, joint replacement (degenerative), osteoarthritis/osteoporosis."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 36,
+    "display": "Covered (36mo wait); Normal ₹40K–₹1.35L, C-Section ₹60K–₹1.35L by SI",
+    "note": "Not available for ₹7.5L and ₹10L SI. Available from ₹15L SI upwards. Both self and spouse must be covered for 36 continuous months. Max 2 events lifetime. Ectopic pregnancy covered under inpatient."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (50%/yr claim-free)",
+    "note": "50% of SI added per claim-free year; reduced by 50% in claim year (minimum zero); max accumulation 100% of SI."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited, 100% of Base SI",
+    "note": "Triggers from 2nd claim onwards after full exhaustion of Base SI + CB + Inflation Guard. Applicable for same or different illness. Once per claim event. Not applicable for Medical Treatment Abroad."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days (₹7.5L–₹15L); 180 days (₹25L+)",
+    "note": "SI ₹7.5L, ₹10L, ₹15L: 90 days. SI ₹25L and above: 180 days."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered up to SI"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (Home Health Care up to 25% of SI, max ₹10L)",
+    "note": "Cashless only via empanelled provider. Conditions apply. Only allopathic treatment."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered. Must be in government hospital or recognised AYUSH hospital. Minimum 24-hour admission required."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Up to SI (no separate cap)",
+    "note": "Emergency road ambulance covered up to Sum Insured per hospitalisation."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Covers robotic surgery, stereotactic radio surgery, oral chemotherapy, immunotherapy, intra-vitreal injections, deep brain stimulation, stem cell therapy (haematopoietic), and others listed."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider (up to SI)",
+    "note": "Consumables/Non-Medical Expenses Cover available as optional add-on for all SI options."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Inbuilt (8 major illnesses; 36mo wait; up to SI)",
+    "note": "Medical Treatment Abroad inbuilt for 8 specific conditions (craniotomy, lung/liver lobectomy, major organ transplant, bone marrow transplant, aortic aneurysm repair, heart valve replacement, CABG). Available from ₹50L and ₹100L and ₹200L SI per schedule. 36 months continuous coverage required. Inflation Guard and Unlimited Restoration not applicable for this benefit."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim contestable except on grounds of fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly premium)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "External congenital anomaly, STDs (non-HIV), stem cell storage, hormone replacement therapy, treatment outside India (except 8 listed conditions), LASIK (24mo wait), infertility/ART",
+  "optional_riders": "Voluntary Deductible, Consumables/Non-Medical Expenses Cover, Mandatory Co-Pay Waiver (for age 61+ entrants)",
+  "insurer": "Generali Central Insurance Company Limited",
+  "plan_name": "Health Unlimited",
+  "uin": "GCIHLIP26041V012526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "health-unlimited-policy-wording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:58:45.044Z"
+}

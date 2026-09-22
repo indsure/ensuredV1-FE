@@ -1,0 +1,125 @@
+{
+  "variant": "Infinity Wallet",
+  "sum_insured_options": "Up to INR 3 Crores",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "No restriction on room rent or category"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "Zone-based 10% co-pay if hospitalized in higher zone than declared"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Road ambulance 1% SI max ₹15k; modern treatments 50% SI (waivable)",
+    "note": "Road ambulance 1% SI max INR 15,000; modern treatments 50% SI unless Advance Care opted"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 7,
+    "display": "7 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered (inbuilt)",
+    "note": "Section 4 Maternity Benefit Wallet not applicable; Optional Cover 9 available"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100%",
+    "note": "50% of SI per claim-free year up to 100%; or No Claim Discount; Infinite Cumulative Bonus optional cover also available"
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited, 100%",
+    "note": "Sum Insured Back-up: unlimited reinstatements for related illness per policy period"
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "3-day minimum; certain conditions excluded"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ambulance": {
+    "number": 15000,
+    "display": "1% of SI, max ₹15,000"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "Optional Cover 6 upgrades to 100% SI"
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Worldwide Coverage not applicable for Infinity Wallet plan"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Consumables not inbuilt; tobacco-related oral/respiratory cancer excluded; hormone replacement therapy excluded; cosmetic surgery excluded",
+  "optional_riders": "Consumables Cover, Network Hospital Discount, Waiting Period Modification, Sum Insured Multiplier, OPD Benefit, Advance Care, Maternity & Newborn, Infertility, Daily Hospital Cash, Infinite Cumulative Bonus, Medical Equipment Cover",
+  "insurer": "Go Digit General Insurance Ltd.",
+  "plan_name": "Digit Health Insurance Policy",
+  "uin": "GODHLIP25039V022425",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "policy-wordings-digit-health-insurance-policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:00:25.565Z"
+}

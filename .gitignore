@@ -85,3 +85,6 @@ policyfiles/
 backup.env
 **/backup.env
 *.passphrase
+catalog_worklist.tsv
+backend/catalog_seed/*.superseded
+backend/catalog_seed/.ingested.log

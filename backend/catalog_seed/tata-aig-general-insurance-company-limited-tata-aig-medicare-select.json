@@ -1,0 +1,173 @@
+{
+  "insurer": "TATA AIG General Insurance Company Limited",
+  "plan_name": "TATA AIG MediCare Select",
+  "uin": "TATHLIP25051V012425",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "As per Policy Schedule",
+    "note": "Room category is specified in the Policy Schedule; Single Private Room is defined as the base single-occupancy room. An optional 'Room Category Select' add-on (C6) can change the entitlement. Proportionate deduction applies if higher room is chosen.",
+    "optional": false,
+    "ordinal": 4
+  },
+  "icu": {
+    "display": "No cap (proportionate deduction not applicable for ICU)",
+    "note": "Policy explicitly states proportionate deductions are not applicable for ICU charges.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the base policy wording. Aggregate Deductible is an optional cost-sharing cover (C7).",
+    "optional": false,
+    "number": 0
+  },
+  "sub_limits": {
+    "display": "No sub-limits",
+    "note": "No disease-wise or procedure-wise monetary sub-limits found in the policy wording. Claims assessed at Reasonable & Customary charges up to Sum Insured.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "deductible": {
+    "display": "None (optional add-on available)",
+    "note": "Aggregate Deductible is an optional cover (C7) chosen for a premium discount; not inbuilt.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents exempt.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months of continuous coverage. Reducible via portability credits from prior insurer.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Specified diseases/procedures (e.g. cataract, hernia, joint replacement, etc.) excluded for 24 months. Accidents exempt.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Optional add-on (24mo wait)",
+    "note": "Maternity Care (C2) is an optional cover with a 2-year waiting period; covers delivery, newborn complications, and first-year vaccinations. Limit as per Policy Schedule. Waiting period reducible to 1 year via optional C3 add-on.",
+    "optional": true,
+    "exists": true,
+    "number": 24
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr)",
+    "note": "50% of SI added per claim-free year; max 100% of SI. Reduces by 50% of SI after a claim year. Alternative option: discount on renewal premium instead of bonus.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Unlimited restorations, 100% SI",
+    "note": "Restore Infinity Plus (B9) is inbuilt. Restores base SI unlimited times per year. Not available for the first claim in a policy year. Cannot be used for covers with SI over and above base SI. Unutilized restored SI cannot be carried forward.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "90 days",
+    "note": "Pre-hospitalisation expenses covered for up to 90 days before admission.",
+    "optional": false,
+    "number": 90
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses covered for up to 90 days after discharge.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "All day-care procedures covered",
+    "note": "Day Care Treatment covered under B4 for any procedure requiring less than 24 hrs due to technological advancement.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Domiciliary hospitalisation covered (B6) if treatment exceeds 3 consecutive days and patient cannot be moved or no hospital room available.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient and day-care treatment covered (B7) including pre/post hospitalisation of 90 days each. Assessed per AYUSH insurance guidelines.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Organ donor harvesting expenses covered (B5) when recipient is the insured and claim is admitted under B1.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered (within 50 km radius)",
+    "note": "Road ambulance covered (B8) within 50 km radius for emergency, planned, inter-hospital transfers. No explicit rupee cap stated; subject to Reasonable & Customary charges.",
+    "optional": false,
+    "number": 999999
+  },
+  "modern_treatments": {
+    "display": "Covered up to SI",
+    "note": "12 modern treatment methods listed (robotic surgery, stereotactic radiosurgery, oral chemo, etc.) covered under inpatient/day-care benefits.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Optional rider",
+    "note": "Consumables Benefit (C1) is an optional cover on additional premium. Without it, consumables are excluded per Annexure I List I.",
+    "optional": true,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly states claims are only covered within India and payments made in Indian Rupees within India.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years of coverage, no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed per IRDAI guidelines with continuity of waiting period credits.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Sleep apnoea, growth hormone therapy, external congenital anomalies, immunoglobulin infusion admissions, STDs, health check-ups, dental (non-accident), hearing aids, alopecia",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Consumables Benefit, Maternity Care, Maternity Waiting Period Reduction (1yr), Infinite Advantage (unlimited SI for 1 lifetime claim), Early Access (multi-year SI pooling), Room Category Select, Aggregate Deductible",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "medicare_select_policy_wording_0faeeb61c5.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:45:19.503Z"
+}

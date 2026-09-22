@@ -1,0 +1,135 @@
+{
+  "variant": "",
+  "sum_insured_options": "₹50,000 to ₹10,00,000 (in steps: 0.5/1/1.5/2/2.5/3/3.5/4/4.5/5/5.5/6/6.5/7/7.5/8/8.5/9/9.5/10 lakhs)",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "2% of SI/day, max ₹5,000",
+    "note": "If room taken at higher rate, all other expenses (except medicines) reimbursed proportionately"
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "5% of SI/day, max ₹10,000",
+    "note": "Proportionate deduction applies if ICU charges exceed limit"
+  },
+  "copayment": {
+    "number": 5,
+    "display": "5% on all claims",
+    "note": "Mandatory 5% co-payment on every admissible claim amount"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract capped at 25% of SI or ₹40,000/eye/year (lower); modern treatments up to 50% of SI",
+    "note": "Cataract sub-limit; modern treatments sub-limited to 50% SI; room/ICU daily caps apply"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Accidents exempt"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Reduced to extent of prior continuous coverage under portability"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months (most); 36 months (joint replacement, age-related osteoarthritis/osteoporosis)",
+    "note": "24-month list includes cataract, hernia, hydrocele, piles, etc.; 36-month list includes joint replacement and osteoporosis"
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Code Excl 18)"
+  },
+  "cumulative_bonus": {
+    "number": 50,
+    "display": "Up to 50% of SI",
+    "note": "5% added per claim-free year; reduced at same rate on claim. Alternatively, insured may opt No Claim Discount (6%/3%/1% on renewal premium by SI band) instead — choice is permanent"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in policy wording"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation excluded; optional Galaxy Smart Outpatient rider available"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to full sum insured in AYUSH hospitals"
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not specified",
+    "note": "No mention of organ donor expenses in policy wording"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance only"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited to 50% of SI",
+    "note": "12 listed procedures including robotic surgery, stereotactic radio surgery, oral chemotherapy, stem cell therapy etc."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-medical/consumable items explicitly excluded (List I, Annexure I)"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy restricted to India; treatment outside India excluded"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud and permanent exclusions"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only, not on renewals or portability"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Maternity, domiciliary/OPD, refractive error <7.5D, sterility/infertility, cosmetic surgery, obesity surgery, gender change, war, nuclear/bio/chemical attack, treatment outside India",
+  "optional_riders": "Galaxy Smart Outpatient rider (covers domiciliary hospitalisation and OPD treatment)",
+  "insurer": "Galaxy Health Insurance Company Limited",
+  "plan_name": "Arogya Sanjeevani Policy",
+  "uin": "GHIHLIP26045V012526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Policy Wording (7).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:57:13.055Z"
+}

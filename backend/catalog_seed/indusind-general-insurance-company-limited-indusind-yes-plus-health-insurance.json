@@ -1,0 +1,137 @@
+{
+  "variant": "",
+  "sum_insured_options": "Not specified in wording (as per Certificate of Insurance)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 0,
+    "display": "Not specified",
+    "note": "Policy wording mentions room rent is covered and proportionate deduction applies if higher room chosen, but no explicit cap or category is stated in the wording. Actual limit per Certificate of Insurance."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap (ICU not proportionately reduced)",
+    "note": "Section 6.6 explicitly states ICU charges shall not be proportionately reduced in all cases."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment mentioned in the wording. Aggregate deductible applies but that is not a co-pay."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Maternity capped at ₹1 lakh; Modern treatments capped at 50% of SI",
+    "note": "Maternity benefit limited to ₹1,00,000 per lifetime (max 2 deliveries). Modern treatments capped at 50% of Sum Insured. Other benefits up to Sum Insured."
+  },
+  "deductible": {
+    "number": null,
+    "display": "Aggregate Deductible (amount per Certificate of Insurance)",
+    "note": "An annual Aggregate Deductible applies; the exact rupee amount is specified in the Certificate of Insurance and not fixed in the wording."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "First 30 days waiting period for illnesses; accidents exempt."
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Pre-existing diseases covered after 24 months of continuous coverage."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "Listed conditions (cataract, hernia, joint replacement, ENT, gynaecological, orthopaedic, GI, urogenital, etc.) excluded for 24 months."
+  },
+  "maternity": {
+    "exists": true,
+    "number": 12,
+    "display": "Covered (12mo wait, ₹1L limit)",
+    "note": "Inbuilt benefit; ₹1,00,000 limit; available after 12 months from first policy inception; max 2 deliveries/terminations lifetime."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "Cumulative Bonus is defined in the policy but no rate or maximum is stated in the wording."
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "Listed procedures only (Annexure D)",
+    "note": "Day care coverage limited to the list specified in Annexure D."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered (min 3 days; some diseases excluded)",
+    "note": "Domiciliary hospitalisation covered subject to condition lasting at least 3 days. Asthma, bronchitis, epilepsy, influenza, diarrhoea, arthritis, gout and several others excluded."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "AYUSH treatment covered up to Sum Insured in AYUSH Hospital or AYUSH Day Care Centre. Pre/post hospitalisation and OPD not covered."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Donor hospitalisation expenses covered up to SI; pre/post hospitalisation of donor not covered."
+  },
+  "ambulance": {
+    "number": 3500,
+    "display": "₹3,500 per hospitalisation"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments (robotic surgery, stereotactic radiosurgery, oral chemotherapy, stem cell therapy, etc.) covered up to 50% of Sum Insured."
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Consumables (gloves, masks, etc.) are listed in Annexure A as non-payable items."
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy explicitly excludes treatment taken outside India."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months, no look-back applied except for proven fraud and permanent exclusions."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)",
+    "note": "15 days grace for monthly premium mode; 30 days for all other modes."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or portability."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Overseas treatment, dental (non-accident), external congenital anomaly, infertility/ART, alcoholic cirrhosis (permanent), OPD treatment, non-medical consumables",
+  "optional_riders": "Not specified in wording",
+  "insurer": "IndusInd General Insurance Company Limited",
+  "plan_name": "IndusInd Yes Plus Health Insurance",
+  "uin": "RELHLGP21524V022021",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "indusind-yes-plus-health-insurance-pw.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:03:15.140Z"
+}

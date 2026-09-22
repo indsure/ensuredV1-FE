@@ -1,0 +1,128 @@
+{
+  "variant": "Premiere",
+  "sum_insured_options": "₹30/40/50/75 Lakhs, ₹1/2/2.5/3/5 Crores",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "No room rent limit applicable under Premiere plan."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "No ICU sub-limit mentioned for Premiere plan."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No mandatory co-payment stated for Premiere plan."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Few sub-limits",
+    "note": "Ambulance 1% of SI max ₹5,000/hosp; Maternity ₹1L/delivery; Home Care ₹5,000/day max 15 days; Specs/lens/hearing aids ₹10,000/yr; High End Diagnostics ₹25,000/yr; Air Ambulance ₹5L/yr; Infertility ₹2L lifetime; Bariatric ₹5L."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "maternity": {
+    "exists": true,
+    "number": 36,
+    "display": "Covered (36mo wait)",
+    "note": "Up to ₹1 Lakh/delivery; limited to first 2 deliveries; 36-month waiting period; newborn covered under maternity SI."
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100%",
+    "note": "Maximum cumulative bonus 100% under Premiere plan; health checkup every 2 years irrespective of claim status."
+  },
+  "restoration": {
+    "ordinal": 3,
+    "display": "Once/yr, 100% of Base SI",
+    "note": "Automatic restoration of Base SI when Base SI and Cumulative Bonus exhausted/insufficient; not applicable for RTA, Home Care, Maternity, Infertility, Bariatric, High End Diagnostics, Global Hospitalisation."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 120,
+    "display": "120 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care up to SI"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Covered up to SI; excludes listed conditions."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Harvesting expenses covered; donor pre/post-hosp not covered."
+  },
+  "ambulance": {
+    "number": 5000,
+    "display": "1% of SI, max ₹5,000/hosp"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)",
+    "note": "No explicit exclusion of modern/robotic treatments."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Covered (inbuilt)",
+    "note": "Reimbursement of listed non-medical/consumable items during hospitalisation; subject to admissible inpatient claim."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Covered (inbuilt)",
+    "note": "Inpatient/Day care expenses outside India up to Base SI; diagnosis must be in India; reimbursement only; no pre/post-hosp; no restoration."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly mode)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Domiciliary excluded for asthma, diabetes, hypertension etc.; alcoholic cirrhosis permanent exclusion; impotency treatment; change-of-gender; adventure sports; global cover requires India diagnosis",
+  "optional_riders": "Personal Accident cover (up to SI max ₹50L), Medical Second Opinion add-on, Flexi OP Care add-on (OPD cover), Infertility treatment (₹2L lifetime), Bariatric surgery (₹5L)",
+  "insurer": "Cholamandalam MS General Insurance",
+  "plan_name": "Chola Flexi Health Supreme",
+  "uin": "CHOHLIP27040V032627",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "Chola Flexi Health Supreme CHOHLIP27040V032627-Policy Wording wef 09042026.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:56:25.522Z"
+}

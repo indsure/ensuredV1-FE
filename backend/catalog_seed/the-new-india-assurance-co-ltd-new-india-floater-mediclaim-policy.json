@@ -1,0 +1,169 @@
+{
+  "insurer": "The New India Assurance Co. Ltd.",
+  "plan_name": "New India Floater Mediclaim Policy",
+  "uin": "NIAHLIP25039V092425",
+  "sum_insured_options": "Not specified in wording (₹8L–₹15L referenced for optional cover)",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Room rent capped at 1% of Sum Insured per day; proportionate deduction applies on associate medical expenses if higher room opted",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU including intensivist, monitor and pulse oxymeter charges capped at 2% of SI per day",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "20% if Zone 2 insured treated in Zone 1",
+    "note": "20% co-pay applies only when insured opts Zone 2 (Rest of India) and gets treated in Zone 1 (Maharashtra & Gujarat). No co-pay for accidents or sub-limited treatments.",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract, modern treatments, mental illness, ARMD, genetic disorders capped",
+    "note": "Cataract: 10% of SI or ₹50k whichever less; modern treatments: 10–50% of SI with ₹cap; mental illness: 25% of SI; ARMD: 10% of SI up to ₹75k; genetic disorders: 25% of SI; artificial life support: 10% of SI up to 15 days; puberty/menopause: 25% of SI",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months continuous coverage; reducible via portability credit",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (some 36 months)",
+    "note": "24-month wait for cataract, hernia, calculi, benign tumours etc.; 36-month wait for joint replacement, ARMD, mental illness, genetic disorders, external congenital diseases; 90-day wait for diabetes, hypertension, cardiac conditions",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under Excl18; ectopic pregnancy is covered",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (25%/yr)",
+    "note": "CB increases 25% per claim-free year up to max 50%; reduced at same rate if claim made; option to take premium discount instead",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reinstatement benefit mentioned in the policy wording",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days preceding hospitalisation",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days after discharge",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed procedures (226 listed)",
+    "note": "Annexure I lists 226 specific day care procedures covered",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation explicitly excluded under clause 4.4.17",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to 100% of SI",
+    "note": "AYUSH treatment covered up to 100% of Sum Insured per policy year",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Donor hospitalisation expenses covered (excluding cost of organ) up to recipient's Sum Insured",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "1% of SI per event",
+    "note": "Ambulance charges covered up to 1% of Sum Insured per insured event for emergency/ICU admission or inter-hospital transfer",
+    "optional": false,
+    "number": 0
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "12 modern treatments covered with individual sub-limits ranging from 10% to 50% of SI with absolute ₹ caps (e.g. robotic surgery up to 50% of SI/₹5L, oral chemo up to 10% of SI/₹1L)",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables like gloves, ECG electrodes, masks etc. are in List I (not payable); some subsumed into room/procedure charges",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy covers treatment only within India; treatment outside India explicitly excluded",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except on grounds of fraud",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary treatment, overseas treatment, acupressure/acupuncture, external prosthetics/hearing aids, CPAP/BIPAP/home equipment, vaccination, OPD procedures converted to IP"
+  },
+  "optional_riders": {
+    "display": "Enhanced cataract limit (₹80k–₹1.5L for SI ₹8L–₹15L, 36mo wait)"
+  },
+  "source_file": "Policy Clause New India Floater Mediclaim Policy (1) (1).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:42:58.099Z"
+}

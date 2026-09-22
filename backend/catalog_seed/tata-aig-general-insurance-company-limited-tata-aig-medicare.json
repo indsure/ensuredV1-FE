@@ -1,0 +1,173 @@
+{
+  "insurer": "TATA AIG General Insurance Company Limited",
+  "plan_name": "TATA AIG Medicare",
+  "uin": "TATHLIP26053V042526",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "As per policy schedule; 10% copay if higher room taken",
+    "note": "Room eligibility category is specified in the policy schedule. If insured opts for a room higher than eligible category, 10% of admissible claim is borne by insured.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "Not specified",
+    "note": "No explicit ICU sub-limit mentioned in the wording; ICU definition present but no cap stated.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "copayment": {
+    "display": "10% if higher room category chosen",
+    "note": "10% of admissible claim if insured is admitted in a room category higher than eligible as per policy schedule. No other mandatory copay mentioned.",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Ambulance ₹3,000/hosp; Health checkup ₹10,000/policy; Vaccination ₹5,000/policy; Hearing aid ₹10,000/policy",
+    "note": "Ambulance capped at ₹3,000 per hospitalisation; health checkup 1% of SI max ₹10,000; vaccination max ₹5,000; hearing aid 50% of cost max ₹10,000; compassionate travel max ₹20,000. Core inpatient treatment appears without disease-wise sub-limits.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": "No aggregate deductible mentioned in the policy wording.",
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses from first policy commencement; not applicable for accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Pre-existing diseases covered after 36 months of continuous coverage. Reducible via portability credit from prior insurer.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Extensive list of specified diseases/procedures (cataract, hernia, joint replacement, etc.) excluded for 24 months from inception.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered. No optional maternity add-on mentioned.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (50%/yr)",
+    "note": "50% of SI added per claim-free year; max 100% of SI. On a claim, bonus reduces by 50% of SI in next year. Alternatively, a renewal premium discount (No Claim Bonus) option is available.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of basic SI",
+    "note": "Restored SI usable for unrelated illness immediately; for related illness/same insured, available after 45 days from discharge. Not applicable for Global Cover (B13). Unutilised restored SI cannot be carried forward.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "60 days",
+    "note": "Pre-hospitalisation expenses covered for 60 days before admission for the same condition.",
+    "optional": false,
+    "number": 60
+  },
+  "post_hosp": {
+    "display": "90 days",
+    "note": "Post-hospitalisation expenses covered for 90 days after discharge for the same condition.",
+    "optional": false,
+    "number": 90
+  },
+  "day_care": {
+    "display": "Listed day-care procedures",
+    "note": "Day care procedures covered as per list available on insurer's website; not all day-care automatically covered.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered (beyond 3 days)",
+    "note": "Domiciliary hospitalisation covered if treatment exceeds 3 days and patient cannot be moved or no hospital room available.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient and day care treatment covered under B8; assessed per IRDAI/Ministry of AYUSH benchmark rates; only within India.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Medical and surgical expenses of organ donor for harvesting covered when insured is the recipient and inpatient claim is admitted.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹3,000 per hospitalisation",
+    "note": "Road ambulance cover capped at ₹3,000 per hospitalisation for emergency or inter-hospital transfer.",
+    "optional": false,
+    "number": 3000
+  },
+  "modern_treatments": {
+    "display": "Covered (up to SI)",
+    "note": "12 listed modern treatment methods including robotic surgery, oral chemotherapy, stem cell therapy (haematological), HIFU, etc. covered as part of inpatient/day care benefits.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Covered (inbuilt, listed items)",
+    "note": "Specified consumables (Annexure I List I) consumed during hospitalisation covered under B12. Personal comfort items, external durable devices excluded.",
+    "optional": false,
+    "exists": true
+  },
+  "global_cover": {
+    "display": "Covered (inbuilt, diagnosis in India)",
+    "note": "Global cover (B13) for inpatient/day care abroad covered up to SI (basic SI + cumulative bonus only, not restored SI). Diagnosis must be made in India. Reimbursement basis; cashless on case-to-case basis.",
+    "optional": false,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 5 continuous years of coverage, no claim/policy contestable except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly mode)",
+    "note": "Grace period is 15 days for monthly premium payment mode and 30 days for all other modes.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free-look period from date of receipt of policy document.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability as per IRDAI guidelines; continuity benefits for PED, specific waiting periods, NCB, moratorium transferred.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, infertility/IVF, sleep apnoea, growth hormone therapy, alcoholic pancreatitis, external congenital anomalies, venereal diseases, dental (except accident/illness inpatient), alopecia",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Accidental Death Benefit (B21); No Claim Bonus as renewal premium discount (alternative to cumulative bonus)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "tata_aig_medicare_policy_wordings_a9aaf64d8b.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:45:30.767Z"
+}

@@ -1,0 +1,165 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "Smart Health",
+  "uin": "MAXHLGP21223V012021",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "medium",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "As per Policy Schedule",
+    "note": "Room rent eligibility is specified in the Policy Schedule/Certificate of Insurance; proportionate deduction applies if higher room is taken. No specific cap stated in wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "icu": {
+    "display": "As per Policy Schedule",
+    "note": "ICU charges covered under inpatient care; specific limit/cap not stated in wording, deferred to Policy Schedule.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "As per Policy Schedule",
+    "note": "Co-payment percentage is specified in the Policy Schedule/Certificate of Insurance; not applicable on maternity, ambulance, air ambulance, health check-up unless specified.",
+    "optional": false,
+    "number": null
+  },
+  "sub_limits": {
+    "display": "As per Policy Schedule",
+    "note": "Sub-limits for modern treatments and other benefits are specified in Policy Schedule/Certificate of Insurance; specific disease sub-limits not enumerated in wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "deductible": {
+    "display": "As per Policy Schedule",
+    "note": "Annual Aggregate Deductible is optional and specified in Policy Schedule; not applicable on maternity, ambulance, air ambulance, health check-up.",
+    "optional": true,
+    "number": null
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "30-day waiting period for illnesses from first policy commencement; waived if continuously covered for more than 12 months.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "As per Policy Schedule",
+    "note": "PED waiting period in months is specified in Policy Schedule/Certificate of Insurance; wording does not state a fixed number.",
+    "optional": false,
+    "number": null
+  },
+  "specific_disease_waiting": {
+    "display": "As per Policy Schedule",
+    "note": "Specific disease waiting period in months is specified in Policy Schedule; list includes cataract, hernia, osteoarthritis, spinal disorders, etc.",
+    "optional": false,
+    "number": null
+  },
+  "maternity": {
+    "display": "Covered (waiting period as per Policy Schedule)",
+    "note": "Covered for normal delivery, C-section, complicated pregnancy; available if female insured is 18+; claimable max twice lifetime; waiting period specified in Policy Schedule; Re-Fill not available for maternity unless specified.",
+    "optional": false,
+    "exists": true,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 200% of Base SI",
+    "note": "No Claim Bonus added each claim-free year at rate specified in Policy Schedule; max accumulation 200% of Base Sum Insured.",
+    "optional": false,
+    "number": 200
+  },
+  "restoration": {
+    "display": "Unlimited, up to 200% per claim",
+    "note": "ReAssure benefit: once Base SI + Loyalty Credit + NCB exhausted, unlimited restoration triggered; max single claim under ReAssure is 200% of Base SI or as per Policy Schedule; available for inpatient, day care, alternative treatments, critical illness multiplier.",
+    "optional": false,
+    "ordinal": 5
+  },
+  "pre_hosp": {
+    "display": "As per Policy Schedule",
+    "note": "Number of pre-hospitalisation days covered is specified in Policy Schedule/Certificate of Insurance.",
+    "optional": false,
+    "number": null
+  },
+  "post_hosp": {
+    "display": "As per Policy Schedule",
+    "note": "Number of post-hospitalisation days covered is specified in Policy Schedule/Certificate of Insurance.",
+    "optional": false,
+    "number": null
+  },
+  "day_care": {
+    "display": "All day-care (Option 1) or Listed procedures (Option 2)",
+    "note": "Option 1: any procedure >2 hrs and <24 hrs covered. Option 2: specific list of 536+ procedures. Applicable option stated in Policy Schedule.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Covered for medically necessary treatment at home when patient cannot be moved or hospital room unavailable; minimum 3 consecutive days unless waived in Policy Schedule.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered (AYUSH inpatient)",
+    "note": "Ayurveda, Unani, Siddha, Homeopathy covered for inpatient care in NABH/NQAS accredited AYUSH hospitals; Yoga and Naturopathy excluded unless specifically mentioned in Policy Schedule.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Covers living donor's inpatient hospitalisation expenses for organ harvesting; excludes stem cell donation (except bone marrow), pre/post-hosp of donor, screening costs.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "Covered (limit as per Policy Schedule)",
+    "note": "Emergency ground ambulance covered at reasonable & customary charges for network providers; non-network capped at amount in Policy Schedule. Air ambulance also covered. One transfer per hospitalisation.",
+    "optional": false,
+    "number": null
+  },
+  "modern_treatments": {
+    "display": "Covered (sub-limits as per Policy Schedule)",
+    "note": "Modern treatments covered as inpatient or day care; list in Annexure IV; sub-limits if any specified in Policy Schedule.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Standard non-medical consumables (gloves, masks, etc.) are listed as non-payable in Annexure II. No consumables rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Optional (Option 2 or 3 of Inpatient Care)",
+    "note": "Treatment outside India excluded by default; coverage available only if Option 2 or 3 of Inpatient Care is specifically opted and mentioned in Policy Schedule.",
+    "optional": true,
+    "exists": true
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage (including portability/migration credits), no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "note": "30 days grace for annual/half-yearly/quarterly premium; 15 days for monthly instalment premium.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free look period from date of receipt of policy document; applicable on new policies, not renewals.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI norms; credits for PED waiting, specific waiting periods, NCB, moratorium transferable.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": "Hormone replacement therapy, sleep disorders, STIs (non-HIV), external congenital anomaly, circumcision (non-medical), multifocal lens, ambulatory devices, animal bite (unless opted)",
+  "optional_riders": "Hospital Cash Benefit, ICU Cash, OPD cover (video/tele/physical consultations, diagnostics, pharmacy), Accidental Cover, Critical Illness Cover, Critical Illness Multiplier Indemnity, Income Protector, EMI Cover, Air Ambulance, Health Check-up, Second Medical Opinion, Empathy Benefit",
+  "source_file": "SmartHealth_FINALpolicyWording.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T14:01:49.689Z"
+}

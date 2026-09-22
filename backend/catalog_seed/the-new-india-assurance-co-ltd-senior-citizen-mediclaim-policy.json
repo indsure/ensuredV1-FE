@@ -1,0 +1,173 @@
+{
+  "insurer": "THE NEW INDIA ASSURANCE CO. LTD",
+  "plan_name": "Senior Citizen Mediclaim Policy",
+  "uin": "NIAHLIP25051V032425",
+  "sum_insured_options": "Not specified in wording",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Room rent capped at 1% of Sum Insured per day; overall hospitalisation benefit (room+ICU+nursing) capped at 25% of SI",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU capped at 2% of Sum Insured per day; included within overall 25% of SI hospitalisation cap",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "10% on every claim",
+    "note": "Company pays 90% of admissible claim amount on all claims; applies to all insured persons regardless of age",
+    "optional": false,
+    "number": 10
+  },
+  "sub_limits": {
+    "display": "Many sub-limits: cataract ₹10k, hysterectomy ₹22k, modern treatments 10% SI each, etc.",
+    "note": "Named surgery sub-limits (e.g. cataract ₹10,000, cholecystectomy ₹16,000, angiography ₹13,000); modern treatments each capped at 10% SI; ARMD 10% SI max ₹15,000; mental illness/genetic/menopause 25% SI; professional fees 25% SI; OT/pharmacy 50% SI",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; not applicable for accidents",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "Diabetes mellitus and Hypertension covered from inception on payment of additional premium",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "18 months (most); 36 months (joint replacement, ARMD, mental illness, genetic)",
+    "note": "90 days for cardiac conditions; 18 months for cataract, hernia, piles, hydrocele, skin disorders etc.; 36 months for joint replacement, osteoporosis, mental illness, ARMD, genetic diseases",
+    "optional": false,
+    "number": 18
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded under standard exclusion Excl18",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 30% (5%/yr)",
+    "note": "5% increase per claim-free year; max 30%; reduced at same rate if claim made; option to take premium discount instead",
+    "optional": false,
+    "number": 30
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Subject to maximum 5% of hospital bill",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Subject to maximum 10% of hospital bill",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed day-care procedures covered",
+    "note": "Specific listed procedures covered; standard day-care definition applies (less than 24 hrs due to technology advancement)",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation explicitly excluded under specific exclusion 4.4.16",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient AYUSH treatment covered up to 100% of Sum Insured per policy year",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Hospitalisation expenses of donor covered (excluding cost of organ); combined donor+recipient liability capped at recipient's SI",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹1,000 per hospitalisation",
+    "note": null,
+    "optional": false,
+    "number": 1000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (10% of SI each)",
+    "note": "12 listed modern treatments (robotic surgery, stereotactic radiosurgery, oral chemo, immunotherapy, etc.) each capped at 10% of SI per policy period",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables/non-medical items listed in Annexure I List-I are explicitly excluded; gloves, masks etc. not payable",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly states all treatment must be taken within India (clause 5.14); overseas treatment excluded (4.4.28)",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months no claim contestable except fraud; applies to original SI; enhanced SI has fresh 60-month period",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes; no coverage during grace period",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual policies with term of 1 year or more; not on renewals or porting",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability and migration both available as per IRDAI guidelines",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary hospitalisation, treatment outside India, Alzheimer's/dementia, venereal disease, CPAP/CPAP instruments, RFQMR/ECP/EECP/hyperbaric oxygen",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Diabetes & Hypertension cover from inception (additional premium); premium discount in lieu of cumulative bonus",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "Policy Clause Senior Citizen Mediclaim Policy.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:43:25.677Z"
+}

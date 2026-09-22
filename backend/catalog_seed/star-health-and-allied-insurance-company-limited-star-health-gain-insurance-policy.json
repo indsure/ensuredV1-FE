@@ -1,0 +1,173 @@
+{
+  "insurer": "Star Health and Allied Insurance Company Limited",
+  "plan_name": "Star Health Gain Insurance Policy",
+  "uin": "SHAHLIP21262V032021",
+  "sum_insured_options": "₹1L – ₹5L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day",
+    "note": "Room, Boarding, Nursing Expenses up to 1% of sum insured per day. Proportionate deduction applies on associated medical expenses if higher room is chosen.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "Not specified separately",
+    "note": "ICU charges are covered under Section I(C) but no separate ICU sub-limit or cap is stated; subject to overall SI.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "copayment": {
+    "display": "20% (age 61+ at entry)",
+    "note": "20% co-payment applies on each and every claim for insured persons whose age at entry is 61 years and above, applicable for fresh and renewal policies under Section I.",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Cataract, Modern Treatments capped",
+    "note": "Cataract: ₹12k–₹40k per eye depending on SI. Modern treatments (robotic surgery, oral chemo, intra-vitreal injections, etc.) have per-procedure sub-limits varying by SI. Stents limited to bare metal/drug-eluting cobalt-chromium/stainless steel cost.",
+    "optional": false,
+    "ordinal": 1
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Expenses for any illness within 30 days from first policy commencement date excluded, except accidents.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months of continuous coverage. Reducible via portability/migration credits.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Extensive list including cataract, ENT, thyroid, hernia, joint replacements, gallbladder, kidney stones, gynaec conditions, prostate, varicose veins, transplants, congenital internal diseases, etc.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is explicitly excluded under Code Excl 18 (childbirth, caesarean, miscarriage, MTP).",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording.",
+    "optional": false,
+    "number": null
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration or reset benefit mentioned in the policy wording.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation medical expenses for 30 days prior to hospitalisation date.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation medical expenses for up to 60 days from date of discharge.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care",
+    "note": "Day care treatments/procedures covered where hospitalisation is less than 24 hours due to technological advancement.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "No domiciliary hospitalisation benefit mentioned in the policy wording.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "AYUSH inpatient hospitalisation covered up to sum insured. Yoga and Naturopathy claims require prior company approval.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not covered",
+    "note": "Organ donor harvesting expenses not explicitly covered; transplant and related surgeries are listed under 24-month specific disease waiting period exclusion.",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹750/hospitalisation, ₹1,500/policy year",
+    "note": "Emergency road ambulance up to ₹750 per hospitalisation and overall ₹1,500 per policy period.",
+    "optional": false,
+    "number": 750
+  },
+  "modern_treatments": {
+    "display": "Sub-limited",
+    "note": "Covered but with per-procedure sub-limits varying by sum insured (e.g. robotic surgery, oral chemo, intra-vitreal injections, stem cell therapy, deep brain stimulation, etc.).",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables are listed in the 'items subsumed into room/procedure charges' schedule but are not separately payable; no consumables cover rider mentioned.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Territorial limit explicitly restricts all treatments to India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim can be contested except on grounds of established fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "15 days for monthly premium mode; 30 days for all other modes. Coverage not available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "Applicable on new individual policies only; not on renewals or porting/migration.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability allowed as per IRDAI guidelines; apply at least 30 days before renewal.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Sleep apnea, endocrine disorders, cochlear implants, EECP/chelation therapy, erectile dysfunction, dental (non-accidental), refractive error <7.5D, circumcision",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Section II: OPD/Outpatient benefit (carry-forward of unutilised amount to next year)",
+    "note": "Section II OPD benefit is part of the policy but operates as a separate benefit limit; no other riders mentioned.",
+    "optional": false
+  },
+  "source_file": "Policy_Star_Health_Gain_Insurance_Policy_V_17_21eac0dc50 (1).pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:25:36.498Z"
+}

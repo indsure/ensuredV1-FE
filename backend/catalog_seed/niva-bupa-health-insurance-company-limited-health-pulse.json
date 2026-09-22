@@ -1,0 +1,173 @@
+{
+  "insurer": "Niva Bupa Health Insurance Company Limited",
+  "plan_name": "Health Pulse",
+  "uin": "NBHHLIP26044V042526",
+  "sum_insured_options": "₹3L – ₹25L",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "1% of SI/day or Single Private Room (Classic); Single Private Room (Enhanced)",
+    "note": "Classic plan: 1% of Base SI per day or Single Private Room, whichever is lower. Enhanced plan: Single Private Room. Pro-rata clause applies if higher room taken.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "2% of SI/day (Classic); No cap (Enhanced)",
+    "note": "Classic plan: up to 2% of Sum Insured per day. Enhanced plan: covered up to Sum Insured (no cap).",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "20% for Classic plan in Delhi NCR, Mumbai, Kolkata & Gujarat; None for Enhanced plan",
+    "note": "20% co-payment applies only under Classic plan for treatment in Delhi NCR, Mumbai (incl. Navi Mumbai & Thane), Kolkata and Gujarat State. No co-payment on ambulance, pharmacy, health check-up, PA, CI, e-Consultation, Hospital Cash.",
+    "optional": false,
+    "number": 20
+  },
+  "sub_limits": {
+    "display": "Mental disorders 10% of Base SI or ₹50k; HIV/AIDS 10% of Base SI or ₹50k; Robotic surgery ₹1L (select types exempt)",
+    "note": "Mental disorder sub-limit (10% Base SI or ₹50k) covers listed conditions. HIV/AIDS sub-limit same. Robotic surgeries capped at ₹1L except prostatectomy, cardiac, partial nephrectomy, malignancy surgeries. No sub-limits on most other conditions.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Standard 30-day waiting period for illnesses; accidents covered from day 1.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "36 months",
+    "note": "PED waiting period is 36 months from first policy inception. Reducible via portability credit.",
+    "optional": false,
+    "number": 36
+  },
+  "specific_disease_waiting": {
+    "display": "24 months",
+    "note": "Applies to listed conditions including cataract, hernia, osteoarthritis, kidney disease, varicose veins, benign tumours, etc. Accidents exempt from day 1; cancer after 30-day wait.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity is a permanent exclusion (Code-Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (10%/yr); optional Enhanced NCB up to 200% (20%/yr)",
+    "note": "Base: 10% of Base SI per claim-free year, max 100%. No reduction on claim. Enhanced NCB optional add-on: 20%/yr, max 200%.",
+    "optional": false,
+    "number": 100
+  },
+  "restoration": {
+    "display": "Once/yr, 100% of Base SI (different illness only)",
+    "note": "Re-fill benefit reinstates up to 100% of Base SI once per policy year for a different illness/injury. Cannot be used for same illness already claimed. Optional Enhanced Re-fill gives 150% of Base SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": "Pre-hospitalisation expenses covered for 30 days preceding admission.",
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": "Post-hospitalisation expenses covered for 60 days after discharge.",
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "Listed procedures only (Annexure IV)",
+    "note": "Only procedures listed in Annexure IV (536 listed procedures) are covered as day care.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "note": "Covered up to Sum Insured; minimum 3 consecutive days; reimbursement basis only.",
+    "optional": false,
+    "exists": true
+  },
+  "ayush": {
+    "display": "Covered up to SI (inpatient in AYUSH hospital)",
+    "note": "Ayurveda, Unani, Siddha, Homeopathy covered for inpatient care in recognised AYUSH hospitals. Pre/post-hosp also covered.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "note": "Living organ donor harvesting expenses covered up to Sum Insured, subject to recipient's claim being admitted.",
+    "optional": false,
+    "exists": true
+  },
+  "ambulance": {
+    "display": "₹1,500/hospitalisation (Classic 3L/4L); ₹2,000/hospitalisation (Classic 5L+); same for Enhanced",
+    "note": "Classic plan 3L/4L SI: ₹1,500 per hospitalisation. Classic 5L+: ₹2,000. Enhanced plan 3L/4L: ₹1,500; Enhanced 5L+: ₹2,000. One transfer per hospitalisation.",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Covered (sub-limit ₹1L on select robotic surgeries)",
+    "note": "12 modern treatments covered including robotic surgery, stereotactic radiosurgery, oral chemo, etc. Robotic surgeries capped at ₹1L except prostatectomy, cardiac, partial nephrectomy and malignancy surgeries.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Consumables like gloves, masks, etc. are listed as non-payable in Annexure II. No consumables cover rider available.",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Policy explicitly states all benefits available in India only; treatment outside India is a specific exclusion (Section 6.2 XI).",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "60 months",
+    "note": "After 60 continuous months of coverage, no claim/policy contestable except on grounds of fraud.",
+    "optional": false,
+    "number": 60
+  },
+  "grace_period": {
+    "display": "30 days (annual/other modes); 15 days (monthly)",
+    "note": "15 days grace for monthly premium mode; 30 days for all other modes. Coverage available during grace period.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "30 days",
+    "note": "30-day free look period from date of receipt of policy document; applicable on new policies only, not renewals.",
+    "optional": false,
+    "number": 30
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "IRDAI-mandated portability with credit transfer for PED waiting, specific waiting periods, NCB and moratorium.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Maternity, hormone replacement therapy, STIs (non-HIV), sleep disorders, external congenital anomaly, dental (non-accident), treatment outside India, artificial life maintenance",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "Personal Accident Cover, Critical Illness Cover (20 CIs), e-Consultation (unlimited), Hospital Cash, Enhanced NCB (200%), Enhanced Re-fill (150%)",
+    "note": null,
+    "optional": true
+  },
+  "source_file": "health-pulse-t-and-c.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-17T13:41:57.763Z"
+}

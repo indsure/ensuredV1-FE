@@ -1,0 +1,140 @@
+{
+  "variant": "Classic",
+  "sum_insured_options": "Not specified in wording (refer policy schedule)",
+  "confidence": "medium",
+  "room_rent": {
+    "ordinal": 2,
+    "display": "General Ward (0% copay); higher rooms attract copay",
+    "note": "Classic: General Ward = 0% copay; Twin Sharing = 20% copay; Single Private = 40% copay; Deluxe/Suite = 50% copay. Choosing a room above eligible category triggers proportionate deduction on associated medical expenses."
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap stated",
+    "note": "No specific ICU sub-limit mentioned for Classic; covered up to Sum Insured subject to room eligibility rules."
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None (if General Ward chosen); else 20%-50% based on room",
+    "note": "Mandatory copay only if insured chooses a room above eligible category. No mandatory copay on admissible claim otherwise. HeadsUp/Tiered Network non-compliance triggers 20% copay. Prolonged hospitalisation >7 days without intimation triggers additional 10% copay."
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract: Mono-focal lens only; Modern treatments sub-limited",
+    "note": "Classic variant covers only Mono-focal Lens for cataract. Modern treatments have a sub-limit (can be removed via optional Modern Treatments+ add-on). Other benefits as per policy schedule limits."
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None (optional Annual Aggregate Deductible available)",
+    "note": "No inbuilt deductible. Optional Annual Aggregate Deductible can be opted (cannot be combined with Co-Payment)."
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Can be reduced via optional Initial Wait Period Modification add-on."
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months",
+    "note": "Can be reduced or increased via optional Pre-Existing Disease Waiting Time Modification (only at inception, not modifiable at renewal)."
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "List includes cataract, hernia, joint replacement, stones, fibroids, haemorrhoids, varicose veins, benign tumours, etc. Can be modified via optional Specific Disease Waiting Time Modification."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered (standard exclusion)",
+    "note": "Maternity expenses are a standard exclusion (Excl18). No inbuilt or optional maternity benefit described for Classic variant."
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Booster+ (up to 10x Base SI, not a % bonus)",
+    "note": "Unutilised Base SI carries forward as Booster+ up to 10 times Base SI. This is a sum-insured accumulation, not a traditional % cumulative bonus. Max accumulation cap applies per variant (10x for Elite example cited; Classic cap not separately specified but same mechanism applies)."
+  },
+  "restoration": {
+    "ordinal": 5,
+    "display": "Unlimited (ReAssure Forever)",
+    "note": "ReAssure Forever triggers after first paid claim and provides up to Base SI per claim, unlimited times, for life of policy (provided renewed without break). Applies only when Unlimited Sum Insured option is NOT opted."
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days",
+    "note": "Can be reduced or increased via optional Pre-Hospitalisation Modification add-on."
+  },
+  "post_hosp": {
+    "number": 180,
+    "display": "180 days",
+    "note": "Can be reduced or increased via optional Post-Hospitalisation Modification add-on."
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (2+ hours hospitalisation)",
+    "note": "Covered from 2 hours or more of admission."
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Home Care/Domiciliary Treatment covered subject to conditions (doctor advice, continuous monitoring, daily records)."
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered (min 24hr admission in AYUSH Hospital)",
+    "note": "AYUSH treatment covered in India only, in recognised AYUSH hospitals with minimum 24-hour admission."
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Harvesting expenses for donor covered when insured's hospitalisation claim is paid. Also covers insured's own organ donation expenses."
+  },
+  "ambulance": {
+    "number": 999999,
+    "display": "Road: up to policy limit; Air: emergency only",
+    "note": "Road ambulance paid up to limit in policy schedule. Air ambulance covered in emergency per hospitalisation (can be enhanced via Air Ambulance+ add-on for Classic). Paid only if hospitalisation claim is paid."
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (removable via Modern Treatments+ add-on)",
+    "note": "12 modern treatments listed (robotic surgery, HIFU, stem cell, oral chemo, etc.) covered up to plan sub-limit for Classic. Optional Modern Treatments+ add-on removes sub-limit up to SI."
+  },
+  "consumables": {
+    "exists": true,
+    "display": "Optional rider (Claim Safeguard+)",
+    "note": "Claim Safeguard+ optional benefit covers non-payable items in List I, II, III, IV of Annexure I (gloves, consumables, etc.)."
+  },
+  "global_cover": {
+    "exists": true,
+    "display": "Optional (Borderless or International Cover)",
+    "note": "Borderless add-on covers emergency/planned treatment worldwide with co-pay options 0-50%. Borderless for Specific Illness also available. International Cover add-on covers emergency hospitalisation abroad up to 45 days/trip."
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months, no claim/policy contestable except for proven fraud."
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly instalment)",
+    "note": "Coverage available during grace period for instalment-based policies."
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only, not renewals."
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Dental (non-accident), external congenital anomaly, infertility/ART, refractive error <7.5D, conflict/war/terrorism, brain death life support, off-label drug use",
+  "optional_riders": "Claim Safeguard+, Borderless, Borderless for Specific Illness, International Cover, Modern Treatments+, Air Ambulance+, Personal Accident (Lite/PA/Pro), Hospital Daily Cash, WellConsult+, NivaBupaOne, Cash-Bag+, Critical Illness, HeadsUp, Tiered Network",
+  "insurer": "Niva Bupa",
+  "plan_name": "ReAssure 3.0",
+  "uin": "NBHHLIP26047V012526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "ReAssure30_Policy_Wordings.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:49:20.071Z"
+}

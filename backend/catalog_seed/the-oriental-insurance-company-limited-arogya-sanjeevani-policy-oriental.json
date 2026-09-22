@@ -1,0 +1,173 @@
+{
+  "insurer": "The Oriental Insurance Company Limited",
+  "plan_name": "Arogya Sanjeevani Policy - Oriental",
+  "uin": "OICHLIP21557V022021",
+  "sum_insured_options": "₹1L – ₹5L (standard); up to ₹20L as per schedule",
+  "confidence": "high",
+  "product_type": "comprehensive_health_indemnity",
+  "room_rent": {
+    "display": "2% of SI/day (capped)",
+    "note": "Up to ₹5L SI: 2% of SI max ₹5,000/day; ₹6-10L SI: max ₹10,000/day; ₹15-20L SI: max ₹20,000/day. Proportionate deduction on other expenses if room limit exceeded.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "icu": {
+    "display": "5% of SI/day (capped)",
+    "note": "Up to ₹5L SI: 5% of SI max ₹10,000/day; ₹6-10L SI: max ₹20,000/day; ₹15-20L SI: max ₹40,000/day.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "copayment": {
+    "display": "5% on every claim",
+    "note": "Mandatory 5% co-payment applies to every admissible claim amount for all insured persons.",
+    "optional": false,
+    "number": 5
+  },
+  "sub_limits": {
+    "display": "Cataract capped; modern treatments 50% of SI",
+    "note": "Cataract: 25% of SI or ₹40,000 per eye per year, whichever lower. Modern/advanced treatments (robotic surgery, etc.) capped at 50% of SI.",
+    "optional": false,
+    "ordinal": 3
+  },
+  "deductible": {
+    "display": "None",
+    "note": null,
+    "optional": false,
+    "number": 0
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "note": "Illness claims excluded for first 30 days; accidents covered from day 1.",
+    "optional": false,
+    "number": 30
+  },
+  "ped_waiting": {
+    "display": "48 months",
+    "note": "Pre-existing diseases covered after 48 months of continuous coverage. Reducible via portability credit.",
+    "optional": false,
+    "number": 48
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (some 48 months)",
+    "note": "24-month wait for cataract, hernia, piles, hydrocele, benign tumours, etc. 48-month wait for joint replacement and age-related osteoarthritis/osteoporosis.",
+    "optional": false,
+    "number": 24
+  },
+  "maternity": {
+    "display": "Not covered",
+    "note": "Maternity expenses explicitly excluded (Excl18). Ectopic pregnancy is covered.",
+    "optional": false,
+    "exists": false,
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "Up to 50% (5%/yr)",
+    "note": "5% added per claim-free year; reduces at same rate if claim made. Maximum 50% of SI.",
+    "optional": false,
+    "number": 50
+  },
+  "restoration": {
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy.",
+    "optional": false,
+    "ordinal": 0
+  },
+  "pre_hosp": {
+    "display": "30 days",
+    "note": null,
+    "optional": false,
+    "number": 30
+  },
+  "post_hosp": {
+    "display": "60 days",
+    "note": null,
+    "optional": false,
+    "number": 60
+  },
+  "day_care": {
+    "display": "All day-care (listed procedures)",
+    "note": "All day-care treatments covered; Appendix I lists 116 specific procedures.",
+    "optional": false,
+    "exists": true
+  },
+  "domiciliary": {
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation and OPD treatment explicitly excluded.",
+    "optional": false,
+    "exists": false
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "note": "Inpatient AYUSH treatment covered up to sum insured in recognised AYUSH hospitals.",
+    "optional": false,
+    "exists": true
+  },
+  "organ_donor": {
+    "display": "Not specified",
+    "note": "Policy wording does not mention organ donor expense cover.",
+    "optional": false,
+    "exists": false
+  },
+  "ambulance": {
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance covered up to ₹2,000 per hospitalisation.",
+    "optional": false,
+    "number": 2000
+  },
+  "modern_treatments": {
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 modern treatments (robotic surgery, stereotactic radio surgery, stem cell therapy, etc.) covered up to 50% of SI.",
+    "optional": false,
+    "exists": true
+  },
+  "consumables": {
+    "display": "Not covered",
+    "note": "Non-medical consumables listed under excluded expenses (Annexure-A lists).",
+    "optional": false,
+    "exists": false
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "note": "Treatment outside India explicitly excluded; territorial limit is India only.",
+    "optional": false,
+    "exists": false
+  },
+  "moratorium": {
+    "display": "96 months (8 years)",
+    "note": "After 8 continuous years, no look-back on claims except fraud and permanent exclusions.",
+    "optional": false,
+    "number": 96
+  },
+  "grace_period": {
+    "display": "30 days",
+    "note": "30-day grace period for annual premium renewal. 15 days for instalment premiums.",
+    "optional": false,
+    "number": 30
+  },
+  "free_look": {
+    "display": "15 days",
+    "note": "Free-look applies at inception only, not on renewals or portability.",
+    "optional": false,
+    "number": 15
+  },
+  "portability": {
+    "display": "Allowed",
+    "note": "Portability to other insurers permitted as per IRDAI guidelines with continuity credit.",
+    "optional": false,
+    "exists": true
+  },
+  "notable_exclusions": {
+    "display": "Domiciliary/OPD, maternity, infertility/IVF, obesity surgery (conditional), refractive error <7.5D, treatment outside India, adventure sports (professional)",
+    "note": null,
+    "optional": false
+  },
+  "optional_riders": {
+    "display": "None mentioned",
+    "note": "No optional riders or add-ons described in the policy wording.",
+    "optional": false
+  },
+  "source_file": "Arogya_Sanjeevani_Policy_Policy_Wordings_1_e781099458.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:33:00.969Z"
+}

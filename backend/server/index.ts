@@ -16,11 +16,10 @@ globalThis.Response = NodeFetchResponse as any;
 
 import { registerRoutes, analysisJobs, getUserIdFromToken } from "./routes";
 import { serveStatic } from "./static";
-import { SACH_AI_SYSTEM_PROMPT } from "./sachAI.prompt";
-import { logGeminiUsage, extractUsage, hashActor, hashInput } from "./services/geminiUsage";
 import { pool } from "./lib/db";
 import { log } from "./lib/logger";
 import { containsPersonalData } from "./lib/pii";
+import { parseIntent, answerFromData } from "./services/sachRetrieval";
 import { sendMail } from "./lib/mailer";
 
 /* ---------------- UPLOAD DIRECTORY CLEANUP ---------------- */
@@ -265,7 +264,6 @@ async function refillOcrAllowance() {
 refillOcrAllowance();
 setInterval(refillOcrAllowance, 6 * 60 * 60 * 1000);
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 /* ---------------- SERVER SETUP ---------------- */
 
@@ -389,12 +387,37 @@ app.use((req, res, next) => {
 });
 
 /* =========================================================
-   SACH AI — TRUTH MODE
+   SACH: ZERO-AI POLICY ANSWER ENGINE
+
+   This route does not call a model. Not as a cost optimisation that might be
+   reverted later: it is the design. Every clause question is answered by looking
+   the fact up in data we already hold and already paid for, which is both
+   cheaper and more accurate than asking a model to recall it.
+
+     - "am I covered for robotic"  -> the caller's own analysis JSON
+     - "does Care Supreme cover X" -> policy_catalog, 69 published wordings
+     - "how much cover do I need"  -> the deterministic cover calculator
+     - "compare A and B"           -> the deterministic catalog comparison
+     - anything else               -> the /learn clause library, resolved on the
+                                      client where that content already lives
+
+   What it replaced: a handler that shipped a ~40-line "policy context" block to
+   Gemini on every message, built from JSON paths that do not exist in a stored
+   analysis (cost_structure.copay_details, coverage_structure.exclusions, and so
+   on). It rendered "Not available" seven times over, then instructed the model
+   to "be specific and reference their actual policy details". It paid for a
+   model call to answer from nothing, and it could not answer the robotic-surgery
+   question that the widget itself suggests first.
+
+   Retrieval and rendering live in services/sachRetrieval.ts, which is pure and
+   unit-tested. This file does auth, ownership and SQL only.
    ========================================================= */
 
 type SachAiRateState = { count: number; resetAt: number };
 const sachAiRateMap = new Map<string, SachAiRateState>();
-const SACH_AI_MAX_MESSAGES_PER_SESSION = 20;
+// Answers cost nothing now, so this is an abuse guard on the DB rather than a
+// spend cap. Generous enough that a real conversation never hits it.
+const SACH_AI_MAX_MESSAGES_PER_SESSION = 60;
 const SACH_AI_MAX_INPUT_CHARS = 500;
 
 // Prune expired rate-limit entries every 10 minutes so the map doesn't grow
@@ -413,101 +436,184 @@ function getSachAiSessionKey(req: Request, sessionId: unknown): string {
   return userId ? `user:${userId}` : `ip:${req.ip}`;
 }
 
+/**
+ * Who is asking, and which policy rows may they read?
+ *
+ * Agents keep their policies in analysis_jobs (agent_id), consumers in
+ * individual_policies (user_id). Both store the SAME analysis JSON, so the
+ * retrieval layer is identical; only the ownership predicate differs. Returning
+ * null for an unknown caller is what keeps one account type from reading the
+ * other's policy PII.
+ */
+async function resolveSachCaller(
+  req: Request
+): Promise<{ userId: string; kind: "agent" | "consumer" } | null> {
+  const authHeader = req.headers["authorization"] as string | undefined;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  if (!token) return null;
+
+  const userId = await getUserIdFromToken(token);
+  if (!userId) return null;
+
+  const agentRow = await pool.query("SELECT 1 FROM agents WHERE id = $1", [userId]);
+  if (agentRow.rows.length > 0) return { userId, kind: "agent" };
+
+  const consumerRow = await pool.query("SELECT 1 FROM individual_profiles WHERE id = $1", [userId]);
+  if (consumerRow.rows.length > 0) return { userId, kind: "consumer" };
+
+  return null;
+}
+
+/**
+ * The caller's own analysis JSON, ownership-checked in the WHERE clause rather
+ * than after the fact. `jobId` is a hint from the open report; without one we
+ * fall back to their most recent completed analysis, which is what someone means
+ * by "my policy" when they have only ever uploaded one.
+ */
+/**
+ * "In Palash Baheti's policy, what is wrong" names a customer, not a job id.
+ *
+ * Rather than trying to pull a person's name out of free text, this loads the names this agent
+ * actually has and tests each one against the question. A name the agent does not own can never
+ * match, so there is no route by which one agent's question reaches another agent's client.
+ *
+ * The displayed customer name lives in clients.policyholder_name. clients.name is null
+ * throughout, and identity.insured_names inside the report carries "Unknown" for some rows, so
+ * neither is a safe key.
+ */
+async function loadByPolicyholder(
+  caller: { userId: string; kind: "agent" | "consumer" },
+  question: string
+): Promise<
+  | { kind: "none" }
+  | { kind: "one"; name: string; report: any }
+  | { kind: "many"; name: string; options: { id: string; policy: string | null; insurer: string | null }[] }
+> {
+  if (caller.kind !== "agent") return { kind: "none" };
+
+  const q = question.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  if (!q) return { kind: "none" };
+
+  const known = await pool.query(
+    `SELECT id, policyholder_name, policy_name, insurer
+       FROM clients
+      WHERE agent_id = $1 AND report_data IS NOT NULL AND policyholder_name IS NOT NULL
+      ORDER BY created_at DESC`,
+    [caller.userId]
+  );
+
+  // Longest name first, so "Palash Baheti" wins over a client who is just "Palash".
+  const hits = known.rows
+    .filter((r: any) => {
+      const n = String(r.policyholder_name).toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+      return n.length >= 4 && q.includes(n);
+    })
+    .sort((a: any, b: any) => String(b.policyholder_name).length - String(a.policyholder_name).length);
+
+  if (hits.length === 0) return { kind: "none" };
+
+  const name = String(hits[0].policyholder_name);
+  const sameName = hits.filter((r: any) => String(r.policyholder_name) === name);
+
+  if (sameName.length > 1) {
+    return {
+      kind: "many",
+      name,
+      options: sameName.map((r: any) => ({
+        id: String(r.id),
+        policy: r.policy_name ?? null,
+        insurer: r.insurer ?? null,
+      })),
+    };
+  }
+
+  const one = await pool.query(
+    `SELECT report_data FROM clients WHERE id = $1 AND agent_id = $2`,
+    [sameName[0].id, caller.userId]
+  );
+  const report = one.rows[0]?.report_data ?? null;
+  return report ? { kind: "one", name, report } : { kind: "none" };
+}
+
+async function loadOwnAnalysis(
+  caller: { userId: string; kind: "agent" | "consumer" },
+  jobId: unknown
+): Promise<any | null> {
+  const id = typeof jobId === "string" && jobId.trim() ? jobId.trim() : null;
+
+  if (caller.kind === "agent") {
+    const q = id
+      ? await pool.query(
+          "SELECT result FROM analysis_jobs WHERE id = $1 AND agent_id = $2",
+          [id, caller.userId]
+        )
+      : await pool.query(
+          `SELECT result FROM analysis_jobs
+            WHERE agent_id = $1 AND result IS NOT NULL
+            ORDER BY created_at DESC LIMIT 1`,
+          [caller.userId]
+        );
+    return q.rows[0]?.result ?? null;
+  }
+
+  // Consumers: report_data carries the same schema as analysis_jobs.result.
+  const q = id
+    ? await pool.query(
+        `SELECT report_data FROM individual_policies
+          WHERE (job_id::text = $1 OR id::text = $1) AND user_id = $2`,
+        [id, caller.userId]
+      )
+    : await pool.query(
+        `SELECT report_data FROM individual_policies
+          WHERE user_id = $1 AND report_data IS NOT NULL
+          ORDER BY created_at DESC LIMIT 1`,
+        [caller.userId]
+      );
+  return q.rows[0]?.report_data ?? null;
+}
+
+/**
+ * Find the catalog row for an insurer the question named. Matches the insurer
+ * first and then, only if the question also names the plan, narrows to it.
+ * Ambiguity resolves to null rather than to a guess: answering about the wrong
+ * product is worse than saying we need the document.
+ */
+async function loadCatalogRow(question: string, insurerMention: string | null) {
+  if (!insurerMention) return null;
+
+  const q = await pool.query(
+    `SELECT insurer, plan_name, status, confidence, profile
+       FROM policy_catalog
+      WHERE is_active = true AND insurer ILIKE $1
+      ORDER BY plan_name`,
+    [`%${insurerMention}%`]
+  );
+  if (q.rows.length === 0) return null;
+  if (q.rows.length === 1) return q.rows[0];
+
+  const asked = question.toLowerCase();
+  const named = q.rows.filter(
+    (r: any) => r.plan_name && asked.includes(String(r.plan_name).toLowerCase())
+  );
+  if (named.length === 1) return named[0];
+
+  // Several plans from the same insurer and no plan named: cannot answer
+  // truthfully about "your Care policy" without knowing which one.
+  return { __ambiguous: true, insurer: q.rows[0].insurer, plans: q.rows.map((r: any) => r.plan_name) } as any;
+}
+
 app.post("/api/sach-ai", async (req: Request, res: Response) => {
   try {
-    const { messages = [], jobId, sessionId, language, stream } = req.body || {};
-    // Disable streaming by default due to Node.js Web Streams API compatibility issues
-    // with @google/generative-ai SDK (pipeThrough not available in all environments)
-    const streamEnabled = stream === true;
+    const { messages = [], jobId, sessionId } = req.body || {};
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ message: "Invalid request: messages must be a non-empty array" });
     }
 
-    // AUTH GUARD: Sach AI is an Agent Portal–only feature. Require a valid
-    // logged-in user (agents authenticate via Supabase; the portal's apiFetch
-    // sends the bearer token automatically). This stops the endpoint from being
-    // called anonymously from anywhere else — and closes the unauthenticated
-    // Gemini-cost/abuse surface.
-    const authHeader = req.headers["authorization"] as string | undefined;
-    const authToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
-    const requesterId = authToken ? await getUserIdFromToken(authToken) : null;
-    if (!requesterId) {
+    // AUTH: agents and logged-in consumers, both reading only their own rows.
+    const caller = await resolveSachCaller(req);
+    if (!caller) {
       return res.status(401).json({ message: "Authentication required" });
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({
-        message: "Sach AI misconfigured",
-        details: "GEMINI_API_KEY is not defined in environment variables",
-      });
-    }
-
-    // Fetch policy context if jobId is provided.
-    // OWNERSHIP GUARD: a job's analysis contains a client's policy PII. Only the
-    // owning agent may ground the chat on it. We require a valid bearer token
-    // and match it against analysis_jobs.agent_id. If the caller is not the
-    // owner (or sends no token), we silently skip policy context rather than
-    // leaking it — the chat still answers, just without policy grounding.
-    // (Agent callers always send their token via apiFetch, so this is
-    // non-breaking for the legitimate flow.)
-    let policyContext = "";
-    if (jobId && typeof jobId === "string") {
-      try {
-        const authHeader = req.headers["authorization"] as string | undefined;
-        const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
-        const requesterId = token ? await getUserIdFromToken(token) : null;
-
-        const jobRes = requesterId
-          ? await pool.query(
-              "SELECT result FROM analysis_jobs WHERE id = $1 AND agent_id = $2",
-              [jobId, requesterId]
-            )
-          : { rows: [] as any[] };
-
-        if (jobRes.rows.length > 0 && jobRes.rows[0].result) {
-          const analysisData = jobRes.rows[0].result;
-          
-          // Extract key policy information for context
-          const policyName = analysisData?.coverage_structure?.policy_name || "Unknown Policy";
-          const insurerName = analysisData?.identity?.insurer_name || "Unknown Insurer";
-          const sumInsured = analysisData?.coverage_structure?.base_sum_insured || "Not specified";
-          const coverageDetails = analysisData?.coverage_structure?.coverage_details || [];
-          const exclusions = analysisData?.coverage_structure?.exclusions || [];
-          const waitingPeriods = analysisData?.policy_timeline?.waiting_periods || [];
-          const copayDetails = analysisData?.cost_structure?.copay_details || [];
-          const roomRentCapping = analysisData?.cost_structure?.room_rent_capping || {};
-          
-          // Build context string with relevant policy details
-          policyContext = `\n\n=== USER'S POLICY CONTEXT ===
-Policy Name: ${policyName}
-Insurer: ${insurerName}
-Sum Insured: ${sumInsured}
-
-Coverage Details:
-${coverageDetails.map((c: any) => `- ${c.coverage_type || c.name}: ${c.description || c.details || 'Covered'}`).join('\n') || 'Not available'}
-
-Exclusions:
-${exclusions.map((e: any) => `- ${typeof e === 'string' ? e : e.exclusion || e.description}`).join('\n') || 'Not available'}
-
-Waiting Periods:
-${waitingPeriods.map((w: any) => `- ${w.condition || w.type}: ${w.period || w.duration}`).join('\n') || 'Not available'}
-
-Copay Details:
-${copayDetails.map((c: any) => `- ${c.condition || c.type}: ${c.percentage || c.amount}`).join('\n') || 'Not available'}
-
-Room Rent Capping:
-${roomRentCapping.limit ? `Limit: ${roomRentCapping.limit}` : 'No capping information available'}
-
-=== END POLICY CONTEXT ===
-
-IMPORTANT: The user has uploaded their policy document. Use the above policy context to answer their specific questions about THEIR policy. Be specific and reference their actual policy details when answering.`;
-        }
-      } catch (dbErr: any) {
-        console.error("Failed to fetch policy context:", dbErr);
-        // Continue without policy context rather than failing the request
-      }
     }
 
     const lastMessage = messages[messages.length - 1] as any;
@@ -519,7 +625,6 @@ IMPORTANT: The user has uploaded their policy document. Use the above policy con
     if (!lastText) {
       return res.status(400).json({ message: "Invalid request: message content cannot be empty" });
     }
-
     if (lastText.length > SACH_AI_MAX_INPUT_CHARS) {
       return res.status(400).json({ message: `Message too long (max ${SACH_AI_MAX_INPUT_CHARS} characters)` });
     }
@@ -535,11 +640,10 @@ IMPORTANT: The user has uploaded their policy document. Use the above policy con
       });
     }
 
-    // Rate limit per session.
     const sessionKey = getSachAiSessionKey(req, sessionId);
     const now = Date.now();
     const existing = sachAiRateMap.get(sessionKey);
-    const resetAt = existing?.resetAt && existing.resetAt > now ? existing.resetAt : now + 60 * 60 * 1000; // 1 hour
+    const resetAt = existing?.resetAt && existing.resetAt > now ? existing.resetAt : now + 60 * 60 * 1000;
     const nextCount = existing?.count != null ? existing.count : 0;
     if (nextCount >= SACH_AI_MAX_MESSAGES_PER_SESSION) {
       return res.status(429).json({
@@ -549,121 +653,152 @@ IMPORTANT: The user has uploaded their policy document. Use the above policy con
     }
     sachAiRateMap.set(sessionKey, { count: nextCount + 1, resetAt });
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-3.5-flash" });
+    const intent = parseIntent(lastText);
 
-    const history = messages.slice(0, -1).map((m: any) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
-
-    const { HarmCategory, HarmBlockThreshold } = await import("@google/generative-ai");
-
-    const userTextForModel =
-      typeof language === "string" && language.trim() && language !== "auto"
-        ? `Respond entirely in ${language.trim()}. Do not mix languages. Write only in ${language.trim()}. User message: ${lastText}`
-        : `Detect the language of this message and respond entirely in that language: ${lastText}. If unsure, respond in English. Do not mix languages. Write only in the detected language.`;
-
-    const chat = model.startChat({
-      history: [
-        {
-          role: "user",
-          parts: [{ text: SACH_AI_SYSTEM_PROMPT + policyContext }]
-        },
-        ...history
-      ],
-      generationConfig: {
-        maxOutputTokens: 8192,
-      },
-      safetySettings: [
-        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE },
-      ],
-    });
-
-    const sachUsageMeta = {
-      feature: "sach_ai" as const,
-      route: "/api/sach-ai",
-      sourceType: "anonymous" as const,
-      actorId: hashActor(req.ip),
-      inputHash: hashInput(lastText),
-    };
-    const sachModelName = process.env.GEMINI_MODEL || "gemini-3.5-flash";
-
-    // Non-stream mode for stable fallback.
-    if (!streamEnabled) {
-      const sachStart = Date.now();
-      const result = await chat.sendMessage(userTextForModel);
-      const content = result?.response?.text?.() ?? "";
-      void logGeminiUsage(sachUsageMeta, {
-        model: sachModelName,
-        tokens: extractUsage(result?.response),
-        status: "ok",
-        latencyMs: Date.now() - sachStart,
+    // ── compare ────────────────────────────────────────────────────────────
+    if (intent.kind === "compare") {
+      return res.json({
+        kind: "compare",
+        source: "compare",
+        content:
+          "**Comparing two policies is its own tool.**\n\nThe compare page lays both wordings side by side on 27 clauses and marks a winner on each one, from the same catalog this chat reads. It is free for any two plans in the catalog.",
+        links: [{ label: "Open compare", href: "/compare" }],
       });
-      return res.json({ content });
     }
 
-    const sachStreamStart = Date.now();
-    const result = await chat.sendMessageStream(userTextForModel);
-
-    // Only set streaming headers after the model request has succeeded.
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-
-    let sentAny = false;
-    try {
-      for await (const chunk of result.stream) {
-        const chunkText = chunk?.text?.() ?? "";
-        if (!chunkText) continue;
-        sentAny = true;
-        res.write(chunkText);
+    // ── how much cover ─────────────────────────────────────────────────────
+    if (intent.kind === "cover_need") {
+      const own = await loadOwnAnalysis(caller, jobId);
+      const currentSI = own?.coverage_structure?.base_sum_insured;
+      const lines = [
+        "**That depends on your city, your age and who is on the policy.**",
+        "The cover calculator asks eight questions and gives you a number you can act on, with the working shown. It runs on your device and costs nothing.",
+      ];
+      if (typeof currentSI === "number" && currentSI > 0) {
+        lines.push(
+          `For reference, the policy you have uploaded carries a base sum insured of ${formatSachINR(currentSI)}.\n\nSource: your uploaded policy analysis.`
+        );
       }
-    } catch (streamError: any) {
-      const logMsg = `[STREAM ERROR] ${streamError?.message || streamError}\n`;
-      fs.promises.appendFile(path.join(process.cwd(), "sach_debug.log"), logMsg).catch(() => {});
+      return res.json({
+        kind: "cover_need",
+        source: "calculator",
+        content: lines.join("\n\n"),
+        links: [{ label: "Open the cover calculator", href: "/calculator" }],
+      });
+    }
 
-      // If streaming fails before we sent anything, return a full response.
-      if (!sentAny) {
-        const fallback = await chat.sendMessage(userTextForModel);
-        res.write(fallback?.response?.text?.() ?? "");
-      } else {
-        res.write("\n\n(Temporary streaming interruption. Please resend your question for the full answer.)");
-      }
-    } finally {
-      // Ledger: the aggregated stream response carries usageMetadata once drained.
-      try {
-        const finalResponse = await result.response;
-        void logGeminiUsage(sachUsageMeta, {
-          model: sachModelName,
-          tokens: extractUsage(finalResponse),
-          status: "ok",
-          latencyMs: Date.now() - sachStreamStart,
+    // ── the overall verdict: "what is wrong with this policy" ──────────────
+    // The audit already decided this and stored it. Until now the question fell through to the
+    // general path and apologised, which is the first thing an advisor asks.
+    if (intent.kind === "verdict") {
+      const byName = await loadByPolicyholder(caller, lastText);
+
+      if (byName.kind === "many") {
+        const list = byName.options
+          .map((o) => `- ${[o.insurer, o.policy].filter(Boolean).join(", ") || "policy on file"}`)
+          .join("\n");
+        return res.json({
+          kind: "verdict",
+          source: "none",
+          content: `**${byName.name} has ${byName.options.length} policies on file, and they do not have the same problems.**\n\n${list}\n\nOpen the one you mean and ask again, and I will read that report.`,
         });
-      } catch { /* logging must never break the response */ }
-      res.end();
-    }
-  } catch (err: any) {
-    const errorMsg = `[${new Date().toISOString()}] Sach AI Error: ${err.message}\nStack: ${err.stack}\n\n`;
-    console.error(errorMsg);
+      }
 
-    fs.promises.appendFile(path.join(process.cwd(), "sach_debug.log"), errorMsg).catch(() => {});
+      const own = byName.kind === "one" ? byName.report : await loadOwnAnalysis(caller, jobId);
+      if (!own) {
+        return res.json({
+          kind: "verdict",
+          source: "none",
+          content:
+            "I need a policy in front of me before I can tell you what is wrong with it. Open a report, or name the client whose policy you mean.",
+        });
+      }
 
-    if (!res.headersSent) {
-      res.status(500).json({
-        message: "Sach AI service failed",
-        details: err.message,
-        hint: "Check sach_debug.log"
+      const { text } = answerFromData(lastText, { ownAnalysis: own, catalogRow: null });
+      return res.json({
+        kind: "verdict",
+        source: "own_policy",
+        about: byName.kind === "one" ? byName.name : null,
+        content:
+          text ??
+          "This report does not carry an overall verdict, so I will not invent one. Ask me about a specific clause instead.",
       });
-    } else {
-      res.end();
     }
+
+    // ── a clause question: the main path ───────────────────────────────────
+    if (intent.kind === "clause") {
+      // A named client wins over "the most recent report", so "what is Palash Baheti's room
+      // rent limit" reads the right document instead of whatever was uploaded last.
+      const byName = await loadByPolicyholder(caller, lastText);
+      if (byName.kind === "many") {
+        const list = byName.options
+          .map((o) => `- ${[o.insurer, o.policy].filter(Boolean).join(", ") || "policy on file"}`)
+          .join("\n");
+        return res.json({
+          kind: "clause",
+          source: "none",
+          content: `**${byName.name} has ${byName.options.length} policies on file.**\n\n${list}\n\nOpen the one you mean and ask again.`,
+        });
+      }
+      const own = byName.kind === "one" ? byName.report : await loadOwnAnalysis(caller, jobId);
+      const catalogRow = own ? null : await loadCatalogRow(lastText, intent.namedPlanText);
+
+      if (catalogRow && (catalogRow as any).__ambiguous) {
+        const amb = catalogRow as any;
+        return res.json({
+          kind: "clause",
+          source: "none",
+          content: `**${amb.insurer} sells several plans, and this clause differs between them.**\n\nI can answer for a specific one: ${amb.plans.filter(Boolean).join(", ")}. Name the plan, or upload your policy and I will read your own schedule instead of the published wording.`,
+        });
+      }
+
+      const { fact, text } = answerFromData(lastText, {
+        ownAnalysis: own,
+        catalogRow: catalogRow as any,
+      });
+
+      if (text && fact) {
+        return res.json({
+          kind: "clause",
+          source: own && fact.sourceLabel.includes("uploaded") ? "own_policy" : "catalog",
+          clause: fact.clauseKey,
+          verdict: fact.verdict,
+          content: text,
+        });
+      }
+
+      // We understood the clause but hold no data on it for this caller.
+      return res.json({
+        kind: "clause",
+        source: "none",
+        clause: intent.clauseKey,
+        content:
+          "**I do not have that clause for you yet.**\n\nUpload the policy document and I will read this straight off your own schedule, or name the exact plan and I will check the published wording.",
+        links: [{ label: "Check a policy", href: "/policychecker" }],
+      });
+    }
+
+    // ── general education: answered on the client from the clause library ──
+    // The /learn clause library is the single source for these explanations and
+    // it is already bundled in the frontend, so it is resolved there rather than
+    // duplicated into the backend.
+    return res.json({ kind: "general", source: "glossary", content: null, query: lastText });
+  } catch (err: any) {
+    log.error("Sach AI failed", { message: err?.message });
+    if (!res.headersSent) {
+      return res.status(500).json({ message: "Sach could not answer that right now." });
+    }
+    return res.end();
   }
 });
+
+/** Local rupee formatter. See services/sachRetrieval.ts on why @shared is unavailable here. */
+function formatSachINR(n: number): string {
+  if (n >= 10000000) return `₹${(n / 10000000).toFixed(1)}Cr`;
+  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
+  if (n >= 1000) return `₹${Math.round(n / 1000)}K`;
+  return `₹${n.toLocaleString("en-IN")}`;
+}
 
 /* ---------------- BOOTSTRAP ---------------- */
 

@@ -1,0 +1,137 @@
+{
+  "variant": "",
+  "sum_insured_options": "₹4 lacs, ₹5 lacs",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 3,
+    "display": "1% of SI/day",
+    "note": "Room rent, boarding and nursing expenses capped at 1% of Sum Insured per day"
+  },
+  "icu": {
+    "ordinal": 3,
+    "display": "2% of SI/day",
+    "note": "ICU/ICCU charges capped at 2% of Sum Insured per day"
+  },
+  "copayment": {
+    "number": 20,
+    "display": "20% on all claims",
+    "note": "Mandatory 20% co-payment on every claim; can be waived by paying additional optional premium"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Cataract ₹40k/eye; Modern treatments 50% of SI",
+    "note": "Cataract capped at ₹40,000 per eye per policy year; Modern treatments capped at 50% of Sum Insured"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days",
+    "note": "30-day initial waiting period for all illnesses except accidents"
+  },
+  "ped_waiting": {
+    "number": 24,
+    "display": "24 months (disability PED); 36 months (other PEDs)",
+    "note": "24 months for pre-existing disability; 36 months for all other pre-existing conditions (excluding HIV/AIDS which has its own terms)"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months",
+    "note": "20 listed conditions including cataract, hernia, ENT disorders, calculi, varicose veins, etc."
+  },
+  "maternity": {
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Maternity explicitly excluded under Exclusion Code Excl18"
+  },
+  "cumulative_bonus": {
+    "number": null,
+    "display": "Not specified",
+    "note": "No cumulative/no-claim bonus mentioned in the policy wording"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned in the policy wording"
+  },
+  "pre_hosp": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "post_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care (indicative list of 537 procedures in Annexure III)"
+  },
+  "domiciliary": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Domiciliary hospitalisation expenses explicitly excluded under Exclusion 26"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to 100% of SI",
+    "note": "Inpatient AYUSH treatment covered up to 100% of Sum Insured per policy year"
+  },
+  "organ_donor": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Hospitalisation for donation of body organs explicitly excluded"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000 per hospitalisation",
+    "note": "Road ambulance reimbursement capped at ₹2,000 per hospitalisation"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Sub-limited (50% of SI)",
+    "note": "12 listed modern treatments including robotic surgery, oral chemotherapy, stem cell therapy etc., covered up to 50% of Sum Insured"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Extensive list of non-payable consumables in Annexure II List I; no optional consumables rider offered"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Any medical treatment taken outside India is explicitly excluded"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months",
+    "note": "After 60 continuous months, claims cannot be contested except on grounds of fraud"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (annual); 15 days (monthly)",
+    "note": "30 days for yearly/half-yearly/quarterly premium modes; 15 days for monthly mode"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days",
+    "note": "Applicable on new policies only; not on renewals or porting/migration"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed",
+    "note": "Portability to same product of other insurers as per IRDAI guidelines; migration within company also allowed but only on product withdrawal"
+  },
+  "notable_exclusions": "Maternity, domiciliary, organ donor hospitalisation, treatment outside India, ART for HIV, cosmetic/prosthetic devices for disability, STDs, stem cell storage",
+  "optional_riders": "Co-payment waiver (additional premium to waive mandatory 20% co-pay)",
+  "insurer": "Cholamandalam MS General Insurance Company Limited",
+  "plan_name": "Divyang Bima",
+  "uin": "CHOHLIP23216V012223",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "PW - Divyang Bima, Chola MS.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T07:56:29.989Z"
+}

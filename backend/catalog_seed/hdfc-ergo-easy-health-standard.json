@@ -1,0 +1,129 @@
+{
+  "variant": "Standard",
+  "sum_insured_options": "Individual: ₹1L, 1.5L, 2L, 2.5L, 3L, 4L, 5L, 7.5L, 10L, 15L; Family: ₹2L, 3L, 4L, 5L, 7.5L, 10L, 15L",
+  "confidence": "high",
+  "room_rent": {
+    "ordinal": 1,
+    "display": "Shared room only",
+    "note": "Daily cash benefit paid if insured voluntarily chooses shared accommodation in a network hospital; no explicit private room entitlement stated for Standard plan — shared accommodation is the covered room type"
+  },
+  "icu": {
+    "ordinal": 5,
+    "display": "No cap",
+    "note": "ICU covered as part of in-patient treatment with no stated sub-limit for Standard plan"
+  },
+  "copayment": {
+    "number": 0,
+    "display": "None",
+    "note": "No co-payment clause stated; no tier-based co-pay applies"
+  },
+  "sub_limits": {
+    "ordinal": 3,
+    "display": "Ambulance ₹2,000/hosp; maternity sub-limited; daily cash capped",
+    "note": "Ambulance capped at ₹2,000 per hospitalisation; maternity (if opted) sub-limited; daily cash for shared room ₹500/day max ₹3,000; no disease-wise sub-limits on main in-patient cover"
+  },
+  "deductible": {
+    "number": 0,
+    "display": "None"
+  },
+  "initial_waiting": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "ped_waiting": {
+    "number": 36,
+    "display": "36 months"
+  },
+  "specific_disease_waiting": {
+    "number": 24,
+    "display": "24 months"
+  },
+  "maternity": {
+    "exists": true,
+    "number": 72,
+    "display": "Optional add-on (6-yr wait)",
+    "note": "Individual: Normal ₹15,000, C-section ₹25,000 (incl. pre/post natal ₹1,500 & newborn ₹2,000); Family: Normal ₹15,000, C-section ₹25,000 (incl. pre/post natal ₹1,500 & newborn ₹2,000); waiting period 6 yrs (Individual), 4 yrs (Family); limited to 2 deliveries lifetime"
+  },
+  "cumulative_bonus": {
+    "number": 100,
+    "display": "Up to 100% (10%/yr)",
+    "note": "10% of base SI added each policy year irrespective of claims; max 100% of base SI"
+  },
+  "restoration": {
+    "ordinal": 0,
+    "display": "Not covered",
+    "note": "No restoration/reset benefit mentioned for Standard variant"
+  },
+  "pre_hosp": {
+    "number": 60,
+    "display": "60 days"
+  },
+  "post_hosp": {
+    "number": 90,
+    "display": "90 days"
+  },
+  "day_care": {
+    "exists": true,
+    "display": "All day-care procedures covered"
+  },
+  "domiciliary": {
+    "exists": true,
+    "display": "Covered"
+  },
+  "ayush": {
+    "exists": true,
+    "display": "Covered up to SI",
+    "note": "In-patient AYUSH treatment covered up to Sum Insured"
+  },
+  "organ_donor": {
+    "exists": true,
+    "display": "Covered",
+    "note": "Harvesting expenses for organ donor covered when insured is recipient; donor's pre/post-hosp excluded"
+  },
+  "ambulance": {
+    "number": 2000,
+    "display": "₹2,000/hospitalisation",
+    "note": "Road ambulance capped at ₹2,000 per hospitalisation; air ambulance not covered in Standard"
+  },
+  "modern_treatments": {
+    "exists": true,
+    "display": "Covered (up to SI)",
+    "note": "No explicit exclusion of modern/robotic treatments; covered under in-patient benefit up to SI"
+  },
+  "consumables": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "List I in Annexure I explicitly excludes gloves and many consumables"
+  },
+  "global_cover": {
+    "exists": false,
+    "display": "Not covered",
+    "note": "Policy covers treatment within India only"
+  },
+  "moratorium": {
+    "number": 60,
+    "display": "60 months"
+  },
+  "grace_period": {
+    "number": 30,
+    "display": "30 days (15 days for monthly)"
+  },
+  "free_look": {
+    "number": 30,
+    "display": "30 days"
+  },
+  "portability": {
+    "exists": true,
+    "display": "Allowed"
+  },
+  "notable_exclusions": "Sleep apnoea, external congenital anomalies, hearing aids/spectacles, dental (unless hospitalised), infertility/IVF, self-injury, war, non-allopathic (except AYUSH)",
+  "optional_riders": "Critical Illness lump sum (50% or 100% of in-patient SI, max ₹10L); Maternity benefit; Newborn baby cover",
+  "insurer": "HDFC ERGO",
+  "plan_name": "Easy Health",
+  "uin": "HDFHLIP26054V102526",
+  "product_type": "comprehensive_health_indemnity",
+  "source_file": "PolicyWordings_EasyHealth-114935539788.pdf",
+  "status": "unverified",
+  "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
+  "extracted_at": "2026-09-20T08:01:24.359Z"
+}
