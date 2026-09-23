@@ -3,10 +3,12 @@ import { motion, useScroll, useTransform } from "motion/react";
 import { Target, Users, Zap, Shield, Eye, Lock, ArrowRight, Heart } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // --- Components ---
 
 const InfiniteMarquee = () => {
+  const { t } = useLanguage();
   return (
     <div className="relative flex overflow-hidden py-8 bg-[var(--color-cream-main)] border-y border-[var(--color-border-light)]">
       <motion.div
@@ -17,15 +19,15 @@ const InfiniteMarquee = () => {
         {[...Array(4)].map((_, i) => (
           <div key={i} className="flex items-center gap-12 mx-6">
             <span className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-[var(--color-text-main)] opacity-5 uppercase tracking-tighter">
-              Mission
+              {t("mission.m_mission")}
             </span>
             <div className="w-3 h-3 rounded-full bg-[var(--color-green-primary)] opacity-20"></div>
             <span className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-[var(--color-text-main)] opacity-5 uppercase tracking-tighter">
-              Vision
+              {t("mission.m_vision")}
             </span>
             <div className="w-3 h-3 rounded-full bg-[var(--color-green-primary)] opacity-20"></div>
             <span className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-[var(--color-text-main)] opacity-5 uppercase tracking-tighter">
-              Transparency
+              {t("mission.m_transparency")}
             </span>
             <div className="w-3 h-3 rounded-full bg-[var(--color-green-primary)] opacity-20"></div>
           </div>
@@ -38,6 +40,7 @@ const InfiniteMarquee = () => {
 export default function Mission() {
   const { scrollYProgress } = useScroll();
   const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
+  const { t } = useLanguage();
 
   return (
     <div className="bg-[var(--color-cream-main)] text-[var(--color-text-main)] font-sans selection:bg-[var(--color-green-secondary)] selection:text-[var(--color-white)] min-h-screen flex flex-col">
@@ -53,11 +56,11 @@ export default function Mission() {
             transition={{ duration: 0.8 }}
           >
             <h1 className="text-4xl sm:text-6xl md:text-8xl font-serif font-bold mb-8 text-[var(--color-text-main)]">
-              Why IndSure?
+              {t("mission.h")}
             </h1>
             <p className="text-xl md:text-2xl text-[var(--color-text-secondary)] max-w-3xl mx-auto font-light leading-relaxed">
-              Insurance was designed to protect you. <br />
-              Somewhere along the way, it became about <span className="font-serif italic text-[var(--color-green-primary)]">confusing</span> you.
+              {t("mission.sub_a")} <br />
+              {t("mission.sub_b")} <span className="font-serif italic text-[var(--color-green-primary)]">{t("mission.sub_c")}</span> {t("mission.sub_d")}
             </p>
           </motion.div>
         </section>
@@ -73,20 +76,20 @@ export default function Mission() {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">Our Mission</h2>
+              <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">{t("mission.our")}</h2>
               <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed mb-6">
-                To make insurance <strong className="text-[var(--color-text-main)]">actually understandable</strong> for everyone.
+                {t("mission.to_make")} <strong className="text-[var(--color-text-main)]">{t("mission.understandable")}</strong> {t("mission.for_all")}
               </p>
               <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed">
-                We believe you shouldn't need a law degree to know if your surgery is covered. IndSure strips away the jargon, the hidden clauses, and the sales pitches to give you the raw truth about your financial safety net.
+                {t("mission.believe")}
               </p>
 
               <div className="mt-10 flex gap-4">
                 <div className="flex items-center gap-2 text-sm font-mono uppercase tracking-widest text-[var(--color-green-primary)]">
-                  <Target className="w-5 h-5" /> Precision
+                  <Target className="w-5 h-5" /> {t("mission.precision")}
                 </div>
                 <div className="flex items-center gap-2 text-sm font-mono uppercase tracking-widest text-[var(--color-green-primary)]">
-                  <Lock className="w-5 h-5" /> Privacy
+                  <Lock className="w-5 h-5" /> {t("mission.privacy")}
                 </div>
               </div>
             </motion.div>
@@ -104,8 +107,8 @@ export default function Mission() {
               </div>
               <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
                 <Users className="w-16 h-16 text-[var(--color-green-primary)] mb-6" />
-                <h3 className="text-3xl font-serif font-bold mb-2">Every clause</h3>
-                <p className="text-[var(--color-text-secondary)]">Read against the insurer's own wording</p>
+                <h3 className="text-3xl font-serif font-bold mb-2">{t("mission.every_clause")}</h3>
+                <p className="text-[var(--color-text-secondary)]">{t("mission.read_against")}</p>
               </div>
             </motion.div>
           </div>
@@ -114,14 +117,16 @@ export default function Mission() {
         {/* 3. CORE VALUES (White Cards) */}
         <section className="py-16 sm:py-24 lg:py-32 bg-[var(--color-cream-main)]">
           <div className="container-editorial">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-16 text-center">Core Values</h2>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-16 text-center">{t("mission.values")}</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { icon: Heart, title: "You First", desc: "No commissions. No upselling. Our only loyalty is to the policyholder." },
-                { icon: Lock, title: "Zero Data Stored", desc: "Your PDF is processed in RAM and deleted instantly. We don't want your data." },
-                { icon: Zap, title: "Just Facts", desc: "We don't give advice. We give analysis. The decision is always yours." },
-                { icon: Eye, title: "Crystal Clear", desc: "If a 10-year-old can't understand it, we rewrite it until they can." }
+                { icon: Heart, title: "mission.v1", desc: "mission.v1_d" },
+                // Was "Zero Data Stored ... processed in RAM and deleted instantly". Files are
+                // kept until the owner deletes them (see the Privacy Policy), so it now says that.
+                { icon: Lock, title: "mission.v2", desc: "mission.v2_d" },
+                { icon: Zap, title: "mission.v3", desc: "mission.v3_d" },
+                { icon: Eye, title: "mission.v4", desc: "mission.v4_d" }
               ].map((card, i) => (
                 <motion.div
                   key={i}
@@ -134,8 +139,8 @@ export default function Mission() {
                   <div className="w-12 h-12 bg-[var(--color-cream-main)] rounded-md flex items-center justify-center mb-6 group-hover:bg-[var(--color-green-primary)] group-hover:text-white transition-colors duration-300 border border-[var(--color-border-light)] shadow-sm">
                     <card.icon className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-bold mb-3 font-serif">{card.title}</h3>
-                  <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">{card.desc}</p>
+                  <h3 className="text-xl font-bold mb-3 font-serif">{t(card.title)}</h3>
+                  <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">{t(card.desc)}</p>
                 </motion.div>
               ))}
             </div>
@@ -152,14 +157,14 @@ export default function Mission() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-4xl md:text-6xl font-serif font-bold mb-8">The Vision</h2>
+              <h2 className="text-4xl md:text-6xl font-serif font-bold mb-8">{t("mission.vision_h")}</h2>
               <p className="text-xl md:text-2xl opacity-90 max-w-4xl mx-auto font-light leading-relaxed mb-12">
-                We envision a future where insurance is as transparent as a bank statement. <br />
-                No "gotcha" clauses, no denied claims due to fine print.
+                {t("mission.vision_a")} <br />
+                {t("mission.vision_b")}
               </p>
               <Link href="/policychecker">
                 <button className="bg-white text-[var(--color-green-primary)] px-10 py-4 rounded-lg font-bold text-lg hover:bg-[var(--color-cream-100)] transition-colors shadow-xl">
-                  Join the Movement
+                  {t("mission.join")}
                 </button>
               </Link>
             </motion.div>
