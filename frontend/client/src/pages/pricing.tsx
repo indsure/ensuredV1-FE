@@ -7,6 +7,7 @@ import { Link } from "wouter";
 import { Check, Minus, ShieldCheck, ArrowRight, Plus } from "lucide-react";
 import { Reveal, Stagger, RevealItem } from "@/components/motion";
 import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Consumer pricing. The advisor plans (Free / ₹1,499 / ₹1,199 a seat) moved to
 // /advisors/pricing — this URL is the one the portfolio's own upgrade CTAs
@@ -23,6 +24,8 @@ import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
 // the card, was the thing that was wrong: an audit read it and flagged the
 // page's "forever" copy as a false claim. Verified against the server on
 // 2026-08-31. If the gate ever comes back, change the card and this note.
+//
+// Every visible string in the data below is a translation key, rendered with t().
 
 type TierFeature = { label: string; muted?: boolean };
 
@@ -45,51 +48,51 @@ type Tier = {
 
 const tiers: Tier[] = [
   {
-    name: "Free",
-    tagline: "See what your policy really says, before you pay anything.",
+    name: "pricing.free",
+    tagline: "pricing.free_tag",
     price: "₹0",
     priceAnnual: "₹0",
-    period: "forever",
-    periodAnnual: "forever",
-    subline: "No card needed",
-    sublineAnnual: "No card needed",
+    period: "pricing.forever",
+    periodAnnual: "pricing.forever",
+    subline: "pricing.no_card",
+    sublineAnnual: "pricing.no_card",
     features: [
-      { label: "One policy of each type: health, term, life and vehicle" },
-      { label: "Full health policy check in plain language" },
-      { label: "Room rent, co-pay, sub-limits and waiting periods explained" },
-      { label: "Renewal reminders 30 days before expiry" },
-      { label: "Download your report as a PDF" },
+      { label: "pricing.ff1" },
+      { label: "pricing.ff2" },
+      { label: "pricing.ff3" },
+      { label: "pricing.ff4" },
+      { label: "pricing.ff5" },
       // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
-      { label: "No expiry date. Stays free as long as you want it", muted: true },
+      { label: "pricing.ff6", muted: true },
     ],
-    cta: "Start free",
+    cta: "pricing.start_free",
     ctaHref: "/signup",
   },
   {
-    name: "Personal",
-    tagline: "Your whole family's cover in one place, checked and watched.",
+    name: "pricing.personal",
+    tagline: "pricing.pers_tag",
     price: "₹99",
     priceAnnual: "₹999",
-    period: "a month",
-    periodAnnual: "a year",
-    subline: "Or ₹999 a year",
-    sublineAnnual: "Under ₹84 a month · saves ₹189",
+    period: "pricing.a_month",
+    periodAnnual: "pricing.a_year",
+    subline: "pricing.or_year",
+    sublineAnnual: "pricing.under_84",
     features: [
-      { label: "4 health policy checks a year" },
-      { label: "Room for 12 more policies across term, life and vehicle, any mix" },
-      { label: "Renewal reminders on every policy you store" },
+      { label: "pricing.pf1" },
+      { label: "pricing.pf2" },
+      { label: "pricing.pf3" },
       // claim-source: founder decision 2026-09-07. Bounded deliberately: an
       // unbounded "unlimited consultation" is a human-time promise nobody had
       // committed to staffing.
-      { label: "Ask our team about any policy you store, replies within 2 working days" },
-      { label: "Ask the Sach assistant any question about your cover" },
-      { label: "Download every report as a PDF" },
+      { label: "pricing.pf4" },
+      { label: "pricing.pf5" },
+      { label: "pricing.pf6" },
     ],
     /* Upgrading is a conversation, not a checkout: there is no payment
        integration in the product, so a button that looked like one would take
        somebody to a page that cannot charge them. WhatsApp reaches a person who
        can actually move the account onto the plan. */
-    cta: "Upgrade on WhatsApp",
+    cta: "pricing.upgrade_wa",
     ctaHref: teamWaLink(
       "Hi, I would like to upgrade my IndSure account to the Personal plan.",
     ),
@@ -99,27 +102,27 @@ const tiers: Tier[] = [
 ];
 
 const featureRows: { label: string; free: string | boolean; paid: string | boolean }[] = [
-  { label: "Health policy checks", free: "1", paid: "4 a year" },
-  { label: "Policies stored and tracked", free: "1 of each type", paid: "16 total" },
-  { label: "Term, life and vehicle policies", free: "1 each, stored", paid: "12 slots, any mix" },
-  { label: "Renewal reminders", free: true, paid: true },
-  { label: "Plain-language report", free: true, paid: true },
-  { label: "PDF download", free: true, paid: true },
-  { label: "Sach assistant", free: false, paid: true },
+  { label: "pricing.r1", free: "1", paid: "pricing.v_4_year" },
+  { label: "pricing.r2", free: "pricing.v_1_each_type", paid: "pricing.v_16_total" },
+  { label: "pricing.r3", free: "pricing.v_1_each_stored", paid: "pricing.v_12_slots" },
+  { label: "pricing.r4", free: true, paid: true },
+  { label: "pricing.r5", free: true, paid: true },
+  { label: "pricing.r6", free: true, paid: true },
+  { label: "pricing.r7", free: false, paid: true },
   // claim-source: founder decision 2026-09-07, same bound as the plan card
   // above. "Unlimited, fair use" contradicted it once the card was reworded.
-  { label: "Consultation with our team", free: false, paid: "Replies in 2 working days" },
-  { label: "Expires", free: "Never", paid: "Never" },
+  { label: "pricing.r8", free: false, paid: "pricing.v_2_days" },
+  { label: "pricing.r9", free: "pricing.never", paid: "pricing.never" },
 ];
 
 const faqs = [
   {
-    q: "What counts as a policy check?",
-    a: "A full read of your health policy wording — room rent caps, co-pay, sub-limits, waiting periods and the gaps between what you assumed and what is written. You get four of these a year on the Personal plan.",
+    q: "pricing.q1",
+    a: "pricing.a1",
   },
   {
-    q: "What do the 12 term, life and vehicle slots do?",
-    a: "They store the policy and watch its renewal date, so nothing lapses quietly. They are not full policy checks — those are for health policies today. You can split the 12 however you like across term, life and vehicle.",
+    q: "pricing.q2",
+    a: "pricing.a2",
   },
   /* The time-based gate that used to return "trial_expired" on day 31 was
      deliberately removed from the server; trial_started_at is still written
@@ -128,24 +131,24 @@ const faqs = [
   {
     /* claim-source: checkIndividualQuota, backend/server/routes.ts:772-798,
        verified 2026-08-31 — free is metered by FREE_SLOTS_PER_TYPE, not time. */
-    q: "Is the free plan really free forever?",
-    a: "Yes. There is no trial clock and no card. You keep one policy of each type, health, term, life and vehicle, with the full health check, renewal reminders and PDF reports, for as long as you want. You move to Personal only when you need more than one policy of a type, or more checks.",
+    q: "pricing.q3",
+    a: "pricing.a3",
   },
   {
-    q: "Can I pay monthly instead of yearly?",
-    a: "Yes. Personal is ₹99 a month or ₹999 a year. Paying for the year costs ₹189 less than twelve monthly payments, and you can switch between the two whenever you like.",
+    q: "pricing.q4",
+    a: "pricing.a4",
   },
   {
-    q: "What does asking our team cover?",
-    a: "Anything in your own portfolio: what a clause means, whether your cover is enough, what to ask your insurer. We reply within two working days. It is meant for your own policies, not for running someone else's advice practice.",
+    q: "pricing.q5",
+    a: "pricing.a5",
   },
   {
-    q: "Do you sell insurance or earn commission?",
-    a: "No. IndSure charges a flat fee and is not an IRDAI-registered broker or agent. We do not earn commission on anything you buy, so there is nothing we gain by pointing you at one insurer over another.",
+    q: "pricing.q6",
+    a: "pricing.a6",
   },
   {
-    q: "Is my policy document private?",
-    a: "Yes. Your documents are yours, they are never sold or shared, and you can delete them whenever you want — as set out in our Privacy Policy and under India's DPDP Act.",
+    q: "pricing.q7",
+    a: "pricing.a7",
   },
 ];
 
@@ -153,6 +156,7 @@ export default function Pricing() {
   // Annual is the default view: it is the better deal and the price the reel
   // and prerendered copy both quote.
   const [annual, setAnnual] = useState(true);
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
@@ -171,17 +175,16 @@ export default function Pricing() {
           </div>
 
           <Reveal className="container-editorial relative mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
-            <Eyebrow>For you and your family</Eyebrow>
+            <Eyebrow>{t("pricing.eyebrow")}</Eyebrow>
 
             <h1 className="font-serif font-bold tracking-[-0.035em] leading-[1.05] text-4xl sm:text-6xl text-[var(--color-navy-900)]">
-              Know what you are
+              {t("pricing.h_a")}
               <br />
-              covered for. <span className="italic text-[var(--color-teal-600)]">₹999 a year.</span>
+              {t("pricing.h_b")} <span className="italic text-[var(--color-teal-600)]">{t("pricing.h_c")}</span>
             </h1>
 
             <p className="max-w-2xl text-lg sm:text-xl leading-relaxed text-[var(--color-text-secondary)]">
-              Most people find out what their policy does not cover on the day they claim. Start
-              free and read yours properly first.
+              {t("pricing.sub")}
             </p>
           </Reveal>
         </section>
@@ -196,11 +199,11 @@ export default function Pricing() {
               <div
                 className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border-light)] bg-white p-1"
                 role="group"
-                aria-label="Billing period"
+                aria-label={t("pricing.billing")}
               >
                 {[
-                  { on: false, label: "Monthly", note: "" },
-                  { on: true, label: "Annual", note: "saves ₹189" },
+                  { on: false, label: "pricing.monthly", note: "" },
+                  { on: true, label: "pricing.annual", note: "pricing.saves" },
                 ].map((opt) => {
                   const active = annual === opt.on;
                   return (
@@ -214,10 +217,10 @@ export default function Pricing() {
                           : "font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)]"
                       }`}
                     >
-                      {opt.label}
+                      {t(opt.label)}
                       {opt.note ? (
                         <span className={active ? "text-white/85" : "text-[var(--color-teal-700)]"}>
-                          {opt.note}
+                          {t(opt.note)}
                         </span>
                       ) : null}
                     </button>
@@ -254,20 +257,20 @@ export default function Pricing() {
                       <div className="px-7 pt-7 pb-6" style={{ backgroundColor: wash }}>
                         <div className="flex items-center justify-between gap-3">
                           <h2 className="font-serif text-2xl font-bold text-[var(--color-navy-900)]">
-                            {tier.name}
+                            {t(tier.name)}
                           </h2>
                           {paid ? (
                             <span
                               className="rounded-full px-3 py-1 text-sm font-bold uppercase tracking-[0.1em] text-white"
                               style={{ backgroundColor: accent }}
                             >
-                              Best value
+                              {t("pricing.best")}
                             </span>
                           ) : null}
                         </div>
 
                         <p className="mt-2 min-h-[44px] text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                          {tier.tagline}
+                          {t(tier.tagline)}
                         </p>
 
                         <div className="mt-4 flex flex-wrap items-baseline gap-2">
@@ -275,12 +278,12 @@ export default function Pricing() {
                             {annual ? tier.priceAnnual : tier.price}
                           </span>
                           <span className="text-[15px] text-[var(--color-text-secondary)]">
-                            {annual ? tier.periodAnnual : tier.period}
+                            {t(annual ? tier.periodAnnual : tier.period)}
                           </span>
                         </div>
 
                         <p className="mt-1 text-[15px] font-semibold" style={{ color: accent }}>
-                          {annual ? tier.sublineAnnual : tier.subline}
+                          {t(annual ? tier.sublineAnnual : tier.subline)}
                         </p>
                       </div>
 
@@ -292,7 +295,7 @@ export default function Pricing() {
                               className="flex items-start gap-2.5 text-[15px] leading-relaxed text-[var(--color-text-main)]"
                             >
                               <Check className="mt-1 h-4 w-4 shrink-0" style={{ color: accent }} aria-hidden="true" />
-                              <span>{f.label}</span>
+                              <span>{t(f.label)}</span>
                             </li>
                           ))}
                         </ul>
@@ -307,12 +310,12 @@ export default function Pricing() {
                             rel="noopener noreferrer"
                             className={ctaClass}
                           >
-                            {tier.cta}
+                            {t(tier.cta)}
                             <ArrowRight className="h-4 w-4" aria-hidden="true" />
                           </a>
                         ) : (
                           <Link href={tier.ctaHref} className={ctaClass}>
-                            {tier.cta}
+                            {t(tier.cta)}
                             <ArrowRight className="h-4 w-4" aria-hidden="true" />
                           </Link>
                         )}
@@ -326,9 +329,7 @@ export default function Pricing() {
             <Reveal className="flex w-full max-w-3xl items-start gap-3 rounded-2xl border border-[var(--color-teal-600)]/25 bg-white px-6 py-5">
               <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-teal-600)]" aria-hidden="true" />
               <p className="text-[15px] leading-relaxed text-[var(--color-text-main)]">
-                <span className="font-bold">We do not sell insurance.</span> IndSure earns nothing
-                from insurers, so there is no commission and no referral fee riding on what your
-                report says. You pay us, which is why we work for you.
+                <span className="font-bold">{t("pricing.no_sell_b")}</span> {t("pricing.no_sell")}
               </p>
             </Reveal>
           </div>
@@ -337,17 +338,17 @@ export default function Pricing() {
         {/* COMPARISON */}
         <Section surface="white">
           <div className="container-editorial mx-auto flex max-w-4xl flex-col gap-8">
-            <SectionHeading eyebrow="Side by side" title="What you get" align="center" />
+            <SectionHeading eyebrow={t("pricing.side")} title={t("pricing.what_get")} align="center" />
 
             <Reveal className="overflow-x-auto rounded-2xl border border-[var(--color-border-light)]">
               <table className="table-cards w-full text-[15px] md:min-w-[520px]">
                 <thead>
                   <tr className="bg-[var(--color-cream-main)]">
                     <th className="w-1/2 p-4 text-left text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
-                      Feature
+                      {t("pricing.feature")}
                     </th>
-                    <th className="p-4 text-center font-bold text-[var(--color-navy-900)]">Free</th>
-                    <th className="p-4 text-center font-bold text-[var(--color-teal-700)]">Personal</th>
+                    <th className="p-4 text-center font-bold text-[var(--color-navy-900)]">{t("pricing.free")}</th>
+                    <th className="p-4 text-center font-bold text-[var(--color-teal-700)]">{t("pricing.personal")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -358,24 +359,24 @@ export default function Pricing() {
                     >
                       <td
                         className="p-4 font-medium text-[var(--color-navy-900)]"
-                        data-label="Feature"
+                        data-label={t("pricing.feature")}
                         data-cell="title"
                       >
-                        {row.label}
+                        {t(row.label)}
                       </td>
                       {[row.free, row.paid].map((val, j) => (
                         <td
                           key={j}
                           className="p-4 text-center text-[var(--color-text-secondary)]"
                           style={j === 1 ? { backgroundColor: "var(--lob-health-wash)" } : undefined}
-                          data-label={j === 0 ? "Free" : "Personal"}
+                          data-label={j === 0 ? t("pricing.free") : t("pricing.personal")}
                         >
                           {val === true ? (
-                            <Check className="mx-auto h-5 w-5 text-[var(--color-teal-600)]" aria-label="Included" />
+                            <Check className="mx-auto h-5 w-5 text-[var(--color-teal-600)]" aria-label={t("pricing.included")} />
                           ) : val === false ? (
-                            <Minus className="mx-auto h-5 w-5 text-[var(--color-border-medium)]" aria-label="Not included" />
+                            <Minus className="mx-auto h-5 w-5 text-[var(--color-border-medium)]" aria-label={t("pricing.not_included")} />
                           ) : (
-                            <span className="font-semibold text-[var(--color-navy-900)]">{val}</span>
+                            <span className="font-semibold text-[var(--color-navy-900)]">{/^\d+$/.test(val) ? val : t(val)}</span>
                           )}
                         </td>
                       ))}
@@ -390,21 +391,21 @@ export default function Pricing() {
         {/* FAQ */}
         <Section surface="cream" bordered>
           <div className="container-editorial mx-auto flex max-w-3xl flex-col gap-8">
-            <SectionHeading eyebrow="Questions" title="Before you decide" align="center" />
+            <SectionHeading eyebrow={t("pricing.questions")} title={t("pricing.before")} align="center" />
 
             <Stagger className="flex flex-col gap-3">
               {faqs.map((f) => (
                 <RevealItem key={f.q}>
                   <details className="group rounded-xl border border-[var(--color-border-light)] bg-white px-5 py-4 open:border-[var(--color-teal-600)]/30">
                     <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-[17px] font-semibold text-[var(--color-navy-900)]">
-                      {f.q}
+                      {t(f.q)}
                       <Plus
                         className="mt-1 h-5 w-5 shrink-0 text-[var(--color-teal-600)] transition-transform duration-300 group-open:rotate-45"
                         aria-hidden="true"
                       />
                     </summary>
                     <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                      {f.a}
+                      {t(f.a)}
                     </p>
                   </details>
                 </RevealItem>
@@ -425,25 +426,24 @@ export default function Pricing() {
 
           <Reveal className="container-editorial relative flex flex-col items-center gap-6 text-center">
             <h2 className="font-serif text-3xl font-bold tracking-[-0.03em] leading-[1.1] text-white sm:text-5xl">
-              Start with the policy you already have
+              {t("pricing.close_h")}
             </h2>
             <p className="max-w-2xl text-lg leading-relaxed text-white/80">
-              Upload it, read what it actually covers, and decide from there. Free, and there is
-              nothing to buy at the end.
+              {t("pricing.close_d")}
             </p>
 
-            <CTA href="/signup" icon={ArrowRight}>Check my policy</CTA>
+            <CTA href="/signup" icon={ArrowRight}>{t("pricing.check")}</CTA>
 
             {/* The advisor cross-link used to be the last line on the page in
                 small grey text, which is where the second audience was quietly
                 losing the site. */}
             <p className="pt-2 text-[15px] text-white/70">
-              Selling insurance rather than buying it?{" "}
+              {t("pricing.selling")}{" "}
               <Link
                 href="/advisors/pricing"
                 className="font-semibold text-[var(--color-teal-400)] underline underline-offset-4"
               >
-                See advisor plans
+                {t("pricing.adv_plans")}
               </Link>
             </p>
           </Reveal>

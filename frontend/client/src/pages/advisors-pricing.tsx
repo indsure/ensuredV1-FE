@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { teamWaLink } from "@/components/app/portfolio-utils";
 import { Check, Minus, Sparkles, ArrowRight } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
+
+// Every visible string in the data below is a translation key, rendered with t().
 
 type TierFeature = { label: string; soon?: boolean };
 
@@ -27,74 +30,74 @@ type Tier = {
 
 const tiers: Tier[] = [
   {
-    name: "Free",
+    name: "advp.free",
     // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
-    tagline: "Everything for your daily work. Free forever.",
+    tagline: "advp.free_tag",
     price: "₹0",
     priceAnnual: "₹0",
-    period: "forever",
-    periodAnnual: "forever",
+    period: "advp.forever",
+    periodAnnual: "advp.forever",
     features: [
-      { label: "Leads, renewals and client portfolio" },
-      { label: "Cover Calculator with shareable reports" },
-      { label: "3 policy checks to try" },
-      { label: "20 data-entry policies (motor / life / term / travel)" },
-      { label: "WhatsApp drafts in English, Hindi and Hinglish" },
-      { label: "No card needed" },
+      { label: "advp.ff1" },
+      { label: "advp.ff2" },
+      { label: "advp.ff3" },
+      { label: "advp.ff4" },
+      { label: "advp.ff5" },
+      { label: "advp.ff6" },
     ],
-    cta: "Start free",
+    cta: "advp.start_free",
     ctaHref: "/agent/signup/step1",
   },
   {
-    name: "Agent",
-    tagline: "For the full-time advisor.",
+    name: "advp.agent",
+    tagline: "advp.agent_tag",
     price: "₹1,499",
     priceAnnual: "₹14,990",
-    period: "/ month",
-    periodAnnual: "/ year",
-    subline: "12 policy checks every month",
-    sublineAnnual: "12 policy checks every month · 2 months free",
+    period: "advp.per_month",
+    periodAnnual: "advp.per_year",
+    subline: "advp.agent_sub",
+    sublineAnnual: "advp.agent_sub_annual",
     features: [
-      { label: "12 policy checks every month — audit or compare" },
-      { label: "50 data-entry policies every month (annual plan carries unused ones over)" },
-      { label: "On annual plan, unused checks roll over till year-end" },
-      { label: "Sach assistant for policy questions" },
-      { label: "Live premium quotes across insurers", soon: true },
-      { label: "Priority support" },
-      { label: "Need more? Packs from ₹449" },
+      { label: "advp.af1" },
+      { label: "advp.af2" },
+      { label: "advp.af3" },
+      { label: "advp.af4" },
+      { label: "advp.af5", soon: true },
+      { label: "advp.af6" },
+      { label: "advp.af7" },
     ],
     highlighted: true,
     /* There is no checkout in the product, so a button that looked like one
        would land an advisor on a page that cannot charge them. WhatsApp reaches
        a person who can actually put the account on the plan. The free signup on
        the card to the left is the only self-serve path, and it stays one. */
-    cta: "Upgrade on WhatsApp",
+    cta: "advp.upgrade_wa",
     ctaHref: teamWaLink(
       "Hi, I would like to put my IndSure account on the Agent plan.",
     ),
     ctaExternal: true,
   },
   {
-    name: "Agency",
-    tagline: "For agencies with a team of advisors.",
+    name: "advp.agency",
+    tagline: "advp.agency_tag",
     price: "₹1,199",
     priceAnnual: "₹1,199",
-    period: "/ seat / month",
-    periodAnnual: "/ seat / month",
-    subline: "Minimum 5 seats",
-    sublineAnnual: "Minimum 5 seats",
+    period: "advp.per_seat",
+    periodAnnual: "advp.per_seat",
+    subline: "advp.min_seats",
+    sublineAnnual: "advp.min_seats",
     features: [
-      { label: "Everything in Agent, for every seat" },
+      { label: "advp.gf1" },
       // Was "shared across the team". The team feature that shipped gives each
       // seat its own 10 and lets the owner move unused ones between advisors —
       // there is no common pool, so the old wording promised something the
       // product does not do.
-      { label: "10 policy checks a seat — move spare ones between advisors" },
-      { label: "Live quotes with a shared allowance", soon: true },
-      { label: "Manage all your advisors in one place" },
-      { label: "Dedicated onboarding" },
+      { label: "advp.gf2" },
+      { label: "advp.gf3", soon: true },
+      { label: "advp.gf4" },
+      { label: "advp.gf5" },
     ],
-    cta: "Talk to us on WhatsApp",
+    cta: "advp.talk_wa",
     ctaHref: teamWaLink(
       "Hi, I run an agency and would like to know more about the IndSure Agency plan.",
     ),
@@ -103,27 +106,28 @@ const tiers: Tier[] = [
 ];
 
 const featureRows: { label: string; free: string | boolean; agent: string | boolean; agency: string | boolean }[] = [
-  { label: "Leads pipeline (WhatsApp + Call one-tap)", free: true, agent: true, agency: true },
-  { label: "Customer portfolio & cover-gap suggestions", free: true, agent: true, agency: true },
-  { label: "Renewals hit-list (30-day expiring policies)", free: true, agent: true, agency: true },
-  { label: "Cover Calculator + shareable reports", free: true, agent: true, agency: true },
-  { label: "WhatsApp message drafts (EN / Hinglish / Hindi)", free: true, agent: true, agency: true },
-  { label: "Rider directory", free: true, agent: true, agency: true },
-  { label: "Policy data entry + Excel export (motor / life / travel / property)", free: "20 total", agent: "50 / month", agency: "50 / seat / month" },
-  { label: "Policy checks — full audit of any policy", free: "3 one-time", agent: "12 / month", agency: "10 / seat / month, movable" },
-  { label: "Policy compare, side by side (catalog free · uploaded quotes use 2 checks)", free: true, agent: true, agency: true },
-  { label: "Live quotes — fetch & compare prices across insurers (coming soon)", free: false, agent: "Monthly allowance", agency: "Shared allowance" },
-  { label: "Extra check packs (5 for ₹449 · 15 for ₹1,199)", free: false, agent: true, agency: true },
-  { label: "Sach assistant — ask any policy question", free: false, agent: "Fair use", agency: "Fair use" },
-  { label: "Manage multiple advisors as a team", free: false, agent: false, agency: true },
-  { label: "Priority support", free: false, agent: true, agency: true },
-  { label: "Dedicated onboarding", free: false, agent: false, agency: true },
+  { label: "advp.r1", free: true, agent: true, agency: true },
+  { label: "advp.r2", free: true, agent: true, agency: true },
+  { label: "advp.r3", free: true, agent: true, agency: true },
+  { label: "advp.r4", free: true, agent: true, agency: true },
+  { label: "advp.r5", free: true, agent: true, agency: true },
+  { label: "advp.r6", free: true, agent: true, agency: true },
+  { label: "advp.r7", free: "advp.v_20_total", agent: "advp.v_50_month", agency: "advp.v_50_seat" },
+  { label: "advp.r8", free: "advp.v_3_once", agent: "advp.v_12_month", agency: "advp.v_10_seat" },
+  { label: "advp.r9", free: true, agent: true, agency: true },
+  { label: "advp.r10", free: false, agent: "advp.v_monthly_allow", agency: "advp.v_shared_allow" },
+  { label: "advp.r11", free: false, agent: true, agency: true },
+  { label: "advp.r12", free: false, agent: "advp.v_fair", agency: "advp.v_fair" },
+  { label: "advp.r13", free: false, agent: false, agency: true },
+  { label: "advp.af6", free: false, agent: true, agency: true },
+  { label: "advp.gf5", free: false, agent: false, agency: true },
 ];
 
 function FeatureCell({ value }: { value: string | boolean }) {
+  const { t } = useLanguage();
   if (value === true) return <Check className="w-5 h-5 text-[var(--color-green-primary)] mx-auto" />;
   if (value === false) return <Minus className="w-4 h-4 text-[var(--color-text-muted)] mx-auto" />;
-  return <span className="text-sm text-[var(--color-text-secondary)]">{value}</span>;
+  return <span className="text-sm text-[var(--color-text-secondary)]">{t(value)}</span>;
 }
 
 const topUpPacks = [
@@ -133,46 +137,47 @@ const topUpPacks = [
 
 const faqs = [
   {
-    q: "What is a policy check?",
-    a: "One check is one full policy audit, or one side-by-side comparison of two policies. Leads, renewals, calculator and WhatsApp drafts never use your checks. Data entry (motor / life / term / travel) has its own separate allowance — 20 in total on Free, 50 a month on paid plans — so it never touches your policy checks either.",
+    q: "advp.q1",
+    a: "advp.a1",
   },
   {
     // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
-    q: "Is there a free trial?",
-    a: "The Free plan is free forever, not a trial. Your leads, renewals, calculator and WhatsApp drafts stay free for life, and you get 3 policy checks to see the reports for yourself. No card needed.",
+    q: "advp.q2",
+    a: "advp.a2",
   },
   {
-    q: "What happens when I run out of checks?",
-    a: "Buy a pack anytime — ₹449 for 5 checks or ₹1,199 for 15. Purchased checks never expire while your plan is active.",
+    q: "advp.q3",
+    a: "advp.a3",
   },
   {
-    q: "What are live quotes?",
-    a: "An upcoming feature for Agent and Agency plans: fetch live premium quotes across insurers for every type of insurance, then compare price and wording side by side — so you can show a customer both the cheapest option and the best-value one. Live quotes won't use your policy checks; they come with their own monthly allowance (limits announced at launch).",
+    q: "advp.q4",
+    a: "advp.a4",
   },
   {
-    q: "Will prices increase later?",
-    a: "Yes. When live quotes launch, prices for new signups will go up. Founding 50 members keep their locked rate forever.",
+    q: "advp.q5",
+    a: "advp.a5",
   },
   {
-    q: "Do you offer a discount for annual billing?",
-    a: "Yes — annual is 2 months free (₹14,990 instead of ₹17,988). Unused checks on the annual plan also roll over until year-end, while monthly-plan checks expire each month.",
+    q: "advp.q6",
+    a: "advp.a6",
   },
   {
-    q: "Can I switch plans later?",
-    a: "Yes. Upgrades apply immediately and your remaining checks carry over. Downgrades take effect from your next billing date.",
+    q: "advp.q7",
+    a: "advp.a7",
   },
   {
-    q: "What happens to my leads and customers if I cancel?",
-    a: "They stay yours. You can export everything to Excel anytime, and your data is retained or deleted as per our Privacy Policy and India's DPDP Act — just ask.",
+    q: "advp.q8",
+    a: "advp.a8",
   },
   {
-    q: "Do you take a commission on policies I sell?",
-    a: "No — IndSure charges a flat subscription fee. We are not an IRDAI-registered broker or agent and do not earn commissions.",
+    q: "advp.q9",
+    a: "advp.a9",
   },
 ];
 
 export default function Pricing() {
   const [annual, setAnnual] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
@@ -190,15 +195,14 @@ export default function Pricing() {
             />
           </div>
           <div className="inline-block py-1.5 px-3.5 border border-[var(--color-teal-600)]/25 bg-[var(--color-teal-50)] rounded-full text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)] mb-4">
-            For advisors
+            {t("advp.for_adv")}
           </div>
           <h1 className="text-4xl md:text-5xl font-serif mb-4 tracking-tight text-[var(--color-text-main)] leading-tight">
-            Simple pricing. <span className="italic text-[var(--color-green-primary)]">One policy covers it.</span>
+            {t("advp.h_a")} <span className="italic text-[var(--color-green-primary)]">{t("advp.h_b")}</span>
           </h1>
           <p className="text-lg md:text-xl text-[var(--color-text-secondary)] font-light leading-relaxed max-w-2xl mx-auto">
             {/* claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07. */}
-            Your daily tools are free forever. The full plan costs ₹1,499 a month —
-            close one policy and it has paid for itself. We take no commission, ever.
+            {t("advp.sub")}
           </p>
         </section>
 
@@ -208,12 +212,11 @@ export default function Pricing() {
             <Sparkles className="h-6 w-6 shrink-0 text-[var(--lob-motor)]" aria-hidden="true" />
             <div>
               <p className="text-[15px] md:text-base text-[var(--color-text-main)]">
-                <span className="font-semibold">Founding 50:</span> the first 50 advisors get a full year at{" "}
-                <span className="font-semibold">₹9,990</span>{" "}
-                <span className="line-through text-[var(--color-text-muted)]">₹14,990</span> — a third off, locked in forever.
+                <span className="font-semibold">{t("advp.f50_b")}</span>{" "}
+                {t("advp.f50", { price: "₹9,990", old: "₹14,990" })}
               </p>
               <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                Prices rise when live quotes launch. Founding members keep their rate.
+                {t("advp.f50_rise")}
               </p>
             </div>
           </div>
@@ -221,18 +224,18 @@ export default function Pricing() {
 
         {/* BILLING TOGGLE */}
         <div className="flex items-center justify-center gap-4 mb-10">
-          <span className={`text-sm font-medium ${!annual ? "text-[var(--color-text-main)]" : "text-[var(--color-text-muted)]"}`}>Monthly</span>
+          <span className={`text-sm font-medium ${!annual ? "text-[var(--color-text-main)]" : "text-[var(--color-text-muted)]"}`}>{t("advp.monthly")}</span>
           <button
             onClick={() => setAnnual(!annual)}
             className="relative before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-[''] w-14 h-8 rounded-full bg-[var(--color-cream-dark)] border border-[var(--color-border-main)] transition-colors"
-            aria-label="Toggle annual billing"
+            aria-label={t("advp.toggle")}
           >
             <span
               className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-[var(--color-green-primary)] transition-transform ${annual ? "translate-x-6" : ""}`}
             />
           </button>
           <span className={`text-sm font-medium ${annual ? "text-[var(--color-text-main)]" : "text-[var(--color-text-muted)]"}`}>
-            Annual <span className="text-[var(--color-green-primary)]">(2 months free)</span>
+            {t("advp.annual")} <span className="text-[var(--color-green-primary)]">{t("advp.two_free")}</span>
           </span>
         </div>
 
@@ -265,7 +268,7 @@ export default function Pricing() {
               >
                 <div className="px-6 pt-7 pb-6" style={{ backgroundColor: wash }}>
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-serif text-2xl font-bold text-[var(--color-navy-900)]">{tier.name}</h3>
+                    <h3 className="font-serif text-2xl font-bold text-[var(--color-navy-900)]">{t(tier.name)}</h3>
                     {/* Was "Most Popular". With the book this size that is a
                         claim about other customers we cannot support, so the
                         badge says what it actually is. */}
@@ -274,13 +277,13 @@ export default function Pricing() {
                         className="shrink-0 rounded-full px-3 py-1 text-sm font-bold uppercase tracking-[0.1em] text-white"
                         style={{ backgroundColor: accent }}
                       >
-                        Our pick
+                        {t("advp.our_pick")}
                       </span>
                     )}
                   </div>
 
                   <p className="mt-2 min-h-[44px] text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                    {tier.tagline}
+                    {t(tier.tagline)}
                   </p>
 
                   <div className="mt-4 flex flex-wrap items-baseline gap-2">
@@ -288,12 +291,12 @@ export default function Pricing() {
                       {annual ? tier.priceAnnual : tier.price}
                     </span>
                     <span className="text-[15px] text-[var(--color-text-secondary)]">
-                      {annual ? tier.periodAnnual : tier.period}
+                      {t(annual ? tier.periodAnnual : tier.period)}
                     </span>
                   </div>
 
                   <p className="mt-1 min-h-[22px] text-[15px] font-semibold" style={{ color: accent }}>
-                    {(annual ? tier.sublineAnnual : tier.subline) ?? ""}
+                    {(() => { const v = annual ? tier.sublineAnnual : tier.subline; return v ? t(v) : ""; })()}
                   </p>
                 </div>
 
@@ -303,11 +306,11 @@ export default function Pricing() {
                       <li key={f.label} className="flex items-start gap-2.5 text-[15px] leading-relaxed text-[var(--color-text-main)]">
                         <Check className="mt-1 h-4 w-4 shrink-0" style={{ color: accent }} aria-hidden="true" />
                         <span>
-                          {f.label}
+                          {t(f.label)}
                           {f.soon && (
                             <span className="ml-1.5 inline-block rounded-full border px-1.5 align-middle text-sm font-semibold uppercase leading-5 tracking-wider"
                               style={{ color: accent, borderColor: accent }}>
-                              Soon
+                              {t("advp.soon")}
                             </span>
                           )}
                         </span>
@@ -325,12 +328,12 @@ export default function Pricing() {
                       rel="noopener noreferrer"
                       className={ctaClass}
                     >
-                      {tier.cta}
+                      {t(tier.cta)}
                       <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </a>
                   ) : (
                     <Link href={tier.ctaHref} className={ctaClass}>
-                      {tier.cta}
+                      {t(tier.cta)}
                       <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   )}
@@ -341,18 +344,17 @@ export default function Pricing() {
         </section>
 
         <p className="mb-16 text-center text-sm text-[var(--color-text-secondary)]">
-          All prices in INR, inclusive of GST.
+          {t("advp.gst")}
         </p>
 
         {/* CREDIT EXPLAINER + TOP-UPS */}
         <section className="max-w-4xl mx-auto mb-12 sm:mb-16 lg:mb-24">
           <div className="card-white p-8 md:p-10 text-center">
-            <h2 className="mb-3 font-serif text-2xl font-bold text-[var(--color-navy-900)]">How policy checks work</h2>
+            <h2 className="mb-3 font-serif text-2xl font-bold text-[var(--color-navy-900)]">{t("advp.how_checks")}</h2>
             <span className="rule-accent mx-auto mb-6" />
             <p className="text-[var(--color-text-secondary)] leading-relaxed max-w-2xl mx-auto mb-8">
-              <span className="font-semibold text-[var(--color-text-main)]">One check is one full policy audit, or one side-by-side comparison.</span>{" "}
-              That's less than ₹100 to walk into a client meeting with a complete audit in hand.
-              The commission on a single closed policy covers your month many times over.
+              <span className="font-semibold text-[var(--color-text-main)]">{t("advp.one_check_b")}</span>{" "}
+              {t("advp.one_check")}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               {topUpPacks.map((pack) => (
@@ -367,41 +369,40 @@ export default function Pricing() {
                 >
                   <div className="font-serif text-3xl font-bold text-[var(--color-navy-900)] tabular">{pack.price}</div>
                   <div className="text-[15px] font-semibold text-[var(--color-text-secondary)]">
-                    {pack.credits} policy checks
+                    {t("advp.n_checks", { n: pack.credits })}
                   </div>
                   <div className="mt-1 text-sm font-semibold text-[var(--color-teal-700)]">
-                    Buy on WhatsApp
+                    {t("advp.buy_wa")}
                   </div>
                 </a>
               ))}
             </div>
             <p className="mt-4 text-sm text-[var(--color-text-secondary)]">
-              Purchased checks never expire while your plan is active.
-              Live quotes (coming soon) won't use your checks — they'll have their own monthly allowance.
+              {t("advp.never_expire")}
             </p>
           </div>
         </section>
 
         {/* FEATURE COMPARISON TABLE */}
         <section className="bleed bleed-mint max-w-5xl mx-auto mb-12 sm:mb-16 lg:mb-24 py-14 md:overflow-x-auto">
-          <h2 className="text-3xl font-serif mb-3 text-center">What&apos;s included</h2>
+          <h2 className="text-3xl font-serif mb-3 text-center">{t("advp.included")}</h2>
           <span className="rule-accent mx-auto mb-8" />
           <table className="table-cards w-full border-collapse md:min-w-[640px]">
             <thead>
               <tr className="border-b border-[var(--color-border-main)]">
-                <th className="text-left py-4 font-normal text-sm text-[var(--color-text-secondary)]">Feature</th>
-                <th className="py-4 font-serif text-lg">Free</th>
-                <th className="py-4 font-serif text-lg text-[var(--color-green-primary)]">Agent</th>
-                <th className="py-4 font-serif text-lg">Agency</th>
+                <th className="text-left py-4 font-normal text-sm text-[var(--color-text-secondary)]">{t("advp.feature")}</th>
+                <th className="py-4 font-serif text-lg">{t("advp.free")}</th>
+                <th className="py-4 font-serif text-lg text-[var(--color-green-primary)]">{t("advp.agent")}</th>
+                <th className="py-4 font-serif text-lg">{t("advp.agency")}</th>
               </tr>
             </thead>
             <tbody>
               {featureRows.map((row) => (
                 <tr key={row.label} className="border-b border-[var(--color-border-light)]">
-                  <td className="py-4 text-sm text-[var(--color-text-main)]" data-label="Feature" data-cell="title">{row.label}</td>
-                  <td className="py-4 text-center px-2" data-label="Free"><FeatureCell value={row.free} /></td>
-                  <td className="py-4 text-center px-2 bg-[var(--color-cream-dark)]/40" data-label="Agent"><FeatureCell value={row.agent} /></td>
-                  <td className="py-4 text-center px-2" data-label="Agency"><FeatureCell value={row.agency} /></td>
+                  <td className="py-4 text-sm text-[var(--color-text-main)]" data-label={t("advp.feature")} data-cell="title">{t(row.label)}</td>
+                  <td className="py-4 text-center px-2" data-label={t("advp.free")}><FeatureCell value={row.free} /></td>
+                  <td className="py-4 text-center px-2 bg-[var(--color-cream-dark)]/40" data-label={t("advp.agent")}><FeatureCell value={row.agent} /></td>
+                  <td className="py-4 text-center px-2" data-label={t("advp.agency")}><FeatureCell value={row.agency} /></td>
                 </tr>
               ))}
             </tbody>
@@ -410,13 +411,13 @@ export default function Pricing() {
 
         {/* FAQ */}
         <section className="max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-24 pt-4">
-          <h2 className="text-3xl font-serif mb-3 text-center">Pricing questions</h2>
+          <h2 className="text-3xl font-serif mb-3 text-center">{t("advp.questions")}</h2>
           <span className="rule-accent mx-auto mb-10" />
           <div className="space-y-6">
             {faqs.map((f) => (
               <div key={f.q} className="border-b border-[var(--color-border-light)] pb-6">
-                <h3 className="text-lg font-semibold mb-2">{f.q}</h3>
-                <p className="text-[var(--color-text-secondary)] leading-relaxed">{f.a}</p>
+                <h3 className="text-lg font-semibold mb-2">{t(f.q)}</h3>
+                <p className="text-[var(--color-text-secondary)] leading-relaxed">{t(f.a)}</p>
               </div>
             ))}
           </div>
@@ -428,9 +429,9 @@ export default function Pricing() {
             <div className="absolute top-[-50%] left-[-20%] w-[500px] h-[500px] bg-[var(--color-green-primary)] rounded-full blur-[100px]"></div>
           </div>
           <div className="relative z-10">
-            <h2 className="text-3xl md:text-5xl font-serif mb-6 text-white">Not sure which plan fits?</h2>
+            <h2 className="text-3xl md:text-5xl font-serif mb-6 text-white">{t("advp.not_sure")}</h2>
             <p className="text-xl text-white/80 max-w-2xl mx-auto mb-10 font-light">
-              Talk to us for 15 minutes — we'll tell you honestly if the free plan covers you.
+              {t("advp.talk15")}
             </p>
             <Button asChild size="lg" className="bg-[var(--color-green-primary)] hover:bg-[var(--color-green-secondary)] text-white h-14 px-8 text-lg rounded-full">
               <a
@@ -440,7 +441,7 @@ export default function Pricing() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Talk to Us on WhatsApp
+                {t("advp.talk_us_wa")}
               </a>
             </Button>
           </div>
