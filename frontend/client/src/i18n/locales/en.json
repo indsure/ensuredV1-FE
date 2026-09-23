@@ -1885,7 +1885,14 @@
     "wa_message": "Ready-made WhatsApp message",
     "msg_copied": "Message copied",
     "copy_message": "Copy message",
-    "qr_hint": "Print the QR on your visiting card or a standee. Anyone who scans it lands on your page."
+    "qr_hint": "Print the QR on your visiting card or a standee. Anyone who scans it lands on your page.",
+    "lbl_browser": "Web browser",
+    "lbl_mobile": "Phone",
+    "lbl_tablet": "Tablet",
+    "lbl_desktop": "Computer",
+    "lbl_unknown": "Unknown",
+    "ch_instagram": "Instagram bio",
+    "ch_qr": "QR / printed"
   },
   "team": {
     "today": "Today",

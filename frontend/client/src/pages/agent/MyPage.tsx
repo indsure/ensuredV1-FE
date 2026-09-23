@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { supabase } from "@/lib/supabase";
 import {
@@ -516,7 +517,7 @@ function ShareKit({ slug, name }: { slug: string; name: string }) {
               key={c.key}
               className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3"
             >
-              <span className="sm:w-28 sm:shrink-0 text-sm font-medium text-slate-700">{c.label}</span>
+              <span className="sm:w-28 sm:shrink-0 text-sm font-medium text-slate-700">{tOr(t, `mypage.ch_${c.key}`, c.label)}</span>
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <code className="min-w-0 flex-1 truncate text-xs text-slate-500">
                   {pageUrl(slug, c.key, campaign)}
@@ -613,6 +614,7 @@ function BreakdownList({
   rows: { key: string; label: string; views: number }[];
   total: number;
 }) {
+  const { t } = useLanguage();
   return (
     <div>
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{title}</p>
@@ -622,7 +624,7 @@ function BreakdownList({
           return (
             <li key={r.key}>
               <div className="flex items-baseline justify-between text-sm">
-                <span className="font-medium text-slate-700">{r.label}</span>
+                <span className="font-medium text-slate-700">{tOr(t, `mypage.lbl_${r.key}`, r.label)}</span>
                 <span className="tabular-nums text-slate-500">
                   {r.views} <span className="text-slate-400">({pct}%)</span>
                 </span>
