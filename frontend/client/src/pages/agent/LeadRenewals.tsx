@@ -24,12 +24,15 @@ import {
   type LeadPolicyWithLead,
 } from "@/lib/leadPolicies";
 import { format } from "date-fns";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { dateLocale, tOr } from "@/i18n";
 
 type Bucket = { key: string; label: string; rows: LeadPolicyWithLead[]; tone: string };
 
 export default function LeadRenewals({ embedded = false }: { embedded?: boolean }) {
   const [, setLocation] = useLocation();
   const { agent } = useAgent();
+  const { t } = useLanguage();
   const [rows, setRows] = useState<LeadPolicyWithLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +47,7 @@ export default function LeadRenewals({ embedded = false }: { embedded?: boolean 
     try {
       setRows(await fetchDueLeadPolicies(agent.agentId));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      setError(e instanceof Error ? e.message : t("common.unknown_error"));
     } finally {
       setLoading(false);
     }
@@ -66,13 +69,13 @@ export default function LeadRenewals({ embedded = false }: { embedded?: boolean 
       else later.push(r);
     }
     const base: Bucket[] = [
-      { key: "overdue", label: "Overdue", rows: overdue, tone: "text-red-600" },
-      { key: "week", label: "This week", rows: week, tone: "text-amber-600" },
-      { key: "month", label: "This month", rows: month, tone: "text-slate-700" },
+      { key: "overdue", label: t("renewals.b_overdue"), rows: overdue, tone: "text-red-600" },
+      { key: "week", label: t("renewals.b_week"), rows: week, tone: "text-amber-600" },
+      { key: "month", label: t("renewals.b_month"), rows: month, tone: "text-slate-700" },
     ];
-    if (showAll) base.push({ key: "later", label: "Later", rows: later, tone: "text-slate-500" });
+    if (showAll) base.push({ key: "later", label: t("renewals.b_later"), rows: later, tone: "text-slate-500" });
     return base.filter((b) => b.rows.length > 0);
-  }, [rows, showAll]);
+  }, [rows, showAll, t]);
 
   const within30 = useMemo(
     () => rows.filter((r) => { const d = daysUntilDue(r.due_date); return d !== null && d <= 30; }).length,
@@ -86,7 +89,7 @@ export default function LeadRenewals({ embedded = false }: { embedded?: boolean 
       await setLeadPolicySpoken(r.id, !r.spoken_to);
       setRows((list) => list.map((x) => (x.id === r.id ? { ...x, spoken_to: !x.spoken_to } : x)));
     } catch {
-      toast({ variant: "destructive", title: "Couldn't update" });
+      toast({ variant: "destructive", title: t("renewals.update_failed") });
     } finally {
       setBusyId(null);
     }
@@ -100,13 +103,13 @@ export default function LeadRenewals({ embedded = false }: { embedded?: boolean 
         <div>
           {!embedded && (
             <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-800">
-              <CalendarClock className="h-6 w-6" style={{ color: "#0D9488" }} /> Renewals coming up
+              <CalendarClock className="h-6 w-6" style={{ color: "#0D9488" }} /> {t("renewals.title")}
             </h1>
           )}
           <p className="text-sm text-slate-500 mt-1">
             {within30 > 0
-              ? <><b className="text-slate-700">{within30}</b> {within30 === 1 ? "policy" : "policies"} due in the next 30 days. Reach out before they renew.</>
-              : "No lead policies due in the next 30 days."}
+              ? t(within30 === 1 ? "renewals.due_one" : "renewals.due_many", { count: within30 })
+              : t("renewals.none_30")}
           </p>
         </div>
         {laterCount > 0 && (
@@ -114,7 +117,7 @@ export default function LeadRenewals({ embedded = false }: { embedded?: boolean 
             onClick={() => setShowAll((v) => !v)}
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:border-slate-300"
           >
-            {showAll ? "Hide later" : `Show all (${laterCount} later)`}
+            {showAll ? t("renewals.hide_later") : t("renewals.show_all", { count: laterCount })}
           </button>
         )}
       </div>
@@ -124,7 +127,7 @@ export default function LeadRenewals({ embedded = false }: { embedded?: boolean 
       ) : buckets.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center text-slate-400">
           <CalendarClock className="mx-auto mb-3 h-9 w-9 text-slate-200" />
-          <span className="italic">No upcoming renewals. Add policies to your leads to see them here.</span>
+          <span className="italic">{t("renewals.empty")}</span>
         </div>
       ) : (
         buckets.map((b) => (
@@ -154,8 +157,10 @@ export default function LeadRenewals({ embedded = false }: { embedded?: boolean 
 function RenewalCard({ row: r, busy, onOpen, onToggleSpoken, onDraft }: {
   row: LeadPolicyWithLead; busy: boolean; onOpen: () => void; onToggleSpoken: () => void; onDraft: () => void;
 }) {
-  const meta = LEAD_POLICY_TYPE_META[(r.insurance_type || "motor") as LeadPolicyType] ?? { label: r.insurance_type || "Policy", emoji: "📄" };
-  const name = r.agent_leads?.name || r.policyholder_name || "Lead";
+  const { t, locale } = useLanguage();
+  const meta = LEAD_POLICY_TYPE_META[(r.insurance_type || "motor") as LeadPolicyType] ?? { label: r.insurance_type || t("renewals.policy"), emoji: "📄" };
+  const typeText = tOr(t, `common.type_${r.insurance_type || "motor"}`, meta.label);
+  const name = r.agent_leads?.name || r.policyholder_name || t("renewals.lead");
   const phone = r.agent_leads?.phone ?? null;
   const days = daysUntilDue(r.due_date);
   const due = r.due_date ? new Date(r.due_date) : null;
@@ -170,13 +175,13 @@ function RenewalCard({ row: r, busy, onOpen, onToggleSpoken, onDraft }: {
         <button onClick={onOpen} className="text-left min-w-0">
           <div className="font-bold text-slate-800 truncate">{name}</div>
           <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 font-bold">{meta.emoji} {meta.label}</span>
-            <span className="truncate">{r.insurer || "Unknown insurer"}</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 font-bold">{meta.emoji} {typeText}</span>
+            <span className="truncate">{r.insurer || t("renewals.unknown_insurer")}</span>
           </div>
         </button>
         <div className="text-right shrink-0">
-          {dueValid && <div className={`text-sm font-bold ${dueCls}`}>{format(due!, "d MMM")}</div>}
-          {days !== null && <div className={`text-[11px] font-semibold ${dueCls}`}>{days < 0 ? `overdue ${-days}d` : days === 0 ? "due today" : `in ${days}d`}</div>}
+          {dueValid && <div className={`text-sm font-bold ${dueCls}`}>{format(due!, "d MMM", { locale: dateLocale(locale) })}</div>}
+          {days !== null && <div className={`text-[11px] font-semibold ${dueCls}`}>{days < 0 ? t("renewals.overdue_days", { days: -days }) : days === 0 ? t("renewals.due_today") : t("renewals.in_days", { days })}</div>}
           {r.premium != null && <div className="text-[11px] text-slate-400 mt-0.5">{formatAmount(r.premium)}</div>}
         </div>
       </div>
@@ -184,13 +189,13 @@ function RenewalCard({ row: r, busy, onOpen, onToggleSpoken, onDraft }: {
       <div className="flex items-center gap-2">
         <a href={wa ?? undefined} target="_blank" rel="noopener noreferrer"
           className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#25D366] py-2 text-sm font-bold text-white hover:brightness-95 ${!wa ? "opacity-40 pointer-events-none" : ""}`}>
-          <MessageCircle size={16} /> WhatsApp
+          <MessageCircle size={16} /> {t("leads.whatsapp")}
         </a>
-        <a href={tel ?? undefined}
+        <a href={tel ?? undefined} aria-label={t("leads.call")}
           className={`inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-3 py-2 text-sm font-bold text-white hover:bg-slate-900 ${!tel ? "opacity-40 pointer-events-none" : ""}`}>
           <Phone size={16} />
         </a>
-        <button onClick={onDraft} className="inline-flex items-center justify-center rounded-lg border border-[#0D9488]/30 bg-[#0D9488]/5 px-3 py-2 text-sm font-bold text-[#0D9488] hover:bg-[#0D9488]/10" title="Draft a message">
+        <button onClick={onDraft} className="inline-flex items-center justify-center rounded-lg border border-[#0D9488]/30 bg-[#0D9488]/5 px-3 py-2 text-sm font-bold text-[#0D9488] hover:bg-[#0D9488]/10" title={t("renewals.draft")}>
           ✍️
         </button>
       </div>
@@ -203,7 +208,7 @@ function RenewalCard({ row: r, busy, onOpen, onToggleSpoken, onDraft }: {
           r.spoken_to ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white text-slate-500 border-slate-200 hover:border-slate-300",
         ].join(" ")}
       >
-        {r.spoken_to ? <><Check size={13} /> Spoken to</> : "Mark as spoken to"}
+        {r.spoken_to ? <><Check size={13} /> {t("renewals.spoken")}</> : t("renewals.mark_spoken")}
       </button>
     </div>
   );

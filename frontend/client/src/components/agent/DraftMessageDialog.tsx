@@ -16,6 +16,8 @@ import { Copy, MessageCircle, X } from "lucide-react";
 
 import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 import { waHref } from "@/lib/leads";
 import {
   buildMessage,
@@ -38,6 +40,7 @@ export function DraftMessageDialog({
   onClose: () => void;
 }) {
   const { agent } = useAgent();
+  const { t } = useLanguage();
   const [kind, setKind] = useState<DraftKind>("follow_up");
   const [language, setLanguage] = useState<DraftLanguage>("english");
   const [text, setText] = useState("");
@@ -74,7 +77,7 @@ export function DraftMessageDialog({
 
   function handleSend() {
     if (!wa) {
-      toast({ title: "No phone number", description: "Add a mobile number for this person first.", variant: "destructive" });
+      toast({ title: t("drafter.no_phone"), description: t("drafter.no_phone_desc"), variant: "destructive" });
       return;
     }
     window.open(wa, "_blank", "noopener,noreferrer");
@@ -83,9 +86,9 @@ export function DraftMessageDialog({
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(text);
-      toast({ title: "Copied", description: "Message copied to clipboard." });
+      toast({ title: t("drafter.copied"), description: t("drafter.copied_desc") });
     } catch {
-      toast({ title: "Couldn't copy", variant: "destructive" });
+      toast({ title: t("drafter.copy_failed"), variant: "destructive" });
     }
   }
 
@@ -100,11 +103,11 @@ export function DraftMessageDialog({
           <div className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5" style={{ color: ACCENT }} />
             <div>
-              <h2 className="text-lg font-bold text-slate-800 leading-tight">Draft a WhatsApp message</h2>
-              <p className="text-xs text-slate-500">To {target.name || "this contact"}</p>
+              <h2 className="text-lg font-bold text-slate-800 leading-tight">{t("drafter.title")}</h2>
+              <p className="text-xs text-slate-500">{t("drafter.to", { name: target.name || t("drafter.this_contact") })}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
+          <button onClick={onClose} aria-label={t("drafter.close")} className="text-slate-400 hover:text-slate-600 p-1">
             <X size={22} />
           </button>
         </div>
@@ -112,7 +115,7 @@ export function DraftMessageDialog({
         <div className="p-5 space-y-5">
           {/* Intent picker */}
           <div>
-            <p className="text-xs font-bold text-slate-500 mb-2">What do you want to say?</p>
+            <p className="text-xs font-bold text-slate-500 mb-2">{t("drafter.what")}</p>
             <div className="flex flex-wrap gap-2">
               {intents.map((k) => {
                 const active = kind === k;
@@ -127,7 +130,7 @@ export function DraftMessageDialog({
                     style={active ? { backgroundColor: ACCENT } : undefined}
                   >
                     <span>{DRAFT_KIND_META[k].emoji}</span>
-                    {DRAFT_KIND_META[k].label}
+                    {tOr(t, `drafter.kind_${k}`, DRAFT_KIND_META[k].label)}
                   </button>
                 );
               })}
@@ -136,7 +139,7 @@ export function DraftMessageDialog({
 
           {/* Language */}
           <div>
-            <p className="text-xs font-bold text-slate-500 mb-2">Language</p>
+            <p className="text-xs font-bold text-slate-500 mb-2">{t("drafter.language")}</p>
             <div className="flex gap-2">
               {DRAFT_LANGUAGES.map((l) => {
                 const active = language === l.value;
@@ -159,7 +162,7 @@ export function DraftMessageDialog({
 
           {/* Draft area */}
           <div>
-            <p className="text-xs font-bold text-slate-500 mb-2">Your message (edit if you like)</p>
+            <p className="text-xs font-bold text-slate-500 mb-2">{t("drafter.your_message")}</p>
             <textarea
               value={text}
               onChange={(e) => { setText(e.target.value); setEdited(true); }}
@@ -171,12 +174,12 @@ export function DraftMessageDialog({
 
           {/* WhatsApp number — prefilled when on file, pasteable when not */}
           <div>
-            <p className="text-xs font-bold text-slate-500 mb-2">WhatsApp number</p>
+            <p className="text-xs font-bold text-slate-500 mb-2">{t("drafter.wa_number")}</p>
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               inputMode="numeric"
-              placeholder="Paste 10-digit mobile number"
+              placeholder={t("drafter.ph_number")}
               className="w-full rounded-xl border border-slate-200 px-3.5 py-3 text-base focus:outline-none focus:ring-2"
               style={{ ['--tw-ring-color' as any]: `${ACCENT}55` }}
             />
@@ -189,23 +192,23 @@ export function DraftMessageDialog({
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold text-white disabled:opacity-50"
               style={{ backgroundColor: "#25D366" }}
             >
-              <MessageCircle size={20} /> Send on WhatsApp
+              <MessageCircle size={20} /> {t("drafter.send")}
             </button>
             <button
               onClick={handleCopy}
               className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
             >
-              <Copy size={16} /> Copy
+              <Copy size={16} /> {t("drafter.copy")}
             </button>
           </div>
           {phone.trim() && !wa && (
-            <p className="text-[11px] text-amber-600 text-center">That doesn't look like a valid mobile number yet.</p>
+            <p className="text-[11px] text-amber-600 text-center">{t("drafter.invalid_number")}</p>
           )}
           {!phone.trim() && (
-            <p className="text-[11px] text-amber-600 text-center">Paste a WhatsApp number above to send, or use Copy.</p>
+            <p className="text-[11px] text-amber-600 text-center">{t("drafter.need_number")}</p>
           )}
           <p className="text-[11px] text-slate-400 text-center">
-            WhatsApp opens with this text ready. You tap send.
+            {t("drafter.hint")}
           </p>
         </div>
       </div>
