@@ -1,6 +1,7 @@
 import { X, Check } from "lucide-react";
 import { InsurerCount } from "./InsurerCard"; // Need to ensure this is shared
 import { motion } from "motion/react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface ComparisonItem {
     id: string; // Unique ID (e.g., city name or pincode)
@@ -15,6 +16,7 @@ interface ComparisonViewProps {
 }
 
 export function ComparisonView({ items, onClose }: ComparisonViewProps) {
+    const { t } = useLanguage();
     // Get all unique insurers across all selected items
     const allInsurers = Array.from(new Set(
         items.flatMap(item => item.insurers.map(i => i.insurer_slug))
@@ -26,10 +28,10 @@ export function ComparisonView({ items, onClose }: ComparisonViewProps) {
             <div className="p-6 border-b border-[var(--color-border-subtle)] bg-white flex justify-between items-center shadow-sm z-10">
                 <div>
                     <h2 className="text-2xl font-serif font-bold text-[var(--color-navy-900)]">
-                        Network Comparison
+                        {t("hosp.net_cmp")}
                     </h2>
                     <p className="text-[var(--color-text-secondary)]">
-                        Comparing hospital counts across {items.length} locations
+                        {t("hosp.comparing_n", { n: items.length })}
                     </p>
                 </div>
                 <button
@@ -47,7 +49,7 @@ export function ComparisonView({ items, onClose }: ComparisonViewProps) {
                         <thead>
                             <tr>
                                 <th className="p-4 text-left min-w-[200px] sticky top-0 bg-[var(--color-cream-main)] z-20 border-b-2 border-[var(--color-navy-900)]">
-                                    <span className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">Insurer</span>
+                                    <span className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">{t("hosp.insurer")}</span>
                                 </th>
                                 {items.map(item => (
                                     <th key={item.id} className="p-4 text-center min-w-[180px] sticky top-0 bg-[var(--color-cream-main)] z-20 border-b-2 border-[var(--color-navy-900)]">
@@ -94,7 +96,7 @@ export function ComparisonView({ items, onClose }: ComparisonViewProps) {
                                                         <span className="text-xl font-bold font-mono text-[var(--color-teal-600)]">
                                                             {count}
                                                         </span>
-                                                        <span className="text-xs text-[var(--color-text-muted)]">hospitals</span>
+                                                        <span className="text-xs text-[var(--color-text-muted)]">{t("hosp.hospitals")}</span>
                                                     </div>
                                                 ) : (
                                                     <span className="text-[var(--color-text-muted)] opacity-30 text-2xl font-mono">-</span>
@@ -111,7 +113,7 @@ export function ComparisonView({ items, onClose }: ComparisonViewProps) {
 
             {/* Footer / Legend relative info */}
             <div className="p-4 bg-[var(--color-teal-50)] border-t border-[var(--color-teal-200)] text-center text-[var(--color-navy-900)] text-sm">
-                <span className="font-bold">Tip:</span> Higher network density usually suggests easier cashless approvals in that region.
+                <span className="font-bold">{t("hosp.tip")}</span> {t("hosp.tip_d")}
             </div>
         </div>
     );

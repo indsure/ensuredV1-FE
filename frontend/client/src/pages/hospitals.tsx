@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import { Info } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { Eyebrow } from "@/components/marketing";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Local interfaces using the shared InsurerCount
 interface CityResult {
@@ -67,6 +68,7 @@ const CollapsibleSection = ({ title, children, className = "", titleClassName = 
 };
 
 export default function HospitalFilter() {
+    const { t } = useLanguage();
     const [state, setState] = useState("");
     const [city, setCity] = useState("");
     const [pincode, setPincode] = useState("");
@@ -84,7 +86,7 @@ export default function HospitalFilter() {
             setSelectedItems(selectedItems.filter(i => i.id !== item.id));
         } else {
             if (selectedItems.length >= 4) {
-                toast({ variant: "destructive", title: "You can compare up to 4 locations at a time" });
+                toast({ variant: "destructive", title: t("hosp.max4") });
                 return;
             }
             setSelectedItems([...selectedItems, item]);
@@ -166,16 +168,16 @@ export default function HospitalFilter() {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || "Failed to fetch data");
+                throw new Error(data.error || t("hosp.fetch_failed"));
             }
 
             if (!data.cityLevel || !data.pincodeLevel) {
-                throw new Error("Received invalid data from server");
+                throw new Error(t("hosp.invalid"));
             }
 
             setResults(data);
         } catch (error: any) {
-            setError(error.message || "Something went wrong. Please try again.");
+            setError(error.message || t("hosp.wrong"));
         } finally {
             setLoading(false);
         }
@@ -212,53 +214,52 @@ export default function HospitalFilter() {
                                 className="text-center mb-10 flex flex-col items-center gap-5"
                             >
                                 <Eyebrow accent="var(--lob-travel)" icon={Building2}>
-                                    Network finder
+                                    {t("hosp.eyebrow")}
                                 </Eyebrow>
 
                                 <h1 className="font-serif font-bold tracking-[-0.035em] leading-[1.05] text-4xl sm:text-6xl text-[var(--color-navy-900)]">
-                                    Is your hospital
+                                    {t("hosp.h_a")}
                                     <br />
-                                    <span className="italic text-[var(--lob-travel)]">on their list?</span>
+                                    <span className="italic text-[var(--lob-travel)]">{t("hosp.h_b")}</span>
                                 </h1>
 
                                 <p className="max-w-2xl text-lg sm:text-xl leading-relaxed text-[var(--color-text-secondary)]">
-                                    A policy is only cashless at hospitals the insurer has a tie-up with. Check
-                                    which insurers actually cover your area before you buy, not after a claim.
+                                    {t("hosp.sub")}
                                 </p>
                             </motion.div>
 
                             <div className="on-ink rounded-2xl bg-[var(--color-navy-900)] p-6 sm:p-8 shadow-[0_30px_60px_-24px_rgba(15,23,42,0.5)]">
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <div className="space-y-2">
-                                        <Label className="text-white/75 text-[15px]">State</Label>
+                                        <Label className="text-white/75 text-[15px]">{t("hosp.state")}</Label>
                                         <Combobox
                                             options={allStates.map(s => ({ value: s, label: s }))}
                                             value={state}
                                             onValueChange={setState}
-                                            placeholder="Select state"
-                                            searchPlaceholder="Search state..."
+                                            placeholder={t("hosp.sel_state")}
+                                            searchPlaceholder={t("hosp.search_state")}
                                             className="bg-white/10 border-white/20 h-12 text-white"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-white/75 text-[15px]">City</Label>
+                                        <Label className="text-white/75 text-[15px]">{t("hosp.city")}</Label>
                                         <Combobox
                                             options={availableCities.map(c => ({ value: c, label: c }))}
                                             value={city}
                                             onValueChange={setCity}
-                                            placeholder={state ? "Select city" : "Select state first"}
-                                            searchPlaceholder="Search city..."
+                                            placeholder={state ? t("hosp.sel_city") : t("hosp.state_first")}
+                                            searchPlaceholder={t("hosp.search_city")}
                                             className="bg-white/10 border-white/20 h-12 text-white"
                                             disabled={!state}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-white/75 text-[15px]">Pincode</Label>
+                                        <Label className="text-white/75 text-[15px]">{t("hosp.pincode")}</Label>
                                         <Input
                                             type="text"
                                             value={pincode}
                                             onChange={(e) => setPincode(e.target.value)}
-                                            placeholder="6-digit pincode"
+                                            placeholder={t("hosp.pin6")}
                                             className="h-12 bg-white/10 border-white/20 text-white placeholder-white/45 focus:outline-none focus:border-[var(--color-teal-400)]"
                                         />
                                     </div>
@@ -270,7 +271,7 @@ export default function HospitalFilter() {
                                             className="w-full h-12 bg-[var(--color-cta)] text-white px-6 rounded-lg text-[15px] font-semibold hover:bg-[var(--color-teal-500)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                                         >
                                             <Search className="w-5 h-5" />
-                                            {loading ? "Searching..." : "Compare"}
+                                            {loading ? t("hosp.searching") : t("hosp.compare")}
                                         </button>
                                     </div>
                                 </div>
@@ -283,8 +284,7 @@ export default function HospitalFilter() {
                             </div>
 
                             <p className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
-                                Network lists change often. Always confirm with the insurer or TPA before a
-                                planned admission.
+                                {t("hosp.change_often")}
                             </p>
                         </div>
                     </section>
@@ -304,16 +304,16 @@ export default function HospitalFilter() {
                                         options={allStates.map(s => ({ value: s, label: s }))}
                                         value={state}
                                         onValueChange={setState}
-                                        placeholder="State"
-                                        searchPlaceholder="Search state..."
+                                        placeholder={t("hosp.state")}
+                                        searchPlaceholder={t("hosp.search_state")}
                                         className="bg-white border-[var(--color-border-medium)] h-10 text-sm text-[var(--color-text-main)]"
                                     />
                                     <Combobox
                                         options={availableCities.map(c => ({ value: c, label: c }))}
                                         value={city}
                                         onValueChange={setCity}
-                                        placeholder="City"
-                                        searchPlaceholder="Search city..."
+                                        placeholder={t("hosp.city")}
+                                        searchPlaceholder={t("hosp.search_city")}
                                         className="bg-white border-[var(--color-border-medium)] h-10 text-sm text-[var(--color-text-main)]"
                                         disabled={!state}
                                     />
@@ -322,7 +322,7 @@ export default function HospitalFilter() {
                                             type="text"
                                             value={pincode}
                                             onChange={(e) => setPincode(e.target.value)}
-                                            placeholder="Pincode"
+                                            placeholder={t("hosp.pincode")}
                                             className="h-10 bg-white border-[var(--color-border-medium)] text-[var(--color-text-main)] text-sm placeholder-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-teal-600)]"
                                         />
                                     </div>
@@ -334,7 +334,7 @@ export default function HospitalFilter() {
                                     className="w-full lg:w-auto bg-[var(--color-cta)] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 h-10 whitespace-nowrap"
                                 >
                                     <Search className="w-4 h-4" />
-                                    {loading ? "..." : "Update Search"}
+                                    {loading ? "..." : t("hosp.update")}
                                 </button>
                             </div>
                         </div>
@@ -358,7 +358,7 @@ export default function HospitalFilter() {
                                     className="mb-8"
                                 >
                                     <div className="flex items-center gap-2 text-[15px] text-[var(--color-text-secondary)] mb-4">
-                                        <span>{state || "India"}</span>
+                                        <span>{state || t("hosp.india")}</span>
                                         {city && <><span>/</span><span>{city}</span></>}
                                         {pincode && <><span>/</span><span>{pincode}</span></>}
                                     </div>
@@ -366,10 +366,10 @@ export default function HospitalFilter() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                                         <div>
                                             <h2 className="text-3xl font-serif font-bold text-[var(--color-navy-900)] mb-2">
-                                                Network Coverage
+                                                {t("hosp.coverage")}
                                             </h2>
                                             <p className="text-[var(--color-text-secondary)] text-lg">
-                                                Found <span className="text-[var(--color-teal-700)] font-bold">{getStats(results).totalHospitals} hospitals</span> across <span className="text-[var(--color-navy-900)] font-bold">{getStats(results).totalInsurers} insurers</span> in this area.
+                                                {t("hosp.found", { h: getStats(results).totalHospitals, i: getStats(results).totalInsurers })}
                                             </p>
                                         </div>
 
@@ -396,10 +396,10 @@ export default function HospitalFilter() {
                                             </div>
                                             <div>
                                                 <h2 className="text-3xl font-serif font-bold text-[var(--color-navy-900)]">
-                                                    Hospitals in Your City
+                                                    {t("hosp.in_city")}
                                                 </h2>
                                                 <p className="text-[var(--color-text-secondary)]">
-                                                    {results.cityLevel.length} cities found
+                                                    {t("hosp.n_cities", { n: results.cityLevel.length })}
                                                 </p>
                                             </div>
                                         </div>
@@ -418,7 +418,7 @@ export default function HospitalFilter() {
                                                         key={idx}
                                                         type="city"
                                                         title={cityData.city}
-                                                        subtitle={`${hospitalCount} hospitals · ${cityData.insurers.length} insurers`}
+                                                        subtitle={t("hosp.card_sub", { h: hospitalCount, i: cityData.insurers.length })}
                                                         insurers={cityData.insurers}
                                                         delay={idx * 0.05}
                                                         isSelected={selectedItems.some(i => i.id === cityData.city)}
@@ -443,10 +443,10 @@ export default function HospitalFilter() {
                                         </div>
                                         <div>
                                             <h2 className="text-3xl font-serif font-bold text-[var(--color-navy-900)]">
-                                                Hospitals in Your Pincode
+                                                {t("hosp.in_pin")}
                                             </h2>
                                             <p className="text-[var(--color-text-secondary)]">
-                                                {results.pincodeLevel.length} pincodes found
+                                                {t("hosp.n_pins", { n: results.pincodeLevel.length })}
                                             </p>
                                         </div>
                                     </div>
@@ -465,7 +465,7 @@ export default function HospitalFilter() {
                                                     key={idx}
                                                     type="pincode"
                                                     title={pincodeData.pincode}
-                                                    subtitle={`${hospitalCount} hospitals · ${pincodeData.insurers.length} insurers`}
+                                                    subtitle={t("hosp.card_sub", { h: hospitalCount, i: pincodeData.insurers.length })}
                                                     insurers={pincodeData.insurers}
                                                     delay={idx * 0.05}
                                                     isSelected={selectedItems.some(i => i.id === pincodeData.pincode)}
@@ -495,37 +495,37 @@ export default function HospitalFilter() {
 
                 {/* Educational Sections (Progressive Disclosure) */}
                 <CollapsibleSection
-                    title="How this works"
+                    title={t("hosp.how")}
                     className="bg-[var(--color-cream-main)] text-[var(--color-text-main)]"
                     titleClassName="text-[var(--color-navy-900)]"
                 >
                     <div className="container-editorial">
                         <div className="max-w-3xl mx-auto">
                             <p className="text-lg text-[var(--color-text-secondary)] mb-4 leading-relaxed text-center">
-                                Hospital Network Finder shows how well each insurer is networked in your area.
+                                {t("hosp.how1")}
                             </p>
                             <p className="text-lg text-[var(--color-text-secondary)] mb-4 leading-relaxed text-center">
-                                Instead of scanning PDFs or relying on sales claims, you get a direct comparison of hospital counts by insurer at:
+                                {t("hosp.how2")}
                             </p>
                             <div className="flex justify-center gap-8 mb-6">
                                 <div className="flex items-center gap-2 font-medium text-[var(--color-navy-900)]">
                                     <Building2 className="w-5 h-5 text-[var(--color-teal-600)]" />
-                                    City level
+                                    {t("hosp.city_level")}
                                 </div>
                                 <div className="flex items-center gap-2 font-medium text-[var(--color-navy-900)]">
                                     <MapPin className="w-5 h-5 text-[var(--color-teal-600)]" />
-                                    Pincode level
+                                    {t("hosp.pin_level")}
                                 </div>
                             </div>
                             <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed text-center italic">
-                                This helps you evaluate network strength before buying health insurance, not after a claim is rejected.
+                                {t("hosp.how3")}
                             </p>
                         </div>
                     </div>
                 </CollapsibleSection>
 
                 <CollapsibleSection
-                    title="Why this exists"
+                    title={t("hosp.why")}
                     className="bg-[var(--surface-mint)]"
                     titleClassName="text-[var(--color-navy-900)]"
                 >
@@ -533,26 +533,25 @@ export default function HospitalFilter() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                             <div>
                                 <p className="text-lg text-[var(--color-text-secondary)] mb-4">
-                                    Hospital network data in India is:
+                                    {t("hosp.why1")}
                                 </p>
                                 <ul className="space-y-3 mb-6">
                                     {[
-                                        "Buried inside PDFs",
-                                        "Inconsistent across insurers",
-                                        "Impossible to compare objectively",
+                                        "hosp.w1",
+                                        "hosp.w2",
+                                        "hosp.w3",
                                     ].map((item) => (
                                         <li key={item} className="flex items-center gap-3 text-lg text-[var(--color-text-secondary)]">
                                             <span className="w-1.5 h-1.5 bg-[var(--lob-travel)] rounded-full shrink-0" />
-                                            {item}
+                                            {t(item)}
                                         </li>
                                     ))}
                                 </ul>
                                 <p className="text-lg leading-relaxed font-semibold text-[var(--color-navy-900)] mb-2">
-                                    We extracted, standardised and indexed the official network lists into one
-                                    queryable dataset.
+                                    {t("hosp.why2")}
                                 </p>
                                 <p className="text-lg text-[var(--lob-travel)] font-serif italic">
-                                    No PDFs. No customer care calls. No guesswork.
+                                    {t("hosp.why3")}
                                 </p>
                             </div>
 
@@ -562,14 +561,14 @@ export default function HospitalFilter() {
                                 been re-counted against the live table. */}
                             <div className="bg-white border border-[var(--color-border-light)] rounded-2xl p-8 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
                                 <h3 className="font-serif text-xl font-bold mb-6 border-b border-[var(--color-border-light)] pb-3 text-[var(--color-navy-900)]">
-                                    Coverage snapshot
+                                    {t("hosp.snapshot")}
                                 </h3>
                                 <div className="space-y-6">
                                     {[
-                                        { icon: Building2, accent: "var(--lob-health)", wash: "var(--lob-health-wash)", stat: "83,000+ hospitals", note: "Verified from official insurer network lists" },
-                                        { icon: Building2, accent: "var(--lob-life)", wash: "var(--lob-life-wash)", stat: "2,800+ cities", note: "Nationwide urban and semi-urban coverage" },
-                                        { icon: MapPin, accent: "var(--lob-travel)", wash: "var(--lob-travel-wash)", stat: "19,000+ pincodes", note: "Granular, locality-level insight" },
-                                        { icon: Search, accent: "var(--lob-motor)", wash: "var(--lob-motor-wash)", stat: "16 insurers", note: "Major health insurance providers in India" },
+                                        { icon: Building2, accent: "var(--lob-health)", wash: "var(--lob-health-wash)", stat: "hosp.st1", note: "hosp.st1n" },
+                                        { icon: Building2, accent: "var(--lob-life)", wash: "var(--lob-life-wash)", stat: "hosp.st2", note: "hosp.st2n" },
+                                        { icon: MapPin, accent: "var(--lob-travel)", wash: "var(--lob-travel-wash)", stat: "hosp.st3", note: "hosp.st3n" },
+                                        { icon: Search, accent: "var(--lob-motor)", wash: "var(--lob-motor-wash)", stat: "hosp.st4", note: "hosp.st4n" },
                                     ].map((row) => (
                                         <div key={row.stat} className="flex items-start gap-4">
                                             <div
@@ -579,8 +578,8 @@ export default function HospitalFilter() {
                                                 <row.icon className="w-6 h-6" aria-hidden="true" />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-lg mb-0.5 text-[var(--color-navy-900)] tabular">{row.stat}</h4>
-                                                <p className="text-[15px] text-[var(--color-text-secondary)]">{row.note}</p>
+                                                <h4 className="font-bold text-lg mb-0.5 text-[var(--color-navy-900)] tabular">{t(row.stat)}</h4>
+                                                <p className="text-[15px] text-[var(--color-text-secondary)]">{t(row.note)}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -594,10 +593,10 @@ export default function HospitalFilter() {
                 <section className="py-16 bg-[var(--color-cream-main)] text-[var(--color-text-main)]">
                     <div className="container-editorial">
                         <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-8 text-[var(--color-navy-900)] text-center">
-                            Insurers Covered
+                            {t("hosp.covered")}
                         </h2>
                         <p className="text-center text-[var(--color-text-secondary)] mb-12 max-w-2xl mx-auto">
-                            Official hospital network lists processed from:
+                            {t("hosp.processed")}
                         </p>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
                             {[
@@ -636,9 +635,8 @@ export default function HospitalFilter() {
                                 <Info className="w-6 h-6" />
                             </div>
                             <p className="text-[var(--color-navy-900)] text-sm leading-relaxed">
-                                <span className="font-bold block text-base mb-1">Important Disclaimer</span>
-                                These network counts are based on official insurer lists processed by our engine. While we aim for accuracy, hospital tie-ups change frequently.
-                                Always verify with the insurer or TPA before planned hospitalization. This tool tracks network <em>presence</em>, not quality of care.
+                                <span className="font-bold block text-base mb-1">{t("hosp.disc_h")}</span>
+                                {t("hosp.disc")}
                             </p>
                         </div>
                     </div>
