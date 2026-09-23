@@ -2,6 +2,8 @@ import { Check, Minus, Info, ShieldCheck, HelpCircle } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { formatINRFull } from "@/lib/format";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 import { ADD_ON_FINDINGS_KEY, type AddOnScan, type AddOnFinding } from "@shared/motorAddOns";
 
 /**
@@ -27,6 +29,7 @@ function isScan(v: any): v is AddOnScan {
 const CLASS_LABEL = { car: "car", bike: "two-wheeler" } as const;
 
 function Row({ f }: { f: AddOnFinding }) {
+  const { t } = useLanguage();
   const found = f.state === "present";
   const check = f.state === "check_manually";
   return (
@@ -55,7 +58,7 @@ function Row({ f }: { f: AddOnFinding }) {
 
       <span className="min-w-0">
         <span className={`text-base ${found ? "font-semibold text-slate-800" : "font-medium text-slate-600"}`}>
-          {f.label}
+          {tOr(t, `addon.a_${f.id}`, f.label)}
         </span>
         {/* On a proven-empty policy every row carries the same arithmetic
             sentence, which is nine copies of one fact. The footer states it
@@ -86,12 +89,12 @@ function Row({ f }: { f: AddOnFinding }) {
               the else and printed "Not found in this document" beside its own
               green tick and its own quoted evidence. */}
           {found
-            ? "On this policy"
+            ? t("addon.on_policy")
             : f.state === "absent_proven"
-            ? "Not on this policy"
+            ? t("addon.not_on_policy")
             : check
-            ? "Needs a look"
-            : "Not found in this document"}
+            ? t("addon.needs_look")
+            : t("addon.not_found")}
         </span>
       )}
     </div>
@@ -99,6 +102,7 @@ function Row({ f }: { f: AddOnFinding }) {
 }
 
 export default function AddOnChecklist({ data }: Props) {
+  const { t } = useLanguage();
   const scan = data?.[ADD_ON_FINDINGS_KEY];
   // No scan means the document predates this feature, was a scan we could not
   // read, or was not a motor policy. Showing "0 of 9" for any of those would be
@@ -118,16 +122,16 @@ export default function AddOnChecklist({ data }: Props) {
     <Card className="border-slate-100 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-6">
         <div>
-          <h3 className="text-lg font-bold text-slate-800">Add-on cover on this policy</h3>
+          <h3 className="text-lg font-bold text-slate-800">{t("addon.title")}</h3>
           <p className="mt-1 max-w-[52ch] text-sm text-slate-500">
             {provenEmpty
-              ? "This policy has no add-on cover. The premium table proves it, line by line."
-              : "Read from the policy schedule. Every tick shows the line it came from."}
+              ? t("addon.proven_empty")
+              : t("addon.read_from")}
           </p>
         </div>
         <div className="shrink-0 text-right">
           {provenEmpty ? (
-            <div className="text-2xl font-black leading-none text-slate-500">None</div>
+            <div className="text-2xl font-black leading-none text-slate-500">{t("addon.none")}</div>
           ) : (
             <div className="text-4xl font-black leading-none tabular-nums text-[#0D9488]">
               {scan.present}
@@ -135,7 +139,7 @@ export default function AddOnChecklist({ data }: Props) {
             </div>
           )}
           <div className="mt-2 text-sm font-bold uppercase tracking-wider text-slate-500">
-            Add-ons found
+            {t("addon.found")}
           </div>
         </div>
       </div>
@@ -153,29 +157,18 @@ export default function AddOnChecklist({ data }: Props) {
             {(provenEmpty || (scan.reconciliation && unexplained < 1)) && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 font-bold text-emerald-700">
                 <ShieldCheck className="h-4 w-4" />
-                {provenEmpty ? "Proven, not guessed" : "Every rupee accounted for"}
+                {provenEmpty ? t("addon.proven") : t("addon.every_rupee")}
               </span>
             )}
             <span>
-              Own damage premium{" "}
-              <b className="font-bold tabular-nums text-slate-800">
-                {formatINRFull(scan.arithmetic.basicOd)}
-              </b>{" "}
-              basic,{" "}
-              <b className="font-bold tabular-nums text-slate-800">
-                {formatINRFull(scan.arithmetic.totalOd)}
-              </b>{" "}
-              total.
+              {t("addon.od_line", { basic: formatINRFull(scan.arithmetic.basicOd), total: formatINRFull(scan.arithmetic.totalOd) })}
             </span>
             {scan.reconciliation && (
               <span>
-                Add-ons{" "}
-                <b className="font-bold tabular-nums text-slate-800">
-                  {formatINRFull(scan.reconciliation.named)}
-                </b>
+                {t("addon.addons_amt", { amount: formatINRFull(scan.reconciliation.named) })}
                 {scan.reconciliation.ncb !== 0 && (
                   <>
-                    , less a no-claim bonus of{" "}
+                    {t("addon.less_ncb")}{" "}
                     {/* Math.abs: formatINRFull renders a negative as "₹-1,240",
                         which reads as a typo rather than as a deduction. */}
                     <b className="font-bold tabular-nums text-slate-800">
@@ -185,18 +178,15 @@ export default function AddOnChecklist({ data }: Props) {
                 )}
                 .{" "}
                 {unexplained < 1 ? (
-                  "Nothing unaccounted for."
+                  t("addon.nothing_unaccounted")
                 ) : (
                   <>
-                    <b className="font-bold tabular-nums text-slate-800">
-                      {formatINRFull(scan.reconciliation.unexplained)}
-                    </b>{" "}
-                    of add-on premium could not be named, so check the schedule.
+                    {t("addon.unexplained", { amount: formatINRFull(scan.reconciliation.unexplained) })}
                   </>
                 )}
               </span>
             )}
-            {provenEmpty && <span>Nothing was added on top, so there is no add-on cover to find.</span>}
+            {provenEmpty && <span>{t("addon.nothing_added")}</span>}
           </div>
         </div>
       )}
@@ -205,24 +195,21 @@ export default function AddOnChecklist({ data }: Props) {
         <div className="flex gap-3 border-t border-amber-100 bg-amber-50 px-6 py-4 text-sm leading-relaxed text-amber-900">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
           <span>
-            {uncounted.length === 1 ? "One line in" : `${uncounted.length} lines in`} the premium
-            table {uncounted.length === 1 ? "is" : "are"} not in the checklist:{" "}
+            {t(uncounted.length === 1 ? "addon.uncounted_one" : "addon.uncounted_many", { count: uncounted.length })}{" "}
             {uncounted.map((p, i) => (
               <span key={p.name + i}>
                 {i > 0 && ", "}
-                <b className="font-semibold">{p.name}</b> at {formatINRFull(p.amount)}
+                <b className="font-semibold">{p.name}</b> {t("addon.at")} {formatINRFull(p.amount)}
               </span>
             ))}
-            . A cover priced at or below zero was not bought at that price, so it is not counted.
+            . {t("addon.zero_note")}
           </span>
         </div>
       )}
 
       <CardContent className="border-t border-slate-100 py-3">
         <p className="text-sm text-slate-500">
-          Checked against the {CLASS_LABEL[scan.vehicleClass]} list of {scan.applicable} add-ons on{" "}
-          {scan.scannedAt}. Read from this document only, so cover added by a separate endorsement
-          will not appear here.
+          {t("addon.checked_against", { cls: tOr(t, `addon.class_${scan.vehicleClass}`, CLASS_LABEL[scan.vehicleClass]), count: scan.applicable, date: scan.scannedAt })}
         </p>
       </CardContent>
     </Card>

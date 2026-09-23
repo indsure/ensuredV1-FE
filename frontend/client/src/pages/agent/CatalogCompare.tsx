@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Loader2, Scale, Zap, Upload, Search, Plus, X, ArrowRight, ChevronRight, ChevronLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import ComparisonShareBar from "@/components/agent/ComparisonShareBar";
+import { useLanguage } from "@/i18n/LanguageContext";
 import ComparisonView, { SIDE_PALETTE } from "@/components/ComparisonView";
 import { type ComparisonResult } from "@/lib/wordingProfile";
 
@@ -42,6 +43,7 @@ function AddPlanPicker({
   onAdd: (uin: string) => void;
   disabled?: boolean;
 }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   // Two-level browse: the catalogue is ~100 plans, so the closed state lists insurers and you
@@ -111,7 +113,7 @@ function AddPlanPicker({
         onClick={() => { setOpen((o) => !o); setTimeout(() => inputRef.current?.focus(), 0); }}
         className="h-12 w-full sm:w-auto px-5 rounded-xl border-2 border-dashed border-slate-300 text-slate-600 font-semibold flex items-center justify-center gap-2 hover:border-[#0D9488] hover:text-[#0D9488] hover:bg-[#0D9488]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        <Plus className="h-5 w-5" /> Add a plan
+        <Plus className="h-5 w-5" /> {t("compare.add_plan")}
       </button>
 
       {open && (
@@ -123,7 +125,7 @@ function AddPlanPicker({
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search insurer or plan…"
+                placeholder={t("compare.search_plan")}
                 className="w-full h-10 pl-8 pr-3 text-sm rounded-lg border border-slate-200 bg-slate-50 outline-none focus:bg-white focus:border-slate-300 placeholder:text-slate-400"
               />
             </div>
@@ -131,7 +133,7 @@ function AddPlanPicker({
           <div className="max-h-80 overflow-y-auto py-1">
             {searching ? (
               filtered.length === 0 ? (
-                <div className="px-4 py-6 text-center text-sm text-slate-400">No plans match that.</div>
+                <div className="px-4 py-6 text-center text-sm text-slate-400">{t("compare.no_plans_match")}</div>
               ) : (
                 filtered.map(([insurer, items]) => (
                   <div key={insurer}>
@@ -147,13 +149,13 @@ function AddPlanPicker({
                   onClick={() => setOpenInsurer(null)}
                   className="w-full text-left px-3 py-2 flex items-center gap-1.5 text-sm font-bold text-slate-600 hover:text-[#0D9488] border-b border-slate-100 cursor-pointer transition-colors"
                 >
-                  <ChevronLeft className="h-3.5 w-3.5" /> All insurers
+                  <ChevronLeft className="h-3.5 w-3.5" /> {t("compare.all_insurers")}
                 </button>
                 <div className="sticky top-0 z-10 bg-white px-3 pt-2 pb-1 text-sm font-bold text-slate-600">{openInsurer}</div>
                 {drilledPlans.map(planRow)}
               </>
             ) : insurers.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-slate-600">No more plans available.</div>
+              <div className="px-4 py-6 text-center text-sm text-slate-600">{t("compare.no_more_plans")}</div>
             ) : (
               insurers.map(([insurer, items]) => (
                 <button
@@ -165,7 +167,7 @@ function AddPlanPicker({
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-slate-800 truncate">{insurer}</span>
                     <span className="block text-sm text-slate-600">
-                      {items.length} plan{items.length === 1 ? "" : "s"}
+                      {t(items.length === 1 ? "compare.plan_one" : "compare.plan_many", { count: items.length })}
                     </span>
                   </span>
                   <ChevronRight className="h-4 w-4 text-slate-300 flex-shrink-0" />
@@ -181,6 +183,7 @@ function AddPlanPicker({
 
 // ─── Selected plan card ────────────────────────────────────────────────────────────
 function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number; onRemove: () => void }) {
+  const { t } = useLanguage();
   const pal = SIDE_PALETTE[index % SIDE_PALETTE.length];
   return (
     <div className="relative rounded-xl border-2 bg-white p-3.5 pr-9 w-full sm:w-56 flex-shrink-0" style={{ borderColor: pal.accent }}>
@@ -195,7 +198,7 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
       <button
         onClick={onRemove}
         className="absolute top-2 right-2 h-7 w-7 rounded-full bg-slate-100 hover:bg-red-50 hover:text-red-500 text-slate-400 flex items-center justify-center transition-colors"
-        aria-label="Remove plan"
+        aria-label={t("compare.remove_plan")}
       >
         <X className="h-4 w-4" />
       </button>
@@ -205,6 +208,7 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
 
 // ─── Page ────────────────────────────────────────────────────────────────────────
 export default function CatalogCompare() {
+  const { t } = useLanguage();
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
@@ -220,7 +224,7 @@ export default function CatalogCompare() {
         const json = await res.json();
         setCatalog(json.policies ?? []);
       } catch {
-        setError("Could not load the catalog.");
+        setError(t("compare.catalog_failed"));
       } finally {
         setLoadingCatalog(false);
       }
@@ -255,11 +259,11 @@ export default function CatalogCompare() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ uins: selected }),
         });
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Compare failed");
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("compare.compare_failed"));
         const json = await res.json();
         if (alive) setResult(json.result);
       } catch (e: any) {
-        if (alive) setError(e.message || "Compare failed");
+        if (alive) setError(e.message || t("compare.compare_failed"));
       } finally {
         if (alive) setComparing(false);
       }
@@ -278,9 +282,9 @@ export default function CatalogCompare() {
             <Scale className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900">Compare Policies</h1>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900">{t("compare.cat_title")}</h1>
             <p className="text-slate-500 flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-[#0D9488]" /> Instant and free. Add up to 4 pre-analysed plans.
+              <Zap className="h-3.5 w-3.5 text-[#0D9488]" /> {t("compare.cat_subtitle")}
             </p>
           </div>
         </div>
@@ -288,7 +292,7 @@ export default function CatalogCompare() {
 
       {loadingCatalog ? (
         <div className="flex flex-col items-center py-14 sm:py-20 lg:py-24 text-slate-400">
-          <Loader2 className="h-7 w-7 animate-spin mb-2" /> Loading catalog…
+          <Loader2 className="h-7 w-7 animate-spin mb-2" /> {t("compare.loading_catalog")}
         </div>
       ) : (
         <>
@@ -303,8 +307,8 @@ export default function CatalogCompare() {
               )}
             </div>
             <p className="text-xs text-slate-400 mt-3">
-              {selected.length}/{MAX_PLANS} selected · {catalog.length} plans across {Object.keys(grouped).length} insurers ·{" "}
-              {selected.length < 2 ? "add at least 2 to compare" : "comparing…"}
+              {t("compare.status", { sel: selected.length, max: MAX_PLANS, plans: catalog.length, insurers: Object.keys(grouped).length })}
+              {selected.length < 2 ? t("compare.add_two") : t("compare.comparing")}
             </p>
           </div>
 
@@ -319,10 +323,10 @@ export default function CatalogCompare() {
               <Upload className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-slate-800">Compare Quotes</p>
+              <p className="font-bold text-slate-800">{t("compare.title")}</p>
               <p className="text-sm text-slate-500">
-                Plan not in the catalog? Upload the two quotes and we read both wordings clause by clause.
-                <span className="font-semibold text-slate-600"> Uses 2 policy checks.</span>
+                {t("compare.quotes_desc")}
+                <span className="font-semibold text-slate-600"> {t("compare.uses_two")}</span>
               </p>
             </div>
             <ArrowRight className="h-5 w-5 text-slate-500 group-hover:text-[#0D9488] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
@@ -332,7 +336,7 @@ export default function CatalogCompare() {
 
           {comparing && (
             <div className="flex items-center justify-center gap-2 py-16 text-slate-400">
-              <Loader2 className="h-5 w-5 animate-spin" /> Comparing…
+              <Loader2 className="h-5 w-5 animate-spin" /> {t("compare.comparing_cap")}
             </div>
           )}
 
@@ -350,7 +354,7 @@ export default function CatalogCompare() {
           {!comparing && !result && !error && (
             <div className="text-center py-12 sm:py-16 lg:py-20 text-slate-400">
               <Scale className="h-10 w-10 mx-auto mb-3 opacity-40" />
-              Add two or more plans to see the head-to-head.
+              {t("compare.add_two_or_more")}
             </div>
           )}
         </>

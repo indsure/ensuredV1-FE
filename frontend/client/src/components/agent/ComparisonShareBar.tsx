@@ -3,6 +3,7 @@ import { Check, CheckCircle2, Copy, Loader2, MessageCircle, Share2 } from "lucid
 
 import { apiFetch } from "@/lib/api";
 import { type ComparisonResult } from "@/lib/wordingProfile";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
  * Save a comparison and hand the advisor a link to send.
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export default function ComparisonShareBar({ data, profiles }: Props) {
+  const { t } = useLanguage();
   const [saving, setSaving] = useState(false);
   const [uuid, setUuid] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -45,11 +47,11 @@ export default function ComparisonShareBar({ data, profiles }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ result: data, profiles }),
       });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Could not save");
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("compare.save_failed"));
       const json = await res.json();
       setUuid(json.uuid);
     } catch (e: any) {
-      setErr(e.message || "Could not save. Please try again.");
+      setErr(e.message || t("compare.save_failed_desc"));
     } finally {
       setSaving(false);
     }
@@ -77,7 +79,7 @@ export default function ComparisonShareBar({ data, profiles }: Props) {
           className="w-full md:w-auto h-12 px-6 rounded-xl bg-[#0D9488] hover:bg-[#0f766e] text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Share2 className="h-5 w-5" />}
-          {saving ? "Saving…" : "Save & share with customer"}
+          {saving ? t("compare.saving") : t("compare.save_share")}
         </button>
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
       </div>
@@ -87,12 +89,12 @@ export default function ComparisonShareBar({ data, profiles }: Props) {
   return (
     <div className="rounded-2xl border border-[#0D9488]/30 bg-[#F0FDFA] p-4 md:p-5">
       <p className="text-sm font-bold text-[#0f766e] mb-3 flex items-center gap-2">
-        <CheckCircle2 className="h-4 w-4" /> Saved — send this to your customer
+        <CheckCircle2 className="h-4 w-4" /> {t("compare.saved_send")}
       </p>
       <div className="flex flex-col sm:flex-row gap-2.5">
         <div className="flex-1 min-w-0 flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 h-12">
           <span className="text-sm text-slate-500 truncate flex-1">{shareUrl}</span>
-          <button onClick={copy} className="text-slate-400 hover:text-[#0D9488] flex-shrink-0" aria-label="Copy link">
+          <button onClick={copy} className="text-slate-400 hover:text-[#0D9488] flex-shrink-0" aria-label={t("compare.copy_link")}>
             {copied ? <Check className="h-5 w-5 text-[#0D9488]" /> : <Copy className="h-5 w-5" />}
           </button>
         </div>
@@ -102,7 +104,7 @@ export default function ComparisonShareBar({ data, profiles }: Props) {
           rel="noopener noreferrer"
           className="h-12 px-5 rounded-xl bg-[#25D366] hover:bg-[#1ebe5b] text-white font-bold flex items-center justify-center gap-2 whitespace-nowrap"
         >
-          <MessageCircle className="h-5 w-5" /> WhatsApp
+          <MessageCircle className="h-5 w-5" /> {t("leads.whatsapp")}
         </a>
       </div>
     </div>

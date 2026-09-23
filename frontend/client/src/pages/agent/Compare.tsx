@@ -10,6 +10,7 @@ import { type CompareResponse, type ComparisonResult } from "@/lib/wordingProfil
 import ComparisonView, { TEAL, AMBER } from "@/components/ComparisonView";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { useAgent } from "@/context/AgentContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { isPlaygroundMode } from "@/lib/playground/mode";
 import { DEMO_COMPARE_RESPONSE } from "@/lib/playground/seed";
 
@@ -30,6 +31,7 @@ function UploadSlot({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const accent = side === "a" ? TEAL : AMBER;
+  const { t } = useLanguage();
 
   return (
     <div
@@ -66,7 +68,7 @@ function UploadSlot({
             <button
               onClick={onClear}
               className="h-8 w-8 rounded-full bg-slate-100 hover:bg-red-50 hover:text-red-500 text-slate-400 flex items-center justify-center flex-shrink-0 transition-colors"
-              aria-label="Remove"
+              aria-label={t("compare.remove")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -81,8 +83,8 @@ function UploadSlot({
           <div className="h-14 w-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center">
             <FileText className="h-7 w-7" />
           </div>
-          <span className="font-semibold text-slate-600">Choose policy wording PDF</span>
-          <span className="text-sm">Tap to browse</span>
+          <span className="font-semibold text-slate-600">{t("compare.choose_pdf")}</span>
+          <span className="text-sm">{t("compare.tap_browse")}</span>
         </button>
       )}
     </div>
@@ -92,6 +94,7 @@ function UploadSlot({
 // ─── Save / share bar ─────────────────────────────────────────────────────────────
 // ─── Page ────────────────────────────────────────────────────────────────────────
 export default function Compare() {
+  const { t } = useLanguage();
   const [fileA, setFileA] = useState<File | null>(null);
   const [fileB, setFileB] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -119,15 +122,15 @@ export default function Compare() {
       fd.append("wording_b", fileB);
       const res = await apiFetch("/api/agent/compare", { method: "POST", body: fd });
       if (!res.ok) {
-        const e = await res.json().catch(() => ({ error: "Comparison failed" }));
+        const e = await res.json().catch(() => ({ error: t("compare.failed") }));
         // The balance gate speaks for itself; anything else keeps its own text.
-        throw new Error(e.message || e.error || "Comparison failed");
+        throw new Error(e.message || e.error || t("compare.failed"));
       }
       setResponse(await res.json());
       // Two checks just left the balance the header and dashboard show.
       refreshAgent();
     } catch (e: any) {
-      setError(e.message || "Something went wrong. Please try again.");
+      setError(e.message || t("compare.generic_error"));
     } finally {
       setLoading(false);
     }
@@ -152,26 +155,26 @@ export default function Compare() {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900">Head-to-Head</h1>
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900">{t("compare.head_to_head")}</h1>
           {confirmDiscard ? (
             <span className="inline-flex items-center gap-2">
-              <span className="text-sm text-slate-700">Discard this comparison?</span>
+              <span className="text-sm text-slate-700">{t("compare.discard_q")}</span>
               <button onClick={reset} className="text-sm font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded">
-                Discard
+                {t("compare.discard")}
               </button>
               <button onClick={() => setConfirmDiscard(false)} className="text-sm font-bold text-slate-600 hover:text-slate-900 px-3 py-2">
-                Keep
+                {t("compare.keep")}
               </button>
             </span>
           ) : (
             <button onClick={reset} className="text-sm font-semibold text-slate-500 hover:text-slate-800">
-              ← Compare again
+              {t("compare.compare_again")}
             </button>
           )}
         </div>
         {confirmDiscard && (
           <p className="text-sm text-slate-600">
-            Save or share it first if you need it — it is not stored anywhere yet.
+            {t("compare.save_first")}
           </p>
         )}
         <ComparisonShareBar data={response.result} profiles={response.profiles} />
@@ -186,7 +189,7 @@ export default function Compare() {
         href="/agent/compare"
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 mb-4"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to the catalog (free)
+        <ArrowLeft className="h-4 w-4" /> {t("compare.back_catalog")}
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
@@ -194,32 +197,32 @@ export default function Compare() {
           <Scale className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900">Compare Quotes</h1>
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900">{t("compare.title")}</h1>
           <p className="text-slate-500">
-            For a plan the catalog does not carry. Upload both wordings and we read every clause.
+            {t("compare.subtitle")}
           </p>
         </div>
       </div>
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <UploadSlot side="a" label="Policy A" file={fileA} onPick={setFileA} onClear={() => setFileA(null)} disabled={loading} />
-        <UploadSlot side="b" label="Policy B" file={fileB} onPick={setFileB} onClear={() => setFileB(null)} disabled={loading} />
+        <UploadSlot side="a" label={t("compare.policy_a")} file={fileA} onPick={setFileA} onClear={() => setFileA(null)} disabled={loading} />
+        <UploadSlot side="b" label={t("compare.policy_b")} file={fileB} onPick={setFileB} onClear={() => setFileB(null)} disabled={loading} />
       </div>
 
       {shortOfChecks ? (
         <div className="mt-5 rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
           <p className="font-bold">
-            You need {COMPARE_COST} policy checks to compare uploads. You have {creditsRemaining}.
+            {t("compare.short", { cost: COMPARE_COST, have: creditsRemaining })}
           </p>
           <p className="mt-1">
-            <Link href="/agent/compare" className="underline font-semibold">Comparing from the catalog</Link>{" "}
-            is free and instant, or ask your admin to top up.
+            <Link href="/agent/compare" className="underline font-semibold">{t("compare.catalog_link")}</Link>{" "}
+            {t("compare.catalog_free")}
           </p>
         </div>
       ) : (
         <p className="mt-5 text-sm text-slate-500">
-          Uses <span className="font-bold text-slate-700">{COMPARE_COST} policy checks</span>, one for each wording we read.
-          {balanceKnown && <> You have {creditsRemaining} left.</>}
+          {t("compare.uses", { cost: COMPARE_COST })}
+          {balanceKnown && <> {t("compare.you_have", { count: creditsRemaining })}</>}
         </p>
       )}
 
@@ -236,15 +239,15 @@ export default function Compare() {
         className="mt-6 w-full h-14 rounded-2xl bg-[#0B1120] hover:bg-[#1e293b] text-white font-bold text-base flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? (
-          <><Loader2 className="h-5 w-5 animate-spin" /> Reading both wordings…</>
+          <><Loader2 className="h-5 w-5 animate-spin" /> {t("compare.reading")}</>
         ) : (
-          <>Compare side by side <ArrowRight className="h-5 w-5" /></>
+          <>{t("compare.compare_btn")} <ArrowRight className="h-5 w-5" /></>
         )}
       </button>
 
       {loading && (
         <p className="mt-3 text-center text-sm text-slate-400">
-          This takes about 20–40 seconds. We read every clause so you don't have to.
+          {t("compare.takes")}
         </p>
       )}
 
@@ -254,7 +257,7 @@ export default function Compare() {
           onClick={() => setResponse(DEMO_COMPARE_RESPONSE as unknown as CompareResponse)}
           className="mt-3 w-full h-12 rounded-2xl border-2 border-[#0D9488] text-[#0D9488] font-bold flex items-center justify-center gap-2 hover:bg-[#0D9488] hover:text-white transition-colors"
         >
-          See a sample comparison — no upload needed
+          {t("compare.sample")}
         </button>
       )}
 
@@ -264,14 +267,15 @@ export default function Compare() {
         open={confirmSpend}
         onOpenChange={setConfirmSpend}
         onConfirm={handleCompare}
-        title={`Use ${COMPARE_COST} policy checks?`}
+        title={t("compare.confirm_title", { cost: COMPARE_COST })}
         description={
-          `Reading both uploaded wordings uses ${COMPARE_COST} of your policy checks` +
-          (balanceKnown ? `, leaving you ${Math.max(creditsRemaining - COMPARE_COST, 0)}. ` : ". ") +
-          "Comparing plans from the catalog stays free."
+          (balanceKnown
+            ? t("compare.confirm_desc_left", { cost: COMPARE_COST, left: Math.max(creditsRemaining - COMPARE_COST, 0) })
+            : t("compare.confirm_desc", { cost: COMPARE_COST })) +
+          " " + t("compare.catalog_stays_free")
         }
-        confirmText={`Use ${COMPARE_COST} checks`}
-        cancelText="Not now"
+        confirmText={t("compare.use_checks", { cost: COMPARE_COST })}
+        cancelText={t("compare.not_now")}
       />
     </div>
   );

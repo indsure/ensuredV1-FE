@@ -7,6 +7,12 @@ import { supabase } from "@/lib/supabase";
 import { getApiBase } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import { getFields, typeLabel, type ExtractionField } from "@/lib/insuranceTypes";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
+
+// Field labels are keyed by the label text, not the field key: the same key
+// carries different labels on different insurance types.
+const labelKey = (s: string) => "xform.f_" + s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 
 interface ExtractedDataFormProps {
   clientId: string;
@@ -26,6 +32,7 @@ export default function ExtractedDataForm({
   initialData,
   onSaved,
 }: ExtractedDataFormProps) {
+  const { t } = useLanguage();
   // json fields (the charge table) are edited on the value card, not here — a
   // text input would stringify the object and destroy it on the next save.
   const fields = useMemo<ExtractionField[]>(
@@ -62,7 +69,7 @@ export default function ExtractedDataForm({
       }
 
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      if (!session) throw new Error(t("xform.not_signed_in"));
 
       const res = await fetch(`${getApiBase()}/api/agent/clients/${clientId}/extracted-data`, {
         method: "PATCH",
@@ -74,16 +81,16 @@ export default function ExtractedDataForm({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Save failed");
+        throw new Error(body.error || t("xform.save_failed"));
       }
 
-      toast({ variant: "success", title: "Details saved" });
+      toast({ variant: "success", title: t("xform.saved") });
       onSaved?.(payload);
     } catch (e: unknown) {
       toast({
         variant: "destructive",
-        title: "Save failed",
-        description: e instanceof Error ? e.message : "Could not save the details.",
+        title: t("xform.save_failed"),
+        description: e instanceof Error ? e.message : t("xform.save_failed_desc"),
       });
     } finally {
       setSaving(false);
@@ -94,7 +101,7 @@ export default function ExtractedDataForm({
     return (
       <Card className="border-slate-100 shadow-sm">
         <CardContent className="p-8 text-center text-slate-400 text-sm italic">
-          No data-entry fields are configured for this insurance type.
+          {t("xform.no_fields")}
         </CardContent>
       </Card>
     );
@@ -104,21 +111,21 @@ export default function ExtractedDataForm({
     <Card className="border-slate-100 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 pb-4">
         <CardTitle className="text-lg font-bold text-slate-800">
-          {typeLabel(insuranceType)} policy details
+          {t("xform.title", { type: tOr(t, `common.type_${insuranceType}`, typeLabel(insuranceType)) })}
         </CardTitle>
         <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Data entry · review &amp; edit
+          {t("xform.badge")}
         </span>
       </CardHeader>
       <CardContent className="p-6 space-y-5">
         <p className="text-sm text-slate-500">
-          These fields were read from the uploaded document. Please review and correct anything before saving.
+          {t("xform.intro")}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fields.map((f) => (
             <div key={f.key} className="space-y-1.5">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                {f.label}
+                {tOr(t, labelKey(f.label), f.label)}
               </label>
               <Input
                 type={f.type === "date" ? "date" : f.type === "number" ? "number" : "text"}
@@ -135,7 +142,7 @@ export default function ExtractedDataForm({
             disabled={saving}
             className="bg-[#0D9488] hover:bg-[#0f766e] text-white font-semibold px-8 h-11"
           >
-            {saving ? "Saving…" : "Save details"}
+            {saving ? t("xform.saving") : t("xform.save")}
           </Button>
         </div>
       </CardContent>

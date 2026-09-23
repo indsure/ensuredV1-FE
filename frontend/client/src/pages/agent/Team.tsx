@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import { TableRowSkeleton } from "@/components/ui/skeleton"
 import { toast } from "@/hooks/use-toast"
+import { useLanguage } from "@/i18n/LanguageContext"
+import { intlLocale } from "@/i18n"
 import {
   fetchTeam, inviteAdvisor, moveChecks, removeMember, resendInvite, revokeInvite,
   type TeamMember, type TeamOwnerView, type TeamRequest,
@@ -27,13 +29,13 @@ function initials(name: string, email: string): string {
 }
 
 /** Relative day count, in the plain words the portal already uses elsewhere. */
-function whenLast(iso: string): string {
+function whenLast(iso: string, t: (key: string, vars?: Record<string, string | number>) => string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
-  if (days <= 0) return "Today"
-  if (days === 1) return "Yesterday"
-  if (days < 30) return `${days} days ago`
+  if (days <= 0) return t("team.today")
+  if (days === 1) return t("team.yesterday")
+  if (days < 30) return t("team.days_ago", { count: days })
   const months = Math.floor(days / 30)
-  return months === 1 ? "A month ago" : `${months} months ago`
+  return months === 1 ? t("team.month_ago") : t("team.months_ago", { count: months })
 }
 
 function daysLeft(iso: string): number {
@@ -49,6 +51,7 @@ function checkChip(n: number): string {
 }
 
 export default function Team() {
+  const { t, locale } = useLanguage()
   const [view, setView] = useState<TeamOwnerView | null>(null)
   const [notOwner, setNotOwner] = useState<{ teamName: string; ownerName: string } | null>(null)
   const [request, setRequest] = useState<TeamRequest | null>(null)
@@ -74,7 +77,7 @@ export default function Team() {
       }
       setError(null)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Could not load your team.")
+      setError(e instanceof Error ? e.message : t("team.load_failed"))
     } finally {
       setLoading(false)
     }
@@ -91,10 +94,10 @@ export default function Team() {
     setBusyId(id)
     try {
       const r = await resendInvite(id)
-      toast({ variant: r.emailed ? "success" : "destructive", title: r.emailed ? "Invite resent" : "Link renewed, email not sent", description: r.message })
+      toast({ variant: r.emailed ? "success" : "destructive", title: r.emailed ? t("team.resent") : t("team.renewed_not_sent"), description: r.message })
       await load()
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not resend", description: e instanceof Error ? e.message : undefined })
+      toast({ variant: "destructive", title: t("team.resend_failed"), description: e instanceof Error ? e.message : undefined })
     } finally { setBusyId(null) }
   }
 
@@ -102,10 +105,10 @@ export default function Team() {
     setBusyId(id)
     try {
       const r = await revokeInvite(id)
-      toast({ variant: "success", title: "Invite revoked", description: r.message })
+      toast({ variant: "success", title: t("team.revoked"), description: r.message })
       await load()
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not revoke", description: e instanceof Error ? e.message : undefined })
+      toast({ variant: "destructive", title: t("team.revoke_failed"), description: e instanceof Error ? e.message : undefined })
     } finally { setBusyId(null) }
   }
 
@@ -113,10 +116,10 @@ export default function Team() {
     setBusyId(member.id)
     try {
       const r = await removeMember(member.id)
-      toast({ variant: "success", title: "Advisor removed", description: r.message })
+      toast({ variant: "success", title: t("team.removed"), description: r.message })
       await load()
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not remove", description: e instanceof Error ? e.message : undefined })
+      toast({ variant: "destructive", title: t("team.remove_failed"), description: e instanceof Error ? e.message : undefined })
     } finally { setBusyId(null); setConfirmRemove(null) }
   }
 
@@ -143,17 +146,16 @@ export default function Team() {
   if (notOwner) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-2xl">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Your team</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">{t("team.your_team")}</h1>
         <div className="mt-4 bg-white border border-slate-200 rounded-xl p-5 sm:p-6">
           <p className="text-base text-slate-900">
-            You are on <span className="font-semibold">{notOwner.teamName}</span>, run by {notOwner.ownerName}.
+            {t("team.you_are_on", { team: notOwner.teamName, owner: notOwner.ownerName })}
           </p>
           <p className="mt-3 text-sm text-slate-600 leading-relaxed">
-            {notOwner.ownerName} can read the customers, policies, leads and claims you add — not change or
-            delete them, and never the documents on a claim or the original file on a policy.
+            {t("team.owner_can_read", { owner: notOwner.ownerName })}
           </p>
           <Link href="/agent/settings" className="mt-4 inline-flex items-center min-h-[44px] text-sm font-semibold text-teal-700">
-            See every time your book was opened
+            {t("team.see_every_time")}
           </Link>
         </div>
       </div>
@@ -166,23 +168,20 @@ export default function Team() {
   if (!view && request) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-2xl">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Team</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">{t("team.title")}</h1>
         <div className="mt-4 bg-white border border-amber-200 border-l-4 border-l-amber-500 rounded-xl p-5 sm:p-6">
           <p className="text-base font-semibold text-slate-900">
-            We are setting up {request.agencyName}.
+            {t("team.setting_up", { name: request.agencyName })}
           </p>
           <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-            You told us at signup that you run an agency
-            {request.seatsWanted ? ` of about ${request.seatsWanted} advisors` : ""}. We confirm the
-            seats with you before anything is charged, and this page turns into your team the moment
-            it is set up.
+            {request.seatsWanted ? t("team.told_us_seats", { count: request.seatsWanted }) : t("team.told_us")}
           </p>
           <p className="mt-3 text-sm text-slate-500">
-            Asked on {new Date(request.requestedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.
+            {t("team.asked_on", { date: new Date(request.requestedAt).toLocaleDateString(intlLocale(locale), { day: "numeric", month: "long", year: "numeric" }) })}
           </p>
         </div>
         <p className="mt-4 text-sm text-slate-600 leading-relaxed">
-          Nothing is on hold in the meantime — your account works exactly as it does for any advisor.
+          {t("team.nothing_on_hold")}
         </p>
       </div>
     )
@@ -191,10 +190,9 @@ export default function Team() {
   if (!view) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 max-w-2xl">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Team</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">{t("team.title")}</h1>
         <p className="mt-3 text-sm text-slate-600 leading-relaxed">
-          You are not on an agency team. Teams are set up by us with the seats you have bought —
-          talk to us if you want advisors working under your agency.
+          {t("team.not_on_team")}
         </p>
       </div>
     )
@@ -207,8 +205,8 @@ export default function Team() {
 
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Team</h1>
-          <p className="mt-1 text-sm text-slate-600">{team.name} · Agency plan, {seats.total} seats</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">{t("team.title")}</h1>
+          <p className="mt-1 text-sm text-slate-600">{t("team.plan_line", { name: team.name, count: seats.total })}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -218,11 +216,11 @@ export default function Team() {
             disabled={members.length < 2}
           >
             <ArrowLeftRight className="h-4 w-4 mr-2" />
-            Move checks
+            {t("team.move_checks")}
           </Button>
           <Button className="min-h-[44px]" onClick={() => setInviteOpen(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
-            Invite advisor
+            {t("team.invite_advisor")}
           </Button>
         </div>
       </div>
@@ -231,13 +229,13 @@ export default function Team() {
           rows themselves — see the note at the top of this file. */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
         <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5">
-          <div className="text-sm font-bold uppercase tracking-wider text-slate-500">Seats in use</div>
+          <div className="text-sm font-bold uppercase tracking-wider text-slate-500">{t("team.seats_in_use")}</div>
           <div className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            {seats.members} <span className="text-lg text-slate-500">of {seats.total}</span>
+            {seats.members} <span className="text-lg text-slate-500">{t("team.of_total", { count: seats.total })}</span>
           </div>
           <div className="mt-1 text-sm text-slate-600">
-            {seats.pending > 0 ? `${seats.pending} invite${seats.pending === 1 ? "" : "s"} pending · ` : ""}
-            {seats.free} seat{seats.free === 1 ? "" : "s"} free
+            {seats.pending > 0 ? t(seats.pending === 1 ? "team.pending_one" : "team.pending_many", { count: seats.pending }) : ""}
+            {t(seats.free === 1 ? "team.free_one" : "team.free_many", { count: seats.free })}
           </div>
         </div>
 
@@ -247,33 +245,33 @@ export default function Team() {
               balance keeps it, and checks can be moved between advisors. Writing
               it "109 of 20" invited exactly the reading it deserved — that the
               number is broken — when the only broken thing was the denominator. */}
-          <div className="text-sm font-bold uppercase tracking-wider text-slate-500">Policy checks left</div>
+          <div className="text-sm font-bold uppercase tracking-wider text-slate-500">{t("team.checks_left")}</div>
           <div className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
             {members.reduce((sum, m) => sum + Number(m.checks_left), 0)}
           </div>
           <div className="mt-1 text-sm text-slate-600">
-            Across {members.length} advisor{members.length === 1 ? "" : "s"} · a new seat starts with {view.checksPerSeat}
+            {t(members.length === 1 ? "team.across_checks_one" : "team.across_checks_many", { count: members.length, per: view.checksPerSeat })}
           </div>
         </div>
 
         {outOfChecks.length > 0 ? (
           <div className="bg-white border border-amber-200 border-l-4 border-l-amber-500 rounded-xl p-4 sm:p-5">
-            <div className="text-sm font-bold uppercase tracking-wider text-amber-700">Out of checks</div>
+            <div className="text-sm font-bold uppercase tracking-wider text-amber-700">{t("team.out_of_checks")}</div>
             <div className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-amber-700">{outOfChecks.length}</div>
             <div className="mt-1 text-sm text-amber-700 font-medium">
-              {outOfChecks.map((m) => m.name || m.email).join(", ")} — move them some
+              {t("team.move_them_some", { names: outOfChecks.map((m) => m.name || m.email).join(", ") })}
             </div>
           </div>
         ) : (
           <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5">
-            <div className="text-sm font-bold uppercase tracking-wider text-slate-500">Data entry left</div>
+            <div className="text-sm font-bold uppercase tracking-wider text-slate-500">{t("team.entry_left")}</div>
             {/* Same reasoning as checks: unused data entry carries over, so a
                 balance above the monthly grant is correct, not an error. */}
             <div className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
               {members.reduce((sum, m) => sum + Number(m.entry_left), 0)}
             </div>
             <div className="mt-1 text-sm text-slate-600">
-              Across {members.length} advisor{members.length === 1 ? "" : "s"} · 50 a seat is added every month
+              {t(members.length === 1 ? "team.across_entry_one" : "team.across_entry_many", { count: members.length })}
             </div>
           </div>
         )}
@@ -285,19 +283,19 @@ export default function Team() {
           <table className="table-cards w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr className="text-left text-sm text-slate-500 uppercase tracking-wider font-semibold">
-                <th className="px-5 py-3.5">Advisor</th>
-                <th className="px-3 py-3.5">Role</th>
-                <th className="px-3 py-3.5">Checks</th>
-                <th className="px-3 py-3.5">Data entry</th>
-                <th className="px-3 py-3.5">Customers</th>
-                <th className="px-3 py-3.5">Last activity</th>
-                <th className="px-5 py-3.5 text-right">Actions</th>
+                <th className="px-5 py-3.5">{t("team.col_advisor")}</th>
+                <th className="px-3 py-3.5">{t("team.col_role")}</th>
+                <th className="px-3 py-3.5">{t("team.col_checks")}</th>
+                <th className="px-3 py-3.5">{t("team.col_entry")}</th>
+                <th className="px-3 py-3.5">{t("team.col_customers")}</th>
+                <th className="px-3 py-3.5">{t("team.col_last")}</th>
+                <th className="px-5 py-3.5 text-right">{t("team.col_actions")}</th>
               </tr>
             </thead>
             <tbody>
               {members.map((m) => (
                 <tr key={m.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-5 py-3.5" data-label="Advisor">
+                  <td className="px-5 py-3.5" data-label={t("team.col_advisor")}>
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`h-9 w-9 flex-none rounded-full grid place-items-center text-sm font-bold ${m.is_owner ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-600"}`}>
                         {initials(m.name, m.email)}
@@ -308,12 +306,12 @@ export default function Team() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-3.5" data-label="Role">
+                  <td className="px-3 py-3.5" data-label={t("team.col_role")}>
                     <span className={`inline-flex items-center min-h-[22px] px-2.5 rounded-full text-sm font-bold uppercase tracking-wide ${m.is_owner ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-600"}`}>
-                      {m.is_owner ? "Owner" : "Advisor"}
+                      {m.is_owner ? t("team.owner") : t("team.advisor")}
                     </span>
                   </td>
-                  <td className="px-3 py-3.5" data-label="Checks">
+                  <td className="px-3 py-3.5" data-label={t("team.col_checks")}>
                     <span className={`inline-flex items-center justify-center min-w-[34px] min-h-[26px] px-2 rounded-md border text-sm font-bold ${checkChip(Number(m.checks_left))}`}>
                       {m.checks_left}
                     </span>
@@ -321,16 +319,16 @@ export default function Team() {
                   {/* "68 of 50" is not a typo the reader forgives — it is the
                       same false ceiling. Carryover means the balance can exceed
                       the monthly grant, so show the balance. */}
-                  <td className="px-3 py-3.5 text-slate-700" data-label="Data entry">{m.entry_left} left</td>
-                  <td className="px-3 py-3.5 text-slate-700" data-label="Customers">{m.customers}</td>
-                  <td className="px-3 py-3.5 text-slate-500" data-label="Last activity">{whenLast(m.last_activity_at)}</td>
-                  <td className="px-5 py-3.5" data-label="Actions">
+                  <td className="px-3 py-3.5 text-slate-700" data-label={t("team.col_entry")}>{t("team.n_left", { count: m.entry_left })}</td>
+                  <td className="px-3 py-3.5 text-slate-700" data-label={t("team.col_customers")}>{m.customers}</td>
+                  <td className="px-3 py-3.5 text-slate-500" data-label={t("team.col_last")}>{whenLast(m.last_activity_at, t)}</td>
+                  <td className="px-5 py-3.5" data-label={t("team.col_actions")}>
                     <div className="flex items-center justify-end gap-2">
                       <Link
                         href={`/agent/team/${m.id}`}
                         className="inline-flex items-center min-h-[44px] px-2 text-sm font-semibold text-teal-700"
                       >
-                        {m.is_owner ? "Your book" : "View book"}
+                        {m.is_owner ? t("team.your_book") : t("team.view_book")}
                       </Link>
                       {!m.is_owner && (
                         <button
@@ -339,7 +337,7 @@ export default function Team() {
                           disabled={busyId === m.id}
                           className="inline-flex items-center min-h-[44px] px-2 text-sm font-semibold text-slate-500 hover:text-red-600 disabled:opacity-50"
                         >
-                          Remove
+                          {t("team.remove")}
                         </button>
                       )}
                     </div>
@@ -355,7 +353,7 @@ export default function Team() {
       {invites.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2.5">
-            <span className="text-sm font-bold uppercase tracking-wider text-slate-500">Pending invites</span>
+            <span className="text-sm font-bold uppercase tracking-wider text-slate-500">{t("team.pending_invites")}</span>
             <span className="inline-flex items-center min-h-[20px] px-2 rounded-full bg-slate-100 text-slate-600 text-sm font-bold">
               {invites.length}
             </span>
@@ -368,19 +366,19 @@ export default function Team() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-slate-900 truncate">{inv.email}</div>
-                  <div className="text-sm text-slate-500">The link works only for this address, once</div>
+                  <div className="text-sm text-slate-500">{t("team.link_only")}</div>
                 </div>
                 <span className="inline-flex items-center min-h-[24px] px-2.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-semibold">
-                  Expires in {daysLeft(inv.expires_at)} day{daysLeft(inv.expires_at) === 1 ? "" : "s"}
+                  {t(daysLeft(inv.expires_at) === 1 ? "team.expires_one" : "team.expires_many", { count: daysLeft(inv.expires_at) })}
                 </span>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" className="min-h-[44px]" disabled={busyId === inv.id} onClick={() => void onResend(inv.id)}>
                     <RefreshCw className="h-4 w-4 mr-1.5" />
-                    Resend
+                    {t("team.resend")}
                   </Button>
                   <Button variant="outline" className="min-h-[44px] text-red-600 border-red-200 hover:bg-red-50" disabled={busyId === inv.id} onClick={() => void onRevoke(inv.id)}>
                     <X className="h-4 w-4 mr-1.5" />
-                    Revoke
+                    {t("team.revoke")}
                   </Button>
                 </div>
               </li>
@@ -409,21 +407,20 @@ export default function Team() {
       <Dialog open={!!confirmRemove} onOpenChange={(o) => !o && setConfirmRemove(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Remove {confirmRemove?.name || "this advisor"} from the team?</DialogTitle>
+            <DialogTitle>{t("team.remove_title", { name: confirmRemove?.name || t("team.this_advisor") })}</DialogTitle>
             <DialogDescription className="text-sm leading-relaxed">
-              Their seat is freed and their plan drops back to Free. Their customers, policies and
-              claims stay theirs — nothing is deleted — and you stop being able to see them.
+              {t("team.remove_desc")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" className="min-h-[44px]" onClick={() => setConfirmRemove(null)}>Cancel</Button>
+            <Button variant="outline" className="min-h-[44px]" onClick={() => setConfirmRemove(null)}>{t("common.cancel")}</Button>
             <Button
               variant="destructive"
               className="min-h-[44px]"
               disabled={!!busyId}
               onClick={() => confirmRemove && void onRemove(confirmRemove)}
             >
-              Remove from team
+              {t("team.remove_from_team")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -444,6 +441,7 @@ function InviteDialog({
   checksPerSeat: number
   onDone: () => void
 }) {
+  const { t } = useLanguage()
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
   const [sending, setSending] = useState(false)
@@ -458,13 +456,13 @@ function InviteDialog({
       const r = await inviteAdvisor(email.trim(), name.trim() || undefined)
       toast({
         variant: r.emailed ? "success" : "destructive",
-        title: r.emailed ? "Invite sent" : "Invite created, email not sent",
+        title: r.emailed ? t("team.invite_sent") : t("team.invite_not_emailed"),
         description: r.message,
       })
       onOpenChange(false)
       onDone()
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not send the invite", description: e instanceof Error ? e.message : undefined })
+      toast({ variant: "destructive", title: t("team.invite_failed"), description: e instanceof Error ? e.message : undefined })
     } finally { setSending(false) }
   }
 
@@ -472,22 +470,22 @@ function InviteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Invite an advisor</DialogTitle>
+          <DialogTitle>{t("team.invite_title")}</DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">
-            They get a link that works only for this email address, can be used once, and expires in 7 days.
+            {t("team.invite_desc")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="invite-email" className="text-sm font-semibold">Their email address</Label>
+            <Label htmlFor="invite-email" className="text-sm font-semibold">{t("team.their_email")}</Label>
             <Input
               id="invite-email"
               type="email"
               inputMode="email"
               autoComplete="off"
               className="min-h-[46px] text-base"
-              placeholder="advisor@example.com"
+              placeholder={t("team.email_ph")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -495,7 +493,7 @@ function InviteDialog({
 
           <div className="space-y-2">
             <Label htmlFor="invite-name" className="text-sm font-semibold">
-              Their name <span className="font-normal text-slate-500">optional, so the email reads properly</span>
+              {t("team.their_name")} <span className="font-normal text-slate-500">{t("team.name_optional")}</span>
             </Label>
             <Input
               id="invite-name"
@@ -508,35 +506,33 @@ function InviteDialog({
           {seatsFree > 0 ? (
             <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
               <div className="text-sm font-semibold text-slate-900">
-                This uses seat {seatsTotal - seatsFree + 1} of {seatsTotal}
-                {seatsFree === 1 ? " — your last free seat." : "."}
+                {t(seatsFree === 1 ? "team.uses_last_seat" : "team.uses_seat", { n: seatsTotal - seatsFree + 1, total: seatsTotal })}
               </div>
               <div className="mt-1 text-sm text-slate-600">
-                They start the month with {checksPerSeat} policy checks and 50 data-entry policies of their own.
+                {t("team.start_with", { count: checksPerSeat })}
               </div>
             </div>
           ) : (
             <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-              All {seatsTotal} seats are taken. Revoke a pending invite or remove an advisor to free one.
+              {t("team.all_taken", { count: seatsTotal })}
             </div>
           )}
 
           {/* The advisor is told this on the join screen too. Saying it here as
               well means the owner knows what they are handing themselves. */}
           <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800 leading-relaxed">
-            As team owner you will be able to read their customers, policies, leads and claims —
-            not change them. They are told this before they join, and they see every time you open their book.
+            {t("team.owner_note")}
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" className="min-h-[44px]" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="outline" className="min-h-[44px]" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
           <Button
             className="min-h-[44px]"
             disabled={sending || seatsFree <= 0 || email.trim().length < 5}
             onClick={() => void submit()}
           >
-            {sending ? "Sending…" : "Send invite"}
+            {sending ? t("team.sending") : t("team.send_invite")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -556,6 +552,7 @@ function MoveChecksDialog({
 }) {
   // Sensible opening guess: take from whoever has most, give to whoever has least.
   const sorted = useMemo(() => [...members].sort((a, b) => Number(b.checks_left) - Number(a.checks_left)), [members])
+  const { t } = useLanguage()
   const [fromId, setFromId] = useState("")
   const [toId, setToId] = useState("")
   const [count, setCount] = useState(1)
@@ -577,11 +574,11 @@ function MoveChecksDialog({
     setMoving(true)
     try {
       const r = await moveChecks(fromId, toId, count)
-      toast({ variant: "success", title: "Checks moved", description: r.message })
+      toast({ variant: "success", title: t("team.moved"), description: r.message })
       onOpenChange(false)
       onDone()
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not move the checks", description: e instanceof Error ? e.message : undefined })
+      toast({ variant: "destructive", title: t("team.move_failed"), description: e instanceof Error ? e.message : undefined })
     } finally { setMoving(false) }
   }
 
@@ -589,15 +586,15 @@ function MoveChecksDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Move policy checks</DialogTitle>
+          <DialogTitle>{t("team.move_title")}</DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">
-            Each seat gets its own checks every month. You can move unused ones between advisors.
+            {t("team.move_desc")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="move-from" className="text-sm font-semibold">Take from</Label>
+            <Label htmlFor="move-from" className="text-sm font-semibold">{t("team.take_from")}</Label>
             <select
               id="move-from"
               className="w-full min-h-[46px] px-3 rounded-lg border border-slate-200 bg-white text-base"
@@ -605,13 +602,13 @@ function MoveChecksDialog({
               onChange={(e) => setFromId(e.target.value)}
             >
               {members.map((m) => (
-                <option key={m.id} value={m.id}>{m.name || m.email} — {m.checks_left} left</option>
+                <option key={m.id} value={m.id}>{t("team.option_left", { name: m.name || m.email, count: m.checks_left })}</option>
               ))}
             </select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="move-to" className="text-sm font-semibold">Give to</Label>
+            <Label htmlFor="move-to" className="text-sm font-semibold">{t("team.give_to")}</Label>
             <select
               id="move-to"
               className="w-full min-h-[46px] px-3 rounded-lg border border-slate-200 bg-white text-base"
@@ -619,22 +616,22 @@ function MoveChecksDialog({
               onChange={(e) => setToId(e.target.value)}
             >
               {members.filter((m) => m.id !== fromId).map((m) => (
-                <option key={m.id} value={m.id}>{m.name || m.email} — {m.checks_left} left</option>
+                <option key={m.id} value={m.id}>{t("team.option_left", { name: m.name || m.email, count: m.checks_left })}</option>
               ))}
             </select>
           </div>
 
           <div className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 border border-slate-200 p-4">
             <div>
-              <div className="text-sm font-semibold text-slate-900">How many</div>
+              <div className="text-sm font-semibold text-slate-900">{t("team.how_many")}</div>
               <div className="mt-0.5 text-sm text-slate-600">
-                {from?.name || "They"} keep{(from?.name || "").includes(" ") ? "s" : "s"} {Math.max(available - count, 0)} · {to?.name || "they"} get {Number(to?.checks_left ?? 0) + count}
+                {t("team.keep_get", { from: from?.name || t("team.they"), keep: Math.max(available - count, 0), to: to?.name || t("team.they"), get: Number(to?.checks_left ?? 0) + count })}
               </div>
             </div>
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                aria-label="One fewer"
+                aria-label={t("team.one_fewer")}
                 className="h-11 w-11 rounded-lg border border-slate-200 bg-white text-lg font-bold text-slate-700 disabled:opacity-40"
                 disabled={count <= 1}
                 onClick={() => setCount((c) => Math.max(1, c - 1))}
@@ -644,7 +641,7 @@ function MoveChecksDialog({
               <span className="min-w-[2ch] text-center text-2xl font-bold tracking-tight">{count}</span>
               <button
                 type="button"
-                aria-label="One more"
+                aria-label={t("team.one_more")}
                 className="h-11 w-11 rounded-lg border border-slate-200 bg-white text-lg font-bold text-slate-700 disabled:opacity-40"
                 disabled={count >= available}
                 onClick={() => setCount((c) => Math.min(available, c + 1))}
@@ -658,15 +655,14 @@ function MoveChecksDialog({
               this-month arrangement. Say so rather than let an owner think
               they have permanently rebalanced the team. */}
           <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800 leading-relaxed">
-            This lasts until the monthly refill. On the 1st, every advisor goes back to their own
-            seat's checks, whatever you move today.
+            {t("team.refill_note")}
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" className="min-h-[44px]" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="outline" className="min-h-[44px]" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
           <Button className="min-h-[44px]" disabled={moving || !fromId || !toId || count < 1 || count > available} onClick={() => void submit()}>
-            {moving ? "Moving…" : `Move ${count} check${count === 1 ? "" : "s"}`}
+            {moving ? t("team.moving") : t(count === 1 ? "team.move_one" : "team.move_many", { count })}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/hooks/use-toast"
 import { acceptInvite, previewInvite, type InvitePreview } from "@/lib/team"
+import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext"
 
 function daysLeft(iso: string): number {
   return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000))
@@ -26,6 +27,7 @@ export default function JoinTeam() {
   const [, params] = useRoute("/agent/join/:token")
   const [, setLocation] = useLocation()
   const token = params?.token ?? ""
+  const { t } = useLanguage()
 
   const [invite, setInvite] = useState<InvitePreview | null>(null)
   const [loading, setLoading] = useState(true)
@@ -46,7 +48,7 @@ export default function JoinTeam() {
         setSignedInEmail(session.data.user?.email ?? null)
         setError(null)
       } catch (e: unknown) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "This invite link is not valid.")
+        if (!cancelled) setError(e instanceof Error ? e.message : t("join.invalid"))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -59,10 +61,10 @@ export default function JoinTeam() {
     setAccepting(true)
     try {
       const r = await acceptInvite(token)
-      toast({ variant: "success", title: `You are on ${r.teamName}`, description: r.message })
+      toast({ variant: "success", title: t("join.you_are_on", { team: r.teamName }), description: r.message })
       setLocation("/agent/dashboard")
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not join the team", description: e instanceof Error ? e.message : undefined })
+      toast({ variant: "destructive", title: t("join.join_failed"), description: e instanceof Error ? e.message : undefined })
     } finally {
       setAccepting(false)
     }
@@ -82,12 +84,12 @@ export default function JoinTeam() {
   if (error || !invite) {
     return (
       <Shell>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">This invite link is not valid</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t("join.invalid_title")}</h1>
         <p className="mt-3 text-base text-slate-600 leading-relaxed">
-          {error ?? "We could not find this invite."} If someone is expecting you on their team, ask them to send it again.
+          {error ?? t("join.not_found")} {t("join.ask_again")}
         </p>
         <Link href="/agent/login" className="mt-6 inline-flex items-center min-h-[48px] px-5 rounded-xl bg-teal-600 text-white font-semibold">
-          Go to sign in
+          {t("join.go_sign_in")}
         </Link>
       </Shell>
     )
@@ -98,16 +100,16 @@ export default function JoinTeam() {
   if (invite.state !== "pending") {
     const copy = {
       accepted: {
-        title: "This invite has already been used",
-        body: `The invite to ${invite.email} was accepted. If that was you, just sign in.`,
+        title: t("join.used_title"),
+        body: t("join.used_body", { email: invite.email }),
       },
       revoked: {
-        title: "This invite was withdrawn",
-        body: `${invite.ownerName} cancelled this invite. Ask them for a new one if you still need it.`,
+        title: t("join.revoked_title"),
+        body: t("join.revoked_body", { owner: invite.ownerName }),
       },
       expired: {
-        title: "This invite has expired",
-        body: `Invites last 7 days. Ask ${invite.ownerName} to send a fresh one — it takes them a moment.`,
+        title: t("join.expired_title"),
+        body: t("join.expired_body", { owner: invite.ownerName }),
       },
     }[invite.state]
 
@@ -116,7 +118,7 @@ export default function JoinTeam() {
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">{copy.title}</h1>
         <p className="mt-3 text-base text-slate-600 leading-relaxed">{copy.body}</p>
         <Link href="/agent/login" className="mt-6 inline-flex items-center min-h-[48px] px-5 rounded-xl bg-teal-600 text-white font-semibold">
-          Go to sign in
+          {t("join.go_sign_in")}
         </Link>
       </Shell>
     )
@@ -132,39 +134,38 @@ export default function JoinTeam() {
           {invite.ownerName.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
         </div>
         <div className="min-w-0">
-          <div className="text-sm text-slate-600">{invite.ownerName} has invited you</div>
+          <div className="text-sm text-slate-600">{t("join.has_invited", { owner: invite.ownerName })}</div>
         </div>
       </div>
 
       <h1 className="mt-4 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-tight">
-        Join {invite.teamName} on IndSure
+        {t("join.join_heading", { team: invite.teamName })}
       </h1>
       <p className="mt-3 text-base text-slate-600 leading-relaxed">
-        You get your own advisor account inside the agency team — your leads, your customers,
-        your policy checks.
+        {t("join.own_account")}
       </p>
 
       {/* What the seat carries. Every figure here is what the server will
           actually give them on joining, not a brochure number. */}
       <div className="mt-6 bg-white border border-slate-200 rounded-xl overflow-hidden">
         <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 text-sm font-bold uppercase tracking-wider text-slate-500">
-          Your seat, every month
+          {t("join.seat_monthly")}
         </div>
         <ul>
           <li className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 min-h-[56px]">
             <ShieldCheck className="h-5 w-5 flex-none text-teal-600" />
-            <span className="flex-1 text-base text-slate-800">Policy checks</span>
+            <span className="flex-1 text-base text-slate-800">{t("join.policy_checks")}</span>
             <span className="text-base font-bold text-slate-900">{invite.checksPerSeat}</span>
           </li>
           <li className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 min-h-[56px]">
             <FileText className="h-5 w-5 flex-none text-teal-600" />
-            <span className="flex-1 text-base text-slate-800">Data-entry policies</span>
+            <span className="flex-1 text-base text-slate-800">{t("join.data_entry")}</span>
             <span className="text-base font-bold text-slate-900">50</span>
           </li>
           <li className="flex items-center gap-3 px-4 py-3.5 min-h-[56px]">
             <TrendingUp className="h-5 w-5 flex-none text-teal-600" />
-            <span className="flex-1 text-base text-slate-800">Leads, renewals, calculator</span>
-            <span className="text-base font-bold text-slate-900">Included</span>
+            <span className="flex-1 text-base text-slate-800">{t("join.tools")}</span>
+            <span className="text-base font-bold text-slate-900">{t("join.included")}</span>
           </li>
         </ul>
       </div>
@@ -174,21 +175,19 @@ export default function JoinTeam() {
         <div className="flex items-start gap-3">
           <ShieldCheck className="h-5 w-5 flex-none mt-0.5 text-amber-600" />
           <p className="text-base text-slate-800 leading-relaxed">
-            As team owner, <span className="font-semibold">{invite.ownerName} can read the customers,
-            policies, leads and claims you add here</span> — not change them. You will see every time
-            they open your book.
+            {t("join.consent_read", { owner: invite.ownerName })}
           </p>
         </div>
         <div className="flex items-start gap-3">
           <Lock className="h-5 w-5 flex-none mt-0.5 text-teal-600" />
           <p className="text-base text-slate-800 leading-relaxed">
-            They cannot open the documents on a claim, or the original file on a policy you upload.
+            {t("join.consent_docs")}
           </p>
         </div>
         <div className="flex items-start gap-3">
           <Mail className="h-5 w-5 flex-none mt-0.5 text-teal-600" />
           <p className="text-base text-slate-800 leading-relaxed">
-            This invite works only for <span className="font-semibold">{invite.email}</span>, one time.
+            {t("join.only_for", { email: invite.email })}
           </p>
         </div>
       </div>
@@ -197,23 +196,21 @@ export default function JoinTeam() {
       <div className="mt-6 space-y-3">
         {emailMatches && (
           <Button className="w-full min-h-[52px] text-base" disabled={accepting} onClick={() => void onAccept()}>
-            {accepting ? "Joining…" : `Join ${invite.teamName}`}
+            {accepting ? t("join.joining") : t("join.join_btn", { team: invite.teamName })}
           </Button>
         )}
 
         {signedInEmail && !emailMatches && (
           <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
             <p className="text-base text-amber-800 leading-relaxed">
-              You are signed in as <span className="font-semibold">{signedInEmail}</span>, but this
-              invite is for <span className="font-semibold">{invite.email}</span>. Sign out and sign in
-              with that address to accept it.
+              {t("join.wrong_account", { signed: signedInEmail, email: invite.email })}
             </p>
             <button
               type="button"
               onClick={async () => { await supabase.auth.signOut(); window.location.reload() }}
               className="mt-3 inline-flex items-center min-h-[44px] font-semibold text-amber-900 underline"
             >
-              Sign out
+              {t("join.sign_out")}
             </button>
           </div>
         )}
@@ -228,11 +225,10 @@ export default function JoinTeam() {
               href={`/agent/login?next=${encodeURIComponent(`/agent/join/${token}`)}&email=${encodeURIComponent(invite.email)}`}
               className="w-full min-h-[52px] inline-flex items-center justify-center rounded-xl bg-teal-600 text-white text-base font-bold"
             >
-              Sign in to join {invite.teamName}
+              {t("join.sign_in_to_join", { team: invite.teamName })}
             </Link>
             <p className="text-sm text-slate-600 leading-relaxed text-center">
-              You already advise on IndSure with {invite.email}. Sign in with that account and we
-              will bring you straight back here to finish joining.
+              {t("join.already_advise", { email: invite.email })}
             </p>
           </>
         )}
@@ -248,19 +244,18 @@ export default function JoinTeam() {
               href={`/agent/signup/step1?email=${encodeURIComponent(invite.email)}${invite.signupCode ? `&code=${encodeURIComponent(invite.signupCode)}` : ""}`}
               className="w-full min-h-[52px] inline-flex items-center justify-center rounded-xl bg-teal-600 text-white text-base font-bold"
             >
-              Create my account
+              {t("join.create_account")}
             </Link>
             {/* Told plainly rather than discovered: signup ends in a
                 confirmation email, so the last step happens back here. */}
             <p className="text-sm text-slate-600 leading-relaxed text-center">
-              Set up your account with {invite.email}, then open this link from your invite email
-              again to finish joining.
+              {t("join.set_up_then", { email: invite.email })}
             </p>
             <Link
               href={`/agent/login?next=${encodeURIComponent(`/agent/join/${token}`)}`}
               className="w-full min-h-[48px] inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white text-base font-semibold text-slate-700"
             >
-              Already on IndSure? Sign in to join
+              {t("join.already_on")}
             </Link>
           </>
         )}
@@ -268,13 +263,13 @@ export default function JoinTeam() {
         <div className="flex items-center justify-center gap-2 min-h-[44px]">
           <Clock className="h-4 w-4 text-amber-700" />
           <span className="text-sm font-semibold text-amber-700">
-            This invite expires in {daysLeft(invite.expiresAt)} day{daysLeft(invite.expiresAt) === 1 ? "" : "s"}
+            {t(daysLeft(invite.expiresAt) === 1 ? "join.expires_one" : "join.expires_many", { count: daysLeft(invite.expiresAt) })}
           </span>
         </div>
       </div>
 
       <p className="mt-4 text-sm text-slate-500 leading-relaxed text-center">
-        Not expecting this? Ignore the email — nothing is created until you accept.
+        {t("join.not_expecting")}
       </p>
     </Shell>
   )
@@ -288,6 +283,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <Check className="h-4 w-4 text-white" strokeWidth={3} />
         </div>
         <span className="text-[17px] font-bold tracking-tight text-slate-900">IndSure</span>
+        <div className="ml-auto"><LanguageToggle /></div>
       </div>
       <div className="mx-auto max-w-lg px-5 py-8 sm:py-12">{children}</div>
     </div>

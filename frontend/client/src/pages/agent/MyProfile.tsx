@@ -12,6 +12,7 @@ import { useAgent } from "@/context/AgentContext"
 import { toast } from "@/hooks/use-toast"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import { useLanguage } from "@/i18n/LanguageContext"
+import { tOr } from "@/i18n"
 
 // ─── Health Insurance Companies ───────────────────────────────────────────────
 
@@ -215,9 +216,9 @@ export default function MyProfile() {
       // Save extended fields separately — silently ignore if columns don't exist yet
       await supabase.from("agents").update({ phone_number: phone, firm_name: firm }).eq("id", profile.id)
       await refresh()
-      toast({ variant: "success", title: "Profile updated" })
+      toast({ variant: "success", title: t("my_profile.toast_profile_updated") })
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Update failed", description: e instanceof Error ? e.message : "Could not save." })
+      toast({ variant: "destructive", title: t("my_profile.toast_update_failed"), description: e instanceof Error ? e.message : t("my_profile.toast_could_not_save") })
     } finally {
       setSaving(false)
     }
@@ -231,7 +232,7 @@ export default function MyProfile() {
     try {
       const { error: uErr } = await supabase.auth.updateUser({ password: newPass })
       if (uErr) throw new Error(uErr.message)
-      toast({ variant: "success", title: "Password updated" })
+      toast({ variant: "success", title: t("my_profile.toast_password_updated") })
       setNewPass(""); setConfirmPass("")
     } catch (e: unknown) {
       setPassError(e instanceof Error ? e.message : "Password update failed.")
@@ -257,9 +258,9 @@ export default function MyProfile() {
         .update({ partnered_companies: Array.from(partnered) })
         .eq("id", profile.id)
       if (uErr) throw new Error(uErr.message)
-      toast({ variant: "success", title: "Partnerships saved" })
+      toast({ variant: "success", title: t("my_profile.toast_partnerships_saved") })
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Save failed", description: e instanceof Error ? e.message : "Could not save. The partnered_companies column may need to be added to your agents table." })
+      toast({ variant: "destructive", title: t("my_profile.toast_save_failed"), description: e instanceof Error ? e.message : t("my_profile.toast_partners_failed") })
     } finally {
       setSavingPartners(false)
     }
@@ -368,7 +369,7 @@ export default function MyProfile() {
               <div key={type}>
                 <div className="flex items-center gap-3 mb-3">
                   <span className={`inline-flex rounded-full px-3 py-0.5 text-xs font-black uppercase tracking-widest border ${TYPE_COLORS[type]}`}>
-                    {TYPE_LABELS[type]}
+                    {tOr(t, `my_profile.type_${type}`, TYPE_LABELS[type])}
                   </span>
                   <span className="text-xs text-slate-400 font-semibold">
                     {companies.filter(c => partnered.has(c.name)).length}/{companies.length} {t("my_profile.partnered")}
