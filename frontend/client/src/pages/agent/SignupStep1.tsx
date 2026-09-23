@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'wouter'
 import { supabase } from '@/lib/supabase'
 import { apiFetch } from '@/lib/api';
@@ -111,6 +111,12 @@ export default function AgentSignupStep1() {
     const update = (field: string, value: string) => {
         if (field === 'inviteCode') {
             value = value.toUpperCase().trim()
+            // A changed code is an unchecked code. Without this, editing a code
+            // that had already passed kept the green tick and a live button.
+            if (value !== form.inviteCode) {
+                setInviteCodeStatus('idle')
+                setInviteCodeError('')
+            }
         }
         if (field === 'city') {
             setCitySearch(value)
@@ -172,9 +178,19 @@ export default function AgentSignupStep1() {
     // already do.
     const phoneValid = form.phone === '' || /^[6-9]\d{9}$/.test(form.phone.replace(/\D/g, '').slice(-10))
 
-    const validateInviteCode = async () => {
-        if (!form.inviteCode) {
+    // The code used to be checked only on blur. A code that arrived already
+    // filled in (a team invite link, or a draft restored after a refresh) was
+    // never checked at all, so Continue stayed grey with nothing saying why.
+    // Now it is checked on mount and shortly after every change, and a slow
+    // answer for an old code can never overwrite the answer for the current one.
+    const latestCheck = useRef(0)
+
+    const validateInviteCode = async (raw: string = form.inviteCode) => {
+        const code = raw.trim().toUpperCase()
+        const checkId = ++latestCheck.current
+        if (!code) {
             setInviteCodeStatus('idle')
+            setInviteCodeError('')
             return
         }
 
@@ -184,18 +200,26 @@ export default function AgentSignupStep1() {
         const { data: invite, error: inviteError } = await supabase
             .from('invite_codes')
             .select('*')
-            .eq('code', form.inviteCode)
+            .eq('code', code)
             .eq('is_active', true)
-            .single()
+            .maybeSingle()
 
-        if (inviteError || !invite) {
+        if (checkId !== latestCheck.current) return
+
+        if (inviteError) {
+            // A network or server failure is not a wrong code; say which it is.
+            setInviteCodeStatus('invalid')
+            setInviteCodeError('Could not check the code right now. Check your internet connection and try again.')
+            return
+        }
+
+        if (!invite) {
             setInviteCodeStatus('invalid')
             setInviteCodeError('Invite code not found. Check your email/WhatsApp for the correct code.')
             return
         }
 
         const isMultiUse = invite.max_uses === null || invite.max_uses > (invite.current_uses || 0)
-        const isSingleUse = invite.max_uses === null && invite.used_by === null
 
         if (!isMultiUse && invite.used_by !== null) {
             setInviteCodeStatus('expired')
@@ -211,6 +235,13 @@ export default function AgentSignupStep1() {
 
         setInviteCodeStatus('valid')
     }
+
+    useEffect(() => {
+        if (!form.inviteCode) return
+        const t = setTimeout(() => { void validateInviteCode(form.inviteCode) }, 400)
+        return () => clearTimeout(t)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.inviteCode])
 
     const handleNext = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -387,6 +418,20 @@ export default function AgentSignupStep1() {
         passwordValid &&
         termsAccepted
 
+    // Continue is disabled until the form is complete, so say what is missing
+    // right under it. A grey button with no reason was a dead end.
+    const stillNeeded: string[] = []
+    if (inviteCodeStatus === 'checking') stillNeeded.push('invite code (checking…)')
+    else if (inviteCodeStatus !== 'valid') stillNeeded.push('a valid invite code')
+    if (form.accountType === 'agency' && form.agencyName.trim() === '') stillNeeded.push('agency name')
+    if (form.fullName.trim() === '') stillNeeded.push('full name')
+    if (form.email.trim() === '') stillNeeded.push('email')
+    if (form.phone.trim() === '') stillNeeded.push('mobile number')
+    else if (!phoneValid) stillNeeded.push('a valid 10-digit mobile number')
+    if (form.city.trim() === '') stillNeeded.push('city')
+    if (!passwordValid) stillNeeded.push('a password that meets the rules')
+    if (!termsAccepted) stillNeeded.push('agreeing to the Terms')
+
     const inputClass = 'w-full h-11 px-4 rounded-full border border-slate-200 bg-white text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] transition-all'
 
     return (
@@ -538,7 +583,7 @@ export default function AgentSignupStep1() {
                                     type="text"
                                     value={form.inviteCode}
                                     onChange={(e) => update('inviteCode', e.target.value)}
-                                    onBlur={validateInviteCode}
+                                    onBlur={() => { void validateInviteCode(form.inviteCode) }}
                                     required
                                     placeholder="Paste your invite code here"
                                     className={`${inputClass} font-mono tracking-widest uppercase pr-10 ${
@@ -746,6 +791,11 @@ export default function AgentSignupStep1() {
                                 </span>
                             ) : 'Continue to Empanelment →'}
                         </button>
+                        {!loading && stillNeeded.length > 0 && (
+                            <p className="text-sm text-slate-700" aria-live="polite">
+                                Still needed: {stillNeeded.join(', ')}
+                            </p>
+                        )}
                     </form>
 
                     {/* Footer Links */}

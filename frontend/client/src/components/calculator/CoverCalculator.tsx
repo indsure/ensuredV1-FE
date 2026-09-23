@@ -69,6 +69,9 @@ export interface CoverCalculatorProps {
   partnerCompanies?: string[];
   /** Called after the engine runs and the save attempt finishes. */
   onComplete?: (done: CoverCalculatorCompletion) => void;
+  /** Embedded (agent) flow only: called as the advisor moves through the
+   *  wizard, so the page can keep the run in memory across portal navigation. */
+  onProgress?: (p: { stepId: string; inputs: Partial<UserInputs>; state: string; city: string }) => void;
 }
 
 const OptionCard = ({
@@ -281,6 +284,7 @@ export default function CoverCalculator({
   customerId,
   partnerCompanies,
   onComplete,
+  onProgress,
 }: CoverCalculatorProps) {
   const [_, setLocation] = useLocation();
   const [inputs, setInputs] = useState<Partial<UserInputs>>(initialInputs ?? {});
@@ -288,8 +292,13 @@ export default function CoverCalculator({
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
+  // A step id handed in from outside (a restored advisor run, or "review") can
+  // name a step this build no longer has. Trusting it blindly white-screens the
+  // wizard, so fall back to the normal first step instead.
   const [currentStepId, setCurrentStepId] = useState<StepId>(
-    (initialStepId as StepId) ?? (embedded ? "location" : "intro")
+    initialStepId && ALL_STEPS.some((step) => step.id === initialStepId)
+      ? (initialStepId as StepId)
+      : embedded ? "location" : "intro"
   );
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -344,6 +353,22 @@ export default function CoverCalculator({
       saveProgress(currentStepId, inputs);
     }
   }, [embedded, currentStepId, inputs]);
+
+  // Agent flow: hand progress to the page, which keeps it in memory only
+  // (see lib/agentCalcDraft.ts). Nothing here touches web storage.
+  // Skip the mount itself: a prefilled or restored wizard the advisor has not
+  // touched yet is not new work, and must not raise a "we kept your answers".
+  const progressMounted = useRef(false);
+  useEffect(() => {
+    if (!progressMounted.current) {
+      progressMounted.current = true;
+      return;
+    }
+    if (!embedded || !onProgress) return;
+    if (Object.keys(inputs).length === 0) return;
+    onProgress({ stepId: currentStepId, inputs, state: selectedState, city: selectedCity });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embedded, currentStepId, inputs, selectedState, selectedCity]);
 
   // The agent flow deliberately does NOT autosave: saveProgress() writes the
   // wizard inputs to localStorage (calculator-storage.ts:139), and in the agent

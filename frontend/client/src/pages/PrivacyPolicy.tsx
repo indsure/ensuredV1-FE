@@ -5,8 +5,8 @@
 
 import { useEffect } from "react";
 
-const LAST_UPDATED = "25 March 2025";
-const EFFECTIVE_DATE = "25 March 2025";
+const LAST_UPDATED = "23 September 2026";
+const EFFECTIVE_DATE = "23 September 2026";
 
 const sections = [
   {
@@ -25,7 +25,9 @@ Our registered contact email is tech@indsure.in. For all data-related queries, p
         title: "2.1 Insurance documents you upload",
         body: `When you use our policy analysis tools (health, life, vehicle, or term), you may upload PDF files or images of your insurance policies. These documents may contain your name, policy number, coverage details, nominee information, and other policy-specific data. We treat all uploaded documents as sensitive personal data.
 
-Uploaded files are automatically deleted from our servers within 24 hours. We process your document to generate your report and recommendations, and we do not store the analysis content as a permanent record.`,
+We store the documents you upload, and the reports we make from them, because keeping them is the service: your saved policies stay in your account so you can open them again, see all your cover in one place and get renewal reminders. If an advisor uploads your policy, it is stored in that advisor's client records for the same reason.
+
+A stored document stays until the policy is deleted, by you in your account or by your advisor in theirs. Deleting a policy deletes its document and its report. A report from a check that was never saved to an account is deleted after 90 days. See Section 5 for every retention period, including backups.`,
       },
       {
         title: "2.2 Health and personal information",
@@ -84,15 +86,23 @@ We do not request or collect precise GPS location on these pages. IndSure remain
         body: `Your uploaded insurance documents and chat messages are processed by Google's Gemini AI API to extract policy information and generate analysis. Google processes this data as our data processor under a data processing agreement. Google does not use your data to train its models. For details, see Google's API data usage policy at ai.google.dev/terms.`,
       },
       {
-        title: "4.2 Supabase (infrastructure & auth)",
-        body: `Agent account authentication and profile data are stored and managed by Supabase, which provides database and authentication infrastructure. Data is stored in servers within the region configured by IndSure.`,
+        title: "4.2 Supabase (database, file storage and sign-in)",
+        body: `Supabase provides our database, file storage and sign-in. Account and profile data for consumers and advisors, the policy documents you upload, and the reports we make from them are stored with Supabase.`,
       },
       {
-        title: "4.3 Google Fonts",
+        title: "4.3 Amazon Web Services (servers and email)",
+        body: `Our application servers run on Amazon Web Services, which processes your documents while a report is being made. We send account and renewal-reminder emails through Amazon Simple Email Service, which receives your email address and the message.`,
+      },
+      {
+        title: "4.4 Cloudflare R2 (encrypted backups)",
+        body: `Every night we make an encrypted backup of our database and stored documents and keep it with Cloudflare R2, so that your data can be recovered if something fails. The backups are encrypted before they leave our servers. See Section 5 for how long backups are kept.`,
+      },
+      {
+        title: "4.5 Google Fonts",
         body: `Our website loads fonts from fonts.googleapis.com. Your browser will make a request to Google's servers to download fonts, which may involve your IP address being sent to Google. You may block this in your browser settings without affecting core functionality.`,
       },
       {
-        title: "4.4 Legal or regulatory disclosure",
+        title: "4.6 Legal or regulatory disclosure",
         body: `We may disclose your data to law enforcement, courts, or regulators where required by applicable Indian law, including the DPDP Act 2023, provided we have received a lawful request and — where permitted — have notified you.`,
       },
     ],
@@ -102,11 +112,14 @@ We do not request or collect precise GPS location on these pages. IndSure remain
     title: "5. How long we keep your data",
     content: null,
     table: [
-      { type: "Uploaded policy files", period: "Deleted within 24 hours of upload", notes: "Automatic deletion from file system" },
-      { type: "Policy analysis reports", period: "Not retained in our database; provided for your session only", notes: "Analysis is processed and discarded in accordance with our DPDP practices" },
-      { type: "Health calculator reports", period: "Not retained in our database; provided for your session only", notes: "Calculator outputs are generated on demand" },
+      { type: "Uploaded policy documents", period: "Until the policy is deleted", notes: "Deleted by you in your account, or by your advisor in their client records. Deleting a policy deletes its document." },
+      { type: "Files uploaded before signing up", period: "24 hours", notes: "If you upload a policy and do not finish creating an account, the file is deleted automatically after 24 hours." },
+      { type: "Policy reports", period: "Until the policy is deleted", notes: "A report from a check that was never saved to an account is deleted after 90 days. Share links stop working when the policy is deleted." },
+      { type: "Cover calculations made by an advisor", period: "While the client they belong to exists", notes: "A calculation not linked to a client, or whose client has been deleted, is deleted after 90 days." },
+      { type: "Cover calculations you make yourself", period: "90 days", notes: "While you are filling it in, your answers are saved only in your own browser. When you finish, the report is saved with us so you can open or share its link, and it is deleted after 90 days." },
+      { type: "Encrypted backups", period: "90 days", notes: "Anything you delete is gone from our backups within 90 days of deletion." },
       { type: "Agent account data", period: "For the duration of your account + 2 years after closure", notes: "Required for regulatory compliance" },
-      { type: "Chat messages (Sach AI)", period: "Not stored beyond the current session", notes: "Cleared on session end" },
+      { type: "Chat messages (Sach AI)", period: "Not stored", notes: "We keep a usage record (which feature was used and how much processing it took), never the text of your messages." },
       { type: "API server logs", period: "30 days", notes: "Anonymised; used for performance monitoring only" },
     ],
   },
@@ -139,7 +152,8 @@ In accordance with Section 9 of the DPDP Act 2023, we do not process children's 
     content: `We implement appropriate technical and organisational measures to protect your personal data, including:
 
 • Encrypted transmission of data between your browser and our servers (HTTPS/TLS).
-• Automatic deletion of uploaded files within 24 hours.
+• Automatic deletion of temporary copies of your files made on our servers while a report is being prepared, within 24 hours.
+• Automatic deletion, after 24 hours, of a file uploaded before signing up if no account is created for it.
 • Access controls restricting database access to authorised personnel only.
 • Supabase-managed authentication with industry-standard password hashing.
 • Calculator inputs you enter may be stored in your browser localStorage to help you continue where you left off; this data stays on your device unless you submit it for analysis.

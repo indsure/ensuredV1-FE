@@ -18,6 +18,7 @@ import { pdf } from "@react-pdf/renderer";
 import { CalculatorPDFDocument } from "@/components/CalculatorPDFDocument";
 import { registerPdfFonts } from "@/components/PolicyPDFDocument";
 import { supabase } from "@/lib/supabase";
+import { clearAgentCalcDraft, readAgentCalcDraft, saveAgentCalcDraft, type AgentCalcDraft } from "@/lib/agentCalcDraft";
 
 /** Find the state for a known city name (case-insensitive), if any. */
 function findStateForCity(city: string): { state: string; city: string } | null {
@@ -63,6 +64,41 @@ export default function AgentCalculator() {
   // When re-opening a completed run to tweak answers, the wizard restarts at
   // its review step seeded with the prior inputs (lossless via city/state).
   const [seed, setSeed] = useState<{ inputs: Partial<UserInputs>; state?: string; city?: string } | null>(null);
+  // A run the advisor left mid-way (by opening another portal page) comes back
+  // here. Checked once, when the advisor is known, so the wizard mounts with it.
+  const [restored, setRestored] = useState<AgentCalcDraft | null>(null);
+  const [restoreChecked, setRestoreChecked] = useState(false);
+
+  useEffect(() => {
+    if (!agent?.agentId || restoreChecked) return;
+    setRestored(readAgentCalcDraft(agent.agentId, customerIdParam ?? null));
+    setRestoreChecked(true);
+  }, [agent?.agentId, customerIdParam, restoreChecked]);
+
+  function rememberProgress(p: { stepId: string; inputs: Partial<UserInputs>; state: string; city: string }) {
+    if (!agent?.agentId) return;
+    saveAgentCalcDraft({
+      agentId: agent.agentId,
+      customerId: customerIdParam ?? null,
+      stepId: p.stepId,
+      inputs: p.inputs,
+      state: p.state || undefined,
+      city: p.city || undefined,
+    });
+  }
+
+  function finishRun(result: CoverCalculatorCompletion) {
+    clearAgentCalcDraft();
+    setRestored(null);
+    setDone(result);
+  }
+
+  function startOver() {
+    clearAgentCalcDraft();
+    setRestored(null);
+    setSeed(null);
+    setRunKey((k) => k + 1);
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -155,6 +191,8 @@ export default function AgentCalculator() {
   }
 
   function resetRun() {
+    clearAgentCalcDraft();
+    setRestored(null);
     setDone(null);
     setCopied(false);
     setSeed(null);
@@ -164,6 +202,8 @@ export default function AgentCalculator() {
 
   function adjustInputs() {
     if (!done) return;
+    clearAgentCalcDraft();
+    setRestored(null);
     setSeed({ inputs: done.inputs, state: done.inputs.state, city: done.inputs.city });
     setDone(null);
     setCopied(false);
@@ -230,20 +270,29 @@ export default function AgentCalculator() {
         </div>
       )}
 
-      {!done && !loadingCustomer && (
+      {!done && !loadingCustomer && restoreChecked && (
         <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-6 md:p-10">
+            {restored && !seed && (
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-[#0D9488]/20 bg-[#0D9488]/5 px-4 py-3">
+                <p className="text-base text-slate-800">We kept your answers from earlier. Carry on where you left off.</p>
+                <Button variant="outline" className="min-h-[44px] text-base" onClick={startOver}>
+                  Start over
+                </Button>
+              </div>
+            )}
             <CoverCalculator
               key={runKey}
               embedded
               authToken={authToken}
               customerId={customer?.id ?? null}
               partnerCompanies={partnerCompanies}
-              initialInputs={seed?.inputs ?? prefill.initialInputs}
-              initialState={seed?.state ?? prefill.initialState}
-              initialCity={seed?.city ?? prefill.initialCity}
-              initialStepId={seed ? "review" : undefined}
-              onComplete={setDone}
+              initialInputs={seed?.inputs ?? restored?.inputs ?? prefill.initialInputs}
+              initialState={seed?.state ?? restored?.state ?? prefill.initialState}
+              initialCity={seed?.city ?? restored?.city ?? prefill.initialCity}
+              initialStepId={seed ? "review" : restored?.stepId}
+              onComplete={finishRun}
+              onProgress={rememberProgress}
             />
           </CardContent>
         </Card>
