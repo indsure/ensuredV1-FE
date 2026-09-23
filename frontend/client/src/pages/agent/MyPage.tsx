@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { supabase } from "@/lib/supabase";
 import {
@@ -38,6 +39,7 @@ import {
 
 export default function MyPage() {
   const { agent } = useAgent();
+  const { t, locale } = useLanguage();
   const agentId = agent?.agentId;
 
   const [page, setPage] = useState<AdvisorPage | null>(null);
@@ -86,7 +88,7 @@ export default function MyPage() {
         setLeadCount(leads.count ?? 0);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load your page.");
+      setError(e instanceof Error ? e.message : t("mypage.load_failed"));
     } finally {
       setLoading(false);
     }
@@ -113,7 +115,7 @@ export default function MyPage() {
     if (!page) return;
     const problem = displayNameProblem(displayName);
     if (problem) {
-      toast({ variant: "destructive", title: "Check your name", description: problem });
+      toast({ variant: "destructive", title: t("mypage.check_name"), description: problem });
       return;
     }
     setSaving(true);
@@ -128,13 +130,13 @@ export default function MyPage() {
         photo_url: photoUrl,
         ...extra,
       });
-      toast({ variant: "success", title: "Saved" });
+      toast({ variant: "success", title: t("mypage.saved") });
       await load();
     } catch (e) {
       toast({
         variant: "destructive",
-        title: "Could not save",
-        description: e instanceof Error ? e.message : "Please try again.",
+        title: t("mypage.save_failed"),
+        description: e instanceof Error ? e.message : t("mypage.try_again"),
       });
     } finally {
       setSaving(false);
@@ -149,8 +151,8 @@ export default function MyPage() {
     } catch (e) {
       toast({
         variant: "destructive",
-        title: "Could not create your page",
-        description: e instanceof Error ? e.message : "Please try again.",
+        title: t("mypage.create_failed"),
+        description: e instanceof Error ? e.message : t("mypage.try_again"),
       });
     } finally {
       setCreating(false);
@@ -163,12 +165,12 @@ export default function MyPage() {
     try {
       const url = await uploadPhoto(agentId, file);
       setPhotoUrl(url);
-      toast({ variant: "success", title: "Photo updated", description: "Remember to save." });
+      toast({ variant: "success", title: t("mypage.photo_updated"), description: t("mypage.remember_save") });
     } catch (e) {
       toast({
         variant: "destructive",
-        title: "Could not upload that photo",
-        description: e instanceof Error ? e.message : "Please try a different image.",
+        title: t("mypage.photo_failed"),
+        description: e instanceof Error ? e.message : t("mypage.photo_try"),
       });
     } finally {
       setUploadingPhoto(false);
@@ -197,18 +199,15 @@ export default function MyPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Globe className="h-5 w-5 text-[#0D9488]" />
-              Your advisor page
+              {t("mypage.intro_title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-slate-600">
             <p>
-              An advisor page is your own public page: your photo, your city, the languages you
-              speak. Share it on WhatsApp, put it in your Instagram bio, or print it as a QR code
-              on your visiting card. Anyone who fills it in lands straight in your Leads.
+              {t("mypage.intro_1")}
             </p>
             <p>
-              Creating it takes a second and puts nothing online yet. You add your details here
-              first, then press Publish when you are ready.
+              {t("mypage.intro_2")}
             </p>
             <Button
               className="bg-[#0D9488] hover:bg-[#0F766E]"
@@ -217,10 +216,10 @@ export default function MyPage() {
             >
               {creating ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("mypage.creating")}
                 </>
               ) : (
-                "Create my page"
+                t("mypage.create")
               )}
             </Button>
           </CardContent>
@@ -237,9 +236,9 @@ export default function MyPage() {
       {/* ── Header + publish ─────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl font-bold text-slate-900">My page</h1>
+          <h1 className="font-serif text-2xl font-bold text-slate-900">{t("mypage.title")}</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Your public page at{" "}
+            {t("mypage.public_at")}{" "}
             <a
               href={liveUrl}
               target="_blank"
@@ -253,7 +252,7 @@ export default function MyPage() {
         <div className="flex items-center gap-2">
           <a href={liveUrl} target="_blank" rel="noopener noreferrer">
             <Button variant="outline" className="gap-2">
-              <ExternalLink className="h-4 w-4" /> Preview
+              <ExternalLink className="h-4 w-4" /> {t("mypage.preview")}
             </Button>
           </a>
           <Button
@@ -262,27 +261,27 @@ export default function MyPage() {
             className={page.published ? "bg-slate-700 hover:bg-slate-800" : "bg-[#0D9488] hover:bg-[#0F766E]"}
           >
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {page.published ? "Take page offline" : "Publish my page"}
+            {page.published ? t("mypage.take_offline") : t("mypage.publish")}
           </Button>
         </div>
       </div>
 
       {!page.published && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Your page is not live yet. Fill in your details below, then press{" "}
-          <strong>Publish my page</strong>.
-          {!canPublish && " (Add your name, your WhatsApp number, and at least one type of insurance.)"}
+          {t("mypage.not_live")}{" "}
+          <strong>{t("mypage.publish")}</strong>.
+          {!canPublish && t("mypage.not_live_need")}
         </div>
       )}
 
       {/* ── Numbers ──────────────────────────────────────────────────── */}
       {page.published && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <StatCard icon={<Eye className="h-4 w-4" />} label="Page views (30 days)" value={totalViews} />
-          <StatCard icon={<Target className="h-4 w-4" />} label="Leads from this page" value={leadCount ?? 0} />
+          <StatCard icon={<Eye className="h-4 w-4" />} label={t("mypage.stat_views")} value={totalViews} />
+          <StatCard icon={<Target className="h-4 w-4" />} label={t("mypage.stat_leads")} value={leadCount ?? 0} />
           <StatCard
             icon={<Share2 className="h-4 w-4" />}
-            label="Best channel"
+            label={t("mypage.stat_channel")}
             value={bySource.length ? bySource[0][0] : "—"}
           />
         </div>
@@ -292,11 +291,11 @@ export default function MyPage() {
       {page.published && totalViews > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Where your visitors come from</CardTitle>
+            <CardTitle className="text-base">{t("mypage.visitors_from")}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <BreakdownList title="App" rows={byApp} total={totalViews} />
-            <BreakdownList title="Device" rows={byDevice} total={totalViews} />
+            <BreakdownList title={t("mypage.app")} rows={byApp} total={totalViews} />
+            <BreakdownList title={t("mypage.device")} rows={byDevice} total={totalViews} />
           </CardContent>
         </Card>
       )}
@@ -304,7 +303,7 @@ export default function MyPage() {
       {/* ── Details ──────────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Your details</CardTitle>
+          <CardTitle className="text-base">{t("mypage.details")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Photo */}
@@ -319,7 +318,7 @@ export default function MyPage() {
             <div>
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
                 {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                {photoUrl ? "Change photo" : "Add photo"}
+                {photoUrl ? t("mypage.change_photo") : t("mypage.add_photo")}
                 <input
                   type="file"
                   accept="image/*"
@@ -333,19 +332,19 @@ export default function MyPage() {
                 />
               </label>
               <p className="mt-2 text-xs text-slate-500">
-                A clear photo of your face. Please don't use a company or insurer logo.
+                {t("mypage.photo_hint")}
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Your name" hint="This is what people see on the page.">
+            <Field label={t("mypage.your_name")} hint={t("mypage.your_name_hint")}>
               <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} />
             </Field>
-            <Field label="City">
+            <Field label={t("mypage.city")}>
               <Input value={city} onChange={(e) => setCity(e.target.value)} maxLength={60} />
             </Field>
-            <Field label="WhatsApp number" hint="Where enquiries reach you. Can differ from your login number.">
+            <Field label={t("mypage.whatsapp")} hint={t("mypage.whatsapp_hint")}>
               <Input
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(e.target.value)}
@@ -353,7 +352,7 @@ export default function MyPage() {
                 placeholder="98XXXXXXXX"
               />
             </Field>
-            <Field label="Page opens in" hint="The language your customers are most comfortable in.">
+            <Field label={t("mypage.opens_in")} hint={t("mypage.opens_in_hint")}>
               <div className="flex gap-2">
                 {(["en", "hi"] as PageLocale[]).map((l) => (
                   <button
@@ -373,7 +372,7 @@ export default function MyPage() {
             </Field>
           </div>
 
-          <Field label="Insurance you handle" hint="Only these show on your page.">
+          <Field label={t("mypage.insurance_handle")} hint={t("mypage.insurance_hint")}>
             <div className="flex flex-wrap gap-2">
               {LINES_OF_BUSINESS.map((l) => {
                 const on = lines.includes(l);
@@ -388,14 +387,14 @@ export default function MyPage() {
                         : "border-slate-300 bg-white text-slate-600"
                     }`}
                   >
-                    <span aria-hidden="true">{LOB_META[l].emoji}</span> {LOB_META[l].en}
+                    <span aria-hidden="true">{LOB_META[l].emoji}</span> {locale === "hi" ? LOB_META[l].hi : LOB_META[l].en}
                   </button>
                 );
               })}
             </div>
           </Field>
 
-          <Field label="Languages you speak" hint="Shown on your page as a trust signal.">
+          <Field label={t("mypage.languages")} hint={t("mypage.languages_hint")}>
             <div className="flex flex-wrap gap-2">
               {SPOKEN_LANGUAGES.map((lang) => {
                 const on = languages.includes(lang.code);
@@ -424,7 +423,7 @@ export default function MyPage() {
           <div className="flex justify-end border-t border-slate-100 pt-4">
             <Button onClick={() => save()} disabled={saving} className="bg-[#0D9488] hover:bg-[#0F766E]">
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save
+              {t("mypage.save")}
             </Button>
           </div>
         </CardContent>
@@ -439,6 +438,7 @@ export default function MyPage() {
 /* ── Share kit ───────────────────────────────────────────────────────────── */
 
 function ShareKit({ slug, name }: { slug: string; name: string }) {
+  const { t } = useLanguage();
   const [campaign, setCampaign] = useState("");
   const [copied, setCopied] = useState<ShareChannel | null>(null);
   const qrRef = useRef<HTMLCanvasElement>(null);
@@ -471,7 +471,7 @@ function ShareKit({ slug, name }: { slug: string; name: string }) {
       setCopied(channel);
       window.setTimeout(() => setCopied(null), 1600);
     } catch {
-      toast({ variant: "destructive", title: "Could not copy", description: url });
+      toast({ variant: "destructive", title: t("mypage.copy_failed"), description: url });
     }
   }
 
@@ -490,18 +490,17 @@ function ShareKit({ slug, name }: { slug: string; name: string }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <Share2 className="h-4 w-4 text-[#0D9488]" /> Share your page
+          <Share2 className="h-4 w-4 text-[#0D9488]" /> {t("mypage.share_title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-sm text-slate-600">
-          Use the link made for the place you're posting it. Each one is already tagged, so your
-          page views tell you which channel is actually bringing you enquiries.
+          {t("mypage.share_desc")}
         </p>
 
         <Field
-          label="Campaign name (optional)"
-          hint="Naming a campaign — say diwali-offer — lets you tell two pushes apart."
+          label={t("mypage.campaign")}
+          hint={t("mypage.campaign_hint")}
         >
           <Input
             value={campaign}
@@ -524,7 +523,7 @@ function ShareKit({ slug, name }: { slug: string; name: string }) {
                 </code>
                 <Button size="sm" variant="outline" className="shrink-0 gap-1.5" onClick={() => copy(c.key)}>
                   {copied === c.key ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                  {copied === c.key ? "Copied" : "Copy"}
+                  {copied === c.key ? t("mypage.copied") : t("mypage.copy")}
                 </Button>
               </div>
             </div>
@@ -539,7 +538,7 @@ function ShareKit({ slug, name }: { slug: string; name: string }) {
             />
             {qrError && (
               <div className="grid h-[220px] w-[220px] place-items-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 text-xs text-slate-500">
-                Could not draw the QR code. Please reload the page.
+                {t("mypage.qr_failed")}
               </div>
             )}
             <Button
@@ -549,13 +548,13 @@ function ShareKit({ slug, name }: { slug: string; name: string }) {
               onClick={downloadQr}
               disabled={qrError}
             >
-              <Download className="h-4 w-4" /> Download QR
+              <Download className="h-4 w-4" /> {t("mypage.download_qr")}
             </Button>
             <p className="mt-2 text-[11px] text-slate-400 break-all">{qrUrl}</p>
           </div>
 
           <div className="space-y-3">
-            <p className="text-sm font-medium text-slate-700">Ready-made WhatsApp message</p>
+            <p className="text-sm font-medium text-slate-700">{t("mypage.wa_message")}</p>
             <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4 text-sm leading-relaxed text-slate-600">
               {waText}
             </div>
@@ -566,17 +565,16 @@ function ShareKit({ slug, name }: { slug: string; name: string }) {
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(waText);
-                  toast({ variant: "success", title: "Message copied" });
+                  toast({ variant: "success", title: t("mypage.msg_copied") });
                 } catch {
-                  toast({ variant: "destructive", title: "Could not copy" });
+                  toast({ variant: "destructive", title: t("mypage.copy_failed") });
                 }
               }}
             >
-              <Copy className="h-4 w-4" /> Copy message
+              <Copy className="h-4 w-4" /> {t("mypage.copy_message")}
             </Button>
             <p className="text-xs text-slate-500">
-              Print the QR on your visiting card or a standee. Anyone who scans it lands on your
-              page.
+              {t("mypage.qr_hint")}
             </p>
           </div>
         </div>
