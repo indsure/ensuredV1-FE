@@ -11,9 +11,10 @@ import { ScoreRing, Meter } from "@/components/app/ScoreRing";
 import { PolicyCard } from "@/components/app/PolicyCard";
 import type { Policy, Portfolio } from "@/components/app/portfolio-types";
 import {
-  LOBS, advisorTel, advisorWa, daysUntil, fmtDate, formatINRShort, labelFor, lobFor,
+  LOBS, advisorTel, advisorWa, daysUntil, fmtDate, formatINRShort, lobBlurb, lobLabel, lobWhy,
   parseSumInsured, renewalPhrase, scoreClasses, scoreMeaning, scoreVerdict,
 } from "@/components/app/portfolio-utils";
+import { useLanguage } from "@/i18n/LanguageContext";
 import {
   Upload, FileText, ShieldCheck, LogOut, AlertCircle, Loader2, Lock, Pencil, Bell,
   CalendarClock, PhoneCall, Sparkles, Check, Plus, ArrowRight, MessageCircle,
@@ -25,6 +26,7 @@ type SortKey = "recent" | "score" | "renewal";
 export default function PortfolioPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { t, locale } = useLanguage();
   const [data, setData] = useState<Portfolio | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
 
@@ -53,16 +55,16 @@ export default function PortfolioPage() {
   const load = useCallback(async () => {
     try {
       const res = await apiFetch("/api/me/portfolio");
-      if (!res.ok) throw new Error(`Failed to load portfolio (${res.status})`);
+      if (!res.ok) throw new Error(t("pf.load_failed_status", { status: res.status }));
       setData(await res.json());
       setLoadErr(null);
     } catch (e: any) {
-      setLoadErr(e.message || "Failed to load portfolio");
+      setLoadErr(e.message || t("pf.load_failed"));
     }
   }, []);
 
   useEffect(() => {
-    document.title = "My Portfolio — IndSure";
+    document.title = t("pf.doc_title");
     load();
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [load]);
@@ -88,8 +90,8 @@ export default function PortfolioPage() {
       if (cancelled || claimed.status !== "started") return;
       toast({
         variant: "success",
-        title: "We found the policy you uploaded",
-        description: "Reading it now. This usually takes under a minute.",
+        title: t("pf.found_upload"),
+        description: t("pf.found_upload_d"),
       });
       load();
     })();
@@ -143,9 +145,9 @@ export default function PortfolioPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ renewal_date: date }),
       }));
-      if (date) toast({ title: "Renewal date saved", description: "We'll remind you 30 days before.", variant: "success" });
+      if (date) toast({ title: t("pf.renewal_saved"), description: t("pf.renewal_saved_d"), variant: "success" });
     } catch { load(); }
-  }, [load, toast]);
+  }, [load, toast, t]);
 
   // Deliberately NOT optimistic. The other mutations here update local state
   // first because a failed rename is a cosmetic glitch. A policy vanishing from
@@ -157,15 +159,13 @@ export default function PortfolioPage() {
       const res = await apiFetch(`/api/me/policy/${p.id}`, { method: "DELETE" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || "Could not delete this policy.");
+        throw new Error(body.message || t("pf.delete_failed_d"));
       }
       setData((d) => (d ? { ...d, policies: d.policies.filter((x) => x.id !== p.id) } : d));
       toast({
         variant: "success",
-        title: "Policy deleted",
-        description: p.has_pdf
-          ? "The policy and its document are gone. This cannot be undone."
-          : "The policy is gone. This cannot be undone.",
+        title: t("pf.deleted"),
+        description: p.has_pdf ? t("pf.deleted_with_file") : t("pf.deleted_no_file"),
       });
     } catch (e: any) {
       // Re-read rather than guess: the server may have deleted the file and
@@ -173,13 +173,13 @@ export default function PortfolioPage() {
       load();
       toast({
         variant: "destructive",
-        title: "Could not delete",
-        description: e.message || "Please try again.",
+        title: t("pf.delete_failed"),
+        description: e.message || t("pf.try_again"),
       });
     } finally {
       setDeletingId(null);
     }
-  }, [load, toast]);
+  }, [load, toast, t]);
 
   async function toggleReminders(next: boolean) {
     setData((d) => (d ? { ...d, renewalRemindersEnabled: next } : d)); // optimistic
@@ -190,10 +190,8 @@ export default function PortfolioPage() {
         body: JSON.stringify({ renewal_reminders_enabled: next }),
       }));
       toast({
-        title: next ? "Reminders on" : "Reminders off",
-        description: next
-          ? "We'll email you 30 days before each renewal."
-          : "You won't get renewal emails from us.",
+        title: next ? t("pf.rem_on") : t("pf.rem_off"),
+        description: next ? t("pf.rem_on_d") : t("pf.rem_off_d"),
         variant: next ? "success" : "default",
       });
     } catch { load(); }
@@ -210,7 +208,7 @@ export default function PortfolioPage() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || "Could not download this file.");
+        throw new Error(body.message || t("pf.download_failed_d"));
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -222,11 +220,11 @@ export default function PortfolioPage() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (e: any) {
-      toast({ title: "Download failed", description: e.message || "Could not download this file.", variant: "destructive" });
+      toast({ title: t("pf.download_failed"), description: e.message || t("pf.download_failed_d"), variant: "destructive" });
     } finally {
       setDownloadingId(null);
     }
-  }, [toast]);
+  }, [toast, t]);
 
   const openConnect = useCallback((topic: string) => {
     setConnectTopic(topic);
@@ -250,7 +248,7 @@ export default function PortfolioPage() {
         if (pollRef.current) clearInterval(pollRef.current);
         setUploading(false);
         setUploadStage(null);
-        toast({ title: "Analysis timed out", description: "Please try uploading again.", variant: "destructive" });
+        toast({ title: t("pf.timed_out"), description: t("pf.timed_out_d"), variant: "destructive" });
         return;
       }
       try {
@@ -261,21 +259,21 @@ export default function PortfolioPage() {
           setUploading(false);
           setUploadStage(null);
           setAddOpen(false);
-          toast({ title: "Policy decoded", description: "Your audit is ready — open the card to see it.", variant: "success" });
+          toast({ title: t("pf.decoded"), description: t("pf.decoded_d"), variant: "success" });
           load();
         } else if (s.status === "error") {
           if (pollRef.current) clearInterval(pollRef.current);
           setUploading(false);
           setUploadStage(null);
-          toast({ title: "We couldn't read that PDF", description: s.error || "Try a clearer, non-scanned copy.", variant: "destructive" });
+          toast({ title: t("pf.cant_read"), description: s.error || t("pf.cant_read_d"), variant: "destructive" });
           load();
         } else {
           // Real backend states, not a fake progress bar.
-          setUploadStage(s.status === "pending" ? "In the queue…" : "Reading the fine print…");
+          setUploadStage(s.status === "pending" ? t("pf.stage_queue") : t("pf.stage_reading"));
         }
       } catch { /* transient; keep polling */ }
     }, 3000);
-  }, [load, toast]);
+  }, [load, toast, t]);
 
   // Arriving from signup or login having just claimed a pre-signup upload. The
   // analysis is already running, so attach to it immediately — otherwise the
@@ -289,7 +287,7 @@ export default function PortfolioPage() {
     if (!jobId) return;
     window.history.replaceState({}, "", window.location.pathname);
     setUploading(true);
-    setUploadStage("In the queue…");
+    setUploadStage(t("pf.stage_queue"));
     pollStatus(jobId);
   }, [pollStatus]);
 
@@ -297,11 +295,11 @@ export default function PortfolioPage() {
     if (!files.length) return;
     const file = files[0];
     if (file.size > 25 * 1024 * 1024) {
-      toast({ title: "File is too large", description: "Maximum size is 25MB.", variant: "destructive" });
+      toast({ title: t("pf.too_large"), description: t("pf.too_large_d"), variant: "destructive" });
       return;
     }
     setUploading(true);
-    setUploadStage("Uploading your PDF…");
+    setUploadStage(t("pf.stage_uploading"));
     setPaywall(null);
     try {
       const form = new FormData();
@@ -316,23 +314,23 @@ export default function PortfolioPage() {
         // (backend/server/routes.ts:781, :796). The "trial_expired" branch that
         // used to sit here was unreachable and asserted a 30-day trial the
         // server stopped enforcing, contradicting /pricing.
-        setPaywall(`You've used your free ${labelFor(selectedType)} slot. Upgrade to add more.`);
+        setPaywall(t("pf.paywall", { type: lobLabel(t, selectedType) }));
         return;
       }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Upload failed (${res.status})`);
+        throw new Error(body.error || t("pf.upload_failed_status", { status: res.status }));
       }
       const { jobId } = await res.json();
-      setUploadStage("In the queue…");
+      setUploadStage(t("pf.stage_queue"));
       load(); // show the pending row immediately
       pollStatus(jobId);
     } catch (e: any) {
       setUploading(false);
       setUploadStage(null);
-      toast({ title: "Upload failed", description: e.message || "Please try again.", variant: "destructive" });
+      toast({ title: t("pf.upload_failed"), description: e.message || t("pf.try_again"), variant: "destructive" });
     }
-  }, [selectedType, load, pollStatus, toast]);
+  }, [selectedType, load, pollStatus, toast, t]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -371,7 +369,7 @@ export default function PortfolioPage() {
           .filter((f) => typeof f === "string" && f.trim())
           .map((f) => ({
             id: p.id,
-            policy: p.nickname || p.insurer || labelFor(p.insurance_type),
+            policy: p.nickname || p.insurer || lobLabel(t, p.insurance_type),
             flaw: f.trim(),
             score: p.score ?? 60,
           }))
@@ -386,7 +384,7 @@ export default function PortfolioPage() {
       lifeCover: coverOf(["term", "life"]),
       expiringSoon, presentTypes, missingLobs, fixes, undated,
     };
-  }, [data]);
+  }, [data, t]);
 
   const visiblePolicies = useMemo(() => {
     const list = d.policies.filter((p) => filter === "all" || p.insurance_type === filter);
@@ -403,11 +401,11 @@ export default function PortfolioPage() {
 
   // One primary action for the hero, chosen by what's most urgent right now.
   const heroCta = (() => {
-    if (isEmpty) return { label: "Add your first policy", onClick: () => openAdd(), icon: Plus };
-    if (d.expiringSoon.length) return { label: "Get help renewing", onClick: () => openConnect("renew"), icon: PhoneCall };
-    if (d.fixes.length) return { label: "See what to fix", onClick: () => scrollTo("next-steps"), icon: Zap };
-    if (d.missingLobs.length) return { label: `Add ${d.missingLobs[0].label.toLowerCase()} cover`, onClick: () => openAdd(d.missingLobs[0].type), icon: Plus };
-    return { label: "Add another policy", onClick: () => openAdd(), icon: Plus };
+    if (isEmpty) return { label: t("pf.cta_first"), onClick: () => openAdd(), icon: Plus };
+    if (d.expiringSoon.length) return { label: t("pf.cta_renew"), onClick: () => openConnect("renew"), icon: PhoneCall };
+    if (d.fixes.length) return { label: t("pf.cta_fix"), onClick: () => scrollTo("next-steps"), icon: Zap };
+    if (d.missingLobs.length) return { label: t("pf.cta_add_type", { type: lobLabel(t, d.missingLobs[0].type).toLowerCase() }), onClick: () => openAdd(d.missingLobs[0].type), icon: Plus };
+    return { label: t("pf.cta_another"), onClick: () => openAdd(), icon: Plus };
   })();
 
   if (!data && !loadErr) return <PortfolioSkeleton />;
@@ -420,7 +418,7 @@ export default function PortfolioPage() {
           <div className="flex items-center gap-2.5 min-w-0">
             <img src="/logo.png" alt="IndSure" className="h-7 sm:h-8 w-auto" />
             <span className="hidden sm:inline text-[var(--color-border-medium)]">/</span>
-            <span className="hidden sm:inline text-sm font-semibold text-[var(--color-text-secondary)]">Portfolio</span>
+            <span className="hidden sm:inline text-sm font-semibold text-[var(--color-text-secondary)]">{t("pf.portfolio")}</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <button
@@ -428,13 +426,13 @@ export default function PortfolioPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-[var(--color-teal-600)] hover:bg-[var(--color-teal-600)]/10 transition-colors"
             >
               {data?.advisor ? <ShieldCheck className="w-4 h-4" /> : <PhoneCall className="w-4 h-4" />}
-              <span className="hidden sm:inline">{data?.advisor ? "Your advisor" : "Talk to an advisor"}</span>
+              <span className="hidden sm:inline">{data?.advisor ? t("pf.your_advisor") : t("pf.talk_advisor")}</span>
             </button>
             <button
               onClick={signOut}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] hover:bg-black/5 transition-colors"
             >
-              <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Sign out</span>
+              <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">{t("pf.sign_out")}</span>
             </button>
           </div>
         </div>
@@ -459,21 +457,21 @@ export default function PortfolioPage() {
                   onKeyDown={(e) => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false); }}
                   onBlur={saveName}
                   maxLength={80}
-                  placeholder="Your name"
+                  placeholder={t("pf.your_name")}
                   className="h-10 px-3 rounded-xl border border-[var(--color-border-medium)] bg-white text-base font-semibold focus:border-[var(--color-teal-600)] outline-none"
                 />
-                <span className="text-xs text-[var(--color-text-muted)]">Enter to save</span>
+                <span className="text-xs text-[var(--color-text-muted)]">{t("pf.enter_save")}</span>
               </div>
             ) : (
               <h1 className="font-serif text-2xl sm:text-3xl font-bold leading-tight text-[var(--color-navy-900)] flex flex-wrap items-center gap-x-2">
-                {firstName ? `Hey ${firstName},` : "Your cover,"}
+                {firstName ? t("pf.hey", { name: firstName }) : t("pf.your_cover")}
                 <span className="italic text-[var(--color-teal-600)]">
-                  {firstName ? "here's your cover" : "decoded"}
+                  {firstName ? t("pf.heres_cover") : t("pf.decoded_word")}
                 </span>
                 {data && (
                   <button
                     onClick={() => { setNameDraft(data.fullName ?? ""); setEditingName(true); }}
-                    aria-label={firstName ? "Edit your name" : "Add your name"}
+                    aria-label={firstName ? t("pf.edit_name") : t("pf.add_name")}
                     className="w-9 h-9 inline-flex items-center justify-center rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-teal-600)] hover:bg-[var(--color-teal-600)]/10 transition-colors"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -489,7 +487,7 @@ export default function PortfolioPage() {
             >
               {/* claim-source: Personal is 4 health checks a year and 16 stored
                   policies (pricing.tsx:91-93), not unlimited. */}
-              {data.plan === "paid" ? "Paid · 4 checks a year" : "Free · one policy per type"}
+              {data.plan === "paid" ? t("pf.plan_paid_pill") : t("pf.plan_free_pill")}
               {data.plan !== "paid" && <ArrowRight className="w-3 h-3" />}
             </button>
           )}
@@ -506,12 +504,12 @@ export default function PortfolioPage() {
           <div className="relative grid grid-cols-1 gap-7 sm:gap-9 sm:grid-cols-[auto_1fr] items-center">
             <div className="flex flex-col items-center sm:items-start gap-4">
               {d.avgScore != null ? (
-                <ScoreRing score={d.avgScore} color={ringColor(d.avgScore)} label="cover score" />
+                <ScoreRing score={d.avgScore} color={ringColor(d.avgScore)} label={t("pf.cover_score")} />
               ) : (
                 <div className="w-[168px] h-[168px] rounded-full border-[12px] border-white/10 flex flex-col items-center justify-center text-center px-6">
                   <span className="font-serif text-3xl sm:text-4xl font-bold text-white/40">—</span>
                   <span className="mt-1 text-xs font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
-                    no score yet
+                    {t("pf.no_score")}
                   </span>
                 </div>
               )}
@@ -519,12 +517,12 @@ export default function PortfolioPage() {
 
             <div className="min-w-0">
               <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white leading-tight">
-                {d.avgScore != null ? scoreVerdict(d.avgScore) : "Let's find out where you stand"}
+                {d.avgScore != null ? scoreVerdict(d.avgScore, t) : t("pf.find_out")}
               </h2>
               <p className="mt-2 text-sm text-[var(--color-white-muted)] leading-relaxed max-w-lg">
                 {d.avgScore != null
-                  ? scoreMeaning(d.avgScore)
-                  : "Add a policy PDF and we'll read the fine print for you — waiting periods, sub-limits, the clauses that decide whether a claim gets paid."}
+                  ? scoreMeaning(d.avgScore, t)
+                  : t("pf.find_out_d")}
               </p>
 
               {/* Completeness — honest second dimension: score says how good your
@@ -532,9 +530,9 @@ export default function PortfolioPage() {
               <div className="mt-5 max-w-md">
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="font-mono uppercase tracking-widest text-[var(--color-white-muted)]">
-                    Portfolio completeness
+                    {t("pf.completeness")}
                   </span>
-                  <span className="font-semibold text-white">{d.presentTypes.size} of 4 essentials</span>
+                  <span className="font-semibold text-white">{t("pf.essentials", { n: d.presentTypes.size })}</span>
                 </div>
                 <Meter value={d.presentTypes.size} max={4} color="var(--color-teal-400)" />
               </div>
@@ -543,23 +541,23 @@ export default function PortfolioPage() {
               <div className="mt-6 grid grid-cols-3 gap-3 sm:gap-4 max-w-lg">
                 <HeroStat
                   icon={<Heart className="w-3.5 h-3.5" />}
-                  label="Health cover"
+                  label={t("pf.health_cover")}
                   value={d.healthCover > 0 ? formatINRShort(d.healthCover) : "—"}
-                  hint={d.healthCover > 0 ? undefined : "Not added"}
+                  hint={d.healthCover > 0 ? undefined : t("pf.not_added")}
                   onClick={d.healthCover > 0 ? undefined : () => openAdd("health")}
                 />
                 <HeroStat
                   icon={<ShieldCheck className="w-3.5 h-3.5" />}
-                  label="Life cover"
+                  label={t("pf.life_cover")}
                   value={d.lifeCover > 0 ? formatINRShort(d.lifeCover) : "—"}
-                  hint={d.lifeCover > 0 ? undefined : "Not added"}
+                  hint={d.lifeCover > 0 ? undefined : t("pf.not_added")}
                   onClick={d.lifeCover > 0 ? undefined : () => openAdd("term")}
                 />
                 <HeroStat
                   icon={<CalendarClock className="w-3.5 h-3.5" />}
-                  label="Next renewal"
-                  value={d.expiringSoon[0] ? `${d.expiringSoon[0].d}d` : d.live.length ? "None due" : "—"}
-                  hint={d.expiringSoon[0] ? fmtDate(d.expiringSoon[0].p.renewal_date) : undefined}
+                  label={t("pf.next_renewal")}
+                  value={d.expiringSoon[0] ? t("pf.days_short", { n: d.expiringSoon[0].d }) : d.live.length ? t("pf.none_due") : "—"}
+                  hint={d.expiringSoon[0] ? fmtDate(d.expiringSoon[0].p.renewal_date, locale) : undefined}
                 />
               </div>
 
@@ -575,7 +573,7 @@ export default function PortfolioPage() {
                     onClick={() => openAdd()}
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-colors active:scale-[0.98]"
                   >
-                    <Plus className="w-4 h-4" /> Add policy
+                    <Plus className="w-4 h-4" /> {t("pf.add_policy")}
                   </button>
                 )}
               </div>
@@ -586,23 +584,23 @@ export default function PortfolioPage() {
         {/* ── Quick actions — scannable, one tap each ──────────────────── */}
         {!isEmpty && (
           <div className="-mx-5 sm:mx-0 px-5 sm:px-0 flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <QuickChip icon={Plus} label="Add policy" onClick={() => openAdd()} />
+            <QuickChip icon={Plus} label={t("pf.add_policy")} onClick={() => openAdd()} />
             <QuickChip
               icon={CalendarClock}
-              label="Renewals"
+              label={t("pf.q_renewals")}
               count={d.expiringSoon.length}
               tone={d.expiringSoon.length ? "amber" : "plain"}
               onClick={() => scrollTo("renewals")}
             />
             <QuickChip
               icon={Zap}
-              label="Fixes"
+              label={t("pf.q_fixes")}
               count={d.fixes.length}
               tone={d.fixes.length ? "gold" : "plain"}
               onClick={() => scrollTo("next-steps")}
             />
-            <QuickChip icon={FileText} label="Policies" count={d.policies.length} onClick={() => scrollTo("policies")} />
-            <QuickChip icon={MessageCircle} label="Ask an advisor" onClick={() => openConnect("review")} />
+            <QuickChip icon={FileText} label={t("pf.q_policies")} count={d.policies.length} onClick={() => scrollTo("policies")} />
+            <QuickChip icon={MessageCircle} label={t("pf.q_ask")} onClick={() => openConnect("review")} />
           </div>
         )}
 
@@ -615,15 +613,15 @@ export default function PortfolioPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <h2 className="font-serif text-lg font-bold text-amber-900">
-                  {d.expiringSoon.length === 1 ? "1 policy renews soon" : `${d.expiringSoon.length} policies renew soon`}
+                  {d.expiringSoon.length === 1 ? t("pf.renew_one") : t("pf.renew_many", { n: d.expiringSoon.length })}
                 </h2>
-                <p className="text-sm text-amber-800/80">Miss the date and you start fresh — waiting periods and all.</p>
+                <p className="text-sm text-amber-800/80">{t("pf.miss_date")}</p>
                 <ul className="mt-3 space-y-3">
                   {d.expiringSoon.map(({ p, d: days }) => (
                     <li key={p.id}>
                       <div className="flex flex-wrap items-baseline justify-between gap-x-2 text-sm text-amber-900">
-                        <span className="font-semibold">{p.nickname || p.insurer || labelFor(p.insurance_type)}</span>
-                        <span className="text-xs">{renewalPhrase(days)} · {fmtDate(p.renewal_date)}</span>
+                        <span className="font-semibold">{p.nickname || p.insurer || lobLabel(t, p.insurance_type)}</span>
+                        <span className="text-xs">{renewalPhrase(days, t)} · {fmtDate(p.renewal_date, locale)}</span>
                       </div>
                       {/* Countdown: how much of the 30-day window is left. */}
                       <div className="mt-1.5">
@@ -636,7 +634,7 @@ export default function PortfolioPage() {
                   onClick={() => openConnect("renew")}
                   className="mt-4 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-bold hover:bg-amber-700 transition-colors active:scale-[0.98]"
                 >
-                  <PhoneCall className="w-4 h-4" /> Get help renewing
+                  <PhoneCall className="w-4 h-4" /> {t("pf.cta_renew")}
                 </button>
               </div>
             </div>
@@ -648,33 +646,33 @@ export default function PortfolioPage() {
           <section id="policies" className="scroll-mt-20 space-y-4">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 className="font-serif text-xl font-bold text-[var(--color-navy-900)]">Your policies</h2>
-                <p className="text-sm text-[var(--color-text-muted)]">Tap any policy to see what's inside it.</p>
+                <h2 className="font-serif text-xl font-bold text-[var(--color-navy-900)]">{t("pf.your_policies")}</h2>
+                <p className="text-sm text-[var(--color-text-muted)]">{t("pf.tap_policy")}</p>
               </div>
               <label className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-                <span className="font-mono uppercase tracking-widest">Sort</span>
+                <span className="font-mono uppercase tracking-widest">{t("pf.sort")}</span>
                 <select
                   value={sort}
                   onChange={(e) => setSort(e.target.value as SortKey)}
                   className="h-9 pl-3 pr-8 rounded-xl border border-[var(--color-border-light)] bg-white text-sm font-semibold text-[var(--color-text-secondary)] outline-none focus:border-[var(--color-teal-600)]"
                 >
-                  <option value="recent">Recently added</option>
-                  <option value="score">Score</option>
-                  <option value="renewal">Renewal date</option>
+                  <option value="recent">{t("pf.sort_recent")}</option>
+                  <option value="score">{t("pf.sort_score")}</option>
+                  <option value="renewal">{t("pf.sort_renewal")}</option>
                 </select>
               </label>
             </div>
 
             {/* Filters */}
             <div className="flex flex-wrap gap-2">
-              <FilterChip label="All" count={d.policies.length} active={filter === "all"} onClick={() => setFilter("all")} />
+              <FilterChip label={t("pf.all")} count={d.policies.length} active={filter === "all"} onClick={() => setFilter("all")} />
               {LOBS.map((l) => {
                 const n = d.policies.filter((p) => p.insurance_type === l.type).length;
                 if (!n) return null;
                 return (
                   <FilterChip
                     key={l.type}
-                    label={l.label}
+                    label={lobLabel(t, l.type)}
                     count={n}
                     active={filter === l.type}
                     onClick={() => setFilter(l.type)}
@@ -705,7 +703,7 @@ export default function PortfolioPage() {
                 onClick={() => openAdd()}
                 className="rounded-2xl border-2 border-dashed border-[var(--color-border-medium)] p-5 flex items-center justify-center gap-2 text-sm font-semibold text-[var(--color-text-muted)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)] hover:bg-white transition-colors"
               >
-                <Plus className="w-4 h-4" /> Add another policy
+                <Plus className="w-4 h-4" /> {t("pf.cta_another")}
               </button>
             </div>
           </section>
@@ -715,13 +713,13 @@ export default function PortfolioPage() {
         {!isEmpty && (
           <section id="next-steps" className="scroll-mt-20 space-y-4">
             <h2 className="font-serif text-xl font-bold text-[var(--color-navy-900)] flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[var(--color-teal-600)]" /> Your next steps
+              <Sparkles className="w-5 h-5 text-[var(--color-teal-600)]" /> {t("pf.next_steps")}
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* What you're missing */}
               <div className="bg-white rounded-2xl border border-[var(--color-border-light)] shadow-sm p-5 sm:p-6">
                 <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">
-                  Cover checklist
+                  {t("pf.checklist")}
                 </p>
                 <div className="mt-3 space-y-3">
                   {LOBS.map((l) => {
@@ -741,17 +739,17 @@ export default function PortfolioPage() {
                           <span
                             className={`text-sm font-semibold ${have ? "text-[var(--color-navy-900)]" : "text-[var(--color-text-secondary)]"}`}
                           >
-                            {l.label} cover
-                            {have && <span className="text-[var(--color-teal-600)] font-normal"> · added</span>}
+                            {t("pf.type_cover", { type: lobLabel(t, l.type) })}
+                            {have && <span className="text-[var(--color-teal-600)] font-normal">{t("pf.added")}</span>}
                           </span>
                           {!have && (
                             <p className="text-xs text-[var(--color-text-muted)] leading-snug">
-                              {l.blurb}{" "}
+                              {lobBlurb(t, l.type)}{" "}
                               <button
                                 onClick={() => openAdd(l.type)}
                                 className="font-semibold text-[var(--color-teal-600)] hover:underline"
                               >
-                                Add it
+                                {t("pf.add_it")}
                               </button>
                             </p>
                           )}
@@ -762,9 +760,9 @@ export default function PortfolioPage() {
                 </div>
                 {d.missingLobs.length > 0 && (
                   <p className="mt-4 pt-3 border-t border-[var(--color-border-light)] text-xs text-[var(--color-text-muted)]">
-                    Don't have one yet?{" "}
+                    {t("pf.dont_have")}{" "}
                     <button onClick={() => openConnect("new-cover")} className="font-semibold text-[var(--color-teal-600)] hover:underline">
-                      Ask an advisor what it'd cost you
+                      {t("pf.ask_cost")}
                     </button>
                   </p>
                 )}
@@ -774,12 +772,16 @@ export default function PortfolioPage() {
               <div className="bg-white rounded-2xl border border-[var(--color-border-light)] shadow-sm p-5 sm:p-6">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">
-                    Worth fixing
+                    {t("pf.worth_fixing")}
                   </p>
                   {d.fixes.length > 4 && (
-                    <span className="text-xs font-semibold text-[var(--color-text-muted)]">{d.fixes.length} found</span>
+                    <span className="text-xs font-semibold text-[var(--color-text-muted)]">{t("pf.n_found", { n: d.fixes.length })}</span>
                   )}
                 </div>
+                {/* The findings are written by the policy check, in English. */}
+                {locale === "hi" && d.fixes.length > 0 && (
+                  <p className="mt-2 text-xs text-[var(--color-text-muted)]">{t("pf.findings_english")}</p>
+                )}
                 {d.fixes.length > 0 ? (
                   <ul className="mt-3 space-y-3">
                     {d.fixes.slice(0, 4).map((f, i) => (
@@ -801,16 +803,15 @@ export default function PortfolioPage() {
                   </ul>
                 ) : (
                   <p className="mt-3 text-sm text-[var(--color-text-muted)]">
-                    Nothing major flagged yet. Add more policies to get a fuller picture of your cover.
+                    {t("pf.nothing_major")}
                   </p>
                 )}
 
                 {d.undated > 0 && (
                   <p className="mt-4 pt-3 border-t border-[var(--color-border-light)] text-xs text-[var(--color-text-muted)]">
-                    {d.undated} {d.undated === 1 ? "policy has" : "policies have"} no renewal date set — we can't remind
-                    you about {d.undated === 1 ? "it" : "them"}.{" "}
+                    {d.undated === 1 ? t("pf.undated_one") : t("pf.undated_many", { n: d.undated })}{" "}
                     <button onClick={() => scrollTo("policies")} className="font-semibold text-[var(--color-teal-600)] hover:underline">
-                      Set {d.undated === 1 ? "it" : "them"}
+                      {d.undated === 1 ? t("pf.set_it") : t("pf.set_them")}
                     </button>
                   </p>
                 )}
@@ -820,7 +821,7 @@ export default function PortfolioPage() {
                     onClick={() => openConnect("review")}
                     className="mt-3 -mx-2 px-2 py-2 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--color-teal-600)] hover:underline"
                   >
-                    Get a second opinion from an advisor <ArrowRight className="w-4 h-4" />
+                    {t("pf.second_opinion")} <ArrowRight className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -833,15 +834,13 @@ export default function PortfolioPage() {
           {isEmpty && (
             <div className="mb-4 text-center">
               <h2 className="font-serif text-2xl font-bold text-[var(--color-navy-900)]">
-                Let's decode your first policy
+                {t("pf.first_h")}
               </h2>
               <p className="mt-1.5 text-sm text-[var(--color-text-secondary)] max-w-md mx-auto leading-relaxed">
-                Pick a type, drop the PDF, and get an unbiased audit in about a minute. One free policy each for
-                Health, Term, Life &amp; Vehicle.
+                {t("pf.first_d")}
               </p>
               <p className="mt-3 text-xs text-[var(--color-text-muted)] inline-flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-teal-600)]" /> No calls, no spam — your policies
-                stay private to you.
+                <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-teal-600)]" /> {t("pf.first_private")}
               </p>
             </div>
           )}
@@ -861,9 +860,9 @@ export default function PortfolioPage() {
                   <Upload className="w-5 h-5 text-[var(--color-teal-600)]" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-semibold text-[var(--color-navy-900)]">Add a policy</span>
+                  <span className="block font-semibold text-[var(--color-navy-900)]">{t("pf.add_a_policy")}</span>
                   <span className="block text-sm text-[var(--color-text-muted)]">
-                    Drop a PDF — we'll read it and audit it for you.
+                    {t("pf.add_a_policy_d")}
                   </span>
                 </span>
                 <ChevronDown
@@ -891,7 +890,7 @@ export default function PortfolioPage() {
                             : "bg-white text-[var(--color-text-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
                         }`}
                       >
-                        {l.label}
+                        {lobLabel(t, l.type)}
                         {full && <Lock className="w-3 h-3 opacity-60" />}
                       </button>
                     );
@@ -900,7 +899,7 @@ export default function PortfolioPage() {
 
                 {/* Why this line matters — plain language, changes with the tab */}
                 <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
-                  {lobFor(selectedType)?.why}
+                  {lobWhy(t, selectedType)}
                 </p>
 
                 <div
@@ -916,10 +915,10 @@ export default function PortfolioPage() {
                     <>
                       <Loader2 className="w-8 h-8 mx-auto text-[var(--color-teal-600)] animate-spin" />
                       <p className="mt-4 font-serif text-lg font-bold text-[var(--color-navy-900)]">
-                        {uploadStage ?? "Working on it…"}
+                        {uploadStage ?? t("pf.working")}
                       </p>
                       <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                        Usually about a minute. You can keep browsing — we'll update the page.
+                        {t("pf.usually_minute")}
                       </p>
                     </>
                   ) : (
@@ -928,11 +927,11 @@ export default function PortfolioPage() {
                         <Upload className="w-5 h-5 text-[var(--color-teal-600)]" />
                       </div>
                       <p className="mt-4 font-serif text-lg font-bold text-[var(--color-navy-900)]">
-                        Drop your <span className="text-[var(--color-teal-600)]">{labelFor(selectedType)}</span> policy
-                        PDF here
+                        {t("pf.drop_a")} <span className="text-[var(--color-teal-600)]">{lobLabel(t, selectedType)}</span>{" "}
+                        {t("pf.drop_b")}
                       </p>
                       <p className="mt-1 text-xs text-[var(--color-text-muted)] font-mono uppercase tracking-widest">
-                        or tap to browse · max 25MB
+                        {t("pf.browse")}
                       </p>
                     </>
                   )}
@@ -945,9 +944,9 @@ export default function PortfolioPage() {
                       onClick={() => setLocation("/pricing")}
                       className="ml-auto inline-flex items-center gap-1 font-bold text-amber-900 hover:underline"
                     >
-                      See plans <ArrowRight className="w-3.5 h-3.5" />
+                      {t("pf.see_plans")} <ArrowRight className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => setPaywall(null)} aria-label="Dismiss" className="p-1 text-amber-700">
+                    <button onClick={() => setPaywall(null)} aria-label={t("pf.dismiss")} className="p-1 text-amber-700">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -965,12 +964,12 @@ export default function PortfolioPage() {
                 <ShieldCheck className="w-7 h-7 text-[var(--color-teal-400)]" />
               </div>
               <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-teal-400)]">
-                Your advisor
+                {t("pf.your_advisor")}
               </p>
               <h2 className="mt-1 font-serif text-xl sm:text-2xl font-bold text-white">{data.advisor.name}</h2>
               {data.advisor.city && <p className="mt-1 text-sm text-[var(--color-white-muted)]">{data.advisor.city}</p>}
               <p className="mt-2 text-sm text-[var(--color-white-muted)] max-w-md mx-auto leading-relaxed">
-                A licensed advisor is looking after your cover. Reach out any time — no obligation.
+                {t("pf.advisor_looking")}
               </p>
               <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
                 {advisorWa(data.advisor.phone) && (
@@ -988,7 +987,7 @@ export default function PortfolioPage() {
                     href={advisorTel(data.advisor.phone)!}
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-colors"
                   >
-                    <PhoneCall className="w-4 h-4" /> Call
+                    <PhoneCall className="w-4 h-4" /> {t("pf.call")}
                   </a>
                 )}
               </div>
@@ -996,19 +995,19 @@ export default function PortfolioPage() {
           ) : (
             <section id="advisor-card" className="scroll-mt-20 bg-[var(--color-navy-900)] rounded-2xl p-6 sm:p-8 text-center">
               <h2 className="font-serif text-xl sm:text-2xl font-bold text-white">
-                {data.hasOpenAgentRequest ? "An advisor will reach out to you soon" : "Want a real person to help?"}
+                {data.hasOpenAgentRequest ? t("pf.advisor_soon") : t("pf.want_person")}
               </h2>
               <p className="mt-2 text-sm text-[var(--color-white-muted)] max-w-md mx-auto leading-relaxed">
                 {data.hasOpenAgentRequest
-                  ? "We've got your request. A licensed advisor will call you on the number you shared — no obligation."
-                  : "Talk to a licensed advisor about renewing, buying, or fixing your cover. No pressure, no spam."}
+                  ? t("pf.advisor_soon_d")
+                  : t("pf.want_person_d")}
               </p>
               {!data.hasOpenAgentRequest && (
                 <button
                   onClick={() => openConnect("review")}
                   className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] hover:text-[var(--color-navy-900)] transition-colors active:scale-[0.98]"
                 >
-                  <PhoneCall className="w-4 h-4" /> Connect me to an advisor
+                  <PhoneCall className="w-4 h-4" /> {t("pf.connect_me")}
                 </button>
               )}
             </section>
@@ -1024,9 +1023,9 @@ export default function PortfolioPage() {
                   <Bell className="w-4 h-4 text-[var(--color-teal-600)]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm text-[var(--color-navy-900)]">Renewal reminders</p>
+                  <p className="font-semibold text-sm text-[var(--color-navy-900)]">{t("pf.reminders")}</p>
                   <p className="text-xs text-[var(--color-text-muted)]">
-                    An email 30 days before a policy renews, so your cover never lapses.
+                    {t("pf.reminders_d")}
                   </p>
                 </div>
               </div>
@@ -1034,7 +1033,7 @@ export default function PortfolioPage() {
               <button
                 role="switch"
                 aria-checked={data.renewalRemindersEnabled}
-                aria-label="Renewal reminders"
+                aria-label={t("pf.reminders")}
                 onClick={() => toggleReminders(!data.renewalRemindersEnabled)}
                 className={`shrink-0 relative before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-[''] w-14 h-8 rounded-full transition-colors ${
                   data.renewalRemindersEnabled ? "bg-[var(--color-teal-600)]" : "bg-[var(--color-border-medium)]"
@@ -1055,13 +1054,13 @@ export default function PortfolioPage() {
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-sm text-[var(--color-navy-900)]">
-                    {data.plan === "paid" ? "Paid plan" : "Free plan"}
+                    {data.plan === "paid" ? t("pf.plan_paid") : t("pf.plan_free")}
                   </p>
                   <p className="text-xs text-[var(--color-text-muted)]">
                     {data.plan === "paid"
                       // claim-source: pricing.tsx:91-93. Not unlimited.
-                      ? "4 health checks a year, 16 policies stored."
-                      : "One free policy per type. Does not expire."}
+                      ? t("pf.plan_paid_d")
+                      : t("pf.plan_free_d")}
                   </p>
                 </div>
               </div>
@@ -1070,7 +1069,7 @@ export default function PortfolioPage() {
                   onClick={() => setLocation("/pricing")}
                   className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--color-border-medium)] text-sm font-bold text-[var(--color-text-secondary)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)] transition-colors"
                 >
-                  See plans <ArrowRight className="w-3.5 h-3.5" />
+                  {t("pf.see_plans")} <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
@@ -1078,8 +1077,7 @@ export default function PortfolioPage() {
         )}
 
         <p className="flex items-center justify-center gap-2 text-[var(--color-text-muted)] text-xs font-semibold">
-          <ShieldCheck className="w-4 h-4 text-[var(--color-teal-600)]" /> Private to your account. We only contact you
-          if you ask us to.
+          <ShieldCheck className="w-4 h-4 text-[var(--color-teal-600)]" /> {t("pf.private_footer")}
         </p>
       </main>
 

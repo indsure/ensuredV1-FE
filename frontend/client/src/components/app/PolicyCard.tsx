@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 import {
   AlertCircle, ArrowRight, CalendarClock, Check, ChevronDown, Download, FileText,
   IndianRupee, Loader2, MessageCircle, Pencil, ShieldCheck, Trash2, X,
@@ -10,8 +12,8 @@ import {
   scoreMotorPolicy, motorScoreCaption, motorScoreVerdict, motorScoreTone,
 } from "@shared/motorScore";
 import {
-  daysUntil, fmtDate, formatINRShort, labelFor, parseSumInsured, renewalPhrase,
-  scoreClasses, scoreVerdict, teamWaLink,
+  daysUntil, fmtDate, formatINRShort, parseSumInsured, renewalPhrase,
+  scoreClasses, scoreVerdict, teamWaLink, lobLabel,
 } from "./portfolio-utils";
 
 /**
@@ -74,6 +76,7 @@ export function PolicyCard({
   downloading: boolean;
   deleting: boolean;
 }) {
+  const { t, locale } = useLanguage();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [nickDraft, setNickDraft] = useState<string | null>(null);
   const [dateDraft, setDateDraft] = useState<string | null>(null);
@@ -86,7 +89,7 @@ export function PolicyCard({
     p.insurance_type === "motor"
       ? scoreMotorPolicy((p.add_ons ?? null) as any, p.coverage_type)
       : null;
-  const title = p.nickname || p.insurer || p.policy_name || p.filename || "Policy";
+  const title = p.nickname || p.insurer || p.policy_name || p.filename || t("pf.c_policy");
   const subtitle = p.nickname
     ? [p.insurer, p.policy_name].filter(Boolean).join(" · ")
     : p.policy_name && p.insurer
@@ -119,7 +122,7 @@ export function PolicyCard({
               {p.score}
             </span>
             <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)] mt-0.5">
-              score
+              {t("pf.c_score")}
             </span>
           </div>
         ) : (
@@ -135,7 +138,7 @@ export function PolicyCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-mono font-bold uppercase tracking-widest text-[var(--color-teal-600)]">
-              {labelFor(p.insurance_type)}
+              {lobLabel(t, p.insurance_type)}
             </span>
             <StatusPill status={p.status} />
           </div>
@@ -146,17 +149,17 @@ export function PolicyCard({
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]">
             {cover != null && (
               <span className="inline-flex items-center gap-1">
-                <IndianRupee className="w-3 h-3" /> {formatINRShort(cover)} cover
+                <IndianRupee className="w-3 h-3" /> {t("pf.c_cover", { amount: formatINRShort(cover) })}
               </span>
             )}
             <span className="inline-flex items-center gap-1">
               <CalendarClock className="w-3 h-3" />
               {days != null && days >= 0 && days <= 30 ? (
-                <span className="font-semibold text-amber-700">{renewalPhrase(days)}</span>
+                <span className="font-semibold text-amber-700">{renewalPhrase(days, t)}</span>
               ) : p.renewal_date ? (
-                `Renews ${fmtDate(p.renewal_date)}`
+                t("pf.c_renews", { date: fmtDate(p.renewal_date, locale) })
               ) : (
-                <span className="italic">Renewal date not set</span>
+                <span className="italic">{t("pf.c_no_date")}</span>
               )}
             </span>
           </div>
@@ -178,8 +181,7 @@ export function PolicyCard({
               <p className="text-sm text-red-600 flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>
-                  {p.error_message ||
-                    "We could not read this PDF. It may be locked with a password, or be a scanned copy."}
+                  {p.error_message || t("pf.c_cant_read")}
                 </span>
               </p>
               <a
@@ -190,13 +192,13 @@ export function PolicyCard({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-cta)] text-white text-sm font-bold hover:bg-[var(--color-cta-hover)] transition-colors active:scale-[0.98]"
               >
-                <WhatsAppIcon className="w-4 h-4" /> Send it to our team
+                <WhatsAppIcon className="w-4 h-4" /> {t("pf.c_send_team")}
               </a>
             </div>
           ) : busy ? (
             <p className="text-sm text-[var(--color-text-secondary)] flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-[var(--color-teal-600)]" />
-              Still reading this policy — usually about a minute.
+              {t("pf.c_still_reading")}
             </p>
           ) : (
             <>
@@ -221,7 +223,7 @@ export function PolicyCard({
                     )
                   ) : (
                     <p className={`text-sm font-semibold ${scoreClasses(p.score).text}`}>
-                      {scoreVerdict(p.score)}
+                      {scoreVerdict(p.score, t)}
                     </p>
                   )}
                   {/* The caption has to match the policy. This line used to be
@@ -234,8 +236,11 @@ export function PolicyCard({
                   <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
                     {motorScore
                       ? motorScoreCaption(motorScore)
-                      : "Scored on what actually pays out: waiting periods, sub-limits, exclusions and claim conditions."}
+                      : t("pf.c_scored_on")}
                   </p>
+                  {motorScore && locale === "hi" && (
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">{t("pf.c_motor_english")}</p>
+                  )}
                 </div>
               )}
 
@@ -250,8 +255,11 @@ export function PolicyCard({
               {flaws.length > 0 ? (
                 <div>
                   <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">
-                    What could cost you
+                    {t("pf.c_could_cost")}
                   </p>
+                  {locale === "hi" && (
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">{t("pf.findings_english")}</p>
+                  )}
                   <ul className="mt-2 space-y-2">
                     {flaws.map((f, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
@@ -265,7 +273,7 @@ export function PolicyCard({
                 p.score != null && (
                   <p className="text-sm text-[var(--color-text-muted)] flex items-start gap-2">
                     <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-[var(--color-teal-600)]" />
-                    Nothing major flagged on this one.
+                    {t("pf.c_nothing")}
                   </p>
                 )
               )}
@@ -276,24 +284,24 @@ export function PolicyCard({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <InlineField
               icon={<Pencil className="w-3.5 h-3.5" />}
-              label="Nickname"
+              label={t("pf.c_nickname")}
               value={p.nickname}
-              placeholder="e.g. Papa's health plan"
+              placeholder={t("pf.c_nick_ph")}
               draft={nickDraft}
               setDraft={setNickDraft}
               onSave={(v) => onRename(p.id, v)}
-              emptyLabel="Give it a name"
+              emptyLabel={t("pf.c_nick_empty")}
             />
             <InlineField
               icon={<CalendarClock className="w-3.5 h-3.5" />}
-              label="Renewal date"
+              label={t("pf.c_renewal")}
               type="date"
               value={p.renewal_date}
-              display={p.renewal_date ? fmtDate(p.renewal_date) : null}
+              display={p.renewal_date ? fmtDate(p.renewal_date, locale) : null}
               draft={dateDraft}
               setDraft={setDateDraft}
               onSave={(v) => onSetRenewal(p.id, v)}
-              emptyLabel="Set the date"
+              emptyLabel={t("pf.c_set_date")}
             />
           </div>
 
@@ -304,14 +312,14 @@ export function PolicyCard({
                 onClick={() => onOpenReport(p.id)}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-cta)] text-white text-sm font-bold hover:bg-[var(--color-cta-hover)] transition-colors active:scale-[0.98]"
               >
-                View full report <ArrowRight className="w-4 h-4" />
+                {t("pf.c_full_report")} <ArrowRight className="w-4 h-4" />
               </button>
             )}
             <button
               onClick={() => onAskAdvisor(days != null && days <= 30 ? "renew" : "review")}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--color-border-medium)] bg-white text-sm font-semibold text-[var(--color-text-secondary)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)] transition-colors"
             >
-              <MessageCircle className="w-4 h-4" /> Ask about this
+              <MessageCircle className="w-4 h-4" /> {t("pf.c_ask")}
             </button>
             {p.has_pdf && (
               <button
@@ -320,7 +328,7 @@ export function PolicyCard({
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--color-border-medium)] bg-white text-sm font-semibold text-[var(--color-text-secondary)] hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)] transition-colors disabled:opacity-50"
               >
                 {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                Download
+                {t("pf.c_download")}
               </button>
             )}
 
@@ -331,7 +339,7 @@ export function PolicyCard({
             {confirmDelete ? (
               <span className="inline-flex items-center gap-2 flex-wrap">
                 <span className="text-sm text-[var(--color-text-secondary)]">
-                  Delete this policy{p.has_pdf ? " and its file" : ""}?
+                  {p.has_pdf ? t("pf.c_del_q_file") : t("pf.c_del_q")}
                 </span>
                 <button
                   onClick={() => onDelete(p)}
@@ -339,13 +347,13 @@ export function PolicyCard({
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-sm font-bold text-white transition-colors disabled:opacity-50"
                 >
                   {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                  {deleting ? "Deleting…" : "Delete"}
+                  {deleting ? t("pf.c_deleting") : t("pf.c_delete")}
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
                   className="px-4 py-2 rounded-xl text-sm font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
                 >
-                  Keep
+                  {t("pf.c_keep")}
                 </button>
               </span>
             ) : (
@@ -353,7 +361,7 @@ export function PolicyCard({
                 onClick={() => setConfirmDelete(true)}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--color-border-medium)] bg-white text-sm font-semibold text-[var(--color-text-secondary)] hover:border-red-300 hover:text-red-600 transition-colors"
               >
-                <Trash2 className="w-4 h-4" /> Delete
+                <Trash2 className="w-4 h-4" /> {t("pf.c_delete")}
               </button>
             )}
           </div>
@@ -378,6 +386,7 @@ function InlineField({
   onSave: (v: string) => void;
   emptyLabel: string;
 }) {
+  const { t } = useLanguage();
   const editing = draft !== null;
   const save = () => {
     if (draft === null) return;
@@ -407,7 +416,7 @@ function InlineField({
           <button
             onMouseDown={(e) => e.preventDefault()}
             onClick={save}
-            aria-label={`Save ${label}`}
+            aria-label={t("pf.c_save", { label })}
             className="shrink-0 p-1.5 rounded-lg bg-[var(--color-cta)] text-white"
           >
             <Check className="w-3.5 h-3.5" />
@@ -415,7 +424,7 @@ function InlineField({
           <button
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setDraft(null)}
-            aria-label={`Cancel editing ${label}`}
+            aria-label={t("pf.c_cancel", { label })}
             className="shrink-0 p-1.5 rounded-lg border border-[var(--color-border-medium)] text-[var(--color-text-muted)]"
           >
             <X className="w-3.5 h-3.5" />
@@ -435,6 +444,7 @@ function InlineField({
 }
 
 export function StatusPill({ status }: { status: string }) {
+  const { t } = useLanguage();
   const map: Record<string, string> = {
     done: "bg-emerald-50 text-emerald-700 border-emerald-200",
     processing: "bg-sky-50 text-sky-700 border-sky-200",
@@ -442,7 +452,8 @@ export function StatusPill({ status }: { status: string }) {
     error: "bg-red-50 text-red-700 border-red-200",
   };
   const label =
-    status === "done" ? "Ready" : status === "error" ? "Couldn't read" : status.charAt(0).toUpperCase() + status.slice(1);
+    status === "done" ? t("pf.st_done") : status === "error" ? t("pf.st_error")
+      : tOr(t, `pf.st_${status}`, status.charAt(0).toUpperCase() + status.slice(1));
   return (
     <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full border ${map[status] ?? map.pending}`}>
       {label}

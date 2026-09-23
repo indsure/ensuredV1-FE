@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
  * Animated score dial for the portfolio hero.
@@ -22,6 +23,7 @@ export function ScoreRing({
   track?: string;
   label?: string;
 }) {
+  const { t } = useLanguage();
   const [shown, setShown] = useState(0);
   const raf = useRef<number | null>(null);
 
@@ -58,7 +60,7 @@ export function ScoreRing({
       className="relative shrink-0"
       style={{ width: size, height: size }}
       role="img"
-      aria-label={`Cover score ${Math.round(score)} out of 100`}
+      aria-label={t("pf.score_aria", { n: Math.round(score) })}
     >
       <svg width={size} height={size} className="-rotate-[225deg]">
         <circle
