@@ -10,6 +10,8 @@ import { supabase } from "@/lib/supabase";
 import { isPlaygroundMode } from "@/lib/playground/mode";
 import { getApiBase } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 import {
   computePolicyValue, isValueGap, PLAN_SHAPE_LABELS, PLAN_SHAPE_OPTIONS,
   type PlanShape,
@@ -39,10 +41,10 @@ const SOURCE_STYLE: Record<ParamSource, string> = {
   entered: "bg-blue-50 text-blue-700 border-blue-200",
   default: "bg-amber-50 text-amber-800 border-amber-200",
 };
-const SOURCE_LABEL: Record<ParamSource, string> = {
-  document: "From the document",
-  entered: "You entered",
-  default: "Assumed",
+const SOURCE_KEY: Record<ParamSource, string> = {
+  document: "pvc.src_document",
+  entered: "pvc.src_entered",
+  default: "pvc.src_default",
 };
 
 interface Props {
@@ -53,6 +55,7 @@ interface Props {
 }
 
 export default function PolicyValueChart({ clientId, insuranceType, data, onSaved }: Props) {
+  const { t, locale } = useLanguage();
   const [saving, setSaving] = useState(false);
   const [showParams, setShowParams] = useState(false);
   // Applied locally first so the chart redraws immediately, and so the controls
@@ -94,7 +97,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      if (!session) throw new Error(t("common.not_signed_in"));
       // The endpoint merges, so a partial would be enough. Still sent whole:
       // `patch` holds edits made in this session that were never posted on
       // their own, and dropping them here would lose them.
@@ -106,15 +109,15 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Save failed");
+        throw new Error(body.error || t("pvc.save_failed"));
       }
-      toast({ variant: "success", title: "Saved" });
+      toast({ variant: "success", title: t("pvc.saved") });
       onSaved?.();
     } catch (e: unknown) {
       toast({
         variant: "destructive",
-        title: "Save failed",
-        description: e instanceof Error ? e.message : "Could not save.",
+        title: t("pvc.save_failed"),
+        description: e instanceof Error ? e.message : t("pvc.save_failed_desc"),
       });
     } finally {
       setSaving(false);
@@ -136,12 +139,11 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
     return (
       <Card className="border-slate-100 shadow-sm">
         <CardHeader className="border-b border-slate-50 pb-4">
-          <CardTitle>What the customer gets back</CardTitle>
+          <CardTitle>{t("pvc.title")}</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <p className="text-sm text-slate-600">
-            To work out the surrender value and maturity benefit we still need
-            {result.missing.length === 1 ? " this field" : " these fields"} filled in above:
+            {t(result.missing.length === 1 ? "pvc.need_one" : "pvc.need_many")}
           </p>
           <ul className="mt-3 space-y-1">
             {result.missing.map((m) => (
@@ -149,7 +151,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             ))}
           </ul>
           <p className="mt-4 text-xs text-slate-400">
-            Nothing is guessed here — without these the numbers would be made up, so we show nothing instead.
+            {t("pvc.nothing_guessed")}
           </p>
         </CardContent>
       </Card>
@@ -190,50 +192,44 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
   const verdict = (() => {
     if (shape === "pure_term")
       return {
-        title: "Nothing comes back. That is what this policy is.",
-        body: `This is term cover. There is no surrender value at any point and no maturity benefit, so if the ` +
-          `customer stops paying or outlives the policy they receive nothing. What they are buying is ` +
-          `${short(rows[0].cover)} of cover, for ${rupee(totalPremiums)} of premiums in total.`,
+        title: t("pvc.v_term_title"),
+        body: t("pvc.v_term_body", { cover: short(rows[0].cover), total: rupee(totalPremiums) }),
       };
     if (shape === "return_of_premium")
       return {
-        title: `All ${rupee(totalPremiums)} of the premiums come back at the end` +
-          (returnAtMaturityTop !== null ? `, a return of ${pct(returnAtMaturityTop)} a year.` : "."),
-        body: `Stop earlier and only the guaranteed surrender value is paid, which stays below the premiums ` +
-          `paid until close to the end of the term.`,
+        title: returnAtMaturityTop !== null
+          ? t("pvc.v_rop_title_ret", { total: rupee(totalPremiums), ret: pct(returnAtMaturityTop) })
+          : t("pvc.v_rop_title", { total: rupee(totalPremiums) }),
+        body: t("pvc.v_rop_body"),
       };
     if (shape === "money_back") {
       const payouts = rows[rows.length - 1].value - maturity;
       return {
-        title:
-          `${short(payouts)} paid out along the way, plus ${short(maturity)} at maturity` +
-          (returnAtMaturityTop !== null ? ` — a return of ${pct(returnAtMaturityTop)} a year.` : "."),
-        body:
-          `On ${rupee(totalPremiums)} of premiums, the customer receives ${short(payouts + maturity)} in total. ` +
-          "The regular payouts are money already in their hands, so they count towards the return — but the " +
-          "cover and the maturity amount are separate figures, and neither is derived from the other.",
+        title: returnAtMaturityTop !== null
+          ? t("pvc.v_mb_title_ret", { payouts: short(payouts), maturity: short(maturity), ret: pct(returnAtMaturityTop) })
+          : t("pvc.v_mb_title", { payouts: short(payouts), maturity: short(maturity) }),
+        body: t("pvc.v_mb_body", { total: rupee(totalPremiums), received: short(payouts + maturity) }),
       };
     }
     if (shape === "endowment")
       return {
-        title: `About ${short(maturity)} at maturity, on ${rupee(totalPremiums)} of premiums` +
-          (returnAtMaturityTop !== null ? ` — a return of ${pct(returnAtMaturityTop)} a year.` : "."),
-        body: `Surrender before the end pays the higher of the guaranteed value and the paid-up value, both ` +
-          `well below the premiums paid for most of the term.`,
+        title: returnAtMaturityTop !== null
+          ? t("pvc.v_end_title_ret", { maturity: short(maturity), total: rupee(totalPremiums), ret: pct(returnAtMaturityTop) })
+          : t("pvc.v_end_title", { maturity: short(maturity), total: rupee(totalPremiums) }),
+        body: t("pvc.v_end_body"),
       };
     return {
-      title: lockInEnds ? `The money is locked until ${lockInEnds}.` : "The money is locked in.",
-      body: `For the first ${lockInYears} policy years nothing can be paid out. On surrender the fund moves to ` +
-        `the discontinued fund, earns ${params.discontinuedFundRatePct.value}% a year and reaches the customer only after that date.`,
+      title: lockInEnds ? t("pvc.v_ulip_title_until", { date: lockInEnds }) : t("pvc.v_ulip_title"),
+      body: t("pvc.v_ulip_body", { years: lockInYears ?? "", rate: params.discontinuedFundRatePct.value }),
     };
   })();
 
   return (
     <Card className="border-slate-100 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 pb-4">
-        <CardTitle>What the customer gets back</CardTitle>
+        <CardTitle>{t("pvc.title")}</CardTitle>
         <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
-          Calculated from the document
+          {t("pvc.calculated")}
         </span>
       </CardHeader>
 
@@ -249,7 +245,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             }
           >
             <span className="font-bold">
-              {premiumStatus === "grace" ? "Premium due" : "Premiums not up to date"}
+              {premiumStatus === "grace" ? t("pvc.premium_due") : t("pvc.not_up_to_date")}
             </span>{" "}
             {premiumStatusNote}
           </div>
@@ -267,13 +263,11 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
           >
             {anchorYear !== null ? (
               <>
-                Anchored to the statement: {rupee(anchorValue!)} at policy year {anchorYear}. Later years
-                are projected forward from that real figure.
+                {t("pvc.anchored", { value: rupee(anchorValue!), year: anchorYear })}
               </>
             ) : (
               <>
-                No fund value from a statement, so this whole curve is modelled from the charge table — it is
-                not the customer's actual fund. Add the fund value and the statement date above to fix that.
+                {t("pvc.modelled")}
               </>
             )}
           </div>
@@ -290,12 +284,10 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
             }
           >
             {Math.abs(reconciliation.pct) < 1 ? (
-              <>Matches the illustration in the policy document ({rupee(illustratedMaturity!)} at maturity).</>
+              <>{t("pvc.matches", { amount: rupee(illustratedMaturity!) })}</>
             ) : (
               <>
-                The document's own illustration says {rupee(illustratedMaturity!)} at maturity — this works out
-                to {rupee(maturity)}, a difference of {reconciliation.pct > 0 ? "+" : ""}
-                {reconciliation.pct.toFixed(1)}%. Check the charges below against the policy wording.
+                {t("pvc.differs", { doc: rupee(illustratedMaturity!), ours: rupee(maturity), diff: `${reconciliation.pct > 0 ? "+" : ""}${reconciliation.pct.toFixed(1)}` })}
               </>
             )}
           </div>
@@ -303,7 +295,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
 
         {/* Plan type drives the whole calculation, so it is the first thing to confirm. */}
         <div>
-          <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Plan type</div>
+          <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("pvc.plan_type")}</div>
           <div className="mt-2 flex flex-wrap gap-2">
             {PLAN_SHAPE_OPTIONS.map(([key, label]) => (
               <button
@@ -318,12 +310,12 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                     : "border-slate-200 bg-white text-slate-600 hover:border-[#0D9488]")
                 }
               >
-                {label}
+                {tOr(t, `pvc.shape_${key}`, label)}
               </button>
             ))}
           </div>
           <p className="mt-2 text-xs text-slate-400">
-            This decides the whole calculation. If it is wrong, correct it here and everything below updates.
+            {t("pvc.plan_type_hint")}
           </p>
         </div>
 
@@ -337,7 +329,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                   (assumed === 0 ? SOURCE_STYLE.document : SOURCE_STYLE.default)
                 }
               >
-                {assumed === 0 ? "All from the document" : `${assumed} figure${assumed > 1 ? "s" : ""} assumed`}
+                {assumed === 0 ? t("pvc.all_from_doc") : t(assumed > 1 ? "pvc.assumed_many" : "pvc.assumed_one", { count: assumed })}
               </span>
             )}
           </div>
@@ -349,11 +341,11 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
         <div>
           <div className="mb-2 flex flex-wrap gap-4 text-xs text-slate-600">
             <span className="flex items-center gap-2">
-              <span className="h-[3px] w-5 rounded" style={{ background: PAID }} />Premiums paid
+              <span className="h-[3px] w-5 rounded" style={{ background: PAID }} />{t("pvc.legend_paid")}
             </span>
             {paysDuringTerm && (
               <span className="flex items-center gap-2">
-                <span className="h-3 w-5 rounded-sm" style={{ background: BACK }} />Payouts received
+                <span className="h-3 w-5 rounded-sm" style={{ background: BACK }} />{t("pvc.legend_received")}
               </span>
             )}
             <span className="flex items-center gap-2">
@@ -362,12 +354,12 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
               ) : (
                 <span className="h-[3px] w-5 rounded" style={{ background: BACK }} />
               )}
-              {paysDuringTerm ? "Surrender value on top" : "Surrender value"}
+              {paysDuringTerm ? t("pvc.legend_sv_top") : t("pvc.legend_sv")}
             </span>
             {lockInYears ? (
               <span className="flex items-center gap-2">
                 <span className="w-5 border-t-[3px] border-dashed" style={{ borderColor: BACK }} />
-                Not payable yet
+                {t("pvc.legend_locked")}
               </span>
             ) : null}
           </div>
@@ -383,12 +375,12 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                 <Tooltip
                   formatter={(v: any, n: any) => [
                     rupee(Number(v)),
-                    n === "paid" ? "Money paid"
-                      : n === "received" ? "Already received"
-                      : n === "inHand" ? "Total in hand"
-                      : "If they surrender",
+                    n === "paid" ? t("pvc.tip_paid")
+                      : n === "received" ? t("pvc.tip_received")
+                      : n === "inHand" ? t("pvc.tip_in_hand")
+                      : t("pvc.tip_surrender"),
                   ]}
-                  labelFormatter={(l) => `Policy year ${l}`}
+                  labelFormatter={(l) => t("pvc.tip_year", { year: String(l) })}
                   contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }}
                 />
                 {lockInYears ? (
@@ -423,7 +415,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
           </div>
 
           <div className="mb-1 mt-4 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
-            Cover for the family, same years
+            {t("pvc.cover_family")}
           </div>
           <div className="h-[92px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -431,8 +423,8 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                 <XAxis dataKey="year" hide />
                 <YAxis hide domain={[0, "dataMax"]} width={64} />
                 <Tooltip
-                  formatter={(v: any) => [rupee(Number(v)), "Cover"]}
-                  labelFormatter={(l) => `Policy year ${l}`}
+                  formatter={(v: any) => [rupee(Number(v)), t("pvc.tip_cover")]}
+                  labelFormatter={(l) => t("pvc.tip_year", { year: String(l) })}
                   contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }}
                 />
                 <ReferenceLine x={yr} stroke="#94a3b8" strokeWidth={1} />
@@ -445,8 +437,9 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
         {/* Scrubber: one control moves both charts and all three figures. */}
         <div>
           <label htmlFor="policy-year" className="block text-xs text-slate-500">
-            Policy year {row.year} of {term}
-            {row.age !== null ? ` — age ${row.age}` : ""}. Drag to move through the policy.
+            {row.age !== null
+              ? t("pvc.scrub_age", { year: row.year, term, age: row.age })
+              : t("pvc.scrub", { year: row.year, term })}
           </label>
           <input
             id="policy-year"
@@ -461,62 +454,62 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
 
         <div className={"grid grid-cols-1 gap-4 sm:grid-cols-2 " + (row.received > 0 ? "xl:grid-cols-5" : "xl:grid-cols-4")}>
           <div className="rounded-xl border border-slate-100 p-4">
-            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Premiums paid</div>
+            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">{t("pvc.k_paid")}</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: PAID }}>{rupee(row.paid)}</div>
             <div className="mt-1 text-sm text-slate-500">
-              {row.year >= result.ppt ? `All ${result.ppt} premiums paid.` : `${row.year} of ${result.ppt} premiums paid.`}
+              {row.year >= result.ppt ? t("pvc.all_paid", { count: result.ppt }) : t("pvc.some_paid", { year: row.year, count: result.ppt })}
             </div>
           </div>
           {row.received > 0 && (
             <div className="rounded-xl border border-slate-100 p-4">
-              <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Payouts received</div>
+              <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">{t("pvc.k_received")}</div>
               <div className="mt-1 text-2xl font-bold text-[#0f766e]">{rupee(row.received)}</div>
               <div className="mt-1 text-sm text-slate-500">
-                Paid out along the way. They keep this whatever they decide next.
+                {t("pvc.k_received_desc")}
               </div>
             </div>
           )}
           <div className="rounded-xl border border-slate-100 p-4">
-            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Surrender value</div>
+            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">{t("pvc.k_sv")}</div>
             <div className={"mt-1 text-2xl font-bold " + (row.back > 0 ? "" : "text-slate-400")}
               style={row.back > 0 ? { color: BACK } : undefined}>
-              {row.back > 0 ? rupee(row.back) : "Nothing"}
+              {row.back > 0 ? rupee(row.back) : t("pvc.nothing")}
             </div>
             <div className="mt-1 text-sm text-slate-500">
               {row.received > 0 && (
                 <span className="font-semibold text-slate-700">
-                  {rupee(row.back + row.received)} in hand in total.{" "}
+                  {t("pvc.in_hand", { amount: rupee(row.back + row.received) })}{" "}
                 </span>
               )}
-              {row.penalty > 0 ? `After a ${rupee(row.penalty)} discontinuance charge. ` : ""}{row.note}
+              {row.penalty > 0 ? `${t("pvc.after_charge", { amount: rupee(row.penalty) })} ` : ""}{row.note}
             </div>
           </div>
           <div className="rounded-xl border border-slate-100 p-4">
-            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Annual return</div>
+            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">{t("pvc.k_return")}</div>
             <div className={"mt-1 text-2xl font-bold " + (returnHere === null ? "text-slate-400" : returnHere < 0 ? "text-amber-700" : "text-slate-900")}>
-              {returnHere === null ? "No return" : pct(returnHere)}
+              {returnHere === null ? t("pvc.no_return") : pct(returnHere)}
             </div>
             <div className="mt-1 text-sm text-slate-500">
-              {returnHere === null && "Nothing comes back in this year. "}
+              {returnHere === null && `${t("pvc.nothing_this_year")} `}
               {returnAtMaturity !== null
-                ? `Held to maturity: ${pct(returnAtMaturity)} a year.`
+                ? t("pvc.held_to_maturity", { ret: pct(returnAtMaturity) })
                 : returnHere !== null
-                ? "A year, on the money actually paid in."
+                ? t("pvc.a_year_paid")
                 : ""}
             </div>
             <div className="mt-1 text-[11px] text-slate-400">
               {returnAtMaturity === null
                 ? ""
                 : row.xirr !== null || xirrAtMaturity !== null
-                ? "XIRR — dated cashflows. Compare with a fixed deposit."
-                : "Annual periods; no start date to date the cashflows."}
+                ? t("pvc.xirr_note")
+                : t("pvc.annual_note")}
             </div>
           </div>
           <div className="rounded-xl border border-slate-100 p-4">
-            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Death benefit</div>
+            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">{t("pvc.k_death")}</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: COVER }}>{rupee(row.cover)}</div>
             <div className="mt-1 text-sm text-slate-500">
-              {row.deferredTo ? "Cover stops if the policy is surrendered." : "Cover while the policy is in force."}
+              {row.deferredTo ? t("pvc.cover_stops") : t("pvc.cover_while")}
             </div>
           </div>
         </div>
@@ -526,12 +519,10 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
         {result.paidUpFactor < 1 && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
             <div className="text-sm font-black uppercase tracking-[0.2em] text-rose-800">
-              Reduced paid-up
+              {t("pvc.rpu")}
             </div>
             <div className="mt-1 text-sm text-rose-900">
-              Premiums stopped after {result.paidThrough} of the {result.ppt} years payable, so every figure
-              above is {Math.round(result.paidUpFactor * 100)}% of what this policy would otherwise be worth.
-              Reviving it puts them back to full.
+              {t("pvc.rpu_desc", { paid: result.paidThrough ?? "", ppt: result.ppt, pct: Math.round(result.paidUpFactor * 100) })}
             </div>
           </div>
         )}
@@ -543,27 +534,25 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
           {row.maxLoan > 0 && (
             <div className="rounded-xl border border-[#0D9488]/30 bg-[#0D9488]/5 p-4">
               <div className="text-sm font-black uppercase tracking-[0.2em] text-[#0f766e]">
-                Borrow instead
+                {t("pvc.borrow")}
               </div>
               <div className="mt-1 text-2xl font-bold text-[#0f766e]">{rupee(row.maxLoan)}</div>
               <div className="mt-1 text-sm text-slate-700">
-                Up to {result.loan.sharePct}% of the surrender value, borrowed against the policy. The cover
-                stays alive and so does the plan.
+                {t("pvc.borrow_desc", { pct: result.loan.sharePct })}
               </div>
               <div className="mt-1 text-sm text-slate-600">
                 {result.loan.ratePct !== null
-                  ? `Interest ${result.loan.ratePct}% a year, fixed for the life of the loan.`
+                  ? t("pvc.loan_rate", { rate: result.loan.ratePct })
                   : result.loan.rateNote}
               </div>
               {result.loan.outstanding > 0 && (
                 <div className="mt-1 text-sm font-semibold text-slate-800">
-                  {rupee(result.loan.outstanding)} already drawn, so {rupee(result.loan.available)} is left today.
+                  {t("pvc.loan_drawn", { drawn: rupee(result.loan.outstanding), left: rupee(result.loan.available) })}
                 </div>
               )}
               {result.loan.forecloses && (
                 <div className="mt-1 text-sm font-semibold text-rose-800">
-                  The loan has passed {result.params.foreclosureAtPct.value}% of the surrender value. The
-                  policy can be foreclosed.
+                  {t("pvc.forecloses", { pct: result.params.foreclosureAtPct.value })}
                 </div>
               )}
             </div>
@@ -572,24 +561,22 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
           {result.revival && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
               <div className="text-sm font-black uppercase tracking-[0.2em] text-amber-900">
-                {result.revival.expired ? "Revival window closed" : "Bring it back"}
+                {result.revival.expired ? t("pvc.revival_closed") : t("pvc.bring_back")}
               </div>
               <div className="mt-1 text-2xl font-bold text-amber-900">
                 {rupee(result.revival.payable)}
                 {result.revival.interest === null && (
-                  <span className="ml-1 text-sm font-semibold">+ interest</span>
+                  <span className="ml-1 text-sm font-semibold">{t("pvc.plus_interest")}</span>
                 )}
               </div>
               <div className="mt-1 text-sm text-slate-700">
-                {result.revival.missedInstalments} missed{" "}
-                {result.revival.missedInstalments === 1 ? "premium" : "premiums"} of{" "}
-                {rupee(result.revival.arrears)}
-                {result.revival.interest !== null && `, plus ${rupee(result.revival.interest)} interest`}.
+                {t(result.revival.missedInstalments === 1 ? "pvc.missed_one" : "pvc.missed_many", { count: result.revival.missedInstalments, amount: rupee(result.revival.arrears) })}
+                {result.revival.interest !== null && t("pvc.plus_interest_amt", { amount: rupee(result.revival.interest) })}.
               </div>
               <div className="mt-1 text-sm text-slate-600">
                 {result.revival.interest === null
                   ? result.revival.rateNote
-                  : `Interest charged at ${result.revival.ratePct}% a year on each arrear from its due date.`}
+                  : t("pvc.revival_rate", { rate: result.revival.ratePct ?? "" })}
               </div>
               <div
                 className={
@@ -598,8 +585,8 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                 }
               >
                 {result.revival.expired
-                  ? `The window closed on ${result.revival.deadline}. This policy can no longer be revived.`
-                  : `Revive by ${result.revival.deadline ?? "the end of the revival window"}.`}
+                  ? t("pvc.window_closed_on", { date: result.revival.deadline ?? "" })
+                  : t("pvc.revive_by", { date: result.revival.deadline ?? t("pvc.window_end") })}
               </div>
             </div>
           )}
@@ -613,18 +600,16 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
               onClick={() => setShowParams((s) => !s)}
               className="flex w-full items-center justify-between p-4 text-left"
             >
-              <span className="text-sm font-bold text-slate-900">Charges and assumptions</span>
+              <span className="text-sm font-bold text-slate-900">{t("pvc.charges")}</span>
               <span className="text-xs text-slate-500">
-                {assumed === 0 ? "All read from the document" : `${assumed} still assumed — tap to set`}
+                {assumed === 0 ? t("pvc.all_read") : t("pvc.still_assumed", { count: assumed })}
                 <span className="ml-2 text-slate-400">{showParams ? "▲" : "▼"}</span>
               </span>
             </button>
             {showParams && (
               <div className="space-y-3 border-t border-slate-100 p-4">
                 <p className="text-xs text-slate-500">
-                  These come from the policy wording where it states them. Anything marked "assumed" is a
-                  standard value we applied so the schedule could be drawn — set it from the customer's
-                  document and the numbers become exact.
+                  {t("pvc.charges_desc")}
                 </p>
                 {relevant.map((key) => {
                   const p = params[key];
@@ -632,7 +617,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                   return (
                     <div key={String(key)} className="flex flex-wrap items-center gap-3">
                       <div className="min-w-[220px] flex-1 text-xs text-slate-600">
-                        {PARAM_LABELS[key] ?? String(key)}
+                        {tOr(t, `pvc.p_${String(key)}`, PARAM_LABELS[key] ?? String(key))}
                       </div>
                       {scalar ? (
                         <Input
@@ -644,11 +629,11 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
                         />
                       ) : (
                         <span className="text-xs text-slate-400">
-                          {Array.isArray(p.value) ? `${p.value.length} rows` : "table"}
+                          {Array.isArray(p.value) ? t("pvc.rows", { count: p.value.length }) : t("pvc.table")}
                         </span>
                       )}
                       <span className={"rounded-full border px-2 py-0.5 text-xs font-semibold " + SOURCE_STYLE[p.source]}>
-                        {SOURCE_LABEL[p.source]}
+                        {t(SOURCE_KEY[p.source])}
                       </span>
                     </div>
                   );
@@ -659,17 +644,15 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
         )}
 
         <div className="border-t border-slate-100 pt-4">
-          <div className="text-sm font-bold text-slate-900">How this was worked out</div>
+          <div className="text-sm font-bold text-slate-900">{t("pvc.how")}</div>
           <p className="mt-1 text-xs text-slate-500">
-            Every figure is arithmetic on the fields read from the document and the charges above. Nothing is
-            estimated, and the same document always gives the same numbers.
+            {t("pvc.how_desc")}
+            {locale === "hi" && <> {t("pvc.steps_english")}</>}
           </p>
           <ul className="mt-3 space-y-1.5">
             {returnAtMaturity !== null && (
               <li className="text-xs text-slate-600">
-                · Return = the rate at which the premiums actually paid, year by year, grow into the payout
-                (XIRR, discounted by the real dates). A plain average over total premiums would overstate it, because a
-                premium paid late has not been invested for the whole term.
+                {t("pvc.how_return")}
               </li>
             )}
             {steps.map((s, i) => (
