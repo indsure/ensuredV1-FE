@@ -19,6 +19,8 @@ import { CalculatorPDFDocument } from "@/components/CalculatorPDFDocument";
 import { registerPdfFonts } from "@/components/PolicyPDFDocument";
 import { supabase } from "@/lib/supabase";
 import { clearAgentCalcDraft, readAgentCalcDraft, saveAgentCalcDraft, type AgentCalcDraft } from "@/lib/agentCalcDraft";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 
 /** Find the state for a known city name (case-insensitive), if any. */
 function findStateForCity(city: string): { state: string; city: string } | null {
@@ -44,6 +46,7 @@ import { formatINRFull as formatINR, formatLakhs } from "@/lib/format";
 
 export default function AgentCalculator() {
   const { agent } = useAgent();
+  const { t, locale } = useLanguage();
   const [, setLocation] = useLocation();
 
   const customerIdParam = useMemo(
@@ -148,9 +151,9 @@ export default function AgentCalculator() {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      toast({ variant: "success", title: "Link copied", description: "Send it to your client — no login needed." });
+      toast({ variant: "success", title: t("agent_calc.link_copied"), description: t("agent_calc.link_copied_desc") });
     } catch {
-      toast({ variant: "destructive", title: "Copy failed", description: "Clipboard access was blocked." });
+      toast({ variant: "destructive", title: t("agent_calc.copy_failed"), description: t("agent_calc.clipboard_blocked") });
     }
   }
 
@@ -182,9 +185,9 @@ export default function AgentCalculator() {
       if (error) throw new Error(error.message);
       const c = customers.find((x) => x.id === customerId) ?? null;
       setAttachedTo(c);
-      toast({ variant: "success", title: "Saved to customer", description: c ? `Linked to ${c.name}'s portfolio.` : undefined });
+      toast({ variant: "success", title: t("agent_calc.saved_to_customer"), description: c ? t("agent_calc.linked_to", { name: c.name }) : undefined });
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not save", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("agent_calc.save_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setAssigning(false);
     }
@@ -237,8 +240,8 @@ export default function AgentCalculator() {
       console.error("Cover calculation download failed:", err);
       toast({
         variant: "destructive",
-        title: "Could not build the PDF",
-        description: "The result is still on screen. Please try again.",
+        title: t("agent_calc.pdf_failed"),
+        description: t("agent_calc.pdf_failed_desc"),
       });
     } finally {
       setDownloading(false);
@@ -249,15 +252,15 @@ export default function AgentCalculator() {
     <div className="space-y-6 animate-in fade-in duration-500 pb-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">Cover Calculator</h1>
+          <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("agent_calc.title")}</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Calculate how much health cover a client actually needs — free, no checks used.
+            {t("agent_calc.subtitle")}
           </p>
         </div>
         {done && (
           <Button variant="outline" className="border-slate-200 bg-white" onClick={resetRun}>
             <RefreshCw className="mr-2 h-4 w-4" />
-            New Calculation
+            {t("agent_calc.new_calc")}
           </Button>
         )}
       </div>
@@ -265,7 +268,7 @@ export default function AgentCalculator() {
       {customer && (
         <div className="inline-flex items-center gap-2 rounded-full bg-[#0D9488]/10 border border-[#0D9488]/20 px-4 py-1.5 text-sm font-semibold text-[#0D9488]">
           <UserIcon className="h-3.5 w-3.5" />
-          Calculating for {customer.name}
+          {t("agent_calc.calculating_for", { name: customer.name })}
           {customer.city ? <span className="text-[#0D9488]/60 font-medium">· {customer.city}</span> : null}
         </div>
       )}
@@ -275,9 +278,9 @@ export default function AgentCalculator() {
           <CardContent className="p-6 md:p-10">
             {restored && !seed && (
               <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-[#0D9488]/20 bg-[#0D9488]/5 px-4 py-3">
-                <p className="text-base text-slate-800">We kept your answers from earlier. Carry on where you left off.</p>
+                <p className="text-base text-slate-800">{t("agent_calc.kept_answers")}</p>
                 <Button variant="outline" className="min-h-[44px] text-base" onClick={startOver}>
-                  Start over
+                  {t("agent_calc.start_over")}
                 </Button>
               </div>
             )}
@@ -300,7 +303,7 @@ export default function AgentCalculator() {
 
       {loadingCustomer && (
         <Card className="border-slate-100 shadow-sm">
-          <CardContent className="p-10 text-center text-slate-400">Loading customer…</CardContent>
+          <CardContent className="p-10 text-center text-slate-400">{t("agent_calc.loading_customer")}</CardContent>
         </Card>
       )}
 
@@ -310,13 +313,13 @@ export default function AgentCalculator() {
           <Card className="border-slate-100 shadow-sm overflow-hidden">
             <div className="bg-gradient-to-r from-[#0D9488] to-teal-600 px-6 md:px-8 py-6 text-white">
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-teal-100">
-                <Shield className="h-4 w-4" /> Recommended Protection
+                <Shield className="h-4 w-4" /> {t("agent_calc.recommended")}
               </div>
               <div className="mt-2 text-4xl md:text-5xl font-black">{r.totalProtection}</div>
               <div className="mt-1 text-sm text-teal-50">
                 {r.plans?.hasSplit
-                  ? "Two ways to buy it, below. Same cover, two premiums."
-                  : `${r.baseCover} in a single policy.`}
+                  ? t("agent_calc.two_ways")
+                  : t("agent_calc.single_policy", { amount: r.baseCover })}
               </div>
             </div>
             <CardContent className="p-6 md:p-8 space-y-6">
@@ -325,26 +328,26 @@ export default function AgentCalculator() {
               {r.plans ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Optimal</div>
+                    <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">{t("agent_calc.optimal")}</div>
                     <div className="mt-1 text-xl font-extrabold text-slate-800">
                       {formatLakhs(r.plans.optimal.baseSI)}
                     </div>
-                    <div className="mt-0.5 text-sm text-slate-600">One base policy. Simplest to claim on.</div>
+                    <div className="mt-0.5 text-sm text-slate-600">{t("agent_calc.optimal_desc")}</div>
                     <div className="mt-3 text-sm font-bold text-slate-700">
                       {formatINR(r.plans.optimal.premiumEstimate.annual.min)}–
                       {formatINR(r.plans.optimal.premiumEstimate.annual.max)}
-                      <span className="ml-1 text-sm font-medium text-slate-500">a year</span>
+                      <span className="ml-1 text-sm font-medium text-slate-500">{t("agent_calc.a_year")}</span>
                     </div>
                   </div>
 
                   <div className="rounded-2xl border border-teal-100 bg-teal-50/60 p-4">
                     <div className="flex items-center justify-between gap-2">
                       <div className="text-sm font-black uppercase tracking-[0.2em] text-[#0D9488]">
-                        Cost efficient
+                        {t("agent_calc.efficient")}
                       </div>
                       {r.plans.hasSplit && r.plans.efficientSavingPct > 0 && (
                         <span className="rounded-full bg-white px-2 py-0.5 text-sm font-black text-[#0D9488] border border-teal-100">
-                          save {r.plans.efficientSavingPct}%
+                          {t("agent_calc.save_pct", { pct: r.plans.efficientSavingPct })}
                         </span>
                       )}
                     </div>
@@ -355,28 +358,28 @@ export default function AgentCalculator() {
                     </div>
                     <div className="mt-0.5 text-sm text-slate-600">
                       {r.plans.hasSplit
-                        ? "Base policy plus a super top-up. Two policies to manage."
-                        : "The gap was too small for a separate top-up."}
+                        ? t("agent_calc.efficient_split")
+                        : t("agent_calc.efficient_no_split")}
                     </div>
                     <div className="mt-3 text-sm font-bold text-slate-700">
                       {formatINR(r.plans.efficient.premiumEstimate.annual.min)}–
                       {formatINR(r.plans.efficient.premiumEstimate.annual.max)}
-                      <span className="ml-1 text-sm font-medium text-slate-500">a year</span>
+                      <span className="ml-1 text-sm font-medium text-slate-500">{t("agent_calc.a_year")}</span>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Base Cover</div>
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("agent_calc.base_cover")}</div>
                     <div className="mt-1 text-xl font-extrabold text-slate-800">{r.baseCover}</div>
                   </div>
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Super Top-up</div>
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("agent_calc.super_topup")}</div>
                     <div className="mt-1 text-xl font-extrabold text-slate-800">{r.superTopUp}</div>
                   </div>
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Est. Annual Premium</div>
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("agent_calc.est_premium")}</div>
                     <div className="mt-1 text-xl font-extrabold text-slate-800">
                       {formatINR(r.premiumEstimate.annual.min)}–{formatINR(r.premiumEstimate.annual.max)}
                     </div>
@@ -386,11 +389,7 @@ export default function AgentCalculator() {
 
               {r.coverCap?.applied && (
                 <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  Capped at {formatLakhs(r.coverCap.limit)}, the most we recommend
-                  {r.coverCap.global
-                    ? " for someone who travels abroad"
-                    : " for cover that only has to work in India"}
-                  . The uncapped calculation came to {formatINR(r.coverCap.uncapped)}.
+                  {t(r.coverCap.global ? "agent_calc.capped_abroad" : "agent_calc.capped_india", { limit: formatLakhs(r.coverCap.limit), uncapped: formatINR(r.coverCap.uncapped) })}
                 </div>
               )}
 
@@ -399,7 +398,7 @@ export default function AgentCalculator() {
               {r.coverageBreakdown?.ledger?.length ? (
                 <div>
                   <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-500 mb-3">
-                    How this number was built
+                    {t("agent_calc.how_built")}
                   </div>
                   <div className="rounded-2xl border border-slate-100 divide-y divide-slate-100">
                     {r.coverageBreakdown.ledger.map((row, i) => (
@@ -416,7 +415,7 @@ export default function AgentCalculator() {
                       </div>
                     ))}
                     <div className="flex items-baseline justify-between gap-4 bg-slate-50 px-4 py-3">
-                      <span className="text-sm font-black text-slate-800">What they need</span>
+                      <span className="text-sm font-black text-slate-800">{t("agent_calc.what_they_need")}</span>
                       <span className="shrink-0 font-mono text-base font-black text-slate-900">
                         {formatINR(r.coverageBreakdown.finalOptimal)}
                       </span>
@@ -428,9 +427,9 @@ export default function AgentCalculator() {
               {r.riders.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Recommended Riders</div>
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("agent_calc.riders")}</div>
                     {partnerCompanies.length > 0 && (
-                      <div className="text-[11px] font-semibold text-[#0D9488]">Tuned to your partners</div>
+                      <div className="text-[11px] font-semibold text-[#0D9488]">{t("agent_calc.tuned")}</div>
                     )}
                   </div>
                   <div className="space-y-2">
@@ -445,7 +444,7 @@ export default function AgentCalculator() {
                               : "bg-slate-100 text-slate-500"
                           }`}
                         >
-                          {rider.priority}
+                          {tOr(t, `agent_calc.priority_${String(rider.priority).toLowerCase()}`, rider.priority)}
                         </span>
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
@@ -457,7 +456,7 @@ export default function AgentCalculator() {
                             )}
                             {rider.isGap && (
                               <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-100 px-2 py-0.5 text-xs font-bold">
-                                Gap — not in your lineup
+                                {t("agent_calc.gap")}
                               </span>
                             )}
                           </div>
@@ -471,7 +470,8 @@ export default function AgentCalculator() {
 
               {r.reasoning.length > 0 && (
                 <div>
-                  <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Why this number</div>
+                  <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-3">{t("agent_calc.why")}</div>
+                  {locale === "hi" && <p className="text-sm text-slate-500 mb-2">{t("agent_calc.engine_english")}</p>}
                   <ul className="space-y-1.5">
                     {r.reasoning.slice(0, 4).map((line, i) => (
                       <li key={i} className="flex gap-2 text-sm text-slate-600">
@@ -487,14 +487,14 @@ export default function AgentCalculator() {
               <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
                 <Button className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={copyShareLink} disabled={!shareUrl}>
                   {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-                  {copied ? "Copied!" : "Copy Share Link"}
+                  {copied ? t("agent_calc.copied") : t("agent_calc.copy_share")}
                 </Button>
                 <Button
                   variant="outline"
                   className="border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
                   onClick={whatsAppShare}
                 >
-                  WhatsApp It
+                  {t("agent_calc.whatsapp_it")}
                 </Button>
                 <Button
                   variant="outline"
@@ -503,7 +503,7 @@ export default function AgentCalculator() {
                   disabled={downloading}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  {downloading ? "Preparing\u2026" : "Download PDF"}
+                  {downloading ? t("agent_calc.preparing") : t("agent_calc.download_pdf")}
                 </Button>
                 {shareUrl && (
                   <Button
@@ -512,12 +512,12 @@ export default function AgentCalculator() {
                     onClick={() => window.open(shareUrl, "_blank", "noopener,noreferrer")}
                   >
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    Open Full Report
+                    {t("agent_calc.open_report")}
                   </Button>
                 )}
                 {!shareUrl && (
                   <span className="text-xs text-slate-400 italic">
-                    Report wasn't saved — sharing unavailable for this run.
+                    {t("agent_calc.not_saved")}
                   </span>
                 )}
                 <Button
@@ -526,7 +526,7 @@ export default function AgentCalculator() {
                   onClick={adjustInputs}
                 >
                   <SlidersHorizontal className="mr-2 h-4 w-4" />
-                  Adjust Inputs
+                  {t("agent_calc.adjust")}
                 </Button>
               </div>
 
@@ -536,18 +536,16 @@ export default function AgentCalculator() {
                   <Calculator className="h-4 w-4 text-slate-400" />
                   {attachedTo ? (
                     <div className="text-sm text-slate-600">
-                      Saved to{" "}
                       <button
                         className="font-bold text-[#0D9488] hover:underline"
                         onClick={() => setLocation(`/agent/customers/${attachedTo.id}`)}
                       >
-                        {attachedTo.name}
+                        {t("agent_calc.saved_to", { name: attachedTo.name })}
                       </button>
-                      's portfolio
                     </div>
                   ) : customers.length > 0 ? (
                     <>
-                      <span className="text-sm text-slate-600">Save to customer:</span>
+                      <span className="text-sm text-slate-600">{t("agent_calc.save_to_customer")}</span>
                       <select
                         className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
                         defaultValue=""
@@ -555,7 +553,7 @@ export default function AgentCalculator() {
                         onChange={(e) => e.target.value && attachToCustomer(e.target.value)}
                       >
                         <option value="" disabled>
-                          {assigning ? "Saving…" : "Choose customer"}
+                          {assigning ? t("agent_calc.saving") : t("agent_calc.choose_customer")}
                         </option>
                         {customers.map((c) => (
                           <option key={c.id} value={c.id}>
@@ -566,7 +564,7 @@ export default function AgentCalculator() {
                     </>
                   ) : (
                     <span className="text-sm text-slate-500 italic">
-                      Create a customer to attach calculations to their portfolio.
+                      {t("agent_calc.create_customer_hint")}
                     </span>
                   )}
                 </div>
