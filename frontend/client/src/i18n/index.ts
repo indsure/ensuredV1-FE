@@ -49,3 +49,17 @@ export function getSavedLocale(): Locale {
 export function dateLocale(locale: Locale): DateLocale | undefined {
   return locale === "hi" ? hiDates : undefined;
 }
+
+// Locale tag for Intl / toLocaleDateString, so dates and numbers follow the UI
+// language: "03 Mar 2026" in English, "03 मार्च 2026" in Hindi.
+export function intlLocale(locale: Locale): string {
+  return locale === "hi" ? "hi-IN" : "en-IN";
+}
+
+// For keys built from data (a status, a type). `t` echoes an unknown key back,
+// so a value we have no string for would render as "common.status_xyz". This
+// shows the fallback instead.
+export function tOr(t: (key: string) => string, key: string, fallback: string): string {
+  const value = t(key);
+  return !value || value === key ? fallback : value;
+}
