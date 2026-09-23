@@ -4,8 +4,10 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 export default function ResetPassword() {
+  const { t } = useLanguage();
   const [, setLocation] = useLocation();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -69,11 +71,11 @@ export default function ResetPassword() {
 
   async function handleSubmit() {
     if (!passwordValid) {
-      setError('Password must be at least 8 characters with an uppercase letter and a number.');
+      setError(t('password.rule_error'));
       return;
     }
     if (password !== confirm) {
-      setError('Passwords do not match.');
+      setError(t('password.mismatch'));
       return;
     }
     setLoading(true);
@@ -108,40 +110,40 @@ export default function ResetPassword() {
 
           <div className="mt-20">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.1] font-['Playfair_Display']">
-              Forge a new <br />
-              <span className="text-white/90 drop-shadow-lg">Vault Key.</span>
+              {t('password.reset_heading_1')} <br />
+              <span className="text-white/90 drop-shadow-lg">{t('password.reset_heading_2')}</span>
             </h2>
             <p className="mt-8 text-white/80 text-lg font-medium max-w-sm leading-relaxed">
-              Choose a strong, unique password. This link can only be used once.
+              {t('password.reset_side')}
             </p>
           </div>
         </div>
 
-        <div className="relative z-10 text-white/60 text-xs font-black tracking-[0.2em] uppercase">
-          Standardized by Leading Insurers · v4.1.0-VITE
-        </div>
+        {/* A footer here used to read "Standardized by Leading Insurers", a claim
+            with no source behind it. The spacer keeps the layout. */}
+        <div aria-hidden="true" />
       </div>
 
       {/* RIGHT PANEL: SET NEW PASSWORD */}
       <div className="flex-1 flex flex-col justify-center items-center py-12 sm:py-16 lg:py-20 px-8">
         <div className="w-full max-w-md space-y-12">
           <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 font-['Playfair_Display']">New Vault Key</h1>
-            <p className="mt-3 text-slate-400 font-semibold uppercase text-[11px] tracking-widest">Set Your New Password</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 font-['Playfair_Display']">{t('password.reset_title')}</h1>
+            <p className="mt-3 text-slate-400 font-semibold uppercase text-[11px] tracking-widest">{t('password.reset_sub')}</p>
           </div>
 
           {ready === null && (
-            <div className="text-center text-slate-400 text-sm font-semibold">Verifying reset link...</div>
+            <div className="text-center text-slate-400 text-sm font-semibold">{t('password.verifying')}</div>
           )}
 
           {ready === false && (
             <div className="space-y-8">
               <div className="bg-red-50 text-red-600 p-5 rounded-xl border border-red-100 text-sm font-semibold leading-relaxed">
-                This reset link is invalid or has expired. Please request a new one.
+                {t('password.invalid_link')}
               </div>
               <Link href="/agent/forgot-password">
                 <Button className="w-full h-12 bg-[#0D9488] hover:bg-[#0f766e] text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-[#0D9488]/20 transition-all">
-                  Request New Link
+                  {t('password.request_new')}
                 </Button>
               </Link>
             </div>
@@ -151,7 +153,7 @@ export default function ResetPassword() {
             <div className="space-y-8">
               <div className="bg-emerald-50 text-emerald-700 p-5 rounded-xl border border-emerald-100 text-sm font-semibold leading-relaxed flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 shrink-0" />
-                Password updated. Redirecting you to the portal...
+                {t('password.updated')}
               </div>
             </div>
           )}
@@ -159,7 +161,7 @@ export default function ResetPassword() {
           {ready === true && !done && (
             <div className="space-y-6">
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">New Vault Key</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('password.new_label')}</label>
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
@@ -171,6 +173,7 @@ export default function ResetPassword() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? t('password.hide_password') : t('password.show_password')}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -179,7 +182,7 @@ export default function ResetPassword() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Vault Key</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('password.confirm_label')}</label>
                 <Input
                   type={showPassword ? 'text' : 'password'}
                   value={confirm}
@@ -193,13 +196,13 @@ export default function ResetPassword() {
               {password && (
                 <div className="space-y-2">
                   <div className={`text-xs flex items-center gap-2 ${checks.length ? 'text-emerald-600' : 'text-slate-400'}`}>
-                    <CheckCircle2 className="w-3.5 h-3.5" /> At least 8 characters
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {t('password.rule_length')}
                   </div>
                   <div className={`text-xs flex items-center gap-2 ${checks.uppercase ? 'text-emerald-600' : 'text-slate-400'}`}>
-                    <CheckCircle2 className="w-3.5 h-3.5" /> One uppercase letter
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {t('password.rule_upper')}
                   </div>
                   <div className={`text-xs flex items-center gap-2 ${checks.number ? 'text-emerald-600' : 'text-slate-400'}`}>
-                    <CheckCircle2 className="w-3.5 h-3.5" /> One number
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {t('password.rule_number')}
                   </div>
                 </div>
               )}
@@ -216,7 +219,7 @@ export default function ResetPassword() {
                 disabled={loading}
                 className="w-full h-12 bg-[#0D9488] hover:bg-[#0f766e] text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-[#0D9488]/20 transition-all disabled:opacity-50"
               >
-                {loading ? 'Updating...' : 'Update Password'}
+                {loading ? t('password.updating') : t('password.update')}
               </Button>
             </div>
           )}

@@ -18,6 +18,8 @@ import {
 } from "@/lib/customers";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { dateLocale } from "@/i18n";
 import { CustomersMobileList } from "@/components/agent/CustomersMobileList";
 
 type DraftState = { name: string; phone: string; email: string; city: string };
@@ -26,6 +28,7 @@ const EMPTY_DRAFT: DraftState = { name: "", phone: "", email: "", city: "" };
 export default function CustomersNew() {
   const [, setLocation] = useLocation();
   const { agent } = useAgent();
+  const { t, locale } = useLanguage();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [policies, setPolicies] = useState<PortfolioPolicy[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +59,7 @@ export default function CustomersNew() {
       setCustomers(custs);
       setPolicies(pols);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      setError(e instanceof Error ? e.message : t("common.unknown_error"));
     } finally {
       setLoading(false);
     }
@@ -93,22 +96,22 @@ export default function CustomersNew() {
 
   async function handleCreate() {
     if (!agent?.agentId) {
-      toast({ variant: "destructive", title: "Still loading your account", description: "Please wait a moment and try again." });
+      toast({ variant: "destructive", title: t("customers.still_loading"), description: t("customers.still_loading_desc") });
       return;
     }
     if (!draft.name.trim()) {
-      toast({ variant: "destructive", title: "Name required" });
+      toast({ variant: "destructive", title: t("customers.name_required") });
       return;
     }
     setSaving(true);
     try {
       const created = await createCustomer(agent.agentId, draft);
-      toast({ variant: "success", title: "Customer added" });
+      toast({ variant: "success", title: t("customers.added") });
       setDraft(EMPTY_DRAFT);
       setCreateOpen(false);
       setLocation(`/agent/customers/${created.id}`);
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not add customer", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("customers.add_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setSaving(false);
     }
@@ -119,16 +122,16 @@ export default function CustomersNew() {
 
       {/* HEADER */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">Customers</h1>
+        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("customers.title")}</h1>
         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <button
             onClick={() => setCreateOpen(v => !v)}
             className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg bg-[#0D9488] px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-[#0f766e]"
           >
-            {createOpen ? <X size={14} /> : <Plus size={14} />} {createOpen ? "Cancel" : "Add Customer"}
+            {createOpen ? <X size={14} /> : <Plus size={14} />} {createOpen ? t("common.cancel") : t("customers.add")}
           </button>
           <button onClick={load} disabled={loading} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {t("common.refresh")}
           </button>
         </div>
       </div>
@@ -136,19 +139,19 @@ export default function CustomersNew() {
       {/* CREATE FORM */}
       {createOpen && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-          <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">New customer</p>
+          <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{t("customers.new_customer")}</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="Full name *" className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
-            <input value={draft.phone} onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))} placeholder="Phone" className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
-            <input value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} placeholder="Email" className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
-            <input value={draft.city} onChange={e => setDraft(d => ({ ...d, city: e.target.value }))} placeholder="City" className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
+            <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder={t("customers.ph_name")} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
+            <input value={draft.phone} onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))} placeholder={t("customers.ph_phone")} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
+            <input value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} placeholder={t("customers.ph_email")} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
+            <input value={draft.city} onChange={e => setDraft(d => ({ ...d, city: e.target.value }))} placeholder={t("customers.ph_city")} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
           </div>
           <button
             onClick={handleCreate}
             disabled={saving || !draft.name.trim()}
             className="mt-4 flex items-center gap-1.5 rounded-lg bg-[#0D9488] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0f766e] disabled:opacity-50"
           >
-            {saving && <Loader2 size={14} className="animate-spin" />} Save customer
+            {saving && <Loader2 size={14} className="animate-spin" />} {t("customers.save")}
           </button>
         </div>
       )}
@@ -160,10 +163,10 @@ export default function CustomersNew() {
 
           {/* TOOLBAR */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-slate-50">
-            <p className="text-sm text-slate-500 font-medium">{customers.length} customer{customers.length !== 1 ? "s" : ""}</p>
+            <p className="text-sm text-slate-500 font-medium">{t(customers.length === 1 ? "customers.count_one" : "customers.count_many", { count: customers.length })}</p>
             <input
               type="search"
-              placeholder="Search name, phone, email, city…"
+              placeholder={t("customers.search_placeholder")}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="min-w-0 w-full sm:w-64 rounded-lg border border-slate-200 px-3 py-2 sm:py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
@@ -178,7 +181,7 @@ export default function CustomersNew() {
                 statsFor={(id) => statsByCustomer.get(id)}
                 formatAmount={formatAmount}
                 loading={loading}
-                emptyText={search ? `No results for "${search}"` : "No customers yet. Add one here, or tag a policy to a customer from its detail page."}
+                emptyText={search ? t("common.no_results_for", { query: search }) : t("customers.empty")}
                 onOpen={(id) => setLocation(`/agent/customers/${id}`)}
               />
             </div>
@@ -187,12 +190,12 @@ export default function CustomersNew() {
             <table className="table-cards w-full text-sm">
               <thead className="bg-slate-50/60 text-xs text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-100">
                 <tr>
-                  <th className="px-6 py-3.5 text-left">Customer</th>
-                  <th className="px-6 py-3.5 text-left">Contact</th>
-                  <th className="px-6 py-3.5 text-left">Policies</th>
-                  <th className="px-6 py-3.5 text-left">Total Cover</th>
-                  <th className="px-6 py-3.5 text-left">Next Premium</th>
-                  <th className="px-6 py-3.5 text-left">Added</th>
+                  <th className="px-6 py-3.5 text-left">{t("customers.col_customer")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("customers.col_contact")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("customers.col_policies")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("customers.col_total_cover")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("customers.col_next_premium")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("customers.col_added")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -208,8 +211,8 @@ export default function CustomersNew() {
                     <td colSpan={6} className="px-6 py-16 text-center text-slate-400">
                       <Users className="mx-auto mb-3 h-8 w-8 text-slate-200" />
                       {search
-                        ? <span className="italic">No results for "{search}"</span>
-                        : <span className="italic">No customers yet. Add one here, or tag a policy to a customer from its detail page.</span>}
+                        ? <span className="italic">{t("common.no_results_for", { query: search })}</span>
+                        : <span className="italic">{t("customers.empty")}</span>}
                     </td>
                   </tr>
                 )}
@@ -221,32 +224,32 @@ export default function CustomersNew() {
                       className="hover:bg-slate-50/60 transition-colors cursor-pointer"
                       onClick={() => setLocation(`/agent/customers/${c.id}`)}
                     >
-                      <td className="px-6 py-4" data-label="Customer" data-cell="title">
+                      <td className="px-6 py-4" data-label={t("customers.col_customer")} data-cell="title">
                         <div className="font-semibold text-slate-800">{c.name}</div>
                         {c.city && <div className="text-[11px] text-slate-400 font-medium mt-0.5">{c.city}</div>}
                       </td>
-                      <td className="px-6 py-4 text-slate-500" data-label="Contact">
+                      <td className="px-6 py-4 text-slate-500" data-label={t("customers.col_contact")}>
                         <div>{c.phone || "—"}</div>
                         {c.email && <div className="text-[11px] text-slate-400 mt-0.5">{c.email}</div>}
                       </td>
-                      <td className="px-6 py-4" data-label="Policies">
+                      <td className="px-6 py-4" data-label={t("customers.col_policies")}>
                         {stats ? (
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {Object.entries(stats.byType).map(([t, n]) => (
-                              <span key={t} className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-xs font-bold">
-                                {TYPE_META[t as InsuranceType]?.emoji ?? "📄"} {n}
+                            {Object.entries(stats.byType).map(([ty, n]) => (
+                              <span key={ty} className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-xs font-bold">
+                                {TYPE_META[ty as InsuranceType]?.emoji ?? "📄"} {n}
                               </span>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-300">No policies tagged</span>
+                          <span className="text-xs text-slate-300">{t("customers.no_policies_tagged")}</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 font-semibold text-slate-700" data-label="Total Cover">{formatAmount(stats?.totalSumInsured ?? null)}</td>
-                      <td className="px-6 py-4 text-slate-500" data-label="Next Premium">
-                        {stats?.nextPremium ? format(new Date(stats.nextPremium.date), "d MMM yyyy") : "—"}
+                      <td className="px-6 py-4 font-semibold text-slate-700" data-label={t("customers.col_total_cover")}>{formatAmount(stats?.totalSumInsured ?? null)}</td>
+                      <td className="px-6 py-4 text-slate-500" data-label={t("customers.col_next_premium")}>
+                        {stats?.nextPremium ? format(new Date(stats.nextPremium.date), "d MMM yyyy", { locale: dateLocale(locale) }) : "—"}
                       </td>
-                      <td className="px-6 py-4 text-slate-400 text-xs" data-label="Added">{format(new Date(c.created_at), "d MMM yyyy")}</td>
+                      <td className="px-6 py-4 text-slate-400 text-xs" data-label={t("customers.col_added")}>{format(new Date(c.created_at), "d MMM yyyy", { locale: dateLocale(locale) })}</td>
                     </tr>
                   );
                 })}
@@ -257,7 +260,7 @@ export default function CustomersNew() {
 
           {!loading && filtered.length > 0 && (
             <div className="px-6 py-3 border-t border-slate-50 text-xs text-slate-400">
-              Showing {filtered.length} of {customers.length} customers
+              {t("customers.showing", { shown: filtered.length, total: customers.length })}
             </div>
           )}
         </div>

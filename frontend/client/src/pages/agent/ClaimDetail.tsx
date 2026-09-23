@@ -7,6 +7,8 @@ import {
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 import { formatAmount } from "@/lib/customers";
 import {
   addQuery, CASE_DOCS, CLAIM_SPINE, CLAIM_STATUS_META, deleteClaimDocument, deleteQuery,
@@ -18,10 +20,18 @@ import {
 
 const CLOSED = ["settled", "rejected"];
 
+// Checklist labels and letter names are SAVED as English doc_type values, so a
+// file stays findable whatever language uploaded it. Only the display changes.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+const docKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+const docLabel = (t: T, s: string) => tOr(t, `claim_docs.${docKey(s)}`, s);
+const statusText = (t: T, s: string, fallback: string) => tOr(t, `claims.status_${s}`, fallback);
+
 export default function ClaimDetail() {
   const [, params] = useRoute("/agent/claims/:id");
   const [, setLocation] = useLocation();
   const id = params?.id ?? "";
+  const { t } = useLanguage();
 
   const [claim, setClaim] = useState<ClaimDetailType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +46,7 @@ export default function ClaimDetail() {
     try {
       setClaim(await fetchClaim(id));
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Could not load the claim");
+      setError(e instanceof Error ? e.message : t("claim_detail.load_failed"));
     } finally {
       setLoading(false);
     }
@@ -67,7 +77,7 @@ export default function ClaimDetail() {
         onClick={() => setLocation("/agent/claims")}
         className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800"
       >
-        <ArrowLeft size={16} /> Claims
+        <ArrowLeft size={16} /> {t("claim_detail.back")}
       </button>
 
       {/* HEADER */}
@@ -75,13 +85,13 @@ export default function ClaimDetail() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-['Playfair_Display'] leading-tight">
-              {claim.ailment || "Health claim"}
+              {claim.ailment || t("claim_detail.health_claim")}
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              {claim.customer_name ?? <span className="italic">Customer removed</span>}
+              {claim.customer_name ?? <span className="italic">{t("claims.customer_removed")}</span>}
               {claim.hospital ? ` · ${claim.hospital}` : ""}
               {" · "}
-              {claim.claim_type === "cashless" ? "Cashless" : "Reimbursement"}
+              {claim.claim_type === "cashless" ? t("claims.cashless") : t("claims.reimbursement")}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -95,35 +105,35 @@ export default function ClaimDetail() {
               onClick={() => {
                 const url = `${window.location.origin}/agent/claims/${claim.id}`;
                 navigator.clipboard.writeText(url).then(
-                  () => toast({ variant: "success", title: "Link copied", description: "Only people who can log in to this account can open it." }),
-                  () => toast({ variant: "destructive", title: "Copy failed", description: "Your browser blocked clipboard access." }),
+                  () => toast({ variant: "success", title: t("claim_detail.link_copied"), description: t("claim_detail.link_copied_desc") }),
+                  () => toast({ variant: "destructive", title: t("share_popover.copy_failed"), description: t("share_popover.clipboard_blocked") }),
                 );
               }}
               className="h-10 px-3.5 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50"
             >
-              <Copy size={14} /> Copy link
+              <Copy size={14} /> {t("claim_detail.copy_link")}
             </button>
             <button
               onClick={() => setEditing(true)}
               className="h-10 px-3.5 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50"
             >
-              <Pencil size={14} /> Edit
+              <Pencil size={14} /> {t("claim_detail.edit")}
             </button>
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${meta.badge}`}>
-              <span className={`h-2 w-2 rounded-full ${meta.dot}`} /> {meta.label}
+              <span className={`h-2 w-2 rounded-full ${meta.dot}`} /> {statusText(t, claim.status, meta.label)}
             </span>
           </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-slate-100 pt-4">
-          <Stat label="Claimed" value={claim.claimed_amount != null ? formatAmount(Number(claim.claimed_amount)) : "—"} />
+          <Stat label={t("claim_detail.claimed")} value={claim.claimed_amount != null ? formatAmount(Number(claim.claimed_amount)) : "—"} />
           <Stat
-            label="Settled"
+            label={t("claim_detail.settled")}
             value={claim.settled_amount != null ? formatAmount(Number(claim.settled_amount)) : "—"}
             tone={claim.settled_amount != null ? "text-emerald-700" : undefined}
           />
-          <Stat label="Insurer" value={claim.insurer || "—"} />
-          <Stat label="TPA" value={claim.tpa || "—"} />
+          <Stat label={t("claim_detail.insurer")} value={claim.insurer || "—"} />
+          <Stat label={t("claim_detail.tpa")} value={claim.tpa || "—"} />
         </div>
 
         {(wa || tel) && (
@@ -134,13 +144,13 @@ export default function ClaimDetail() {
               rel="noreferrer"
               className={`flex-1 sm:flex-none sm:px-6 h-12 inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] text-white font-bold text-sm hover:brightness-95 ${!wa ? "opacity-40 pointer-events-none" : ""}`}
             >
-              <MessageCircle className="h-5 w-5" /> WhatsApp
+              <MessageCircle className="h-5 w-5" /> {t("leads.whatsapp")}
             </a>
             <a
               href={tel ?? undefined}
               className={`flex-1 sm:flex-none sm:px-6 h-12 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 text-white font-bold text-sm hover:bg-slate-900 ${!tel ? "opacity-40 pointer-events-none" : ""}`}
             >
-              <Phone className="h-5 w-5" /> Call
+              <Phone className="h-5 w-5" /> {t("leads.call")}
             </a>
           </div>
         )}
@@ -157,16 +167,16 @@ export default function ClaimDetail() {
           <Pile
             claim={claim}
             category="personal"
-            title="Personal documents"
-            subtitle="identity and bank"
+            title={t("claim_detail.personal_docs")}
+            subtitle={t("claim_detail.personal_docs_sub")}
             checklist={PERSONAL_DOCS}
             onChanged={load}
           />
           <Pile
             claim={claim}
             category="case"
-            title="Case files"
-            subtitle="first visit to discharge"
+            title={t("claim_detail.case_files")}
+            subtitle={t("claim_detail.case_files_sub")}
             checklist={CASE_DOCS[claim.claim_type]}
             onChanged={load}
           />
@@ -177,7 +187,7 @@ export default function ClaimDetail() {
 
       {!closed && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
-          <p className="text-xs font-black uppercase tracking-widest text-slate-400">Update the claim</p>
+          <p className="text-xs font-black uppercase tracking-widest text-slate-400">{t("claim_detail.update_claim")}</p>
           <StatusButtons claim={claim} onChanged={load} onClose={(kind) => setOutcome(kind)} />
         </div>
       )}
@@ -218,13 +228,14 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: str
 /* ── tracker ──────────────────────────────────────────────────────────────── */
 
 function Tracker({ claim }: { claim: ClaimDetailType }) {
+  const { t } = useLanguage();
   const at = spineIndex(claim.status);
   const closed = CLOSED.includes(claim.status);
   const openRounds = claim.queries.filter((q) => !q.resolved_on).length;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4">
-      <p className="text-xs font-black uppercase tracking-widest text-slate-400">Where the claim is</p>
+      <p className="text-xs font-black uppercase tracking-widest text-slate-400">{t("claim_detail.where")}</p>
       <ol className="flex flex-col">
         {CLAIM_SPINE.map((step, i) => {
           const done = i < at;
@@ -244,14 +255,14 @@ function Tracker({ claim }: { claim: ClaimDetailType }) {
               </div>
               <div className="pb-4">
                 <div className={`text-sm font-bold ${current ? "text-blue-700" : done ? "text-slate-800" : "text-slate-400"}`}>
-                  {step.label}
+                  {tOr(t, `claim_detail.spine_${step.key}`, step.label)}
                 </div>
                 {current && step.key === "under_process" && (
                   <div className="text-xs text-slate-500">
-                    {openRounds > 0 ? `Paused by round ${claim.queries[claim.queries.length - 1]?.seq}` : "No query yet"}
+                    {openRounds > 0 ? t("claim_detail.paused_by_round", { count: claim.queries[claim.queries.length - 1]?.seq ?? "" }) : t("claim_detail.no_query_yet")}
                   </div>
                 )}
-                {step.hint && !current && <div className="text-xs text-slate-400">{step.hint}</div>}
+                {step.hint && !current && <div className="text-xs text-slate-400">{tOr(t, `claim_detail.spine_${step.key}_hint`, step.hint)}</div>}
               </div>
             </li>
           );
@@ -269,10 +280,10 @@ function Tracker({ claim }: { claim: ClaimDetailType }) {
           </div>
           <div>
             <div className={`text-sm font-bold ${closed ? (claim.status === "settled" ? "text-emerald-700" : "text-red-700") : "text-slate-400"}`}>
-              {closed ? CLAIM_STATUS_META[claim.status].label : "Settled or rejected"}
+              {closed ? statusText(t, claim.status, CLAIM_STATUS_META[claim.status].label) : t("claim_detail.settled_or_rejected")}
             </div>
             <div className="text-xs text-slate-400">
-              {closed ? formatDate(claim.closed_at) : "Needs a letter from the insurer"}
+              {closed ? formatDate(claim.closed_at) : t("claim_detail.needs_letter")}
             </div>
           </div>
         </li>
@@ -284,6 +295,7 @@ function Tracker({ claim }: { claim: ClaimDetailType }) {
 /* ── queries ──────────────────────────────────────────────────────────────── */
 
 function Queries({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () => void }) {
+  const { t } = useLanguage();
   const [adding, setAdding] = useState(false);
   const [question, setQuestion] = useState("");
   const [raisedBy, setRaisedBy] = useState("");
@@ -295,7 +307,7 @@ function Queries({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =
 
   async function save() {
     if (!question.trim()) {
-      toast({ variant: "destructive", title: "Write down what the insurer asked" });
+      toast({ variant: "destructive", title: t("claim_detail.write_query") });
       return;
     }
     setBusy(true);
@@ -304,7 +316,7 @@ function Queries({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =
       setQuestion(""); setRaisedBy(""); setAdding(false);
       onChanged();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not save the query", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.query_save_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -314,16 +326,16 @@ function Queries({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <div className="flex-1">
-          <h2 className="text-lg font-bold text-slate-800">Insurer queries</h2>
+          <h2 className="text-lg font-bold text-slate-800">{t("claim_detail.queries_title")}</h2>
           <p className="text-xs text-slate-500">
             {rounds.length === 0
-              ? "None so far."
-              : `${rounds.length} round${rounds.length !== 1 ? "s" : ""} so far · ${openCount} still open`}
+              ? t("claim_detail.none_so_far")
+              : t(rounds.length === 1 ? "claim_detail.rounds_one" : "claim_detail.rounds_many", { count: rounds.length, open: openCount })}
           </p>
         </div>
         {openCount > 0 && (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
-            <span className="h-2 w-2 rounded-full bg-amber-600" /> {openCount} open
+            <span className="h-2 w-2 rounded-full bg-amber-600" /> {t("claim_detail.open_count", { count: openCount })}
           </span>
         )}
       </div>
@@ -338,13 +350,13 @@ function Queries({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             rows={3}
-            placeholder="What did the insurer ask for?"
+            placeholder={t("claim_detail.ph_question")}
             className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
           />
           <input
             value={raisedBy}
             onChange={(e) => setRaisedBy(e.target.value)}
-            placeholder="Who asked — insurer or TPA (optional)"
+            placeholder={t("claim_detail.ph_raised_by")}
             className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
           />
           <div className="flex items-center gap-3">
@@ -353,9 +365,9 @@ function Queries({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =
               disabled={busy}
               className="flex items-center gap-2 rounded-xl bg-[#0D9488] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#0f766e] disabled:opacity-50"
             >
-              {busy && <Loader2 size={15} className="animate-spin" />} Save query
+              {busy && <Loader2 size={15} className="animate-spin" />} {t("claim_detail.save_query")}
             </button>
-            <button onClick={() => setAdding(false)} className="text-sm font-bold text-slate-500 hover:underline">Cancel</button>
+            <button onClick={() => setAdding(false)} className="text-sm font-bold text-slate-500 hover:underline">{t("common.cancel")}</button>
           </div>
         </div>
       ) : (
@@ -363,13 +375,13 @@ function Queries({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =
           onClick={() => setAdding(true)}
           className="w-full h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 text-sm font-bold text-slate-600 hover:bg-slate-50"
         >
-          <Plus size={17} /> Insurer raised {rounds.length ? "another" : "a"} query
+          <Plus size={17} /> {rounds.length ? t("claim_detail.raised_another") : t("claim_detail.raised_first")}
         </button>
       ))}
 
       {!closed && (
         <p className="text-xs text-slate-400">
-          Add as many rounds as the insurer raises. Each one keeps its own question, dates and papers.
+          {t("claim_detail.rounds_hint")}
         </p>
       )}
     </div>
@@ -379,6 +391,7 @@ function Queries({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =
 function QueryRound({
   claim, round, onChanged,
 }: { claim: ClaimDetailType; round: ClaimQuery; onChanged: () => void }) {
+  const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const open = !round.resolved_on;
   const replies = claim.documents.filter((d) => d.query_id === round.id);
@@ -389,7 +402,7 @@ function QueryRound({
       await updateQuery(claim.id, round.id, { resolve: true });
       onChanged();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not resolve", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.resolve_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -401,7 +414,7 @@ function QueryRound({
       await deleteQuery(claim.id, round.id);
       onChanged();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not remove", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.remove_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -414,11 +427,11 @@ function QueryRound({
           <CheckCircle2 size={19} className="text-emerald-600 shrink-0" />
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline gap-2">
-              <span className="text-[11px] font-black tracking-wider text-slate-400">ROUND {round.seq}</span>
+              <span className="text-[11px] font-black tracking-wider text-slate-400">{t("claim_detail.round_label", { count: round.seq })}</span>
               <span className="text-sm font-semibold text-slate-700 truncate">{round.question}</span>
             </div>
             <div className="text-[11px] text-slate-400">
-              {formatDay(round.raised_on)} to {formatDay(round.resolved_on)}
+              {t("claim_detail.date_range", { from: formatDay(round.raised_on), to: formatDay(round.resolved_on) })}
             </div>
           </div>
         </div>
@@ -440,15 +453,16 @@ function QueryRound({
     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex flex-col gap-3">
       <div className="flex items-center gap-2.5 flex-wrap">
         <span className="rounded-lg bg-amber-600 px-2 py-1 text-[11px] font-black tracking-wide text-white">
-          ROUND {round.seq}
+          {t("claim_detail.round_label", { count: round.seq })}
         </span>
         <span className="text-xs font-semibold text-amber-800">
-          Raised {formatDay(round.raised_on)}{round.raised_by ? ` by ${round.raised_by}` : ""}
+          {round.raised_by ? t("claim_detail.raised_on_by", { date: formatDay(round.raised_on), who: round.raised_by }) : t("claim_detail.raised_on", { date: formatDay(round.raised_on) })}
         </span>
         <button
           onClick={remove}
           disabled={busy}
-          title="Remove this query"
+          title={t("claim_detail.remove_query")}
+          aria-label={t("claim_detail.remove_query")}
           className="ml-auto text-amber-700 hover:text-red-600 disabled:opacity-40"
         >
           <Trash2 size={15} />
@@ -461,7 +475,7 @@ function QueryRound({
 
       {replies.length > 0 && (
         <div className="flex flex-col gap-2">
-          <span className="text-[11px] font-black uppercase tracking-wider text-amber-700">Sent back so far</span>
+          <span className="text-[11px] font-black uppercase tracking-wider text-amber-700">{t("claim_detail.sent_back")}</span>
           {replies.map((d) => (
             <DocRow key={d.id} claim={claim} doc={d} onChanged={onChanged} compact />
           ))}
@@ -475,14 +489,14 @@ function QueryRound({
           queryId={round.id}
           onChanged={onChanged}
           className="flex-1 h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-amber-500 bg-white text-sm font-bold text-amber-700 hover:bg-amber-100/50"
-          label="Add reply document"
+          label={t("claim_detail.add_reply")}
         />
         <button
           onClick={resolve}
           disabled={busy}
           className="flex-1 h-12 inline-flex items-center justify-center gap-2 rounded-xl bg-[#0D9488] text-sm font-bold text-white hover:bg-[#0f766e] disabled:opacity-50"
         >
-          {busy && <Loader2 size={15} className="animate-spin" />} Round {round.seq} resolved
+          {busy && <Loader2 size={15} className="animate-spin" />} {t("claim_detail.round_resolved", { count: round.seq })}
         </button>
       </div>
     </div>
@@ -492,6 +506,7 @@ function QueryRound({
 /* ── retention ────────────────────────────────────────────────────────────── */
 
 function Retention({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () => void }) {
+  const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
 
   if (claim.documents_purged_at) {
@@ -500,14 +515,12 @@ function Retention({ claim, onChanged }: { claim: ClaimDetailType; onChanged: ()
         <div className="flex items-center gap-3">
           <Trash2 size={19} className="text-slate-500" />
           <div>
-            <p className="text-base font-bold text-slate-700">Documents deleted</p>
-            <p className="text-xs text-slate-500">on {formatDate(claim.documents_purged_at)}</p>
+            <p className="text-base font-bold text-slate-700">{t("claim_detail.docs_deleted")}</p>
+            <p className="text-xs text-slate-500">{t("claim_detail.on_date", { date: formatDate(claim.documents_purged_at) })}</p>
           </div>
         </div>
         <p className="text-sm text-slate-500 leading-relaxed">
-          Every file on this claim was destroyed on schedule, as the customer was told when you
-          collected them. They cannot be recovered by anyone, including us. The claim record and
-          its history below are kept.
+          {t("claim_detail.purged_desc")}
         </p>
       </div>
     );
@@ -518,9 +531,8 @@ function Retention({ claim, onChanged }: { claim: ClaimDetailType; onChanged: ()
       <div className="rounded-2xl border border-slate-200 bg-white p-5 flex items-start gap-3 shadow-sm">
         <Clock size={18} className="text-slate-400 mt-0.5 shrink-0" />
         <p className="text-sm text-slate-500 leading-relaxed">
-          Nothing uploaded yet. <span className="font-semibold text-slate-700">The 30-day clock starts
-          on the first document</span> — we keep claim documents for 30 days only, in line with IRDAI
-          guidance.
+          {t("claim_detail.nothing_uploaded")} <span className="font-semibold text-slate-700">{t("claim_detail.clock_starts")}</span>{" "}
+          {t("claim_detail.irdai_30")}
         </p>
       </div>
     );
@@ -536,10 +548,10 @@ function Retention({ claim, onChanged }: { claim: ClaimDetailType; onChanged: ()
     setBusy(true);
     try {
       await extendRetention(claim.id);
-      toast({ title: "Kept for 30 more days" });
+      toast({ title: t("claim_detail.kept_30_more") });
       onChanged();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not extend", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.extend_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -549,9 +561,9 @@ function Retention({ claim, onChanged }: { claim: ClaimDetailType; onChanged: ()
     <div className={`rounded-2xl border bg-white p-6 shadow-sm flex flex-col gap-3 ${urgent ? "border-red-200" : "border-slate-200"}`}>
       <div className="flex items-center gap-2.5 flex-wrap">
         <Trash2 size={18} className={urgent ? "text-red-600" : "text-slate-500"} />
-        <span className="text-base font-bold text-slate-800">Documents deleted on {formatDate(claim.purge_at)}</span>
+        <span className="text-base font-bold text-slate-800">{t("claim_detail.deleted_on", { date: formatDate(claim.purge_at) })}</span>
         {claim.extension_used && (
-          <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-500">EXTENDED</span>
+          <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-500">{t("claim_detail.extended")}</span>
         )}
       </div>
 
@@ -563,14 +575,13 @@ function Retention({ claim, onChanged }: { claim: ClaimDetailType; onChanged: ()
           />
         </div>
         <div className="flex items-center justify-between text-xs">
-          <span className={`font-bold ${urgent ? "text-red-700" : "text-slate-600"}`}>Day {elapsed} of {total}</span>
-          <span className="text-slate-500">{days} day{days !== 1 ? "s" : ""} left</span>
+          <span className={`font-bold ${urgent ? "text-red-700" : "text-slate-600"}`}>{t("claim_detail.day_of", { day: elapsed, total })}</span>
+          <span className="text-slate-500">{t(days === 1 ? "claim_detail.days_left_one" : "claim_detail.days_left_many", { count: days })}</span>
         </div>
       </div>
 
       <p className="text-xs text-slate-500 leading-relaxed">
-        We keep claim documents for 30 days only, in line with IRDAI guidance. From day 25 you can
-        add 30 more days if the claim is still open. At 60 days everything is deleted for good.
+        {t("claim_detail.retention_rule")}
       </p>
 
       {claim.can_extend && (
@@ -579,12 +590,12 @@ function Retention({ claim, onChanged }: { claim: ClaimDetailType; onChanged: ()
           disabled={busy}
           className="h-12 inline-flex items-center justify-center gap-2 rounded-xl bg-[#0D9488] text-sm font-bold text-white hover:bg-[#0f766e] disabled:opacity-50"
         >
-          {busy && <Loader2 size={15} className="animate-spin" />} Keep for 30 more days
+          {busy && <Loader2 size={15} className="animate-spin" />} {t("claim_detail.keep_30_more")}
         </button>
       )}
       {claim.extension_used && (
         <p className="text-xs text-slate-400">
-          This claim has had its one extension. It cannot be extended again.
+          {t("claim_detail.no_more_extension")}
         </p>
       )}
     </div>
@@ -613,6 +624,7 @@ function Pile({
   checklist: string[];
   onChanged: () => void;
 }) {
+  const { t } = useLanguage();
   // Query replies live with their round, not in the pile.
   const docs = claim.documents.filter((d) => d.category === category && !d.query_id);
 
@@ -634,8 +646,8 @@ function Pile({
       <div>
         <h2 className="text-base font-bold text-slate-800">{title}</h2>
         <p className="text-xs text-slate-500">
-          {filledFromList} of {checklist.length} · {subtitle}
-          {extras.length > 0 && ` · ${extras.length} of your own`}
+          {t("claim_detail.pile_count", { done: filledFromList, total: checklist.length, sub: subtitle })}
+          {extras.length > 0 && t("claim_detail.pile_own", { count: extras.length })}
         </p>
       </div>
 
@@ -654,7 +666,7 @@ function Pile({
 
       {extras.length > 0 && (
         <div className="flex flex-col">
-          <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 pb-1">Your own</p>
+          <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 pb-1">{t("claim_detail.your_own")}</p>
           {extras.map((d) => (
             <Slot
               key={d.id}
@@ -671,7 +683,7 @@ function Pile({
       <CustomAdd claim={claim} category={category} onChanged={onChanged} />
 
       <p className="text-xs text-slate-400">
-        The list is a reminder, not a rule — add anything else the insurer asks for.
+        {t("claim_detail.list_hint")}
       </p>
     </div>
   );
@@ -687,18 +699,19 @@ function Slot({
   doc: ClaimDocument | null;
   onChanged: () => void;
 }) {
+  const { t } = useLanguage();
   if (!doc) {
     return (
       <div className="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
         <Circle size={18} className="text-slate-300 shrink-0" strokeDasharray="3 3" />
-        <span className="flex-1 min-w-0 text-sm font-medium text-slate-400 truncate">{label}</span>
+        <span className="flex-1 min-w-0 text-sm font-medium text-slate-400 truncate">{docLabel(t, label)}</span>
         <UploadButton
           claim={claim}
           category={category}
           docType={label}
           onChanged={onChanged}
           className="shrink-0 h-10 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#0D9488]/30 bg-[#0D9488]/5 text-xs font-bold text-[#0D9488] hover:bg-[#0D9488]/10"
-          label="Upload"
+          label={t("claim_detail.upload")}
         />
       </div>
     );
@@ -709,6 +722,7 @@ function Slot({
 function FilledSlot({
   claim, doc, onChanged,
 }: { claim: ClaimDetailType; doc: ClaimDocument; onChanged: () => void }) {
+  const { t } = useLanguage();
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState(doc.doc_type || doc.filename);
   const [busy, setBusy] = useState(false);
@@ -722,7 +736,7 @@ function FilledSlot({
       setRenaming(false);
       onChanged();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not rename", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.rename_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -747,12 +761,12 @@ function FilledSlot({
           disabled={busy}
           className="shrink-0 h-10 px-3 rounded-lg bg-[#0D9488] text-xs font-bold text-white hover:bg-[#0f766e] disabled:opacity-50"
         >
-          {busy ? <Loader2 size={14} className="animate-spin" /> : "Save"}
+          {busy ? <Loader2 size={14} className="animate-spin" /> : t("claim_detail.save")}
         </button>
         <button
           onClick={() => { setDraft(doc.doc_type || doc.filename); setRenaming(false); }}
           className="shrink-0 h-10 w-10 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700"
-          aria-label="Cancel rename"
+          aria-label={t("claim_detail.cancel_rename")}
         >
           <X size={16} />
         </button>
@@ -764,7 +778,7 @@ function FilledSlot({
     <div className="flex items-center gap-2.5 py-2 border-b border-slate-50 last:border-0">
       <CheckCircle2 size={18} className="text-[#0D9488] shrink-0" />
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-slate-800 truncate">{doc.doc_type || doc.filename}</div>
+        <div className="text-sm font-semibold text-slate-800 truncate">{doc.doc_type ? docLabel(t, doc.doc_type) : doc.filename}</div>
         <div className="text-[11px] text-slate-400 truncate">
           {doc.filename}
           {doc.file_size ? ` · ${Math.max(1, Math.round(doc.file_size / 1024))} KB` : ""}
@@ -784,6 +798,7 @@ function DocControls({
   onRename: () => void;
   onChanged: () => void;
 }) {
+  const { t } = useLanguage();
   const [busy, setBusy] = useState<null | "view" | "download" | "delete">(null);
 
   async function view() {
@@ -792,7 +807,7 @@ function DocControls({
       const url = await openClaimDocument(claim.id, doc.id);
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not open the file", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.open_failed"), description: e instanceof Error ? e.message : undefined });
     } finally { setBusy(null); }
   }
 
@@ -804,18 +819,18 @@ function DocControls({
       // under the document's own name instead of its storage uuid.
       window.location.assign(url);
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not download", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.download_failed"), description: e instanceof Error ? e.message : undefined });
     } finally { setBusy(null); }
   }
 
   async function remove() {
-    if (!window.confirm(`Delete “${doc.doc_type || doc.filename}”? This cannot be undone.`)) return;
+    if (!window.confirm(t("claim_detail.delete_confirm", { name: doc.doc_type ? docLabel(t, doc.doc_type) : doc.filename }))) return;
     setBusy("delete");
     try {
       await deleteClaimDocument(claim.id, doc.id);
       onChanged();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not delete", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.delete_failed"), description: e instanceof Error ? e.message : undefined });
     } finally { setBusy(null); }
   }
 
@@ -823,16 +838,16 @@ function DocControls({
 
   return (
     <div className="flex items-center gap-0.5 shrink-0">
-      <button onClick={view} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-slate-100 hover:text-slate-700`} title="View" aria-label="View">
+      <button onClick={view} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-slate-100 hover:text-slate-700`} title={t("claim_detail.view")} aria-label={t("claim_detail.view")}>
         {busy === "view" ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
       </button>
-      <button onClick={download} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-teal-50 hover:text-[#0D9488]`} title="Download" aria-label="Download">
+      <button onClick={download} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-teal-50 hover:text-[#0D9488]`} title={t("claim_detail.download")} aria-label={t("claim_detail.download")}>
         {busy === "download" ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
       </button>
-      <button onClick={onRename} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-slate-100 hover:text-slate-700`} title="Rename" aria-label="Rename">
+      <button onClick={onRename} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-slate-100 hover:text-slate-700`} title={t("claim_detail.rename")} aria-label={t("claim_detail.rename")}>
         <Pencil size={15} />
       </button>
-      <button onClick={remove} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-red-50 hover:text-red-600`} title="Delete" aria-label="Delete">
+      <button onClick={remove} disabled={!!busy} className={`${btn} text-slate-400 hover:bg-red-50 hover:text-red-600`} title={t("claim_detail.delete")} aria-label={t("claim_detail.delete")}>
         {busy === "delete" ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={15} />}
       </button>
     </div>
@@ -843,6 +858,7 @@ function DocControls({
 function CustomAdd({
   claim, category, onChanged,
 }: { claim: ClaimDetailType; category: DocCategory; onChanged: () => void }) {
+  const { t } = useLanguage();
   const [label, setLabel] = useState("");
   const typed = label.trim();
 
@@ -851,7 +867,7 @@ function CustomAdd({
       <input
         value={label}
         onChange={(e) => setLabel(e.target.value)}
-        placeholder="Write your own — e.g. Dental records"
+        placeholder={t("claim_detail.ph_own")}
         className="flex-1 min-w-0 rounded-lg px-2.5 py-2.5 text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
       />
       <UploadButton
@@ -861,7 +877,7 @@ function CustomAdd({
         disabled={!typed}
         onChanged={() => { setLabel(""); onChanged(); }}
         className="shrink-0 h-11 px-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#0D9488] text-sm font-bold text-white hover:bg-[#0f766e]"
-        label="Upload"
+        label={t("claim_detail.upload")}
       />
     </div>
   );
@@ -871,6 +887,7 @@ function CustomAdd({
 function DocRow({
   claim, doc, onChanged, compact,
 }: { claim: ClaimDetailType; doc: ClaimDocument; onChanged: () => void; compact?: boolean }) {
+  const { t } = useLanguage();
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState(doc.doc_type || doc.filename);
 
@@ -882,7 +899,7 @@ function DocRow({
       setRenaming(false);
       onChanged();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not rename", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.rename_failed"), description: e instanceof Error ? e.message : undefined });
     }
   }
 
@@ -901,12 +918,12 @@ function DocRow({
             }}
             className="flex-1 min-w-0 rounded-lg border border-[#0D9488] px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
           />
-          <button onClick={saveName} className="shrink-0 h-10 px-3 rounded-lg bg-[#0D9488] text-xs font-bold text-white hover:bg-[#0f766e]">Save</button>
+          <button onClick={saveName} className="shrink-0 h-10 px-3 rounded-lg bg-[#0D9488] text-xs font-bold text-white hover:bg-[#0f766e]">{t("claim_detail.save")}</button>
         </>
       ) : (
         <>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-slate-800 truncate">{doc.doc_type || doc.filename}</div>
+            <div className="text-sm font-semibold text-slate-800 truncate">{doc.doc_type ? docLabel(t, doc.doc_type) : doc.filename}</div>
             <div className="text-[11px] text-slate-400 truncate">{doc.filename}</div>
           </div>
           <DocControls claim={claim} doc={doc} onRename={() => setRenaming(true)} onChanged={onChanged} />
@@ -929,6 +946,7 @@ function UploadButton({
   className: string;
   label: string;
 }) {
+  const { t } = useLanguage();
   const ref = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
@@ -947,13 +965,13 @@ function UploadButton({
       });
       if ((res as any).retention) {
         toast({
-          title: "Saved. The 30-day clock has started.",
-          description: "These documents are deleted automatically. You can add 30 more days from day 25.",
+          title: t("claim_detail.clock_started"),
+          description: t("claim_detail.clock_started_desc"),
         });
       }
       onChanged();
     } catch (err: unknown) {
-      toast({ variant: "destructive", title: "Upload failed", description: err instanceof Error ? err.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.upload_failed"), description: err instanceof Error ? err.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -976,6 +994,7 @@ function UploadButton({
 /* ── outcome ──────────────────────────────────────────────────────────────── */
 
 function Outcome({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () => void }) {
+  const { t } = useLanguage();
   const proof = claim.documents.filter((d) => d.category === "outcome");
   if (proof.length === 0) return null;
 
@@ -983,7 +1002,7 @@ function Outcome({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex-1">
-          {claim.proof_consent_at ? "Kept with permission" : "Proof from the insurer"}
+          {claim.proof_consent_at ? t("claim_detail.kept_with_permission") : t("claim_detail.proof")}
         </p>
       </div>
       {proof.map((d) => (
@@ -993,8 +1012,8 @@ function Outcome({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =
       ))}
       <p className="text-xs text-slate-400">
         {claim.proof_consent_at
-          ? `The customer agreed on ${formatDate(claim.proof_consent_at)} that this letter can be kept after the rest is deleted.`
-          : "Without the customer's permission this letter is deleted with everything else."}
+          ? t("claim_detail.consent_on", { date: formatDate(claim.proof_consent_at) })
+          : t("claim_detail.no_consent")}
       </p>
     </div>
   );
@@ -1003,6 +1022,7 @@ function Outcome({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =
 function StatusButtons({
   claim, onChanged, onClose,
 }: { claim: ClaimDetailType; onChanged: () => void; onClose: (kind: "settled" | "rejected") => void }) {
+  const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const at = spineIndex(claim.status);
 
@@ -1015,7 +1035,7 @@ function StatusButtons({
       await setClaimStatus(claim.id, next.key);
       onChanged();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not update", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.update_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -1029,7 +1049,7 @@ function StatusButtons({
           disabled={busy}
           className="h-13 py-3.5 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 text-base font-bold text-white hover:bg-slate-800 disabled:opacity-50"
         >
-          {busy && <Loader2 size={16} className="animate-spin" />} Move to “{next.label}”
+          {busy && <Loader2 size={16} className="animate-spin" />} {t("claim_detail.move_to", { step: tOr(t, `claim_detail.spine_${next.key}`, next.label) })}
         </button>
       )}
       <div className="flex items-stretch gap-3">
@@ -1037,17 +1057,17 @@ function StatusButtons({
           onClick={() => onClose("settled")}
           className="flex-1 py-3.5 inline-flex items-center justify-center rounded-xl bg-emerald-600 text-base font-bold text-white hover:bg-emerald-700"
         >
-          Settled
+          {t("claim_detail.btn_settled")}
         </button>
         <button
           onClick={() => onClose("rejected")}
           className="flex-1 py-3.5 inline-flex items-center justify-center rounded-xl border border-red-200 bg-white text-base font-bold text-red-700 hover:bg-red-50"
         >
-          Rejected
+          {t("claim_detail.btn_rejected")}
         </button>
       </div>
       <p className="text-xs text-slate-400 text-center">
-        Settling or rejecting needs the insurer's letter attached.
+        {t("claim_detail.needs_letter_note")}
       </p>
     </div>
   );
@@ -1061,6 +1081,7 @@ function OutcomeDialog({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const { t } = useLanguage();
   const [amount, setAmount] = useState("");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -1086,7 +1107,7 @@ function OutcomeDialog({
       });
       setProof((p) => [...p, doc]);
     } catch (err: unknown) {
-      toast({ variant: "destructive", title: "Upload failed", description: err instanceof Error ? err.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.upload_failed"), description: err instanceof Error ? err.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -1094,14 +1115,14 @@ function OutcomeDialog({
 
   async function confirm() {
     if (proof.length === 0) {
-      toast({ variant: "destructive", title: "Attach the insurer's letter first" });
+      toast({ variant: "destructive", title: t("claim_detail.attach_letter_first") });
       return;
     }
     if (overClaimed) {
       toast({
         variant: "destructive",
-        title: "Settled is more than claimed",
-        description: "An insurer cannot pay out more than was asked for. Check the figure.",
+        title: t("claim_detail.settled_over"),
+        description: t("claim_detail.settled_over_desc"),
       });
       return;
     }
@@ -1113,7 +1134,7 @@ function OutcomeDialog({
       });
       onDone();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not close the claim", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.close_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -1130,20 +1151,20 @@ function OutcomeDialog({
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-bold text-slate-900 font-['Playfair_Display']">
-              Claim {kind === "settled" ? "settled" : "rejected"}
+              {kind === "settled" ? t("claim_detail.title_settled") : t("claim_detail.title_rejected")}
             </h2>
-            <p className="text-xs text-slate-500">{claim.customer_name} · {claim.insurer || "insurer"}</p>
+            <p className="text-xs text-slate-500">{claim.customer_name} · {claim.insurer || t("claim_detail.insurer_word")}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={20} /></button>
+          <button onClick={onClose} aria-label={t("claim_detail.close")} className="text-slate-400 hover:text-slate-700"><X size={20} /></button>
         </div>
 
         {kind === "settled" && (
           <label className="flex flex-col gap-1.5">
             <div className="flex items-baseline gap-2">
-              <span className="text-xs font-bold text-slate-600">Amount settled</span>
+              <span className="text-xs font-bold text-slate-600">{t("claim_detail.amount_settled")}</span>
               {claimedNum != null && (
                 <span className="text-xs text-slate-400">
-                  claimed {formatAmount(claimedNum)}
+                  {t("claim_detail.claimed_amt", { amount: formatAmount(claimedNum) })}
                 </span>
               )}
             </div>
@@ -1151,7 +1172,7 @@ function OutcomeDialog({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               inputMode="numeric"
-              placeholder={claimedNum != null ? `up to ${claimedNum}` : "e.g. 171400"}
+              placeholder={claimedNum != null ? t("claim_detail.up_to", { amount: claimedNum }) : t("claim_detail.eg_amount")}
               className={`w-full rounded-xl border px-4 py-3 text-base font-bold focus:outline-none focus:ring-2 ${
                 overClaimed
                   ? "border-red-300 focus:ring-red-200"
@@ -1160,8 +1181,7 @@ function OutcomeDialog({
             />
             {overClaimed && (
               <span className="text-xs font-semibold text-red-600">
-                More than the {formatAmount(claimedNum as number)} claimed. Check the figure, or
-                edit the claimed amount first.
+                {t("claim_detail.more_than_claimed", { amount: formatAmount(claimedNum as number) })}
               </span>
             )}
           </label>
@@ -1169,14 +1189,14 @@ function OutcomeDialog({
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-600">Proof from the insurer</span>
-            <span className="rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-black tracking-wide text-red-700">REQUIRED</span>
+            <span className="text-xs font-bold text-slate-600">{t("claim_detail.proof")}</span>
+            <span className="rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-black tracking-wide text-red-700">{t("claim_detail.required")}</span>
           </div>
           {proof.map((d) => (
             <div key={d.id} className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3">
               <CheckCircle2 size={19} className="text-emerald-600 shrink-0" />
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-emerald-800 truncate">{d.doc_type}</div>
+                <div className="text-sm font-bold text-emerald-800 truncate">{d.doc_type ? docLabel(t, d.doc_type) : d.filename}</div>
                 <div className="text-[11px] text-emerald-700 truncate">{d.filename}</div>
               </div>
             </div>
@@ -1188,7 +1208,7 @@ function OutcomeDialog({
             className="h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
           >
             {busy ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-            {proof.length ? "Add another" : `Add the ${kind === "settled" ? "settlement" : "rejection"} letter`}
+            {proof.length ? t("claim_detail.add_another") : kind === "settled" ? t("claim_detail.add_settlement") : t("claim_detail.add_rejection")}
           </button>
         </div>
 
@@ -1196,10 +1216,8 @@ function OutcomeDialog({
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3.5">
           <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-800 leading-relaxed">
-            <span className="font-bold">Closing deletes the paperwork now.</span> The personal
-            documents and case files on this claim are destroyed as soon as you confirm — the
-            claim is over, so there is no reason to keep identity papers. Only the letter above
-            is kept. Download anything you still need first.
+            <span className="font-bold">{t("claim_detail.closing_deletes")}</span>{" "}
+            {t("claim_detail.closing_deletes_desc")}
           </p>
         </div>
 
@@ -1213,11 +1231,10 @@ function OutcomeDialog({
           </span>
           <span className="flex flex-col gap-1">
             <span className="text-sm font-bold text-teal-800">
-              {claim.customer_name?.split(" ")[0] ?? "The customer"} has agreed I can keep this letter
+              {t("claim_detail.consent_label", { name: claim.customer_name?.split(" ")[0] ?? t("claim_detail.the_customer") })}
             </span>
             <span className="text-xs text-teal-800 leading-relaxed">
-              Ticked, the letter is kept for good and becomes part of your claims record. Left
-              unticked it is deleted too, on {formatDate(claim.purge_at)}.
+              {t("claim_detail.consent_desc", { date: formatDate(claim.purge_at) })}
             </span>
           </span>
         </button>
@@ -1229,9 +1246,9 @@ function OutcomeDialog({
             className={`h-14 inline-flex items-center justify-center gap-2 rounded-xl text-base font-bold text-white disabled:opacity-50 ${kind === "settled" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}`}
           >
             {busy && <Loader2 size={17} className="animate-spin" />}
-            Mark as {kind}
+            {kind === "settled" ? t("claim_detail.mark_settled") : t("claim_detail.mark_rejected")}
           </button>
-          <button onClick={onClose} className="h-12 text-base font-bold text-slate-500 hover:underline">Cancel</button>
+          <button onClick={onClose} className="h-12 text-base font-bold text-slate-500 hover:underline">{t("common.cancel")}</button>
         </div>
       </div>
     </div>
@@ -1247,6 +1264,7 @@ function OutcomeDialog({
 function EditDialog({
   claim, onClose, onSaved,
 }: { claim: ClaimDetailType; onClose: () => void; onSaved: () => void }) {
+  const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     ailment: claim.ailment ?? "",
@@ -1276,8 +1294,8 @@ function EditDialog({
     if (overClaimed) {
       toast({
         variant: "destructive",
-        title: "Settled is more than claimed",
-        description: "An insurer cannot pay out more than was asked for.",
+        title: t("claim_detail.settled_over"),
+        description: t("claim_detail.settled_over_short"),
       });
       return;
     }
@@ -1286,7 +1304,7 @@ function EditDialog({
       await updateClaim(claim.id, form);
       onSaved();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not save", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.save_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -1298,47 +1316,45 @@ function EditDialog({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/55 p-0 sm:p-4" role="dialog" aria-modal="true">
       <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto">
         <div className="flex items-center gap-3">
-          <h2 className="flex-1 text-xl font-bold text-slate-900 font-['Playfair_Display']">Edit claim details</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={20} /></button>
+          <h2 className="flex-1 text-xl font-bold text-slate-900 font-['Playfair_Display']">{t("claim_detail.edit_title")}</h2>
+          <button onClick={onClose} aria-label={t("claim_detail.close")} className="text-slate-400 hover:text-slate-700"><X size={20} /></button>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="What happened"><input value={form.ailment} onChange={(e) => set("ailment", e.target.value)} className={field} /></Field>
-          <Field label="Hospital"><input value={form.hospital} onChange={(e) => set("hospital", e.target.value)} className={field} /></Field>
-          <Field label="Insurer"><input value={form.insurer} onChange={(e) => set("insurer", e.target.value)} className={field} /></Field>
-          <Field label="TPA"><input value={form.tpa} onChange={(e) => set("tpa", e.target.value)} className={field} /></Field>
-          <Field label="Policy number"><input value={form.policy_number} onChange={(e) => set("policy_number", e.target.value)} className={field} /></Field>
-          <Field label="Type of claim">
+          <Field label={t("claim_detail.f_what")}><input value={form.ailment} onChange={(e) => set("ailment", e.target.value)} className={field} /></Field>
+          <Field label={t("claim_detail.f_hospital")}><input value={form.hospital} onChange={(e) => set("hospital", e.target.value)} className={field} /></Field>
+          <Field label={t("claim_detail.insurer")}><input value={form.insurer} onChange={(e) => set("insurer", e.target.value)} className={field} /></Field>
+          <Field label={t("claim_detail.tpa")}><input value={form.tpa} onChange={(e) => set("tpa", e.target.value)} className={field} /></Field>
+          <Field label={t("claim_detail.f_policy_number")}><input value={form.policy_number} onChange={(e) => set("policy_number", e.target.value)} className={field} /></Field>
+          <Field label={t("claim_detail.f_type")}>
             <select value={form.claim_type} onChange={(e) => set("claim_type", e.target.value)} className={field}>
-              <option value="cashless">Cashless</option>
-              <option value="reimbursement">Reimbursement</option>
+              <option value="cashless">{t("claims.cashless")}</option>
+              <option value="reimbursement">{t("claims.reimbursement")}</option>
             </select>
           </Field>
-          <Field label="Amount claimed">
-            <input value={form.claimed_amount} onChange={(e) => set("claimed_amount", e.target.value)} inputMode="numeric" placeholder="e.g. 185000" className={field} />
+          <Field label={t("claim_detail.f_claimed")}>
+            <input value={form.claimed_amount} onChange={(e) => set("claimed_amount", e.target.value)} inputMode="numeric" placeholder={t("claims.ph_amount")} className={field} />
           </Field>
-          <Field label="Amount settled">
+          <Field label={t("claim_detail.amount_settled")}>
             <input
               value={form.settled_amount}
               onChange={(e) => set("settled_amount", e.target.value)}
               inputMode="numeric"
-              placeholder={claimedNum != null ? `up to ${claimedNum}` : "e.g. 171400"}
+              placeholder={claimedNum != null ? t("claim_detail.up_to", { amount: claimedNum }) : t("claim_detail.eg_amount")}
               className={overClaimed ? field.replace("border-slate-200", "border-red-300") : field}
             />
           </Field>
-          <Field label="Admitted on"><input type="date" value={form.admitted_on} onChange={(e) => set("admitted_on", e.target.value)} className={field} /></Field>
-          <Field label="Discharged on"><input type="date" value={form.discharged_on} onChange={(e) => set("discharged_on", e.target.value)} className={field} /></Field>
+          <Field label={t("claim_detail.f_admitted")}><input type="date" value={form.admitted_on} onChange={(e) => set("admitted_on", e.target.value)} className={field} /></Field>
+          <Field label={t("claim_detail.f_discharged")}><input type="date" value={form.discharged_on} onChange={(e) => set("discharged_on", e.target.value)} className={field} /></Field>
         </div>
 
         {overClaimed ? (
           <p className="text-xs font-semibold text-red-600">
-            The settled amount is more than the amount claimed. An insurer cannot pay out more
-            than was asked for — raise the claimed figure, or correct the settled one.
+            {t("claim_detail.edit_over")}
           </p>
         ) : (
           <p className="text-xs text-slate-400">
-            Amounts in numbers only — commas and ₹ are fine, they are stripped. Every change is
-            recorded in the claim's history below.
+            {t("claim_detail.edit_hint")}
           </p>
         )}
 
@@ -1348,9 +1364,9 @@ function EditDialog({
             disabled={busy}
             className="h-13 py-3.5 inline-flex items-center justify-center gap-2 rounded-xl bg-[#0D9488] text-base font-bold text-white hover:bg-[#0f766e] disabled:opacity-50"
           >
-            {busy && <Loader2 size={17} className="animate-spin" />} Save changes
+            {busy && <Loader2 size={17} className="animate-spin" />} {t("claim_detail.save_changes")}
           </button>
-          <button onClick={onClose} className="h-12 text-base font-bold text-slate-500 hover:underline">Cancel</button>
+          <button onClick={onClose} className="h-12 text-base font-bold text-slate-500 hover:underline">{t("common.cancel")}</button>
         </div>
       </div>
     </div>
@@ -1374,19 +1390,18 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
  */
 
 function Reopen({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () => void }) {
+  const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
 
   async function reopen() {
-    if (!window.confirm(
-      "Reopen this claim?\n\nThe personal documents and case files were deleted when it was closed and cannot be brought back — you would need to collect them from the customer again."
-    )) return;
+    if (!window.confirm(t("claim_detail.reopen_confirm"))) return;
     setBusy(true);
     try {
       await setClaimStatus(claim.id, "under_process");
-      toast({ title: "Claim reopened" });
+      toast({ title: t("claim_detail.reopened") });
       onChanged();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not reopen", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("claim_detail.reopen_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -1394,17 +1409,16 @@ function Reopen({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =>
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3">
-      <p className="text-xs font-black uppercase tracking-widest text-slate-400">Closed {formatDate(claim.closed_at)}</p>
+      <p className="text-xs font-black uppercase tracking-widest text-slate-400">{t("claim_detail.closed_on", { date: formatDate(claim.closed_at) })}</p>
       <p className="text-sm text-slate-500 leading-relaxed">
-        If the insurer reverses this, or you closed it by mistake, you can put the claim back
-        under process. The documents deleted on closing cannot be recovered.
+        {t("claim_detail.reopen_desc")}
       </p>
       <button
         onClick={reopen}
         disabled={busy}
         className="h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
       >
-        {busy ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />} Reopen this claim
+        {busy ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />} {t("claim_detail.reopen")}
       </button>
     </div>
   );
@@ -1413,16 +1427,17 @@ function Reopen({ claim, onChanged }: { claim: ClaimDetailType; onChanged: () =>
 /* ── timeline ─────────────────────────────────────────────────────────────── */
 
 function Timeline({ claim }: { claim: ClaimDetailType }) {
+  const { t } = useLanguage();
   if (claim.events.length === 0) return null;
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4">
-      <p className="text-xs font-black uppercase tracking-widest text-slate-400">What happened</p>
+      <p className="text-xs font-black uppercase tracking-widest text-slate-400">{t("claim_detail.history")}</p>
       <div className="flex flex-col gap-2.5">
         {claim.events.map((e) => (
           <div key={e.id} className="flex items-baseline gap-3">
             <span className="w-14 shrink-0 text-xs font-bold text-slate-400">{formatDay(e.occurred_at)}</span>
             <span className="text-sm text-slate-700 leading-snug">
-              {e.note || CLAIM_STATUS_META[e.status as keyof typeof CLAIM_STATUS_META]?.label || e.status}
+              {e.note || statusText(t, e.status, CLAIM_STATUS_META[e.status as keyof typeof CLAIM_STATUS_META]?.label || e.status)}
             </span>
           </div>
         ))}

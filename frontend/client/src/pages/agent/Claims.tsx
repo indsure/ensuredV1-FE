@@ -8,6 +8,8 @@ import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { InsurerSelect } from "@/components/agent/InsurerSelect";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 import { fetchCustomers, formatAmount, type Customer } from "@/lib/customers";
 import {
   CLAIM_STATUS_META,
@@ -41,6 +43,7 @@ function needsAttention(c: Claim): boolean {
 
 export default function Claims() {
   const { agent } = useAgent();
+  const { t } = useLanguage();
   const [, setLocation] = useLocation();
 
   const [claims, setClaims] = useState<Claim[]>([]);
@@ -61,7 +64,7 @@ export default function Claims() {
     try {
       setClaims(await fetchClaims());
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Could not load claims");
+      setError(e instanceof Error ? e.message : t("claims.load_failed"));
     } finally {
       setLoading(false);
     }
@@ -114,22 +117,22 @@ export default function Claims() {
       {/* HEADER */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">Claims</h1>
-          <p className="text-sm text-slate-500 mt-1">Health claims you are running for your customers.</p>
+          <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("claims.title")}</h1>
+          <p className="text-sm text-slate-500 mt-1">{t("claims.subtitle")}</p>
         </div>
         <div className="flex items-center gap-4">
           <button
             onClick={() => setCreateOpen((v) => !v)}
             className="flex items-center gap-2 rounded-xl bg-[#0D9488] px-5 py-3 text-base font-bold text-white hover:bg-[#0f766e] shadow-sm"
           >
-            {createOpen ? <X size={18} /> : <Plus size={18} />} {createOpen ? "Cancel" : "New claim"}
+            {createOpen ? <X size={18} /> : <Plus size={18} />} {createOpen ? t("common.cancel") : t("claims.new_claim")}
           </button>
           <button
             onClick={load}
             disabled={loading}
             className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50"
           >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> {t("common.refresh")}
           </button>
         </div>
       </div>
@@ -137,20 +140,20 @@ export default function Claims() {
       {/* SUMMARY */}
       {!loading && claims.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Summary label="Claims opened" value={String(claims.length)} hint={`${openCount} still open`} />
+          <Summary label={t("claims.s_opened")} value={String(claims.length)} hint={t("claims.s_still_open", { count: openCount })} />
           <Summary
-            label="Closed"
+            label={t("claims.s_closed")}
             value={String(closedCount)}
-            hint={closedCount > 0 ? `${totals.settledCount} settled` : "none yet"}
+            hint={closedCount > 0 ? t("claims.s_settled", { count: totals.settledCount }) : t("claims.s_none_yet")}
           />
-          <Summary label="Amount claimed" value={formatAmount(totals.claimed)} />
+          <Summary label={t("claims.s_claimed")} value={formatAmount(totals.claimed)} />
           <Summary
-            label="Amount settled"
+            label={t("claims.s_settled_amt")}
             value={formatAmount(totals.settled)}
             tone="text-emerald-700"
             hint={
               totals.claimedOnSettled > 0
-                ? `${Math.round((totals.settled / totals.claimedOnSettled) * 100)}% recovered on settled claims`
+                ? t("claims.s_recovered", { pct: Math.round((totals.settled / totals.claimedOnSettled) * 100) })
                 : undefined
             }
           />
@@ -160,9 +163,9 @@ export default function Claims() {
       {/* TABS */}
       <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 w-fit">
         {([
-          ["open", "Open", openCount],
-          ["attention", "Needs you", attentionCount],
-          ["closed", "Closed", closedCount],
+          ["open", t("claims.tab_open"), openCount],
+          ["attention", t("claims.tab_attention"), attentionCount],
+          ["closed", t("claims.tab_closed"), closedCount],
         ] as const).map(([key, label, count]) => {
           const active = tab === key;
           const urgent = key === "attention" && count > 0;
@@ -215,11 +218,11 @@ export default function Claims() {
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="h-5 w-5 text-amber-600" />
             <h2 className="text-lg font-bold text-amber-800">
-              {attentionCount} claim{attentionCount !== 1 ? "s" : ""} need{attentionCount === 1 ? "s" : ""} you today
+              {t(attentionCount === 1 ? "claims.need_one" : "claims.need_many", { count: attentionCount })}
             </h2>
           </div>
           <p className="text-sm text-amber-800">
-            An insurer is waiting on you, or documents are about to be deleted.
+            {t("claims.need_desc")}
           </p>
         </button>
       )}
@@ -234,10 +237,10 @@ export default function Claims() {
           <Shield className="mx-auto mb-3 h-9 w-9 text-slate-200" />
           <span className="italic">
             {tab === "attention"
-              ? "Nothing needs you right now."
+              ? t("claims.empty_attention")
               : tab === "closed"
-                ? "No settled or rejected claims yet."
-                : "No open claims. Tap “New claim” to start one."}
+                ? t("claims.empty_closed")
+                : t("claims.empty_open")}
           </span>
         </div>
       ) : (
@@ -268,6 +271,7 @@ function Summary({
 /* ── card ─────────────────────────────────────────────────────────────────── */
 
 function ClaimCard({ claim, onOpen }: { claim: Claim; onOpen: () => void }) {
+  const { t } = useLanguage();
   const meta = CLAIM_STATUS_META[claim.status];
   const wa = waLink(claim.customer_phone);
   const tel = telLink(claim.customer_phone);
@@ -287,14 +291,14 @@ function ClaimCard({ claim, onOpen }: { claim: Claim; onOpen: () => void }) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="text-lg font-bold text-slate-800 truncate">
-              {claim.customer_name ?? <span className="italic text-slate-400">Customer removed</span>}
+              {claim.customer_name ?? <span className="italic text-slate-400">{t("claims.customer_removed")}</span>}
             </div>
             <div className="text-sm text-slate-500 truncate">
-              {[claim.ailment, claim.hospital].filter(Boolean).join(" · ") || "No details yet"}
+              {[claim.ailment, claim.hospital].filter(Boolean).join(" · ") || t("leads.no_details")}
             </div>
           </div>
           <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold ${meta.badge}`}>
-            <span className={`h-2 w-2 rounded-full ${meta.dot}`} /> {meta.label}
+            <span className={`h-2 w-2 rounded-full ${meta.dot}`} /> {tOr(t, `claims.status_${claim.status}`, meta.label)}
           </span>
         </div>
 
@@ -312,7 +316,7 @@ function ClaimCard({ claim, onOpen }: { claim: Claim; onOpen: () => void }) {
                 urgentPurge ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-500",
               ].join(" ")}
             >
-              <Clock size={13} /> {days} day{days !== 1 ? "s" : ""} left
+              <Clock size={13} /> {t(days === 1 ? "claims.days_left_one" : "claims.days_left_many", { count: days })}
             </span>
           )}
         </div>
@@ -321,22 +325,22 @@ function ClaimCard({ claim, onOpen }: { claim: Claim; onOpen: () => void }) {
       {queried && (
         <div className="rounded-xl bg-amber-50 px-3.5 py-3 text-sm text-amber-800">
           <span className="font-bold">
-            Round {claim.total_queries} open.
+            {t("claims.round_open", { count: claim.total_queries ?? 0 })}
           </span>{" "}
-          The insurer is waiting on you.
+          {t("claims.insurer_waiting")}
         </div>
       )}
 
       {!queried && claim.documents_purged_at && (
         <div className="rounded-xl bg-slate-50 px-3.5 py-3 text-sm text-slate-500">
-          Documents deleted. The claim record is kept.
+          {t("claims.docs_deleted")}
         </div>
       )}
 
       {!queried && !claim.documents_purged_at && (
         <div className="flex items-center gap-2 text-xs text-slate-400 border-t border-slate-50 pt-3">
           <FileText size={15} />
-          {claim.document_count ?? 0} document{(claim.document_count ?? 0) !== 1 ? "s" : ""}
+          {t((claim.document_count ?? 0) === 1 ? "claims.doc_one" : "claims.doc_many", { count: claim.document_count ?? 0 })}
         </div>
       )}
 
@@ -348,13 +352,13 @@ function ClaimCard({ claim, onOpen }: { claim: Claim; onOpen: () => void }) {
             rel="noreferrer"
             className={`flex-1 h-12 inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] text-white font-bold text-sm hover:brightness-95 ${!wa ? "opacity-40 pointer-events-none" : ""}`}
           >
-            <MessageCircle className="h-5 w-5" /> WhatsApp
+            <MessageCircle className="h-5 w-5" /> {t("leads.whatsapp")}
           </a>
           <a
             href={tel ?? undefined}
             className={`flex-1 h-12 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 text-white font-bold text-sm hover:bg-slate-900 ${!tel ? "opacity-40 pointer-events-none" : ""}`}
           >
-            <Phone className="h-5 w-5" /> Call
+            <Phone className="h-5 w-5" /> {t("leads.call")}
           </a>
         </div>
       )}
@@ -373,6 +377,7 @@ function NewClaimForm({
   onCancel: () => void;
   onCreated: (claim: Claim) => void;
 }) {
+  const { t } = useLanguage();
   const [saving, setSaving] = useState(false);
   const [useNew, setUseNew] = useState(false);
   const [draft, setDraft] = useState({
@@ -390,11 +395,11 @@ function NewClaimForm({
 
   async function save() {
     if (!useNew && !draft.customer_id) {
-      toast({ variant: "destructive", title: "Pick who the claim is for" });
+      toast({ variant: "destructive", title: t("claims.pick_who") });
       return;
     }
     if (useNew && !draft.new_customer_name.trim()) {
-      toast({ variant: "destructive", title: "Enter the person's name" });
+      toast({ variant: "destructive", title: t("claims.enter_name") });
       return;
     }
     setSaving(true);
@@ -413,7 +418,7 @@ function NewClaimForm({
     } catch (e: unknown) {
       toast({
         variant: "destructive",
-        title: "Could not open the claim",
+        title: t("claims.open_failed"),
         description: e instanceof Error ? e.message : undefined,
       });
     } finally {
@@ -423,15 +428,15 @@ function NewClaimForm({
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-      <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">New claim</p>
+      <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{t("claims.new_claim")}</p>
 
       {/* who */}
       <div className="flex flex-col gap-3 mb-5">
-        <span className="text-xs font-bold text-slate-500">Who is the claim for</span>
+        <span className="text-xs font-bold text-slate-500">{t("claims.who_for")}</span>
         {!useNew ? (
           <>
             <select value={draft.customer_id} onChange={(e) => set("customer_id", e.target.value)} className={inputCls}>
-              <option value="">Choose a customer…</option>
+              <option value="">{t("claims.choose_customer")}</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}{c.phone ? ` · ${c.phone}` : ""}</option>
               ))}
@@ -440,7 +445,7 @@ function NewClaimForm({
               onClick={() => setUseNew(true)}
               className="self-start flex items-center gap-1.5 text-sm text-[#0D9488] font-bold hover:underline"
             >
-              <Plus size={15} /> Not in my list — add a new person
+              <Plus size={15} /> {t("claims.add_new_person")}
             </button>
           </>
         ) : (
@@ -449,13 +454,13 @@ function NewClaimForm({
               <input
                 value={draft.new_customer_name}
                 onChange={(e) => set("new_customer_name", e.target.value)}
-                placeholder="Full name"
+                placeholder={t("leads.ph_full_name")}
                 className={inputCls}
               />
               <input
                 value={draft.new_customer_phone}
                 onChange={(e) => set("new_customer_phone", e.target.value)}
-                placeholder="10-digit number"
+                placeholder={t("leads.ph_phone")}
                 inputMode="tel"
                 className={inputCls}
               />
@@ -464,7 +469,7 @@ function NewClaimForm({
               onClick={() => setUseNew(false)}
               className="self-start text-sm text-slate-500 font-bold hover:underline"
             >
-              Pick from my customers instead
+              {t("claims.pick_instead")}
             </button>
           </>
         )}
@@ -472,11 +477,11 @@ function NewClaimForm({
 
       {/* type */}
       <div className="flex flex-col gap-2 mb-5">
-        <span className="text-xs font-bold text-slate-500">Type of claim</span>
+        <span className="text-xs font-bold text-slate-500">{t("claims.claim_type")}</span>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {([
-            ["cashless", "Cashless", "Hospital bills the insurer"],
-            ["reimbursement", "Reimbursement", "Customer paid, claims back"],
+            ["cashless", t("claims.cashless"), t("claims.cashless_hint")],
+            ["reimbursement", t("claims.reimbursement"), t("claims.reimbursement_hint")],
           ] as const).map(([key, label, hint]) => {
             const active = draft.claim_type === key;
             return (
@@ -494,12 +499,12 @@ function NewClaimForm({
             );
           })}
         </div>
-        <p className="text-xs text-slate-400">This decides which documents the claim asks you for.</p>
+        <p className="text-xs text-slate-400">{t("claims.type_note")}</p>
       </div>
 
       {/* the claim */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Labeled label="Insurer">
+        <Labeled label={t("claims.f_insurer")}>
           {/* Was a free-text box whose placeholder ("e.g. Niva Bupa") was the
               only hint at what belonged here, so every spelling of every insurer
               got stored as written. Picking from the list keeps the column
@@ -509,14 +514,14 @@ function NewClaimForm({
             onChange={(next) => set("insurer", next)}
           />
         </Labeled>
-        <Labeled label="Hospital">
-          <input value={draft.hospital} onChange={(e) => set("hospital", e.target.value)} placeholder="Hospital and city" className={inputCls} />
+        <Labeled label={t("claims.f_hospital")}>
+          <input value={draft.hospital} onChange={(e) => set("hospital", e.target.value)} placeholder={t("claims.ph_hospital")} className={inputCls} />
         </Labeled>
-        <Labeled label="What happened">
-          <input value={draft.ailment} onChange={(e) => set("ailment", e.target.value)} placeholder="e.g. Fracture, left radius" className={inputCls} />
+        <Labeled label={t("claims.f_what")}>
+          <input value={draft.ailment} onChange={(e) => set("ailment", e.target.value)} placeholder={t("claims.ph_what")} className={inputCls} />
         </Labeled>
-        <Labeled label="Amount claimed">
-          <input value={draft.claimed_amount} onChange={(e) => set("claimed_amount", e.target.value)} placeholder="e.g. 185000" inputMode="numeric" className={inputCls} />
+        <Labeled label={t("claims.f_amount")}>
+          <input value={draft.claimed_amount} onChange={(e) => set("claimed_amount", e.target.value)} placeholder={t("claims.ph_amount")} inputMode="numeric" className={inputCls} />
         </Labeled>
       </div>
 
@@ -526,11 +531,11 @@ function NewClaimForm({
           disabled={saving}
           className="flex items-center gap-2 rounded-xl bg-[#0D9488] px-6 py-3 text-base font-bold text-white hover:bg-[#0f766e] disabled:opacity-50"
         >
-          {saving && <Loader2 size={16} className="animate-spin" />} Open the claim
+          {saving && <Loader2 size={16} className="animate-spin" />} {t("claims.open_claim")}
         </button>
-        <button onClick={onCancel} className="text-sm font-bold text-slate-500 hover:underline">Cancel</button>
+        <button onClick={onCancel} className="text-sm font-bold text-slate-500 hover:underline">{t("common.cancel")}</button>
         <p className="text-xs text-slate-400 basis-full sm:basis-auto">
-          Nothing is deleted yet. The 30-day clock starts when you upload the first document.
+          {t("claims.clock_note")}
         </p>
       </div>
     </div>

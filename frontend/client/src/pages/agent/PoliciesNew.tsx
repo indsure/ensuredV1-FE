@@ -16,6 +16,8 @@ import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog"
 import type { DraftTarget } from "@/lib/draftMessage"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { toast } from "@/hooks/use-toast"
+import { useLanguage } from "@/i18n/LanguageContext"
+import { dateLocale, tOr } from "@/i18n"
 import { PoliciesMobileList } from "@/components/agent/PoliciesMobileList"
 import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns"
 import { scoreMotorPolicy, motorScoreTone, motorScoreVerdict } from "@shared/motorScore"
@@ -48,14 +50,15 @@ function getDays(expiry_date: string | null): number | null {
 }
 
 function NextPremiumBadge({ dateStr }: { dateStr: string | null }) {
+  const { t, locale } = useLanguage();
   if (!dateStr) return <span className="text-slate-400 text-sm">—</span>;
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return <span className="text-slate-400 text-sm">—</span>;
   const days = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const dateLabel = format(d, "d MMM yyyy");
+  const dateLabel = format(d, "d MMM yyyy", { locale: dateLocale(locale) });
   const sub =
-    days < 0 ? { text: "overdue", cls: "text-red-400" }
-    : days <= 60 ? { text: `in ${days}d`, cls: days <= 15 ? "text-red-400" : days <= 30 ? "text-amber-500" : "text-slate-400" }
+    days < 0 ? { text: t("common.overdue"), cls: "text-red-400" }
+    : days <= 60 ? { text: t("common.in_days", { days }), cls: days <= 15 ? "text-red-400" : days <= 30 ? "text-amber-500" : "text-slate-400" }
     : null;
   const dateCls = days < 0 || days <= 15 ? "text-red-600" : days <= 30 ? "text-amber-600" : "text-slate-700";
   return (
@@ -121,6 +124,7 @@ function MotorScoreBadge({ extracted }: { extracted: any }) {
 }
 
 function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boolean; reportData: any }) {
+  const { t, locale } = useLanguage();
   const reportData = typeof rawData === 'string' ? (() => { try { return JSON.parse(rawData); } catch { return null; } })() : rawData;
   const failures: string[] = reportData?.final_verdict?.key_failure_points ?? [];
   const criticals: { action: string; reason: string }[] = reportData?.recommendations?.critical_actions ?? [];
@@ -139,8 +143,8 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
   return (
     <div className="inline-flex items-center gap-1.5">
       {shouldSwitch
-        ? <span className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">↙ Switch</span>
-        : <span className="inline-flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">✓ Keep</span>
+        ? <span className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">{t("policies.switch")}</span>
+        : <span className="inline-flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">{t("policies.keep")}</span>
       }
       {hasPainpoints && (
         <>
@@ -158,9 +162,12 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
               style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999 }}
               className="w-80 rounded-xl border border-slate-100 bg-white shadow-2xl p-4 text-left"
             >
+              {locale === 'hi' && (
+                <p className="text-xs text-slate-500 mb-2">{t("policies.report_in_english")}</p>
+              )}
               {failures.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Painpoints</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">{t("policies.painpoints")}</p>
                   <ul className="space-y-1.5">
                     {failures.slice(0, 3).map((f, i) => (
                       <li key={i} className="text-xs text-slate-700 flex gap-2"><span className="text-red-400 shrink-0 mt-0.5">•</span>{f}</li>
@@ -170,7 +177,7 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
               )}
               {criticals.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-xs font-black uppercase tracking-widest text-orange-400 mb-2">Critical Actions</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-orange-400 mb-2">{t("policies.critical_actions")}</p>
                   <ul className="space-y-1.5">
                     {criticals.slice(0, 2).map((c, i) => (
                       <li key={i} className="text-xs text-slate-700 flex gap-2"><span className="text-orange-400 shrink-0 mt-0.5">⚡</span>{c.action}</li>
@@ -181,7 +188,7 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
               {portRec && (
                 <div className="pt-2.5 border-t border-slate-100">
                   <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
-                    Port? <span className={portRec === 'yes' ? 'text-red-500' : portRec === 'consider' ? 'text-amber-500' : 'text-green-500'}>{portRec.toUpperCase()}</span>
+                    {t("policies.port")} <span className={portRec === 'yes' ? 'text-red-500' : portRec === 'consider' ? 'text-amber-500' : 'text-green-500'}>{portRec.toUpperCase()}</span>
                   </p>
                   {portReason && <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{portReason}</p>}
                 </div>
@@ -213,6 +220,7 @@ function normaliseType(raw: string | null): TypeFilter {
 
 export default function PoliciesNew() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
   const [rows, setRows] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
   // The spreadsheet writer is fetched on click now, so the button has to be
@@ -258,7 +266,7 @@ export default function PoliciesNew() {
         setCustomersById(new Map(customers.map(c => [c.id, c])));
       } catch { /* chips just won't render */ }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      setError(e instanceof Error ? e.message : t("common.unknown_error"));
     } finally {
       setLoading(false);
     }
@@ -281,14 +289,14 @@ export default function PoliciesNew() {
         .eq("agent_id", agent.agentId);
       if (dErr) throw new Error(dErr.message);
       setRows(prev => prev.filter(r => r.id !== id));
-      toast({ variant: "success", title: "Policy deleted", description: "This cannot be undone." });
+      toast({ variant: "success", title: t("policies.deleted_title"), description: t("policies.deleted_desc") });
     } catch (e: unknown) {
       // Re-fetch so the table shows what the database actually holds.
       void fetchPolicies();
       toast({
         variant: "destructive",
-        title: "Could not delete",
-        description: e instanceof Error ? e.message : "Please try again.",
+        title: t("policies.delete_failed"),
+        description: e instanceof Error ? e.message : t("common.try_again_later"),
       });
     } finally {
       setDeletingId(null);
@@ -300,13 +308,13 @@ export default function PoliciesNew() {
     setDownloadingId(row.id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      if (!session) throw new Error(t("common.not_signed_in"));
       const res = await fetch(`${getApiBase()}/api/agent/clients/${row.id}/download-pdf`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Download failed");
+        throw new Error(body.error || t("policies.download_failed"));
       }
       // The endpoint streams the file itself — no storage URL ever reaches the
       // browser — so save the blob client-side.
@@ -322,8 +330,8 @@ export default function PoliciesNew() {
     } catch (e: unknown) {
       toast({
         variant: "destructive",
-        title: "Download failed",
-        description: e instanceof Error ? e.message : "Could not download the PDF. Please try again.",
+        title: t("policies.download_failed"),
+        description: e instanceof Error ? e.message : t("policies.download_failed_desc"),
       });
     } finally {
       setDownloadingId(null);
@@ -377,10 +385,10 @@ export default function PoliciesNew() {
   }, [rows, search, tab, sort, typeFilter]);
 
   const tabs: { key: FilterTab; label: string; count: number }[] = [
-    { key: "all", label: "All", count: rows.length },
-    { key: "expiring", label: "Expiring Soon", count: stats.expiringSoon },
-    { key: "switch", label: "Should Switch", count: stats.shouldSwitch },
-    { key: "healthy", label: "Healthy", count: stats.healthy },
+    { key: "all", label: t("policies.tab_all"), count: rows.length },
+    { key: "expiring", label: t("policies.tab_expiring"), count: stats.expiringSoon },
+    { key: "switch", label: t("policies.tab_switch"), count: stats.shouldSwitch },
+    { key: "healthy", label: t("policies.tab_healthy"), count: stats.healthy },
   ];
 
   return (
@@ -388,7 +396,7 @@ export default function PoliciesNew() {
 
       {/* HEADER */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">My Policies</h1>
+        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("policies.title")}</h1>
         <div className="flex items-center gap-4">
           <button
             onClick={async () => {
@@ -396,7 +404,7 @@ export default function PoliciesNew() {
               try {
                 await exportPoliciesToExcel(filtered, typeFilter)
               } catch {
-                toast({ title: "Export failed", description: "Could not build the spreadsheet. Please try again.", variant: "destructive" })
+                toast({ title: t("policies.export_failed"), description: t("policies.export_failed_desc"), variant: "destructive" })
               } finally {
                 setExporting(false)
               }
@@ -405,10 +413,10 @@ export default function PoliciesNew() {
             className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:border-[#0D9488] hover:text-[#0D9488] disabled:opacity-50"
           >
             {exporting ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
-            {exporting ? "Preparing..." : "Export to Excel"}
+            {exporting ? t("policies.preparing") : t("policies.export_excel")}
           </button>
           <button onClick={fetchPolicies} disabled={loading} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {t("common.refresh")}
           </button>
         </div>
       </div>
@@ -417,15 +425,15 @@ export default function PoliciesNew() {
       {!loading && (
         <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-3 sm:p-5 min-w-0">
-            <p className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wide sm:tracking-widest mb-1">Total Analysed</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wide sm:tracking-widest mb-1">{t("policies.stat_total")}</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-slate-800 tabular-nums">{stats.total}</p>
           </div>
           <div className="bg-white rounded-xl border border-amber-100 shadow-sm p-3 sm:p-5 border-l-4 border-l-amber-400 min-w-0">
-            <p className="text-[11px] sm:text-xs font-bold text-amber-500 uppercase tracking-wide sm:tracking-widest mb-1">Expiring in 30 days</p>
+            <p className="text-[11px] sm:text-xs font-bold text-amber-500 uppercase tracking-wide sm:tracking-widest mb-1">{t("policies.stat_expiring")}</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-amber-600 tabular-nums">{stats.expiringSoon}</p>
           </div>
           <div className="bg-white rounded-xl border border-red-100 shadow-sm p-3 sm:p-5 border-l-4 border-l-red-400 min-w-0">
-            <p className="text-[11px] sm:text-xs font-bold text-red-400 uppercase tracking-wide sm:tracking-widest mb-1">Should Switch</p>
+            <p className="text-[11px] sm:text-xs font-bold text-red-400 uppercase tracking-wide sm:tracking-widest mb-1">{t("policies.stat_switch")}</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-red-500 tabular-nums">{stats.shouldSwitch}</p>
           </div>
         </div>
@@ -441,9 +449,9 @@ export default function PoliciesNew() {
             {(["all", ...(Object.keys(TYPE_META) as InsuranceType[]), "others"] as TypeFilter[]).map(tk => {
               const active = typeFilter === tk;
               const label =
-                tk === "all" ? "All types"
-                : tk === "others" ? "Others"
-                : `${TYPE_META[tk].emoji} ${TYPE_META[tk].label}`;
+                tk === "all" ? t("common.all_types")
+                : tk === "others" ? t("common.others")
+                : `${TYPE_META[tk].emoji} ${tOr(t, `common.type_${tk}`, TYPE_META[tk].label)}`;
               return (
                 <button
                   key={tk}
@@ -463,17 +471,17 @@ export default function PoliciesNew() {
           {/* TOOLBAR */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-6 pt-4 pb-4 border-b border-slate-50">
             <div className="flex w-full sm:w-auto items-center gap-1 overflow-x-auto bg-slate-100 rounded-lg p-1">
-              {tabs.map(t => (
+              {tabs.map(tb => (
                 <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
+                  key={tb.key}
+                  onClick={() => setTab(tb.key)}
                   className={`flex flex-none min-h-10 sm:min-h-0 items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                    tab === t.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    tab === tb.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  {t.label}
-                  <span className={`rounded-full px-1.5 py-0.5 text-xs font-black ${tab === t.key ? "bg-slate-100 text-slate-600" : "text-slate-400"}`}>
-                    {t.count}
+                  {tb.label}
+                  <span className={`rounded-full px-1.5 py-0.5 text-xs font-black ${tab === tb.key ? "bg-slate-100 text-slate-600" : "text-slate-400"}`}>
+                    {tb.count}
                   </span>
                 </button>
               ))}
@@ -481,7 +489,7 @@ export default function PoliciesNew() {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <input
                 type="search"
-                placeholder="Search client, insurer, policy ID…"
+                placeholder={t("policies.search_placeholder")}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="min-w-0 flex-1 sm:w-56 rounded-lg border border-slate-200 px-3 py-2 sm:py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
@@ -491,9 +499,9 @@ export default function PoliciesNew() {
                 onChange={e => setSort(e.target.value as SortKey)}
                 className="min-w-0 shrink-0 rounded-lg border border-slate-200 px-2 sm:px-3 py-2 sm:py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
               >
-                <option value="expiry">Expiring Soon</option>
-                <option value="score">Lowest Score</option>
-                <option value="name">Name A–Z</option>
+                <option value="expiry">{t("policies.sort_expiry")}</option>
+                <option value="score">{t("policies.sort_score")}</option>
+                <option value="name">{t("policies.sort_name")}</option>
               </select>
             </div>
           </div>
@@ -504,7 +512,7 @@ export default function PoliciesNew() {
               <PoliciesMobileList
                 rows={filtered}
                 loading={loading}
-                emptyText={search ? `No results for "${search}"` : "No policies in this category."}
+                emptyText={search ? t("common.no_results_for", { query: search }) : t("policies.empty_category")}
                 onOpen={(id) => setLocation(`/agent/policies/${id}`)}
               />
             </div>
@@ -513,14 +521,14 @@ export default function PoliciesNew() {
             <table className="table-cards w-full text-sm">
               <thead className="bg-slate-50/60 text-xs text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-100">
                 <tr>
-                  <th className="px-6 py-3.5 text-left">Customer</th>
-                  <th className="px-6 py-3.5 text-left">Type</th>
-                  <th className="px-6 py-3.5 text-left">Insured With</th>
-                  <th className="px-6 py-3.5 text-left">Next Premium</th>
-                  <th className="px-6 py-3.5 text-left">Score</th>
-                  <th className="px-6 py-3.5 text-left">Recommendation</th>
-                  <th className="px-6 py-3.5 text-left">Views</th>
-                  <th className="px-6 py-3.5 text-right">Actions</th>
+                  <th className="px-6 py-3.5 text-left">{t("policies.col_customer")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("policies.col_type")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("policies.col_insurer")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("policies.col_next_premium")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("policies.col_score")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("policies.col_recommendation")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("policies.col_views")}</th>
+                  <th className="px-6 py-3.5 text-right">{t("policies.col_actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -538,7 +546,7 @@ export default function PoliciesNew() {
                 {!loading && filtered.length === 0 && (
                   <tr>
                     <td colSpan={8} className="px-6 py-16 text-center text-slate-400 italic">
-                      {search ? `No results for "${search}"` : "No policies in this category."}
+                      {search ? t("common.no_results_for", { query: search }) : t("policies.empty_category")}
                     </td>
                   </tr>
                 )}
@@ -556,7 +564,7 @@ export default function PoliciesNew() {
                       className="hover:bg-slate-50/60 transition-colors cursor-pointer group"
                       onClick={() => setLocation(`/agent/policies/${p.id}`)}
                     >
-                      <td className="px-6 py-4" data-label="Customer" data-cell="title">
+                      <td className="px-6 py-4" data-label={t("policies.col_customer")} data-cell="title">
                         <div className="font-semibold text-slate-800">{p.policyholder_name || p.name || "—"}</div>
                         {(p.policy_identifier || p.policy_name) && (
                           <div className="text-[11px] text-slate-400 font-medium mt-0.5">
@@ -572,36 +580,36 @@ export default function PoliciesNew() {
                           </button>
                         )}
                       </td>
-                      <td className="px-6 py-4" data-label="Type">
+                      <td className="px-6 py-4" data-label={t("policies.col_type")}>
                         <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider">
-                          {TYPE_META[(p.insurance_type || "health") as InsuranceType]?.emoji} {typeLabel(p.insurance_type)}
+                          {TYPE_META[(p.insurance_type || "health") as InsuranceType]?.emoji} {tOr(t, `common.type_${p.insurance_type || "health"}`, typeLabel(p.insurance_type))}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-slate-500" data-label="Insured With">{p.insurer || "—"}</td>
-                      <td className="px-6 py-4" data-label="Next Premium"><NextPremiumBadge dateStr={npDate} /></td>
-                      <td className="px-6 py-4" data-label="Score">{isHealth ? <ScoreBadge score={p.score} /> : isMotor ? <MotorScoreBadge extracted={p.extracted_data} /> : <span className="text-slate-300 text-sm">—</span>}</td>
-                      <td className="px-6 py-4" data-label="Recommendation" onClick={e => e.stopPropagation()}>
+                      <td className="px-6 py-4 text-slate-500" data-label={t("policies.col_insurer")}>{p.insurer || "—"}</td>
+                      <td className="px-6 py-4" data-label={t("policies.col_next_premium")}><NextPremiumBadge dateStr={npDate} /></td>
+                      <td className="px-6 py-4" data-label={t("policies.col_score")}>{isHealth ? <ScoreBadge score={p.score} /> : isMotor ? <MotorScoreBadge extracted={p.extracted_data} /> : <span className="text-slate-300 text-sm">—</span>}</td>
+                      <td className="px-6 py-4" data-label={t("policies.col_recommendation")} onClick={e => e.stopPropagation()}>
                         {isHealth ? <SwitchCell shouldSwitch={shouldSwitch} reportData={p.report_data} /> : <span className="text-slate-300 text-sm">—</span>}
                       </td>
-                      <td className="px-6 py-4" data-label="Views">
+                      <td className="px-6 py-4" data-label={t("policies.col_views")}>
                         {views === 0 ? (
-                          <span className="text-xs text-slate-400">Not viewed</span>
+                          <span className="text-xs text-slate-400">{t("policies.not_viewed")}</span>
                         ) : (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <span className="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-0.5 text-xs font-black uppercase tracking-widest cursor-default">
-                                  {views} views
+                                  {t("policies.views_count", { count: views })}
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                Shared report viewed {views} time{views !== 1 ? "s" : ""}
+                                {t(views === 1 ? "policies.viewed_times_one" : "policies.viewed_times_many", { count: views })}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         )}
                       </td>
-                      <td className="px-6 py-4" data-label="Actions" data-cell="actions" onClick={e => e.stopPropagation()}>
+                      <td className="px-6 py-4" data-label={t("policies.col_actions")} data-cell="actions" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1 max-md:w-full max-md:justify-start">
 
                           {/* Draft AI WhatsApp message */}
@@ -629,7 +637,7 @@ export default function PoliciesNew() {
                                   <Sparkles className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger>
-                              <TooltipContent>Draft WhatsApp message</TooltipContent>
+                              <TooltipContent>{t("policies.draft_whatsapp")}</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
 
@@ -644,7 +652,7 @@ export default function PoliciesNew() {
                                   <ExternalLink className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger>
-                              <TooltipContent>Open report</TooltipContent>
+                              <TooltipContent>{t("policies.open_report")}</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
 
@@ -663,7 +671,7 @@ export default function PoliciesNew() {
                                   }
                                 </button>
                               </TooltipTrigger>
-                              <TooltipContent>{p.pdf_url ? "Download original PDF" : "No PDF stored"}</TooltipContent>
+                              <TooltipContent>{p.pdf_url ? t("policies.download_pdf") : t("policies.no_pdf")}</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
 
@@ -683,7 +691,7 @@ export default function PoliciesNew() {
                                 },
                                 body: JSON.stringify({ enabled: false }),
                               });
-                              if (!res.ok) throw new Error("Request failed");
+                              if (!res.ok) throw new Error(t("common.request_failed"));
                               setRows(prev => prev.map(x => x.id === p.id ? { ...x, share_enabled: false } : x));
                             }}
                           />
@@ -696,18 +704,19 @@ export default function PoliciesNew() {
                                 disabled={deletingId === p.id}
                                 className="text-xs font-black uppercase tracking-wider text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded transition-colors disabled:opacity-50"
                               >
-                                {deletingId === p.id ? "…" : "Delete"}
+                                {deletingId === p.id ? "…" : t("common.delete")}
                               </button>
                               <button
                                 onClick={() => setConfirmId(null)}
                                 className="text-xs font-black uppercase tracking-wider text-slate-400 hover:text-slate-600 px-1.5 py-1 rounded"
                               >
-                                Cancel
+                                {t("common.cancel")}
                               </button>
                             </div>
                           ) : (
                             <button
                               onClick={() => setConfirmId(p.id)}
+                              aria-label={t("policies.delete_policy")}
                               className="inline-flex h-10 w-10 md:h-9 md:w-9 items-center justify-center p-1.5 rounded text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -725,7 +734,7 @@ export default function PoliciesNew() {
 
           {!loading && filtered.length > 0 && (
             <div className="px-6 py-3 border-t border-slate-50 text-xs text-slate-400">
-              Showing {filtered.length} of {rows.length} policies
+              {t("policies.showing", { shown: filtered.length, total: rows.length })}
             </div>
           )}
         </div>

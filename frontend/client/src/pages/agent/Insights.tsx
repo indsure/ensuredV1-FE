@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { TYPE_META, typeLabel, type InsuranceType } from "@/lib/insuranceTypes";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr, type Locale } from "@/i18n";
 
 /**
  * Insights — the book, analysed.
@@ -44,7 +46,10 @@ function daysUntil(date: string | null): number | null {
   return Math.ceil((t - Date.now()) / DAY);
 }
 
-function monthKey(d: Date): string {
+function monthKey(d: Date, locale: Locale): string {
+  // Devanagari month names cannot be cut to three characters, so Hindi keeps
+  // the whole short form and only drops the abbreviation mark.
+  if (locale === "hi") return d.toLocaleDateString("hi-IN", { month: "short" }).replace("॰", "");
   // en-IN renders September as "Sept", four characters against everything
   // else's three, which makes one bar's label sit wider than its neighbours.
   return d.toLocaleDateString("en-IN", { month: "short" }).replace(".", "").slice(0, 3);
@@ -53,6 +58,7 @@ function monthKey(d: Date): string {
 export default function Insights() {
   const { agent } = useAgent();
   const [, setLocation] = useLocation();
+  const { t, locale } = useLanguage();
   const [rows, setRows] = useState<InsightRow[]>([]);
   const [customerCount, setCustomerCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,7 +86,7 @@ export default function Insights() {
         setCustomerCount(count ?? 0);
       } catch { setCustomerCount(null); }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Could not load insights.");
+      setError(e instanceof Error ? e.message : t("insights.load_failed"));
     } finally {
       setLoading(false);
     }
@@ -106,8 +112,8 @@ export default function Insights() {
     // actually hold.
     const byType = new Map<string, number>();
     for (const r of rows) {
-      const t = r.insurance_type || "health";
-      byType.set(t, (byType.get(t) ?? 0) + 1);
+      const ty = r.insurance_type || "health";
+      byType.set(ty, (byType.get(ty) ?? 0) + 1);
     }
     const typeRows = Array.from(byType.entries()).sort((a, b) => b[1] - a[1]);
 
@@ -116,7 +122,7 @@ export default function Insights() {
     const buckets: { label: string; count: number }[] = [];
     for (let i = 0; i < 6; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      buckets.push({ label: monthKey(d), count: 0 });
+      buckets.push({ label: monthKey(d, locale), count: 0 });
     }
     for (const r of rows) {
       if (!r.expiry_date) continue;
@@ -150,7 +156,7 @@ export default function Insights() {
     const weak = scored.filter((r) => (r.score ?? 100) < 70).length;
 
     return { total, renewing30, expired, unknownExpiry, typeRows, buckets, scored: scored.length, avgScore, weak };
-  }, [rows]);
+  }, [rows, locale]);
 
   const maxBucket = Math.max(1, ...stats.buckets.map((b) => b.count));
   const maxType = Math.max(1, ...stats.typeRows.map(([, n]) => n));
@@ -158,7 +164,7 @@ export default function Insights() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">Insights</h1>
+        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("insights.title")}</h1>
         <InlineErrorState onRetry={load} />
       </div>
     );
@@ -169,33 +175,32 @@ export default function Insights() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">Insights</h1>
-          <p className="mt-1 text-sm text-slate-500">How your book is moving, and where the work is.</p>
+          <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("insights.title")}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t("insights.subtitle")}</p>
         </div>
         <button
           onClick={load}
           disabled={loading}
           className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm font-semibold text-[#0D9488] hover:underline disabled:opacity-50"
         >
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {t("common.refresh")}
         </button>
       </div>
 
-      {loading && <p className="text-sm text-slate-500">Loading your book…</p>}
+      {loading && <p className="text-sm text-slate-500">{t("insights.loading")}</p>}
 
       {!loading && stats.total === 0 && (
         <div className="rounded-2xl border border-slate-100 bg-white p-10 text-center shadow-sm">
           <TrendingUp className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-          <p className="text-base font-semibold text-slate-700">Nothing to chart yet</p>
+          <p className="text-base font-semibold text-slate-700">{t("insights.empty_title")}</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
-            Insights fills in as you add policies. Check your first policy and this page starts
-            showing renewals, product mix and where your weak covers are.
+            {t("insights.empty_desc")}
           </p>
           <button
             onClick={() => setLocation("/agent/uploads")}
             className="mt-5 inline-flex min-h-11 items-center rounded-lg bg-[#0D9488] px-4 text-sm font-bold text-white hover:bg-[#0f766e]"
           >
-            Check a policy
+            {t("insights.check_policy")}
           </button>
         </div>
       )}
@@ -204,19 +209,19 @@ export default function Insights() {
         <>
           {/* HEADLINE COUNTS */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Tile label="Policies in your book" value={stats.total} />
-            <Tile label="Renewing in 30 days" value={stats.renewing30} tone={stats.renewing30 > 0 ? "warn" : undefined} />
-            <Tile label="Already expired" value={stats.expired} tone={stats.expired > 0 ? "bad" : undefined} />
-            <Tile label="People you cover" value={customerCount ?? "—"} />
+            <Tile label={t("insights.t_total")} value={stats.total} />
+            <Tile label={t("insights.t_renewing")} value={stats.renewing30} tone={stats.renewing30 > 0 ? "warn" : undefined} />
+            <Tile label={t("insights.t_expired")} value={stats.expired} tone={stats.expired > 0 ? "bad" : undefined} />
+            <Tile label={t("insights.t_people")} value={customerCount ?? "—"} />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
 
             {/* RENEWAL FORECAST */}
             <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <h2 className="text-base font-bold text-slate-800">Renewals due, next six months</h2>
+              <h2 className="text-base font-bold text-slate-800">{t("insights.renewals_title")}</h2>
               <p className="mb-5 text-sm text-slate-500">
-                Policies reaching their expiry date. Plan your calls against the tall months.
+                {t("insights.renewals_desc")}
               </p>
               <div className="flex h-40 items-end gap-2">
                 {stats.buckets.map((b) => (
@@ -234,9 +239,9 @@ export default function Insights() {
 
             {/* PRODUCT MIX */}
             <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <h2 className="text-base font-bold text-slate-800">What you sell</h2>
+              <h2 className="text-base font-bold text-slate-800">{t("insights.mix_title")}</h2>
               <p className="mb-5 text-sm text-slate-500">
-                Share of {stats.total} policies. One colour, because a product type is not a warning.
+                {t("insights.mix_desc", { count: stats.total })}
               </p>
               <div className="space-y-2.5">
                 {stats.typeRows.map(([type, count]) => (
@@ -250,7 +255,7 @@ export default function Insights() {
                     className="grid min-h-11 w-full grid-cols-[76px_1fr_74px] items-center gap-2 rounded-lg px-1 text-left hover:bg-slate-50 sm:grid-cols-[92px_1fr_78px] sm:gap-3"
                   >
                     <span className="truncate text-sm font-semibold text-slate-600">
-                      {TYPE_META[type as InsuranceType]?.emoji} {typeLabel(type)}
+                      {TYPE_META[type as InsuranceType]?.emoji} {tOr(t, `common.type_${type}`, typeLabel(type))}
                     </span>
                     <span className="h-3.5 overflow-hidden rounded bg-slate-100">
                       <span
@@ -270,22 +275,21 @@ export default function Insights() {
           {/* CHECK QUALITY */}
           {stats.scored > 0 && (
             <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <h2 className="text-base font-bold text-slate-800">What your checks found</h2>
+              <h2 className="text-base font-bold text-slate-800">{t("insights.checks_title")}</h2>
               <p className="mb-4 text-sm text-slate-500">
-                Across the {stats.scored} {stats.scored === 1 ? "policy" : "policies"} that carry a
-                health check score. Other lines are data entry and are not scored.
+                {t(stats.scored === 1 ? "insights.checks_desc_one" : "insights.checks_desc_many", { count: stats.scored })}
               </p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <Tile label="Average score" value={stats.avgScore ?? "—"} />
-                <Tile label="Scoring under 70" value={stats.weak} tone={stats.weak > 0 ? "warn" : undefined} />
-                <Tile label="Policies checked" value={stats.scored} />
+                <Tile label={t("insights.t_avg")} value={stats.avgScore ?? "—"} />
+                <Tile label={t("insights.t_weak")} value={stats.weak} tone={stats.weak > 0 ? "warn" : undefined} />
+                <Tile label={t("insights.t_checked")} value={stats.scored} />
               </div>
               {stats.weak > 0 && (
                 <button
                   onClick={() => setLocation("/agent/policies?type=health")}
                   className="mt-4 inline-flex min-h-11 items-center text-sm font-bold text-[#0D9488] hover:underline"
                 >
-                  See the weak ones →
+                  {t("insights.see_weak")}
                 </button>
               )}
             </section>
@@ -293,16 +297,11 @@ export default function Insights() {
 
           {/* HONESTY NOTE — the empty slots, said out loud. */}
           <p className="text-sm leading-relaxed text-slate-500">
-            <b className="text-slate-600">What these numbers count.</b> Every figure above is
-            counted from the policies in your book right now.
+            <b className="text-slate-600">{t("insights.note_title")}</b> {t("insights.note_body")}
             {stats.unknownExpiry > 0 && (
-              <> {stats.unknownExpiry} {stats.unknownExpiry === 1 ? "policy has" : "policies have"} no
-              expiry date recorded, so {stats.unknownExpiry === 1 ? "it is" : "they are"} left out of the
-              renewal figures rather than guessed at.</>
+              <> {t(stats.unknownExpiry === 1 ? "insights.note_unknown_one" : "insights.note_unknown_many", { count: stats.unknownExpiry })}</>
             )}{" "}
-            Premium under management and lapse rate are deliberately not shown: we do not store a
-            premium on a checked policy, and a lapse is not something the system can tell apart from
-            a renewal written elsewhere. Showing either would mean inventing it.
+            {t("insights.note_not_shown")}
           </p>
         </>
       )}

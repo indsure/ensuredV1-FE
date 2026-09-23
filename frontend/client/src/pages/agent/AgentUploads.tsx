@@ -12,6 +12,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { getApiBase } from "@/lib/queryClient";
 import { TYPE_META, type InsuranceType } from "@/lib/insuranceTypes";
 import { supabase } from "@/lib/supabase";
+import { tOr } from "@/i18n";
 
 type UploadStatus = {
   filename: string;
@@ -31,14 +32,14 @@ const COMPANION_SLOTS = [
   {
     key: "superTopup",
     field: "companion_super_topup",
-    label: "Super top-up policy",
-    hint: "We check whether its deductible is actually bridged by the base cover.",
+    label: "uploads.comp_topup",
+    hint: "uploads.comp_topup_hint",
   },
   {
     key: "corporate",
     field: "companion_corporate",
-    label: "Company / corporate policy",
-    hint: "Employer cover ends with the job — the report will say where that leaves them.",
+    label: "uploads.comp_corporate",
+    hint: "uploads.comp_corporate_hint",
   },
 ] as const;
 
@@ -56,12 +57,13 @@ function CompanionSlot({
   onPick: (file: File | null) => void;
   disabled?: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="rounded-xl border border-slate-200 p-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-700">{label}</p>
-          <p className="mt-0.5 text-xs text-slate-500">{hint}</p>
+          <p className="text-sm font-semibold text-slate-700">{t(label)}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{t(hint)}</p>
         </div>
         {file ? (
           <button
@@ -70,7 +72,7 @@ function CompanionSlot({
             disabled={disabled}
             className="flex-shrink-0 text-xs font-semibold text-slate-500 hover:text-red-600 disabled:opacity-50"
           >
-            Remove
+            {t("uploads.remove")}
           </button>
         ) : (
           <label
@@ -78,7 +80,7 @@ function CompanionSlot({
               disabled ? "pointer-events-none opacity-50" : ""
             }`}
           >
-            Attach file
+            {t("uploads.attach")}
             <input
               type="file"
               accept="application/pdf,image/*"
@@ -172,7 +174,7 @@ export default function AgentUploads() {
 
   const processFiles = async (acceptedFiles: File[]) => {
     if (!agent?.agentId) {
-      toast({ variant: "destructive", title: "Error", description: "Agent not authenticated" });
+      toast({ variant: "destructive", title: t("uploads.error"), description: t("uploads.not_signed_in") });
       return;
     }
 
@@ -185,8 +187,8 @@ export default function AgentUploads() {
     if (invalidFiles.length > 0) {
       toast({
         variant: "destructive",
-        title: "File too large",
-        description: `${invalidFiles[0].name} exceeds 25MB limit`
+        title: t("uploads.too_large"),
+        description: t("uploads.too_large_desc", { name: invalidFiles[0].name })
       });
       return;
     }
@@ -219,8 +221,8 @@ export default function AgentUploads() {
           if (authError.message.includes('Not authenticated') || authError.message.includes('Session expired')) {
             toast({
               variant: "destructive",
-              title: "Session expired",
-              description: "Please log in again"
+              title: t("uploads.session_expired"),
+              description: t("uploads.log_in_again")
             });
             setLocation("/agent/login");
             return;
@@ -262,13 +264,13 @@ export default function AgentUploads() {
           
           // Handle auth errors specifically
           if (uploadRes.status === 401) {
+            // The token prefix used to be logged here too. A slice of a live
+            // access token has no business in the browser console.
             console.error('[Upload] 401 Unauthorized error:', errorData);
-            console.error('[Upload] Session token:', session.access_token?.substring(0, 20) + '...');
-            console.error('[Upload] Session expires at:', new Date((session.expires_at || 0) * 1000).toISOString());
             toast({
               variant: "destructive",
-              title: "Authentication failed",
-              description: "Your session has expired. Please log in again."
+              title: t("uploads.auth_failed"),
+              description: t("uploads.auth_failed_desc")
             });
             setLocation("/agent/login");
             return;
@@ -278,13 +280,13 @@ export default function AgentUploads() {
           if (uploadRes.status === 403 && (errorData.error === "NO_OCR_CREDITS" || errorData.error === "NO_CREDITS")) {
             toast({
               variant: "destructive",
-              title: errorData.error === "NO_OCR_CREDITS" ? "Data-entry limit reached" : "No policy checks left",
+              title: errorData.error === "NO_OCR_CREDITS" ? t("uploads.no_ocr") : t("uploads.no_checks"),
               description: errorData.message,
             });
             throw new Error(errorData.message || errorData.error);
           }
 
-          throw new Error(errorData.error || "Upload failed");
+          throw new Error(errorData.error || t("uploads.upload_failed"));
         }
 
         const { clientId, jobId } = await uploadRes.json();
@@ -309,7 +311,7 @@ export default function AgentUploads() {
             });
 
             if (!statusRes.ok) {
-              throw new Error("Status check failed");
+              throw new Error(t("uploads.status_failed"));
             }
 
             const statusData = await statusRes.json();
@@ -335,7 +337,7 @@ export default function AgentUploads() {
             if (attempts >= maxAttempts) {
               clearInterval(pollInterval);
               setUploads(prev => prev.map((u, idx) =>
-                idx === i ? { ...u, status: "error", error: "Analysis timeout", progress: 0 } : u
+                idx === i ? { ...u, status: "error", error: t("uploads.timeout"), progress: 0 } : u
               ));
             }
           } catch (pollError: any) {
@@ -369,8 +371,8 @@ export default function AgentUploads() {
     if (tooBig) {
       toast({
         variant: "destructive",
-        title: "File too large",
-        description: `${tooBig.name} exceeds the 25MB limit`,
+        title: t("uploads.too_large"),
+        description: t("uploads.too_large_desc", { name: tooBig.name }),
       });
       return;
     }
@@ -386,8 +388,8 @@ export default function AgentUploads() {
       if (insuranceType === "health" && next.length > 1) {
         next = [next[0]];
         toast({
-          title: "One health policy at a time",
-          description: `Keeping "${next[0].name}". Health policies run a full audit and use 1 policy check each — analyse the rest separately.`,
+          title: t("uploads.one_health"),
+          description: t("uploads.one_health_desc", { name: next[0].name }),
         });
       }
       return next;
@@ -475,15 +477,15 @@ export default function AgentUploads() {
 
             {insuranceType === "health" && companionCount > 0 && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-sm font-bold text-slate-700">Also being sent with this policy</p>
+                <p className="text-sm font-bold text-slate-700">{t("uploads.also_sent")}</p>
                 <ul className="mt-1 space-y-0.5 text-sm text-slate-600">
-                  {superTopupFile && <li className="break-all">• Super top-up — {superTopupFile.name}</li>}
-                  {corporateFile && <li className="break-all">• Company / corporate — {corporateFile.name}</li>}
-                  {ayushmanFile && <li className="break-all">• Ayushman Bharat — {ayushmanFile.name}</li>}
-                  {hasAyushman && !ayushmanFile && <li>• Ayushman Bharat (PM-JAY) — declared, no document</li>}
+                  {superTopupFile && <li className="break-all">{t("uploads.sent_topup", { name: superTopupFile.name })}</li>}
+                  {corporateFile && <li className="break-all">{t("uploads.sent_corporate", { name: corporateFile.name })}</li>}
+                  {ayushmanFile && <li className="break-all">{t("uploads.sent_ayushman", { name: ayushmanFile.name })}</li>}
+                  {hasAyushman && !ayushmanFile && <li>{t("uploads.sent_ayushman_declared")}</li>}
                 </ul>
                 <p className="mt-1.5 text-xs text-slate-500">
-                  The consent above covers these documents too.
+                  {t("uploads.consent_covers")}
                 </p>
               </div>
             )}
@@ -553,21 +555,21 @@ export default function AgentUploads() {
                 ].join(" ")}
               >
                 <span>{meta.emoji}</span>
-                {meta.label}
+                {tOr(t, `common.type_${tkey}`, meta.label)}
               </button>
             );
           })}
         </div>
         <p className="mt-2 text-xs text-slate-500">
           {insuranceType === "health"
-            ? "Full risk analysis — generates a score and audit report. Uploaded one at a time; each one uses 1 policy check."
-            : `${TYPE_META[insuranceType].label} — we read each policy and fill in the details (data entry only). No risk score. Each reading uses 1 data-entry entry from your plan.`}
+            ? t("uploads.health_desc")
+            : t("uploads.other_desc", { type: tOr(t, `common.type_${insuranceType}`, TYPE_META[insuranceType].label) })}
         </p>
         {insuranceType !== "health" && (
           <p className={`mt-1 text-xs font-medium ${ocrRemaining <= 0 ? "text-red-600" : ocrRemaining <= 5 ? "text-amber-600" : "text-slate-500"}`}>
             {ocrRemaining <= 0
-              ? "No data-entry entries left in your plan for this period."
-              : `${ocrRemaining} data-entry ${ocrRemaining === 1 ? "entry" : "entries"} left this period.`}
+              ? t("uploads.ocr_none")
+              : t(ocrRemaining === 1 ? "uploads.ocr_left_one" : "uploads.ocr_left_many", { count: ocrRemaining })}
           </p>
         )}
       </div>
@@ -599,11 +601,11 @@ export default function AgentUploads() {
               <p className="text-sm text-slate-500">{t("uploads.drop_hint")}</p>
               {insuranceType !== "health" && (
                 <p className="mt-1 text-xs font-medium text-[#0D9488]">
-                  Tip: select multiple files to upload a batch at once.
+                  {t("uploads.batch_tip")}
                 </p>
               )}
               <p className="mt-2 text-xs text-slate-400">
-                Nothing is analysed until you press Analyze.
+                {t("uploads.nothing_until")}
               </p>
             </div>
 
@@ -611,7 +613,7 @@ export default function AgentUploads() {
             {stagedFiles.length > 0 && (
               <div className="rounded-xl border border-[#0D9488]/30 bg-[#0D9488]/5 p-4">
                 <h4 className="text-sm font-bold text-slate-900">
-                  Ready to analyse ({stagedFiles.length} {stagedFiles.length === 1 ? "file" : "files"})
+                  {t(stagedFiles.length === 1 ? "uploads.ready_one" : "uploads.ready_many", { count: stagedFiles.length })}
                 </h4>
                 <ul className="mt-2 space-y-1.5">
                   {stagedFiles.map((f, idx) => (
@@ -632,7 +634,7 @@ export default function AgentUploads() {
                         disabled={isProcessing}
                         className="flex-shrink-0 text-xs font-semibold text-slate-500 hover:text-red-600 disabled:opacity-50"
                       >
-                        Remove
+                        {t("uploads.remove")}
                       </button>
                     </li>
                   ))}
@@ -642,15 +644,14 @@ export default function AgentUploads() {
                   <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
                     <span className="break-all">
-                      Already in your account: {duplicateNames.join(", ")}. Analysing again
-                      {insuranceType === "health" ? " uses another policy check." : " uses another data-entry entry."}
+                      {t(insuranceType === "health" ? "uploads.already_health" : "uploads.already_other", { names: duplicateNames.join(", ") })}
                     </span>
                   </p>
                 )}
 
                 {insuranceType === "health" && (
                   <p className="mt-2 text-xs text-slate-500">
-                    Attach any other cover below before you analyse — it goes in the same policy check.
+                    {t("uploads.attach_first")}
                   </p>
                 )}
               </div>
@@ -663,10 +664,9 @@ export default function AgentUploads() {
                 <div className="flex items-start gap-3">
                   <Layers className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#0D9488]" />
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">Other cover this person already has</h4>
+                    <h4 className="text-sm font-bold text-slate-900">{t("uploads.other_cover")}</h4>
                     <p className="mt-0.5 text-xs text-slate-600 leading-relaxed">
-                      Optional. Attach these and the report reads them together with the base policy — so it judges
-                      their total protection, not one policy in isolation. Still 1 policy check in total.
+                      {t("uploads.other_cover_desc")}
                     </p>
                   </div>
                 </div>
@@ -704,10 +704,10 @@ export default function AgentUploads() {
                         />
                         <span className="min-w-0">
                           <span className="block text-sm font-semibold text-slate-700">
-                            Ayushman Bharat (PM-JAY)
+                            {t("uploads.ayushman")}
                           </span>
                           <span className="mt-0.5 block text-xs text-slate-500">
-                            ₹5 lakh family cover at empanelled hospitals only. Card is enough — no document needed.
+                            {t("uploads.ayushman_desc")}
                           </span>
                         </span>
                       </label>
@@ -717,7 +717,7 @@ export default function AgentUploads() {
                             isProcessing ? "pointer-events-none opacity-50" : ""
                           }`}
                         >
-                          Attach file
+                          {t("uploads.attach")}
                           <input
                             type="file"
                             accept="application/pdf,image/*"
@@ -734,7 +734,7 @@ export default function AgentUploads() {
                           disabled={isProcessing}
                           className="flex-shrink-0 text-xs font-semibold text-slate-500 hover:text-red-600 disabled:opacity-50"
                         >
-                          Remove
+                          {t("uploads.remove")}
                         </button>
                       )}
                     </div>
@@ -760,10 +760,10 @@ export default function AgentUploads() {
                   className="bg-[#0D9488] hover:bg-[#0f766e]"
                 >
                   {isProcessing
-                    ? "Working…"
+                    ? t("uploads.working")
                     : insuranceType === "health"
-                    ? `Analyze${companionCount > 0 ? ` with ${companionCount} other cover` : ""}`
-                    : `Analyze ${stagedFiles.length} ${stagedFiles.length === 1 ? "policy" : "policies"}`}
+                    ? (companionCount > 0 ? t("uploads.check_with_other", { count: companionCount }) : t("uploads.check_btn"))
+                    : t(stagedFiles.length === 1 ? "uploads.check_n_one" : "uploads.check_n_many", { count: stagedFiles.length })}
                 </Button>
                 <button
                   type="button"
@@ -771,12 +771,12 @@ export default function AgentUploads() {
                   disabled={isProcessing}
                   className="text-xs font-semibold text-slate-500 hover:text-slate-700 disabled:opacity-50"
                 >
-                  Clear all
+                  {t("uploads.clear_all")}
                 </button>
                 <span className="text-xs text-slate-500">
                   {insuranceType === "health"
-                    ? "Uses 1 policy check."
-                    : `Uses ${stagedFiles.length} data-entry ${stagedFiles.length === 1 ? "entry" : "entries"}.`}
+                    ? t("uploads.uses_one_check")
+                    : t(stagedFiles.length === 1 ? "uploads.uses_entries_one" : "uploads.uses_entries_many", { count: stagedFiles.length })}
                 </span>
               </div>
             )}
@@ -815,7 +815,7 @@ export default function AgentUploads() {
                       {upload.status === "analyzing" && t("uploads.status_analyzing")}
                       {upload.status === "completed" && t("uploads.status_done")}
                       {upload.status === "error" && (
-                        <span className="text-red-600">Error: {upload.error}</span>
+                        <span className="text-red-600">{t("uploads.error_prefix", { message: upload.error ?? "" })}</span>
                       )}
                     </div>
                   </div>

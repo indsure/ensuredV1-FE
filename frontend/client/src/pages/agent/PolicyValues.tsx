@@ -12,6 +12,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 
 import { useAgent } from "@/context/AgentContext";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,6 +34,9 @@ const short = (n: number) => {
 export default function PolicyValues() {
   const [, setLocation] = useLocation();
   const { agent } = useAgent();
+  const { t, locale } = useLanguage();
+  const actLabel = (a: keyof typeof ACTION_META) => tOr(t, `pv.act_${a}`, ACTION_META[a].label);
+  const actBlurb = (a: keyof typeof ACTION_META) => tOr(t, `pv.act_${a}_blurb`, ACTION_META[a].blurb);
   const [rows, setRows] = useState<PolicyValueSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +50,7 @@ export default function PolicyValues() {
     try {
       setRows(await fetchPolicyValues(agent.agentId));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not work out the policy values.");
+      setError(e instanceof Error ? e.message : t("pv.load_failed"));
     } finally {
       setLoading(false);
     }
@@ -93,11 +98,9 @@ export default function PolicyValues() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Surrender values</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{t("pv.title")}</h1>
         <p className="mt-1 text-sm text-slate-500">
-          What every life policy in your book is worth if the customer stopped today, what it would lend
-          them instead, and what a lapsed one costs to bring back. Worked out from the policy documents by
-          arithmetic, not estimated.
+          {t("pv.subtitle")}
         </p>
       </div>
 
@@ -105,10 +108,10 @@ export default function PolicyValues() {
         <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-5">
             <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">
-              Surrenderable today
+              {t("pv.c_surrenderable")}
             </div>
             <div className="mt-1 text-2xl font-bold text-[#0D9488]">{short(totals.liveValue)}</div>
-            <div className="mt-1 text-sm text-slate-600">Across {totals.tracked} savings policies</div>
+            <div className="mt-1 text-sm text-slate-600">{t("pv.c_across", { count: totals.tracked })}</div>
           </CardContent>
         </Card>
         {/* The retention card. Surrendering is what a customer asks for; borrowing
@@ -116,24 +119,24 @@ export default function PolicyValues() {
         <Card className="border-[#0D9488]/30 bg-[#0D9488]/5 shadow-sm">
           <CardContent className="p-5">
             <div className="text-sm font-black uppercase tracking-[0.2em] text-[#0f766e]">
-              Can borrow instead
+              {t("pv.c_borrow")}
             </div>
             <div className="mt-1 text-2xl font-bold text-[#0f766e]">{short(totals.borrowable)}</div>
-            <div className="mt-1 text-sm text-slate-600">Raised without ending a single policy</div>
+            <div className="mt-1 text-sm text-slate-600">{t("pv.c_borrow_sub")}</div>
           </CardContent>
         </Card>
         <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-5">
-            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Maturing</div>
+            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">{t("pv.c_maturing")}</div>
             <div className="mt-1 text-2xl font-bold text-slate-900">{totals.maturing}</div>
-            <div className="mt-1 text-sm text-slate-600">Money about to reach the customer</div>
+            <div className="mt-1 text-sm text-slate-600">{t("pv.c_maturing_sub")}</div>
           </CardContent>
         </Card>
         <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-5">
-            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Needs reviving</div>
+            <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">{t("pv.c_reviving")}</div>
             <div className="mt-1 text-2xl font-bold text-rose-700">{totals.reviving}</div>
-            <div className="mt-1 text-sm text-slate-600">Lapsed, or a premium past its grace period</div>
+            <div className="mt-1 text-sm text-slate-600">{t("pv.c_reviving_sub")}</div>
           </CardContent>
         </Card>
       </div>
@@ -142,7 +145,7 @@ export default function PolicyValues() {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search client, plan or insurer"
+          placeholder={t("pv.search")}
           className="h-10 max-w-xs border-slate-200 bg-white"
         />
         <button
@@ -153,7 +156,7 @@ export default function PolicyValues() {
             (filter === "all" ? "border-[#0D9488] bg-[#0D9488] text-white" : "border-slate-200 bg-white text-slate-600")
           }
         >
-          All ({rows.length})
+          {t("pv.all", { count: rows.length })}
         </button>
         {ACTION_ORDER.filter((a) => counts[a]).map((a) => (
           <button
@@ -165,27 +168,27 @@ export default function PolicyValues() {
               (filter === a ? "border-[#0D9488] bg-[#0D9488] text-white" : "border-slate-200 bg-white text-slate-600")
             }
           >
-            {ACTION_META[a].label} ({counts[a]})
+            {actLabel(a)} ({counts[a]})
           </button>
         ))}
       </div>
 
       {filter !== "all" && (
-        <p className="text-xs text-slate-500">{ACTION_META[filter].blurb}</p>
+        <p className="text-xs text-slate-500">{actBlurb(filter)}</p>
       )}
 
       {loading ? (
         <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-8 text-center text-sm italic text-slate-400">
-            Working out the values…
+            {t("pv.working")}
           </CardContent>
         </Card>
       ) : visible.length === 0 ? (
         <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-8 text-center text-sm italic text-slate-400">
             {rows.length === 0
-              ? "No life or term policies with enough detail yet. Upload one, or fill in the premium, term and sum assured on an existing policy."
-              : "Nothing in this group."}
+              ? t("pv.empty_all")
+              : t("pv.empty_group")}
           </CardContent>
         </Card>
       ) : (
@@ -193,7 +196,7 @@ export default function PolicyValues() {
           <table className="table-cards w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left">
-                {["Client", "Year", "Premiums paid", "Surrender value now", "Next anniversary", "At maturity", "What to do"].map((h, i) => (
+                {[t("pv.col_client"), t("pv.col_year"), t("pv.col_paid"), t("pv.col_now"), t("pv.col_next"), t("pv.col_maturity"), t("pv.col_action")].map((h, i) => (
                   <th
                     key={h}
                     className={
@@ -213,17 +216,17 @@ export default function PolicyValues() {
                   onClick={() => setLocation(`/agent/policies/${r.id}`)}
                   className="cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50"
                 >
-                  <td className="px-4 py-3" data-label="Client" data-cell="title">
+                  <td className="px-4 py-3" data-label={t("pv.col_client")} data-cell="title">
                     <div className="font-semibold text-slate-900">{r.clientName}</div>
                     <div className="text-xs text-slate-400">{r.planName || r.insurer || "—"}</div>
                   </td>
-                  <td className="px-4 py-3 text-slate-600" data-label="Year">
+                  <td className="px-4 py-3 text-slate-600" data-label={t("pv.col_year")}>
                     {r.policyYear}/{r.term}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-slate-600" data-label="Premiums paid">{rupee(r.paidSoFar)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums font-semibold text-slate-900" data-label="Surrender value now">
+                  <td className="px-4 py-3 text-right tabular-nums text-slate-600" data-label={t("pv.col_paid")}>{rupee(r.paidSoFar)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums font-semibold text-slate-900" data-label={t("pv.col_now")}>
                     {r.action === "none" ? (
-                      <span className="text-slate-400">Nothing</span>
+                      <span className="text-slate-400">{t("pv.nothing")}</span>
                     ) : r.deferredTo ? (
                       <span className="text-slate-400">{rupee(r.valueToday)}*</span>
                     ) : (
@@ -233,11 +236,11 @@ export default function PolicyValues() {
                         the surrender value alone understates what they have. */}
                     {r.receivedSoFar > 0 && (
                       <div className="text-xs font-normal text-[#0f766e]">
-                        + {rupee(r.receivedSoFar)} received
+                        {t("pv.received", { amount: rupee(r.receivedSoFar) })}
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums" data-label="Next anniversary">
+                  <td className="px-4 py-3 text-right tabular-nums" data-label={t("pv.col_next")}>
                     {r.valueNextYear === null || r.action === "none" ? (
                       <span className="text-slate-300">—</span>
                     ) : (
@@ -249,7 +252,7 @@ export default function PolicyValues() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums" data-label="At maturity">
+                  <td className="px-4 py-3 text-right tabular-nums" data-label={t("pv.col_maturity")}>
                     {r.action === "none" || r.totalAtMaturity <= 0 ? (
                       <span className="text-slate-300">—</span>
                     ) : (
@@ -262,21 +265,19 @@ export default function PolicyValues() {
                             (r.totalAtMaturity >= r.premiumsPayable ? "text-[#0f766e]" : "text-amber-700")
                           }
                         >
-                          {r.totalAtMaturity >= r.premiumsPayable ? "+" : "−"}
-                          {rupee(Math.abs(r.totalAtMaturity - r.premiumsPayable))} on
-                          {" "}{rupee(r.premiumsPayable)} paid
+                          {t("pv.vs_paid", { sign: r.totalAtMaturity >= r.premiumsPayable ? "+" : "−", diff: rupee(Math.abs(r.totalAtMaturity - r.premiumsPayable)), paid: rupee(r.premiumsPayable) })}
                         </div>
                       </>
                     )}
                   </td>
-                  <td className="px-4 py-3" data-label="What to do" data-cell="actions">
+                  <td className="px-4 py-3" data-label={t("pv.col_action")} data-cell="actions">
                     <span
                       className={
                         "inline-block rounded-full border px-2 py-0.5 text-xs font-semibold " +
                         ACTION_META[r.action].tone
                       }
                     >
-                      {ACTION_META[r.action].label}
+                      {actLabel(r.action)}
                     </span>
                     <div className="mt-1 text-xs text-slate-500">{r.headline}</div>
                   </td>
@@ -288,12 +289,8 @@ export default function PolicyValues() {
       )}
 
       <p className="text-sm text-slate-500">
-        * Held in the discontinued fund — the amount shown is what is released when the lock-in ends, not
-        what is payable now. Every value is worked out from the policy document each time this page loads, so
-        they move with the anniversary on their own. What a policy will lend is its own loan percentage
-        applied to that day's surrender value; open a policy to see or correct it. Loan and revival interest
-        rates stay blank until the reference G-Sec yield is set on the policy, because a rate quoted from a
-        guess is one a customer would be told.
+        {t("pv.footnote")}
+        {locale === "hi" && <> {t("pv.headline_english")}</>}
       </p>
     </div>
   );

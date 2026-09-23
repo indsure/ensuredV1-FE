@@ -1,5 +1,7 @@
 import { ChevronRight, Users } from "lucide-react"
 import { format } from "date-fns"
+import { useLanguage } from "@/i18n/LanguageContext"
+import { dateLocale } from "@/i18n"
 
 /**
  * The phone view of the customer book.
@@ -40,6 +42,7 @@ export function CustomersMobileList({
   emptyText: string
   onOpen: (id: string) => void
 }) {
+  const { t, locale } = useLanguage()
   if (loading) {
     return (
       <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
@@ -83,28 +86,28 @@ export function CustomersMobileList({
                 </span>
                 {s && s.policyCount > 0 && (
                   <span className="inline-flex min-h-6 shrink-0 items-center rounded-md bg-slate-100 px-2 text-xs font-bold text-slate-600">
-                    {s.policyCount} {s.policyCount === 1 ? "policy" : "policies"}
+                    {t(s.policyCount === 1 ? "customers.policy_one" : "customers.policy_many", { count: s.policyCount })}
                   </span>
                 )}
               </div>
 
               <span className="truncate text-[13px] text-slate-500">
-                {c.phone || c.city || "No contact saved"}
+                {c.phone || c.city || t("customers.no_contact")}
               </span>
 
               <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                 {s && s.totalSumInsured ? (
                   <span className="inline-flex min-h-[23px] items-center rounded-md bg-teal-50 px-2 text-xs font-bold text-teal-700">
-                    {formatAmount(s.totalSumInsured)} cover
+                    {t("customers.cover_amount", { amount: formatAmount(s.totalSumInsured) })}
                   </span>
                 ) : (
                   <span className="inline-flex min-h-[23px] items-center rounded-md bg-slate-100 px-2 text-xs font-bold text-slate-500">
-                    No policies tagged
+                    {t("customers.no_policies_tagged")}
                   </span>
                 )}
                 {dueValid && (
                   <span className="inline-flex min-h-[23px] items-center rounded-md bg-amber-50 px-2 text-xs font-bold text-amber-700">
-                    Due {format(due!, "d MMM")}
+                    {t("customers.due_on", { date: format(due!, "d MMM", { locale: dateLocale(locale) }) })}
                   </span>
                 )}
               </div>

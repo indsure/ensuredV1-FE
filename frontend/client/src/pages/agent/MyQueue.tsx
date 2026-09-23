@@ -10,6 +10,8 @@ import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import { toast } from "@/hooks/use-toast"
+import { useLanguage } from "@/i18n/LanguageContext"
+import { intlLocale, tOr } from "@/i18n"
 
 type QueuePolicy = {
   id: string;
@@ -33,6 +35,7 @@ function statusColor(status: string): string {
 
 export default function MyQueue() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
   const [myPolicies, setMyPolicies] = useState<QueuePolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +72,7 @@ export default function MyQueue() {
       
       setMyPolicies(mappedData as QueuePolicy[])
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Unknown error")
+      setError(e instanceof Error ? e.message : t("queue.unknown_error"))
     } finally {
       setLoading(false)
     }
@@ -87,9 +90,9 @@ export default function MyQueue() {
     try {
       await rerunPolicy(id)
       setMyPolicies((prev) => prev.map((p) => (p.id === id ? { ...p, status: "processing", error_message: null } : p)))
-      toast({ variant: "success", title: "Re-running analysis", description: "Watch the Processing tab — it will finish or report an error." })
+      toast({ variant: "success", title: t("queue.rerun_title"), description: t("queue.rerun_desc") })
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Retry failed", description: e instanceof Error ? e.message : "Could not retry." })
+      toast({ variant: "destructive", title: t("queue.retry_failed"), description: e instanceof Error ? e.message : t("queue.retry_failed_desc") })
     }
   }
 
@@ -108,9 +111,9 @@ export default function MyQueue() {
         .eq("agent_id", agent.agentId)
       if (dErr) throw new Error(dErr.message)
       setMyPolicies((prev) => prev.filter((p) => p.id !== id))
-      toast({ variant: "success", title: "Policy deleted", description: "The upload and its record are gone. This cannot be undone." })
+      toast({ variant: "success", title: t("queue.deleted_title"), description: t("queue.deleted_desc") })
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not delete", description: e instanceof Error ? e.message : undefined })
+      toast({ variant: "destructive", title: t("queue.delete_failed"), description: e instanceof Error ? e.message : undefined })
     } finally {
       setDismissingId(null)
       setConfirmDismissId(null)
@@ -134,9 +137,9 @@ export default function MyQueue() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">My Queue</h1>
+        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("queue.title")}</h1>
         <Button variant="outline" className="border-slate-200 text-slate-600" onClick={fetchQueue} disabled={loading}>
-          Refresh
+          {t("queue.refresh")}
         </Button>
       </div>
 
@@ -146,19 +149,19 @@ export default function MyQueue() {
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
           <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 gap-6">
             <TabsTrigger value="failed" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#0D9488] data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 text-sm font-semibold">
-              Failed ({failedRows.length})
+              {t("queue.tab_failed", { count: failedRows.length })}
             </TabsTrigger>
             <TabsTrigger value="processing" className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#0D9488] data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 text-sm font-semibold">
-              Processing ({processingRows.length})
+              {t("queue.tab_processing", { count: processingRows.length })}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="failed" className="mt-6">
             <QueueTable
               loading={loading}
-              emptyText="No failed analyses. 🎉"
+              emptyText={t("queue.empty_failed")}
               rows={failedRows}
-              actionLabel="Retry"
+              actionLabel={t("queue.retry")}
               onAction={retry}
               onRowClick={(rid) => setLocation(`/agent/policies/${rid}`)}
               onDismiss={deletePolicy}
@@ -170,12 +173,12 @@ export default function MyQueue() {
           </TabsContent>
 
           <TabsContent value="processing" className="mt-6">
-            <div className="text-xs text-slate-500 mb-3">{polling ? "Auto-refreshing every 5s" : ""}</div>
+            <div className="text-xs text-slate-500 mb-3">{polling ? t("queue.auto_refresh") : ""}</div>
             <QueueTable
               loading={loading}
-              emptyText="No analyses currently processing."
+              emptyText={t("queue.empty_processing")}
               rows={processingRows}
-              actionLabel="View"
+              actionLabel={t("queue.view")}
               onAction={(rid) => setLocation(`/agent/policies/${rid}`)}
               onRowClick={(rid) => setLocation(`/agent/policies/${rid}`)}
               onDismiss={deletePolicy}
@@ -219,18 +222,19 @@ function QueueTable({
   showSpinner?: boolean
   showError?: boolean
 }) {
+  const { t, locale } = useLanguage()
   return (
     <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="table-cards w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-100">
             <tr className="text-left text-xs text-slate-400 uppercase tracking-wider font-semibold">
-              <th className="px-5 py-3.5">File</th>
-              <th className="px-5 py-3.5">Client</th>
-              {showError && <th className="px-5 py-3.5">Reason</th>}
-              <th className="px-5 py-3.5">Status</th>
-              <th className="px-5 py-3.5">Date</th>
-              <th className="px-5 py-3.5 text-right">Action</th>
+              <th className="px-5 py-3.5">{t("queue.col_file")}</th>
+              <th className="px-5 py-3.5">{t("queue.col_client")}</th>
+              {showError && <th className="px-5 py-3.5">{t("queue.col_reason")}</th>}
+              <th className="px-5 py-3.5">{t("queue.col_status")}</th>
+              <th className="px-5 py-3.5">{t("queue.col_date")}</th>
+              <th className="px-5 py-3.5 text-right">{t("queue.col_action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -254,46 +258,46 @@ function QueueTable({
                 className="group hover:bg-slate-50/50 transition-colors cursor-pointer"
                 onClick={() => onRowClick(p.id)}
               >
-                <td className="px-5 py-4 font-medium text-slate-600 text-xs" data-label="File">{p.filename || '—'}</td>
-                <td className="px-5 py-4 font-semibold text-slate-800" data-label="Client" data-cell="title">{p.client_name}</td>
+                <td className="px-5 py-4 font-medium text-slate-600 text-xs" data-label={t("queue.col_file")}>{p.filename || '—'}</td>
+                <td className="px-5 py-4 font-semibold text-slate-800" data-label={t("queue.col_client")} data-cell="title">{p.client_name}</td>
                 {showError && (
-                  <td className="px-5 py-4 text-xs text-red-500 max-w-xs md:truncate" data-label="Reason">
-                    {p.error_message || 'Analysis failed'}
+                  <td className="px-5 py-4 text-xs text-red-500 max-w-xs md:truncate" data-label={t("queue.col_reason")}>
+                    {p.error_message || t("queue.check_failed")}
                   </td>
                 )}
-                <td className="px-5 py-4" data-label="Status">
+                <td className="px-5 py-4" data-label={t("queue.col_status")}>
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-black uppercase tracking-widest border ${statusColor(p.status)}`}>
                     {showSpinner && (p.status === "processing" || p.status === "pending") ? (
                       <span className="inline-flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin" />
-                        {p.status}
+                        {tOr(t, `common.status_${p.status}`, p.status)}
                       </span>
-                    ) : p.status.replace(/_/g, " ")}
+                    ) : tOr(t, `common.status_${p.status}`, p.status.replace(/_/g, " "))}
                   </span>
                 </td>
-                <td className="px-5 py-4 text-slate-400 text-xs" data-label="Date">
-                  {new Date(p.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                <td className="px-5 py-4 text-slate-400 text-xs" data-label={t("queue.col_date")}>
+                  {new Date(p.created_at).toLocaleDateString(intlLocale(locale), { day: "2-digit", month: "short", year: "numeric" })}
                 </td>
-                <td className="px-5 py-4 text-right" data-label="Action" data-cell="actions" onClick={(e) => e.stopPropagation()}>
+                <td className="px-5 py-4 text-right" data-label={t("queue.col_action")} data-cell="actions" onClick={(e) => e.stopPropagation()}>
                   <div className="inline-flex items-center gap-2 max-md:w-full">
                     <Button size="sm" variant="outline" className="border-slate-200" onClick={() => onAction(p.id)}>
                       {actionLabel}
                     </Button>
                     {confirmDismissId === p.id ? (
                       <span className="inline-flex items-center gap-2">
-                        <span className="text-sm text-slate-700">Delete permanently?</span>
+                        <span className="text-sm text-slate-700">{t("queue.delete_confirm")}</span>
                         <button
                           onClick={() => onDismiss(p.id)}
                           disabled={dismissingId === p.id}
                           className="text-sm font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded transition-colors disabled:opacity-50"
                         >
-                          {dismissingId === p.id ? "Deleting…" : "Delete"}
+                          {dismissingId === p.id ? t("queue.deleting") : t("queue.delete")}
                         </button>
                         <button
                           onClick={() => setConfirmDismissId(null)}
                           className="text-sm font-bold text-slate-600 hover:text-slate-900 px-3 py-2"
                         >
-                          Keep
+                          {t("queue.keep")}
                         </button>
                       </span>
                     ) : (
@@ -303,7 +307,7 @@ function QueueTable({
                         className="border-slate-200 text-slate-600 hover:text-red-600 hover:border-red-200"
                         onClick={() => setConfirmDismissId(p.id)}
                       >
-                        Delete
+                        {t("queue.delete")}
                       </Button>
                     )}
                   </div>

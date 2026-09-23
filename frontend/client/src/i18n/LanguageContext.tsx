@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { Locale, SUPPORTED_LANGUAGES, getTranslator, getSavedLocale } from "./index";
+import { Locale, SUPPORTED_LANGUAGES, getTranslator, getSavedLocale, type TranslateVars } from "./index";
 
 type LanguageContextType = {
   locale: Locale;
-  t: (key: string) => string;
+  t: (key: string, vars?: TranslateVars) => string;
   setLocale: (locale: Locale) => void;
 };
 

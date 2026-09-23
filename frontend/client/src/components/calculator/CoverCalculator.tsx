@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 import {
   calculateHealthCover, UserInputs, EngineResult,
   AgeBand, CityTier,
@@ -69,6 +71,9 @@ export interface CoverCalculatorProps {
   partnerCompanies?: string[];
   /** Called after the engine runs and the save attempt finishes. */
   onComplete?: (done: CoverCalculatorCompletion) => void;
+  /** Embedded (agent) flow only: called as the advisor moves through the
+   *  wizard, so the page can keep the run in memory across portal navigation. */
+  onProgress?: (p: { stepId: string; inputs: Partial<UserInputs>; state: string; city: string }) => void;
 }
 
 const OptionCard = ({
@@ -179,6 +184,12 @@ const ALL_STEPS = [
 
 type StepId = (typeof ALL_STEPS)[number]["id"];
 
+// Option text doubles as the value the engine reads ("Couple + kids",
+// "< 5L"), so it is never translated in place. These only change what is shown.
+type T = (key: string, vars?: Record<string, string | number>) => string;
+const calcSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+const optText = (t: T, value: string) => tOr(t, `calc.opt_${calcSlug(value)}`, value);
+
 type StepDef = (typeof ALL_STEPS)[number];
 function getStepCopy(step: StepDef): { question?: string; subtext?: string } {
   if (!("question" in step)) return {};
@@ -281,15 +292,22 @@ export default function CoverCalculator({
   customerId,
   partnerCompanies,
   onComplete,
+  onProgress,
 }: CoverCalculatorProps) {
   const [_, setLocation] = useLocation();
+  const { t } = useLanguage();
   const [inputs, setInputs] = useState<Partial<UserInputs>>(initialInputs ?? {});
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
+  // A step id handed in from outside (a restored advisor run, or "review") can
+  // name a step this build no longer has. Trusting it blindly white-screens the
+  // wizard, so fall back to the normal first step instead.
   const [currentStepId, setCurrentStepId] = useState<StepId>(
-    (initialStepId as StepId) ?? (embedded ? "location" : "intro")
+    initialStepId && ALL_STEPS.some((step) => step.id === initialStepId)
+      ? (initialStepId as StepId)
+      : embedded ? "location" : "intro"
   );
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -344,6 +362,22 @@ export default function CoverCalculator({
       saveProgress(currentStepId, inputs);
     }
   }, [embedded, currentStepId, inputs]);
+
+  // Agent flow: hand progress to the page, which keeps it in memory only
+  // (see lib/agentCalcDraft.ts). Nothing here touches web storage.
+  // Skip the mount itself: a prefilled or restored wizard the advisor has not
+  // touched yet is not new work, and must not raise a "we kept your answers".
+  const progressMounted = useRef(false);
+  useEffect(() => {
+    if (!progressMounted.current) {
+      progressMounted.current = true;
+      return;
+    }
+    if (!embedded || !onProgress) return;
+    if (Object.keys(inputs).length === 0) return;
+    onProgress({ stepId: currentStepId, inputs, state: selectedState, city: selectedCity });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embedded, currentStepId, inputs, selectedState, selectedCity]);
 
   // The agent flow deliberately does NOT autosave: saveProgress() writes the
   // wizard inputs to localStorage (calculator-storage.ts:139), and in the agent
@@ -486,7 +520,7 @@ export default function CoverCalculator({
     // Validate age
     const age = inputs.exactAge;
     if (!age) {
-      setValidationErrors({ exactAge: "Age is required" });
+      setValidationErrors({ exactAge: t("calc.age_required") });
       return;
     }
 
@@ -497,7 +531,7 @@ export default function CoverCalculator({
     }
 
     if (!inputs.annualIncome) {
-      setValidationErrors({ annualIncome: "Income is required" });
+      setValidationErrors({ annualIncome: t("calc.income_required") });
       return;
     }
 
@@ -540,8 +574,8 @@ export default function CoverCalculator({
         setIsAnalyzing(false);
         if (!saveResult.success) {
           showWarning(
-            "Report not saved",
-            "The result is shown below, but the share link could not be created."
+            t("calc.not_saved"),
+            t("calc.not_saved_desc")
           );
         }
         onComplete?.({
@@ -562,18 +596,18 @@ export default function CoverCalculator({
       } else {
         // Show error with retry option
         showError(
-          "Failed to Save Report",
+          t("calc.save_failed"),
           saveResult.error,
           {
-            label: "Retry",
+            label: t("calc.retry"),
             onClick: () => finishAnalysis(finalInputs),
           }
         );
 
         // Fallback: still show the report but without UUID
         showWarning(
-          "Viewing Temporary Report",
-          "Your report wasn't saved, but you can still view it. It will be lost if you close this tab."
+          t("calc.temporary"),
+          t("calc.temporary_desc")
         );
 
         // Store in sessionStorage as fallback
@@ -585,8 +619,8 @@ export default function CoverCalculator({
     } catch (error) {
       console.error("Analysis error:", error);
       showError(
-        "Calculation Error",
-        "Something went wrong during the analysis. Please try again."
+        t("calc.calc_error"),
+        t("calc.calc_error_desc")
       );
       setIsAnalyzing(false);
       setIsSaving(false);
@@ -601,7 +635,9 @@ export default function CoverCalculator({
   // and starting the person at the top is a far better failure than a blank page.
   const currentStepDef =
     ALL_STEPS.find((s) => s.id === currentStepId) ?? ALL_STEPS[0];
-  const { question, subtext } = getStepCopy(currentStepDef);
+  const stepCopy = getStepCopy(currentStepDef);
+  const question = stepCopy.question ? tOr(t, `calc.q_${currentStepDef.id}`, stepCopy.question) : undefined;
+  const subtext = stepCopy.subtext ? tOr(t, `calc.s_${currentStepDef.id}`, stepCopy.subtext) : undefined;
 
   if (isAnalyzing) {
     return (
@@ -613,16 +649,16 @@ export default function CoverCalculator({
       >
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[var(--color-teal-600)] mb-8" />
         <h2 className="text-2xl font-serif text-[var(--color-navy-900)] animate-pulse mb-2">
-          {isSaving ? "Saving Your Report..." : "Analysing 140+ Policy Combinations..."}
+          {isSaving ? t("calc.saving_report") : t("calc.calculating")}
         </h2>
         <p className="text-[var(--color-text-secondary)]">
           {isSaving
-            ? "Securely storing your coverage analysis..."
-            : `Checking inflation data for ${inputs.cityTier}...`}
+            ? t("calc.storing")
+            : t("calc.checking_costs", { tier: inputs.cityTier ?? "" })}
         </p>
         {isSaving && (
           <p className="text-xs text-[var(--color-text-muted)] mt-4">
-            This may take a few seconds. Please don't close this page.
+            {t("calc.few_seconds")}
           </p>
         )}
       </div>
@@ -651,7 +687,7 @@ export default function CoverCalculator({
               totalSteps={visibleStepIds.length}
             />
             <div className="text-center mt-2 text-sm text-[var(--color-text-secondary)]">
-              Step {currentVisibleIdx + 1} of {visibleStepIds.length}
+              {t("calc.step_of", { step: currentVisibleIdx + 1, total: visibleStepIds.length })}
             </div>
           </div>
         )}
@@ -674,25 +710,25 @@ export default function CoverCalculator({
               </div>
 
               <div className="space-y-2">
-                <Label>State</Label>
+                <Label>{t("calc.state")}</Label>
                 <Combobox
                   options={allStates.map((s: string) => ({ value: s, label: s }))}
                   value={selectedState}
                   onValueChange={setSelectedState}
-                  placeholder="Select State"
-                  searchPlaceholder="Search state..."
+                  placeholder={t("calc.select_state")}
+                  searchPlaceholder={t("calc.search_state")}
                   className="bg-white border-[var(--color-border-medium)] h-12"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>City</Label>
+                <Label>{t("calc.city")}</Label>
                 <Combobox
                   options={availableCities.map((c: string) => ({ value: c, label: c }))}
                   value={selectedCity}
                   onValueChange={setSelectedCity}
-                  placeholder={selectedState ? "Select City" : "Select State First"}
-                  searchPlaceholder="Search city..."
+                  placeholder={selectedState ? t("calc.select_city") : t("calc.select_state_first")}
+                  searchPlaceholder={t("calc.search_city")}
                   className={cn(
                     "bg-white border-[var(--color-border-medium)] h-12",
                     !selectedState && "opacity-50 pointer-events-none"
@@ -713,7 +749,7 @@ export default function CoverCalculator({
                     className="text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)]"
                     onClick={goBack}
                   >
-                    Back
+                    {t("calc.back")}
                   </Button>
                 )}
                 <Button
@@ -724,7 +760,7 @@ export default function CoverCalculator({
                   )}
                   onClick={confirmLocation}
                 >
-                  Next Step
+                  {t("calc.next")}
                 </Button>
               </div>
             </div>
@@ -735,14 +771,14 @@ export default function CoverCalculator({
                 {question}
               </h2>
               <p className="text-center text-[var(--color-text-secondary)] mb-8">
-                Help us calculate risks precisely.
+                {t("calc.help_precise")}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <SectionDivider label="Your Details" />
+                <SectionDivider label={t("calc.your_details")} />
 
                 <div className="space-y-2">
-                  <Label>Your Age</Label>
+                  <Label>{t("calc.your_age")}</Label>
                   <Input
                     type="number"
                     placeholder="e.g. 30"
@@ -776,7 +812,7 @@ export default function CoverCalculator({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Your Gender</Label>
+                  <Label>{t("calc.your_gender")}</Label>
                   <Select
                     onValueChange={(v: "Male" | "Female") =>
                       setInputs({ ...inputs, gender: v })
@@ -784,17 +820,17 @@ export default function CoverCalculator({
                     defaultValue={inputs.gender}
                   >
                     <SelectTrigger className="bg-white h-12">
-                      <SelectValue placeholder="Select Gender" />
+                      <SelectValue placeholder={t("calc.select_gender")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Male">{t("calc.opt_male")}</SelectItem>
+                      <SelectItem value="Female">{t("calc.opt_female")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Annual Family Income</Label>
+                  <Label>{t("calc.family_income")}</Label>
                   <Select
                     onValueChange={(v: string) =>
                       setInputs({ ...inputs, annualIncome: v })
@@ -802,13 +838,13 @@ export default function CoverCalculator({
                     defaultValue={inputs.annualIncome}
                   >
                     <SelectTrigger className="bg-white h-12">
-                      <SelectValue placeholder="Annual Income" />
+                      <SelectValue placeholder={t("calc.annual_income")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="< 5L">Less than ₹5 Lakhs</SelectItem>
-                      <SelectItem value="5-10L">₹5 – ₹10 Lakhs</SelectItem>
-                      <SelectItem value="10-20L">₹10 – ₹20 Lakhs</SelectItem>
-                      <SelectItem value="20L+">More than ₹20 Lakhs</SelectItem>
+                      <SelectItem value="< 5L">{t("calc.opt_5l")}</SelectItem>
+                      <SelectItem value="5-10L">{t("calc.opt_5_10l")}</SelectItem>
+                      <SelectItem value="10-20L">{t("calc.opt_10_20l")}</SelectItem>
+                      <SelectItem value="20L+">{t("calc.opt_20l")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -816,10 +852,10 @@ export default function CoverCalculator({
                 {(inputs.familyStructure === "Couple" ||
                   inputs.familyStructure === "Couple + kids") && (
                   <>
-                    <SectionDivider label="Spouse Details" />
+                    <SectionDivider label={t("calc.spouse_details")} />
 
                     <div className="space-y-2">
-                      <Label>Spouse Age</Label>
+                      <Label>{t("calc.spouse_age")}</Label>
                       <Input
                         type="number"
                         placeholder="e.g. 28"
@@ -835,7 +871,7 @@ export default function CoverCalculator({
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Spouse Income</Label>
+                      <Label>{t("calc.spouse_income")}</Label>
                       <Select
                         onValueChange={(v: string) =>
                           setInputs({ ...inputs, spouseIncome: v })
@@ -843,19 +879,19 @@ export default function CoverCalculator({
                         defaultValue={inputs.spouseIncome}
                       >
                         <SelectTrigger className="bg-white h-12">
-                          <SelectValue placeholder="Spouse Income" />
+                          <SelectValue placeholder={t("calc.spouse_income")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="None">None / Homemaker</SelectItem>
-                          <SelectItem value="< 5L">Less than ₹5 Lakhs</SelectItem>
-                          <SelectItem value="5-10L">₹5 – ₹10 Lakhs</SelectItem>
-                          <SelectItem value="10L+">More than ₹10 Lakhs</SelectItem>
+                          <SelectItem value="None">{t("calc.none_homemaker")}</SelectItem>
+                          <SelectItem value="< 5L">{t("calc.opt_5l")}</SelectItem>
+                          <SelectItem value="5-10L">{t("calc.opt_5_10l")}</SelectItem>
+                          <SelectItem value="10L+">{t("calc.opt_10l")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
-                      <Label>Spouse Employer Coverage</Label>
+                      <Label>{t("calc.spouse_employer")}</Label>
                       <Select
                         onValueChange={(v: any) =>
                           setInputs({ ...inputs, spouseEmployerCover: v })
@@ -863,13 +899,13 @@ export default function CoverCalculator({
                         defaultValue={inputs.spouseEmployerCover}
                       >
                         <SelectTrigger className="bg-white h-12">
-                          <SelectValue placeholder="Employer Cover" />
+                          <SelectValue placeholder={t("calc.employer_cover")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="None">None</SelectItem>
-                          <SelectItem value="< 5L">Less than ₹5 Lakhs</SelectItem>
-                          <SelectItem value="5-10L">₹5 – ₹10 Lakhs</SelectItem>
-                          <SelectItem value="> 10L">More than ₹10 Lakhs</SelectItem>
+                          <SelectItem value="None">{t("calc.opt_none")}</SelectItem>
+                          <SelectItem value="< 5L">{t("calc.opt_5l")}</SelectItem>
+                          <SelectItem value="5-10L">{t("calc.opt_5_10l")}</SelectItem>
+                          <SelectItem value="> 10L">{t("calc.opt_10l")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -878,9 +914,9 @@ export default function CoverCalculator({
 
                 {inputs.familyStructure === "Couple + kids" && (
                   <>
-                    <SectionDivider label="Children" />
+                    <SectionDivider label={t("calc.children")} />
                     <div className="space-y-2 md:col-span-2">
-                      <Label>Number of Children</Label>
+                      <Label>{t("calc.num_children")}</Label>
                       <Select
                         onValueChange={(v: string) =>
                           setInputs({ ...inputs, childCount: parseInt(v) })
@@ -888,12 +924,12 @@ export default function CoverCalculator({
                         defaultValue={inputs.childCount?.toString()}
                       >
                         <SelectTrigger className="bg-white h-12">
-                          <SelectValue placeholder="Count" />
+                          <SelectValue placeholder={t("calc.count")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="1">1 Child</SelectItem>
-                          <SelectItem value="2">2 Children</SelectItem>
-                          <SelectItem value="3">3+ Children</SelectItem>
+                          <SelectItem value="1">{t("calc.child_1")}</SelectItem>
+                          <SelectItem value="2">{t("calc.child_2")}</SelectItem>
+                          <SelectItem value="3">{t("calc.child_3")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -902,10 +938,10 @@ export default function CoverCalculator({
 
                 {inputs.familyStructure === "Parents included" && (
                   <>
-                    <SectionDivider label="Parents" />
+                    <SectionDivider label={t("calc.parents")} />
 
                     <div className="space-y-2">
-                      <Label>Father's Age</Label>
+                      <Label>{t("calc.father_age")}</Label>
                       <Input
                         type="number"
                         placeholder="e.g. 65"
@@ -921,7 +957,7 @@ export default function CoverCalculator({
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Mother's Age</Label>
+                      <Label>{t("calc.mother_age")}</Label>
                       <Input
                         type="number"
                         placeholder="e.g. 60"
@@ -945,14 +981,14 @@ export default function CoverCalculator({
                   onClick={goBack}
                   className="text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)]"
                 >
-                  Back
+                  {t("calc.back")}
                 </Button>
                 <Button
                   className="bg-[var(--color-cta)] text-white px-8"
                   disabled={!inputs.exactAge || !inputs.annualIncome}
                   onClick={confirmDetailedProfile}
                 >
-                  Next Step
+                  {t("calc.next")}
                 </Button>
               </div>
             </div>
@@ -968,21 +1004,21 @@ export default function CoverCalculator({
                 {buildReviewRows(inputs).map((row) => (
                   <div key={row.label} className="flex items-center justify-between gap-4 px-5 py-3.5">
                     <div className="min-w-0">
-                      <div className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{row.label}</div>
-                      <div className="text-sm font-semibold text-[var(--color-navy-900)] truncate">{row.value}</div>
+                      <div className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{tOr(t, `calc.rev_${calcSlug(row.label)}`, row.label)}</div>
+                      <div className="text-sm font-semibold text-[var(--color-navy-900)] truncate">{optText(t, row.value)}</div>
                     </div>
                     <button
                       onClick={() => editStep(row.stepId)}
                       className="shrink-0 text-xs font-semibold text-[var(--color-teal-600)] hover:underline"
                     >
-                      Edit
+                      {t("calc.edit")}
                     </button>
                   </div>
                 ))}
               </div>
 
               <p className="mt-6 text-xs text-[var(--color-text-muted)] text-center leading-relaxed">
-                For informational purposes only — not insurance or financial advice. Premium estimates are indicative and not based on insurer-specific data. Consult a licensed insurance advisor before purchasing.
+                {t("calc.disclaimer")}
               </p>
 
               <div className="flex justify-center gap-4 mt-4">
@@ -991,13 +1027,13 @@ export default function CoverCalculator({
                   onClick={goBack}
                   className="text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)]"
                 >
-                  Back
+                  {t("calc.back")}
                 </Button>
                 <Button
                   className="bg-[var(--color-cta)] text-white px-8"
                   onClick={() => finishAnalysis(inputs as UserInputs)}
                 >
-                  {embedded ? "Calculate Cover Need" : "See My Coverage Plan"}
+                  {embedded ? t("calc.calculate_need") : t("calc.see_plan")}
                 </Button>
               </div>
             </div>
@@ -1014,7 +1050,7 @@ export default function CoverCalculator({
               )}
               {(currentStepDef as any).description && (
                 <p className="text-center text-[var(--color-text-secondary)] mb-8">
-                  {(currentStepDef as any).description}
+                  {tOr(t, `calc.d_${currentStepDef.id}`, (currentStepDef as any).description)}
                 </p>
               )}
 
@@ -1027,8 +1063,8 @@ export default function CoverCalculator({
                   return (
                     <OptionCard
                       key={idx}
-                      label={label}
-                      subLabel={sub}
+                      label={optText(t, label)}
+                      subLabel={sub ? tOr(t, `calc.opt_${calcSlug(label)}_sub`, sub) : undefined}
                       selected={selectedOption === label}
                       onClick={() =>
                         handleOptionSelect(
@@ -1047,7 +1083,7 @@ export default function CoverCalculator({
                   className="text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)]"
                   onClick={goBack}
                 >
-                  Back
+                  {t("calc.back")}
                 </Button>
               </div>
             </div>

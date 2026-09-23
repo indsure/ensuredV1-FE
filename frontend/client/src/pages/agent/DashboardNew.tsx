@@ -11,7 +11,6 @@ import { InlineErrorState } from '@/components/agent/InlineErrorState';
 import { toast } from '@/hooks/use-toast';
 import { rerunPolicy } from '@/lib/rerun';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { translateAll } from '@/i18n/translate';
 import { TYPE_META, typeLabel, getNextPremiumDate, type InsuranceType } from '@/lib/insuranceTypes';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardMobile } from "@/components/agent/DashboardMobile";
@@ -134,8 +133,6 @@ export default function DashboardNew() {
   const { t, locale } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [translatedNames, setTranslatedNames] = useState<Record<string, string>>({});
-  const translationRef = useRef<string>("");
   
   // Stat counts
   const [stats, setStats] = useState({
@@ -279,7 +276,7 @@ export default function DashboardNew() {
       setChartData(weeks);
 
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load');
+      setError(e instanceof Error ? e.message : t("dashboard.load_failed"));
     } finally {
       setLoading(false);
     }
@@ -289,26 +286,12 @@ export default function DashboardNew() {
     fetchDashboard();
   }, [agent?.agentId]);
 
-  useEffect(() => {
-    if (locale !== 'hi' || recentActivity.length === 0) return;
-    const key = recentActivity.map(p => p.id).join(',') + locale;
-    if (translationRef.current === key) return;
-    translationRef.current = key;
-
-    const names = recentActivity.map(p => p.policyholder_name || p.name || '');
-    translateAll(names, 'hi').then(translated => {
-      const map: Record<string, string> = {};
-      recentActivity.forEach((p, i) => {
-        map[p.id + '_name'] = translated[i] || names[i];
-      });
-      setTranslatedNames(map);
-    });
-  }, [recentActivity, locale]);
-
+  // Names are shown exactly as written, in every language. This used to send
+  // client names to a free public translation service (MyMemory) whenever the
+  // portal was in Hindi: client data leaving us for a third party that is not
+  // in the Privacy Policy, and machine-translated names come back garbled.
   function getDisplayName(p: RecentPolicy) {
-    const raw = p.policyholder_name || p.name || '—';
-    if (locale === 'hi' && translatedNames[p.id + '_name']) return translatedNames[p.id + '_name'];
-    return raw;
+    return p.policyholder_name || p.name || '—';
   }
 
   function getDisplayInsurer(p: RecentPolicy) {
@@ -326,10 +309,10 @@ export default function DashboardNew() {
   async function retryJob(jobId: string) {
     try {
       await rerunPolicy(jobId);
-      toast({ variant: 'success', title: 'Re-running analysis', description: 'Track progress in My Queue — the result lands in My Policies.' });
+      toast({ variant: 'success', title: t("dashboard.rerun_title"), description: t("dashboard.rerun_desc") });
       fetchDashboard();
     } catch (e: unknown) {
-      toast({ variant: 'destructive', title: 'Retry failed', description: e instanceof Error ? e.message : undefined });
+      toast({ variant: 'destructive', title: t("dashboard.retry_failed"), description: e instanceof Error ? e.message : undefined });
     }
   }
 
@@ -343,44 +326,22 @@ export default function DashboardNew() {
     const hasPainpoints = failures.length > 0 || criticals.length > 0;
 
     const [pos, setPos] = React.useState<{ top: number; left: number } | null>(null);
-    const [txFailures, setTxFailures] = React.useState<string[]>(failures);
-    const [txCriticals, setTxCriticals] = React.useState<string[]>(criticals.map(c => c.action));
-    const [txPortReason, setTxPortReason] = React.useState<string>(portReason);
-    const [translating, setTranslating] = React.useState(false);
     const btnRef = React.useRef<HTMLButtonElement>(null);
 
-    async function handleEnter() {
+    // The findings are the client's own report, so they are never sent to an
+    // outside translation service. In Hindi they stay in English, and say so.
+    function handleEnter() {
       if (!btnRef.current) return;
       const r = btnRef.current.getBoundingClientRect();
       setPos({ top: r.bottom + 6, left: r.left });
-
-      if (locale === 'hi') {
-        setTranslating(true);
-        const allTexts = [
-          ...failures.slice(0, 3),
-          ...criticals.slice(0, 2).map(c => c.action),
-          portReason,
-        ];
-        const translated = await translateAll(allTexts, 'hi');
-        const fLen = Math.min(failures.length, 3);
-        const cLen = Math.min(criticals.length, 2);
-        setTxFailures(translated.slice(0, fLen));
-        setTxCriticals(translated.slice(fLen, fLen + cLen));
-        setTxPortReason(translated[fLen + cLen] ?? portReason);
-        setTranslating(false);
-      } else {
-        setTxFailures(failures);
-        setTxCriticals(criticals.map(c => c.action));
-        setTxPortReason(portReason);
-      }
     }
 
     return (
       <div className="inline-flex items-center gap-1.5">
         {shouldSwitch ? (
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md">↙ YES</span>
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md">↙ {t("dashboard.switch_yes")}</span>
         ) : (
-          <span className="inline-flex items-center text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">NO</span>
+          <span className="inline-flex items-center text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{t("dashboard.switch_no")}</span>
         )}
         {hasPainpoints && (
           <>
@@ -398,35 +359,35 @@ export default function DashboardNew() {
                 style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999 }}
                 className="w-72 rounded-xl border border-slate-100 bg-white shadow-xl p-4 text-left"
               >
-                {translating && (
-                  <p className="text-xs text-slate-400 text-center py-2">अनुवाद हो रहा है...</p>
+                {locale === 'hi' && (
+                  <p className="text-xs text-slate-500 mb-2">{t("dashboard.report_in_english")}</p>
                 )}
-                {!translating && failures.length > 0 && (
+                {failures.length > 0 && (
                   <div className="mb-3">
                     <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1.5">{t("dashboard.painpoints")}</p>
                     <ul className="space-y-1">
-                      {txFailures.map((f, i) => (
+                      {failures.slice(0, 3).map((f, i) => (
                         <li key={i} className="text-xs text-slate-700 flex gap-1.5"><span className="text-red-400 mt-0.5">•</span>{f}</li>
                       ))}
                     </ul>
                   </div>
                 )}
-                {!translating && criticals.length > 0 && (
+                {criticals.length > 0 && (
                   <div className="mb-3">
                     <p className="text-xs font-black uppercase tracking-widest text-orange-400 mb-1.5">{t("dashboard.critical_actions")}</p>
                     <ul className="space-y-1">
-                      {txCriticals.map((action, i) => (
+                      {criticals.slice(0, 2).map(c => c.action).map((action, i) => (
                         <li key={i} className="text-xs text-slate-700 flex gap-1.5"><span className="text-orange-400 mt-0.5">⚡</span>{action}</li>
                       ))}
                     </ul>
                   </div>
                 )}
-                {!translating && portRec && (
+                {portRec && (
                   <div className="pt-2 border-t border-slate-50">
                     <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
                       {t("dashboard.port")} <span className={portRec === 'yes' ? 'text-red-500' : portRec === 'consider' ? 'text-amber-500' : 'text-green-500'}>{portRec.toUpperCase()}</span>
                     </p>
-                    {txPortReason && <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{txPortReason}</p>}
+                    {portReason && <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{portReason}</p>}
                   </div>
                 )}
               </div>
@@ -462,10 +423,10 @@ export default function DashboardNew() {
   if (error) return <InlineErrorState onRetry={fetchDashboard} />;
 
   function StatusBadge({ status }: { status: string }) {
-    if (status === 'done') return <span className="text-xs font-bold uppercase tracking-wider bg-green-100 text-green-800 px-2 py-0.5 rounded-sm">Completed</span>;
-    if (status === 'error') return <span className="text-xs font-bold uppercase tracking-wider bg-red-100 text-red-800 px-2 py-0.5 rounded-sm">Failed</span>;
-    if (status === 'pending') return <span className="text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-sm">Pending</span>;
-    return <span className="text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800 px-2 flex items-center gap-1 py-0.5 rounded-sm"><div className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin"/> Processing</span>;
+    if (status === 'done') return <span className="text-xs font-bold uppercase tracking-wider bg-green-100 text-green-800 px-2 py-0.5 rounded-sm">{t("dashboard.status_completed")}</span>;
+    if (status === 'error') return <span className="text-xs font-bold uppercase tracking-wider bg-red-100 text-red-800 px-2 py-0.5 rounded-sm">{t("dashboard.status_failed")}</span>;
+    if (status === 'pending') return <span className="text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-sm">{t("dashboard.status_pending")}</span>;
+    return <span className="text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800 px-2 flex items-center gap-1 py-0.5 rounded-sm"><div className="w-2 h-2 rounded-full border border-blue-600 border-t-transparent animate-spin"/> {t("dashboard.status_processing")}</span>;
   }
 
   if (isMobile) {
@@ -477,7 +438,7 @@ export default function DashboardNew() {
     );
     return (
       <DashboardMobile
-        agentName={agent.name.split(' ')[0] || 'Agent'}
+        agentName={agent.name.split(' ')[0] || t("dashboard.agent_fallback")}
         loading={loading}
         expiringSoon={expiringSoon}
         atRisk={atRisk}
@@ -493,7 +454,7 @@ export default function DashboardNew() {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight font-['Playfair_Display']">
-          {t(getGreetingKey())}, {agent.name.split(' ')[0] || 'Agent'}
+          {t(getGreetingKey())}, {agent.name.split(' ')[0] || t("dashboard.agent_fallback")}
         </h1>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="text-slate-500 bg-white" onClick={() => { fetchDashboard(); void refreshAgent(); }} disabled={loading}>
@@ -502,7 +463,7 @@ export default function DashboardNew() {
           <Button
             className="bg-[#0D9488] hover:bg-[#0f766e] text-white shadow-md font-semibold"
             onClick={() => setLocation('/agent/uploads')}
-            title={creditsRemaining <= 0 ? 'Health analysis needs policy checks. Data-entry types (motor, life, term…) use your separate monthly data-entry allowance.' : undefined}
+            title={creditsRemaining <= 0 ? t("dashboard.no_checks_hint") : undefined}
           >
             <Play size={16} className="mr-2 fill-current" /> {t("dashboard.analyze_policies")}
             {creditsRemaining <= 0 && <span className="ml-2 text-xs opacity-80">{t("dashboard.no_credits")}</span>}
@@ -592,7 +553,7 @@ export default function DashboardNew() {
                 <span className="text-3xl font-extrabold text-slate-800">
                   {stats.avgRiskScore === null ? '—' : stats.avgRiskScore.toFixed(1)}
                 </span>
-                <span className="text-xs font-medium text-slate-400">{stats.avgScoreWindow === "30d" ? t("dashboard.last_30_days") : "all time"}</span>
+                <span className="text-xs font-medium text-slate-400">{stats.avgScoreWindow === "30d" ? t("dashboard.last_30_days") : t("dashboard.all_time")}</span>
               </div>
             )}
           </CardContent>
@@ -622,7 +583,7 @@ export default function DashboardNew() {
                    <tr>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_customer")}</th>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_insured")}</th>
-                     <th className="px-6 py-4 text-left">Next Premium</th>
+                     <th className="px-6 py-4 text-left">{t("dashboard.col_next_premium")}</th>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_score")}</th>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_switch")}</th>
                      <th className="px-6 py-4 text-left">{t("dashboard.col_report")}</th>
@@ -647,7 +608,7 @@ export default function DashboardNew() {
                            </div>
                          </td>
                          <td className="px-6 py-4 text-slate-600" data-label={t("dashboard.col_insured")}>{getDisplayInsurer(p)}</td>
-                         <td className="px-6 py-4" data-label="Next Premium">
+                         <td className="px-6 py-4" data-label={t("dashboard.col_next_premium")}>
                            {!npValid ? (
                              <span className="text-slate-400">—</span>
                            ) : (
@@ -656,9 +617,9 @@ export default function DashboardNew() {
                                  {format(npDateObj!, 'd MMM yyyy')}
                                </span>
                                {npDays !== null && npDays < 0 ? (
-                                 <span className="text-[11px] text-red-400">overdue</span>
+                                 <span className="text-[11px] text-red-400">{t("dashboard.overdue")}</span>
                                ) : npDays !== null && npDays <= 60 ? (
-                                 <span className="text-[11px] text-slate-400">in {npDays}d</span>
+                                 <span className="text-[11px] text-slate-400">{t("dashboard.in_days", { days: npDays })}</span>
                                ) : null}
                              </div>
                            )}
@@ -753,14 +714,14 @@ export default function DashboardNew() {
                       <td className="px-6 py-4 text-slate-600" data-label={t("dashboard.col_insured")}>{getDisplayInsurer(p)}</td>
                       <td className="px-6 py-4" data-label={t("dashboard.col_expiry")}>
                         {p.days !== null && p.days <= 15
-                          ? <span className="font-bold text-red-500">{p.days} days</span>
-                          : <span className="font-semibold text-amber-500">{p.days} days</span>}
+                          ? <span className="font-bold text-red-500">{t("dashboard.days_count", { days: p.days ?? 0 })}</span>
+                          : <span className="font-semibold text-amber-500">{t("dashboard.days_count", { days: p.days ?? 0 })}</span>}
                       </td>
                       <td className="px-6 py-4" data-label={t("dashboard.col_score")}>
                         <ScoreCell policy={p} />
                       </td>
                       <td className="px-6 py-4" data-label={t("dashboard.col_report")} data-cell="actions" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setLocation(`/agent/policies/${p.id}`)} className="inline-flex min-h-10 items-center text-xs font-semibold text-[#0D9488] hover:underline">Open →</button>
+                        <button onClick={() => setLocation(`/agent/policies/${p.id}`)} className="inline-flex min-h-10 items-center text-xs font-semibold text-[#0D9488] hover:underline">{t("dashboard.open")}</button>
                       </td>
                     </tr>
                   ))}

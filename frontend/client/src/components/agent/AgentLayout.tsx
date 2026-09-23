@@ -253,7 +253,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="hidden lg:flex h-9 w-9 rounded-lg hover:bg-white/10 items-center justify-center transition-colors flex-shrink-0"
-              aria-label="Collapse sidebar"
+              aria-label={t("layout.collapse_sidebar")}
             >
               <Menu className="h-5 w-5 text-white" />
             </button>
@@ -262,7 +262,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           <button
             onClick={() => setMobileOpen(false)}
             className="lg:hidden h-11 w-11 -mr-2 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
-            aria-label="Close menu"
+            aria-label={t("layout.close_menu")}
           >
             <X className="h-5 w-5 text-white" />
           </button>
@@ -273,7 +273,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="w-full h-10 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
-              aria-label="Expand sidebar"
+              aria-label={t("layout.expand_sidebar")}
             >
               <Menu className="h-5 w-5 text-white" />
             </button>
@@ -386,7 +386,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
               )
             })}
             {queueCountError && !sidebarCollapsed && (
-              <div className="px-2 mt-2 text-xs text-white/50">Queue badge unavailable</div>
+              <div className="px-2 mt-2 text-xs text-white/50">{t("layout.queue_badge_unavailable")}</div>
             )}
           </nav>
 
@@ -420,12 +420,12 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                 </div>
                 {!sidebarCollapsed && (
                   <div className="flex-1 min-w-0 text-left">
-                    <div className="text-sm font-semibold truncate">{agent?.name ?? "Agent"}</div>
+                    <div className="text-sm font-semibold truncate">{agent?.name ?? t("layout.agent_fallback")}</div>
                     <div className="text-xs uppercase tracking-widest text-white/60 font-black truncate">
                       {/* Ownership is not a role — it lives in teams.owner_id
                           (migration 017), so `role` still reads "agent" for
                           someone who runs an agency. Say the more useful thing. */}
-                      {team?.isOwner ? (t("layout.team_owner") ?? "Team owner") : (agent?.role ?? "agent")}
+                      {team?.isOwner ? t("layout.team_owner") : (!agent?.role || agent.role === "agent" ? t("layout.role_agent") : agent.role)}
                     </div>
                   </div>
                 )}
@@ -438,7 +438,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
             <DropdownMenuContent align="end" sideOffset={8} className="w-60">
               <DropdownMenuItem onClick={() => setLocation("/agent/riders")}>
                 <BookOpen className="text-slate-500" />
-                {t("layout.rider_directory") ?? "Rider Directory"}
+                {t("layout.rider_directory")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setLocation("/agent/profile")}>
                 <User className="text-slate-500" />
@@ -463,7 +463,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           <button
             onClick={() => setMobileOpen(true)}
             className="h-11 w-11 -ml-2 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
-            aria-label="Open menu"
+            aria-label={t("layout.open_menu")}
           >
             <Menu className="h-6 w-6" />
           </button>

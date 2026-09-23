@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "@/hooks/use-toast"
+import { useLanguage } from "@/i18n/LanguageContext"
 
 type Props = {
   shareUrl: string | null
@@ -15,6 +16,7 @@ type Props = {
 }
 
 export function ShareLinkPopover({ shareUrl, shareEnabled, disabled, onDisable }: Props) {
+  const { t } = useLanguage()
   const [copied, setCopied] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -27,7 +29,7 @@ export function ShareLinkPopover({ shareUrl, shareEnabled, disabled, onDisable }
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast({ variant: "destructive", title: "Copy failed", description: "Your browser blocked clipboard access." })
+      toast({ variant: "destructive", title: t("share_popover.copy_failed"), description: t("share_popover.clipboard_blocked") })
     }
   }
 
@@ -36,7 +38,7 @@ export function ShareLinkPopover({ shareUrl, shareEnabled, disabled, onDisable }
     try {
       await onDisable()
     } catch {
-      toast({ variant: "destructive", title: "Update failed", description: "Could not disable the share link." })
+      toast({ variant: "destructive", title: t("share_popover.update_failed"), description: t("share_popover.disable_failed") })
     } finally {
       setBusy(false)
     }
@@ -50,15 +52,15 @@ export function ShareLinkPopover({ shareUrl, shareEnabled, disabled, onDisable }
           size="icon"
           className="h-8 w-8"
           disabled={disabled || !shareUrl}
-          aria-label="Share link"
+          aria-label={t("share_popover.title")}
         >
           <Link2 className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 space-y-3">
         <div className="space-y-1">
-          <div className="text-sm font-semibold">Share link</div>
-          <div className="text-xs text-muted-foreground">Copy the URL to send to your client.</div>
+          <div className="text-sm font-semibold">{t("share_popover.title")}</div>
+          <div className="text-xs text-muted-foreground">{t("share_popover.desc")}</div>
         </div>
 
         <div className="flex gap-2">
@@ -70,8 +72,8 @@ export function ShareLinkPopover({ shareUrl, shareEnabled, disabled, onDisable }
 
         <div className="flex items-center justify-between gap-3 rounded-md border p-3">
           <div className="space-y-0.5">
-            <div className="text-sm font-medium">Disable</div>
-            <div className="text-xs text-muted-foreground">Turn off this link immediately.</div>
+            <div className="text-sm font-medium">{t("share_popover.disable")}</div>
+            <div className="text-xs text-muted-foreground">{t("share_popover.disable_desc")}</div>
           </div>
           <Switch checked={!canShare} onCheckedChange={() => void disable()} disabled={busy || disabled} />
         </div>

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'wouter'
 import { supabase } from '@/lib/supabase'
 import { apiFetch } from '@/lib/api';
+import { useLanguage, LanguageToggle } from '@/i18n/LanguageContext';
 import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, MessageCircle, Check } from 'lucide-react'
 
 const TOP_INDIAN_CITIES = [
@@ -22,6 +23,7 @@ const TOP_INDIAN_CITIES = [
 
 export default function AgentSignupStep1() {
     const [, setLocation] = useLocation()
+    const { t } = useLanguage()
     
     // Load saved form data from sessionStorage on mount
     const getSavedFormData = () => {
@@ -111,6 +113,12 @@ export default function AgentSignupStep1() {
     const update = (field: string, value: string) => {
         if (field === 'inviteCode') {
             value = value.toUpperCase().trim()
+            // A changed code is an unchecked code. Without this, editing a code
+            // that had already passed kept the green tick and a live button.
+            if (value !== form.inviteCode) {
+                setInviteCodeStatus('idle')
+                setInviteCodeError('')
+            }
         }
         if (field === 'city') {
             setCitySearch(value)
@@ -172,9 +180,19 @@ export default function AgentSignupStep1() {
     // already do.
     const phoneValid = form.phone === '' || /^[6-9]\d{9}$/.test(form.phone.replace(/\D/g, '').slice(-10))
 
-    const validateInviteCode = async () => {
-        if (!form.inviteCode) {
+    // The code used to be checked only on blur. A code that arrived already
+    // filled in (a team invite link, or a draft restored after a refresh) was
+    // never checked at all, so Continue stayed grey with nothing saying why.
+    // Now it is checked on mount and shortly after every change, and a slow
+    // answer for an old code can never overwrite the answer for the current one.
+    const latestCheck = useRef(0)
+
+    const validateInviteCode = async (raw: string = form.inviteCode) => {
+        const code = raw.trim().toUpperCase()
+        const checkId = ++latestCheck.current
+        if (!code) {
             setInviteCodeStatus('idle')
+            setInviteCodeError('')
             return
         }
 
@@ -184,33 +202,48 @@ export default function AgentSignupStep1() {
         const { data: invite, error: inviteError } = await supabase
             .from('invite_codes')
             .select('*')
-            .eq('code', form.inviteCode)
+            .eq('code', code)
             .eq('is_active', true)
-            .single()
+            .maybeSingle()
 
-        if (inviteError || !invite) {
+        if (checkId !== latestCheck.current) return
+
+        if (inviteError) {
+            // A network or server failure is not a wrong code; say which it is.
             setInviteCodeStatus('invalid')
-            setInviteCodeError('Invite code not found. Check your email/WhatsApp for the correct code.')
+            setInviteCodeError(t('signup.code_check_failed'))
+            return
+        }
+
+        if (!invite) {
+            setInviteCodeStatus('invalid')
+            setInviteCodeError(t('signup.code_not_found'))
             return
         }
 
         const isMultiUse = invite.max_uses === null || invite.max_uses > (invite.current_uses || 0)
-        const isSingleUse = invite.max_uses === null && invite.used_by === null
 
         if (!isMultiUse && invite.used_by !== null) {
             setInviteCodeStatus('expired')
-            setInviteCodeError('This invite code is no longer valid. Contact us for a new one.')
+            setInviteCodeError(t('signup.code_expired'))
             return
         }
 
         if (invite.max_uses !== null && invite.current_uses >= invite.max_uses) {
             setInviteCodeStatus('expired')
-            setInviteCodeError('This invite code is no longer valid. Contact us for a new one.')
+            setInviteCodeError(t('signup.code_expired'))
             return
         }
 
         setInviteCodeStatus('valid')
     }
+
+    useEffect(() => {
+        if (!form.inviteCode) return
+        const timer = setTimeout(() => { void validateInviteCode(form.inviteCode) }, 400)
+        return () => clearTimeout(timer)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.inviteCode])
 
     const handleNext = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -226,7 +259,7 @@ export default function AgentSignupStep1() {
             .single()
 
         if (inviteError || !invite) {
-            setError('Invalid or inactive invite code.')
+            setError(t('signup.code_invalid'))
             setLoading(false)
             return
         }
@@ -235,13 +268,13 @@ export default function AgentSignupStep1() {
         const isSingleUse = invite.max_uses === null && invite.used_by === null
 
         if (!isMultiUse && invite.used_by !== null) {
-            setError('This invite code has already been used.')
+            setError(t('signup.code_used'))
             setLoading(false)
             return
         }
 
         if (invite.max_uses !== null && invite.current_uses >= invite.max_uses) {
-            setError('This invite code has reached its usage limit.')
+            setError(t('signup.code_limit'))
             setLoading(false)
             return
         }
@@ -259,7 +292,7 @@ export default function AgentSignupStep1() {
         })
 
         if (authError || !authData.user) {
-            setError(authError?.message || 'Signup failed. Please try again.')
+            setError(authError?.message || t('signup.signup_failed'))
             setLoading(false)
             return
         }
@@ -301,7 +334,7 @@ export default function AgentSignupStep1() {
         } catch {}
 
         if (!profileRes.ok) {
-            let errMsg = 'Failed to create profile. Please try again.'
+            let errMsg = t('signup.profile_failed')
             const contentType = profileRes.headers.get('content-type') || ''
             if (contentType.includes('application/json')) {
                 // Read from the body parsed above — a Response can only be
@@ -312,7 +345,7 @@ export default function AgentSignupStep1() {
                 // Non-JSON response (e.g. the SPA host returned HTML/405 because
                 // the API base is misconfigured) — the request never reached the
                 // backend. Surface a clear message instead of a confusing generic one.
-                errMsg = 'We could not reach the server. Please try again or contact support on WhatsApp.'
+                errMsg = t('signup.server_unreachable')
                 console.error('create-profile got non-JSON response', profileRes.status, contentType)
             }
             setError(errMsg)
@@ -365,7 +398,7 @@ export default function AgentSignupStep1() {
         setLocation(`/agent/signup/empanelment${agencyUnconfirmed ? '?agency=unconfirmed' : ''}`)
         } catch (err) {
             console.error('Signup error:', err)
-            setError('Something went wrong. Please try again.')
+            setError(t('signup.generic_error'))
             setLoading(false)
         }
     }
@@ -387,6 +420,20 @@ export default function AgentSignupStep1() {
         passwordValid &&
         termsAccepted
 
+    // Continue is disabled until the form is complete, so say what is missing
+    // right under it. A grey button with no reason was a dead end.
+    const stillNeeded: string[] = []
+    if (inviteCodeStatus === 'checking') stillNeeded.push(t('signup.need_code_checking'))
+    else if (inviteCodeStatus !== 'valid') stillNeeded.push(t('signup.need_code'))
+    if (form.accountType === 'agency' && form.agencyName.trim() === '') stillNeeded.push(t('signup.need_agency'))
+    if (form.fullName.trim() === '') stillNeeded.push(t('signup.need_name'))
+    if (form.email.trim() === '') stillNeeded.push(t('signup.need_email'))
+    if (form.phone.trim() === '') stillNeeded.push(t('signup.need_mobile'))
+    else if (!phoneValid) stillNeeded.push(t('signup.need_valid_mobile'))
+    if (form.city.trim() === '') stillNeeded.push(t('signup.need_city'))
+    if (!passwordValid) stillNeeded.push(t('signup.need_password'))
+    if (!termsAccepted) stillNeeded.push(t('signup.need_terms'))
+
     const inputClass = 'w-full h-11 px-4 rounded-full border border-slate-200 bg-white text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] transition-all'
 
     return (
@@ -399,19 +446,22 @@ export default function AgentSignupStep1() {
                         <h1 className="font-['Playfair_Display'] text-[28px] font-semibold text-slate-900 tracking-tight mb-1">
                             IndSure
                         </h1>
-                        <p className="text-slate-500 text-sm font-medium">Advisor Portal</p>
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="text-slate-500 text-sm font-medium">{t('signup.portal')}</p>
+                            <LanguageToggle />
+                        </div>
                     </div>
 
                     {/* Progress Indicator */}
                     <div className="flex items-center gap-3 mb-10">
                         <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-[#0D9488] text-white text-xs flex items-center justify-center font-bold">1</div>
-                            <span className="text-sm font-semibold text-slate-900">Your Details</span>
+                            <span className="text-sm font-semibold text-slate-900">{t('signup.step_details')}</span>
                         </div>
                         <div className="w-12 h-px bg-slate-200"></div>
                         <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 text-xs flex items-center justify-center font-bold">2</div>
-                            <span className="text-sm text-slate-400">Empanelment</span>
+                            <span className="text-sm text-slate-400">{t('signup.step_empanelment')}</span>
                         </div>
                     </div>
 
@@ -419,18 +469,18 @@ export default function AgentSignupStep1() {
                     <div className="mb-8">
                         <div className="flex items-center justify-between mb-2">
                             <h2 className="font-['Playfair_Display'] text-[32px] font-semibold text-slate-900 leading-tight">
-                                Create your account
+                                {t('signup.create_account')}
                             </h2>
                             {(form.fullName || form.email || form.phone) && (
                                 <span className="text-xs text-slate-400 flex items-center gap-1">
                                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                     </svg>
-                                    Draft saved
+                                    {t('signup.draft_saved')}
                                 </span>
                             )}
                         </div>
-                        <p className="text-slate-600">You'll need an invite code to get started</p>
+                        <p className="text-slate-600">{t('signup.need_invite')}</p>
                     </div>
 
                     {/* Form */}
@@ -443,19 +493,19 @@ export default function AgentSignupStep1() {
                             options. */}
                         <fieldset>
                             <legend className="block text-sm font-semibold text-slate-700 mb-2">
-                                Are you signing up on your own, or for an agency? <span className="text-red-500">*</span>
+                                {t('signup.who_signing')} <span className="text-red-500">*</span>
                             </legend>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {([
                                     {
                                         value: 'individual',
-                                        title: 'Individual advisor',
-                                        blurb: 'Just you. Your own leads, customers and policy checks.',
+                                        title: t('signup.individual'),
+                                        blurb: t('signup.individual_blurb'),
                                     },
                                     {
                                         value: 'agency',
-                                        title: 'Agency / Enterprise',
-                                        blurb: 'Advisors work under you, and you can see their book.',
+                                        title: t('signup.agency'),
+                                        blurb: t('signup.agency_blurb'),
                                     },
                                 ] as const).map((opt) => {
                                     const selected = form.accountType === opt.value
@@ -493,20 +543,20 @@ export default function AgentSignupStep1() {
                                 <div className="mt-4 space-y-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
                                     <div>
                                         <label htmlFor="agency-name" className="block text-sm font-semibold text-slate-700 mb-2">
-                                            Agency name <span className="text-red-500">*</span>
+                                            {t('signup.agency_name')} <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             id="agency-name"
                                             type="text"
                                             value={form.agencyName}
                                             onChange={(e) => update('agencyName', e.target.value)}
-                                            placeholder="Shreyas Insurance Services"
+                                            placeholder={t('signup.agency_ph')}
                                             className={inputClass}
                                         />
                                     </div>
                                     <div>
                                         <label htmlFor="seats-wanted" className="block text-sm font-semibold text-slate-700 mb-2">
-                                            How many advisors, roughly? <span className="font-normal text-slate-500">optional</span>
+                                            {t('signup.how_many')} <span className="font-normal text-slate-500">{t('signup.optional')}</span>
                                         </label>
                                         <input
                                             id="seats-wanted"
@@ -520,9 +570,7 @@ export default function AgentSignupStep1() {
                                         />
                                     </div>
                                     <p className="text-sm text-slate-600 leading-relaxed">
-                                        Your account is created either way and works straight away. We set the team up
-                                        for you and confirm the seats before anything is charged — the Agency plan
-                                        starts at five seats.
+                                        {t('signup.agency_note')}
                                     </p>
                                 </div>
                             )}
@@ -531,16 +579,16 @@ export default function AgentSignupStep1() {
                         {/* Invite Code */}
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                Invite Code <span className="text-red-500">*</span>
+                                {t('signup.invite_code')} <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={form.inviteCode}
                                     onChange={(e) => update('inviteCode', e.target.value)}
-                                    onBlur={validateInviteCode}
+                                    onBlur={() => { void validateInviteCode(form.inviteCode) }}
                                     required
-                                    placeholder="Paste your invite code here"
+                                    placeholder={t('signup.invite_ph')}
                                     className={`${inputClass} font-mono tracking-widest uppercase pr-10 ${
                                         inviteCodeStatus === 'valid' ? 'border-green-500 ring-2 ring-green-500/20' : 
                                         inviteCodeStatus === 'invalid' || inviteCodeStatus === 'expired' ? 'border-red-500 ring-2 ring-red-500/20' : ''
@@ -566,7 +614,7 @@ export default function AgentSignupStep1() {
                             )}
                             <Link href="/agent">
                                 <p className="mt-2 text-xs text-[#0D9488] hover:underline cursor-pointer font-medium">
-                                    Don't have an invite code? Request access →
+                                    {t('signup.no_code')}
                                 </p>
                             </Link>
                         </div>
@@ -574,7 +622,7 @@ export default function AgentSignupStep1() {
                         {/* Full Name */}
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                Full Name <span className="text-red-500">*</span>
+                                {t('signup.full_name')} <span className="text-red-500">*</span>
                             </label>
                             <input 
                                 type="text" 
@@ -589,7 +637,7 @@ export default function AgentSignupStep1() {
                         {/* Email */}
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                Email <span className="text-red-500">*</span>
+                                {t('signup.email')} <span className="text-red-500">*</span>
                             </label>
                             <input 
                                 type="email" 
@@ -605,7 +653,7 @@ export default function AgentSignupStep1() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Phone <span className="text-red-500">*</span>
+                                    {t('signup.phone')} <span className="text-red-500">*</span>
                                 </label>
                                 <input 
                                     type="tel" 
@@ -616,12 +664,12 @@ export default function AgentSignupStep1() {
                                     className={`${inputClass} ${!phoneValid && form.phone ? 'border-red-500' : ''}`}
                                 />
                                 {form.phone && !phoneValid && (
-                                    <p className="mt-1.5 text-xs text-red-600">Enter valid 10-digit number</p>
+                                    <p className="mt-1.5 text-xs text-red-600">{t('signup.phone_invalid')}</p>
                                 )}
                             </div>
                             <div className="relative">
                                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    City <span className="text-red-500">*</span>
+                                    {t('signup.city')} <span className="text-red-500">*</span>
                                 </label>
                                 <input 
                                     type="text" 
@@ -656,13 +704,13 @@ export default function AgentSignupStep1() {
                             </div>
                         </div>
                         {(!form.phone || phoneValid) && form.phone && (
-                            <p className="text-xs text-slate-500 -mt-3">We'll only contact you for important account updates.</p>
+                            <p className="text-xs text-slate-500 -mt-3">{t('signup.contact_note')}</p>
                         )}
 
                         {/* Password */}
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                Password <span className="text-red-500">*</span>
+                                {t('signup.password')} <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
                                 <input 
@@ -670,13 +718,14 @@ export default function AgentSignupStep1() {
                                     value={form.password} 
                                     onChange={(e) => update('password', e.target.value)} 
                                     required 
-                                    placeholder="Min. 8 characters" 
+                                    placeholder={t('signup.password_ph')} 
                                     minLength={8} 
                                     className={`${inputClass} pr-10`}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
+                                    aria-label={showPassword ? t('signup.hide_password') : t('signup.show_password')}
                                     className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                                 >
                                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -686,15 +735,15 @@ export default function AgentSignupStep1() {
                                 <div className="mt-3 space-y-2">
                                     <div className={`text-xs flex items-center gap-2 ${passwordChecks.length ? 'text-green-600' : 'text-slate-400'}`}>
                                         <CheckCircle2 className="w-3.5 h-3.5" />
-                                        At least 8 characters
+                                        {t('signup.rule_length')}
                                     </div>
                                     <div className={`text-xs flex items-center gap-2 ${passwordChecks.uppercase ? 'text-green-600' : 'text-slate-400'}`}>
                                         <CheckCircle2 className="w-3.5 h-3.5" />
-                                        One uppercase letter
+                                        {t('signup.rule_upper')}
                                     </div>
                                     <div className={`text-xs flex items-center gap-2 ${passwordChecks.number ? 'text-green-600' : 'text-slate-400'}`}>
                                         <CheckCircle2 className="w-3.5 h-3.5" />
-                                        One number
+                                        {t('signup.rule_number')}
                                     </div>
                                 </div>
                             )}
@@ -711,7 +760,7 @@ export default function AgentSignupStep1() {
                                     required
                                 />
                                 <span className="text-sm text-slate-600 group-hover:text-slate-900">
-                                    I agree to the <a href="/terms" className="text-[#0D9488] underline hover:text-[#0f766e]">Terms of Service</a> and <a href="/privacy-policy" className="text-[#0D9488] underline hover:text-[#0f766e]">Privacy Policy</a> <span className="text-red-500">*</span>
+                                    {t('signup.agree_1')} <a href="/terms" className="text-[#0D9488] underline hover:text-[#0f766e]">{t('signup.terms')}</a> {t('signup.and')} <a href="/privacy-policy" className="text-[#0D9488] underline hover:text-[#0f766e]">{t('signup.privacy')}</a> {t('signup.agree_2')} <span className="text-red-500">*</span>
                                 </span>
                             </label>
                             <label className="flex items-start gap-3 cursor-pointer group">
@@ -722,7 +771,7 @@ export default function AgentSignupStep1() {
                                     className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#0D9488] focus:ring-[#0D9488]"
                                 />
                                 <span className="text-sm text-slate-600 group-hover:text-slate-900">
-                                    I consent to receive product updates via WhatsApp, SMS, and email
+                                    {t('signup.marketing')}
                                 </span>
                             </label>
                         </div>
@@ -742,16 +791,21 @@ export default function AgentSignupStep1() {
                             {loading ? (
                                 <span className="flex items-center justify-center gap-2">
                                     <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                                    Verifying...
+                                    {t('signup.verifying')}
                                 </span>
-                            ) : 'Continue to Empanelment →'}
+                            ) : t('signup.continue')}
                         </button>
+                        {!loading && stillNeeded.length > 0 && (
+                            <p className="text-sm text-slate-700" aria-live="polite">
+                                {t('signup.still_needed', { items: stillNeeded.join(', ') })}
+                            </p>
+                        )}
                     </form>
 
                     {/* Footer Links */}
                     <div className="mt-8 text-center space-y-2">
                         <Link to="/agent/login" className="text-sm text-slate-600 hover:text-slate-900 font-medium">
-                            Already have an account? <span className="text-[#0D9488]">Sign in</span>
+                            {t('signup.have_account')} <span className="text-[#0D9488]">{t('signup.sign_in')}</span>
                         </Link>
                         <div>
                             <a 
@@ -761,7 +815,7 @@ export default function AgentSignupStep1() {
                                 className="text-xs text-slate-500 hover:text-[#0D9488] inline-flex items-center gap-1.5"
                             >
                                 <MessageCircle className="w-3.5 h-3.5" />
-                                Need help? Chat on WhatsApp →
+                                {t('signup.need_help')}
                             </a>
                         </div>
                     </div>
@@ -785,13 +839,16 @@ export default function AgentSignupStep1() {
 
                     {/* Hero Copy */}
                     <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
-                        Manage 10x more policies.
+                        {t('signup.side_heading_1')}
                         <br />
-                        Without 10x the paperwork.
+                        {t('signup.side_heading_2')}
                     </h1>
 
                     <p className="text-lg text-white/90 mb-12 leading-relaxed">
-                        Join 500+ Indian advisors using IndSure to streamline their policy workflow.
+                        {/* This used to read "Join 500+ Indian advisors", with trust points
+                            ("200+ cities", "99.9% uptime guarantee") and a named testimonial
+                            that no record supports. Only what the product does is said now. */}
+                        {t('signup.side_sub')}
                     </p>
 
                     {/* Trust Points */}
@@ -800,35 +857,19 @@ export default function AgentSignupStep1() {
                             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
                                 <Check className="w-4 h-4" />
                             </div>
-                            <span className="text-white/95 font-medium">IRDAI-compliant workflows</span>
+                            <span className="text-white/95 font-medium">{t('signup.side_point_1')}</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
                                 <Check className="w-4 h-4" />
                             </div>
-                            <span className="text-white/95 font-medium">Trusted across 200+ Indian cities</span>
+                            <span className="text-white/95 font-medium">{t('signup.side_point_2')}</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
                                 <Check className="w-4 h-4" />
                             </div>
-                            <span className="text-white/95 font-medium">99.9% uptime guarantee</span>
-                        </div>
-                    </div>
-
-                    {/* Testimonial */}
-                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                        <p className="text-white/95 italic mb-4 leading-relaxed">
-                            "IndSure helped me close 47 policies last month — double my previous best."
-                        </p>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-lg font-semibold">
-                                P
-                            </div>
-                            <div>
-                                <div className="font-semibold text-white">Priya Sharma</div>
-                                <div className="text-sm text-white/70">Senior Advisor, Pune</div>
-                            </div>
+                            <span className="text-white/95 font-medium">{t('signup.side_point_3')}</span>
                         </div>
                     </div>
                 </div>

@@ -26,6 +26,9 @@ import {
   type LeadStatus,
 } from "@/lib/leads";
 import { format } from "date-fns";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { dateLocale } from "@/i18n";
+import { statusLabel, sourceLabel, interestLabel } from "@/lib/leadLabels";
 
 type DraftState = {
   name: string;
@@ -49,6 +52,7 @@ type Filter = "all" | "open" | LeadStatus;
 export default function LeadsNew() {
   const [, setLocation] = useLocation();
   const { agent } = useAgent();
+  const { t } = useLanguage();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +73,7 @@ export default function LeadsNew() {
     try {
       setLeads(await fetchLeads(agent.agentId));
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      setError(e instanceof Error ? e.message : t("common.unknown_error"));
     } finally {
       setLoading(false);
     }
@@ -113,22 +117,22 @@ export default function LeadsNew() {
 
   async function handleCreate() {
     if (!agent?.agentId) {
-      toast({ variant: "destructive", title: "Still loading your account", description: "Please wait a moment and try again." });
+      toast({ variant: "destructive", title: t("customers.still_loading"), description: t("customers.still_loading_desc") });
       return;
     }
     if (!draft.name.trim()) {
-      toast({ variant: "destructive", title: "Please enter a name" });
+      toast({ variant: "destructive", title: t("leads.please_name") });
       return;
     }
     setSaving(true);
     try {
       const created = await createLead(agent.agentId, draft);
-      toast({ variant: "success", title: "Lead added" });
+      toast({ variant: "success", title: t("leads.added") });
       setDraft(EMPTY_DRAFT);
       setCreateOpen(false);
       setLeads((prev) => [created, ...prev]);
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not add lead", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("leads.add_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setSaving(false);
     }
@@ -140,7 +144,7 @@ export default function LeadsNew() {
       await setLeadStatus(lead.id, status);
       setLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, status } : l)));
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not update", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("leads.update_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusyId(null);
     }
@@ -152,25 +156,25 @@ export default function LeadsNew() {
       {/* HEADER */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">Leads</h1>
-          <p className="text-sm text-slate-500 mt-1">People you're following up with for a new policy.</p>
+          <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("leads.title")}</h1>
+          <p className="text-sm text-slate-500 mt-1">{t("leads.subtitle")}</p>
         </div>
         <div className="flex items-center gap-4">
           <button
             onClick={() => { setView("pipeline"); setCreateOpen((v) => !v); }}
             className="flex items-center gap-2 rounded-xl bg-[#0D9488] px-5 py-3 text-base font-bold text-white hover:bg-[#0f766e] shadow-sm"
           >
-            {createOpen ? <X size={18} /> : <Plus size={18} />} {createOpen ? "Cancel" : "Add Lead"}
+            {createOpen ? <X size={18} /> : <Plus size={18} />} {createOpen ? t("common.cancel") : t("leads.add")}
           </button>
           <button onClick={load} disabled={loading} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> {t("common.refresh")}
           </button>
         </div>
       </div>
 
       {/* TABS: Pipeline vs Renewals */}
       <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 w-fit">
-        {([["pipeline", "Pipeline"], ["renewals", "Renewals"]] as const).map(([key, label]) => {
+        {([["pipeline", t("leads.tab_pipeline")], ["renewals", t("leads.tab_renewals")]] as const).map(([key, label]) => {
           const active = view === key;
           return (
             <button
@@ -197,37 +201,37 @@ export default function LeadsNew() {
       {/* CREATE FORM */}
       {createOpen && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-          <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">New lead</p>
+          <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{t("leads.new_lead")}</p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Labeled label="Name *">
-              <input value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} placeholder="Full name" className={inputCls} />
+            <Labeled label={t("leads.f_name")}>
+              <input value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} placeholder={t("leads.ph_full_name")} className={inputCls} />
             </Labeled>
-            <Labeled label="Phone / WhatsApp">
-              <input value={draft.phone} onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))} placeholder="10-digit number" inputMode="tel" className={inputCls} />
+            <Labeled label={t("leads.f_phone")}>
+              <input value={draft.phone} onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))} placeholder={t("leads.ph_phone")} inputMode="tel" className={inputCls} />
             </Labeled>
-            <Labeled label="City">
-              <input value={draft.city} onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))} placeholder="City" className={inputCls} />
+            <Labeled label={t("leads.f_city")}>
+              <input value={draft.city} onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))} placeholder={t("leads.f_city")} className={inputCls} />
             </Labeled>
-            <Labeled label="Interested in">
+            <Labeled label={t("leads.f_interest")}>
               <select value={draft.insurance_interest} onChange={(e) => setDraft((d) => ({ ...d, insurance_interest: e.target.value }))} className={inputCls}>
-                <option value="">Select…</option>
-                {INTEREST_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                <option value="">{t("leads.select")}</option>
+                {INTEREST_OPTIONS.map((o) => <option key={o} value={o}>{interestLabel(t, o)}</option>)}
               </select>
             </Labeled>
-            <Labeled label="How did they come?">
+            <Labeled label={t("leads.f_source")}>
               <select value={draft.source} onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))} className={inputCls}>
-                <option value="">Select…</option>
-                {LEAD_SOURCES.map((o) => <option key={o} value={o}>{o}</option>)}
+                <option value="">{t("leads.select")}</option>
+                {LEAD_SOURCES.map((o) => <option key={o} value={o}>{sourceLabel(t, o)}</option>)}
               </select>
             </Labeled>
-            <Labeled label="Expected premium (₹)">
-              <input value={draft.expected_value} onChange={(e) => setDraft((d) => ({ ...d, expected_value: e.target.value }))} placeholder="e.g. 15000" inputMode="numeric" className={inputCls} />
+            <Labeled label={t("leads.f_premium")}>
+              <input value={draft.expected_value} onChange={(e) => setDraft((d) => ({ ...d, expected_value: e.target.value }))} placeholder={t("leads.ph_premium")} inputMode="numeric" className={inputCls} />
             </Labeled>
-            <Labeled label="Call them again on">
+            <Labeled label={t("leads.f_follow_up")}>
               <input type="date" value={draft.next_follow_up} onChange={(e) => setDraft((d) => ({ ...d, next_follow_up: e.target.value }))} className={inputCls} />
             </Labeled>
-            <Labeled label="Notes" className="sm:col-span-2">
-              <input value={draft.notes} onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))} placeholder="Anything to remember" className={inputCls} />
+            <Labeled label={t("leads.f_notes")} className="sm:col-span-2">
+              <input value={draft.notes} onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))} placeholder={t("leads.ph_notes")} className={inputCls} />
             </Labeled>
           </div>
           <button
@@ -235,7 +239,7 @@ export default function LeadsNew() {
             disabled={saving || !draft.name.trim()}
             className="mt-5 flex items-center gap-2 rounded-xl bg-[#0D9488] px-6 py-3 text-base font-bold text-white hover:bg-[#0f766e] disabled:opacity-50"
           >
-            {saving && <Loader2 size={16} className="animate-spin" />} Save lead
+            {saving && <Loader2 size={16} className="animate-spin" />} {t("leads.save")}
           </button>
         </div>
       )}
@@ -249,14 +253,14 @@ export default function LeadsNew() {
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Bell className="h-5 w-5 text-amber-600" />
-                <h2 className="text-lg font-bold text-amber-800">Call today ({dueToday.length})</h2>
+                <h2 className="text-lg font-bold text-amber-800">{t("leads.call_today", { count: dueToday.length })}</h2>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {dueToday.map((l) => (
                   <div key={l.id} className="bg-white rounded-xl border border-amber-200 p-4 flex items-center justify-between gap-3">
                     <button onClick={() => setLocation(`/agent/leads/${l.id}`)} className="text-left min-w-0">
                       <div className="font-bold text-slate-800 truncate">{l.name}</div>
-                      <div className="text-xs text-slate-500 truncate">{l.insurance_interest || "Policy"} · {l.city || "—"}</div>
+                      <div className="text-xs text-slate-500 truncate">{l.insurance_interest ? interestLabel(t, l.insurance_interest) : t("leads.policy")} · {l.city || "—"}</div>
                     </button>
                     <ContactButtons phone={l.phone} name={l.name} compact />
                   </div>
@@ -267,14 +271,14 @@ export default function LeadsNew() {
 
           {/* FILTER CHIPS */}
           <div className="flex flex-wrap items-center gap-2">
-            <FilterChip active={filter === "open"} onClick={() => setFilter("open")} label="Open" count={counts.open} />
+            <FilterChip active={filter === "open"} onClick={() => setFilter("open")} label={t("leads.filter_open")} count={counts.open} />
             {LEAD_STATUSES.map((s) => (
-              <FilterChip key={s} active={filter === s} onClick={() => setFilter(s)} label={LEAD_STATUS_META[s].label} count={counts[s]} dot={LEAD_STATUS_META[s].dot} />
+              <FilterChip key={s} active={filter === s} onClick={() => setFilter(s)} label={statusLabel(t, s)} count={counts[s]} dot={LEAD_STATUS_META[s].dot} />
             ))}
-            <FilterChip active={filter === "all"} onClick={() => setFilter("all")} label="All" count={counts.all} />
+            <FilterChip active={filter === "all"} onClick={() => setFilter("all")} label={t("leads.filter_all")} count={counts.all} />
             <input
               type="search"
-              placeholder="Search name, phone, city…"
+              placeholder={t("leads.search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="ml-auto w-64 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
@@ -290,8 +294,8 @@ export default function LeadsNew() {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center text-slate-400">
               <Target className="mx-auto mb-3 h-9 w-9 text-slate-200" />
               {search
-                ? <span className="italic">No leads match "{search}"</span>
-                : <span className="italic">No leads here yet. Tap "Add Lead" to add your first one.</span>}
+                ? <span className="italic">{t("leads.no_match", { query: search })}</span>
+                : <span className="italic">{t("leads.empty")}</span>}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -351,6 +355,7 @@ function FilterChip({ active, onClick, label, count, dot }: { active: boolean; o
 }
 
 function ContactButtons({ phone, name, compact = false }: { phone: string | null; name: string; compact?: boolean }) {
+  const { t } = useLanguage();
   const tel = telHref(phone);
   const wa = waHref(phone, `Hello ${name.split(" ")[0]}, `);
   const size = compact ? "h-10 w-10" : "h-11 flex-1";
@@ -362,17 +367,17 @@ function ContactButtons({ phone, name, compact = false }: { phone: string | null
         rel="noopener noreferrer"
         aria-disabled={!wa}
         className={`${size} inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] text-white font-bold text-sm hover:brightness-95 ${!wa ? "opacity-40 pointer-events-none" : ""}`}
-        title="WhatsApp"
+        title={t("leads.whatsapp")}
       >
-        <MessageCircle className="h-5 w-5" /> {!compact && "WhatsApp"}
+        <MessageCircle className="h-5 w-5" /> {!compact && t("leads.whatsapp")}
       </a>
       <a
         href={tel ?? undefined}
         aria-disabled={!tel}
         className={`${size} inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 text-white font-bold text-sm hover:bg-slate-900 ${!tel ? "opacity-40 pointer-events-none" : ""}`}
-        title="Call"
+        title={t("leads.call")}
       >
-        <Phone className="h-5 w-5" /> {!compact && "Call"}
+        <Phone className="h-5 w-5" /> {!compact && t("leads.call")}
       </a>
     </div>
   );
@@ -381,6 +386,7 @@ function ContactButtons({ phone, name, compact = false }: { phone: string | null
 function LeadCard({ lead, busy, onOpen, onStatus, onDraft }: { lead: Lead; busy: boolean; onOpen: () => void; onStatus: (s: LeadStatus) => void; onDraft: () => void }) {
   const meta = LEAD_STATUS_META[lead.status];
   const due = isFollowUpDue(lead);
+  const { t, locale } = useLanguage();
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow">
       <button onClick={onOpen} className="text-left">
@@ -388,21 +394,21 @@ function LeadCard({ lead, busy, onOpen, onStatus, onDraft }: { lead: Lead; busy:
           <div className="min-w-0">
             <div className="text-lg font-bold text-slate-800 truncate">{lead.name}</div>
             <div className="text-sm text-slate-500 truncate">
-              {[lead.insurance_interest, lead.city].filter(Boolean).join(" · ") || "No details yet"}
+              {[lead.insurance_interest ? interestLabel(t, lead.insurance_interest) : null, lead.city].filter(Boolean).join(" · ") || t("leads.no_details")}
             </div>
           </div>
           <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold ${meta.badge}`}>
-            <span className={`h-2 w-2 rounded-full ${meta.dot}`} /> {meta.label}
+            <span className={`h-2 w-2 rounded-full ${meta.dot}`} /> {statusLabel(t, lead.status)}
           </span>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
           {lead.expected_value != null && <span className="font-semibold text-slate-500">≈ {formatAmount(lead.expected_value)}</span>}
-          {lead.source && <span>via {lead.source}</span>}
+          {lead.source && <span>{t("leads.via", { source: sourceLabel(t, lead.source) })}</span>}
           {sourceContext(lead) && <span className="text-slate-500">{sourceContext(lead)}</span>}
           {lead.utm_campaign && <span className="text-slate-500">“{lead.utm_campaign}”</span>}
           {lead.next_follow_up && (
             <span className={due ? "font-bold text-amber-600" : ""}>
-              {due ? "⏰ Call " : "Next: "}{format(new Date(lead.next_follow_up), "d MMM")}
+              {t(due ? "leads.call_on" : "leads.next_on", { date: format(new Date(lead.next_follow_up), "d MMM", { locale: dateLocale(locale) }) })}
             </span>
           )}
         </div>
@@ -414,7 +420,7 @@ function LeadCard({ lead, busy, onOpen, onStatus, onDraft }: { lead: Lead; busy:
         onClick={onDraft}
         className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-[#0D9488]/30 bg-[#0D9488]/5 py-2.5 text-sm font-bold text-[#0D9488] hover:bg-[#0D9488]/10"
       >
-        <MessageCircle className="h-4 w-4" /> Draft message
+        <MessageCircle className="h-4 w-4" /> {t("leads.draft_message")}
       </button>
 
       {/* QUICK STAGE MOVE */}
@@ -426,9 +432,9 @@ function LeadCard({ lead, busy, onOpen, onStatus, onDraft }: { lead: Lead; busy:
             onClick={() => onStatus(s)}
             disabled={busy}
             className="rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-50"
-            title={`Move to ${LEAD_STATUS_META[s].label}`}
+            title={t("leads.move_to", { status: statusLabel(t, s) })}
           >
-            → {LEAD_STATUS_META[s].label}
+            → {statusLabel(t, s)}
           </button>
         ))}
       </div>

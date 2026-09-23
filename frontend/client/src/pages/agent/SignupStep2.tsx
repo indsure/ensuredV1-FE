@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'motion/react'
 import { supabase } from '@/lib/supabase'
 import { partnersFromSignup } from '@/lib/data/signup-insurer-map'
 import { Search, X, Check, Plus, CheckCircle2 } from 'lucide-react'
+import { useLanguage, LanguageToggle } from '@/i18n/LanguageContext'
+import { tOr } from '@/i18n'
 
 // Insurers grouped by category
 const INSURERS_BY_CATEGORY = {
@@ -44,6 +46,7 @@ const ALL_INSURERS = Object.values(INSURERS_BY_CATEGORY).flat()
 
 export default function AgentSignupStep2() {
     const [, setLocation] = useLocation()
+    const { t } = useLanguage()
     const [search, setSearch] = useState('')
     const [selected, setSelected] = useState<string[]>([])
     const [loading, setLoading] = useState(false)
@@ -95,7 +98,7 @@ export default function AgentSignupStep2() {
 
     const handleFinish = async () => {
         if (selected.length === 0) {
-            setError('Please select at least one insurer to continue')
+            setError(t('signup2.select_one'))
             return
         }
 
@@ -104,7 +107,7 @@ export default function AgentSignupStep2() {
 
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
-            setError('Session expired. Please sign up again.')
+            setError(t('signup2.session_expired'))
             setLoading(false)
             return
         }
@@ -112,7 +115,7 @@ export default function AgentSignupStep2() {
         const rows = selected.map((name) => ({ agent_id: user.id, insurer_name: name }))
         const { error: empError } = await supabase.from('empanelments').insert(rows)
         if (empError) {
-            setError('Failed to save empanelments. Please try again.')
+            setError(t('signup2.save_failed'))
             setLoading(false)
             return
         }
@@ -183,7 +186,10 @@ export default function AgentSignupStep2() {
                         <h1 className="font-['Playfair_Display'] text-[28px] font-semibold text-slate-900 tracking-tight mb-1">
                             IndSure
                         </h1>
-                        <p className="text-slate-500 text-sm font-medium">Advisor Portal</p>
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="text-slate-500 text-sm font-medium">{t('signup.portal')}</p>
+                            <LanguageToggle />
+                        </div>
                     </div>
 
                     {/* Step 1 said "agency" but the server did not confirm it
@@ -194,11 +200,10 @@ export default function AgentSignupStep2() {
                     {agencyUnconfirmed && (
                         <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-4">
                             <p className="text-sm font-semibold text-amber-900">
-                                Your account is set up, but we could not record your agency details.
+                                {t('signup2.agency_not_recorded')}
                             </p>
                             <p className="mt-1 text-sm text-amber-800 leading-relaxed">
-                                Nothing is lost on your side — carry on below and use IndSure normally.
-                                Message us and we will set your team up by hand.
+                                {t('signup2.agency_not_recorded_desc')}
                             </p>
                             {/* target and rel stay on ONE line: checks/guard.mjs
                                 matches them per line, so splitting them reads
@@ -208,7 +213,7 @@ export default function AgentSignupStep2() {
                                 target="_blank" rel="noopener noreferrer"
                                 className="mt-3 inline-flex items-center min-h-[44px] px-4 rounded-full bg-amber-600 text-white text-sm font-semibold"
                             >
-                                Message us on WhatsApp
+                                {t('signup2.message_us')}
                             </a>
                         </div>
                     )}
@@ -217,22 +222,22 @@ export default function AgentSignupStep2() {
                     <div className="flex items-center gap-3 mb-10">
                         <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 text-xs flex items-center justify-center font-bold">✓</div>
-                            <span className="text-sm text-slate-400">Your Details</span>
+                            <span className="text-sm text-slate-400">{t('signup.step_details')}</span>
                         </div>
                         <div className="w-12 h-px bg-[#0D9488]"></div>
                         <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-[#0D9488] text-white text-xs flex items-center justify-center font-bold">2</div>
-                            <span className="text-sm font-semibold text-slate-900">Empanelment</span>
+                            <span className="text-sm font-semibold text-slate-900">{t('signup.step_empanelment')}</span>
                         </div>
                     </div>
 
                     {/* Page Heading */}
                     <div className="mb-8">
                         <h2 className="font-['Playfair_Display'] text-[32px] font-semibold text-slate-900 leading-tight mb-3">
-                            Which insurers are you empanelled with?
+                            {t('signup2.heading')}
                         </h2>
                         <p className="text-slate-600 leading-relaxed">
-                            Select all that apply. We'll use this to tailor your dashboard and recommendations. You can update this anytime from your profile.
+                            {t('signup2.sub')}
                         </p>
                     </div>
 
@@ -244,7 +249,7 @@ export default function AgentSignupStep2() {
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search insurers (e.g., LIC, HDFC Life, Star Health)"
+                                placeholder={t('signup2.search_ph')}
                                 className="w-full h-12 pl-12 pr-4 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] transition-all"
                             />
                         </div>
@@ -259,7 +264,7 @@ export default function AgentSignupStep2() {
                                 return (
                                     <div key={category}>
                                         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
-                                            {category}
+                                            {tOr(t, `signup2.cat_${category.toLowerCase().replace(/[^a-z]+/g, '_')}`, category)}
                                         </h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             {insurers.map((insurer) => {
@@ -294,7 +299,7 @@ export default function AgentSignupStep2() {
                             })
                         ) : (
                             <div className="text-center py-12">
-                                <p className="text-slate-500 mb-4">No insurers found matching "{search}"</p>
+                                <p className="text-slate-500 mb-4">{t('signup2.no_match', { query: search })}</p>
                                 <button
                                     onClick={() => {
                                         setCustomInsurer(search)
@@ -303,7 +308,7 @@ export default function AgentSignupStep2() {
                                     }}
                                     className="text-sm text-[#0D9488] font-semibold hover:underline"
                                 >
-                                    + Add "{search}" as custom insurer
+                                    {t('signup2.add_custom', { name: search })}
                                 </button>
                             </div>
                         )}
@@ -316,7 +321,7 @@ export default function AgentSignupStep2() {
                                     className="w-full h-16 px-4 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-slate-400 transition-all flex items-center justify-center gap-2 text-slate-600 font-semibold text-sm"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    Add another insurer
+                                    {t('signup2.add_another')}
                                 </button>
                             ) : (
                                 <div className="flex gap-2">
@@ -334,7 +339,7 @@ export default function AgentSignupStep2() {
                                                 setCustomInsurer('')
                                             }
                                         }}
-                                        placeholder="Enter insurer name"
+                                        placeholder={t('signup2.enter_name')}
                                         autoFocus
                                         className="flex-1 h-12 px-4 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] transition-all"
                                     />
@@ -342,7 +347,7 @@ export default function AgentSignupStep2() {
                                         onClick={addCustomInsurer}
                                         className="px-4 h-12 bg-[#0D9488] hover:bg-[#0f766e] text-white rounded-xl font-semibold text-sm transition-all"
                                     >
-                                        Add
+                                        {t('signup2.add')}
                                     </button>
                                     <button
                                         onClick={() => {
@@ -351,7 +356,7 @@ export default function AgentSignupStep2() {
                                         }}
                                         className="px-4 h-12 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-sm transition-all"
                                     >
-                                        Cancel
+                                        {t('common.cancel')}
                                     </button>
                                 </div>
                             )}
@@ -366,7 +371,7 @@ export default function AgentSignupStep2() {
                                 <div className="flex items-center gap-2 mb-3">
                                     <CheckCircle2 className="w-4 h-4 text-[#0D9488]" />
                                     <span className="text-sm font-semibold text-slate-700">
-                                        {selected.length} {selected.length === 1 ? 'insurer' : 'insurers'} selected
+                                        {t(selected.length === 1 ? 'signup2.selected_one' : 'signup2.selected_many', { count: selected.length })}
                                     </span>
                                 </div>
                                 <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
@@ -382,6 +387,7 @@ export default function AgentSignupStep2() {
                                                 {name}
                                                 <button 
                                                     onClick={() => removeInsurer(name)} 
+                                                    aria-label={t('signup2.remove', { name })}
                                                     className="hover:bg-[#0D9488]/20 rounded-full p-0.5 transition-colors"
                                                 >
                                                     <X className="w-3 h-3" />
@@ -412,12 +418,12 @@ export default function AgentSignupStep2() {
                             {loading ? (
                                 <span className="flex items-center justify-center gap-2">
                                     <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                                    Setting up dashboard...
+                                    {t('signup2.setting_up')}
                                 </span>
                             ) : selected.length > 0 ? (
-                                'Continue to Dashboard →'
+                                t('signup2.continue')
                             ) : (
-                                'Select at least one insurer to continue'
+                                t('signup2.select_to_continue')
                             )}
                         </button>
 
@@ -427,7 +433,7 @@ export default function AgentSignupStep2() {
                                 onClick={handleSkip}
                                 className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
                             >
-                                I'll add these later →
+                                {t('signup2.later')}
                             </button>
                         </div>
                     </div>
@@ -451,13 +457,13 @@ export default function AgentSignupStep2() {
 
                     {/* Hero Copy */}
                     <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
-                        Almost there.
+                        {t('signup2.side_1')}
                         <br />
-                        Let's personalize your experience.
+                        {t('signup2.side_2')}
                     </h1>
 
                     <p className="text-lg text-white/90 mb-8 leading-relaxed">
-                        Adding your empanelled insurers helps IndSure show you:
+                        {t('signup2.side_intro')}
                     </p>
 
                     {/* Benefits */}
@@ -467,8 +473,8 @@ export default function AgentSignupStep2() {
                                 <Check className="w-4 h-4" />
                             </div>
                             <div>
-                                <div className="text-white/95 font-semibold mb-1">Recommendations tailored to your insurer mix</div>
-                                <div className="text-white/70 text-sm">Get policy suggestions that match your partnerships</div>
+                                <div className="text-white/95 font-semibold mb-1">{t('signup2.benefit_1')}</div>
+                                <div className="text-white/70 text-sm">{t('signup2.benefit_1_sub')}</div>
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
@@ -479,8 +485,8 @@ export default function AgentSignupStep2() {
                                 {/* Not built. The word "commission" appears in no implementation file;
     agent/Landing.tsx was rebuilt in 2026-08 specifically to drop this claim.
     Kept as a labelled roadmap item by founder decision 2026-09-07. */}
-                                <div className="text-white/95 font-semibold mb-1">Commission tracking across all insurers in one place (coming soon)</div>
-                                <div className="text-white/70 text-sm">Unified view of earnings from all your partnerships</div>
+                                <div className="text-white/95 font-semibold mb-1">{t('signup2.benefit_2')}</div>
+                                <div className="text-white/70 text-sm">{t('signup2.benefit_2_sub')}</div>
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
@@ -491,21 +497,15 @@ export default function AgentSignupStep2() {
                                 {/* Not built. There is no insurer submission path; insurer integrations
     are mocked per rules.md. The shipped OCR autofill fills OUR records from
     a PDF, which is a different thing. Founder decision 2026-09-07. */}
-                                <div className="text-white/95 font-semibold mb-1">Auto-filled forms for faster policy submissions (coming soon)</div>
-                                <div className="text-white/70 text-sm">Save time with pre-populated insurer-specific fields</div>
+                                <div className="text-white/95 font-semibold mb-1">{t('signup2.benefit_3')}</div>
+                                <div className="text-white/70 text-sm">{t('signup2.benefit_3_sub')}</div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Stat/Testimonial */}
-                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                        <p className="text-white/95 italic mb-2 leading-relaxed">
-                            "Advisors who complete empanelment process 3x more policies in their first month."
-                        </p>
-                        <div className="text-sm text-white/70">
-                            — IndSure Platform Analytics, 2026
-                        </div>
-                    </div>
+                    {/* A quoted statistic sat here ("3x more policies in their first month",
+                        credited to "IndSure Platform Analytics, 2026"). No such analysis
+                        exists; the 2026-08-23 audit flagged it. Removed. */}
                 </div>
             </div>
         </div>

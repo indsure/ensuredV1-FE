@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiFetch, apiJson } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface PlanNameFieldProps {
   clientId: string;
@@ -29,6 +30,7 @@ interface PlanNameFieldProps {
  * to notice is wrong.
  */
 export function PlanNameField({ clientId, name, suggestion, onSaved }: PlanNameFieldProps) {
+  const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name ?? "");
   const [saving, setSaving] = useState(false);
@@ -46,12 +48,12 @@ export function PlanNameField({ clientId, name, suggestion, onSaved }: PlanNameF
       );
       setEditing(false);
       await onSaved();
-      toast({ variant: "success", title: "Plan name saved" });
+      toast({ variant: "success", title: t("plan_name.saved") });
     } catch (err) {
       toast({
         variant: "destructive",
-        title: "Could not save",
-        description: err instanceof Error ? err.message : "Please try again.",
+        title: t("plan_name.save_failed"),
+        description: err instanceof Error ? err.message : t("common.try_again_later"),
       });
     } finally {
       setSaving(false);
@@ -70,7 +72,7 @@ export function PlanNameField({ clientId, name, suggestion, onSaved }: PlanNameF
             if (event.key === "Enter") void save(draft);
             if (event.key === "Escape") setEditing(false);
           }}
-          placeholder="Plan name as printed on the policy"
+          placeholder={t("plan_name.placeholder")}
           className="min-h-11 w-full max-w-sm"
         />
         <Button
@@ -78,7 +80,7 @@ export function PlanNameField({ clientId, name, suggestion, onSaved }: PlanNameF
           disabled={saving}
           onClick={() => void save(draft)}
         >
-          {saving ? "Saving..." : "Save"}
+          {saving ? t("plan_name.saving") : t("plan_name.save")}
         </Button>
         <Button
           variant="outline"
@@ -86,7 +88,7 @@ export function PlanNameField({ clientId, name, suggestion, onSaved }: PlanNameF
           disabled={saving}
           onClick={() => { setDraft(name ?? ""); setEditing(false); }}
         >
-          Cancel
+          {t("common.cancel")}
         </Button>
       </div>
     );
@@ -109,11 +111,10 @@ export function PlanNameField({ clientId, name, suggestion, onSaved }: PlanNameF
   return (
     <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
       <p className="text-sm font-bold text-amber-900">
-        We could not find the plan name in this document
+        {t("plan_name.not_found")}
       </p>
       <p className="mt-1 text-sm text-amber-800">
-        Rather than guess, we have left it blank. Add it and it will appear on
-        the customer's report.
+        {t("plan_name.not_found_desc")}
       </p>
 
       {suggestion && !dismissed && (
@@ -122,10 +123,10 @@ export function PlanNameField({ clientId, name, suggestion, onSaved }: PlanNameF
               which is the whole point: the old behaviour stored this silently
               and printed it to the customer. */}
           <p className="text-sm text-slate-700">
-            Did you mean <span className="font-bold text-slate-900">{suggestion}</span>?
+            {t("plan_name.did_you_mean")} <span className="font-bold text-slate-900">{suggestion}</span>?
           </p>
           <p className="mt-1 text-sm text-slate-500">
-            We matched this from wording in the document, so it may be wrong.
+            {t("plan_name.match_note")}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
@@ -134,7 +135,7 @@ export function PlanNameField({ clientId, name, suggestion, onSaved }: PlanNameF
               onClick={() => void save(suggestion)}
             >
               <Check className="mr-1.5 h-4 w-4" />
-              Yes, use this
+              {t("plan_name.yes_use")}
             </Button>
             <Button
               variant="outline"
@@ -143,7 +144,7 @@ export function PlanNameField({ clientId, name, suggestion, onSaved }: PlanNameF
               onClick={() => setDismissed(true)}
             >
               <X className="mr-1.5 h-4 w-4" />
-              No
+              {t("plan_name.no")}
             </Button>
           </div>
         </div>
@@ -155,7 +156,7 @@ export function PlanNameField({ clientId, name, suggestion, onSaved }: PlanNameF
         onClick={() => { setDraft(""); setEditing(true); }}
       >
         <Pencil className="mr-1.5 h-4 w-4" />
-        Add plan name
+        {t("plan_name.add")}
       </Button>
     </div>
   );
