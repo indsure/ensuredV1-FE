@@ -1,5 +1,6 @@
 import { CheckCircle2, Crown, AlertCircle, Check } from "lucide-react";
 import { type ComparisonResult, type ComparisonRow, sideName } from "@/lib/wordingProfile";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Per-side palette (up to 4). accent = strong, light = on-dark text, tint = cell bg.
 export const SIDE_PALETTE = [
@@ -13,9 +14,10 @@ export const TEAL = SIDE_PALETTE[0].accent;
 export const AMBER = SIDE_PALETTE[1].accent;
 
 function OptionalTag() {
+  const { t } = useLanguage();
   return (
     <span className="inline-flex items-center text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-      add-on
+      {t("compare_view.add_on")}
     </span>
   );
 }
@@ -51,28 +53,30 @@ function MatrixRow({ row, n }: { row: ComparisonRow; n: number }) {
 }
 
 export default function ComparisonView({ data }: { data: ComparisonResult }) {
+  const { t, locale } = useLanguage();
   const n = data.sides.length;
   const v = data.verdict;
-  const names = data.sides.map((s, i) => sideName(s, `Plan ${i + 1}`));
+  const names = data.sides.map((s, i) => sideName(s, t("compare_view.plan_n", { n: i + 1 })));
 
   return (
     <div className="space-y-8">
       {/* Verdict banner */}
       <div className="rounded-2xl bg-[#0B1120] text-white p-6 md:p-8">
-        <p className="text-[11px] uppercase tracking-[0.2em] font-black text-[#5eead4] mb-2">Our verdict</p>
+        <p className="text-[11px] uppercase tracking-[0.2em] font-black text-[#5eead4] mb-2">{t("compare_view.verdict")}</p>
         {/* text-white on the tie heading is load-bearing. This card is navy, and an h2 with no
             colour class inherits navy from the base stylesheet, so the heading rendered
             invisible. The winner branch sets its colour explicitly; the tie branch did not. */}
         {v.winner_index < 0 ? (
-          <h2 className="text-2xl font-black mb-1 text-white">It's a close call</h2>
+          <h2 className="text-2xl font-black mb-1 text-white">{t("compare_view.close_call")}</h2>
         ) : (
           <h2 className="text-2xl md:text-3xl font-black mb-1 flex items-center gap-2 flex-wrap">
             <Crown className="h-7 w-7" style={{ color: SIDE_PALETTE[v.winner_index % SIDE_PALETTE.length].accent }} />
             <span style={{ color: SIDE_PALETTE[v.winner_index % SIDE_PALETTE.length].light }}>{v.winner_name}</span>
-            <span className="text-slate-300 text-lg font-bold">is the stronger base plan</span>
+            <span className="text-slate-300 text-lg font-bold">{t("compare_view.stronger")}</span>
           </h2>
         )}
-        <p className="text-slate-400 text-sm mb-5">{n} plans compared on inbuilt base cover</p>
+        <p className="text-slate-400 text-sm mb-5">{t("compare_view.n_compared", { count: n })}</p>
+        {locale === "hi" && <p className="text-slate-400 text-sm -mt-3 mb-5">{t("compare_view.engine_english")}</p>}
 
         {/* Score bars */}
         <div className="space-y-3 mb-6">
@@ -106,7 +110,7 @@ export default function ComparisonView({ data }: { data: ComparisonResult }) {
         {v.counterpoint && (
           <div className="mt-5 rounded-xl bg-white/5 border border-white/10 p-3.5 text-sm text-slate-300 flex items-start gap-2.5">
             <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-400" />
-            <span><span className="font-semibold text-white">But:</span> {v.counterpoint}</span>
+            <span><span className="font-semibold text-white">{t("compare_view.but")}</span> {v.counterpoint}</span>
           </div>
         )}
       </div>
@@ -116,7 +120,7 @@ export default function ComparisonView({ data }: { data: ComparisonResult }) {
         <div style={{ minWidth: `${(n + 1) * 150}px` }}>
           {/* Header */}
           <div className="grid bg-[#0B1120] text-white" style={{ gridTemplateColumns: `minmax(130px,1.2fr) repeat(${n}, minmax(120px,1fr))` }}>
-            <div className="px-4 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400">Parameter</div>
+            <div className="px-4 py-4 text-[11px] font-black uppercase tracking-widest text-slate-400">{t("compare_view.parameter")}</div>
             {names.map((nm, i) => (
               <div key={i} className="px-4 py-4 text-sm font-bold leading-tight" style={{ color: SIDE_PALETTE[i % SIDE_PALETTE.length].light }}>
                 {nm}
@@ -137,7 +141,7 @@ export default function ComparisonView({ data }: { data: ComparisonResult }) {
       </div>
 
       <p className="text-xs text-slate-400 text-center">
-        Compared on each plan's inbuilt base cover. Items marked <span className="font-semibold">add-on</span> need an optional rider. Always confirm critical clauses against the official policy wording.
+        {t("compare_view.footer_1")} <span className="font-semibold">{t("compare_view.add_on")}</span> {t("compare_view.footer_2")}
       </p>
     </div>
   );
