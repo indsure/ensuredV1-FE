@@ -197,7 +197,7 @@ export function DashboardMobile({
                     id={p.id}
                     title={displayName(p)}
                     sub={p.insurer || "—"}
-                    chip={d === null ? undefined : d < 0 ? t("dash_mobile.overdue") : t("dash_mobile.renews_in", { days: d })}
+                    chip={d === null ? undefined : d < 0 ? t("dash_mobile.overdue") : d === 0 ? t("dash_mobile.renews_today") : t("dash_mobile.renews_in", { days: d })}
                     chipCls={d !== null && d <= 7 ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"}
                     onOpen={onOpenPolicy}
                   />

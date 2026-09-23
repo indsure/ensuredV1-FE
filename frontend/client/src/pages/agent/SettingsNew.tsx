@@ -10,6 +10,7 @@ import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import { toast } from "@/hooks/use-toast"
 import { apiFetch } from "@/lib/api"
+import { useLanguage } from "@/i18n/LanguageContext"
 
 type AgentProfile = {
   id: string;
@@ -40,6 +41,7 @@ function roleBadge(role: string) {
 }
 
 export default function SettingsNew() {
+  const { t } = useLanguage()
   const [exporting, setExporting] = useState(false)
 
   /* Fetched rather than linked, because the route needs the auth header and a
@@ -49,7 +51,7 @@ export default function SettingsNew() {
     setExporting(true)
     try {
       const res = await apiFetch("/api/agent/export")
-      if (!res.ok) throw new Error("Export failed")
+      if (!res.ok) throw new Error(t("settings.export_failed"))
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
@@ -59,9 +61,9 @@ export default function SettingsNew() {
       a.click()
       a.remove()
       URL.revokeObjectURL(url)
-      toast({ variant: "success", title: "Your file has downloaded" })
+      toast({ variant: "success", title: t("settings.downloaded") })
     } catch {
-      toast({ variant: "destructive", title: "Could not build your export", description: "Please try again in a moment." })
+      toast({ variant: "destructive", title: t("settings.export_build_failed"), description: t("settings.try_moment") })
     } finally {
       setExporting(false)
     }
@@ -117,10 +119,10 @@ export default function SettingsNew() {
         .eq("id", agentProfile.id)
 
       if (uErr) throw new Error(uErr.message)
-      toast({ variant: "success", title: "Profile updated" })
+      toast({ variant: "success", title: t("settings.profile_updated") })
       await refresh()
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Update failed", description: e instanceof Error ? e.message : "Could not update profile." })
+      toast({ variant: "destructive", title: t("settings.update_failed"), description: e instanceof Error ? e.message : t("settings.profile_failed") })
     } finally {
       setSaveStatus("")
     }
@@ -129,11 +131,11 @@ export default function SettingsNew() {
   async function changePassword() {
     setPasswordError(null)
     if (newPassword.length < 8) {
-      setPasswordError("New password must be at least 8 characters.")
+      setPasswordError(t("settings.pw_short"))
       return
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError("Confirmation does not match.")
+      setPasswordError(t("settings.pw_mismatch"))
       return
     }
 
@@ -141,11 +143,11 @@ export default function SettingsNew() {
     try {
       const { error: uErr } = await supabase.auth.updateUser({ password: newPassword })
       if (uErr) throw new Error(uErr.message)
-      toast({ variant: "success", title: "Password updated" })
+      toast({ variant: "success", title: t("settings.pw_updated") })
       setNewPassword("")
       setConfirmPassword("")
     } catch (e: unknown) {
-      setPasswordError(e instanceof Error ? e.message : "Password update failed.")
+      setPasswordError(e instanceof Error ? e.message : t("settings.pw_failed"))
     } finally {
       setPasswordSaveStatus("")
     }
@@ -157,8 +159,8 @@ export default function SettingsNew() {
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex items-end justify-between border-b border-slate-100 pb-6">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">Account Orchestration</h1>
-            <p className="text-slate-500 font-medium">Manage your professional identity and workspace preferences.</p>
+            <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("settings.title")}</h1>
+            <p className="text-slate-500 font-medium">{t("settings.subtitle")}</p>
           </div>
       </div>
 
@@ -167,7 +169,7 @@ export default function SettingsNew() {
           <div className="space-y-6">
             <Card className="border-none shadow-sm bg-white overflow-hidden">
                 <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-                    <CardTitle className="text-xs font-black text-slate-900 uppercase tracking-widest">Personal Identification</CardTitle>
+                    <CardTitle className="text-xs font-black text-slate-900 uppercase tracking-widest">{t("settings.profile")}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                     {loading ? (
@@ -179,30 +181,30 @@ export default function SettingsNew() {
                     ) : (
                     <div className="space-y-4">
                         <div className="space-y-1.5">
-                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Full Name</label>
-                            <Input value={profileName} onChange={e => setProfileName(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] font-semibold h-11" />
+                            <label htmlFor="settings-name" className="text-xs font-black text-slate-500 uppercase tracking-widest">{t("settings.full_name")}</label>
+                            <Input id="settings-name" value={profileName} onChange={e => setProfileName(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] font-semibold h-11" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Registered Email</label>
-                            <Input value={agentProfile?.email ?? ''} readOnly className="bg-slate-50/50 border-slate-100 text-slate-400 cursor-not-allowed font-medium h-11" />
+                            <label htmlFor="settings-email" className="text-xs font-black text-slate-500 uppercase tracking-widest">{t("settings.email")}</label>
+                            <Input id="settings-email" value={agentProfile?.email ?? ''} readOnly className="bg-slate-50/50 border-slate-100 text-slate-400 cursor-not-allowed font-medium h-11" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Authorization Level</label>
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{t("settings.role")}</span>
                                 <div className="h-11 flex items-center px-4 bg-slate-50/50 border border-slate-100 rounded-lg text-xs font-bold text-slate-500 uppercase">
-                                    {agentProfile?.role}
+                                    {!agentProfile?.role || agentProfile.role === "agent" ? t("layout.role_agent") : agentProfile.role}
                                 </div>
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Primary Location</label>
-                                <Input value={profileLocation} onChange={e => setProfileLocation(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] font-semibold h-11" />
+                                <label htmlFor="settings-city" className="text-xs font-black text-slate-500 uppercase tracking-widest">{t("settings.location")}</label>
+                                <Input id="settings-city" value={profileLocation} onChange={e => setProfileLocation(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] font-semibold h-11" />
                             </div>
                         </div>
                     </div>
                     )}
                     <div className="pt-4 flex items-center gap-4">
                         <Button onClick={saveProfile} disabled={saveStatus === "saving" || loading} className="bg-[#0D9488] hover:bg-[#0f766e] text-white font-black uppercase text-xs tracking-widest px-8">
-                            {saveStatus === "saving" ? "Saving…" : "Save"}
+                            {saveStatus === "saving" ? t("settings.saving") : t("settings.save")}
                         </Button>
                     </div>
                 </CardContent>
@@ -213,22 +215,22 @@ export default function SettingsNew() {
           <div className="space-y-6">
             <Card className="border-none shadow-sm bg-white overflow-hidden">
                 <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-                    <CardTitle className="text-xs font-black text-slate-900 uppercase tracking-widest">Security Credentials</CardTitle>
+                    <CardTitle className="text-xs font-black text-slate-900 uppercase tracking-widest">{t("settings.security")}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                     <div className="space-y-4">
                         <div className="space-y-1.5">
-                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">New Vault Password</label>
-                            <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] h-11" />
+                            <label htmlFor="settings-new-pw" className="text-xs font-black text-slate-500 uppercase tracking-widest">{t("settings.new_password")}</label>
+                            <Input id="settings-new-pw" autoComplete="new-password" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] h-11" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Confirm Credentials</label>
-                            <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] h-11" />
+                            <label htmlFor="settings-confirm-pw" className="text-xs font-black text-slate-500 uppercase tracking-widest">{t("settings.confirm_password")}</label>
+                            <Input id="settings-confirm-pw" autoComplete="new-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="bg-slate-50 border-slate-100 focus:border-[#0D9488] h-11" />
                         </div>
                     </div>
                     <div className="pt-4 flex flex-col gap-3">
                         <Button onClick={changePassword} disabled={passwordSaveStatus === "saving"} className="bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-xs tracking-widest w-full h-11">
-                            {passwordSaveStatus === "saving" ? "Saving…" : "Update Password"}
+                            {passwordSaveStatus === "saving" ? t("settings.saving") : t("settings.update_password")}
                         </Button>
                         <div className="min-h-4 text-center">
                           {passwordError && <span className="text-xs font-black text-red-600 uppercase tracking-widest">{passwordError}</span>}
@@ -245,13 +247,11 @@ export default function SettingsNew() {
           anything, so it ships first. Deletion follows as its own change. */}
       <Card className="border-none shadow-sm bg-white overflow-hidden">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-          <CardTitle className="text-xs font-black text-slate-900 uppercase tracking-widest">Your data</CardTitle>
+          <CardTitle className="text-xs font-black text-slate-900 uppercase tracking-widest">{t("settings.your_data")}</CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <p className="text-sm text-slate-600 max-w-prose">
-            Download everything we hold for your account: your policies, customers, leads, claims,
-            comparisons and cover calculations, as one file. Documents themselves are not in the
-            file, but every one of them is listed with where it is stored.
+            {t("settings.your_data_desc")}
           </p>
           <Button
             onClick={exportAccount}
@@ -259,7 +259,7 @@ export default function SettingsNew() {
             variant="outline"
             className="font-bold"
           >
-            {exporting ? "Preparing your file..." : "Download my data"}
+            {exporting ? t("settings.preparing") : t("settings.download")}
           </Button>
         </CardContent>
       </Card>
