@@ -13,6 +13,7 @@
  */
 
 import { apiFetch } from "@/lib/api";
+import { getSavedLocale, intlLocale } from "@/i18n";
 import { isPlaygroundMode } from "@/lib/playground/mode";
 import { playgroundClaims } from "@/lib/playground/claimsSeed";
 
@@ -341,14 +342,14 @@ export function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString(intlLocale(getSavedLocale()), { day: "numeric", month: "short", year: "numeric" });
 }
 
 export function formatDay(value: string | null | undefined): string {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  return d.toLocaleDateString(intlLocale(getSavedLocale()), { day: "numeric", month: "short" });
 }
 
 export function waLink(phone: string | null | undefined): string | null {
