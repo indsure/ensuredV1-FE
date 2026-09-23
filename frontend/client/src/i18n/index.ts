@@ -1,5 +1,7 @@
 import en from "./locales/en.json";
 import hi from "./locales/hi.json";
+import { hi as hiDates } from "date-fns/locale/hi";
+import type { Locale as DateLocale } from "date-fns";
 
 export type Locale = "en" | "hi";
 
@@ -10,8 +12,18 @@ export const SUPPORTED_LANGUAGES: { code: Locale; label: string }[] = [
 
 const translations: Record<Locale, Record<string, any>> = { en, hi };
 
+export type TranslateVars = Record<string, string | number>;
+
+// `{{name}}` placeholders are filled from `vars`, so a sentence with a number or
+// a name in it is translated as a whole sentence. Hindi word order differs from
+// English, so gluing translated fragments around a number reads wrong.
+function fill(text: string, vars?: TranslateVars): string {
+  if (!vars) return text;
+  return text.replace(/\{\{(\w+)\}\}/g, (m, name) => (name in vars ? String(vars[name]) : m));
+}
+
 export function getTranslator(locale: Locale) {
-  return function t(key: string): string {
+  return function t(key: string, vars?: TranslateVars): string {
     const parts = key.split(".");
     let val: any = translations[locale];
     for (const part of parts) {
@@ -21,13 +33,19 @@ export function getTranslator(locale: Locale) {
     if (val === undefined) {
       let fallback: any = translations["en"];
       for (const part of parts) fallback = fallback?.[part];
-      return fallback ?? key;
+      return fill(fallback ?? key, vars);
     }
-    return val;
+    return fill(val, vars);
   };
 }
 
 export function getSavedLocale(): Locale {
   const saved = localStorage.getItem("indsure_lang");
   return (saved === "hi" ? "hi" : "en") as Locale;
+}
+
+// date-fns locale for the UI language, so "Monday, 3 March" becomes
+// "सोमवार, 3 मार्च" in Hindi. Pass as `format(date, pattern, { locale: dateLocale(locale) })`.
+export function dateLocale(locale: Locale): DateLocale | undefined {
+  return locale === "hi" ? hiDates : undefined;
 }

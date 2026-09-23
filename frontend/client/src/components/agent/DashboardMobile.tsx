@@ -1,6 +1,8 @@
 import { Link } from "wouter"
 import { CalendarDays, AlertTriangle, TrendingDown, ChevronRight, RefreshCw } from "lucide-react"
 import { format } from "date-fns"
+import { useLanguage } from "@/i18n/LanguageContext"
+import { dateLocale } from "@/i18n"
 
 /**
  * The phone view of the agent dashboard.
@@ -136,8 +138,9 @@ export function DashboardMobile({
   onOpenPolicy: (id: string) => void
   onOpenQueue: () => void
 }) {
+  const { t, locale } = useLanguage()
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"
+  const greeting = t(hour < 12 ? "dashboard.good_morning" : hour < 17 ? "dashboard.good_afternoon" : "dashboard.good_evening")
 
   const renewals = expiringSoon.slice(0, 3)
   const risky = atRisk.slice(0, 3)
@@ -160,30 +163,30 @@ export function DashboardMobile({
         <h1 className="text-[22px] font-bold tracking-tight text-slate-900">
           {greeting}, {agentName}
         </h1>
-        <p className="text-[13px] font-medium text-slate-500">{format(new Date(), "EEEE, d MMMM")}</p>
+        <p className="text-[13px] font-medium text-slate-500">{format(new Date(), "EEEE, d MMMM", { locale: dateLocale(locale) })}</p>
       </div>
 
       <div className="mb-2.5 flex items-baseline justify-between">
-        <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">Needs you today</span>
+        <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">{t("dash_mobile.needs_you")}</span>
         <span className="text-xs font-bold text-[#0D9488]">
-          {total} {total === 1 ? "item" : "items"}
+          {t(total === 1 ? "dash_mobile.item_one" : "dash_mobile.item_many", { count: total })}
         </span>
       </div>
 
       {total === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
-          <p className="text-[15px] font-semibold text-slate-700">Nothing needs you today.</p>
-          <p className="mt-1 text-[13px] text-slate-500">No renewals due, nothing failed, no weak policies flagged.</p>
+          <p className="text-[15px] font-semibold text-slate-700">{t("dash_mobile.nothing_title")}</p>
+          <p className="mt-1 text-[13px] text-slate-500">{t("dash_mobile.nothing_desc")}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {renewals.length > 0 && (
             <Section
-              title="Renewals coming up"
+              title={t("dash_mobile.renewals_title")}
               count={renewals.length}
               tone="amber"
               icon={<CalendarDays className="h-[17px] w-[17px]" strokeWidth={2} />}
-              cta="See all renewals"
+              cta={t("dash_mobile.renewals_cta")}
               href="/agent/policies"
             >
               {renewals.map((p) => {
@@ -194,7 +197,7 @@ export function DashboardMobile({
                     id={p.id}
                     title={displayName(p)}
                     sub={p.insurer || "—"}
-                    chip={d === null ? undefined : d < 0 ? "Overdue" : `Renews in ${d} days`}
+                    chip={d === null ? undefined : d < 0 ? t("dash_mobile.overdue") : t("dash_mobile.renews_in", { days: d })}
                     chipCls={d !== null && d <= 7 ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"}
                     onOpen={onOpenPolicy}
                   />
@@ -205,11 +208,11 @@ export function DashboardMobile({
 
           {risky.length > 0 && (
             <Section
-              title="Weak cover worth a call"
+              title={t("dash_mobile.weak_title")}
               count={risky.length}
               tone="red"
               icon={<TrendingDown className="h-[17px] w-[17px]" strokeWidth={2} />}
-              cta="See all policies"
+              cta={t("dash_mobile.weak_cta")}
               href="/agent/policies"
             >
               {risky.map((p) => (
@@ -218,7 +221,7 @@ export function DashboardMobile({
                   id={p.id}
                   title={displayName(p)}
                   sub={p.insurer || "—"}
-                  chip={p.score !== null ? `Scores ${p.score}` : undefined}
+                  chip={p.score !== null ? t("dash_mobile.scores", { score: p.score }) : undefined}
                   chipCls="bg-red-50 text-red-600"
                   onOpen={onOpenPolicy}
                 />
@@ -228,20 +231,20 @@ export function DashboardMobile({
 
           {failures.length > 0 && (
             <Section
-              title="Uploads that failed"
+              title={t("dash_mobile.failed_title")}
               count={failures.length}
               tone="red"
               icon={<AlertTriangle className="h-[17px] w-[17px]" strokeWidth={2} />}
-              cta="Open my queue"
+              cta={t("dash_mobile.failed_cta")}
               href="/agent/my-queue"
             >
               {failures.map((j) => (
                 <div key={j.id} className="flex items-center gap-2.5 border-b border-slate-50 px-3.5 py-2.5">
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-[15px] font-semibold tracking-tight text-slate-900">
-                      {j.name || j.policy_name || "Upload"}
+                      {j.name || j.policy_name || t("dash_mobile.upload")}
                     </span>
-                    <span className="truncate text-[13px] text-slate-500">{j.error_message || "Analysis failed"}</span>
+                    <span className="truncate text-[13px] text-slate-500">{j.error_message || t("dash_mobile.analysis_failed")}</span>
                   </div>
                   <button
                     type="button"
@@ -249,7 +252,7 @@ export function DashboardMobile({
                     className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-[10px] bg-[#0D9488] px-3.5 text-[13px] font-bold text-white"
                   >
                     <RefreshCw className="h-[15px] w-[15px]" strokeWidth={2.2} />
-                    Retry
+                    {t("dash_mobile.retry")}
                   </button>
                 </div>
               ))}

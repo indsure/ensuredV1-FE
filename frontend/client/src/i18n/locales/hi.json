@@ -169,7 +169,15 @@
     "type_life": "जीवन",
     "type_term": "टर्म",
     "type_motor": "मोटर",
-    "type_others": "अन्य"
+    "type_others": "अन्य",
+    "collapse_sidebar": "साइडबार छोटा करें",
+    "expand_sidebar": "साइडबार बड़ा करें",
+    "close_menu": "मेन्यू बंद करें",
+    "open_menu": "मेन्यू खोलें",
+    "queue_badge_unavailable": "कतार की गिनती नहीं मिली",
+    "agent_fallback": "सलाहकार",
+    "role_agent": "सलाहकार",
+    "agent_navigation": "सलाहकार नेविगेशन"
   },
   "dashboard": {
     "good_morning": "सुप्रभात",
@@ -228,7 +236,21 @@
     "col_time": "समय",
     "col_action": "कार्रवाई",
     "analysis_failed": "विश्लेषण विफल",
-    "retry": "पुनः प्रयास"
+    "retry": "पुनः प्रयास",
+    "load_failed": "आपका डैशबोर्ड लोड नहीं हो सका",
+    "rerun_title": "पॉलिसी दोबारा जांची जा रही है",
+    "rerun_desc": "प्रगति मेरी कतार में देखें। नतीजा मेरी पॉलिसी में आएगा।",
+    "retry_failed": "दोबारा कोशिश नहीं हो सकी",
+    "switch_yes": "हाँ",
+    "switch_no": "नहीं",
+    "agent_fallback": "सलाहकार",
+    "no_checks_hint": "हेल्थ जांच के लिए पॉलिसी जांच चाहिए। मोटर, लाइफ़, टर्म जैसी डेटा-एंट्री के लिए आपकी अलग मासिक डेटा-एंट्री सीमा इस्तेमाल होती है।",
+    "all_time": "अब तक",
+    "col_next_premium": "अगला प्रीमियम",
+    "overdue": "समय निकल गया",
+    "in_days": "{{days}} दिन में",
+    "days_count": "{{days}} दिन",
+    "report_in_english": "रिपोर्ट की बातें अंग्रेज़ी में दिखाई गई हैं।"
   },
   "uploads": {
     "title": "पॉलिसी अपलोड करें",
@@ -384,5 +406,28 @@
     "privacy_link": "प्राइवेसी",
     "grievance_link": "शिकायत अधिकारी",
     "powered_by": "यह पेज IndSure द्वारा संचालित है"
+  },
+  "dash_mobile": {
+    "needs_you": "आज आपका ध्यान चाहिए",
+    "item_one": "{{count}} काम",
+    "item_many": "{{count}} काम",
+    "nothing_title": "आज कोई काम बाकी नहीं है।",
+    "nothing_desc": "कोई रिन्यूअल नहीं, कुछ अटका नहीं, कोई कमज़ोर पॉलिसी नहीं।",
+    "renewals_title": "आने वाले रिन्यूअल",
+    "renewals_cta": "सभी रिन्यूअल देखें",
+    "overdue": "समय निकल गया",
+    "renews_in": "{{days}} दिन में रिन्यूअल",
+    "weak_title": "कमज़ोर कवर, एक कॉल करें",
+    "weak_cta": "सभी पॉलिसी देखें",
+    "scores": "स्कोर {{score}}",
+    "failed_title": "जो अपलोड नहीं हो सके",
+    "failed_cta": "मेरी कतार खोलें",
+    "upload": "अपलोड",
+    "analysis_failed": "जांच पूरी नहीं हो सकी",
+    "retry": "दोबारा करें"
+  },
+  "common": {
+    "load_failed": "यह लोड नहीं हो सका।",
+    "try_again": "दोबारा कोशिश करें"
   }
 }

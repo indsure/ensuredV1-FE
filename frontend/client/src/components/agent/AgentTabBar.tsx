@@ -41,7 +41,7 @@ export function AgentTabBar({ onMore }: { onMore: () => void }) {
   return (
     <nav
       className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)]"
-      aria-label="Agent navigation"
+      aria-label={t("layout.agent_navigation")}
     >
       <div className="flex items-stretch">
         {tabs.map((tab) => {
@@ -68,7 +68,7 @@ export function AgentTabBar({ onMore }: { onMore: () => void }) {
         <button
           type="button"
           onClick={onMore}
-          aria-label="More"
+          aria-label={t("layout.tab_more")}
           className="flex flex-1 min-h-[58px] flex-col items-center justify-center gap-1 pt-2 text-slate-400 transition-colors"
         >
           <MoreHorizontal className="h-[22px] w-[22px]" strokeWidth={2} />
