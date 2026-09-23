@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { ArrowRight, FileText, TriangleAlert, IndianRupee } from "lucide-react";
 import { EASE, AnimatedNumber } from "@/components/motion";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /* ============================================================
    CLAUSE DECODER
@@ -30,6 +31,9 @@ import { EASE, AnimatedNumber } from "@/components/motion";
 
    The clauses are representative rather than lifted from any one
    insurer's wording, and the panel says so.
+
+   The legalese stays English, because that is the language the policy is
+   written in. tab, verdict, detail and figures are translation keys.
    ============================================================ */
 
 type Clause = {
@@ -48,7 +52,7 @@ type Clause = {
 const CLAUSES: Clause[] = [
   {
     id: "room",
-    tab: "Room rent",
+    tab: "show.room_tab",
     accent: "var(--lob-health)",
     wash: "var(--lob-health-wash)",
     parts: [
@@ -58,17 +62,17 @@ const CLAUSES: Clause[] = [
       { t: "rateable proportion of the total associated medical expenses", hot: true },
       { t: ", including surgeon fees, anaesthetist fees and operation theatre charges." },
     ],
-    verdict: "Take a room above your limit and you pay a share of the whole bill, not just the room.",
-    detail: "The surgeon, the anaesthetist and the theatre are all scaled down by the same proportion. This is the single most common reason a claim pays out at half what the customer expected.",
+    verdict: "show.room_verdict",
+    detail: "show.room_detail",
     figures: [
-      { label: "Room limit", value: "₹5,000/day", tone: "neutral" },
-      { label: "You took", value: "₹10,000/day", tone: "neutral" },
-      { label: "Insurer pays", value: "50% of everything", tone: "bad" },
+      { label: "show.room_f1", value: "show.room_f1v", tone: "neutral" },
+      { label: "show.room_f2", value: "show.room_f2v", tone: "neutral" },
+      { label: "show.room_f3", value: "show.room_f3v", tone: "bad" },
     ],
   },
   {
     id: "copay",
-    tab: "Co-pay",
+    tab: "show.copay_tab",
     accent: "var(--lob-motor)",
     wash: "var(--lob-motor-wash)",
     parts: [
@@ -78,17 +82,17 @@ const CLAUSES: Clause[] = [
       { t: "twenty per cent (20%)", hot: true },
       { t: " of the amount otherwise payable, which shall not be recoverable under any cumulative bonus, restoration or top-up benefit." },
     ],
-    verdict: "After sixty, you pay a fifth of every hospital bill yourself. Forever.",
-    detail: "The last clause is the one that hurts: your no-claim bonus does not absorb it, and neither does a top-up policy bought on top. It applies to every claim, not the first one.",
+    verdict: "show.copay_verdict",
+    detail: "show.copay_detail",
     figures: [
-      { label: "A ₹4 L bill", value: "₹3,20,000", tone: "neutral" },
-      { label: "You pay", value: "₹80,000", tone: "bad" },
-      { label: "Every time", value: "No cap", tone: "bad" },
+      { label: "show.copay_f1", value: "₹3,20,000", tone: "neutral" },
+      { label: "show.copay_f2", value: "₹80,000", tone: "bad" },
+      { label: "show.copay_f3", value: "show.copay_f3v", tone: "bad" },
     ],
   },
   {
     id: "waiting",
-    tab: "Waiting period",
+    tab: "show.wait_tab",
     accent: "var(--lob-life)",
     wash: "var(--lob-life-wash)",
     parts: [
@@ -98,12 +102,12 @@ const CLAUSES: Clause[] = [
       { t: "Annexure II", hot: true },
       { t: ", irrespective of whether such condition was disclosed at the time of proposal." },
     ],
-    verdict: "Two years before the things most people buy this policy for are covered at all.",
-    detail: "Annexure II is usually where knee and hip replacement, cataract, hernia and piles live. Disclosing the condition honestly does not shorten the wait, which surprises almost everyone.",
+    verdict: "show.wait_verdict",
+    detail: "show.wait_detail",
     figures: [
-      { label: "Knee replacement", value: "2 years", tone: "bad" },
-      { label: "Cataract", value: "2 years", tone: "bad" },
-      { label: "Disclosed it?", value: "Makes no difference", tone: "bad" },
+      { label: "show.wait_f1", value: "show.two_years", tone: "bad" },
+      { label: "show.wait_f2", value: "show.two_years", tone: "bad" },
+      { label: "show.wait_f3", value: "show.wait_f3v", tone: "bad" },
     ],
   },
 ];
@@ -112,6 +116,7 @@ export function ClauseDecoder({ className = "" }: { className?: string }) {
   const [active, setActive] = useState(0);
   const reduced = useReducedMotion();
   const clause = CLAUSES[active];
+  const { t } = useLanguage();
 
   return (
     <div className={`overflow-hidden rounded-2xl bg-white ${className}`}
@@ -122,7 +127,7 @@ export function ClauseDecoder({ className = "" }: { className?: string }) {
       <div
         className="flex flex-wrap items-center gap-1 border-b border-[var(--color-border-light)] bg-[var(--color-cream-main)] p-2"
         role="tablist"
-        aria-label="Policy clauses"
+        aria-label={t("show.clauses")}
       >
         {CLAUSES.map((c, i) => {
           const on = i === active;
@@ -137,13 +142,13 @@ export function ClauseDecoder({ className = "" }: { className?: string }) {
               }`}
               style={on ? { color: c.accent, backgroundColor: c.wash } : undefined}
             >
-              {c.tab}
+              {t(c.tab)}
             </button>
           );
         })}
 
         <span className="ml-auto hidden rounded-md bg-[var(--color-cream-dark)] px-2.5 py-1.5 text-sm font-semibold text-[var(--color-text-secondary)] sm:inline">
-          Representative wording
+          {t("show.representative")}
         </span>
       </div>
 
@@ -160,7 +165,7 @@ export function ClauseDecoder({ className = "" }: { className?: string }) {
           <div className="border-b border-[var(--color-border-light)] bg-[#FCFCFB] p-5 md:border-b-0 md:border-r sm:p-6">
             <span className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
               <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
-              What the policy says
+              {t("show.says")}
             </span>
 
             <p className="text-justify text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
@@ -183,7 +188,7 @@ export function ClauseDecoder({ className = "" }: { className?: string }) {
             </p>
 
             <p className="mt-4 text-sm text-[var(--color-text-secondary)]">
-              Highlighted phrases are the ones that decide what you are paid.
+              {t("show.highlighted")}
             </p>
           </div>
 
@@ -194,15 +199,15 @@ export function ClauseDecoder({ className = "" }: { className?: string }) {
               style={{ color: clause.accent }}
             >
               <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
-              What it costs you
+              {t("show.costs")}
             </span>
 
             <p className="font-serif text-2xl font-bold leading-snug tracking-[-0.02em] text-[var(--color-navy-900)] sm:text-[1.75rem]">
-              {clause.verdict}
+              {t(clause.verdict)}
             </p>
 
             <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-              {clause.detail}
+              {t(clause.detail)}
             </p>
 
             {clause.figures ? (
@@ -224,13 +229,13 @@ export function ClauseDecoder({ className = "" }: { className?: string }) {
                       className="block text-sm font-bold uppercase tracking-[0.08em] leading-tight"
                       style={{ color: f.tone === "bad" ? "#B91C1C" : "var(--color-text-secondary)" }}
                     >
-                      {f.label}
+                      {t(f.label)}
                     </span>
                     <span
                       className="mt-1 block text-[15px] font-extrabold leading-tight tabular"
                       style={{ color: f.tone === "bad" ? "#991B1B" : "var(--color-navy-900)" }}
                     >
-                      {f.value}
+                      {f.value.startsWith("show.") ? t(f.value) : f.value}
                     </span>
                   </motion.div>
                 ))}
@@ -252,10 +257,10 @@ export function ClauseDecoder({ className = "" }: { className?: string }) {
    ============================================================ */
 
 const BANDS = [
-  { max: 39, label: "Exposed", color: "#DC2626" },
-  { max: 64, label: "Under-insured", color: "#B45309" },
-  { max: 84, label: "Adequate", color: "#0D9488" },
-  { max: 100, label: "Well covered", color: "#0F766E" },
+  { max: 39, label: "show.band_exposed", color: "#DC2626" },
+  { max: 64, label: "show.band_under", color: "#B45309" },
+  { max: 84, label: "show.band_adequate", color: "#0D9488" },
+  { max: 100, label: "show.band_well", color: "#0F766E" },
 ];
 
 export function ScoreDial({
@@ -270,6 +275,7 @@ export function ScoreDial({
   className?: string;
 }) {
   const reduced = useReducedMotion();
+  const { t } = useLanguage();
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(reduced ? score : 0);
 
@@ -331,7 +337,7 @@ export function ScoreDial({
     <div ref={ref} className={`flex flex-col items-center gap-3 ${className}`}>
       <div className="relative" style={{ width: size, height: size * 0.82 }}>
         <svg viewBox="0 0 100 100" className="h-full w-full" role="img"
-          aria-label={`Insurance health score ${Math.round(score)} out of 100: ${band.label}`}
+          aria-label={t("show.dial_aria", { n: Math.round(score), band: t(band.label) })}
         >
           <g transform={`rotate(${START} 50 50)`}>
             <circle
@@ -362,7 +368,7 @@ export function ScoreDial({
             {Math.round(shown)}
           </span>
           <span className="mt-1 text-sm font-semibold text-[var(--color-text-secondary)]">
-            out of 100
+            {t("show.out_of")}
           </span>
         </div>
       </div>
@@ -371,7 +377,7 @@ export function ScoreDial({
         className="rounded-full px-3 py-1.5 text-[15px] font-bold"
         style={{ backgroundColor: `${band.color}14`, color: band.color }}
       >
-        {band.label}
+        {t(band.label)}
       </span>
 
       {caption ? (
@@ -448,11 +454,12 @@ export function DiffRows({
   rows: Array<{ label: string; a: string; b: string; better: "a" | "b" | "tie" }>;
   className?: string;
 }) {
+  const { t } = useLanguage();
   return (
     <div className={`overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white ${className}`}>
       <div className="grid grid-cols-[1.1fr_1fr_1fr] gap-2 border-b border-[var(--color-border-light)] bg-[var(--color-cream-main)] px-4 py-3">
         <span className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
-          What it does
+          {t("show.what_does")}
         </span>
         <span className="text-[15px] font-bold text-[var(--color-navy-900)]">{left}</span>
         <span className="text-[15px] font-bold text-[var(--color-navy-900)]">{right}</span>
@@ -484,9 +491,9 @@ export function DiffRows({
                   {val}
                 </span>
                 {wins ? (
-                  <span className="text-sm font-semibold text-[#0F766E]">Better</span>
+                  <span className="text-sm font-semibold text-[#0F766E]">{t("show.better")}</span>
                 ) : loses ? (
-                  <span className="text-sm font-semibold text-[#B91C1C]">Costs you</span>
+                  <span className="text-sm font-semibold text-[#B91C1C]">{t("show.costs_you")}</span>
                 ) : null}
               </span>
             );
@@ -517,6 +524,7 @@ export function CoverGap({
   className?: string;
 }) {
   const reduced = useReducedMotion();
+  const { t } = useLanguage();
   const pct = Math.max(0, Math.min(100, (have / need) * 100));
   const fmt = (n: number) =>
     n >= 10000000 ? `₹${(n / 10000000).toFixed(n % 10000000 === 0 ? 0 : 1)} Cr`
@@ -526,10 +534,10 @@ export function CoverGap({
     <div className={`flex flex-col gap-3 ${className}`}>
       <div className="flex items-end justify-between gap-3">
         <span className="text-[15px] font-semibold text-[var(--color-text-secondary)]">
-          You hold {fmt(have)}
+          {t("show.hold", { amount: fmt(have) })}
         </span>
         <span className="text-[15px] font-semibold text-[var(--color-text-secondary)]">
-          You need {fmt(need)}
+          {t("show.need", { amount: fmt(need) })}
         </span>
       </div>
 
@@ -547,12 +555,12 @@ export function CoverGap({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-[15px] font-bold text-[#B91C1C]">
           <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
-          Short by {fmt(need - have)}
+          {t("show.short", { amount: fmt(need - have) })}
         </span>
         {monthly ? (
           <span className="flex items-center gap-1 text-[15px] text-[var(--color-text-secondary)]">
             <IndianRupee className="h-4 w-4 shrink-0" aria-hidden="true" />
-            about <AnimatedNumber value={monthly} className="font-bold text-[var(--color-navy-900)]" /> a month for the cover you need
+            {t("show.about")} <AnimatedNumber value={monthly} className="font-bold text-[var(--color-navy-900)]" /> {t("show.a_month_for")}
           </span>
         ) : null}
       </div>
