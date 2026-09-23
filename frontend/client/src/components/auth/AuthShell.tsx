@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "wouter";
 import { Lock, ShieldCheck, Clock, Scale } from "lucide-react";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext";
 
 /**
  * Shared shell for the consumer auth pages (/signup, /login).
@@ -53,13 +53,17 @@ export function AuthShell({
         <div className="pointer-events-none absolute bottom-0 -left-20 w-72 h-72 rounded-full bg-[var(--color-teal-400)]/10 blur-3xl" />
 
         <div className="relative z-10">
-          <Link href="/">
-            <img
-              src="/logo-white.png"
-              alt="IndSure"
-              className="h-9 lg:h-10 w-auto object-contain cursor-pointer"
-            />
-          </Link>
+          {/* These pages have no site header, so the language switch sits by the logo. */}
+          <div className="flex items-center justify-between gap-4">
+            <Link href="/">
+              <img
+                src="/logo-white.png"
+                alt="IndSure"
+                className="h-9 lg:h-10 w-auto object-contain cursor-pointer"
+              />
+            </Link>
+            <LanguageToggle variant="dark" />
+          </div>
 
           <div className="mt-6 lg:mt-16 max-w-lg">
             <span className="inline-block py-1 px-3 rounded-full border border-white/15 bg-white/5 text-[11px] font-mono uppercase tracking-widest text-[var(--color-teal-400)]">
