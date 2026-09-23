@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, Star } from "lucide-react";
 
 import { useAgent } from "@/context/AgentContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/lib/supabase";
 import { resolvePartnerCompanies } from "@/lib/data/insurer-aliases";
 import {
@@ -18,6 +19,7 @@ const ALL_COMPANIES = Array.from(new Set(RIDERS_DATABASE.map((r) => r.company)))
 
 export default function RiderDirectory() {
   const { agent } = useAgent();
+  const { t, locale } = useLanguage();
   const [partners, setPartners] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [insurer, setInsurer] = useState<"all" | string>("all");
@@ -58,9 +60,10 @@ export default function RiderDirectory() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-8">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">Rider Directory</h1>
+        <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("riders.title")}</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Every rider across {ALL_COMPANIES.length} insurers — your partnered insurers show first.
+          {t("riders.subtitle", { count: ALL_COMPANIES.length })}
+          {locale === "hi" && <> {t("riders.details_english")}</>}
         </p>
       </div>
 
@@ -72,7 +75,7 @@ export default function RiderDirectory() {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search rider, benefit, plan or insurer…"
+            placeholder={t("riders.search")}
             className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
           />
         </div>
@@ -81,15 +84,15 @@ export default function RiderDirectory() {
           onChange={(e) => setInsurer(e.target.value)}
           className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
         >
-          <option value="all">All insurers</option>
+          <option value="all">{t("riders.all_insurers")}</option>
           {partners.length > 0 && (
-            <optgroup label="Your partners">
+            <optgroup label={t("riders.your_partners")}>
               {partners.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </optgroup>
           )}
-          <optgroup label="All insurers">
+          <optgroup label={t("riders.all_insurers")}>
             {ALL_COMPANIES.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -100,7 +103,7 @@ export default function RiderDirectory() {
           onChange={(e) => setType(e.target.value as RiderType | "all")}
           className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
         >
-          <option value="all">All rider types</option>
+          <option value="all">{t("riders.all_types")}</option>
           {ALL_TYPES.map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
@@ -109,14 +112,14 @@ export default function RiderDirectory() {
 
       {/* COUNT */}
       <div className="text-xs text-slate-400">
-        Showing {filtered.length} rider{filtered.length !== 1 ? "s" : ""}
-        {partnerCount > 0 && <span className="text-[#0D9488] font-semibold"> · {partnerCount} from your partners</span>}
+        {t(filtered.length === 1 ? "riders.showing_one" : "riders.showing_many", { count: filtered.length })}
+        {partnerCount > 0 && <span className="text-[#0D9488] font-semibold">{t("riders.from_partners", { count: partnerCount })}</span>}
       </div>
 
       {/* LIST */}
       {filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-10 lg:p-16 text-center text-slate-400 italic">
-          No riders match your filters.
+          {t("riders.none")}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -130,6 +133,7 @@ export default function RiderDirectory() {
 }
 
 function RiderCard({ rider, isPartner }: { rider: RiderEntry; isPartner: boolean }) {
+  const { t } = useLanguage();
   return (
     <div
       className={`rounded-2xl border bg-white p-4 shadow-sm ${
@@ -142,7 +146,7 @@ function RiderCard({ rider, isPartner }: { rider: RiderEntry; isPartner: boolean
             <span className="text-sm font-bold text-slate-800">{rider.riderName}</span>
             {rider.mustHave && (
               <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-100 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider">
-                ★ Must Have
+                {t("riders.must_have")}
               </span>
             )}
           </div>
@@ -165,10 +169,10 @@ function RiderCard({ rider, isPartner }: { rider: RiderEntry; isPartner: boolean
       <p className="mt-2 text-xs text-slate-600 leading-relaxed">{rider.description}</p>
 
       <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] empty:hidden">
-        <Field label="Payout" value={rider.payoutType} span />
-        <Field label="Plans" value={rider.plans} span />
-        <Field label="Waiting" value={rider.waitingPeriod} />
-        <Field label="Survival" value={rider.survivalPeriod} />
+        <Field label={t("riders.payout")} value={rider.payoutType} span />
+        <Field label={t("riders.plans")} value={rider.plans} span />
+        <Field label={t("riders.waiting")} value={rider.waitingPeriod} />
+        <Field label={t("riders.survival")} value={rider.survivalPeriod} />
       </dl>
     </div>
   );

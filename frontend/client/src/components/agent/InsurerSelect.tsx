@@ -17,6 +17,8 @@ import {
   INSURERS_BY_CATEGORY,
   isKnownInsurer,
 } from "@/lib/data/insurer-directory";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 
 interface InsurerSelectProps {
   value: string;
@@ -46,11 +48,12 @@ const OTHER = "__other__";
 export function InsurerSelect({
   value,
   onChange,
-  placeholder = "Select insurer",
+  placeholder,
   disabled = false,
   label,
   id,
 }: InsurerSelectProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
 
   // A stored value that is not in the list came from "Other" (or predates the
@@ -68,7 +71,7 @@ export function InsurerSelect({
     [],
   );
 
-  const triggerText = value || placeholder;
+  const triggerText = value || placeholder || t("insurer_select.select");
 
   if (otherMode) {
     return (
@@ -83,12 +86,12 @@ export function InsurerSelect({
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Insurer name"
+          placeholder={t("insurer_select.name_ph")}
           className="min-h-11"
         />
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm text-slate-500">
-            Not in our list, so we will not treat this as a verified insurer.
+            {t("insurer_select.not_in_list")}
           </p>
           <button
             type="button"
@@ -100,7 +103,7 @@ export function InsurerSelect({
             }}
             className="shrink-0 text-sm font-semibold text-[#0D9488] underline underline-offset-2 disabled:opacity-50"
           >
-            Pick from list
+            {t("insurer_select.pick_list")}
           </button>
         </div>
       </div>
@@ -149,13 +152,13 @@ export function InsurerSelect({
               return value.toLowerCase().includes(q) ? 1 : 0;
             }}
           >
-            <CommandInput placeholder="Search insurer..." />
+            <CommandInput placeholder={t("insurer_select.search")} />
             <CommandList>
               <CommandEmpty>
-                No insurer matches that name.
+                {t("insurer_select.no_match")}
               </CommandEmpty>
               {groups.map(([category, list]) => (
-                <CommandGroup key={category} heading={category}>
+                <CommandGroup key={category} heading={tOr(t, `signup2.cat_${category.toLowerCase().replace(/[^a-z]+/g, "_")}`, category)}>
                   {list.map((insurer) => (
                     <CommandItem
                       key={insurer}
@@ -176,7 +179,7 @@ export function InsurerSelect({
                   ))}
                 </CommandGroup>
               ))}
-              <CommandGroup heading="Not listed">
+              <CommandGroup heading={t("insurer_select.not_listed")}>
                 <CommandItem
                   value={OTHER}
                   onSelect={() => {
@@ -186,7 +189,7 @@ export function InsurerSelect({
                   className="min-h-11 cursor-pointer"
                 >
                   <Pencil className="mr-2 h-4 w-4 text-slate-500" />
-                  Other (type the name)
+                  {t("insurer_select.other")}
                 </CommandItem>
               </CommandGroup>
             </CommandList>

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { enterPlayground } from "@/lib/playground/mode";
 import { installPlaygroundFetch } from "@/lib/playground/mockClient";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
  * Clean, shareable entry point for the demo: visiting /agent/playground turns on
@@ -11,6 +12,7 @@ import { installPlaygroundFetch } from "@/lib/playground/mockClient";
  */
 export default function PlaygroundEntry() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
 
   useEffect(() => {
     enterPlayground();
@@ -21,7 +23,7 @@ export default function PlaygroundEntry() {
   return (
     <div className="min-h-screen bg-[#FAFAF8] flex flex-col items-center justify-center gap-4">
       <div className="w-6 h-6 rounded-full border-2 border-[#0D9488] border-t-transparent animate-spin" />
-      <p className="text-sm text-slate-500">Setting up your playground…</p>
+      <p className="text-sm text-slate-500">{t("playground.setting_up")}</p>
     </div>
   );
 }
