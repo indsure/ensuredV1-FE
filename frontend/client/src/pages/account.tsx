@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -24,19 +25,20 @@ export default function Account() {
   const user = null as any;
   const isLoading = false;
   const [, setLocation] = useLocation();
+  const { t, locale } = useLanguage();
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef as React.RefObject<Element>, { once: true });
 
   if (isLoading) {
     return (
       <div className="bg-[var(--color-cream-main)] min-h-screen flex items-center justify-center">
-        <div className="text-[var(--color-text-muted)] font-sans">Loading…</div>
+        <div className="text-[var(--color-text-muted)] font-sans">{t("cflow.loading")}</div>
       </div>
     );
   }
 
   const memberSince = user?.created_at
-    ? new Date(user.created_at).toLocaleDateString("en-IN", {
+    ? new Date(user.created_at).toLocaleDateString(locale === "hi" ? "hi-IN" : "en-IN", {
         day: "numeric",
         month: "long",
         year: "numeric",
@@ -52,7 +54,7 @@ export default function Account() {
           <div className="container-editorial px-6">
             <Link href="/">
               <span className="inline-flex items-center gap-1 text-sm text-[var(--color-white-muted)] hover:text-white transition-colors cursor-pointer mb-6">
-                <ArrowLeft className="w-4 h-4" /> Back
+                <ArrowLeft className="w-4 h-4" /> {t("cflow.back")}
               </span>
             </Link>
             <motion.h1
@@ -61,7 +63,7 @@ export default function Account() {
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="text-3xl sm:text-5xl md:text-7xl font-serif font-bold tracking-tight leading-[1.1] mb-4 text-white"
             >
-              Your <span className="text-[var(--color-teal-400)]">profile.</span>
+              {t("cflow.acc_your")} <span className="text-[var(--color-teal-400)]">{t("cflow.acc_profile")}</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0 }}
@@ -69,7 +71,7 @@ export default function Account() {
               transition={{ delay: 0.3, duration: 0.8 }}
               className="text-lg text-[var(--color-white-muted)]"
             >
-              Welcome back, <span className="font-medium text-white">{user?.username}</span>
+              {t("cflow.acc_welcome")} <span className="font-medium text-white">{user?.username}</span>
             </motion.p>
           </div>
         </section>
@@ -92,24 +94,24 @@ export default function Account() {
                     <Shield className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-serif font-bold text-[var(--color-navy-900)]">Account Details</h2>
-                    <p className="text-sm text-[var(--color-text-muted)]">Your profile information</p>
+                    <h2 className="text-2xl font-serif font-bold text-[var(--color-navy-900)]">{t("cflow.acc_details")}</h2>
+                    <p className="text-sm text-[var(--color-text-muted)]">{t("cflow.acc_info")}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                   <div className="p-4 rounded-lg bg-[var(--color-cream-main)] border border-[var(--color-border-light)]">
-                    <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Username</span>
+                    <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{t("cflow.acc_username")}</span>
                     <div className="text-lg font-bold text-[var(--color-navy-900)] mt-1">{user?.username}</div>
                   </div>
                   <div className="p-4 rounded-lg bg-[var(--color-cream-main)] border border-[var(--color-border-light)]">
-                    <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Role</span>
+                    <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{t("cflow.acc_role")}</span>
                     <div className="text-lg font-bold text-[var(--color-navy-900)] mt-1 capitalize">{user?.role}</div>
                   </div>
                 </div>
 
                 <div className="p-4 rounded-lg bg-[var(--color-cream-main)] border border-[var(--color-border-light)]">
-                  <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">Member Since</span>
+                  <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{t("cflow.acc_since")}</span>
                   <div className="text-lg font-bold text-[var(--color-navy-900)] mt-1">{memberSince}</div>
                 </div>
               </motion.div>
@@ -126,8 +128,8 @@ export default function Account() {
                     <FileText className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-serif font-bold text-[var(--color-navy-900)]">Analysis History</h2>
-                    <p className="text-sm text-[var(--color-text-muted)]">Your past policy analyses</p>
+                    <h2 className="text-2xl font-serif font-bold text-[var(--color-navy-900)]">{t("cflow.acc_history")}</h2>
+                    <p className="text-sm text-[var(--color-text-muted)]">{t("cflow.acc_past")}</p>
                   </div>
                 </div>
 
@@ -135,9 +137,9 @@ export default function Account() {
                   <div className="w-16 h-16 bg-[var(--color-cream-main)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--color-border-light)]">
                     <FileText className="w-7 h-7 text-[var(--color-text-muted)] opacity-50" />
                   </div>
-                  <p className="font-serif font-bold text-lg text-[var(--color-navy-900)]">Agent portal only</p>
+                  <p className="font-serif font-bold text-lg text-[var(--color-navy-900)]">{t("cflow.acc_agent_only")}</p>
                   <p className="text-sm text-[var(--color-text-muted)] mt-1 max-w-xs mx-auto">
-                    This public account page isn’t connected to analysis history in this build. For agent policy history, sign in to the agent portal.
+                    {t("cflow.acc_not_connected")}
                   </p>
                   <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
                     <button
@@ -145,14 +147,14 @@ export default function Account() {
                       onClick={() => setLocation("/agent/login")}
                       className="px-6 py-3 rounded-lg font-medium bg-[var(--color-cta)] text-white hover:bg-[var(--color-cta-hover)] transition-colors"
                     >
-                      Agent Login
+                      {t("cflow.acc_agent_login")}
                     </button>
                     <Link href="/policychecker">
                       <button
                         type="button"
                         className="px-6 py-3 rounded-lg font-medium border border-[var(--color-border-light)] text-[var(--color-text-main)] hover:bg-[var(--color-cream-main)] transition-colors"
                       >
-                        Analyze a Policy
+                        {t("cflow.acc_analyze")}
                       </button>
                     </Link>
                   </div>
@@ -168,7 +170,7 @@ export default function Account() {
               >
                 <Link href="/policychecker">
                   <button className="bg-[var(--color-cta)] text-white px-8 py-4 rounded-lg font-medium hover:bg-[var(--color-cta-hover)] transition-colors flex items-center gap-2 shadow-lg shadow-teal-900/20">
-                    Analyze a Policy <ArrowRight className="w-4 h-4" />
+                    {t("cflow.acc_analyze")} <ArrowRight className="w-4 h-4" />
                   </button>
                 </Link>
                 <button
@@ -177,7 +179,7 @@ export default function Account() {
                   className="px-8 py-4 rounded-lg font-medium border border-[var(--color-border-light)] text-white/90 hover:bg-white/10 transition-colors flex items-center gap-2"
                 >
                   <Shield className="w-4 h-4" />
-                  Agent Portal
+                  {t("cflow.acc_agent_portal")}
                 </button>
               </motion.div>
 

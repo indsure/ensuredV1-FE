@@ -16,9 +16,11 @@ import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { validateForensicAuditReport } from "@shared/policy";
 import { apiFetch } from "@/lib/api";
 import { MpEvent, track } from "@/lib/mixpanel";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function Report({ params }: { params?: { id?: string } }) {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
   const [data, setData] = useState(null as any | null);
   const [loading, setLoading] = useState(true);
 
@@ -108,7 +110,7 @@ export default function Report({ params }: { params?: { id?: string } }) {
       <div className="min-h-screen bg-[var(--color-cream-main)] flex items-center justify-center px-6">
         <div className="flex flex-col items-center text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--color-teal-600)]" />
-          <p className="mt-4 text-sm text-[var(--color-text-secondary)]">Preparing your report…</p>
+          <p className="mt-4 text-sm text-[var(--color-text-secondary)]">{t("cflow.rep_preparing")}</p>
         </div>
       </div>
     );
@@ -131,15 +133,14 @@ export default function Report({ params }: { params?: { id?: string } }) {
           <div className="inline-flex p-4 bg-red-100 rounded-full mb-6 text-red-600">
             <AlertCircle className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-serif text-[var(--color-navy-900)] mb-4">Report Generation Failed</h2>
+          <h2 className="text-2xl font-serif text-[var(--color-navy-900)] mb-4">{t("cflow.rep_failed")}</h2>
           <p className="text-[var(--color-text-secondary)] max-w-md mx-auto mb-8">
-            The policy data found in your session matches an older format or is corrupted.
-            Please run the audit again with the latest engine.
+            {t("cflow.rep_failed_b")}
           </p>
           <div className="flex justify-center gap-4">
             <Link href="/policychecker">
               <Button size="lg" className="bg-[var(--color-navy-900)] text-white hover:bg-[var(--color-navy-800)]">
-                Start New Audit
+                {t("cflow.rep_new")}
               </Button>
             </Link>
           </div>

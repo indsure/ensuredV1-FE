@@ -15,9 +15,11 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { loadSampleReport, mockReport, mockReportLife, mockReportVehicle } from "@/lib/mock-data";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function AnalyzePage() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
 
   useSEO({
     title: "Analyze Your Insurance Policy | Health, Life, Vehicle Insurance Analyzer | IndSure",
@@ -29,8 +31,9 @@ export default function AnalyzePage() {
   const insuranceTypes = [
     {
       id: "health",
-      title: "Health Insurance",
-      description: "Upload your health insurance policy. Understand your room limits, co-pays, deductibles, coverage areas, and exclusions. See what a ₹5L or ₹20L hospitalization will really cost you.",
+      title: t("cflow.an_health"),
+      cta: t("cflow.an_health_cta"),
+      description: t("cflow.an_health_d"),
       icon: Heart,
       iconColor: "text-[#EF4444]",
       gradientFrom: "from-[#EF4444]/20",
@@ -38,13 +41,14 @@ export default function AnalyzePage() {
       darkGradientFrom: "dark:from-[#EF4444]/10",
       darkGradientTo: "dark:to-[#FCA5A5]/10",
       href: "/policychecker",
-      badge: "Most Popular",
+      badge: t("cflow.an_popular"),
       sampleReport: mockReport,
     },
     {
       id: "life",
-      title: "Life Insurance",
-      description: "Upload your life insurance PDF. Instantly see if your sum assured is enough for your family's future, understand claim conditions, exclusions, and how your riders actually protect you.",
+      title: t("cflow.an_life"),
+      cta: t("cflow.an_life_cta"),
+      description: t("cflow.an_life_d"),
       icon: Users,
       iconColor: "text-[#00B4D8]",
       gradientFrom: "from-[#00B4D8]/20",
@@ -57,8 +61,9 @@ export default function AnalyzePage() {
     },
     {
       id: "vehicle",
-      title: "Vehicle Insurance",
-      description: "Upload your car or bike policy. Instantly see if you're third-party or comprehensive, your actual deductibles, IDV, no-claim bonus impact, and what a ₹50k or ₹2L accident will really cost you.",
+      title: t("cflow.an_vehicle"),
+      cta: t("cflow.an_vehicle_cta"),
+      description: t("cflow.an_vehicle_d"),
       icon: Car,
       iconColor: "text-[#10B981]",
       gradientFrom: "from-[#10B981]/20",
@@ -80,14 +85,13 @@ export default function AnalyzePage() {
         <div className="max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#00B4D8]/20 rounded-full text-xs font-medium text-white/90 mb-4">
             <FileText className="w-3 h-3" />
-            Choose your insurance type
+            {t("cflow.an_choose")}
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-[56px] font-bold leading-[1.1] mb-6 tracking-[-0.02em]">
-            Analyze Your Insurance Policy
+            {t("cflow.an_h")}
           </h1>
           <p className="text-base md:text-lg text-white/90 leading-relaxed mb-8 max-w-2xl mx-auto">
-            Upload your policy PDF and get instant analysis. Understand your coverage, 
-            identify gaps, and get actionable recommendations—all in seconds.
+            {t("cflow.an_sub")}
           </p>
         </div>
       </section>
@@ -137,7 +141,7 @@ export default function AnalyzePage() {
                       }}
                       className="w-full bg-[#00B4D8] hover:bg-[#0099B4] text-white group-hover:bg-[#0099B4]"
                     >
-                      Analyze {type.title}
+                      {type.cta}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                     <button
@@ -150,7 +154,7 @@ export default function AnalyzePage() {
                       className="mt-3 min-h-11 w-full text-center text-sm text-[#00B4D8] hover:text-[#0099B4] dark:text-cyan-400 dark:hover:text-cyan-300 flex items-center justify-center gap-2"
                     >
                       <FileSearch className="w-4 h-4" />
-                      View sample report
+                      {t("cflow.an_sample")}
                     </button>
                   </CardContent>
                 </Card>
@@ -164,7 +168,7 @@ export default function AnalyzePage() {
       <section className="bg-[#E0F7FA] dark:bg-[#1F2937] py-12 px-6 md:px-14 border-t border-[#E5E7EB] dark:border-gray-700">
         <div className="max-w-6xl mx-auto">
           <h3 className="text-[28px] font-semibold text-center text-black dark:text-[#FAFBFC] mb-8 leading-[1.3]">
-            Need more help? Use our tools:
+            {t("cflow.an_more")}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
@@ -174,19 +178,18 @@ export default function AnalyzePage() {
                     <Calculator className="w-6 h-6 text-[#00B4D8]" />
                   </div>
                   <h4 className="text-lg font-semibold text-[#0F1419] dark:text-[#FAFBFC]">
-                    Coverage Calculator
+                    {t("cflow.an_calc")}
                   </h4>
                 </div>
                 <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF] mb-4">
-                  Calculate how much coverage you actually need based on your income, 
-                  dependents, and financial goals.
+                  {t("cflow.an_calc_b")}
                 </p>
                 <Button
                   variant="outline"
                   onClick={() => setLocation("/calculator")}
                   className="w-full"
                 >
-                  Go to Calculator
+                  {t("cflow.an_calc_cta")}
                 </Button>
               </CardContent>
             </Card>
@@ -198,19 +201,18 @@ export default function AnalyzePage() {
                     <Scale className="w-6 h-6 text-[#00B4D8]" />
                   </div>
                   <h4 className="text-lg font-semibold text-[#0F1419] dark:text-[#FAFBFC]">
-                    Policy Comparer
+                    {t("cflow.an_cmp")}
                   </h4>
                 </div>
                 <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF] mb-4">
-                  Compare multiple insurance policies side-by-side. Find the best 
-                  coverage and rates for your needs.
+                  {t("cflow.an_cmp_b")}
                 </p>
                 <Button
                   variant="outline"
                   onClick={() => setLocation("/compare")}
                   className="w-full"
                 >
-                  Compare Policies
+                  {t("cflow.an_cmp_cta")}
                 </Button>
               </CardContent>
             </Card>

@@ -6,25 +6,28 @@ import { useAnalysis } from "@/hooks/use-analysis";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { motion, AnimatePresence } from "motion/react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Enhanced "Live Insight" Lines - Rotating
+// Translation keys, like the step titles below.
 const LIVE_INSIGHTS = [
-  "Scanning for room rent caps and silent sub-limits...",
-  "Checking if restoration clauses actually restore...",
-  "Identifying exclusions most claims fail on...",
-  "Comparing coverage wording against real hospital billing..."
+  "cflow.pr_i1",
+  "cflow.pr_i2",
+  "cflow.pr_i3",
+  "cflow.pr_i4"
 ];
 
 // Revamped Steps (Forensic)
 const STEPS = [
-  { id: 1, title: "Reading policy structure", desc: "Sections, schedules, endorsements" },
-  { id: 2, title: "Parsing exclusions & sub-limits", desc: "Hidden caps, waiting periods, conditions" },
-  { id: 3, title: "Stress-testing claim scenarios", desc: "Real hospital + treatment situations" },
-  { id: 4, title: "Preparing coverage verdict", desc: "What works, what fails, what misleads" },
+  { id: 1, title: "cflow.pr_s1", desc: "cflow.pr_s1_d" },
+  { id: 2, title: "cflow.pr_s2", desc: "cflow.pr_s2_d" },
+  { id: 3, title: "cflow.pr_s3", desc: "cflow.pr_s3_d" },
+  { id: 4, title: "cflow.pr_s4", desc: "cflow.pr_s4_d" },
 ];
 
 export default function Processing() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
   const { status, error, currentJobId, checkJobStatus } = useAnalysis();
   const [activeStep, setActiveStep] = useState(0);
   const [insightIndex, setInsightIndex] = useState(0);
@@ -99,10 +102,10 @@ export default function Processing() {
 
             {/* Status Text */}
             <h2 className="text-2xl font-serif text-[var(--color-navy-900)] mb-2">
-              {STEPS[activeStep]?.title || "Finalizing..."}
+              {STEPS[activeStep] ? t(STEPS[activeStep].title) : t("cflow.pr_final")}
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)] opacity-80 mb-8 font-mono uppercase tracking-widest text-xs">
-              {STEPS[activeStep]?.desc}
+              {STEPS[activeStep] ? t(STEPS[activeStep].desc) : null}
             </p>
 
             {/* Live Insight Line (Rotating) */}
@@ -116,7 +119,7 @@ export default function Processing() {
                   transition={{ duration: 0.5 }}
                   className="text-sm font-mono text-[var(--color-teal-700)] text-center w-full absolute top-0"
                 >
-                  {">"} {LIVE_INSIGHTS[insightIndex]}
+                  {">"} {t(LIVE_INSIGHTS[insightIndex])}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -144,14 +147,14 @@ export default function Processing() {
                   </div>
                   <div>
                     <h4 className={`font-serif text-lg leading-tight mb-1 transition-colors ${isActive ? "text-[var(--color-navy-900)]" : "text-[var(--color-text-muted)]"}`}>
-                      {step.title}
+                      {t(step.title)}
                     </h4>
                     {isActive && (
                       <motion.p
                         initial={{ opacity: 0 }} animate={{ opacity: 0.7 }}
                         className="text-xs font-mono text-[var(--color-text-secondary)] uppercase tracking-widest mt-1"
                       >
-                        {step.desc}
+                        {t(step.desc)}
                       </motion.p>
                     )}
                   </div>
@@ -164,7 +167,7 @@ export default function Processing() {
           {/* 3. WHAT WE'RE CHECKING (Stacked Panels) */}
           <div className="w-full max-w-lg">
             <h3 className="text-xs font-mono uppercase tracking-[0.2em] text-[var(--color-text-muted)] mb-6 text-center">
-              What this audit is actively checking
+              {t("cflow.pr_checking")}
             </h3>
 
             <div className="grid grid-cols-1 gap-4">
@@ -172,10 +175,10 @@ export default function Processing() {
               <div className="bg-white border border-[var(--color-border-light)] p-5 rounded-lg shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
                   <FileText className="w-4 h-4 text-[var(--color-teal-600)]" />
-                  <h4 className="font-serif text-[var(--color-navy-900)]">Policy Structure</h4>
+                  <h4 className="font-serif text-[var(--color-navy-900)]">{t("cflow.pr_p1")}</h4>
                 </div>
                 <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed opacity-80">
-                  Analyzing the base policy, attached schedules, and endorsement overrides.
+                  {t("cflow.pr_p1_b")}
                 </p>
               </div>
 
@@ -183,10 +186,10 @@ export default function Processing() {
               <div className="bg-white border border-[var(--color-border-light)] p-5 rounded-lg shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
                   <Search className="w-4 h-4 text-[var(--color-teal-600)]" />
-                  <h4 className="font-serif text-[var(--color-navy-900)]">Claim Failure Triggers</h4>
+                  <h4 className="font-serif text-[var(--color-navy-900)]">{t("cflow.pr_p2")}</h4>
                 </div>
                 <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed opacity-80">
-                  Scanning for room rent caps, co-pay clauses, and hidden sub-limits.
+                  {t("cflow.pr_p2_b")}
                 </p>
               </div>
 
@@ -194,10 +197,10 @@ export default function Processing() {
               <div className="bg-white border border-[var(--color-border-light)] p-5 rounded-lg shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
                   <Clock className="w-4 h-4 text-[var(--color-teal-600)]" />
-                  <h4 className="font-serif text-[var(--color-navy-900)]">Time-Based Risks</h4>
+                  <h4 className="font-serif text-[var(--color-navy-900)]">{t("cflow.pr_p3")}</h4>
                 </div>
                 <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed opacity-80">
-                  Calculating waiting period completion and pre-existing disease exclusions.
+                  {t("cflow.pr_p3_b")}
                 </p>
               </div>
             </div>
@@ -210,7 +213,7 @@ export default function Processing() {
               onClick={() => setIsWhyOpen(!isWhyOpen)}
               className="group flex items-center gap-2 text-xs uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-teal-600)] transition-colors mx-auto mb-4"
             >
-              Why this takes a minute
+              {t("cflow.pr_why")}
               <span className={`transition-transform duration-300 ${isWhyOpen ? "rotate-180" : ""}`}>
                 <ChevronDown className="w-3 h-3" />
               </span>
@@ -224,7 +227,7 @@ export default function Processing() {
                   className="overflow-hidden max-w-md mx-auto"
                 >
                   <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed bg-white p-4 rounded border border-[var(--color-border-light)] shadow-sm">
-                    We don’t just keyword-scan PDFs. We read definitions, find cross-references in annexures, and interpret complex conditions the way a claims team would. This ensures accuracy over speed.
+                    {t("cflow.pr_why_b")}
                   </p>
                 </motion.div>
               )}
@@ -237,15 +240,15 @@ export default function Processing() {
         <div className="absolute bottom-6 w-full text-center px-6">
           <p className="text-xs text-[var(--color-text-muted)] opacity-60 flex items-center justify-center gap-2 font-mono tracking-wide">
             <ShieldCheck className="w-3 h-3 text-[var(--color-teal-600)] opacity-70" />
-            ANALYSIS IN ISOLATION • NO HUMAN REVIEW • PRIVATE ENCLAVE
+            {t("cflow.pr_footer")}
           </p>
         </div>
 
         {hasError && (
           <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-white border border-red-200 p-6 rounded-lg text-center shadow-xl max-w-sm w-full mx-4">
             <AlertCircle className="w-8 h-8 text-red-600 mx-auto mb-3" />
-            <p className="text-[var(--color-navy-900)] text-sm mb-4 font-mono">{error || "Analysis failed to complete."}</p>
-            <button onClick={() => setLocation("/policychecker")} className="w-full bg-red-50 hover:bg-red-100 text-red-700 py-2 rounded uppercase text-xs font-bold tracking-widest transition-colors border border-red-200">Try Again</button>
+            <p className="text-[var(--color-navy-900)] text-sm mb-4 font-mono">{error || t("cflow.pr_failed")}</p>
+            <button onClick={() => setLocation("/policychecker")} className="w-full bg-red-50 hover:bg-red-100 text-red-700 py-2 rounded uppercase text-xs font-bold tracking-widest transition-colors border border-red-200">{t("cflow.pr_retry")}</button>
           </div>
         )}
 

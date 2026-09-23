@@ -6,12 +6,14 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, CheckCircle2, ArrowRight } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Consumer "set a new password" page. Supabase parses the recovery token from
 // the URL and establishes a session; we verify one exists, then updateUser.
 // Mirrors the agent ResetPassword logic in the consumer style.
 export default function ResetPasswordPublic() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -23,7 +25,7 @@ export default function ResetPasswordPublic() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Set a new password — IndSure";
+    document.title = t("cauth.rp_doc_title");
   }, []);
 
   useEffect(() => {
@@ -81,11 +83,11 @@ export default function ResetPasswordPublic() {
 
   async function handleSubmit() {
     if (!passwordValid) {
-      setError("Password needs at least 8 characters, an uppercase letter and a number.");
+      setError(t("cauth.rp_err_rules"));
       return;
     }
     if (password !== confirm) {
-      setError("Passwords do not match.");
+      setError(t("cauth.rp_err_match"));
       return;
     }
     setLoading(true);
@@ -105,24 +107,24 @@ export default function ResetPasswordPublic() {
 
   return (
     <AuthShell
-      eyebrow="Almost there"
-      title={<>Set a <span className="italic text-[var(--color-teal-400)]">new password.</span></>}
-      subtitle="Choose a strong password you don't use anywhere else. This link works once."
+      eyebrow={t("cauth.rp_eyebrow")}
+      title={<>{t("cauth.rp_title_a")} <span className="italic text-[var(--color-teal-400)]">{t("cauth.rp_title_b")}</span></>}
+      subtitle={t("cauth.rp_sub")}
     >
       {ready === null && (
         <div className="py-6 text-center text-sm font-medium text-[var(--color-text-secondary)]">
-          Verifying your reset link…
+          {t("cauth.rp_verifying")}
         </div>
       )}
 
       {ready === false && (
         <div className="space-y-6">
           <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 text-sm font-medium leading-relaxed">
-            This reset link is invalid or has expired. Please request a new one.
+            {t("cauth.rp_invalid")}
           </div>
           <Link href="/forgot-password">
             <Button className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98]">
-              Request a new link
+              {t("cauth.rp_request")}
             </Button>
           </Link>
         </div>
@@ -132,7 +134,7 @@ export default function ResetPasswordPublic() {
         <div className="space-y-4">
           <div className="bg-emerald-50 text-emerald-700 p-4 rounded-xl border border-emerald-100 text-sm font-semibold leading-relaxed flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 shrink-0" />
-            Password updated. Taking you to your portfolio…
+            {t("cauth.rp_done")}
           </div>
         </div>
       )}
@@ -140,12 +142,12 @@ export default function ResetPasswordPublic() {
       {ready === true && !done && (
         <div className="space-y-5">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">New password</h2>
-            <p className="text-sm text-[var(--color-text-secondary)]">Pick something only you would know.</p>
+            <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">{t("cauth.rp_h")}</h2>
+            <p className="text-sm text-[var(--color-text-secondary)]">{t("cauth.rp_pick")}</p>
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="rp-pw" className="text-sm font-semibold text-[var(--color-navy-900)]">Password</label>
+            <label htmlFor="rp-pw" className="text-sm font-semibold text-[var(--color-navy-900)]">{t("cauth.password")}</label>
             <div className="relative">
               <Input
                 id="rp-pw"
@@ -154,13 +156,13 @@ export default function ResetPasswordPublic() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium px-4 pr-12 rounded-xl"
-                placeholder="Your new password"
+                placeholder={t("cauth.rp_new_ph")}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
                 className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t("cauth.hide_pw") : t("cauth.show_pw")}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -168,7 +170,7 @@ export default function ResetPasswordPublic() {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="rp-confirm" className="text-sm font-semibold text-[var(--color-navy-900)]">Confirm password</label>
+            <label htmlFor="rp-confirm" className="text-sm font-semibold text-[var(--color-navy-900)]">{t("cauth.rp_confirm")}</label>
             <Input
               id="rp-confirm"
               type={showPassword ? "text" : "password"}
@@ -176,16 +178,16 @@ export default function ResetPasswordPublic() {
               onChange={(e) => setConfirm(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               className="h-[52px] bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white transition-all font-medium px-4 rounded-xl"
-              placeholder="Type it again"
+              placeholder={t("cauth.rp_again")}
             />
           </div>
 
           {password && (
             <div className="space-y-1.5">
               {[
-                { ok: checks.length, label: "At least 8 characters" },
-                { ok: checks.uppercase, label: "One uppercase letter" },
-                { ok: checks.number, label: "One number" },
+                { ok: checks.length, label: t("cauth.rp_len") },
+                { ok: checks.uppercase, label: t("cauth.rp_upper") },
+                { ok: checks.number, label: t("cauth.rp_number") },
               ].map((c) => (
                 <div key={c.label} className={`text-xs flex items-center gap-2 ${c.ok ? "text-emerald-600" : "text-[var(--color-text-muted)]"}`}>
                   <CheckCircle2 className="w-3.5 h-3.5" /> {c.label}
@@ -205,7 +207,7 @@ export default function ResetPasswordPublic() {
             disabled={loading}
             className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
           >
-            {loading ? "Updating…" : <>Update password <ArrowRight className="w-4 h-4" /></>}
+            {loading ? t("cauth.rp_updating") : <>{t("cauth.rp_update")} <ArrowRight className="w-4 h-4" /></>}
           </Button>
         </div>
       )}

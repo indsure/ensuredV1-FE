@@ -8,6 +8,7 @@ import { FieldLabel, FieldError, RequiredLegend, inputStateClass } from "@/compo
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Consumer (D2C individual) login — mobile number OR email, plus password.
 // Signs individuals into their personal insurance portfolio (/app). The agent
@@ -19,6 +20,7 @@ import { Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
 // the form works out which it is instead of asking.
 export default function LoginPublic() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -36,7 +38,7 @@ export default function LoginPublic() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Sign in | IndSure";
+    document.title = t("cauth.login_doc_title");
   }, []);
 
   /** Ten digits after stripping punctuation and any +91 / leading 0 = a mobile.
@@ -52,8 +54,8 @@ export default function LoginPublic() {
     const value = identifier.trim();
 
     const next: { identifier?: string; password?: string } = {};
-    if (!value) next.identifier = "Please enter your mobile number or email.";
-    if (!password) next.password = "Please enter your password.";
+    if (!value) next.identifier = t("cauth.err_identifier");
+    if (!password) next.password = t("cauth.err_password");
     setFieldErrors(next);
     if (next.identifier || next.password) {
       setError(null);
@@ -77,7 +79,7 @@ export default function LoginPublic() {
         });
         const body = await res.json().catch(() => null);
         if (!res.ok || !body?.access_token) {
-          setError(body?.message || "That mobile number and password don't match an account.");
+          setError(body?.message || t("cauth.err_no_match"));
           setLoading(false);
           return;
         }
@@ -91,7 +93,7 @@ export default function LoginPublic() {
           return;
         }
       } catch {
-        setError("Could not reach IndSure. Please check your connection and try again.");
+        setError(t("cauth.err_network"));
         setLoading(false);
         return;
       }
@@ -124,9 +126,9 @@ export default function LoginPublic() {
 
   return (
     <AuthShell
-      eyebrow="Welcome back"
-      title={<>Your portfolio's <span className="italic text-[var(--color-teal-400)]">waiting.</span></>}
-      subtitle="Pick up where you left off. Every policy you have added, audited and in one place."
+      eyebrow={t("cauth.login_eyebrow")}
+      title={<>{t("cauth.login_title_a")} <span className="italic text-[var(--color-teal-400)]">{t("cauth.login_title_b")}</span></>}
+      subtitle={t("cauth.login_sub")}
     >
       {/* A real form, not a div. Enter used to submit only from the password
           box, because that was the one field carrying a keydown handler: typing
@@ -138,18 +140,18 @@ export default function LoginPublic() {
         onSubmit={(e) => { e.preventDefault(); void handleSignIn(); }}
       >
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">Log in</h2>
+          <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">{t("cauth.log_in")}</h2>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            New to IndSure?{" "}
+            {t("cauth.new_here")}{" "}
             <Link href="/signup">
-              <span className="font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">Create a free account</span>
+              <span className="font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">{t("cauth.create_free")}</span>
             </Link>
           </p>
         </div>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <FieldLabel htmlFor="login-identifier" required>Mobile number or email</FieldLabel>
+            <FieldLabel htmlFor="login-identifier" required>{t("cauth.identifier")}</FieldLabel>
             <Input
               id="login-identifier"
               ref={identifierRef}
@@ -163,7 +165,7 @@ export default function LoginPublic() {
               value={identifier}
               onChange={(e) => { setIdentifier(e.target.value); clearFieldError("identifier"); }}
               className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.identifier))} transition-all font-medium px-4 rounded-xl`}
-              placeholder="9876543210 or you@gmail.com"
+              placeholder={t("cauth.identifier_ph")}
             />
             {fieldErrors.identifier ? (
               <FieldError id="login-identifier-err" message={fieldErrors.identifier} />
@@ -171,16 +173,16 @@ export default function LoginPublic() {
               // Say the number works before they wonder — mobile login is new and
               // nobody expects it on a form that used to be email-only.
               <p id="login-identifier-hint" className="text-xs text-[var(--color-text-muted)] pl-1">
-                Use whichever you registered with.
+                {t("cauth.identifier_hint")}
               </p>
             )}
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-3">
-              <FieldLabel htmlFor="login-password" required>Password</FieldLabel>
+              <FieldLabel htmlFor="login-password" required>{t("cauth.password")}</FieldLabel>
               <Link href="/forgot-password">
-                <span className="inline-flex min-h-11 items-center text-xs font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">Forgot password?</span>
+                <span className="inline-flex min-h-11 items-center text-xs font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">{t("cauth.forgot")}</span>
               </Link>
             </div>
             <div className="relative">
@@ -195,13 +197,13 @@ export default function LoginPublic() {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
                 className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.password))} transition-all font-medium px-4 pr-12 rounded-xl`}
-                placeholder="Your password"
+                placeholder={t("cauth.your_password")}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
                 className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t("cauth.hide_pw") : t("cauth.show_pw")}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -230,13 +232,13 @@ export default function LoginPublic() {
           disabled={loading}
           className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
         >
-          {loading ? "Signing you in…" : <>Take me to my portfolio <ArrowRight className="w-4 h-4" /></>}
+          {loading ? t("cauth.signing_in") : <>{t("cauth.to_portfolio")} <ArrowRight className="w-4 h-4" /></>}
         </Button>
 
         <p className="text-center text-xs text-[var(--color-text-muted)]">
-          Are you an insurance agent?{" "}
+          {t("cauth.are_agent")}{" "}
           <Link href="/agent/login">
-            <span className="underline cursor-pointer hover:text-[var(--color-navy-900)]">Use the agent portal</span>
+            <span className="underline cursor-pointer hover:text-[var(--color-navy-900)]">{t("cauth.use_agent")}</span>
           </Link>
         </p>
       </form>

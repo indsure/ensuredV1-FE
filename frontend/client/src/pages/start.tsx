@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useSEO } from "@/hooks/use-seo";
 import { PolicyUploadGate } from "@/components/PolicyUploadGate";
 import { FileText, Search, Bell, ShieldCheck, Lock, IndianRupee } from "lucide-react";
+import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext";
 
 // Campaign landing page for the "review your insurance, make a portfolio
 // today" reel. Deliberately narrow:
@@ -23,29 +24,30 @@ import { FileText, Search, Bell, ShieldCheck, Lock, IndianRupee } from "lucide-r
 const steps = [
   {
     icon: FileText,
-    title: "Add your policy",
-    body: "Upload the PDF your insurer sent you. Health, term life or vehicle.",
+    title: "cflow.st_s1",
+    body: "cflow.st_s1_b",
   },
   {
     icon: Search,
-    title: "We read the wording",
-    body: "Room rent limits, co-pay, sub-limits, waiting periods — explained in plain language, not insurance language.",
+    title: "cflow.st_s2",
+    body: "cflow.st_s2_b",
   },
   {
     icon: Bell,
-    title: "Your portfolio watches it",
-    body: "Everything in one place, with a reminder 30 days before anything expires.",
+    title: "cflow.st_s3",
+    body: "cflow.st_s3_b",
   },
 ];
 
 const trust = [
-  { icon: IndianRupee, text: "We earn no commission from any insurer" },
-  { icon: Lock, text: "Your documents stay private, and you can delete them anytime" },
+  { icon: IndianRupee, text: "cflow.st_t1" },
+  { icon: Lock, text: "cflow.st_t2" },
   // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
-  { icon: ShieldCheck, text: "Free forever for one policy of each type. No card needed" },
+  { icon: ShieldCheck, text: "cflow.st_t3" },
 ];
 
 export default function Start() {
+  const { t } = useLanguage();
   useSEO({
     title: "Review Your Insurance. Make Your Portfolio Today | IndSure",
     // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
@@ -58,21 +60,22 @@ export default function Start() {
       <main className="flex-grow px-6 py-10 md:py-16 w-full">
 
         {/* LOGO — not a link. The only way off this page is the CTA. */}
-        <div className="max-w-2xl mx-auto mb-10 md:mb-14">
+        {/* No site header on this page, so the language toggle sits by the logo. */}
+        <div className="max-w-2xl mx-auto mb-10 md:mb-14 flex items-center justify-between gap-4">
           <img src="/logo.png" alt="IndSure" className="h-9 w-auto" />
+          <LanguageToggle />
         </div>
 
         {/* HERO — the reel's own words */}
         <section className="max-w-2xl mx-auto mb-10">
           <h1 className="text-3xl md:text-5xl font-serif tracking-tight leading-tight mb-5">
-            Review your insurance.{" "}
+            {t("cflow.st_h_a")}{" "}
             <span className="italic text-[var(--color-green-primary)]">
-              Make your portfolio today.
+              {t("cflow.st_h_b")}
             </span>
           </h1>
           <p className="text-lg md:text-xl text-[var(--color-text-secondary)] font-light leading-relaxed">
-            Most people only find out what their policy does not cover on the day
-            they claim. Take a few minutes now instead.
+            {t("cflow.st_sub")}
           </p>
         </section>
 
@@ -87,7 +90,7 @@ export default function Start() {
         {/* HOW IT WORKS */}
         <section className="max-w-2xl mx-auto mb-12">
           <h2 className="text-sm font-mono uppercase tracking-widest text-[var(--color-text-secondary)] mb-6">
-            How it works
+            {t("cflow.st_how")}
           </h2>
           <ol className="space-y-6">
             {steps.map((step, i) => {
@@ -102,10 +105,10 @@ export default function Start() {
                       <span className="text-[var(--color-text-muted)] font-mono text-sm mr-2">
                         {i + 1}
                       </span>
-                      {step.title}
+                      {t(step.title)}
                     </h3>
                     <p className="text-[var(--color-text-secondary)] leading-relaxed">
-                      {step.body}
+                      {t(step.body)}
                     </p>
                   </div>
                 </li>
@@ -117,12 +120,12 @@ export default function Start() {
         {/* TRUST */}
         <section className="max-w-2xl mx-auto mb-12">
           <div className="card-white p-6 space-y-4">
-            {trust.map((t) => {
-              const Icon = t.icon;
+            {trust.map((item) => {
+              const Icon = item.icon;
               return (
-                <div key={t.text} className="flex items-start gap-3">
+                <div key={item.text} className="flex items-start gap-3">
                   <Icon className="w-5 h-5 text-[var(--color-green-primary)] shrink-0 mt-0.5" aria-hidden="true" />
-                  <p className="text-sm text-[var(--color-text-main)]">{t.text}</p>
+                  <p className="text-sm text-[var(--color-text-main)]">{t(item.text)}</p>
                 </div>
               );
             })}
@@ -132,30 +135,29 @@ export default function Start() {
         {/* CLOSING CTA */}
         <section className="max-w-2xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-serif mb-4">
-            Start with the policy you already have
+            {t("cflow.st_close")}
           </h2>
           {/* claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07. */}
           <p className="text-[var(--color-text-secondary)] mb-6">
-            One policy of each type is free forever — health, term life and vehicle.
+            {t("cflow.st_close_sub")}
           </p>
           {/* Back to the uploader rather than off to /signup: the account is
               worth asking for once they have a file waiting, not before. */}
           <Button asChild size="lg" className="w-full md:w-auto text-base py-6 px-8">
-            <a href="#upload">Check my policy — free</a>
+            <a href="#upload">{t("cflow.st_cta")}</a>
           </Button>
         </section>
 
         {/* MINIMAL LEGAL FOOTER — no site nav */}
         <footer className="max-w-2xl mx-auto mt-16 pt-6 border-t border-[var(--color-border-light)]">
           <p className="text-xs text-[var(--color-text-muted)]">
-            IndSure is not an IRDAI-registered broker or agent and does not sell
-            insurance.{" "}
+            {t("cflow.st_legal")}{" "}
             <a href="/privacy-policy" className="underline underline-offset-2 hover:text-[var(--color-text-secondary)]">
-              Privacy Policy
+              {t("cflow.st_privacy")}
             </a>{" "}
             ·{" "}
             <a href="/terms" className="underline underline-offset-2 hover:text-[var(--color-text-secondary)]">
-              Terms
+              {t("cflow.st_terms")}
             </a>
           </p>
         </footer>
