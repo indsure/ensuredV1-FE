@@ -13,17 +13,20 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAgent } from "@/context/AgentContext"
 import { describeSurface, fetchMyAccessLog, type AccessLogEntry } from "@/lib/team"
+import { useLanguage } from "@/i18n/LanguageContext"
+import { getSavedLocale, intlLocale, tOr } from "@/i18n"
 
 function whenExactly(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ""
-  return d.toLocaleString("en-IN", {
+  return d.toLocaleString(intlLocale(getSavedLocale()), {
     day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit",
   })
 }
 
 export default function TeamAccessLog() {
   const { team } = useAgent()
+  const { t } = useLanguage()
   const [reads, setReads] = useState<AccessLogEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -34,7 +37,7 @@ export default function TeamAccessLog() {
     let cancelled = false
     fetchMyAccessLog()
       .then((r) => { if (!cancelled) { setReads(r.reads); setError(null) } })
-      .catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : "Could not load this.") })
+      .catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : t("access_log.load_failed")) })
     return () => { cancelled = true }
   }, [show])
 
@@ -44,21 +47,19 @@ export default function TeamAccessLog() {
     <Card className="border-none shadow-sm bg-white overflow-hidden">
       <CardHeader className="bg-slate-50/50 border-b border-slate-100">
         <CardTitle className="text-sm font-black text-slate-900 uppercase tracking-widest">
-          Who opened your book
+          {t("access_log.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
         <p className="text-sm text-slate-600 leading-relaxed">
-          You are on <span className="font-semibold text-slate-900">{team!.name}</span>. The team owner
-          can read the customers, policies, leads and claims you add — not change them, and never the
-          documents on a claim or the original file on a policy. Every time they look, it is listed here.
+          {t("access_log.desc", { team: team!.name })}
         </p>
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
         {reads && reads.length === 0 && (
           <p className="mt-4 text-sm text-slate-500">
-            Nobody has opened your book yet.
+            {t("access_log.nobody")}
           </p>
         )}
 
@@ -67,7 +68,7 @@ export default function TeamAccessLog() {
             {reads.map((r) => (
               <li key={r.id} className="py-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <span className="text-sm font-semibold text-slate-900">{r.owner_name}</span>
-                <span className="text-sm text-slate-600">{describeSurface(r.surface)}</span>
+                <span className="text-sm text-slate-600">{tOr(t, `access_log.s_${r.surface}`, describeSurface(r.surface))}</span>
                 <span className="text-sm text-slate-500 ml-auto">{whenExactly(r.created_at)}</span>
               </li>
             ))}
