@@ -21,6 +21,8 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { intlLocale, tOr } from "@/i18n";
 import { apiFetch, apiJson } from "@/lib/api";
 import { PlanNameField } from "@/components/agent/PlanNameField";
 import { rerunPolicy } from "@/lib/rerun";
@@ -55,11 +57,13 @@ type FileRow = {
 };
 type ClientMeta = { email: string; phone: string };
 
-function scoreTone(score: number | null) {
-  if (score == null) return { label: "Pending", bar: 0, color: "text-slate-500" };
-  if (score >= 75) return { label: "Strong fit", bar: score, color: "text-emerald-600" };
-  if (score >= 60) return { label: "Watch", bar: score, color: "text-amber-600" };
-  return { label: "Needs action", bar: score, color: "text-red-600" };
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+function scoreTone(score: number | null, t: T) {
+  if (score == null) return { label: t("policy_detail.tone_pending"), bar: 0, color: "text-slate-500" };
+  if (score >= 75) return { label: t("policy_detail.tone_strong"), bar: score, color: "text-emerald-600" };
+  if (score >= 60) return { label: t("policy_detail.tone_watch"), bar: score, color: "text-amber-600" };
+  return { label: t("policy_detail.tone_action"), bar: score, color: "text-red-600" };
 }
 
 /**
@@ -93,23 +97,23 @@ const MOTOR_BAR_CLASS = {
   unscored: "bg-slate-300",
 } as const;
 
-function expiryMeta(value: string | null) {
-  if (!value) return { label: "No expiry data", className: "bg-slate-100 text-slate-600" };
+function expiryMeta(value: string | null, t: T) {
+  if (!value) return { label: t("policy_detail.no_expiry"), className: "bg-slate-100 text-slate-600" };
   const end = new Date(value);
   const today = new Date();
   const days = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (days < 0) return { label: "Expired", className: "bg-red-50 text-red-700" };
-  if (days < 30) return { label: `${days} days left`, className: "bg-red-50 text-red-700" };
-  if (days <= 60) return { label: `${days} days left`, className: "bg-amber-50 text-amber-700" };
-  return { label: `${days} days left`, className: "bg-emerald-50 text-emerald-700" };
+  if (days < 0) return { label: t("policy_detail.expired"), className: "bg-red-50 text-red-700" };
+  if (days < 30) return { label: t("policy_detail.days_left", { days }), className: "bg-red-50 text-red-700" };
+  if (days <= 60) return { label: t("policy_detail.days_left", { days }), className: "bg-amber-50 text-amber-700" };
+  return { label: t("policy_detail.days_left", { days }), className: "bg-emerald-50 text-emerald-700" };
 }
 
-async function copyText(text: string, title: string) {
+async function copyText(text: string, title: string, t: T) {
   try {
     await navigator.clipboard.writeText(text);
-    toast({ variant: "success", title, description: "Link copied to clipboard." });
+    toast({ variant: "success", title, description: t("policy_detail.link_copied_desc") });
   } catch {
-    toast({ variant: "destructive", title: "Copy failed", description: "Clipboard access was blocked." });
+    toast({ variant: "destructive", title: t("policy_detail.copy_failed"), description: t("policy_detail.clipboard_blocked") });
   }
 }
 
@@ -122,16 +126,17 @@ type CompanionRecord = {
   read: boolean;
 };
 
-const COMPANION_LABEL: Record<CompanionRecord["kind"], string> = {
-  super_topup: "Super top-up",
-  corporate: "Company / corporate policy",
-  ayushman: "Ayushman Bharat (PM-JAY)",
+const COMPANION_KEY: Record<CompanionRecord["kind"], string> = {
+  super_topup: "policy_detail.comp_super_topup",
+  corporate: "policy_detail.comp_corporate",
+  ayushman: "policy_detail.comp_ayushman",
 };
 
 export default function PolicyDetail() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { agent } = useAgent();
+  const { t, locale } = useLanguage();
   const [policy, setPolicy] = useState<PolicyRow | null>(null);
   const [reportData, setReportData] = useState<ForensicAuditReport | null>(null);
   const [insuranceType, setInsuranceType] = useState<string>("health");
@@ -155,7 +160,7 @@ export default function PolicyDetail() {
   const origin = useMemo(() => (typeof window === "undefined" ? "" : window.location.origin), []);
   const shareLink = shareToken ? `${origin}/shared/report/${shareToken}` : "";
   const score = policy?.score ?? null;
-  const scoreMeta = scoreTone(score);
+  const scoreMeta = scoreTone(score, t);
   /* Motor is scored from the add-on scan, which is stored on the row, so the
      tile is computed from that scan rather than read from the `score` column.
      The two can disagree: a row written before the scorer shipped holds null
@@ -172,7 +177,7 @@ export default function PolicyDetail() {
         : null,
     [insuranceType, extractedData],
   );
-  const expiry = expiryMeta(policy?.policy_end_date ?? null);
+  const expiry = expiryMeta(policy?.policy_end_date ?? null, t);
   const isDataEntry = isDataEntryType(insuranceType);
   /* A policy may be shared once there is something at the other end of the
      link. Health needs its audit; a data-entry policy needs at least one
@@ -203,7 +208,7 @@ export default function PolicyDetail() {
       if (policyRes.error) throw new Error(policyRes.error.message);
 
       const clientData = policyRes.data;
-      if (!clientData) throw new Error("Policy not found.");
+      if (!clientData) throw new Error(t("policy_detail.not_found"));
 
       // Map clients data to policy structure
       const nextPolicy: PolicyRow = {
@@ -257,7 +262,7 @@ export default function PolicyDetail() {
       setDraftName(clientData.policyholder_name || clientData.name || "");
       setDraftIdentifier(clientData.policy_identifier || "");
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Could not load policy detail.");
+      setError(loadError instanceof Error ? loadError.message : t("policy_detail.load_failed"));
     } finally {
       setLoading(false);
     }
@@ -313,9 +318,9 @@ export default function PolicyDetail() {
         .eq("id", id)
         .eq("agent_id", agent.agentId);
       if (notesError) throw new Error(notesError.message);
-      toast({ variant: "success", title: "Notes saved" });
+      toast({ variant: "success", title: t("policy_detail.notes_saved") });
     } catch (saveError) {
-      toast({ variant: "destructive", title: "Save failed", description: saveError instanceof Error ? saveError.message : "Could not save notes." });
+      toast({ variant: "destructive", title: t("policy_detail.save_failed"), description: saveError instanceof Error ? saveError.message : t("policy_detail.notes_failed") });
     } finally {
       setBusy(null);
     }
@@ -338,9 +343,9 @@ export default function PolicyDetail() {
 
       setEditOpen(false);
       await loadDetail();
-      toast({ variant: "success", title: "Client details updated" });
+      toast({ variant: "success", title: t("policy_detail.client_updated") });
     } catch (saveError) {
-      toast({ variant: "destructive", title: "Update failed", description: saveError instanceof Error ? saveError.message : "Could not update client details." });
+      toast({ variant: "destructive", title: t("policy_detail.update_failed"), description: saveError instanceof Error ? saveError.message : t("policy_detail.client_update_failed") });
     } finally {
       setBusy(null);
     }
@@ -370,14 +375,14 @@ export default function PolicyDetail() {
       
       toast({
         variant: "success",
-        title: "Link copied",
-        description: "Share link copied to clipboard"
+        title: t("policy_detail.link_copied"),
+        description: t("policy_detail.share_link_copied")
       });
     } catch (shareError) {
       toast({
         variant: "destructive",
-        title: "Share failed",
-        description: shareError instanceof Error ? shareError.message : "Could not create share link"
+        title: t("policy_detail.share_failed"),
+        description: shareError instanceof Error ? shareError.message : t("policy_detail.share_failed_desc")
       });
     } finally {
       setBusy(null);
@@ -391,19 +396,19 @@ export default function PolicyDetail() {
       await rerunPolicy(policy.id);
 
       toast({
-        title: "Re-analyzing",
-        description: "Processing from the stored document — this page updates automatically.",
+        title: t("policy_detail.rerun_title"),
+        description: t("policy_detail.rerun_desc"),
       });
 
       await loadDetail();
     } catch (rerunError) {
       toast({
         variant: "destructive",
-        title: "Re-run failed",
+        title: t("policy_detail.rerun_failed"),
         description:
           rerunError instanceof Error
             ? rerunError.message
-            : "Could not re-run analysis.",
+            : t("policy_detail.rerun_failed_desc"),
       });
     } finally {
       setBusy(null);
@@ -424,10 +429,10 @@ export default function PolicyDetail() {
         .eq("agent_id", agent.agentId);
       if (update.error) throw new Error(update.error.message);
 
-      toast({ variant: "success", title: "Policy deleted" });
+      toast({ variant: "success", title: t("policy_detail.deleted") });
       setLocation("/agent/policies");
     } catch (deleteError) {
-      toast({ variant: "destructive", title: "Delete failed", description: deleteError instanceof Error ? deleteError.message : "Could not delete policy." });
+      toast({ variant: "destructive", title: t("policy_detail.delete_failed"), description: deleteError instanceof Error ? deleteError.message : t("policy_detail.delete_failed_desc") });
     } finally {
       setBusy(null);
     }
@@ -439,22 +444,22 @@ export default function PolicyDetail() {
     <div className="space-y-6 pb-8">
       <div className="flex items-center justify-between">
         <Button variant="ghost" className="text-slate-600" onClick={() => setLocation("/agent/policies")}>
-          Back to policies
+          {t("policy_detail.back")}
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="border-slate-200 bg-white" onClick={loadDetail} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            {t("common.refresh")}
           </Button>
           {!isDataEntry && (
             <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={shareReport} disabled={!canShare || busy === "share"}>
-              Share Report
+              {t("policy_detail.share_report")}
             </Button>
           )}
         </div>
       </div>
 
-      {loading && <Card className="border-slate-100 shadow-sm"><CardContent className="p-10 text-center text-slate-400">Loading policy detail...</CardContent></Card>}
+      {loading && <Card className="border-slate-100 shadow-sm"><CardContent className="p-10 text-center text-slate-400">{t("policy_detail.loading")}</CardContent></Card>}
 
       {!loading && policy && (
         <>
@@ -465,16 +470,16 @@ export default function PolicyDetail() {
                   <div className="flex flex-wrap items-center gap-3">
                     <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${expiry.className}`}>{expiry.label}</span>
                     <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-600">
-                      {policy.status?.replaceAll("_", " ") || "pending"}
+                      {tOr(t, `common.status_${policy.status || "pending"}`, policy.status?.replaceAll("_", " ") || "pending")}
                     </span>
                     <span className="inline-flex rounded-full bg-[#0D9488]/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#0D9488]">
-                      {typeLabel(insuranceType)}
+                      {tOr(t, `common.type_${insuranceType}`, typeLabel(insuranceType))}
                     </span>
                   </div>
                   <div>
-                    <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold text-slate-900">{policy.client_name || "Pending policyholder"}</h1>
+                    <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold text-slate-900">{policy.client_name || t("policy_detail.pending_holder")}</h1>
                     <p className="mt-2 text-sm text-slate-500">
-                      {policy.insurer_name || "Insurer not read"} · {policy.product_name || "Plan Name Unclear in Doc"} · {policy.id}
+                      {policy.insurer_name || t("policy_detail.insurer_not_read")} · {policy.product_name || t("policy_detail.plan_unclear")} · {policy.id}
                     </p>
                     <PlanNameField
                       clientId={policy.id}
@@ -487,7 +492,7 @@ export default function PolicyDetail() {
 
                 {!isDataEntry && (
                   <div className="min-w-[280px] rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Score</div>
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">{t("policy_detail.score")}</div>
                     <div className={`mt-2 text-4xl font-black ${scoreMeta.color}`}>{score == null ? "-" : score}</div>
                     <div className="text-sm font-medium text-slate-500">{scoreMeta.label}</div>
                     <Progress value={scoreMeta.bar} className="mt-4 h-2 bg-white" />
@@ -501,7 +506,7 @@ export default function PolicyDetail() {
                     the reader the sentence saying which. */}
                 {motor && (
                   <div className="min-w-[280px] max-w-[320px] rounded-3xl border border-slate-100 bg-slate-50 p-5">
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Cover score</div>
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">{t("policy_detail.cover_score")}</div>
                     <div className={`mt-2 text-4xl font-black ${MOTOR_TONE_CLASS[motorScoreTone(motor)]}`}>
                       {motor.score == null ? "-" : motor.score}
                       {motor.score != null && <span className="text-xl font-extrabold text-slate-500">/100</span>}
@@ -522,12 +527,12 @@ export default function PolicyDetail() {
                 {!isDataEntry && (
                   <Button variant="outline" className="border-slate-200 bg-white shrink-0" onClick={shareReport} disabled={!canShare || busy === "share"}>
                     <Copy className="mr-2 h-4 w-4" />
-                    Share Report
+                    {t("policy_detail.share_report")}
                   </Button>
                 )}
                 <Button variant="destructive" className="shrink-0" onClick={() => setDeleteOpen(true)} disabled={busy === "delete"}>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  {t("common.delete")}
                 </Button>
               </div>
 
@@ -541,9 +546,9 @@ export default function PolicyDetail() {
               {shareToken && canShare && (
                 <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#0D9488]/10 bg-slate-50 p-4">
                   <div className="min-w-0 flex-1 truncate text-sm text-slate-700">{shareLink}</div>
-                  <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={() => void copyText(shareLink, "Report link copied")}>
+                  <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={() => void copyText(shareLink, t("policy_detail.report_link_copied"), t)}>
                     <Copy className="mr-2 h-4 w-4" />
-                    Copy
+                    {t("policy_detail.copy")}
                   </Button>
                 </div>
               )}
@@ -553,22 +558,21 @@ export default function PolicyDetail() {
           {/* Extra cover fed into this audit, so it's clear what the report saw. */}
           {companions.length > 0 && (
             <Card className="border-slate-100 shadow-sm">
-              <CardHeader><CardTitle>Also read in this audit</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t("policy_detail.also_read")}</CardTitle></CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-sm text-slate-600">
-                  This person's other cover was read together with the policy above, so the report judges their
-                  total protection.
+                  {t("policy_detail.also_read_desc")}
                 </p>
                 <ul className="space-y-1.5">
                   {companions.map((c, idx) => (
                     <li key={idx} className="flex items-start gap-2 text-sm text-slate-700">
                       <FileText className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
                       <span className="break-all">
-                        <span className="font-semibold">{COMPANION_LABEL[c.kind] ?? c.kind}</span>
+                        <span className="font-semibold">{COMPANION_KEY[c.kind] ? t(COMPANION_KEY[c.kind]) : c.kind}</span>
                         {c.declaredOnly
-                          ? " — confirmed by the advisor, no document attached"
+                          ? t("policy_detail.declared_only")
                           : c.filename
-                          ? ` — ${c.filename}${c.read ? "" : " (could not be read)"}`
+                          ? `: ${c.filename}${c.read ? "" : t("policy_detail.could_not_read")}`
                           : ""}
                       </span>
                     </li>
@@ -607,12 +611,16 @@ export default function PolicyDetail() {
               <Card className="border-slate-100 shadow-sm">
                 <CardContent className="p-8 text-center text-slate-400 text-sm italic">
                   {policy.status === "error"
-                    ? "We couldn't read this document. Try deleting and re-uploading an unlocked PDF."
-                    : "Reading the document… this page will update automatically."}
+                    ? t("policy_detail.doc_unreadable")
+                    : t("policy_detail.doc_reading")}
                 </CardContent>
               </Card>
             )
           ) : reportData ? (
+            <>
+            {locale === "hi" && (
+              <p className="text-sm text-slate-500">{t("policy_detail.report_in_english")}</p>
+            )}
             // reportData is validated at runtime by validateForensicAuditReport.
             // The double cast this used to carry existed only because the frontend
             // and backend each had their own ForensicAuditReport; there is now one.
@@ -629,6 +637,7 @@ export default function PolicyDetail() {
                 generatedAt: policy.last_analyzed_at ?? policy.created_at,
               }}
             />
+            </>
           ) : (
             <Card className="border-slate-100 shadow-sm">
               <CardContent className="p-8 text-center text-slate-400 text-sm italic">
@@ -640,23 +649,23 @@ export default function PolicyDetail() {
                     never says what to do next. */}
                 {policy.status === "error" ? (
                   <div className="mx-auto max-w-xl text-left not-italic">
-                    <div className="text-sm font-semibold text-slate-700">We could not finish this analysis.</div>
+                    <div className="text-sm font-semibold text-slate-700">{t("policy_detail.check_failed")}</div>
                     {/* Verbatim, and scrollable rather than truncated: the agent
                         lane stores the raw error on purpose so agents and admin
                         can triage from it. Some real rows hold kilobytes of
                         provider JSON, so it is boxed instead of set loose in a
                         centred card. */}
                     <div className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
-                      {policy.error_message || "No reason was recorded for the failure."}
+                      {policy.error_message || t("policy_detail.no_reason")}
                     </div>
                     <div className="mt-3 text-sm text-slate-500">
-                      Use Re-run Analysis, or delete and re-upload an unlocked PDF.
+                      {t("policy_detail.check_failed_hint")}
                     </div>
                   </div>
                 ) : policy.status === "done" ? (
-                  "Analysis data is in an unexpected format. Try re-running analysis."
+                  t("policy_detail.bad_format")
                 ) : (
-                  "Analysis is still in progress. This page will update automatically."
+                  t("policy_detail.in_progress")
                 )}
               </CardContent>
             </Card>
@@ -665,27 +674,27 @@ export default function PolicyDetail() {
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div className="space-y-6">
               <Card ref={clientCardRef} className="border-slate-100 shadow-sm">
-                <CardHeader><CardTitle>Client details</CardTitle></CardHeader>
+                <CardHeader><CardTitle>{t("policy_detail.client_details")}</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   {!editOpen ? (
                     <>
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Full name</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.client_name || "-"}</div></div>
-                        <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Policy identifier</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.client_identifier || "-"}</div></div>
-                        <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Email</div><div className="mt-1 text-sm font-semibold text-slate-900">{clientMeta.email || "-"}</div></div>
-                        <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Phone</div><div className="mt-1 text-sm font-semibold text-slate-900">{clientMeta.phone || "-"}</div></div>
+                        <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.full_name")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.client_name || "-"}</div></div>
+                        <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.identifier")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.client_identifier || "-"}</div></div>
+                        <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.email")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{clientMeta.email || "-"}</div></div>
+                        <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.phone")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{clientMeta.phone || "-"}</div></div>
                       </div>
-                      <Button variant="outline" className="border-slate-200 bg-white" onClick={() => setEditOpen(true)}>Edit Client Details</Button>
+                      <Button variant="outline" className="border-slate-200 bg-white" onClick={() => setEditOpen(true)}>{t("policy_detail.edit_client")}</Button>
                     </>
                   ) : (
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <Input value={draftName} onChange={(event) => setDraftName(event.target.value)} placeholder="Client name" />
-                      <Input value={draftIdentifier} onChange={(event) => setDraftIdentifier(event.target.value)} placeholder="Identifier / relationship / reference" />
-                      <Input value={draftClientMeta.email} onChange={(event) => setDraftClientMeta((current) => ({ ...current, email: event.target.value }))} placeholder="Email" />
-                      <Input value={draftClientMeta.phone} onChange={(event) => setDraftClientMeta((current) => ({ ...current, phone: event.target.value }))} placeholder="Phone" />
+                      <Input value={draftName} onChange={(event) => setDraftName(event.target.value)} placeholder={t("policy_detail.ph_client_name")} />
+                      <Input value={draftIdentifier} onChange={(event) => setDraftIdentifier(event.target.value)} placeholder={t("policy_detail.ph_identifier")} />
+                      <Input value={draftClientMeta.email} onChange={(event) => setDraftClientMeta((current) => ({ ...current, email: event.target.value }))} placeholder={t("policy_detail.email")} />
+                      <Input value={draftClientMeta.phone} onChange={(event) => setDraftClientMeta((current) => ({ ...current, phone: event.target.value }))} placeholder={t("policy_detail.phone")} />
                       <div className="md:col-span-2 flex gap-3">
-                        <Button className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={saveClientDetails} disabled={busy === "client"}>Save details</Button>
-                        <Button variant="outline" className="border-slate-200 bg-white" onClick={() => setEditOpen(false)}>Cancel</Button>
+                        <Button className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={saveClientDetails} disabled={busy === "client"}>{t("policy_detail.save_details")}</Button>
+                        <Button variant="outline" className="border-slate-200 bg-white" onClick={() => setEditOpen(false)}>{t("common.cancel")}</Button>
                       </div>
                     </div>
                   )}
@@ -693,10 +702,10 @@ export default function PolicyDetail() {
               </Card>
 
               <Card className="border-slate-100 shadow-sm">
-                <CardHeader><CardTitle>Agent notes</CardTitle></CardHeader>
+                <CardHeader><CardTitle>{t("policy_detail.agent_notes")}</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={7} placeholder="Add private notes for this policy..." />
-                  <Button className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={saveNotes} disabled={busy === "notes"}>Save Notes</Button>
+                  <Textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={7} placeholder={t("policy_detail.ph_notes")} />
+                  <Button className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={saveNotes} disabled={busy === "notes"}>{t("policy_detail.save_notes")}</Button>
                 </CardContent>
               </Card>
             </div>
@@ -710,33 +719,33 @@ export default function PolicyDetail() {
               />
 
               <Card className="border-slate-100 shadow-sm">
-                <CardHeader><CardTitle>Upload metadata</CardTitle></CardHeader>
+                <CardHeader><CardTitle>{t("policy_detail.upload_meta")}</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Filename</div><div className="mt-1 text-sm font-semibold text-slate-900">{fileMeta?.file_path?.split("/").pop() || "Unavailable"}</div></div>
-                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Upload date</div><div className="mt-1 text-sm font-semibold text-slate-900">{fileMeta?.uploaded_at ? new Date(fileMeta.uploaded_at).toLocaleString("en-IN") : "Unavailable"}</div></div>
-                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">File size</div><div className="mt-1 text-sm font-semibold text-slate-900">Unavailable</div></div>
-                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Current status</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.status?.replaceAll("_", " ") || "pending"}</div></div>
-                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Last analyzed</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.last_analyzed_at ? new Date(policy.last_analyzed_at).toLocaleString("en-IN") : "Not recorded"}</div></div>
+                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.filename")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{fileMeta?.file_path?.split("/").pop() || t("policy_detail.unavailable")}</div></div>
+                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.upload_date")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{fileMeta?.uploaded_at ? new Date(fileMeta.uploaded_at).toLocaleString(intlLocale(locale)) : t("policy_detail.unavailable")}</div></div>
+                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.file_size")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{t("policy_detail.unavailable")}</div></div>
+                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.current_status")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{tOr(t, `common.status_${policy.status || "pending"}`, policy.status?.replaceAll("_", " ") || "pending")}</div></div>
+                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.last_analyzed")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.last_analyzed_at ? new Date(policy.last_analyzed_at).toLocaleString(intlLocale(locale)) : t("policy_detail.not_recorded")}</div></div>
                 </CardContent>
               </Card>
 
               <Card className="border-slate-100 shadow-sm">
-                <CardHeader><CardTitle>Action bar</CardTitle></CardHeader>
+                <CardHeader><CardTitle>{t("policy_detail.actions")}</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   <Button className="w-full bg-[#0D9488] hover:bg-[#0f766e]" onClick={rerunAnalysis} disabled={busy === "rerun" || policy.status === "processing"}>
                     <RefreshCw className={`mr-2 h-4 w-4 ${busy === "rerun" || policy.status === "processing" ? "animate-spin" : ""}`} />
-                    {isDataEntry ? "Re-read Document" : "Re-run Analysis"}
+                    {isDataEntry ? t("policy_detail.reread") : t("policy_detail.rerun")}
                   </Button>
-                  <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={openClientEditor}>Edit Client Details</Button>
+                  <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={openClientEditor}>{t("policy_detail.edit_client")}</Button>
                   {!isDataEntry && (
                     <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!canShare || busy === "share"}>
                       <ExternalLink className="mr-2 h-4 w-4" />
-                      Share Link
+                      {t("policy_detail.share_link")}
                     </Button>
                   )}
                   <Button variant="destructive" className="w-full" onClick={() => setDeleteOpen(true)} disabled={busy === "delete"}>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
+                    {t("common.delete")}
                   </Button>
                 </CardContent>
               </Card>
@@ -749,9 +758,9 @@ export default function PolicyDetail() {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         onConfirm={() => void deletePolicy()}
-        title="Delete this policy permanently?"
-        description="The policy, its analysis and its uploaded file are deleted for good — this cannot be undone. Any share link you sent the customer will stop working immediately."
-        confirmText={busy === "delete" ? "Deleting..." : "Delete policy"}
+        title={t("policy_detail.confirm_title")}
+        description={t("policy_detail.confirm_desc")}
+        confirmText={busy === "delete" ? t("policy_detail.deleting") : t("policy_detail.delete_policy")}
         variant="destructive"
       />
     </div>

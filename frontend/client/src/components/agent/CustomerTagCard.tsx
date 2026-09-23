@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 import {
   createCustomer,
   fetchCustomers,
@@ -33,6 +34,14 @@ export default function CustomerTagCard({
 }) {
   const { agent } = useAgent();
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
+  // suggestCustomers() returns English reasons; show them in the UI language.
+  const REASON_KEY: Record<string, string> = {
+    "Same phone number": "tag_card.reason_phone",
+    "Same email": "tag_card.reason_email",
+    "Name matches": "tag_card.reason_name",
+    "Similar name": "tag_card.reason_similar",
+  };
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -80,11 +89,11 @@ export default function CustomerTagCard({
     setBusy(true);
     try {
       await tagPolicyToCustomer(clientId, targetCustomerId);
-      toast({ variant: "success", title: targetCustomerId ? "Policy tagged" : "Policy untagged" });
+      toast({ variant: "success", title: targetCustomerId ? t("customer_detail.tagged") : t("customer_detail.untagged") });
       setSearch("");
       onChanged();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not update", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("tag_card.could_not_update"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -94,7 +103,7 @@ export default function CustomerTagCard({
     if (!agent?.agentId) return;
     const name = (hint.name ?? "").trim();
     if (!name) {
-      toast({ variant: "destructive", title: "No policyholder name", description: "Add a client name to this policy first." });
+      toast({ variant: "destructive", title: t("tag_card.no_holder"), description: t("tag_card.no_holder_desc") });
       return;
     }
     setBusy(true);
@@ -105,10 +114,10 @@ export default function CustomerTagCard({
         email: hint.email ?? null,
       });
       await tagPolicyToCustomer(clientId, created.id);
-      toast({ variant: "success", title: "Customer created", description: `${name} added and tagged.` });
+      toast({ variant: "success", title: t("tag_card.created"), description: t("tag_card.created_desc", { name }) });
       onChanged();
     } catch (e: unknown) {
-      toast({ variant: "destructive", title: "Could not create customer", description: e instanceof Error ? e.message : undefined });
+      toast({ variant: "destructive", title: t("tag_card.create_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(false);
     }
@@ -116,9 +125,9 @@ export default function CustomerTagCard({
 
   return (
     <Card className="border-slate-100 shadow-sm">
-      <CardHeader><CardTitle>Customer</CardTitle></CardHeader>
+      <CardHeader><CardTitle>{t("tag_card.title")}</CardTitle></CardHeader>
       <CardContent className="space-y-3">
-        {loading && <div className="text-sm text-slate-400">Loading…</div>}
+        {loading && <div className="text-sm text-slate-400">{t("tag_card.loading")}</div>}
 
         {!loading && current && (
           <>
@@ -127,7 +136,7 @@ export default function CustomerTagCard({
               <div className="min-w-0">
                 <div className="font-semibold text-slate-900 truncate">{current.name}</div>
                 <div className="text-xs text-slate-500 truncate">
-                  {[current.phone, current.city].filter(Boolean).join(" · ") || "No contact details"}
+                  {[current.phone, current.city].filter(Boolean).join(" · ") || t("tag_card.no_contact")}
                 </div>
               </div>
             </div>
@@ -135,7 +144,7 @@ export default function CustomerTagCard({
               className="w-full bg-[#0D9488] hover:bg-[#0f766e]"
               onClick={() => setLocation(`/agent/customers/${current.id}`)}
             >
-              View portfolio
+              {t("tag_card.view_portfolio")}
             </Button>
             <Button
               variant="outline"
@@ -144,7 +153,7 @@ export default function CustomerTagCard({
               disabled={busy}
             >
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
-              Untag from customer
+              {t("tag_card.untag")}
             </Button>
           </>
         )}
@@ -152,7 +161,7 @@ export default function CustomerTagCard({
         {/* Tagged, but the customer record is gone or still loading its list */}
         {!loading && customerId && !current && (
           <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={() => void tag(null)} disabled={busy}>
-            Untag (customer not found)
+            {t("tag_card.untag_missing")}
           </Button>
         )}
 
@@ -161,7 +170,7 @@ export default function CustomerTagCard({
             {suggestions.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-amber-400" /> Suggested match
+                  <Sparkles className="h-3 w-3 text-amber-400" /> {t("tag_card.suggested")}
                 </p>
                 {suggestions.map(({ customer, reason }) => (
                   <button
@@ -171,7 +180,7 @@ export default function CustomerTagCard({
                     className="w-full rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-left hover:border-amber-300 hover:bg-amber-50 transition-colors disabled:opacity-50"
                   >
                     <div className="font-semibold text-slate-800 text-sm">{customer.name}</div>
-                    <div className="text-[11px] text-amber-600 font-medium">{reason} — click to tag</div>
+                    <div className="text-[11px] text-amber-600 font-medium">{t("tag_card.click_to_tag", { reason: REASON_KEY[reason] ? t(REASON_KEY[reason]) : reason })}</div>
                   </button>
                 ))}
               </div>
@@ -180,7 +189,7 @@ export default function CustomerTagCard({
             <Input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder={customers.length > 0 ? "Search customers…" : "No customers yet"}
+              placeholder={customers.length > 0 ? t("tag_card.search") : t("tag_card.none_yet")}
               disabled={customers.length === 0}
             />
             {searchResults.map(c => (
@@ -195,7 +204,7 @@ export default function CustomerTagCard({
               </button>
             ))}
             {search && searchResults.length === 0 && (
-              <p className="text-xs text-slate-400 italic px-1">No customers match "{search}"</p>
+              <p className="text-xs text-slate-400 italic px-1">{t("tag_card.no_match", { query: search })}</p>
             )}
 
             <Button
@@ -205,7 +214,7 @@ export default function CustomerTagCard({
               disabled={busy || !(hint.name ?? "").trim()}
             >
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              Create "{(hint.name ?? "").trim() || "customer"}" & tag
+              {t("tag_card.create_and_tag", { name: (hint.name ?? "").trim() || t("tag_card.customer_word") })}
             </Button>
           </>
         )}
