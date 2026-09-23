@@ -3,8 +3,10 @@ import { Link } from 'wouter';
 import { apiFetch, apiOk } from "@/lib/api";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 export default function ForgotPassword() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -12,7 +14,7 @@ export default function ForgotPassword() {
 
   async function handleSubmit() {
     if (!email) {
-      setError('Provide your registered email to initiate credential reset.');
+      setError(t('password.need_email'));
       return;
     }
     setLoading(true);
@@ -29,7 +31,7 @@ export default function ForgotPassword() {
     } catch {
       // Not revealing whether the address exists is the no-enumeration rule.
       // Hiding a 500 is not: the user is told we sent a mail we never sent.
-      setError('Could not send the reset link just now. Please try again in a minute.');
+      setError(t('password.send_failed'));
       setLoading(false);
       return;
     }
@@ -57,52 +59,51 @@ export default function ForgotPassword() {
 
           <div className="mt-20">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.1] font-['Playfair_Display']">
-              Lost your <br />
-              <span className="text-white/90 drop-shadow-lg">Vault Key?</span> <br />
-              Let's restore it.
+              {t('password.forgot_heading_1')} <br />
+              <span className="text-white/90 drop-shadow-lg">{t('password.forgot_heading_2')}</span> <br />
+              {t('password.forgot_heading_3')}
             </h2>
             <p className="mt-8 text-white/80 text-lg font-medium max-w-sm leading-relaxed">
-              We'll dispatch a secured, single-use link to your registered email to re-establish access.
+              {t('password.forgot_side')}
             </p>
           </div>
         </div>
 
-        <div className="relative z-10 text-white/60 text-xs font-black tracking-[0.2em] uppercase">
-          Standardized by Leading Insurers · v4.1.0-VITE
-        </div>
+        {/* A footer here used to read "Standardized by Leading Insurers", a claim
+            with no source behind it. The spacer keeps the layout. */}
+        <div aria-hidden="true" />
       </div>
 
       {/* RIGHT PANEL: RESET REQUEST */}
       <div className="flex-1 flex flex-col justify-center items-center py-12 sm:py-16 lg:py-20 px-8">
         <div className="w-full max-w-md space-y-12">
           <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 font-['Playfair_Display']">Reset Access</h1>
-            <p className="mt-3 text-slate-400 font-semibold uppercase text-[11px] tracking-widest">Credential Recovery</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 font-['Playfair_Display']">{t('password.forgot_title')}</h1>
+            <p className="mt-3 text-slate-400 font-semibold uppercase text-[11px] tracking-widest">{t('password.forgot_sub')}</p>
           </div>
 
           {sent ? (
             <div className="space-y-8">
               <div className="bg-emerald-50 text-emerald-700 p-5 rounded-xl border border-emerald-100 text-sm font-semibold leading-relaxed">
-                If an account exists for <span className="font-black">{email}</span>, a secured reset link has been
-                dispatched. Check your inbox (and spam) and follow the link to set a new Vault Key.
+                {t('password.sent', { email })}
               </div>
               <Link href="/agent/login">
                 <Button className="w-full h-12 bg-[#0D9488] hover:bg-[#0f766e] text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-[#0D9488]/20 transition-all">
-                  Back to Portal
+                  {t('password.back_login')}
                 </Button>
               </Link>
             </div>
           ) : (
             <div className="space-y-6">
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Credential Email</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t('password.email_label')}</label>
                 <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                   className="h-12 bg-slate-50 border-slate-100 focus:border-[#0D9488] focus:bg-white transition-all font-semibold px-4 rounded-xl"
-                  placeholder="advisor@indsure.ai"
+                  placeholder={t('password.email_ph')}
                 />
               </div>
 
@@ -118,12 +119,12 @@ export default function ForgotPassword() {
                 disabled={loading}
                 className="w-full h-12 bg-[#0D9488] hover:bg-[#0f766e] text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-[#0D9488]/20 transition-all disabled:opacity-50"
               >
-                {loading ? 'Dispatching...' : 'Send Reset Link'}
+                {loading ? t('password.sending') : t('password.send_link')}
               </Button>
 
               <div className="text-center">
                 <Link href="/agent/login" className="inline-flex min-h-11 items-center text-xs font-black text-slate-400 uppercase tracking-widest hover:text-[#0D9488]">
-                  ← Back to Portal
+                  {t('password.back_login_arrow')}
                 </Link>
               </div>
             </div>
