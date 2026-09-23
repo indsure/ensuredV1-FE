@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { Twitter, Linkedin, Instagram } from "lucide-react";
+import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext";
 
 /* Rebuilt 2026-08-25: was ~900px tall, mostly because eight serif links sat in
    one column at 18px with 24px gaps. Same links, four columns, 14px sans.
@@ -15,38 +16,39 @@ const socialLinks = [
 
 const columns: { heading: string; links: { label: string; href: string }[] }[] = [
   {
-    heading: "Product",
+    heading: "site.f_product",
     links: [
-      { label: "Check a policy", href: "/policychecker" },
-      { label: "Compare plans", href: "/compare" },
-      { label: "Cover Calculator", href: "/calculator" },
-      { label: "Clause library", href: "/learn" },
-      { label: "Find a network hospital", href: "/find-provider" },
+      { label: "site.f_check", href: "/policychecker" },
+      { label: "site.f_compare", href: "/compare" },
+      { label: "site.f_calc", href: "/calculator" },
+      { label: "site.f_clauses", href: "/learn" },
+      { label: "site.f_hospital", href: "/find-provider" },
     ],
   },
   {
-    heading: "Company",
+    heading: "site.f_company",
     links: [
-      { label: "Why IndSure", href: "/why-indsure" },
-      { label: "Pricing", href: "/pricing" },
-      { label: "For advisors", href: "/agent" },
-      { label: "Blog", href: "/blog" },
-      { label: "Meet the team", href: "/team" },
-      { label: "Help & support", href: "/help" },
+      { label: "site.f_why", href: "/why-indsure" },
+      { label: "site.f_pricing", href: "/pricing" },
+      { label: "site.f_advisors", href: "/agent" },
+      { label: "site.f_blog", href: "/blog" },
+      { label: "site.f_team", href: "/team" },
+      { label: "site.f_help", href: "/help" },
     ],
   },
   {
-    heading: "Legal",
+    heading: "site.f_legal",
     links: [
-      { label: "Privacy Policy", href: "/privacy-policy" },
-      { label: "Terms of Service", href: "/terms" },
-      { label: "Cookie Policy", href: "/cookie-policy" },
-      { label: "Grievance Officer", href: "/grievance" },
+      { label: "site.f_privacy", href: "/privacy-policy" },
+      { label: "site.f_terms", href: "/terms" },
+      { label: "site.f_cookies", href: "/cookie-policy" },
+      { label: "site.f_grievance", href: "/grievance" },
     ],
   },
 ];
 
 export function Footer() {
+  const { t } = useLanguage();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -64,9 +66,9 @@ export function Footer() {
                 </span>
               </Link>
               <p className="text-sm leading-relaxed text-[var(--color-white-muted)] max-w-xs mb-5">
-                We do not sell insurance and we earn zero commissions, so the report you get is the
-                one the policy deserves.
+                {t("site.f_tagline")}
               </p>
+              <div className="mb-5"><LanguageToggle variant="dark" /></div>
               <div className="flex gap-2.5">
                 {socialLinks.map((social) => {
                   const Icon = social.icon;
@@ -88,7 +90,7 @@ export function Footer() {
             {columns.map((col) => (
               <div key={col.heading} className="lg:col-span-3 last:lg:col-span-2">
                 <h4 className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-gold-500)] mb-4">
-                  {col.heading}
+                  {t(col.heading)}
                 </h4>
                 <ul className="space-y-2.5">
                   {col.links.map((l) => (
@@ -101,7 +103,7 @@ export function Footer() {
                           without moving anything on desktop. */}
                       <Link href={l.href} className="inline-flex min-h-11 items-center md:min-h-0">
                         <span className="text-sm text-[var(--color-white-muted)] hover:text-white transition-colors cursor-pointer">
-                          {l.label}
+                          {t(l.label)}
                         </span>
                       </Link>
                     </li>
@@ -118,8 +120,8 @@ export function Footer() {
               <p className="opacity-60">CIN: U62099MR2026PTC473468</p>
             </div>
             <p className="md:text-right max-w-sm leading-relaxed opacity-80">
-              <span className="font-bold text-white">Not an IRDAI-registered broker or agent.</span>{" "}
-              We have no incentive to recommend or sell any policy.
+              <span className="font-bold text-white">{t("site.f_not_broker")}</span>{" "}
+              {t("site.f_no_incentive")}
             </p>
           </div>
 

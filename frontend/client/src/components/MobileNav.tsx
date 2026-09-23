@@ -3,17 +3,19 @@ import { Link } from "wouter";
 import { Home, Calculator, Scale, FileText, Upload } from "lucide-react";
 import { useAnalysis } from "@/hooks/use-analysis";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const mobileNavItems = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/calculator", label: "Calculator", icon: Calculator },
-  { href: "/compare", label: "Compare", icon: Scale },
-  { href: "/blog", label: "Blog", icon: FileText },
+  { href: "/", label: "site.m_home", icon: Home },
+  { href: "/calculator", label: "site.m_calculator", icon: Calculator },
+  { href: "/compare", label: "site.m_compare", icon: Scale },
+  { href: "/blog", label: "site.m_blog", icon: FileText },
 ];
 
 export function MobileNav() {
   const [location] = useLocation();
   const { currentJobId } = useAnalysis();
+  const { t } = useLanguage();
   const [hasActiveJob, setHasActiveJob] = useState(false);
 
   useEffect(() => {
@@ -82,7 +84,7 @@ export function MobileNav() {
     <nav
       className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg pb-[env(safe-area-inset-bottom)]"
       role="navigation"
-      aria-label="Mobile navigation"
+      aria-label={t("site.m_nav")}
     >
       <div className="flex items-center justify-around h-16 px-2">
         {mobileNavItems.map((item) => {
@@ -98,7 +100,7 @@ export function MobileNav() {
                   : "text-gray-500 dark:text-gray-400"
               }`}
               aria-current={active ? "page" : undefined}
-              aria-label={item.label}
+              aria-label={t(item.label)}
             >
               <div className="relative">
                 <Icon className="w-5 h-5 mb-1" />
@@ -107,7 +109,7 @@ export function MobileNav() {
                 )}
               </div>
               <span className="text-xs font-medium truncate w-full text-center">
-                {item.label}
+                {t(item.label)}
               </span>
             </Link>
           );
@@ -116,10 +118,10 @@ export function MobileNav() {
           <Link
             href="/processing"
             className="flex flex-col items-center justify-center flex-1 h-full min-w-0 px-2 text-[#3CBBA0] animate-pulse"
-            aria-label="View analysis progress"
+            aria-label={t("site.m_progress")}
           >
             <Upload className="w-5 h-5 mb-1" />
-            <span className="text-xs font-medium">Analyzing</span>
+            <span className="text-xs font-medium">{t("site.m_analyzing")}</span>
           </Link>
         )}
       </div>

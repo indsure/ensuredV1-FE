@@ -13,7 +13,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(getSavedLocale);
 
   function setLocale(next: Locale) {
-    localStorage.setItem("indsure_lang", next);
+    try { localStorage.setItem("indsure_lang", next); } catch { /* still switch for this visit */ }
+    // Screen readers and the browser's own hyphenation read the page language.
+    if (typeof document !== "undefined") document.documentElement.lang = next;
     setLocaleState(next);
   }
 

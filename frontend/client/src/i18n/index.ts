@@ -40,8 +40,13 @@ export function getTranslator(locale: Locale) {
 }
 
 export function getSavedLocale(): Locale {
-  const saved = localStorage.getItem("indsure_lang");
-  return (saved === "hi" ? "hi" : "en") as Locale;
+  // Storage can throw (blocked site data, some private modes). English is the
+  // safe answer; the page must still render.
+  try {
+    return (localStorage.getItem("indsure_lang") === "hi" ? "hi" : "en") as Locale;
+  } catch {
+    return "en";
+  }
 }
 
 // date-fns locale for the UI language, so "Monday, 3 March" becomes
