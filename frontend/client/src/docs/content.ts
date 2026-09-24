@@ -34,6 +34,10 @@ export type DocPage = {
   description: string;
   /** One line under the title. */
   lead: string;
+  /** Shorter label for the sidebar, when the title is long. */
+  nav?: string;
+  /** A small tag beside the sidebar label. */
+  badge?: string;
   blocks: DocBlock[];
 };
 
@@ -48,6 +52,7 @@ export const DOC_SECTIONS: DocSection[] = [
     pages: [
       {
         slug: "",
+        nav: "Welcome",
         title: "Welcome to IndSure for advisors",
         description:
           "IndSure advisor docs: what the portal does, how to set it up, how every screen works, and answers to common questions, in simple English.",
@@ -141,6 +146,7 @@ export const DOC_SECTIONS: DocSection[] = [
       },
       {
         slug: "portal-tour",
+        nav: "Portal tour",
         title: "A tour of the portal",
         description: "Find your way around the IndSure advisor portal: the menu, the home screen, the phone layout and the Hindi language switch.",
         lead: "Where everything is, on a computer and on a phone.",
@@ -194,6 +200,8 @@ export const DOC_SECTIONS: DocSection[] = [
       },
       {
         slug: "demo",
+        nav: "Try the demo",
+        badge: "No login",
         title: "Try the demo first",
         description: "Explore the IndSure advisor portal with sample customers and policies. No account needed, nothing is saved, and a guided tour shows the main tools.",
         lead: "See the whole portal with sample data before you sign up.",
@@ -408,6 +416,7 @@ export const DOC_SECTIONS: DocSection[] = [
       },
       {
         slug: "policy-report",
+        nav: "Read the report",
         title: "Read the policy report",
         description: "How to read an IndSure health policy report: the score out of 100, the verdict, what could cost your customer at claim time, and coverage gaps.",
         lead: "What each part of a health policy report means, and how to use it with a customer.",
@@ -504,6 +513,7 @@ export const DOC_SECTIONS: DocSection[] = [
       },
       {
         slug: "policies",
+        nav: "Policies and Excel",
         title: "Policies and Excel export",
         description: "See every policy in your IndSure book, filter by type or renewal, spot policies that should switch, and export everything to Excel.",
         lead: "Every policy in your book, with filters and an Excel download.",
@@ -589,6 +599,7 @@ export const DOC_SECTIONS: DocSection[] = [
       },
       {
         slug: "surrender-value",
+        nav: "Surrender values",
         title: "Surrender values",
         description: "See what every life policy in your IndSure book is worth today, what a customer could borrow instead, and which lapsed policies need reviving.",
         lead: "What each life policy is worth if the customer stopped today.",
@@ -724,6 +735,7 @@ export const DOC_SECTIONS: DocSection[] = [
       },
       {
         slug: "team",
+        nav: "Team",
         title: "Team, for agencies",
         description: "For IndSure agency owners: invite advisors, manage seats, move policy checks between advisors, and see each advisor's book.",
         lead: "For agency owners: your advisors, their seats and their checks.",
@@ -751,6 +763,7 @@ export const DOC_SECTIONS: DocSection[] = [
     pages: [
       {
         slug: "account",
+        nav: "Settings and password",
         title: "Settings, profile and password",
         description: "Change your name, city and password in IndSure, update the insurers you work with, download your data, and sign out.",
         lead: "Your details, your password, and your data.",
@@ -783,6 +796,7 @@ export const DOC_SECTIONS: DocSection[] = [
       },
       {
         slug: "plans",
+        nav: "Plans and checks",
         title: "Plans and policy checks",
         description: "How IndSure plans work for advisors: the free plan, what a policy check is, what is always free, and how to upgrade.",
         lead: "What is free, what a policy check is, and how to get more.",
@@ -826,6 +840,7 @@ export const DOC_SECTIONS: DocSection[] = [
       },
       {
         slug: "your-data",
+        nav: "Your data",
         title: "Your data and your customers' data",
         description: "How IndSure keeps an advisor's book private: every advisor's data is kept apart, share links cannot be guessed, and you can download everything.",
         lead: "Your book is yours. Here is how we keep it that way.",
@@ -849,6 +864,7 @@ export const DOC_SECTIONS: DocSection[] = [
       },
       {
         slug: "faq",
+        nav: "FAQ",
         title: "Frequently asked questions",
         description: "Answers to the questions advisors ask most about IndSure: cost, commission, policy checks, file types, Hindi, sharing, phones and your data.",
         lead: "Quick answers to what advisors ask us most.",

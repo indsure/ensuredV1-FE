@@ -1,8 +1,8 @@
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Link } from "wouter";
 import {
-  AlertTriangle, ArrowLeft, ArrowRight, BookOpen, Check, ChevronRight, Info, Lightbulb, Link2, Menu,
-  MessageCircle, PlayCircle, Search, X,
+  AlertTriangle, ArrowLeft, ArrowRight, BookOpen, Check, ChevronRight, FileText, Info, Lightbulb, Link2, Menu,
+  MessageCircle, PlayCircle, Rocket, Search, TrendingUp, UserCog, Users, Wrench, X,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -236,8 +236,34 @@ function Cta({ kind }: { kind: "demo" | "signup" | "contact" }) {
   );
 }
 
-function Nav({ current, onNavigate }: { current: string; onNavigate?: () => void }) {
+// One colour and icon per section, in DOC_SECTIONS order, so 27 rows read as six
+// groups instead of one list. A section with no entry here falls back to the last.
+const SECTION_STYLE: { icon: typeof BookOpen; tint: string }[] = [
+  { icon: Rocket, tint: "bg-[#E6F7F4] text-[#0F766E]" },
+  { icon: Users, tint: "bg-[#EFF6FF] text-[#1D4ED8]" },
+  { icon: FileText, tint: "bg-[#F5F3FF] text-[#6D28D9]" },
+  { icon: Wrench, tint: "bg-[#FFFBEB] text-[#B45309]" },
+  { icon: TrendingUp, tint: "bg-[#FDF2F8] text-[#BE185D]" },
+  { icon: UserCog, tint: "bg-[#F1F5F9] text-[#334155]" },
+];
+
+function Nav({ current, onNavigate, searchRef }: { current: string; onNavigate?: () => void; searchRef?: RefObject<HTMLInputElement | null> }) {
   const [query, setQuery] = useState("");
+  const currentSection = DOC_SECTIONS.findIndex((s) => s.pages.some((p) => p.slug === current));
+  // Only the section you are reading starts open: six headings fit on one
+  // screen, twenty-seven links do not.
+  const [open, setOpen] = useState<Set<number>>(() => new Set([currentSection]));
+  useEffect(() => {
+    setOpen((prev) => (prev.has(currentSection) ? prev : new Set(prev).add(currentSection)));
+  }, [currentSection]);
+  const toggle = (i: number) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const results = useMemo(() => {
     if (!words.length) return [];
@@ -249,28 +275,32 @@ function Nav({ current, onNavigate }: { current: string; onNavigate?: () => void
   }, [query]);
 
   return (
-    <nav aria-label="Docs" className="flex flex-col gap-6">
+    <nav aria-label="Docs" className="flex flex-col gap-5">
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-secondary)]" aria-hidden="true" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
         <input
+          ref={searchRef}
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search the docs"
           aria-label="Search the docs"
-          className="h-12 w-full rounded-lg border border-[var(--color-border-medium)] bg-white pl-9 pr-3 text-base outline-none focus:border-[var(--color-teal-600)]"
+          className="h-11 w-full rounded-lg border border-transparent bg-[#F4F4F2] pl-9 pr-9 text-base text-slate-900 outline-none transition-colors placeholder:text-slate-500 focus:border-[var(--color-teal-600)] focus:bg-white"
         />
+        {searchRef && (
+          <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-slate-300 bg-white px-1.5 text-sm text-slate-500 lg:block">/</kbd>
+        )}
       </div>
 
       {words.length > 0 ? (
         <div>
-          <p className="mb-2 text-sm font-semibold text-[var(--color-text-secondary)]">
+          <p className="mb-2 px-1 text-sm font-semibold text-slate-600">
             {results.length === 0 ? "Nothing found. Try another word." : `${results.length} ${results.length === 1 ? "page" : "pages"} found`}
           </p>
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col gap-0.5">
             {results.map((p) => (
               <li key={p.slug}>
-                <Link href={docPath(p.slug)} onClick={() => { setQuery(""); onNavigate?.(); }} className="flex min-h-11 items-center rounded-lg px-3 text-base font-medium text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)]">
+                <Link href={docPath(p.slug)} onClick={() => { setQuery(""); onNavigate?.(); }} className="flex min-h-11 items-center rounded-lg px-3 text-base font-medium text-slate-800 hover:bg-slate-100 lg:min-h-10">
                   {p.title}
                 </Link>
               </li>
@@ -278,32 +308,57 @@ function Nav({ current, onNavigate }: { current: string; onNavigate?: () => void
           </ul>
         </div>
       ) : (
-        DOC_SECTIONS.map((section) => (
-          <div key={section.title}>
-            <p className="mb-2 px-3 text-sm font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">{section.title}</p>
-            <ul className="flex flex-col gap-0.5">
-              {section.pages.map((p) => {
-                const active = p.slug === current;
-                return (
-                  <li key={p.slug}>
-                    <Link
-                      href={docPath(p.slug)}
-                      onClick={onNavigate}
-                      aria-current={active ? "page" : undefined}
-                      className={`flex min-h-11 items-center rounded-lg px-3 text-base transition-colors ${
-                        active
-                          ? "bg-[var(--color-teal-50)] font-semibold text-[var(--color-teal-700)]"
-                          : "font-medium text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)]"
-                      }`}
-                    >
-                      {p.title}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))
+        <div className="flex flex-col gap-1">
+          {DOC_SECTIONS.map((section, i) => {
+            const style = SECTION_STYLE[i] ?? SECTION_STYLE[SECTION_STYLE.length - 1];
+            const Icon = style.icon;
+            const isOpen = open.has(i);
+            const listId = `docs-section-${i}`;
+            return (
+              <div key={section.title}>
+                <button
+                  type="button"
+                  onClick={() => toggle(i)}
+                  aria-expanded={isOpen}
+                  aria-controls={listId}
+                  className="flex min-h-11 w-full items-center gap-2.5 rounded-lg px-1.5 text-left text-[15px] font-semibold text-[var(--color-navy-900)] hover:bg-slate-50 lg:min-h-10"
+                >
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${style.tint}`}>
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <span className="flex-1">{section.title}</span>
+                  <ChevronRight className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} aria-hidden="true" />
+                </button>
+                {isOpen && (
+                  <ul id={listId} className="mb-2 ml-[19px] mt-0.5 border-l border-slate-200">
+                    {section.pages.map((p) => {
+                      const active = p.slug === current;
+                      return (
+                        <li key={p.slug}>
+                          <Link
+                            href={docPath(p.slug)}
+                            onClick={onNavigate}
+                            aria-current={active ? "page" : undefined}
+                            className={`-ml-px flex min-h-11 items-center gap-2 border-l-2 py-1.5 pl-4 pr-2 text-[15px] transition-colors lg:min-h-9 ${
+                              active
+                                ? "border-[var(--color-teal-600)] bg-[#F0FDFA] font-semibold text-[var(--color-navy-900)]"
+                                : "border-transparent text-slate-600 hover:border-slate-400 hover:text-slate-900"
+                            }`}
+                          >
+                            <span className="flex-1">{p.nav ?? p.title}</span>
+                            {p.badge && (
+                              <span className="shrink-0 rounded bg-[#FEF3C7] px-1.5 py-0.5 text-sm font-medium leading-none text-[#92400E]">{p.badge}</span>
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
     </nav>
   );
@@ -337,6 +392,19 @@ export default function Docs({ slug = "" }: { slug?: string }) {
   const { t, locale } = useLanguage();
   const page = DOC_PAGES.find((p) => p.slug === slug);
   const [menuOpen, setMenuOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement | null>(null);
+
+  // "/" jumps to search, as on most docs sites, unless you are already typing.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target instanceof Element ? e.target : null;
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || el?.closest("input, textarea, select, [contenteditable]")) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useSEO({
     title: page ? (page.slug ? `${page.title} | IndSure Docs` : "IndSure Docs for Advisors") : "Page not found | IndSure",
@@ -382,10 +450,16 @@ export default function Docs({ slug = "" }: { slug?: string }) {
       {menuOpen && (
         <div className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true" aria-label="Docs menu">
           <div className="absolute inset-0 bg-black/40" onClick={() => setMenuOpen(false)} aria-hidden="true" />
-          <div className="absolute inset-y-0 left-0 w-[88vw] max-w-sm overflow-y-auto bg-[var(--color-cream-main)] p-4 pb-12 shadow-xl">
+          <div className="absolute inset-y-0 left-0 w-[88vw] max-w-sm overflow-y-auto bg-white p-4 pb-12 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <span className="flex items-center gap-2 text-lg font-bold text-[var(--color-navy-900)]">
-                <BookOpen className="h-5 w-5 text-[var(--color-teal-600)]" aria-hidden="true" /> IndSure Docs
+              <span className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-navy-900)] text-[#5eead4]">
+                  <BookOpen className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="flex flex-col leading-tight">
+                  <span className="text-base font-bold text-[var(--color-navy-900)]">IndSure Docs</span>
+                  <span className="text-sm text-slate-500">For advisors</span>
+                </span>
               </span>
               <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-[var(--color-cream-dark)]">
                 <X className="h-5 w-5" />
@@ -396,13 +470,21 @@ export default function Docs({ slug = "" }: { slug?: string }) {
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-[1400px] flex-1 px-4 sm:px-6 lg:grid lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-10 lg:pt-24 xl:grid-cols-[270px_minmax(0,1fr)_220px]">
+      <div className="mx-auto w-full max-w-[1400px] flex-1 px-4 sm:px-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10 lg:pt-24 xl:grid-cols-[280px_minmax(0,1fr)_220px]">
         <aside className="hidden lg:block print:hidden">
-          <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pb-10 pr-2">
-            <Link href="/docs" className="mb-5 flex items-center gap-2 px-3 text-lg font-bold text-[var(--color-navy-900)]">
-              <BookOpen className="h-5 w-5 text-[var(--color-teal-600)]" aria-hidden="true" /> IndSure Docs
+          {/* A white panel, so the menu reads as its own thing against the cream
+              page, and a scrollbar that only shows while the pointer is on it. */}
+          <div className="sticky top-24 mb-10 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm [scrollbar-color:transparent_transparent] [scrollbar-width:thin] hover:[scrollbar-color:#cbd5e1_transparent]">
+            <Link href="/docs" className="mb-4 flex items-center gap-3 rounded-lg px-1">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-navy-900)] text-[#5eead4]">
+                <BookOpen className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="flex flex-col leading-tight">
+                <span className="text-base font-bold text-[var(--color-navy-900)]">IndSure Docs</span>
+                <span className="text-sm text-slate-500">For advisors</span>
+              </span>
             </Link>
-            <Nav current={page.slug} />
+            <Nav current={page.slug} searchRef={searchRef} />
           </div>
         </aside>
 
