@@ -389,7 +389,7 @@ export default function SachAIChat() {
                   {t("sach.ask_what")}
                 </p>
                 {locale === "hi" && (
-                  <p className="text-xs text-[var(--color-text-secondary)] mb-4">{t("sach.english_note")}</p>
+                  <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t("sach.english_note")}</p>
                 )}
 
                 {!hasPolicy && (

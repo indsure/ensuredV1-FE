@@ -8,6 +8,7 @@
 // 3. REGISTERED_ADDRESS — IndSure's registered business address
 // 4. GRIEVANCE_EMAIL — dedicated email (e.g. grievance@indsure.in) — create this mailbox
 
+import { LegalHindiNote } from "@/components/LegalHindiNote";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
@@ -135,6 +136,7 @@ export default function GrievanceOfficer() {
         {/* Title */}
         <div className="mb-10">
           <p className="text-xs font-medium tracking-widest text-gray-400 uppercase mb-3">Legal</p>
+          <LegalHindiNote />
           <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-4 leading-tight">Grievance Officer</h1>
           <p className="text-gray-500 text-sm leading-relaxed">
             Under Section 13 of the Digital Personal Data Protection Act, 2023 (India), IndSure has

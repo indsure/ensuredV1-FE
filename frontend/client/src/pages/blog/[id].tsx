@@ -17,6 +17,8 @@ import { ShareButtons } from "@/components/ShareButtons";
 import { BlogCover } from "@/components/BlogCover";
 import { BlogInlineCTA, BlogClosingCTA, BlogSidebarCTA } from "@/components/BlogCTA";
 import { useRef, useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { intlLocale } from "@/i18n";
 
 export default function BlogPost() {
   const [, params] = useRoute("/blog/:id");
@@ -24,6 +26,7 @@ export default function BlogPost() {
   const post = postFromParam(params?.id);
   const contentRef = useRef<HTMLElement>(null!);
   const [activeFAQ, setActiveFAQ] = useState<number | null>(null);
+  const { t, locale } = useLanguage();
 
   // Authored article tables carry no styling hooks; label them so they restack
   // into cards on phones instead of running off the page.
@@ -41,14 +44,14 @@ export default function BlogPost() {
     return (
       <div className="min-h-screen bg-[var(--color-cream-main)] flex flex-col">
         <Header />
-        <Breadcrumbs items={[{ label: "Blog" }]} />
+        <Breadcrumbs items={[{ label: t("blogpost.blog") }]} />
         <main className="relative z-10 flex-1 max-w-4xl mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-12 text-center">
-          <h1 className="text-3xl font-bold font-serif mb-4 text-[var(--color-text-main)]">Article Not Found</h1>
+          <h1 className="text-3xl font-bold font-serif mb-4 text-[var(--color-text-main)]">{t("blogpost.not_found")}</h1>
           <p className="text-[var(--color-text-secondary)] mb-6">
-            The article you're looking for doesn't exist.
+            {t("blogpost.not_found_d")}
           </p>
           <Button asChild className="bg-[var(--color-green-primary)] hover:bg-[var(--color-green-secondary)] text-white">
-            <Link href="/blog">Back to Blog</Link>
+            <Link href="/blog">{t("blogpost.back")}</Link>
           </Button>
         </main>
         <Footer />
@@ -106,7 +109,7 @@ export default function BlogPost() {
       {/* Sticky Breadcrumb */}
       <div className="hidden md:block sticky top-[65px] z-30 bg-[var(--color-cream-main)]/95 backdrop-blur-sm border-b border-[var(--color-border-light)]">
         <div className="max-w-7xl mx-auto px-6 py-3">
-          <Breadcrumbs items={[{ label: "Blog", href: "/blog" }, { label: post.category }, { label: post.title }]} />
+          <Breadcrumbs items={[{ label: t("blogpost.blog"), href: "/blog" }, { label: post.category }, { label: post.title }]} />
         </div>
       </div>
 
@@ -124,9 +127,13 @@ export default function BlogPost() {
             <Link href="/blog">
               <Button variant="ghost" className="mb-6 text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)]">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Blog
+                {t("blogpost.back")}
               </Button>
             </Link>
+
+            {locale === "hi" && (
+              <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{t("blogpost.english_note")}</p>
+            )}
 
             {/* Article Header — typographic banner + real H1 */}
             <div className="mb-12">
@@ -150,12 +157,12 @@ export default function BlogPost() {
                   <span>•</span>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    <span>{new Date(post.date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</span>
+                    <span>{new Date(post.date).toLocaleDateString(intlLocale(locale), { year: "numeric", month: "long", day: "numeric" })}</span>
                   </div>
                   <span>•</span>
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4" />
-                    <span>By {author ? (
+                    <span>{t("blogpost.by")} {author ? (
                       <Link href={`/author/${author.slug}`} className="hover:text-[var(--color-green-primary)] transition-colors">
                         {displayName(author)}
                       </Link>
@@ -179,7 +186,7 @@ export default function BlogPost() {
                   <div className="text-[var(--color-text-muted)]">
                     <p className="text-lg mb-4">{post.excerpt}</p>
                     <p className="mt-4 italic">
-                      Full article content isn’t available for this post right now. Use the policy analysis tool below for tailored insights.
+                      {t("blogpost.no_content")}
                     </p>
                   </div>
                 )}
@@ -195,7 +202,7 @@ export default function BlogPost() {
                 <div className="mt-12 pt-8 border-t border-[var(--color-border-light)]">
                   <SchemaMarkup type="FAQPage" data={createFAQSchema(post.faqs)} />
                   <h2 className="text-2xl md:text-3xl font-bold text-center font-serif text-[var(--color-text-main)] mb-8">
-                    Frequently Asked Questions
+                    {t("blogpost.faq")}
                   </h2>
                   <div className="space-y-0">
                     {post.faqs.map((faq, index) => (
@@ -254,14 +261,14 @@ export default function BlogPost() {
 
               {/* Share Buttons */}
               <div className="bg-white border border-[var(--color-border-light)] rounded-xl p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-[var(--color-text-main)] mb-3">Share</h3>
+                <h3 className="text-sm font-semibold text-[var(--color-text-main)] mb-3">{t("blogpost.share")}</h3>
                 <ShareButtons url={typeof window !== "undefined" ? window.location.href : ""} title={post.title} description={post.excerpt} compact />
               </div>
 
               {/* Related Articles (Mini) */}
               {relatedArticles.length > 0 && (
                 <div className="bg-white border border-[var(--color-border-light)] rounded-xl p-5 shadow-sm">
-                  <h3 className="text-sm font-semibold text-[var(--color-text-main)] mb-3">Related Articles</h3>
+                  <h3 className="text-sm font-semibold text-[var(--color-text-main)] mb-3">{t("blogpost.related")}</h3>
                   <div className="space-y-3">
                     {relatedArticles.map((relatedPost) => {
                       const Icon = relatedPost.icon;
@@ -293,9 +300,9 @@ export default function BlogPost() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
             <ShareButtons url={typeof window !== "undefined" ? window.location.href : ""} title={post.title} description={post.excerpt} />
             <div className="text-right">
-              <p className="text-xs text-[var(--color-text-secondary)] mb-1">Not ready to leave?</p>
+              <p className="text-xs text-[var(--color-text-secondary)] mb-1">{t("blogpost.stay")}</p>
               <Link href="/blog" className="inline-flex min-h-11 items-center text-xs text-[var(--color-green-primary)] hover:underline">
-                Read more on {post.category} →
+                {t("blogpost.read_more", { cat: post.category })}
               </Link>
             </div>
           </div>
@@ -307,7 +314,7 @@ export default function BlogPost() {
         {/* Related Articles - Full Section */}
         {relatedArticles.length > 0 && (
           <div className="max-w-4xl mx-auto px-6 mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold mb-8 font-serif text-[var(--color-text-main)]">Related Articles</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-8 font-serif text-[var(--color-text-main)]">{t("blogpost.related")}</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedArticles.map((relatedPost) => {
                 const Icon = relatedPost.icon;

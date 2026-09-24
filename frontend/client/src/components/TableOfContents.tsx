@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface TOCItem {
   id: string;
@@ -12,6 +13,7 @@ interface TableOfContentsProps {
 
 export function TableOfContents({ contentRef }: TableOfContentsProps) {
   const [headings, setHeadings] = useState<TOCItem[]>([]);
+  const { t } = useLanguage();
   const [activeId, setActiveId] = useState<string>("");
 
   useEffect(() => {
@@ -80,7 +82,7 @@ export function TableOfContents({ contentRef }: TableOfContentsProps) {
   return (
     <div className="hidden lg:block fixed top-24 left-6 w-64 max-h-[calc(100vh-120px)] overflow-y-auto bg-[#FAFBFC] dark:bg-[#0F1419] border border-gray-200 dark:border-gray-700 rounded-xl p-5 z-40">
       <h3 className="text-xs font-semibold text-[#0F1419] dark:text-[#FAFBFC] uppercase tracking-wider mb-4">
-        On This Page
+        {t("toc.on_page")}
       </h3>
       <nav className="space-y-1">
         {headings.map((heading) => (

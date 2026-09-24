@@ -368,7 +368,7 @@ function NavLink({ label, href, active }: { label: string; href: string; active:
   return (
     <Link
       href={href}
-      className={`relative rounded-lg px-3 py-2 text-[15px] font-medium transition-colors ${
+      className={`relative whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-medium transition-colors ${
         active
           ? "text-[var(--color-teal-600)]"
           : "text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)]"

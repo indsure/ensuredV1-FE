@@ -2,6 +2,7 @@
 // Drop this file into your pages directory and add a Wouter route:
 // <Route path="/cookie-policy" component={CookiePolicy} />
 
+import { LegalHindiNote } from "@/components/LegalHindiNote";
 import { useEffect } from "react";
 
 const LAST_UPDATED = "25 March 2025";
@@ -94,6 +95,7 @@ export default function CookiePolicy() {
         {/* Title */}
         <div className="mb-12">
           <p className="text-xs font-medium tracking-widest text-gray-400 uppercase mb-3">Legal</p>
+          <LegalHindiNote />
           <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-4 leading-tight">Cookie Policy</h1>
           <p className="text-gray-500 text-sm leading-relaxed">
             This policy explains what cookies and browser storage IndSure uses, what data they contain,

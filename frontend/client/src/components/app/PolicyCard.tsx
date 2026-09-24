@@ -239,7 +239,7 @@ export function PolicyCard({
                       : t("pf.c_scored_on")}
                   </p>
                   {motorScore && locale === "hi" && (
-                    <p className="text-xs text-[var(--color-text-muted)] mt-1">{t("pf.c_motor_english")}</p>
+                    <p className="text-sm text-[var(--color-text-muted)] mt-1">{t("pf.c_motor_english")}</p>
                   )}
                 </div>
               )}
@@ -258,7 +258,7 @@ export function PolicyCard({
                     {t("pf.c_could_cost")}
                   </p>
                   {locale === "hi" && (
-                    <p className="text-xs text-[var(--color-text-muted)] mt-1">{t("pf.findings_english")}</p>
+                    <p className="text-sm text-[var(--color-text-muted)] mt-1">{t("pf.findings_english")}</p>
                   )}
                   <ul className="mt-2 space-y-2">
                     {flaws.map((f, i) => (

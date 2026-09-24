@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Twitter, Linkedin, Facebook, Link2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface ShareButtonsProps {
   url: string;
@@ -11,6 +12,7 @@ interface ShareButtonsProps {
 
 export function ShareButtons({ url, title, description, compact = false }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
+  const { t } = useLanguage();
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : url;
   const shareTitle = title;
@@ -55,28 +57,28 @@ export function ShareButtons({ url, title, description, compact = false }: Share
         <button
           onClick={() => handleShare("twitter")}
           className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          aria-label="Share on Twitter"
+          aria-label={t("sharebtn.tw")}
         >
           <Twitter className="w-5 h-5 text-[#1DA1F2]" />
         </button>
         <button
           onClick={() => handleShare("linkedin")}
           className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          aria-label="Share on LinkedIn"
+          aria-label={t("sharebtn.li")}
         >
           <Linkedin className="w-5 h-5 text-[#0077B5]" />
         </button>
         <button
           onClick={() => handleShare("facebook")}
           className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          aria-label="Share on Facebook"
+          aria-label={t("sharebtn.fb")}
         >
           <Facebook className="w-5 h-5 text-[#1877F2]" />
         </button>
         <button
           onClick={handleCopy}
           className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          aria-label="Copy link"
+          aria-label={t("sharebtn.copy")}
         >
           {copied ? (
             <Check className="w-5 h-5 text-green-500" />
@@ -90,33 +92,33 @@ export function ShareButtons({ url, title, description, compact = false }: Share
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Share this article</span>
+      <span className="text-sm font-semibold text-[#0F1419] dark:text-[#FAFBFC]">{t("sharebtn.share")}</span>
       <div className="flex items-center gap-2">
         <button
           onClick={() => handleShare("twitter")}
           className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:scale-110"
-          aria-label="Share on Twitter"
+          aria-label={t("sharebtn.tw")}
         >
           <Twitter className="w-5 h-5 text-[#1DA1F2]" />
         </button>
         <button
           onClick={() => handleShare("linkedin")}
           className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:scale-110"
-          aria-label="Share on LinkedIn"
+          aria-label={t("sharebtn.li")}
         >
           <Linkedin className="w-5 h-5 text-[#0077B5]" />
         </button>
         <button
           onClick={() => handleShare("facebook")}
           className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:scale-110"
-          aria-label="Share on Facebook"
+          aria-label={t("sharebtn.fb")}
         >
           <Facebook className="w-5 h-5 text-[#1877F2]" />
         </button>
         <button
           onClick={handleCopy}
           className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-[#0F1419] border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all hover:scale-110"
-          aria-label="Copy link"
+          aria-label={t("sharebtn.copy")}
         >
           {copied ? (
             <Check className="w-5 h-5 text-green-500" />

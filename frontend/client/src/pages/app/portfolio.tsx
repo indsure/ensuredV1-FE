@@ -780,7 +780,7 @@ export default function PortfolioPage() {
                 </div>
                 {/* The findings are written by the policy check, in English. */}
                 {locale === "hi" && d.fixes.length > 0 && (
-                  <p className="mt-2 text-xs text-[var(--color-text-muted)]">{t("pf.findings_english")}</p>
+                  <p className="mt-2 text-sm text-[var(--color-text-muted)]">{t("pf.findings_english")}</p>
                 )}
                 {d.fixes.length > 0 ? (
                   <ul className="mt-3 space-y-3">

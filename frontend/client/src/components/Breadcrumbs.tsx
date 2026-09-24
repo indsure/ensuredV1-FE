@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { ChevronRight, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export interface BreadcrumbItem {
   label: string;
@@ -14,11 +15,12 @@ export interface BreadcrumbsProps {
 
 export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
   const [location] = useLocation();
+  const { t } = useLanguage();
 
   // Auto-generate breadcrumbs from path if not provided
   const breadcrumbs: BreadcrumbItem[] = items || (() => {
     const paths = location.split("/").filter(Boolean);
-    const result: BreadcrumbItem[] = [{ label: "Home", href: "/" }];
+    const result: BreadcrumbItem[] = [{ label: t("crumbs.home"), href: "/" }];
 
     let currentPath = "";
     paths.forEach((path, index) => {
@@ -42,7 +44,7 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
         "hidden md:flex items-center gap-2 px-6 py-4 text-sm border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800",
         className
       )}
-      aria-label="Breadcrumb"
+      aria-label={t("crumbs.aria")}
     >
       {breadcrumbs.map((item, index) => {
         const isLast = index === breadcrumbs.length - 1;

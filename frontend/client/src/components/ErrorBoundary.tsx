@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { useLocation } from "wouter";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Props {
   children: ReactNode;
@@ -63,6 +64,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
 function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () => void }) {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
@@ -74,10 +76,10 @@ function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () =>
             </div>
             <div>
               <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Something went wrong
+                {t("errb.h")}
               </CardTitle>
               <CardDescription className="text-base mt-1">
-                We encountered an unexpected error. Please try again.
+                {t("errb.d")}
               </CardDescription>
             </div>
           </div>
@@ -86,7 +88,7 @@ function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () =>
           {error && (
             <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
               <p className="text-sm font-mono text-gray-700 dark:text-gray-300 break-all">
-                {error.message || "Unknown error"}
+                {error.message || t("errb.unknown")}
               </p>
             </div>
           )}
@@ -94,11 +96,11 @@ function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () =>
           <div className="flex gap-3">
             <Button onClick={onReset} variant="outline" className="flex-1">
               <RefreshCw className="w-4 h-4 mr-2" />
-              Try Again
+              {t("errb.retry")}
             </Button>
             <Button onClick={() => setLocation("/")} className="flex-1">
               <Home className="w-4 h-4 mr-2" />
-              Go Home
+              {t("errb.home")}
             </Button>
           </div>
         </CardContent>
