@@ -220,7 +220,7 @@ export default function TermPage() {
             </Button>
           </div>
           <p className="text-xs text-white/70">
-            Secure upload • No data stored • Free analysis
+            Secure upload • Delete it any time • Free analysis
           </p>
         </div>
       </section>

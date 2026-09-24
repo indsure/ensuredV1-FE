@@ -28,6 +28,7 @@ import {
   Users,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
@@ -37,6 +38,7 @@ import { loadSampleReport, mockReportLife } from "@/lib/mock-data";
 
 export default function LifePage() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
 
   // SEO
   useSEO(seoFor("/life"));
@@ -45,7 +47,7 @@ export default function LifePage() {
   const faqData = createFAQSchema([
     {
       question: "How do you analyze policies?",
-      answer: "We use AI to read your policy PDF clause-by-clause, extracting key terms: sum assured, riders, claim conditions, exclusions, waiting periods, maturity age, etc. Then we structure it into a human-readable verdict.",
+      answer: "The engine reads your policy PDF clause by clause and pulls out the key terms: sum assured, riders, claim conditions, exclusions, waiting periods, maturity age and so on. Then it turns them into a plain-language verdict.",
     },
     {
       question: "Is my data safe?",
@@ -107,43 +109,43 @@ export default function LifePage() {
             {/* Left: Content */}
             <div className="flex flex-col justify-center">
               <h1 className="text-4xl md:text-5xl lg:text-[56px] font-bold text-black dark:text-[#FAFBFC] mb-5 leading-[1.1] tracking-[-0.02em]">
-                Understand Your Life Insurance Policy
+                {t("lobp.l_h")}
               </h1>
               <p className="text-lg md:text-xl text-[#4B5563] dark:text-[#D1D5DB] mb-6 leading-relaxed">
-                Upload a PDF. See if your sum assured is enough. No agents, no storage, no sales pitch.
+                {t("lobp.l_sub")}
               </p>
 
               {/* Trust badges */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-xs font-medium text-[#6B7280] dark:text-[#9CA3AF]">
                 <div className="flex items-center gap-1.5">
                   <Shield className="w-3.5 h-3.5 text-[#00B4D8]" />
-                  <span>IRDAI-aligned</span>
+                  <span>{t("lobp.irdai")}</span>
                 </div>
                 <span className="text-[#9CA3AF]">•</span>
-                <span>Every clause read</span>
+                <span>{t("lobp.every_clause")}</span>
                 <span className="text-[#9CA3AF]">•</span>
                 <div className="flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#10B981]" />
-                  <span>100% private</span>
+                  <span>{t("lobp.private100")}</span>
                 </div>
                 <span className="text-[#9CA3AF]">•</span>
                 {/* claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07. */}
-                <span>Free forever</span>
+                <span>{t("lobp.free_forever")}</span>
               </div>
 
               {/* Feature highlights */}
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-[#00B4D8] rounded-full"></div>
-                  <span className="text-sm font-medium text-[#0F1419] dark:text-[#FAFBFC]">60-second analysis</span>
+                  <span className="text-sm font-medium text-[#0F1419] dark:text-[#FAFBFC]">{t("lobp.sixty")}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-[#10B981] rounded-full"></div>
-                  <span className="text-sm font-medium text-[#0F1419] dark:text-[#FAFBFC]">Sum assured adequacy + gaps</span>
+                  <span className="text-sm font-medium text-[#0F1419] dark:text-[#FAFBFC]">{t("lobp.l_sa_gaps")}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-[#00B4D8] rounded-full"></div>
-                  <span className="text-sm font-medium text-[#0F1419] dark:text-[#FAFBFC]">Downloadable report</span>
+                  <span className="text-sm font-medium text-[#0F1419] dark:text-[#FAFBFC]">{t("lobp.downloadable")}</span>
                 </div>
               </div>
             </div>
@@ -155,7 +157,7 @@ export default function LifePage() {
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-red-900 dark:text-red-200 mb-1">Upload Failed</p>
+                      <p className="text-sm font-semibold text-red-900 dark:text-red-200 mb-1">{t("lobp.upload_failed")}</p>
                       <p className="text-xs text-red-700 dark:text-red-300 mb-2">{error}</p>
                       <div className="flex gap-2">
                         <Button
@@ -168,7 +170,7 @@ export default function LifePage() {
                           }}
                           className="border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 text-xs h-7"
                         >
-                          Dismiss
+                          {t("lobp.dismiss")}
                         </Button>
                         <Button
                           size="sm"
@@ -181,7 +183,7 @@ export default function LifePage() {
                           }}
                           className="bg-red-600 hover:bg-red-700 text-white text-xs h-7"
                         >
-                          Try Again
+                          {t("lobp.try_again")}
                         </Button>
                       </div>
                     </div>
@@ -221,12 +223,12 @@ export default function LifePage() {
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <p className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC]">File Selected</p>
+                          <p className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC]">{t("lobp.file_selected")}</p>
                           <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF] font-mono bg-[#F3F4F6] dark:bg-[#0F1419] px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
                             {selectedFile.name}
                           </p>
                           {fileSize && (
-                            <p className="text-xs text-[#9CA3AF] dark:text-[#6B7280]">Size: {fileSize}</p>
+                            <p className="text-xs text-[#9CA3AF] dark:text-[#6B7280]">{t("lobp.size", { size: fileSize })}</p>
                           )}
                         </div>
                       </div>
@@ -239,8 +241,8 @@ export default function LifePage() {
                           </div>
                         </div>
                         <div>
-                          <p className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-1">Analyzing...</p>
-                          <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF]">Reading your policy</p>
+                          <p className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-1">{t("lobp.analyzing")}</p>
+                          <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF]">{t("lobp.reading")}</p>
                         </div>
                       </div>
                     ) : (
@@ -255,16 +257,16 @@ export default function LifePage() {
 
                         {/* Main text */}
                         <div className="space-y-2">
-                          <p className="text-xl font-bold text-[#0F1419] dark:text-[#FAFBFC]">Drop your PDF here</p>
+                          <p className="text-xl font-bold text-[#0F1419] dark:text-[#FAFBFC]">{t("lobp.drop")}</p>
                           <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF]">
-                            or <span className="text-[#00B4D8] dark:text-[#00B4D8] font-semibold hover:underline">click to browse</span>
+                            {t("lobp.or")} <span className="text-[#00B4D8] dark:text-[#00B4D8] font-semibold hover:underline">{t("lobp.browse")}</span>
                           </p>
                         </div>
 
                         {/* File info */}
                         <div className="w-full space-y-2 pt-2">
                           <p className="text-xs text-[#9CA3AF] dark:text-[#6B7280]">
-                            PDF, PNG, JPG • Max 25 MB
+                            {t("lobp.formats")}
                           </p>
                           <div className="flex flex-wrap justify-center gap-2">
                             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F3F4F6] dark:bg-[#0F1419] rounded-full border border-gray-200 dark:border-gray-700">
@@ -273,7 +275,7 @@ export default function LifePage() {
                             </div>
                             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F3F4F6] dark:bg-[#0F1419] rounded-full border border-gray-200 dark:border-gray-700">
                               <Lock className="w-3.5 h-3.5 text-[#10B981]" />
-                              <span className="text-xs font-medium text-[#0F1419] dark:text-[#FAFBFC]">Private</span>
+                              <span className="text-xs font-medium text-[#0F1419] dark:text-[#FAFBFC]">{t("lobp.private")}</span>
                             </div>
                           </div>
                           <button
@@ -282,7 +284,7 @@ export default function LifePage() {
                             className="mt-4 min-h-11 text-sm font-semibold text-[#00B4D8] hover:text-[#0099B4] hover:underline inline-flex items-center gap-2"
                           >
                             <FileText className="w-4 h-4" />
-                            View sample life analysis directly
+                            {t("lobp.l_sample")}
                           </button>
                         </div>
                       </div>
@@ -299,7 +301,7 @@ export default function LifePage() {
       <section className="relative z-10 py-8 md:py-12 px-6">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl sm:text-4xl md:text-[48px] font-semibold text-center text-black dark:text-[#FAFBFC] mb-12 md:mb-16 leading-[1.15] tracking-[-0.01em]">
-            Three steps to total clarity.
+            {t("lobp.three_steps")}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto relative">
@@ -321,9 +323,9 @@ export default function LifePage() {
                   <Upload className="w-8 h-8 text-[#00B4D8]" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Upload Your Policy</h3>
+              <h3 className="text-xl font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">{t("lobp.upload_policy")}</h3>
               <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                PDF only. Takes 10 seconds.
+                {t("lobp.pdf_only")}
               </p>
             </div>
 
@@ -339,9 +341,9 @@ export default function LifePage() {
                   <Brain className="w-8 h-8 text-[#00B4D8]" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">We Analyze</h3>
+              <h3 className="text-xl font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">{t("lobp.we_analyze")}</h3>
               <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                Our AI reads every clause, every rider, every exclusion.
+                {t("lobp.l_reads")}
               </p>
             </div>
 
@@ -357,9 +359,9 @@ export default function LifePage() {
                   <Lightbulb className="w-8 h-8 text-[#00B4D8]" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">You Understand</h3>
+              <h3 className="text-xl font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">{t("lobp.you_understand")}</h3>
               <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                Get a verdict on your coverage adequacy, gaps, and next steps.
+                {t("lobp.l_verdict")}
               </p>
             </div>
           </div>
@@ -370,7 +372,7 @@ export default function LifePage() {
       <section className="relative z-10 py-10 md:py-12 px-6">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-8">
-            What You'll Understand After Analysis
+            {t("lobp.understand_after")}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -384,9 +386,9 @@ export default function LifePage() {
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00B4D8]/20 to-[#10B981]/20 dark:from-[#00B4D8]/20 dark:to-[#10B981]/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <DollarSign className="w-6 h-6 text-[#00B4D8]" />
                 </div>
-                <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Sum Assured Adequacy</h3>
+                <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">{t("lobp.l_sa")}</h3>
                 <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                  Your ₹1cr coverage might seem enough, but is it? We calculate if it covers your family's needs—loans, education, spouse's retirement—for the next 20–30 years.
+                  {t("lobp.l_1cr")}
                 </p>
               </div>
             </div>
@@ -401,9 +403,9 @@ export default function LifePage() {
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#10B981]/20 to-[#00B4D8]/20 dark:from-[#10B981]/20 dark:to-[#00B4D8]/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Shield className="w-6 h-6 text-[#10B981]" />
                 </div>
-                <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Claim Conditions</h3>
+                <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">{t("lobp.l_claim")}</h3>
                 <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                  Suicide clause, non-disclosure penalties, exclusions—these can get your entire claim rejected. Most people don't know until it's too late. We surface these upfront.
+                  {t("lobp.l_claim_d")}
                 </p>
               </div>
             </div>
@@ -418,9 +420,9 @@ export default function LifePage() {
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F59E0B]/20 to-[#EF4444]/20 dark:from-[#F59E0B]/20 dark:to-[#EF4444]/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Users className="w-6 h-6 text-[#F59E0B]" />
                 </div>
-                <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Riders & Protection</h3>
+                <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">{t("lobp.l_riders")}</h3>
                 <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                  Accidental death, critical illness, disability riders—how they actually trigger and what they don't cover. Most people get this completely wrong and are shocked at claim time.
+                  {t("lobp.l_riders_d")}
                 </p>
               </div>
             </div>
@@ -432,57 +434,57 @@ export default function LifePage() {
       <section className="relative z-10 py-10 md:py-12 px-6">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-8">
-            Questions About Your Analysis
+            {t("lobp.questions")}
           </h2>
 
           <div className="space-y-3">
             <details className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
-                <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">How do you analyze policies?</span>
+                <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">{t("lobp.q_how")}</span>
                 <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
               </summary>
               <p className="mt-3 text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                We use AI to read your policy PDF clause-by-clause, extracting key terms: sum assured, riders, claim conditions, exclusions, waiting periods, maturity age, etc. Then we structure it into a human-readable verdict.
+                {t("lobp.l_a_how")}
               </p>
             </details>
 
             <details className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
-                <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Is my data safe?</span>
+                <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">{t("lobp.q_safe")}</span>
                 <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
               </summary>
               <p className="mt-3 text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                Yes. Your document is stored so you can open and download it again from your portfolio, and it is encrypted in transit. We never sell it and never pass it to an insurer or an advisor unless you ask us to. You can delete any policy, and the file behind it, whenever you want.
+                {t("lobp.a_safe")}
               </p>
             </details>
 
             <details className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
-                <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">What if my policy is unusual or custom?</span>
+                <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">{t("lobp.q_custom")}</span>
                 <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
               </summary>
               <p className="mt-3 text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                We handle standard term life, whole life, and endowment policies. Custom policies with unusual terms may need manual cross-checking with your insurer, and we flag this in the report.
+                {t("lobp.l_a_custom")}
               </p>
             </details>
 
             <details className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
-                <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">Can I download my analysis?</span>
+                <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">{t("lobp.q_download")}</span>
                 <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
               </summary>
               <p className="mt-3 text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                Yes. Your full verdict, findings, and recommendations are downloadable as PDF, shareable with family, advisors, or agents.
+                {t("lobp.a_download")}
               </p>
             </details>
 
             <details className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <summary className="flex min-h-11 items-center justify-between gap-3 cursor-pointer list-none">
-                <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">What if I disagree with the analysis?</span>
+                <span className="text-base font-semibold text-[#0F1419] dark:text-[#FAFBFC]">{t("lobp.q_disagree")}</span>
                 <ChevronDown className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" />
               </summary>
               <p className="mt-3 text-sm text-[#6B7280] dark:text-[#D1D5DB] leading-relaxed">
-                We read the policy as written. If there's ambiguity, we flag it and recommend you confirm with your insurer. Insurance terms can be subject to interpretation.
+                {t("lobp.a_disagree")}
               </p>
             </details>
           </div>
@@ -493,7 +495,7 @@ export default function LifePage() {
       <section className="relative z-10 py-10 md:py-12 px-6">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-8">
-            Now What?
+            {t("lobp.now_what")}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -502,16 +504,16 @@ export default function LifePage() {
               <div className="w-12 h-12 rounded-xl bg-[#00B4D8]/10 flex items-center justify-center mx-auto mb-4">
                 <Calculator className="w-6 h-6 text-[#00B4D8]" />
               </div>
-              <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Calculate Your Needs</h3>
+              <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">{t("lobp.l_calc")}</h3>
               <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] mb-4 leading-relaxed">
-                Found gaps in your coverage? Use our Calculator to see exactly how much sum assured your family actually needs.
+                {t("lobp.l_gaps")}
               </p>
               <Button
                 variant="outline"
                 onClick={() => setLocation("/calculator?type=life")}
                 className="border-gray-300 dark:border-gray-600"
               >
-                Calculate Your Needs
+                {t("lobp.l_calc")}
               </Button>
             </div>
 
@@ -520,15 +522,15 @@ export default function LifePage() {
               <div className="w-12 h-12 rounded-xl bg-[#10B981]/10 flex items-center justify-center mx-auto mb-4">
                 <Scale className="w-6 h-6 text-[#10B981]" />
               </div>
-              <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Compare Alternatives</h3>
+              <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">{t("lobp.compare_alt")}</h3>
               <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] mb-5 leading-relaxed">
-                Thinking about switching? Compare popular term life plans side-by-side and see which one covers your needs best.
+                {t("lobp.l_switch")}
               </p>
               <Button
                 onClick={() => setLocation("/compare?type=life")}
                 className="bg-[#10B981] hover:bg-[#059669] text-white font-semibold h-10 px-5"
               >
-                Compare Policies
+                {t("lobp.compare_pol")}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -538,16 +540,16 @@ export default function LifePage() {
               <div className="w-12 h-12 rounded-xl bg-[#00B4D8]/10 flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-6 h-6 text-[#00B4D8]" />
               </div>
-              <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">Share Your Analysis</h3>
+              <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">{t("lobp.share")}</h3>
               <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] mb-4 leading-relaxed">
-                Download your report as PDF. Share with family, discuss with your agent, or keep for your records.
+                {t("lobp.share_d")}
               </p>
               <Button
                 variant="outline"
                 disabled
                 className="border-gray-300 dark:border-gray-600 opacity-50 cursor-not-allowed"
               >
-                Download Report
+                {t("lobp.download_report")}
               </Button>
             </div>
           </div>

@@ -29,19 +29,23 @@ import { seoFor } from "@/data/seo-pages";
 import { BlogListingCTA } from "@/components/BlogCTA";
 import { BlogCover } from "@/components/BlogCover";
 import { ArrowRight } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { intlLocale } from "@/i18n";
+
+// Only the page chrome is translated; articles stay in English.
 
 
 const categories = [
-  { id: "All", label: "All", icon: BookOpen },
-  { id: "Health Insurance", label: "Health", icon: Heart },
-  { id: "Life Insurance", label: "Life", icon: Shield },
-  { id: "Vehicle Insurance", label: "Vehicle", icon: Car },
-  { id: "Home Insurance", label: "Home", icon: Home },
-  { id: "Travel Insurance", label: "Travel", icon: Plane },
-  { id: "Business Insurance", label: "Business", icon: Briefcase },
-  { id: "Education", label: "Education", icon: BookOpen },
-  { id: "Tips", label: "Tips", icon: AlertCircle },
-  { id: "Guide", label: "Guide", icon: BookOpen },
+  { id: "All", label: "blogp.c_all", icon: BookOpen },
+  { id: "Health Insurance", label: "blogp.c_health", icon: Heart },
+  { id: "Life Insurance", label: "blogp.c_life", icon: Shield },
+  { id: "Vehicle Insurance", label: "blogp.c_vehicle", icon: Car },
+  { id: "Home Insurance", label: "blogp.c_home", icon: Home },
+  { id: "Travel Insurance", label: "blogp.c_travel", icon: Plane },
+  { id: "Business Insurance", label: "blogp.c_business", icon: Briefcase },
+  { id: "Education", label: "blogp.c_education", icon: BookOpen },
+  { id: "Tips", label: "blogp.c_tips", icon: AlertCircle },
+  { id: "Guide", label: "blogp.c_guide", icon: BookOpen },
 ];
 
 /* This grid used raw Tailwind colours (green/blue/amber/rose/cyan/purple)
@@ -54,19 +58,20 @@ const categories = [
    element it was spread into sets `bg-white` afterwards, so only the text
    colour ever survived. */
 const insuranceCategories = [
-  { id: "Health Insurance", label: "Health Insurance", icon: Heart, accent: "var(--lob-health)", wash: "var(--lob-health-wash)", count: blogPosts.filter(p => p.insuranceType === "Health" || p.category === "Health Insurance").length },
-  { id: "Life Insurance", label: "Life Insurance", icon: Shield, accent: "var(--lob-life)", wash: "var(--lob-life-wash)", count: blogPosts.filter(p => p.insuranceType === "Life" || p.category === "Life Insurance").length },
-  { id: "Vehicle Insurance", label: "Vehicle Insurance", icon: Car, accent: "var(--lob-motor)", wash: "var(--lob-motor-wash)", count: blogPosts.filter(p => p.insuranceType === "Vehicle" || p.category === "Vehicle Insurance").length },
-  { id: "Home Insurance", label: "Home Insurance", icon: Home, accent: "var(--lob-home)", wash: "var(--lob-home-wash)", count: blogPosts.filter(p => p.insuranceType === "Home" || p.category === "Home Insurance").length },
-  { id: "Travel Insurance", label: "Travel Insurance", icon: Plane, accent: "var(--lob-travel)", wash: "var(--lob-travel-wash)", count: blogPosts.filter(p => p.insuranceType === "Travel" || p.category === "Travel Insurance").length },
-  { id: "Business Insurance", label: "Business Insurance", icon: Briefcase, accent: "var(--lob-business)", wash: "var(--lob-business-wash)", count: blogPosts.filter(p => p.insuranceType === "Business" || p.category === "Business Insurance").length },
-  { id: "General", label: "General", icon: BookOpen, accent: "var(--lob-general)", wash: "var(--lob-general-wash)", count: blogPosts.filter(p => p.insuranceType === "General" || p.category === "General").length },
+  { id: "Health Insurance", label: "blogp.t_health", icon: Heart, accent: "var(--lob-health)", wash: "var(--lob-health-wash)", count: blogPosts.filter(p => p.insuranceType === "Health" || p.category === "Health Insurance").length },
+  { id: "Life Insurance", label: "blogp.t_life", icon: Shield, accent: "var(--lob-life)", wash: "var(--lob-life-wash)", count: blogPosts.filter(p => p.insuranceType === "Life" || p.category === "Life Insurance").length },
+  { id: "Vehicle Insurance", label: "blogp.t_vehicle", icon: Car, accent: "var(--lob-motor)", wash: "var(--lob-motor-wash)", count: blogPosts.filter(p => p.insuranceType === "Vehicle" || p.category === "Vehicle Insurance").length },
+  { id: "Home Insurance", label: "blogp.t_home", icon: Home, accent: "var(--lob-home)", wash: "var(--lob-home-wash)", count: blogPosts.filter(p => p.insuranceType === "Home" || p.category === "Home Insurance").length },
+  { id: "Travel Insurance", label: "blogp.t_travel", icon: Plane, accent: "var(--lob-travel)", wash: "var(--lob-travel-wash)", count: blogPosts.filter(p => p.insuranceType === "Travel" || p.category === "Travel Insurance").length },
+  { id: "Business Insurance", label: "blogp.t_business", icon: Briefcase, accent: "var(--lob-business)", wash: "var(--lob-business-wash)", count: blogPosts.filter(p => p.insuranceType === "Business" || p.category === "Business Insurance").length },
+  { id: "General", label: "blogp.t_general", icon: BookOpen, accent: "var(--lob-general)", wash: "var(--lob-general-wash)", count: blogPosts.filter(p => p.insuranceType === "General" || p.category === "General").length },
 ];
 
 const PAGE_SIZE = 12;
 
 export default function Blog() {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const { t, locale } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -104,7 +109,7 @@ export default function Blog() {
 
       {/* Header */}
       <Header />
-      <Breadcrumbs items={[{ label: "Blog" }]} />
+      <Breadcrumbs items={[{ label: t("blogp.crumb") }]} />
 
       {/* Main Content */}
       <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-8 md:pb-12 w-full">
@@ -120,14 +125,18 @@ export default function Blog() {
             />
           </div>
           <span className="mb-5 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)]">
-            The library
+            {t("blogp.library")}
           </span>
           <h1 className="text-4xl md:text-5xl lg:text-[52px] font-bold font-serif text-[var(--color-text-main)] mb-4 leading-[1.1]">
-            The fine print, <span className="italic text-[var(--color-teal-600)]">explained.</span>
+            {t("blogp.h_a")} <span className="italic text-[var(--color-teal-600)]">{t("blogp.h_b")}</span>
           </h1>
           <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto mb-10 leading-relaxed font-light">
-            Clear, honest answers to every insurance question — no jargon, no sales pitch.
+            {t("blogp.sub")}
           </p>
+
+          {locale === "hi" && (
+            <p className="-mt-6 mb-8 text-sm text-[var(--color-text-secondary)]">{t("blogp.english_note")}</p>
+          )}
 
           {/* Search Bar */}
           <div className="mx-auto mb-6 max-w-[560px]">
@@ -135,7 +144,7 @@ export default function Blog() {
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-teal-600)]" aria-hidden="true" />
               <Input
                 type="text"
-                placeholder="Search articles, terms, topics..."
+                placeholder={t("blogp.search")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-14 rounded-2xl border border-[var(--color-border-medium)] bg-white pl-12 pr-12 text-base text-[var(--color-text-main)] shadow-sm placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-teal-600)] focus:ring-0"
@@ -144,7 +153,7 @@ export default function Blog() {
                 <button
                   onClick={() => setSearchQuery("")}
                   className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg transition-colors hover:bg-[var(--color-cream-dark)]"
-                  aria-label="Clear search"
+                  aria-label={t("blogp.clear")}
                 >
                   <X className="w-4 h-4 text-[var(--color-text-secondary)]" />
                 </button>
@@ -152,7 +161,7 @@ export default function Blog() {
             </div>
             {searchQuery && (
               <p className="text-sm text-[var(--color-text-secondary)] mt-2">
-                Found {filteredPosts.length} article{filteredPosts.length !== 1 ? 's' : ''}
+                {filteredPosts.length === 1 ? t("blogp.found_one") : t("blogp.found_n", { n: filteredPosts.length })}
               </p>
             )}
           </div>
@@ -174,7 +183,7 @@ export default function Blog() {
                   }`}
                 >
                   <CategoryIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  {category.label}
+                  {t(category.label)}
                 </button>
               );
             })}
@@ -191,7 +200,7 @@ export default function Blog() {
                   <div className="relative h-full min-h-[280px] md:min-h-[320px] overflow-hidden">
                     <div className="absolute top-4 left-4 z-10">
                       <span className="inline-block px-3 py-1 bg-[var(--color-cta)] text-white text-xs font-semibold rounded-full uppercase tracking-wider">
-                        FEATURED
+                        {t("blogp.featured")}
                       </span>
                     </div>
                     <BlogCover title={topFeaturedPost.title} category={topFeaturedPost.category} />
@@ -213,10 +222,10 @@ export default function Blog() {
                     <div className="flex items-center gap-4 text-xs text-[var(--color-text-muted)] mb-6 uppercase tracking-widest font-medium">
                       <span>{topFeaturedPost.readTime}</span>
                       <span>•</span>
-                      <span>{new Date(topFeaturedPost.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      <span>{new Date(topFeaturedPost.date).toLocaleDateString(intlLocale(locale), { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
                     <Button variant="outline" className="w-fit border-[var(--color-green-primary)] text-[var(--color-green-primary)] hover:bg-[var(--color-green-primary)] hover:text-white transition-all">
-                      Read Full Article
+                      {t("blogp.read_full")}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </div>
@@ -230,10 +239,10 @@ export default function Blog() {
         {selectedCategory === "All" && searchQuery === "" && (
           <div className="mb-16 bg-[var(--color-white)] rounded-2xl p-6 sm:p-8 md:p-16 border border-[var(--color-border-light)] shadow-sm">
             <h2 className="text-2xl md:text-3xl font-bold text-center font-serif text-[var(--color-text-main)] mb-3">
-              Browse by Insurance Type
+              {t("blogp.browse")}
             </h2>
             <p className="text-center text-[var(--color-text-secondary)] mb-10 font-light">
-              Find articles on the type of insurance you're learning about
+              {t("blogp.browse_d")}
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
               {insuranceCategories.map((cat) => {
@@ -257,10 +266,10 @@ export default function Blog() {
                       <Icon className="w-6 h-6" aria-hidden="true" />
                     </div>
                     <div className="relative text-[15px] font-semibold text-[var(--color-text-main)] mb-1">
-                      {cat.label}
+                      {t(cat.label)}
                     </div>
                     <div className="relative text-sm text-[var(--color-text-secondary)]">
-                      {cat.count} article{cat.count !== 1 ? 's' : ''}
+                      {cat.count === 1 ? t("blogp.n_art_one") : t("blogp.n_art", { n: cat.count })}
                     </div>
                   </button>
                 );
@@ -273,15 +282,17 @@ export default function Blog() {
         <div className="mb-16">
           {selectedCategory !== "All" || searchQuery !== "" ? (
             <h2 className="text-2xl md:text-3xl font-bold font-serif mb-8 text-[var(--color-text-main)]">
-              {searchQuery ? `Search Results (${regularPosts.length})` : `${selectedCategory} Articles`}
+              {searchQuery
+                ? t("blogp.results", { n: regularPosts.length })
+                : t("blogp.cat_articles", { cat: t(categories.find((c) => c.id === selectedCategory)?.label ?? selectedCategory) })}
             </h2>
           ) : (
             <div className="mb-8 flex flex-col gap-3">
               <span className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)]">
-                Everything we have written
+                {t("blogp.everything")}
               </span>
               <h2 className="font-serif text-2xl font-bold text-[var(--color-navy-900)] md:text-3xl">
-                All articles
+                {t("blogp.all_articles")}
               </h2>
               <span className="rule-accent" />
             </div>
@@ -311,7 +322,7 @@ export default function Blog() {
                           <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)] mt-4 uppercase tracking-wider font-medium">
                             <span>{post.readTime}</span>
                             <span>•</span>
-                            <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                            <span>{new Date(post.date).toLocaleDateString(intlLocale(locale), { month: 'short', day: 'numeric' })}</span>
                           </div>
                         </CardContent>
                       </Card>
@@ -328,7 +339,7 @@ export default function Blog() {
                     onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
                     className="h-12 px-8 border-[var(--color-border-medium)] text-[var(--color-text-secondary)] hover:bg-[var(--color-cream-dark)] hover:text-[var(--color-text-main)]"
                   >
-                    Load More Articles ({regularPosts.length - visibleCount} more)
+                    {t("blogp.load_more", { n: regularPosts.length - visibleCount })}
                   </Button>
                 </div>
               )}
@@ -338,7 +349,7 @@ export default function Blog() {
               <div className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-amber-50 border border-amber-200">
                 <AlertCircle className="w-5 h-5 text-amber-600" />
                 <span className="text-sm font-semibold text-amber-700">
-                  No articles found. Try a different search or category.
+                  {t("blogp.none")}
                 </span>
               </div>
             </div>

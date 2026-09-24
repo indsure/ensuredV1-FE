@@ -3,6 +3,7 @@
 // <Route path="/privacy-policy" component={PrivacyPolicy} />
 // Update the Footer.tsx links from href="#" to href="/privacy-policy"
 
+import { LegalHindiNote } from "@/components/LegalHindiNote";
 import { useEffect } from "react";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
@@ -217,6 +218,7 @@ export default function PrivacyPolicy() {
         {/* Title block */}
         <div className="mb-12">
           <p className="text-xs font-medium tracking-widest text-gray-400 uppercase mb-3">Legal</p>
+          <LegalHindiNote />
           <h1 className="text-3xl sm:text-4xl font-semibold text-gray-900 mb-4 leading-tight">Privacy Policy</h1>
           <p className="text-gray-500 text-sm leading-relaxed">
             Effective date: {EFFECTIVE_DATE}. This policy describes how IndSure collects, uses, stores, and protects

@@ -30,6 +30,7 @@ export const MyProfile = lazyWithPreload(() => import("@/pages/agent/MyProfile")
 export const AgentMyPage = lazyWithPreload(() => import("@/pages/agent/MyPage"));
 export const AgentTeam = lazyWithPreload(() => import("@/pages/agent/Team"));
 export const AgentTeamMember = lazyWithPreload(() => import("@/pages/agent/TeamMember"));
+export const AgentHelp = lazyWithPreload(() => import("@/pages/agent/Help"));
 
 /**
  * Wave 1: everything the sidebar can reach in one click, most-likely-first.
@@ -58,6 +59,7 @@ const NAV_ROUTES: PreloadableComponent<any>[] = [
   SettingsNew,
   MyProfile,
   AgentTeam,
+  AgentHelp,
 ];
 
 /**
@@ -108,6 +110,7 @@ const ROUTE_BY_PATH: Record<string, PreloadableComponent<any>> = {
   "/agent/riders": RiderDirectory,
   "/agent/settings": SettingsNew,
   "/agent/profile": MyProfile,
+  "/agent/help": AgentHelp,
 };
 
 /** Prefetch the chunk behind a nav href. Safe to call on every hover. */

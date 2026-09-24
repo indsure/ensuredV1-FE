@@ -1,10 +1,11 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation, useSearch } from "wouter"
-import { BookOpen, ChevronRight, FileText, LayoutDashboard, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
+import { BookOpen, ChevronRight, FileText, HelpCircle, LayoutDashboard, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
 import PlaygroundBanner from "@/components/agent/PlaygroundBanner"
+import PlaygroundTour from "@/components/agent/PlaygroundTour"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext"
@@ -394,6 +395,19 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
             {!sidebarCollapsed && <div className="px-2 text-xs font-black uppercase tracking-[0.25em] text-white/40 mb-3">{t("layout.account")}</div>}
             <nav className="space-y-1">
               <Link
+                to="/agent/help"
+                {...warm("/agent/help")}
+                className={[
+                  "flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
+                  location === "/agent/help" ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
+                  sidebarCollapsed ? "justify-center" : ""
+                ].join(" ")}
+                title={sidebarCollapsed ? label("layout.help", "Help") : undefined}
+              >
+                <HelpCircle className="h-4 w-4" />
+                {!sidebarCollapsed && label("layout.help", "Help")}
+              </Link>
+              <Link
                 to="/agent/settings"
                 {...warm("/agent/settings")}
                 className={[
@@ -481,6 +495,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         <div className="flex-1 p-4 pb-24 md:p-6 md:pb-6 lg:p-8 lg:pt-2">{children}</div>
         <AgentTabBar onMore={() => setMobileOpen(true)} />
       </main>
+      <PlaygroundTour hidden={mobileOpen} />
 
     </div>
   )

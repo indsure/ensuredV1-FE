@@ -1,199 +1,266 @@
-import { Link } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Accordion } from "@/components/ui/accordion";
-import { 
-  Mail, 
-  MessageCircle, 
-  FileText, 
-  Search,
-  ArrowLeft,
-  HelpCircle,
-  BookOpen,
-  Video,
-  Phone
-} from "lucide-react";
-import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { Link } from "wouter";
+import { Mail, MessagesSquare, BookOpen, Plus, ArrowRight, Briefcase } from "lucide-react";
+import { Reveal, Stagger, RevealItem } from "@/components/motion";
+import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 
-export default function Help() {
-  useSEO(seoFor("/help"));
-  const faqItems = [
-    {
-      question: "How does the policy analysis work?",
-      answer: "Upload your health insurance policy PDF. Our AI extracts key coverage details, analyzes sufficiency against common medical costs, and generates a clear verdict with identified gaps. The entire process takes about 60 seconds."
-    },
-    {
-      question: "Is my data stored?",
-      // Policies persist in individual_policies and are removed only by their
-      // owner. That handler deletes the storage object FIRST and refuses to
-      // drop the row if the file delete fails, which is what the "we leave the
-      // record alone" sentence describes. The 90 days is RETENTION_GRACE_DAYS.
-      // claim-source: backend/server/routes.ts:4565, :4584-4596;
-      // pages/app/portfolio.tsx:157; backend/server/index.ts:80.
-      answer: "Yes, and deliberately so — storing them is the product. A policy you save stays in your portfolio, with its document, so we can show your cover in one place and remind you before it renews. It stays until you delete it. Deleting a policy removes the stored document too, and if the document cannot be removed we leave the record alone rather than tell you it is gone. Reports left over from a check you never saved are cleared after 90 days."
-    },
-    {
-      question: "What format should my policy be in?",
-      answer: "We support PDF format only. The PDF should be a clear scan or digital copy of your health insurance policy document."
-    },
-    {
-      question: "Will I receive sales calls?",
-      answer: "Only if you ask for one. Creating a free account needs your name, mobile number and email, and we use them to run your account and send renewal reminders. We do not sell insurance products, and we do not pass your details to an advisor unless you tap 'Talk to an advisor' yourself."
-    },
-    {
-      question: "How accurate is the analysis?",
-      answer: "Our AI uses deterministic analysis based on IRDAI guidelines and common medical cost patterns. The analysis identifies coverage gaps and provides actionable insights, but you should always consult with your insurer for specific coverage questions."
-    },
-    {
-      question: "Can I compare multiple policies?",
-      answer: "Yes! Use our comparison tool to upload multiple policies and see side-by-side comparisons of coverage, premiums, and key features."
-    },
-    {
-      question: "What if my policy is in Hindi or another language?",
-      answer: "Currently, we support English language policies. If your policy is in another language, please contact support and we'll work on adding support for additional languages."
-    },
-    {
-      question: "Is the service free?",
-      // Plan contents and the ₹999 price mirror the live /pricing table. "No
-      // expiry" is enforced server-side: the 30-day trial gate was removed and
-      // Free is now capped by slots, not by time.
-      // claim-source: pricing.tsx; backend/server/routes.ts:771, :784-789.
-      answer: "There is a free plan, not a free product. It covers one policy check of each type — health, term, life and vehicle — with no card and no expiry date. Beyond that, Personal is ₹999 a year. We do not sell insurance and earn no commission from insurers, which is why you pay us. See the pricing page for what each plan includes."
-    }
-  ];
+/* ============================================================
+   HELP
 
-  const supportOptions = [
-    {
-      icon: Mail,
-      title: "Email Support",
-      description: "Get help via email",
-      action: "nikhil@indsure.in",
-      href: "mailto:nikhil@indsure.in"
-    },
-    {
-      icon: MessageCircle,
-      title: "FAQ",
-      description: "Browse frequently asked questions",
-      action: "View FAQ",
-      href: "#faq"
-    },
-    {
-      icon: FileText,
-      title: "Documentation",
-      description: "Learn how to use our tools",
-      action: "Read Docs",
-      href: "/blog"
-    }
-  ];
+   This page predated the public-site design system and still
+   wore the old look: a mint page wash, four pulsing blurred
+   blobs, generic grey type and shadcn cards. It is rebuilt on
+   the same kit as /why-indsure and /pricing: cream hero with a
+   serif headline, one mint section for the questions, an ink
+   close. The FAQ copy is unchanged, only the chrome is new.
+   ============================================================ */
+
+const SUPPORT_EMAIL = "nikhil@indsure.in";
+
+// Visible strings are translation keys, rendered with t().
+const faqItems = [
+  { q: "help.q1", a: "help.a1" },
+  // Policies persist in individual_policies and are removed only by their
+  // owner. That handler deletes the storage object FIRST and refuses to
+  // drop the row if the file delete fails, which is what the "we leave the
+  // record alone" sentence describes. The 90 days is RETENTION_GRACE_DAYS.
+  // claim-source: backend/server/routes.ts:4565, :4584-4596;
+  // pages/app/portfolio.tsx:157; backend/server/index.ts:80.
+  { q: "help.q2", a: "help.a2" },
+  { q: "help.q3", a: "help.a3" },
+  { q: "help.q4", a: "help.a4" },
+  { q: "help.q5", a: "help.a5" },
+  { q: "help.q6", a: "help.a6" },
+  { q: "help.q7", a: "help.a7" },
+  // Plan contents and the ₹999 price mirror the live /pricing table. "No
+  // expiry" is enforced server-side: the 30-day trial gate was removed and
+  // Free is now capped by slots, not by time.
+  // claim-source: pricing.tsx; backend/server/routes.ts:771, :784-789.
+  { q: "help.q8", a: "help.a8" },
+];
+
+/* Three ways in. The third used to be labelled "Documentation" and
+   pointed at /blog, which is articles, not docs, so it now says what
+   it is. Colours are health / life / travel so the row reads as three
+   different doors rather than one card printed three times. */
+const routes = [
+  {
+    icon: Mail,
+    title: "help.email_t",
+    body: "help.email_d",
+    action: SUPPORT_EMAIL,
+    href: `mailto:${SUPPORT_EMAIL}`,
+    accent: "var(--lob-health)",
+    wash: "var(--lob-health-wash)",
+  },
+  {
+    icon: MessagesSquare,
+    title: "help.faq_t",
+    body: "help.faq_d",
+    action: "help.faq_a",
+    href: "#faq",
+    accent: "var(--lob-life)",
+    wash: "var(--lob-life-wash)",
+  },
+  {
+    icon: BookOpen,
+    title: "help.guides_t",
+    body: "help.guides_d",
+    action: "help.guides_a",
+    href: "/blog",
+    accent: "var(--lob-travel)",
+    wash: "var(--lob-travel-wash)",
+  },
+];
+
+// Same look as the shared CTA, but a plain <a>: wouter's Link would treat
+// a mailto: as an in-app route.
+const MAIL_CTA =
+  "inline-flex h-[52px] items-center justify-center gap-2 rounded-lg px-6 text-base font-semibold transition-all duration-200 bg-[var(--color-cta)] text-white hover:bg-[#0F766E] hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-8px_rgba(13,148,136,0.6)]";
+
+export default function Help() {
+  const { t } = useLanguage();
+  useSEO(seoFor("/help"));
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0FFFE] dark:bg-[#0F1419] relative">
-      {/* Animated background elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-20 -left-40 w-80 h-80 bg-blue-400/30 dark:bg-blue-500/15 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 -right-40 w-96 h-96 bg-cyan-400/30 dark:bg-cyan-500/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-teal-400/25 dark:bg-teal-500/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-indigo-400/20 dark:bg-indigo-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-      </div>
+    <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
       <Header />
-      
-      <Breadcrumbs items={[
-        { label: "Home", href: "/" },
-        { label: "Help & Support", href: "/help" }
-      ]} />
 
-      <main id="main-content" className="flex-1 container mx-auto px-4 sm:px-6 pt-32 sm:pt-36 md:pt-40 pb-8 sm:pb-12" role="main">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            Help & Support
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Find answers to common questions or get in touch with our support team
-          </p>
-        </div>
+      <main id="main-content" className="flex-grow pt-32" role="main">
 
-        {/* Support Options */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {supportOptions.map((option, index) => {
-            const Icon = option.icon;
-            return (
-              <Card key={index} clickable className="text-center">
-                <CardHeader>
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-lg bg-gradient-to-br from-[#1A3A52] to-[#4A9B9E] flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
-                  <CardTitle className="text-xl">{option.title}</CardTitle>
-                  <CardDescription>{option.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {option.href.startsWith("mailto:") ? (
-                    <a
-                      href={option.href}
-                      className="inline-flex min-h-11 items-center text-[#1A3A52] dark:text-[#4A9B9E] hover:underline font-medium break-all"
+        {/* ─────────── HERO ─────────── */}
+        <section className="relative overflow-hidden pb-14 sm:pb-20">
+          <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+            <div className="absolute inset-0 bg-grid-faint mask-fade-edges" />
+            <div
+              className="absolute -top-40 left-1/2 h-[540px] w-[900px] -translate-x-1/2 rounded-full opacity-70 blur-3xl"
+              style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.20), transparent 68%)" }}
+            />
+          </div>
+
+          <div className="container-editorial relative">
+            <Reveal className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
+              <Eyebrow>{t("help.eyebrow")}</Eyebrow>
+
+              <h1 className="font-serif font-bold tracking-[-0.035em] leading-[1.05] text-4xl sm:text-6xl lg:text-7xl text-[var(--color-navy-900)]">
+                {t("help.h_a")}
+                <br />
+                <span className="italic text-[var(--color-teal-600)]">{t("help.h_b")}</span>
+              </h1>
+
+              <p className="max-w-2xl text-lg sm:text-xl leading-relaxed text-[var(--color-text-secondary)]">
+                {t("help.sub")}
+              </p>
+            </Reveal>
+
+            {/* ─────────── THREE DOORS ─────────── */}
+            <Stagger className="mx-auto mt-14 grid max-w-5xl gap-5 md:grid-cols-3">
+              {routes.map((r) => {
+                const isMail = r.href.startsWith("mailto:");
+                const card = (
+                  <article
+                    className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-7 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_-16px_rgba(15,23,42,0.18)]"
+                    style={{ boxShadow: "0 1px 2px rgba(15,23,42,0.05), 0 0 0 1px rgba(15,23,42,0.05)" }}
+                  >
+                    <span
+                      className="absolute inset-x-0 top-0 h-1 origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100"
+                      style={{ backgroundColor: r.accent }}
+                      aria-hidden="true"
+                    />
+
+                    <span
+                      className="flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105"
+                      style={{ backgroundColor: r.wash, color: r.accent }}
                     >
-                      {option.action}
-                    </a>
-                  ) : (
-                    <Link href={option.href}>
-                      <Button variant="outline" className="w-full">
-                        {option.action}
-                      </Button>
-                    </Link>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                      <r.icon className="h-5 w-5" aria-hidden="true" />
+                    </span>
 
-        {/* FAQ Section */}
-        <section id="faq" className="mb-12">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              Frequently Asked Questions
+                    <div className="flex flex-col gap-1.5">
+                      <h2 className="font-serif text-2xl font-bold text-[var(--color-navy-900)]">
+                        {t(r.title)}
+                      </h2>
+                      <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
+                        {t(r.body)}
+                      </p>
+                    </div>
+
+                    <span
+                      className="mt-auto inline-flex items-center gap-2 pt-2 text-base font-semibold break-all"
+                      style={{ color: r.accent }}
+                    >
+                      {isMail ? r.action : t(r.action)}
+                      <ArrowRight className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
+                    </span>
+                  </article>
+                );
+
+                return (
+                  <RevealItem key={r.title}>
+                    {isMail || r.href.startsWith("#") ? (
+                      <a href={r.href} className="block h-full rounded-2xl">{card}</a>
+                    ) : (
+                      <Link href={r.href} className="block h-full rounded-2xl">{card}</Link>
+                    )}
+                  </RevealItem>
+                );
+              })}
+            </Stagger>
+          </div>
+        </section>
+
+        {/* ─────────── QUESTIONS ─────────── */}
+        <Section surface="mint" id="faq">
+          <div className="container-editorial grid gap-10 lg:grid-cols-[minmax(0,340px)_1fr] lg:gap-16">
+            <div className="flex flex-col gap-6 lg:sticky lg:top-32 lg:self-start">
+              <SectionHeading
+                eyebrow={t("help.faq_eyebrow")}
+                title={t("help.faq_h")}
+                sub={t("help.faq_sub")}
+              />
+
+              {/* Advisors land here from the footer too. Their answers live
+                  in /docs, so point them there instead of making them read
+                  consumer questions. */}
+              <Link
+                href="/docs"
+                className="group flex items-start gap-4 rounded-2xl border border-[var(--color-border-light)] bg-white p-5 transition-colors hover:border-[var(--color-teal-600)]/40"
+              >
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: "var(--lob-business-wash)", color: "var(--lob-business)" }}
+                >
+                  <Briefcase className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="flex flex-col gap-1">
+                  <span className="text-base font-semibold text-[var(--color-navy-900)]">
+                    {t("help.adv_t")}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-[var(--color-teal-600)]">
+                    {t("help.adv_a")}
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
+                  </span>
+                </span>
+              </Link>
+            </div>
+
+            <Stagger className="flex flex-col gap-3">
+              {faqItems.map((f) => (
+                <RevealItem key={f.q}>
+                  <details className="group rounded-xl border border-[var(--color-border-light)] bg-white px-5 py-4 open:border-[var(--color-teal-600)]/30">
+                    <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-[17px] font-semibold text-[var(--color-navy-900)]">
+                      {t(f.q)}
+                      <Plus
+                        className="mt-1 h-5 w-5 shrink-0 text-[var(--color-teal-600)] transition-transform duration-300 group-open:rotate-45"
+                        aria-hidden="true"
+                      />
+                    </summary>
+                    <p className="mt-3 text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
+                      {t(f.a)}
+                    </p>
+                  </details>
+                </RevealItem>
+              ))}
+            </Stagger>
+          </div>
+        </Section>
+
+        {/* ─────────── CLOSE ─────────── */}
+        <Section surface="ink" className="relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+            <div className="absolute inset-0 bg-grid-faint-dark mask-fade-edges" />
+            <div
+              className="absolute left-1/2 top-0 h-[420px] w-[820px] -translate-x-1/2 -translate-y-1/3 rounded-full blur-3xl"
+              style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.22), transparent 70%)" }}
+            />
+          </div>
+
+          <Reveal className="container-editorial relative flex flex-col items-center gap-6 text-center">
+            <h2 className="font-serif text-3xl font-bold tracking-[-0.03em] leading-[1.1] text-white sm:text-5xl">
+              {t("help.still")}
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Quick answers to common questions
-            </p>
-          </div>
-          <div className="max-w-3xl mx-auto">
-            <Accordion items={faqItems} />
-          </div>
-        </section>
 
-        {/* Contact Section */}
-        <section className="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center">
-          <HelpCircle className="w-12 h-12 mx-auto mb-4 text-[#1A3A52] dark:text-[#4A9B9E]" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Still need help?
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Our support team is here to assist you
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="mailto:nikhil@indsure.in">
-              <Button className="bg-[#1A3A52] hover:bg-[#2d5a7b] text-white">
-                <Mail className="w-4 h-4 mr-2" />
-                Email Us
-              </Button>
-            </a>
-            <Link href="/">
-              <Button variant="outline">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-            </Link>
-          </div>
-        </section>
+            <p className="max-w-2xl text-lg leading-relaxed text-white/80">
+              {t("help.here")}
+            </p>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <a href={`mailto:${SUPPORT_EMAIL}`} className={MAIL_CTA}>
+                <Mail className="h-4 w-4" aria-hidden="true" />
+                {t("help.email_us")}
+              </a>
+              <CTA href="/" variant="ghost-ink">{t("help.back_home")}</CTA>
+            </div>
+
+            <p className="text-sm text-white/60">{SUPPORT_EMAIL}</p>
+          </Reveal>
+        </Section>
       </main>
 
       <Footer />
     </div>
   );
 }
-

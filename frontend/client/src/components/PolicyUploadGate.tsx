@@ -4,7 +4,8 @@ import { Upload, FileCheck, Loader2, AlertCircle, ShieldCheck } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { getApiBase } from "@/lib/queryClient";
 import { savePendingUpload, readPendingUpload, clearPendingUpload, type PendingUpload } from "@/lib/pendingUpload";
-import { LOBS } from "@/components/app/portfolio-utils";
+import { LOBS, lobLabel } from "@/components/app/portfolio-utils";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Upload first, sign up second.
 //
@@ -31,6 +32,7 @@ const ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.txt";
 const TYPES = LOBS.map((l) => ({ value: l.type, label: l.label }));
 
 export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
+  const { t } = useLanguage();
   const [pending, setPending] = useState<PendingUpload | null>(() => readPendingUpload());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
     async (file: File) => {
       setError(null);
       if (file.size > MAX_BYTES) {
-        setError("That file is larger than 10 MB. Try a smaller PDF.");
+        setError(t("gate.too_big"));
         return;
       }
       setBusy(true);
@@ -52,18 +54,18 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
         const res = await fetch(`${getApiBase()}/api/upload/pending`, { method: "POST", body: form });
         const body = await res.json().catch(() => ({}));
         if (!res.ok) {
-          setError(body.message || "We could not upload that file. Please try again.");
+          setError(body.message || t("gate.upload_failed"));
           return;
         }
         savePendingUpload(body);
         setPending(body);
       } catch {
-        setError("We could not reach the server. Check your connection and try again.");
+        setError(t("gate.no_server"));
       } finally {
         setBusy(false);
       }
     },
-    [type]
+    [type, t]
   );
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,7 +81,7 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
         <div className="flex items-start gap-3 mb-5">
           <FileCheck className="w-6 h-6 text-[var(--color-green-primary)] shrink-0 mt-0.5" aria-hidden="true" />
           <div className="min-w-0">
-            <h3 className="font-serif text-xl mb-1">Your policy is ready to check</h3>
+            <h3 className="font-serif text-xl mb-1">{t("gate.ready")}</h3>
             <p className="text-sm text-[var(--color-text-secondary)] break-words">
               {pending.filename}
             </p>
@@ -87,19 +89,18 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
         </div>
 
         <p className="text-[var(--color-text-main)] mb-2">
-          Create your free account to see what it actually covers.
+          {t("gate.create")}
         </p>
         <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-          We have not read it yet — the check starts the moment you sign in. Free
-          for one policy of each type, and no card is needed.
+          {t("gate.not_read")}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3">
           <Button asChild size="lg" className="w-full sm:w-auto">
-            <Link href="/signup">Sign up to view results</Link>
+            <Link href="/signup">{t("gate.signup")}</Link>
           </Button>
           <Button asChild size="lg" variant="secondary" className="w-full sm:w-auto">
-            <Link href="/login">I already have an account</Link>
+            <Link href="/login">{t("gate.have_account")}</Link>
           </Button>
         </div>
 
@@ -114,7 +115,7 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
           }}
           className="mt-5 text-sm text-[var(--color-text-muted)] underline underline-offset-4 hover:text-[var(--color-text-secondary)]"
         >
-          Upload a different file
+          {t("gate.different")}
         </button>
       </div>
     );
@@ -124,26 +125,25 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
   return (
     <div className="card-white p-6 md:p-8">
       {!compact && (
-        <h3 className="font-serif text-xl mb-2">Check your policy</h3>
+        <h3 className="font-serif text-xl mb-2">{t("gate.check")}</h3>
       )}
       <p className="text-sm text-[var(--color-text-secondary)] mb-5">
-        Upload the PDF your insurer sent you. We will tell you what it covers in
-        plain language.
+        {t("gate.intro")}
       </p>
 
-      <div className="flex flex-wrap gap-2 mb-5" role="group" aria-label="Policy type">
-        {TYPES.map((t) => (
+      <div className="flex flex-wrap gap-2 mb-5" role="group" aria-label={t("gate.type_group")}>
+        {TYPES.map((tp) => (
           <button
-            key={t.value}
-            onClick={() => setType(t.value)}
-            aria-pressed={type === t.value}
+            key={tp.value}
+            onClick={() => setType(tp.value)}
+            aria-pressed={type === tp.value}
             className={`inline-flex min-h-11 items-center justify-center px-4 py-2 rounded-lg text-sm font-semibold border transition-colors ${
-              type === t.value
+              type === tp.value
                 ? "bg-[var(--color-green-primary)] text-white border-[var(--color-green-primary)]"
                 : "bg-white text-[var(--color-text-secondary)] border-[var(--color-border-main)] hover:border-[var(--color-green-primary)]"
             }`}
           >
-            {t.label}
+            {lobLabel(t, tp.value)}
           </button>
         ))}
       </div>
@@ -166,12 +166,12 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
         {busy ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />
-            Uploading…
+            {t("gate.uploading")}
           </>
         ) : (
           <>
             <Upload className="w-4 h-4 mr-2" aria-hidden="true" />
-            Choose your policy PDF
+            {t("gate.choose")}
           </>
         )}
       </Button>
@@ -193,9 +193,7 @@ export function PolicyUploadGate({ compact = false }: { compact?: boolean }) {
       <p className="mt-5 flex items-start gap-2 text-sm text-[var(--color-text-muted)] leading-relaxed">
         <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
         <span>
-          We hold your file for 24 hours so you can see your results after signing
-          up, then delete it automatically if you do not. Maximum 10 MB. We never
-          sell your data and earn no commission from insurers.
+          {t("gate.hold")}
         </span>
       </p>
     </div>

@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "motion/react";
+import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext";
 
 /* ============================================================
    SITE HEADER
@@ -26,10 +27,11 @@ import { motion, AnimatePresence } from "motion/react";
    ============================================================ */
 
 const navLinks = [
-  { label: "How it works", href: "/how-it-works" },
-  { label: "Why IndSure", href: "/why-indsure" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Blog", href: "/blog" },
+  // Labels are translation keys; they are turned into words where rendered.
+  { label: "site.nav_how", href: "/how-it-works" },
+  { label: "site.nav_why", href: "/why-indsure" },
+  { label: "site.nav_pricing", href: "/pricing" },
+  { label: "site.nav_blog", href: "/blog" },
 ];
 
 /* Each tool carries its own colour and a line saying what it does.
@@ -37,33 +39,33 @@ const navLinks = [
    symptom of a menu of four bare nouns. */
 const toolsItems = [
   {
-    label: "Policy check",
+    label: "site.tool_check",
     href: "/policychecker",
-    desc: "What your policy actually covers",
+    desc: "site.tool_check_desc",
     icon: ScanSearch,
     accent: "var(--lob-health)",
     wash: "var(--lob-health-wash)",
   },
   {
-    label: "Cover Calculator",
+    label: "site.tool_calc",
     href: "/calculator",
-    desc: "How much cover your family needs",
+    desc: "site.tool_calc_desc",
     icon: Calculator,
     accent: "var(--lob-life)",
     wash: "var(--lob-life-wash)",
   },
   {
-    label: "Compare plans",
+    label: "site.tool_compare",
     href: "/compare",
-    desc: "Two wordings, side by side",
+    desc: "site.tool_compare_desc",
     icon: Scale,
     accent: "var(--lob-motor)",
     wash: "var(--lob-motor-wash)",
   },
   {
-    label: "Find a network hospital",
+    label: "site.tool_hospital",
     href: "/find-provider",
-    desc: "Which insurers cover your hospital",
+    desc: "site.tool_hospital_desc",
     icon: Hospital,
     accent: "var(--lob-travel)",
     wash: "var(--lob-travel-wash)",
@@ -72,6 +74,7 @@ const toolsItems = [
 
 export function Header() {
   const [location] = useLocation();
+  const { t } = useLanguage();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -124,7 +127,7 @@ export function Header() {
 
         {/* ─── LEFT: Logo + Nav ─── */}
         <div className="flex items-center gap-8 xl:gap-11 min-w-0">
-          <Link href="/" aria-label="IndSure home" className="shrink-0">
+          <Link href="/" aria-label={t("site.home_aria")} className="shrink-0">
             <img
               src="/logo.png"
               alt="IndSure"
@@ -132,7 +135,7 @@ export function Header() {
             />
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-1" aria-label="Main">
+          <nav className="hidden lg:flex items-center gap-1" aria-label={t("site.main_nav")}>
             {navLinks.slice(0, 2).map((item) => (
               <NavLink key={item.href} {...item} active={location === item.href} />
             ))}
@@ -146,7 +149,7 @@ export function Header() {
                       : "text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)]"
                   }`}
                 >
-                  Tools
+                  {t("site.tools")}
                   <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                   {toolsActive ? <ActiveRule /> : null}
                 </button>
@@ -171,10 +174,10 @@ export function Header() {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-[15px] font-semibold text-[var(--color-navy-900)]">
-                          {item.label}
+                          {t(item.label)}
                         </span>
                         <span className="block text-sm leading-snug text-[var(--color-text-secondary)]">
-                          {item.desc}
+                          {t(item.desc)}
                         </span>
                       </span>
                     </Link>
@@ -191,6 +194,9 @@ export function Header() {
 
         {/* ─── RIGHT: advisor path, then the consumer CTAs ─── */}
         <div className="hidden lg:flex items-center gap-3 shrink-0">
+          {/* Wide screens only: at 1024px the bar is already full. The footer
+              and the phone menu carry the toggle for everything narrower. */}
+          <div className="hidden xl:block"><LanguageToggle /></div>
           {/* Advisors are a different audience, not a fifth nav item. The
               divider is what says so.
 
@@ -202,7 +208,7 @@ export function Header() {
             className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[15px] font-medium text-[var(--color-text-secondary)] outline-none transition-colors hover:text-[var(--color-teal-600)]"
           >
             <Building2 className="h-4 w-4" aria-hidden="true" />
-            Advisor Portal
+            {t("site.advisor_portal")}
           </Link>
 
           <span className="h-5 w-px bg-[var(--color-border-medium)]" aria-hidden="true" />
@@ -215,14 +221,14 @@ export function Header() {
             className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--color-border-medium)] bg-white px-3.5 text-[15px] font-semibold text-[var(--color-navy-900)] transition-colors hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
           >
             <LogIn className="h-4 w-4" aria-hidden="true" />
-            Log in
+            {t("site.log_in")}
           </Link>
 
           <Link
             href="/signup"
             className="group inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--color-cta)] px-4 text-[15px] font-semibold text-white transition-all duration-200 hover:bg-[#0F766E] hover:shadow-[0_8px_20px_-6px_rgba(13,148,136,0.65)]"
           >
-            Get started free
+            {t("site.get_started")}
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
           </Link>
         </div>
@@ -239,12 +245,12 @@ export function Header() {
             className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-border-medium)] bg-white px-3 text-[15px] font-semibold text-[var(--color-navy-900)] transition-colors hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)]"
           >
             <LogIn className="h-4 w-4" aria-hidden="true" />
-            Log in
+            {t("site.log_in")}
           </Link>
           <button
             className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[var(--color-navy-900)] transition-colors hover:bg-[var(--color-cream-dark)]"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-label={mobileMenuOpen ? t("site.close_menu") : t("site.open_menu")}
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-nav"
           >
@@ -265,6 +271,10 @@ export function Header() {
             id="mobile-nav"
           >
             <div className="container-editorial max-h-[calc(100vh-5rem)] space-y-1 overflow-y-auto overscroll-contain py-5">
+              <div className="flex items-center justify-between px-3 pb-3">
+                <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">{t("site.language")}</span>
+                <LanguageToggle />
+              </div>
               {navLinks.map((item) => (
                 <Link
                   key={item.href}
@@ -276,13 +286,13 @@ export function Header() {
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {item.label}
+                  {t(item.label)}
                 </Link>
               ))}
 
               <div className="px-3 pb-1 pt-4">
                 <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
-                  Tools
+                  {t("site.tools")}
                 </span>
               </div>
 
@@ -301,10 +311,10 @@ export function Header() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[15px] font-semibold text-[var(--color-navy-900)]">
-                      {item.label}
+                      {t(item.label)}
                     </span>
                     <span className="block text-sm leading-snug text-[var(--color-text-secondary)]">
-                      {item.desc}
+                      {t(item.desc)}
                     </span>
                   </span>
                 </Link>
@@ -317,7 +327,7 @@ export function Header() {
                 className="block rounded-lg bg-[var(--color-cta)] px-3 py-3.5 text-center text-base font-semibold text-white transition-colors hover:bg-[#0F766E]"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Get started free
+                {t("site.get_started")}
               </Link>
 
               {/* No "Log in" here: the bar above the menu now carries one, and
@@ -329,7 +339,7 @@ export function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Building2 className="h-4 w-4" aria-hidden="true" />
-                Advisor Portal
+                {t("site.advisor_portal")}
               </Link>
             </div>
           </motion.div>
@@ -354,17 +364,18 @@ function ActiveRule() {
 }
 
 function NavLink({ label, href, active }: { label: string; href: string; active: boolean }) {
+  const { t } = useLanguage();
   return (
     <Link
       href={href}
-      className={`relative rounded-lg px-3 py-2 text-[15px] font-medium transition-colors ${
+      className={`relative whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-medium transition-colors ${
         active
           ? "text-[var(--color-teal-600)]"
           : "text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)]"
       }`}
       aria-current={active ? "page" : undefined}
     >
-      {label}
+      {t(label)}
       {active ? <ActiveRule /> : null}
     </Link>
   );

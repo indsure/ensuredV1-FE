@@ -3,6 +3,11 @@ import { formatINRFull } from "@/lib/format";
 import { getFields, typeLabel } from "@/lib/insuranceTypes";
 import type { ExtractionField } from "@/lib/insuranceTypes";
 import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { intlLocale, tOr, type Locale } from "@/i18n";
+
+// Same key scheme the advisor data-entry form uses, so both share one set of labels.
+const labelKey = (s: string) => "xform.f_" + s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 
 /**
  * What a customer sees for a policy that has no forensic audit.
@@ -31,7 +36,7 @@ interface Props {
   data: Record<string, any> | null | undefined;
 }
 
-function formatValue(value: unknown, field: ExtractionField): string {
+function formatValue(value: unknown, field: ExtractionField, locale: Locale): string {
   if (value === null || value === undefined) return "";
   const raw = String(value).trim();
   if (raw === "") return "";
@@ -47,19 +52,20 @@ function formatValue(value: unknown, field: ExtractionField): string {
   if (field.type === "date") {
     const d = new Date(raw);
     if (Number.isNaN(d.getTime())) return raw;
-    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    return d.toLocaleDateString(intlLocale(locale), { day: "numeric", month: "short", year: "numeric" });
   }
 
   return raw;
 }
 
 export default function PolicyFactsheet({ insuranceType, data }: Props) {
+  const { t, locale } = useLanguage();
   // `json` fields hold structured objects (the charges table) that a label and
   // value row cannot render honestly, so they are left to the surfaces built
   // for them rather than stringified here.
   const rows = getFields(insuranceType)
     .filter((f) => f.type !== "json")
-    .map((f) => ({ label: f.label, value: formatValue(data?.[f.key], f) }))
+    .map((f) => ({ label: tOr(t, labelKey(f.label), f.label), value: formatValue(data?.[f.key], f, locale) }))
     .filter((r) => r.value !== "");
 
   const addOns = data?.[ADD_ON_FINDINGS_KEY] ?? null;
@@ -72,11 +78,10 @@ export default function PolicyFactsheet({ insuranceType, data }: Props) {
         <section className="overflow-hidden rounded-2xl border border-[var(--color-border-light)] bg-white">
           <header className="border-b border-slate-100 px-6 py-4">
             <h2 className="font-serif text-xl text-[var(--color-navy-900)]">
-              {typeLabel(insuranceType)} policy details
+              {t("pf.fs_title", { type: tOr(t, `common.type_${insuranceType}`, typeLabel(insuranceType)) })}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Read from your policy document. Your policy wording is the final word on what is
-              covered.
+              {t("pf.fs_sub")}{locale === "hi" ? ` ${t("pf.fs_values_english")}` : ""}
             </p>
           </header>
           <dl>

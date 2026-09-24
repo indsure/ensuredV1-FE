@@ -55,6 +55,7 @@ import {
   AgentMyPage,
   AgentTeam,
   AgentTeamMember,
+  AgentHelp,
 } from "@/pages/agent/lazyRoutes";
 const JoinTeam = lazy(() => import("@/pages/agent/JoinTeam"));
 import AgentProtectedRoute from "@/components/agent/ProtectedRoute";
@@ -79,6 +80,8 @@ const Home = lazy(() => import("@/pages/home"));
 const HowItWorks = lazy(() => import("@/pages/how-it-works"));
 const Pricing = lazy(() => import("@/pages/pricing"));
 const AdvisorsPricing = lazy(() => import("@/pages/advisors-pricing"));
+const AdvisorsGuide = lazy(() => import("@/pages/advisors-guide"));
+const Docs = lazy(() => import("@/pages/docs"));
 const Start = lazy(() => import("@/pages/start"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Processing = lazy(() => import("@/pages/processing"));
@@ -152,6 +155,10 @@ function App() {
                       <Route path="/how-it-works" component={HowItWorks} />
                       <Route path="/pricing" component={Pricing} />
                       <Route path="/advisors/pricing" component={AdvisorsPricing} />
+                      <Route path="/advisors/features">{() => <AdvisorsGuide view="features" />}</Route>
+                      <Route path="/advisors/how-to-use">{() => <AdvisorsGuide view="howto" />}</Route>
+                      <Route path="/docs">{() => <Docs />}</Route>
+                      <Route path="/docs/:slug">{(params) => <Docs slug={params.slug} />}</Route>
                       <Route path="/start" component={Start} />
                       <Route path="/processing" component={Processing} />
 
@@ -276,6 +283,9 @@ function App() {
                       </Route>
                       <Route path="/agent/settings">
                         {() => <AgentProtectedRoute><SettingsNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/help">
+                        {() => <AgentProtectedRoute><AgentHelp /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/profile">
                         {() => <AgentProtectedRoute><MyProfile /></AgentProtectedRoute>}

@@ -22,12 +22,15 @@ import { Header } from "@/components/Header";
 import { useState } from "react";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
+import { useLanguage } from "@/i18n/LanguageContext";
+
+// Visible strings in the data below are translation keys, rendered with t().
 
 const visionGoals = [
   {
     icon: Globe,
-    title: "Nationwide Impact",
-    description: "Making insurance literacy accessible to every Indian, everywhere.",
+    title: "vision.g1",
+    description: "vision.g1_d",
     timeline: "2025-2027",
     gradient: "from-[#1A3A52] to-[#4A9B9E]",
     bgGradient: "from-[#1A3A52]/10 to-[#4A9B9E]/10 dark:from-[#1A3A52]/20 dark:to-[#4A9B9E]/20",
@@ -35,31 +38,31 @@ const visionGoals = [
   },
   {
     icon: Zap,
-    title: "Instant Clarity",
-    description: "Complex policies → Clear insights in under 60 seconds.",
-    timeline: "Ongoing",
+    title: "vision.g2",
+    description: "vision.g2_d",
+    timeline: "vision.ongoing",
     gradient: "from-[#4A9B9E] to-[#3CBBA0]",
     bgGradient: "from-[#4A9B9E]/10 to-[#3CBBA0]/10 dark:from-[#4A9B9E]/20 dark:to-[#3CBBA0]/20",
     iconColor: "text-[#4A9B9E] dark:text-[#3CBBA0]",
   },
   {
     icon: Rocket,
-    title: "Always Innovating",
-    description: "Cutting-edge AI that gets smarter every day.",
-    timeline: "Continuous",
+    title: "vision.g3",
+    description: "vision.g3_d",
+    timeline: "vision.continuous",
     gradient: "from-[#3CBBA0] to-emerald-500",
     bgGradient: "from-[#3CBBA0]/10 to-emerald-500/10 dark:from-[#3CBBA0]/20 dark:to-emerald-500/20",
     iconColor: "text-[#3CBBA0] dark:text-emerald-400",
   },
   {
     icon: Target,
-    title: "Zero Compromise",
+    title: "vision.g4",
     /* claim-source: we hold no IRDAI intermediary licence and take no
        commission (advisors-pricing.tsx:155). "No storage" used to sit here and
        was false: individual_policies holds real rows and routes.ts persists the
        document so it can be downloaded later. Verified 2026-09-07. */
-    description: "No sales. No commissions. No bias. Ever.",
-    timeline: "Forever",
+    description: "vision.g4_d",
+    timeline: "vision.forever",
     gradient: "from-emerald-500 to-teal-500",
     bgGradient: "from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/20 dark:to-teal-500/20",
     iconColor: "text-emerald-600 dark:text-teal-400",
@@ -70,7 +73,7 @@ const visionMilestones = [
   {
     year: "2024",
     icon: CheckCircle2,
-    achievement: "Launched AI-powered policy analysis platform",
+    achievement: "vision.m1",
     status: "completed",
     color: "from-emerald-500 to-green-500",
   },
@@ -82,21 +85,21 @@ const visionMilestones = [
     // 2026-09-07.
     year: "2026",
     icon: TrendingUp,
-    achievement: "Expand the policy check to regional languages",
+    achievement: "vision.m2",
     status: "in-progress",
     color: "from-[#4A9B9E] to-[#3CBBA0]",
   },
   {
     year: "2027",
     icon: Award,
-    achievement: "Become India's #1 trusted insurance analysis platform",
+    achievement: "vision.m3",
     status: "planned",
     color: "from-[#1A3A52] to-[#4A9B9E]",
   },
   {
     year: "2028+",
     icon: Star,
-    achievement: "Democratize insurance literacy across all of India",
+    achievement: "vision.m4",
     status: "vision",
     color: "from-[#3CBBA0] to-emerald-500",
   },
@@ -105,6 +108,7 @@ const visionMilestones = [
 export default function Vision() {
   useSEO(seoFor("/vision"));
   const [hoveredGoal, setHoveredGoal] = useState<number | null>(null);
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-[#F0FFFE] dark:bg-[#0F1419] flex flex-col relative">
@@ -127,13 +131,13 @@ export default function Vision() {
             <Eye className="w-10 h-10 text-white relative z-10 group-hover:scale-110 transition-transform" />
           </div>
           <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-6 bg-gradient-to-r from-[#1A3A52] via-[#4A9B9E] to-[#3CBBA0] bg-clip-text text-transparent leading-tight">
-            Our Vision
+            {t("vision.h")}
           </h1>
           <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-200 max-w-4xl mx-auto leading-relaxed font-semibold mb-4">
-            A future where insurance decisions are made with <span className="bg-gradient-to-r from-[#1A3A52] to-[#4A9B9E] bg-clip-text text-transparent font-bold">complete clarity</span>
+            {t("vision.h_sub_a")} <span className="bg-gradient-to-r from-[#1A3A52] to-[#4A9B9E] bg-clip-text text-transparent font-bold">{t("vision.h_sub_b")}</span> {t("vision.h_sub_c")}
           </p>
           <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            Where every policyholder understands exactly what they're buying and how it protects them.
+            {t("vision.h_sub2")}
           </p>
         </div>
 
@@ -148,38 +152,38 @@ export default function Vision() {
                   </div>
                   <div>
                     <p className="text-xl md:text-2xl text-gray-800 dark:text-gray-100 leading-relaxed font-semibold">
-                      We envision a future where health insurance decisions are made with <span className="font-bold text-[#1A3A52] dark:text-[#4A9B9E]">complete clarity and confidence</span>.
+                      {t("vision.st_a")} <span className="font-bold text-[#1A3A52] dark:text-[#4A9B9E]">{t("vision.st_b")}</span>{t("vision.st_c")}
                     </p>
                     <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 mt-3">
-                      Where policyholders understand exactly what they're buying, what gaps exist, and how their coverage will protect them in real-world scenarios.
+                      {t("vision.st_d")}
                     </p>
                   </div>
                 </div>
                 
                 <div className="mt-8 p-4 sm:p-6 bg-gradient-to-r from-[#1A3A52]/10 to-[#4A9B9E]/10 dark:from-[#1A3A52]/20 dark:to-[#4A9B9E]/20 rounded-xl border-l-4 border-[#4A9B9E]">
                   <p className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">
-                    Our vision extends beyond individual analysis. We see a future where:
+                    {t("vision.beyond")}
                   </p>
                   <ul className="space-y-3 text-gray-700 dark:text-gray-300">
                     <li className="flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-[#1A3A52] dark:text-[#4A9B9E] flex-shrink-0 mt-0.5" />
-                      <span>Every Indian has access to transparent, jargon-free insurance analysis</span>
+                      <span>{t("vision.b1")}</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-[#4A9B9E] dark:text-[#3CBBA0] flex-shrink-0 mt-0.5" />
-                      <span>Policyholders can compare multiple policies side-by-side with confidence</span>
+                      <span>{t("vision.b2")}</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-[#3CBBA0] dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                      <span>Insurance literacy is democratized through accessible, AI-powered tools</span>
+                      <span>{t("vision.b3")}</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-[#1A3A52] dark:text-[#4A9B9E] flex-shrink-0 mt-0.5" />
-                      <span>Financial security is no longer compromised by hidden policy gaps</span>
+                      <span>{t("vision.b4")}</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <CheckCircle2 className="w-5 h-5 text-[#4A9B9E] dark:text-[#3CBBA0] flex-shrink-0 mt-0.5" />
-                      <span>Trust is built through transparency, not sales pitches</span>
+                      <span>{t("vision.b5")}</span>
                     </li>
                   </ul>
                 </div>
@@ -191,10 +195,10 @@ export default function Vision() {
         {/* Vision Goals */}
         <div className="mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-gray-900 dark:text-gray-100">
-            How We'll Get There
+            {t("vision.get_there")}
           </h2>
           <p className="text-center text-gray-600 dark:text-gray-400 mb-12 text-lg">
-            Our roadmap to making this vision reality
+            {t("vision.roadmap_sub1")}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {visionGoals.map((goal, index) => {
@@ -213,15 +217,15 @@ export default function Vision() {
                       </div>
                       <div className="flex-1">
                         <h3 className="text-xl md:text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100 group-hover:text-[#4A9B9E] dark:group-hover:text-[#3CBBA0] transition-colors">
-                          {goal.title}
+                          {t(goal.title)}
                         </h3>
                         <p className="text-base md:text-lg font-semibold text-gray-700 dark:text-gray-200 leading-relaxed mb-3">
-                          {goal.description}
+                          {t(goal.description)}
                         </p>
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-gray-400" />
                           <span className="text-sm font-semibold text-[#1A3A52] dark:text-[#4A9B9E]">
-                            {goal.timeline}
+                            {/^\d/.test(goal.timeline) ? goal.timeline : t(goal.timeline)}
                           </span>
                         </div>
                       </div>
@@ -236,10 +240,10 @@ export default function Vision() {
         {/* Roadmap */}
         <div className="mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-gray-900 dark:text-gray-100">
-            Our Roadmap
+            {t("vision.roadmap")}
           </h2>
           <p className="text-center text-gray-600 dark:text-gray-400 mb-12 text-lg">
-            Where we've been and where we're going
+            {t("vision.roadmap_sub2")}
           </p>
           <div className="space-y-6">
             {visionMilestones.map((milestone, index) => {
@@ -275,7 +279,7 @@ export default function Vision() {
                       </div>
                       <div className="flex-1">
                         <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                          {milestone.achievement}
+                          {t(milestone.achievement)}
                         </h3>
                         <span
                           className={`text-sm font-semibold px-3 py-1.5 rounded-full ${
@@ -287,10 +291,10 @@ export default function Vision() {
                           }`}
                         >
                           {milestone.status === "completed"
-                            ? "✓ Completed"
+                            ? t("vision.completed")
                             : milestone.status === "in-progress"
-                            ? "⚡ In Progress"
-                            : "📅 Planned"}
+                            ? t("vision.in_progress")
+                            : t("vision.planned")}
                         </span>
                       </div>
                     </div>
@@ -309,17 +313,17 @@ export default function Vision() {
               <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
                 <Star className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Join Us on This Journey</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">{t("vision.join")}</h2>
               <p className="text-lg md:text-xl mb-8 text-white/90 font-medium max-w-2xl mx-auto">
                 {/* claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07. */}
-                See what your policy actually covers. A free account, no card, one policy of each type free forever. No BS.
+                {t("vision.join_sub")}
               </p>
               <Link href="/">
                 <Button
                   size="lg"
                   className="bg-white text-[#1A3A52] hover:bg-gray-100 font-bold text-base md:text-lg px-8 py-6 rounded-xl shadow-xl hover:scale-105 transition-transform group"
                 >
-                  Analyze Your Policy
+                  {t("vision.cta")}
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>

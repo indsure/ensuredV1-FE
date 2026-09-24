@@ -7,10 +7,12 @@ import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 import { SchemaMarkup } from "@/components/SEO";
 import { CLAUSE_LIBRARY } from "@/data/clause-library";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const SITE = "https://indsure.in";
 
 export default function LearnHub() {
+  const { t, locale } = useLanguage();
   useSEO(seoFor("/learn"));
 
   // Group entries by their category label, preserving first-seen order.
@@ -41,20 +43,18 @@ export default function LearnHub() {
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
       <SchemaMarkup type="CollectionPage" data={collectionSchema} />
       <Header />
-      <Breadcrumbs items={[{ label: "Learn" }]} />
+      <Breadcrumbs items={[{ label: t("learn.learn") }]} />
 
       <main className="flex-1 w-full max-w-5xl mx-auto px-6 pt-24 sm:pt-28 pb-16">
         <header className="max-w-2xl mb-12">
           <p className="text-xs uppercase tracking-widest text-[var(--color-green-primary)] font-semibold mb-3">
-            Clause library
+            {t("learn.library")}
           </p>
           <h1 className="text-3xl md:text-5xl font-serif font-bold mb-4 leading-tight">
-            Every insurance clause, explained plainly
+            {t("learn.hub_h")}
           </h1>
           <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed">
-            Insurance is complicated on purpose. This is the plain-language library of the clauses,
-            waiting periods, and benefits that decide whether your claim gets paid. Each term is
-            defined the way you would actually search for it, with examples and the mistakes to avoid.
+            {t("learn.hub_sub")}{locale === "hi" ? ` ${t("learn.hub_english")}` : ""}
           </p>
         </header>
 
@@ -72,7 +72,7 @@ export default function LearnHub() {
                       {c.shortAnswer}
                     </p>
                     <span className="inline-flex items-center gap-1 text-sm text-[var(--color-green-primary)] font-medium mt-3">
-                      Read <ArrowRight className="w-3 h-3" />
+                      {t("learn.read")} <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
                 </Link>

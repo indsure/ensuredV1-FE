@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { Trophy } from "lucide-react";
 import { clsx } from "clsx";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface InsurerScore {
     slug: string;
@@ -13,6 +14,7 @@ interface WinnerPodiumProps {
 }
 
 export function WinnerPodium({ insurers, totalHospitals }: WinnerPodiumProps) {
+    const { t } = useLanguage();
     if (insurers.length === 0) return null;
 
     return (
@@ -25,8 +27,8 @@ export function WinnerPodium({ insurers, totalHospitals }: WinnerPodiumProps) {
                     <Trophy className="w-5 h-5" />
                 </div>
                 <div>
-                    <h3 className="font-bold text-sm tracking-wide uppercase text-[var(--color-white-muted)]">Strongest Networks</h3>
-                    <p className="text-xs text-[var(--color-teal-400)] font-medium">by absolute hospital count</p>
+                    <h3 className="font-bold text-sm tracking-wide uppercase text-[var(--color-white-muted)]">{t("hosp.strongest")}</h3>
+                    <p className="text-xs text-[var(--color-teal-400)] font-medium">{t("hosp.by_count")}</p>
                 </div>
             </div>
 
@@ -81,7 +83,7 @@ export function WinnerPodium({ insurers, totalHospitals }: WinnerPodiumProps) {
             </div>
 
             <div className="mt-6 pt-4 border-t border-[var(--color-border-subtle)] text-xs text-[var(--color-white-muted)] text-center">
-                Review full network lists before purchasing.
+                {t("hosp.review")}
             </div>
         </div>
     );

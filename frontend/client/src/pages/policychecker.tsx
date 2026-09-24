@@ -6,6 +6,7 @@ import { PolicyCheckerLanding } from "@/components/PolicyCheckerLanding";
 import { PolicyUploadGate } from "@/components/PolicyUploadGate";
 import { Section, SectionHeading } from "@/components/marketing";
 import { Reveal } from "@/components/motion";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Value page for the consumer policy analyzer, with the uploader on it.
 //
@@ -16,6 +17,7 @@ import { Reveal } from "@/components/motion";
 // met was a file picker for a decision they had not made yet. It now closes the
 // page, after the decode has shown them what they get for it.
 export default function PolicyChecker() {
+  const { t } = useLanguage();
   useSEO(seoFor("/policychecker"));
 
   return (
@@ -37,8 +39,8 @@ export default function PolicyChecker() {
 
           <div className="container-editorial relative flex flex-col items-center gap-10">
             <SectionHeading
-              title="Now do it with yours"
-              sub="Pick your policy PDF. You will be asked to create a free account before the result is shown, so it has somewhere to live."
+              title={t("cflow.pc_now")}
+              sub={t("cflow.pc_now_sub")}
               align="center"
               onInk
             />

@@ -10,10 +10,12 @@ import { SchemaMarkup } from "@/components/SEO";
 import { founderBySlug, displayName, authorForId } from "@/data/team";
 import { blogPosts } from "./blog/blog-data";
 import { blogPath } from "./blog/slugs";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function AuthorPage() {
   const [, params] = useRoute("/author/:slug");
   const founder = founderBySlug(params?.slug || "");
+  const { t } = useLanguage();
 
   useSEO({
     title: founder ? `${displayName(founder)}, ${founder.role} at IndSure` : "Author | IndSure",
@@ -27,11 +29,11 @@ export default function AuthorPage() {
     return (
       <div className="min-h-screen bg-[var(--color-cream-main)] flex flex-col">
         <Header />
-        <Breadcrumbs items={[{ label: "Team", href: "/team" }, { label: "Author" }]} />
+        <Breadcrumbs items={[{ label: t("author.team"), href: "/team" }, { label: t("author.author") }]} />
         <main className="flex-1 max-w-4xl mx-auto px-6 pt-32 pb-12 text-center">
-          <h1 className="text-3xl font-bold font-serif mb-4">Author not found</h1>
+          <h1 className="text-3xl font-bold font-serif mb-4">{t("author.not_found")}</h1>
           <Button asChild className="bg-[var(--color-green-primary)] text-white">
-            <Link href="/team">Meet the team</Link>
+            <Link href="/team">{t("author.meet")}</Link>
           </Button>
         </main>
         <Footer />
@@ -57,7 +59,7 @@ export default function AuthorPage() {
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
       <SchemaMarkup type="Person" data={personSchema} />
       <Header />
-      <Breadcrumbs items={[{ label: "Team", href: "/team" }, { label: name }]} />
+      <Breadcrumbs items={[{ label: t("author.team"), href: "/team" }, { label: name }]} />
 
       <main className="flex-1 max-w-4xl mx-auto px-6 pt-28 md:pt-32 pb-16 w-full">
         {/* Profile header */}
@@ -77,7 +79,7 @@ export default function AuthorPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 mt-4 text-sm text-[var(--color-green-primary)] hover:underline"
             >
-              <Linkedin className="w-4 h-4" /> Connect on LinkedIn
+              <Linkedin className="w-4 h-4" /> {t("author.connect")}
             </a>
           </div>
         </div>
@@ -85,7 +87,7 @@ export default function AuthorPage() {
         {/* Articles by this author */}
         {articles.length > 0 && (
           <section>
-            <h2 className="text-2xl font-serif font-bold mb-6">Articles by {founder.name}</h2>
+            <h2 className="text-2xl font-serif font-bold mb-6">{t("author.articles", { name: founder.name })}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {articles.map((post) => (
                 <Link key={post.id} href={blogPath(post.id)}>

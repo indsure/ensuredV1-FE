@@ -33,6 +33,8 @@ import { pdf } from '@react-pdf/renderer';
 import { PolicyPDFDocument, registerPdfFonts, type PdfMeta } from './PolicyPDFDocument';
 import { apiFetch } from "@/lib/api";
 import { LeadCollectionCTA } from "./LeadCollectionCTA";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 
 /** Plain-English names for the other-cover kinds the audit can return. */
 const OTHER_COVER_LABEL: Record<string, string> = {
@@ -203,6 +205,10 @@ function WaitingPeriodRow({ title, detail, view }: { title: string; detail: stri
 }
 
 export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, pdfMeta }: PolicyAuditReportProps) {
+    // Headings and labels are translated. The findings themselves (the model's text,
+    // getRiskItems below and the @shared/policy helpers) are read from an English
+    // policy and stay English, which the page says in Hindi mode.
+    const { t, locale } = useLanguage();
     const [showDeductions, setShowDeductions] = useState(false);
     const [showLeadForm, setShowLeadForm] = useState(false);
     const leadFormRef = useRef<HTMLDivElement>(null);
@@ -232,7 +238,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch (err) {
             console.error('Report download failed:', err);
-            alert('Sorry — we could not generate the PDF just now. Please try again.');
+            alert(t("rpt.pdf_failed"));
         } finally {
             setDownloading(false);
         }
@@ -490,7 +496,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
     const renderDeductionsList = (category: string) => {
         const deductions = data.audit_score?.deductions?.filter(d => d.category === category) || [];
         if (deductions?.length === 0) {
-            return <div className="text-sm italic text-slate-500">No deductions. This category is clean.</div>;
+            return <div className="text-sm italic text-slate-500">{t("rpt.no_deductions")}</div>;
         }
         // The model can emit the same clause twice inside one category, which reads
         // as a bug even though the points were counted once. Same dedupe key as
@@ -499,7 +505,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
         return (
             <ul className="list-disc space-y-1 ml-4 text-sm text-gray-600">
                 {unique.map((d, i) => (
-                    <li key={i}>{d.reason}, {Math.abs(d.points)} pts</li>
+                    <li key={i}>{d.reason}, {t("rpt.pts", { n: Math.abs(d.points) })}</li>
                 ))}
             </ul>
         );
@@ -584,12 +590,18 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                 {/* TOP BAR */}
                 <div className="flex justify-between items-center mb-8 print:hidden">
                     <div className="text-sm text-[var(--color-text-secondary)] font-mono">
-                        AUDIT ID: {auditId.current}
+                        {t("rpt.audit_id", { id: auditId.current })}
                     </div>
                     <Button variant="ghost" size="sm" onClick={handleDownload} disabled={downloading} className="hover:bg-[var(--color-cream-dark)]">
-                        <Printer className="w-4 h-4 mr-2" /> {downloading ? 'Preparing…' : 'Download Report'}
+                        <Printer className="w-4 h-4 mr-2" /> {downloading ? t("rpt.preparing") : t("rpt.download")}
                     </Button>
                 </div>
+
+                {locale === "hi" && (
+                    <p className="mb-8 rounded-lg border border-[var(--color-border-light)] bg-white px-4 py-3 text-sm text-[var(--color-text-secondary)] print:hidden">
+                        {t("rpt.english_note")}
+                    </p>
+                )}
 
                 {/* 1. VERDICT HEADER */}
                 <div className="mb-12 border-b border-[var(--color-border-light)] pb-12">
@@ -602,11 +614,11 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         {verdict === "SAFE" && <CheckCircle2 className="w-4 h-4" />}
                         {verdict === "BORDERLINE" && <AlertTriangle className="w-4 h-4" />}
                         {verdict === "RISKY" && <AlertCircle className="w-4 h-4" />}
-                        Verdict: {
-                            verdict === "SAFE" ? "Strong Structural Coverage" :
-                                verdict === "BORDERLINE" ? "Good Core Coverage with Areas to Improve" :
-                                    "Limited Structural Protection — Improvement Recommended"
-                        }
+                        {t("rpt.verdict", {
+                            label: verdict === "SAFE" ? t("rpt.v_safe") :
+                                verdict === "BORDERLINE" ? t("rpt.v_borderline") :
+                                    t("rpt.v_risky"),
+                        })}
                     </span>
 
                     <div className="mb-8 max-w-4xl">
@@ -620,27 +632,27 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4">
                         <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Insured</div>
+                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.insured")}</div>
                             <div className="font-semibold text-lg">{data.identity?.insured_names?.join(", ")}</div>
                         </div>
                         <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Effective Cover</div>
+                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.effective_cover")}</div>
                             <div className="font-semibold text-lg font-mono text-[var(--color-green-primary)]">
                                 {formatINR(effectiveCoverage)}
                             </div>
                             <CoverageDiagnostic report={data} effectiveCoverage={effectiveCoverage || 0} />
                         </div>
                         <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Policy Age</div>
+                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_age")}</div>
                             <div className="font-semibold text-lg">
                                 {realTimePolicyAgeDays > 365
-                                    ? `${(realTimePolicyAgeDays / 365).toFixed(1)} Years`
-                                    : `${realTimePolicyAgeDays} Days`}
+                                    ? t("rpt.years", { n: (realTimePolicyAgeDays / 365).toFixed(1) })
+                                    : t("rpt.days", { n: realTimePolicyAgeDays })}
                             </div>
                         </div>
                         <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Data Quality</div>
-                            <div className="font-semibold text-lg capitalize">{data.data_quality?.overall ?? "N/A"}</div>
+                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.data_quality")}</div>
+                            <div className="font-semibold text-lg capitalize">{data.data_quality?.overall ? tOr(t, `rpt.dq_${data.data_quality.overall}`, data.data_quality.overall) : t("rpt.na")}</div>
                         </div>
                     </div>
 
@@ -657,8 +669,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 figure; they are re-derived on read, not rewritten. */}
                             {coverView.restated && (
                                 <p className="text-sm text-[var(--color-text-secondary)]">
-                                    This figure is what the policy pays for one hospitalisation. An earlier
-                                    version of this report added a restoration refill on top of it.
+                                    {t("rpt.restated")}
                                 </p>
                             )}
                         </div>
@@ -674,7 +685,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             verdict === "SAFE" ? "bg-green-500" :
                                 verdict === "RISKY" ? "bg-red-500" : "bg-amber-500"
                         )} />
-                        <span className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Audit Score</span>
+                        <span className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">{t("rpt.audit_score")}</span>
                         <div className={cn(
                             "text-8xl font-serif leading-none mb-2",
                             verdict === "SAFE" ? "text-[var(--color-green-primary)]" :
@@ -692,7 +703,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             NCAR: <span className="font-mono font-bold">{ncar.toFixed(2)}×</span>
                             {" — "}<span className="italic">{getNCARLabel(ncar)}</span>
                             <div className="text-xs text-slate-500 mt-1">
-                                Your cover is {ncar.toFixed(2)}× the minimum recommended for your age and city.
+                                {t("rpt.ncar_meaning", { x: ncar.toFixed(2) })}
                             </div>
                         </div>
                         )}
@@ -703,18 +714,16 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             being told. Say it on the score itself, where the number is. */}
                         {isScoredUnderOldRules(data) && (
                             <div className="mb-3 mx-auto max-w-[220px] rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                                Scored under earlier rules
-                                {data.engine?.scored_at ? ` (${data.engine.scored_at})` : ""}. Our cover
-                                thresholds have changed since. Re-run this policy for a score on today's rules.
+                                {t("rpt.old_rules", { when: data.engine?.scored_at ? ` (${data.engine.scored_at})` : "" })}
                             </div>
                         )}
                         <div className="text-xs text-[var(--color-text-secondary)] max-w-[220px] leading-relaxed mx-auto space-y-1">
-                            <p>{data.audit_score?.deductions?.length ?? 0} {(data.audit_score?.deductions?.length ?? 0) === 1 ? 'clause' : 'clauses'} in your policy pushed this score down.</p>
-                            <p>Clauses are read automatically from your policy text, then checked against our scoring rules on our servers.</p>
-                            <p>Where the two disagree, the server's number is the one shown here.</p>
+                            <p>{(data.audit_score?.deductions?.length ?? 0) === 1 ? t("rpt.clauses_one") : t("rpt.clauses_many", { n: data.audit_score?.deductions?.length ?? 0 })}</p>
+                            <p>{t("rpt.clauses_read")}</p>
+                            <p>{t("rpt.server_wins")}</p>
                             {data.audit_score?.raw_score && data.audit_score.raw_score !== score && (
                                 <p className="text-xs text-slate-400 mt-2">
-                                    Raw score: {data.audit_score.raw_score} (rounded to {score})
+                                    {t("rpt.raw_score", { raw: data.audit_score.raw_score, score })}
                                 </p>
                             )}
                         </div>
@@ -722,17 +731,17 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
 
                     {data.audit_score?.breakdown && (
                         <div className="md:col-span-8 bg-white border border-[var(--color-border-light)] rounded-xl p-8 shadow-sm">
-                            <h3 className="font-serif text-lg text-[var(--color-navy-900)] mb-6">What Could Cost You at Claim Time</h3>
+                            <h3 className="font-serif text-lg text-[var(--color-navy-900)] mb-6">{t("rpt.cost_title")}</h3>
                             <div className="space-y-5">
 
                                 <div className="group cursor-pointer" onClick={() => toggleBreakdown('CLAIM_REJECTION')}>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="font-medium">
-                                            Rules That Cut Your Payout
-                                            <span title="Clauses that reduce what the insurer pays out: room rent limits, co-payments, disease sub-limits and network restrictions." className="ml-1 text-slate-400 cursor-help">ℹ</span>
+                                            {t("rpt.cat_CLAIM_REJECTION")}
+                                            <span title={t("rpt.tip_rejection")} className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs((data.audit_score.breakdown.claim_rejection_risk ?? 0))} / 30 pts
+                                            {t("rpt.pts_of", { n: Math.abs((data.audit_score.breakdown.claim_rejection_risk ?? 0)), max: 30 })}
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['CLAIM_REJECTION'] && "rotate-180")} />
                                         </span>
                                     </div>
@@ -751,11 +760,11 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 <div className="group cursor-pointer" onClick={() => toggleBreakdown('OOP_EXPOSURE')}>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="font-medium">
-                                            Out-of-Pocket Exposure
-                                            <span title="Measures personal expenses you bear even when a claim is approved — co-pays, consumable exclusions, and sub-limits." className="ml-1 text-slate-400 cursor-help">ℹ</span>
+                                            {t("rpt.cat_OOP_EXPOSURE")}
+                                            <span title={t("rpt.tip_oop")} className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs((data.audit_score.breakdown.oop_exposure ?? 0))} / 30 pts
+                                            {t("rpt.pts_of", { n: Math.abs((data.audit_score.breakdown.oop_exposure ?? 0)), max: 30 })}
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['OOP_EXPOSURE'] && "rotate-180")} />
                                         </span>
                                     </div>
@@ -774,11 +783,11 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 <div className="group cursor-pointer" onClick={() => toggleBreakdown('COVERAGE_GAP')}>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="font-medium">
-                                            Coverage Quality Gap
-                                            <span title="Measures structural exclusions — waiting periods, missing restoration, AYUSH limits, and maternity gaps." className="ml-1 text-slate-400 cursor-help">ℹ</span>
+                                            {t("rpt.cat_COVERAGE_GAP")}
+                                            <span title={t("rpt.tip_gap")} className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs((data.audit_score.breakdown.coverage_quality_gap ?? 0))} / 20 pts
+                                            {t("rpt.pts_of", { n: Math.abs((data.audit_score.breakdown.coverage_quality_gap ?? 0)), max: 20 })}
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['COVERAGE_GAP'] && "rotate-180")} />
                                         </span>
                                     </div>
@@ -797,11 +806,11 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 <div className="group cursor-pointer" onClick={() => toggleBreakdown('NET_COVER')}>
                                     <div className="flex justify-between text-sm mb-2">
                                         <span className="font-medium">
-                                            Net Cover Penalty
-                                            <span title="Applied when your effective cover is below the minimum recommended for your age and city. This penalty is uncapped and overrides all other scores." className="ml-1 text-slate-400 cursor-help">ℹ</span>
+                                            {t("rpt.cat_NET_COVER")}
+                                            <span title={t("rpt.tip_net")} className="ml-1 text-slate-400 cursor-help">ℹ</span>
                                         </span>
                                         <span className="text-xs font-mono text-slate-500 flex items-center gap-1 transition-colors group-hover:text-[var(--color-navy-900)]">
-                                            {Math.abs((data.audit_score.breakdown.net_cover_penalty ?? 0))} / 60 pts
+                                            {t("rpt.pts_of", { n: Math.abs((data.audit_score.breakdown.net_cover_penalty ?? 0)), max: 60 })}
                                             <ChevronDown className={cn("w-4 h-4 transition-transform text-slate-400 group-hover:text-[var(--color-navy-900)]", openBreakdown['NET_COVER'] && "rotate-180")} />
                                         </span>
                                     </div>
@@ -819,7 +828,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
 
                             </div>
                             <p className="mt-6 pt-4 border-t border-[var(--color-border-light)] text-xs text-[var(--color-text-muted)] leading-relaxed">
-                                One clause can appear in more than one row. A co-payment, for example, both cuts what the insurer pays and adds to what you pay yourself, so it counts against both.
+                                {t("rpt.overlap_note")}
                             </p>
                         </div>
                     )}
@@ -847,46 +856,40 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         <section className="mb-16">
                             <div className="flex items-center gap-3 mb-2">
                                 <Layers className="w-6 h-6 text-[var(--color-teal-600)]" />
-                                <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">How far this cover goes</h3>
+                                <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.how_far")}</h3>
                             </div>
                             <p className="text-sm text-[var(--color-text-muted)] mb-6">
-                                The score above is measured against the first of these. The second is
-                                what the same admission is likely to cost by the time it happens, and
-                                it is shown, not scored.
+                                {t("rpt.how_far_d")}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
                                     <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                        One serious admission, today
+                                        {t("rpt.admission_today")}
                                     </div>
                                     <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
                                         {formatINR(outlook.today)}
                                     </div>
                                     <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                                        This policy covers {formatINR(held)}, which is {pctToday}% of it.
+                                        {t("rpt.covers_pct", { held: formatINR(held), pct: pctToday })}{" "}
                                         {shortToday > 0
-                                            ? ` A bill that size would leave ${formatINR(shortToday)} to be paid from savings.`
-                                            : " A bill that size would be met in full."}
+                                            ? t("rpt.leaves_short", { short: formatINR(shortToday) })
+                                            : t("rpt.met_in_full")}
                                     </p>
                                 </div>
                                 <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
                                     <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                        The same admission in {outlook.years} years
+                                        {t("rpt.admission_later", { n: outlook.years })}
                                     </div>
                                     <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
                                         {formatINR(outlook.target)}
                                     </div>
                                     <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                                        This policy is {pctTarget}% of that. Medical costs are carried forward at{" "}
-                                        {Math.round(CALCULATOR_CONFIG.medicalInflationRate * 100)}% a year, with an
-                                        allowance for a second claim in the same year.
+                                        {t("rpt.later_d", { pct: pctTarget, rate: Math.round(CALCULATOR_CONFIG.medicalInflationRate * 100) })}
                                     </p>
                                 </div>
                             </div>
                             <p className="mt-3 text-sm text-slate-500">
-                                Both figures assume nothing about income, employer cover or how much risk
-                                this family is willing to carry. A cover plan that includes those can
-                                recommend more.
+                                {t("rpt.assume_nothing")}
                             </p>
                         </section>
                     );
@@ -897,13 +900,13 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     <section className="mb-16">
                         <div className="flex items-center gap-3 mb-6">
                             <Shield className="w-6 h-6 text-[var(--color-green-primary)]" />
-                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">Coverage Overview</h3>
+                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.overview")}</h3>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                             <div className="border border-[var(--color-border-light)] bg-white p-8 rounded-xl shadow-sm flex flex-col h-full">
                                 <div className="text-sm font-bold uppercase tracking-wider text-green-700 mb-6 flex items-center gap-2">
-                                    <CheckCircle2 className="w-5 h-5" /> What Actually Works
+                                    <CheckCircle2 className="w-5 h-5" /> {t("rpt.works")}
                                 </div>
                                 <ul className="space-y-6 flex-1">
                                     {data.benefit_evaluation.what_actually_works?.length > 0 ? (
@@ -917,14 +920,14 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             </li>
                                         ))
                                     ) : (
-                                        <li className="text-sm text-slate-500 italic border-l-2 border-slate-200 pl-4">None detected.</li>
+                                        <li className="text-sm text-slate-500 italic border-l-2 border-slate-200 pl-4">{t("rpt.none_detected")}</li>
                                     )}
                                 </ul>
                             </div>
 
                             <div className="border border-[var(--color-border-light)] bg-white p-8 rounded-xl shadow-sm flex flex-col h-full">
                                 <div className="text-sm font-bold uppercase tracking-wider text-amber-700 mb-6 flex items-center gap-2">
-                                    <AlertTriangle className="w-5 h-5" /> Where It May Cost You
+                                    <AlertTriangle className="w-5 h-5" /> {t("rpt.may_cost")}
                                 </div>
                                 <ul className="space-y-6 flex-1">
                                     {dynamicRiskItems?.length > 0 ? (
@@ -938,7 +941,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             </li>
                                         ))
                                     ) : (
-                                        <li className="text-sm text-slate-500 italic border-l-2 border-slate-200 pl-4">No significant cost risks identified for your profile.</li>
+                                        <li className="text-sm text-slate-500 italic border-l-2 border-slate-200 pl-4">{t("rpt.no_cost_risks")}</li>
                                     )}
                                 </ul>
                             </div>
@@ -947,14 +950,14 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         {data.benefit_evaluation.structural_red_flags?.length > 0 && (
                             <div className="mt-6 border border-red-100 bg-red-50/30 p-6 rounded-lg">
                                 <div className="text-sm font-bold uppercase tracking-wider text-red-700 mb-4 flex items-center gap-2">
-                                    <AlertCircle className="w-4 h-4" /> Structural Red Flags
+                                    <AlertCircle className="w-4 h-4" /> {t("rpt.red_flags")}
                                 </div>
                                 <ul className="space-y-3">
                                     {data.benefit_evaluation.structural_red_flags.map((flag, i) => (
                                         <li key={i} className="text-sm border-l-2 border-red-300 pl-3">
                                             <span className="font-medium block">{flag.flag}</span>
                                             <span className="text-[var(--color-text-secondary)]">{flag.why_it_is_dangerous}</span>
-                                            <span className={cn("text-xs font-bold uppercase mt-1 inline-block px-2 py-0.5 rounded", getRiskColor(flag.severity))}>{flag.severity}</span>
+                                            <span className={cn("text-xs font-bold uppercase mt-1 inline-block px-2 py-0.5 rounded", getRiskColor(flag.severity))}>{tOr(t, `rpt.sev_${flag.severity}`, flag.severity)}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -970,11 +973,10 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     <section className="mb-16">
                         <div className="flex items-center gap-3 mb-2">
                             <Layers className="w-6 h-6 text-[var(--color-teal-600)]" />
-                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">Other Cover Held</h3>
+                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.other_cover")}</h3>
                         </div>
                         <p className="text-sm text-[var(--color-text-muted)] mb-6">
-                            Read together with this policy. The audit score above still rates this policy on its
-                            own, so it stays comparable with every other report.
+                            {t("rpt.other_cover_d")}
                         </p>
 
                         {/* Total across the stack — deliberately styled as a fact panel,
@@ -984,15 +986,15 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 <div className="flex flex-wrap items-end justify-between gap-4">
                                     <div>
                                         <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                            Usable cover across all policies
+                                            {t("rpt.usable_all")}
                                         </div>
                                         <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
                                             {formatINR(coverView.stack.combined)}
                                         </div>
                                         {typeof coverView.stack.required === "number" && (
                                             <div className="mt-1 text-sm text-[var(--color-text-muted)]">
-                                                against {formatINR(coverView.stack.required)} needed for this family
-                                                {typeof coverView.stack.ratio === "number" && ` — ${Math.round(coverView.stack.ratio * 100)}%`}
+                                                {t("rpt.against", { amount: formatINR(coverView.stack.required) })}
+                                                {typeof coverView.stack.ratio === "number" && `, ${Math.round(coverView.stack.ratio * 100)}%`}
                                             </div>
                                         )}
                                     </div>
@@ -1004,7 +1006,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                                 : coverView.stack.verdict === "THIN"
                                                 ? "border-amber-300 bg-amber-50 text-amber-700"
                                                 : "border-red-300 bg-red-50 text-red-700"
-                                        )}>{coverView.stack.verdict}</span>
+                                        )}>{tOr(t, `rpt.stack_${coverView.stack.verdict}`, coverView.stack.verdict)}</span>
                                     )}
                                 </div>
 
@@ -1017,7 +1019,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                         {coverView.stack.counted.length > 0 && (
                                             <div>
                                                 <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
-                                                    Counted
+                                                    {t("rpt.counted")}
                                                 </div>
                                                 <ul className="space-y-1">
                                                     {coverView.stack.counted.map((c, i) => (
@@ -1029,7 +1031,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                         {coverView.stack.excluded.length > 0 && (
                                             <div>
                                                 <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
-                                                    Not counted
+                                                    {t("rpt.not_counted")}
                                                 </div>
                                                 <ul className="space-y-1">
                                                     {coverView.stack.excluded.map((c, i) => (
@@ -1044,7 +1046,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 {coverStack?.where_the_stack_still_breaks && coverStack.where_the_stack_still_breaks.length > 0 && (
                                     <div className="mt-4 border-t border-[var(--color-border-light)] pt-4">
                                         <div className="text-xs font-bold uppercase tracking-wider text-red-700 mb-1">
-                                            Even with everything together, this still breaks
+                                            {t("rpt.still_breaks")}
                                         </div>
                                         <ul className="space-y-1">
                                             {coverStack.where_the_stack_still_breaks.map((c, i) => (
@@ -1062,10 +1064,10 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                     <div className="flex justify-between items-start gap-3 mb-4">
                                         <div className="min-w-0">
                                             <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                                {OTHER_COVER_LABEL[cover.kind] ?? cover.kind}
+                                                {tOr(t, `rpt.oc_${cover.kind}`, OTHER_COVER_LABEL[cover.kind] ?? cover.kind)}
                                             </div>
                                             <div className="mt-1 font-semibold text-[var(--color-navy-900)] break-words">
-                                                {[cover.insurer, cover.plan_name].filter(Boolean).join(" — ") || "Details not stated"}
+                                                {[cover.insurer, cover.plan_name].filter(Boolean).join(" · ") || t("rpt.details_not_stated")}
                                             </div>
                                         </div>
                                         {/* A cover can be usable today and still be left out of the
@@ -1073,11 +1075,11 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             say so, or only the "Not counted" list would reveal it. */}
                                         {cover.usable_today === false ? (
                                             <span className="flex-shrink-0 text-xs font-bold uppercase px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-700">
-                                                Not usable yet
+                                                {t("rpt.not_usable")}
                                             </span>
                                         ) : cover.counted_in_total === false ? (
                                             <span className="flex-shrink-0 text-xs font-bold uppercase px-2 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-600">
-                                                Not in total
+                                                {t("rpt.not_in_total")}
                                             </span>
                                         ) : null}
                                     </div>
@@ -1085,7 +1087,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                     <div className="space-y-2">
                                         {typeof cover.sum_insured === "number" && (
                                             <div className="flex justify-between">
-                                                <span className="text-sm">Sum insured</span>
+                                                <span className="text-sm">{t("rpt.sum_insured")}</span>
                                                 <span className="font-mono font-bold text-slate-600">{formatINR(cover.sum_insured)}</span>
                                             </div>
                                         )}
@@ -1093,7 +1095,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             rather than null, and "Deductible ₹0" reads as a finding. */}
                                         {typeof cover.deductible === "number" && cover.deductible > 0 && (
                                             <div className="flex justify-between">
-                                                <span className="text-sm">Deductible</span>
+                                                <span className="text-sm">{t("rpt.deductible")}</span>
                                                 <span className="font-mono font-bold text-slate-600">{formatINR(cover.deductible)}</span>
                                             </div>
                                         )}
@@ -1102,7 +1104,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                     {cover.own_limits && cover.own_limits.length > 0 && (
                                         <div className="mt-4">
                                             <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
-                                                Its own limits
+                                                {t("rpt.own_limits")}
                                             </div>
                                             <ul className="space-y-1">
                                                 {cover.own_limits.map((l, j) => (
@@ -1115,7 +1117,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                     {cover.dependency_risk && (
                                         <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3">
                                             <div className="text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">
-                                                What can take it away
+                                                {t("rpt.take_away")}
                                             </div>
                                             <p className="text-sm text-amber-900">{cover.dependency_risk}</p>
                                         </div>
@@ -1123,7 +1125,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
 
                                     {cover.what_it_does_not_solve && (
                                         <p className="mt-3 text-sm text-slate-600">
-                                            <span className="font-semibold">Does not fix: </span>
+                                            <span className="font-semibold">{t("rpt.does_not_fix")} </span>
                                             {cover.what_it_does_not_solve}
                                         </p>
                                     )}
@@ -1138,7 +1140,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     <section className="mb-16">
                         <div className="flex items-center gap-3 mb-6">
                             <Activity className="w-6 h-6 text-[var(--color-teal-600)]" />
-                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">Claim Simulations</h3>
+                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.simulations")}</h3>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1151,24 +1153,24 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                         <span className={cn(
                                             "text-xs font-bold uppercase px-2 py-0.5 rounded border",
                                             getSimulationVerdictColor(sim.verdict)
-                                        )}>{sim.verdict}</span>
+                                        )}>{tOr(t, `rpt.sim_${sim.verdict}`, sim.verdict)}</span>
                                     </div>
                                     <div className="space-y-3">
                                         <div className="flex justify-between">
-                                            <span className="text-sm">Total Bill</span>
+                                            <span className="text-sm">{t("rpt.total_bill")}</span>
                                             <span className="font-mono font-bold text-slate-600">{'₹' + (sim.total_bill || 0)?.toLocaleString('en-IN')}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-sm">Insurer Pays</span>
+                                            <span className="text-sm">{t("rpt.insurer_pays")}</span>
                                             <span className="font-mono font-bold text-green-600">{'₹' + (sim.insurer_pays || 0)?.toLocaleString('en-IN')}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-sm">Your Contribution</span>
+                                            <span className="text-sm">{t("rpt.you_pay")}</span>
                                             <span className="font-mono font-bold text-amber-600">{'₹' + ((sim.total_bill || 0) - (sim.insurer_pays || 0))?.toLocaleString('en-IN')}</span>
                                         </div>
                                         <div className="h-px bg-slate-200 my-2" />
                                         <div className="flex justify-between text-xs text-[var(--color-text-secondary)]">
-                                            <span>OOP Ratio (Out-of-Pocket)</span>
+                                            <span>{t("rpt.oop_ratio")}</span>
                                             <span className="font-mono">{((sim.oop_ratio || 0) * 100).toFixed(1)}%</span>
                                         </div>
                                         {sim.explanation && (
@@ -1196,7 +1198,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             }
                         </div>
                         <div className="relative z-10">
-                            <h3 className="font-serif text-xl text-[var(--color-navy-900)] mb-6">Key Failure Points</h3>
+                            <h3 className="font-serif text-xl text-[var(--color-navy-900)] mb-6">{t("rpt.failure_points")}</h3>
                             <div className="space-y-2">
                                 {data.final_verdict.key_failure_points.map((point, i) => (
                                     <div key={i} className="text-sm text-slate-700 flex items-start gap-2">
@@ -1213,7 +1215,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                 <section className="mb-16">
                     <div className="flex items-center gap-3 mb-6">
                         <Activity className="w-6 h-6 text-[var(--color-teal-600)]" />
-                        <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">Extracted Policy Details</h3>
+                        <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.extracted")}</h3>
                     </div>
 
                     <div className="space-y-4">
@@ -1221,21 +1223,21 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         {/* A. FINANCIAL LIMITS */}
                         <div className="bg-white border border-[var(--color-border-light)] rounded-lg overflow-hidden">
                             <div className="p-4 bg-[var(--color-cream-light)] border-b border-[var(--color-border-light)] flex justify-between items-center">
-                                <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">Financial Limits & Caps</span>
+                                <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">{t("rpt.fin_limits")}</span>
                                 <Shield className="w-4 h-4 text-[var(--color-text-muted)]" />
                             </div>
                             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
                                     <div className="flex justify-between mb-1">
-                                        <span className="text-sm font-medium">Room Rent Limit</span>
+                                        <span className="text-sm font-medium">{t("rpt.room_rent")}</span>
                                         <span className={cn("text-xs font-bold uppercase", data.claim_risk_analysis?.room_rent?.risk_level === "low" ? "text-green-600" : "text-red-600")}>
-                                            {data.claim_risk_analysis?.room_rent?.limit_value || "No Limit"}
+                                            {data.claim_risk_analysis?.room_rent?.limit_value || t("rpt.no_limit")}
                                         </span>
                                     </div>
                                     <p className="text-xs text-[var(--color-text-secondary)]">
                                         {data.claim_risk_analysis?.room_rent?.limit_type === "none"
-                                            ? "No room rent cap detected."
-                                            : `Limit type: ${data.claim_risk_analysis?.room_rent?.limit_type ?? "unknown"}`}
+                                            ? t("rpt.no_room_cap")
+                                            : t("rpt.limit_type", { type: data.claim_risk_analysis?.room_rent?.limit_type ?? t("rpt.unknown") })}
                                     </p>
                                     {data.claim_risk_analysis?.room_rent?.explanation && (
                                         <p className="text-xs text-slate-400 mt-1 italic">{data.claim_risk_analysis.room_rent.explanation}</p>
@@ -1243,7 +1245,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 </div>
                                 <div>
                                     <div className="flex justify-between mb-1">
-                                        <span className="text-sm font-medium">Co-Payment</span>
+                                        <span className="text-sm font-medium">{t("rpt.copay")}</span>
                                         <span className={cn("text-xs font-bold uppercase", data.claim_risk_analysis?.co_payment?.risk_level === "low" ? "text-green-600" : "text-red-600")}>
                                             {data.claim_risk_analysis?.co_payment?.exists
                                                 ? `${data.claim_risk_analysis.co_payment.percentage ?? 0}%`
@@ -1252,12 +1254,12 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                     </div>
                                     <p className="text-xs text-[var(--color-text-secondary)]">
                                         {data.claim_risk_analysis?.co_payment?.exists
-                                            ? `Applies to: ${data.claim_risk_analysis?.co_payment?.applies_to ?? "unknown"}`
-                                            : "No co-payment applicable."}
+                                            ? t("rpt.applies_to", { what: data.claim_risk_analysis?.co_payment?.applies_to ?? t("rpt.unknown") })
+                                            : t("rpt.no_copay")}
                                     </p>
                                     {data.claim_risk_analysis?.co_payment?.oop_on_5L_claim != null && (
                                         <p className="text-xs text-red-500 font-mono mt-1">
-                                            OOP on ₹5L claim: {formatINR(data.claim_risk_analysis.co_payment.oop_on_5L_claim)}
+                                            {t("rpt.oop_5l", { amount: formatINR(data.claim_risk_analysis.co_payment.oop_on_5L_claim) })}
                                         </p>
                                     )}
                                 </div>
@@ -1267,7 +1269,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         {/* B. SUPPLEMENTARY BENEFITS */}
                         <div className="bg-white border border-[var(--color-border-light)] rounded-lg overflow-hidden">
                             <div className="p-4 bg-[var(--color-cream-light)] border-b border-[var(--color-border-light)] flex justify-between items-center">
-                                <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">Supplementary Benefits</span>
+                                <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">{t("rpt.supp")}</span>
                                 <Pill className="w-4 h-4 text-[var(--color-text-muted)]" />
                             </div>
                             {/* Every tile used to be a bare `covered` boolean rendered as one
@@ -1280,12 +1282,12 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 {(() => {
                                     const supp = data.supplementary_coverage;
                                     return [
-                                        { label: "OPD Cover", view: getBenefitStatus({ ...supp?.opd, utility: supp?.opd?.utility }) },
-                                        { label: "Modern Treatments", view: getBenefitStatus({ ...supp?.modern_treatments }) },
-                                        { label: "Consumables", view: getBenefitStatus({ ...supp?.consumables, coverageType: supp?.consumables?.coverage_type }) },
-                                        { label: "Ambulance", view: getBenefitStatus({ ...supp?.ambulance }) },
-                                        { label: "Day Care", view: getBenefitStatus({ ...supp?.day_care_procedures }) },
-                                        { label: "Maternity", view: getBenefitStatus({ ...supp?.maternity, utility: supp?.maternity?.utility }) },
+                                        { label: t("rpt.b_opd"), view: getBenefitStatus({ ...supp?.opd, utility: supp?.opd?.utility }) },
+                                        { label: t("rpt.b_modern"), view: getBenefitStatus({ ...supp?.modern_treatments }) },
+                                        { label: t("rpt.b_consumables"), view: getBenefitStatus({ ...supp?.consumables, coverageType: supp?.consumables?.coverage_type }) },
+                                        { label: t("rpt.b_ambulance"), view: getBenefitStatus({ ...supp?.ambulance }) },
+                                        { label: t("rpt.b_daycare"), view: getBenefitStatus({ ...supp?.day_care_procedures }) },
+                                        { label: t("rpt.b_maternity"), view: getBenefitStatus({ ...supp?.maternity, utility: supp?.maternity?.utility }) },
                                     ].map((item, i) => (
                                         <div key={i} className="p-3 bg-slate-50 rounded text-center">
                                             <div className="text-xs uppercase text-[var(--color-text-muted)] mb-1">{item.label}</div>
@@ -1306,7 +1308,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         {/* C. WAITING PERIODS */}
                         <div className="bg-white border border-blue-100 rounded-lg overflow-hidden">
                             <div className="p-4 bg-blue-50/50 border-b border-blue-100 flex justify-between items-center">
-                                <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">Waiting Periods</span>
+                                <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">{t("rpt.waiting")}</span>
                                 <Clock className="w-4 h-4 text-blue-500" />
                             </div>
                             <div className="p-6">
@@ -1321,7 +1323,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             isActive: endDate ? new Date() < new Date(endDate) : !!wp.is_active_today,
                                             endDate,
                                         });
-                                        return <WaitingPeriodRow title="Initial Waiting Period" detail={`${wp.duration_days} days`} view={view} />;
+                                        return <WaitingPeriodRow title={t("rpt.wp_initial")} detail={t("rpt.n_days", { n: wp.duration_days ?? "" })} view={view} />;
                                     })()}
 
                                     {(() => {
@@ -1342,11 +1344,11 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                                 ...view,
                                                 label: `≈ ${view.label}`,
                                                 tone: "unknown",
-                                                note: "Estimated. The schedule does not separately state a pre-existing disease waiting period, so this is derived from the specific-illness exclusion period. Verify it with the insurer.",
+                                                note: t("rpt.ped_estimated"),
                                             };
                                         }
-                                        const detail = `${wp.duration_months} months${wp.stated === false ? " (est. from specific-illness waiting)" : ""}`;
-                                        return <WaitingPeriodRow title="Pre-Existing Diseases" detail={detail} view={view} />;
+                                        const detail = `${t("rpt.n_months", { n: wp.duration_months ?? "" })}${wp.stated === false ? t("rpt.est_from_specific") : ""}`;
+                                        return <WaitingPeriodRow title={t("rpt.wp_ped")} detail={detail} view={view} />;
                                     })()}
 
                                     {(() => {
@@ -1361,7 +1363,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                         const named = wp.diseases_covered?.length
                                             ? `: ${wp.diseases_covered.slice(0, 3).join(", ")}${wp.diseases_covered.length > 3 ? "…" : ""}`
                                             : "";
-                                        return <WaitingPeriodRow title="Specific Diseases" detail={`${wp.duration_months} months${named}`} view={view} />;
+                                        return <WaitingPeriodRow title={t("rpt.wp_specific")} detail={`${t("rpt.n_months", { n: wp.duration_months ?? "" })}${named}`} view={view} />;
                                     })()}
 
                                     {data.waiting_period_analysis?.personal_waiting_periods?.map((wp, i) => {
@@ -1372,7 +1374,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             monthsRemaining: wp.months_remaining,
                                             endDate,
                                         });
-                                        return <WaitingPeriodRow key={i} title={wp.condition} detail={`${wp.duration_months} months`} view={view} />;
+                                        return <WaitingPeriodRow key={i} title={wp.condition} detail={t("rpt.n_months", { n: wp.duration_months ?? "" })} view={view} />;
                                     })}
 
                                     {data.waiting_period_analysis?.maternity?.relevant && (() => {
@@ -1389,7 +1391,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             monthsRemaining: wp.months_remaining,
                                             endDate,
                                         });
-                                        return <WaitingPeriodRow title="Maternity" detail={`${wp.duration_months} months`} view={view} />;
+                                        return <WaitingPeriodRow title={t("rpt.wp_maternity")} detail={t("rpt.n_months", { n: wp.duration_months ?? "" })} view={view} />;
                                     })()}
                                 </ul>
                             </div>
@@ -1398,39 +1400,39 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         {/* D. NETWORK */}
                         <div className="bg-white border border-[var(--color-border-light)] rounded-lg overflow-hidden">
                             <div className="p-4 bg-[var(--color-cream-light)] border-b border-[var(--color-border-light)] flex justify-between items-center">
-                                <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">Network & Access</span>
+                                <span className="font-bold text-sm uppercase tracking-wider text-[var(--color-navy-900)]">{t("rpt.network")}</span>
                                 <Hospital className="w-4 h-4 text-[var(--color-text-muted)]" />
                             </div>
                             <div className="p-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                                     <div>
                                         <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">
-                                            Cashless Hospitals in {data.identity?.city || "Your City"}
+                                            {t("rpt.cashless_in", { city: data.identity?.city || t("rpt.your_city") })}
                                         </div>
                                         <div className="text-2xl font-bold text-[var(--color-navy-900)]">
                                             {hospitalCount !== null
                                                 ? hospitalCount.toLocaleString("en-IN")
                                                 : countFallback}
                                         </div>
-                                        <div className="text-xs text-slate-400 mt-0.5">unique empanelled hospitals</div>
+                                        <div className="text-xs text-slate-400 mt-0.5">{t("rpt.unique_hosp")}</div>
                                     </div>
 
                                     {insurerHospitalCount !== null && (
                                         <div>
                                             <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">
-                                                Your Insurer's Network
+                                                {t("rpt.insurer_network")}
                                             </div>
                                             <div className="text-2xl font-bold text-[var(--color-green-primary)]">
                                                 {insurerHospitalCount?.toLocaleString("en-IN")}
                                             </div>
-                                            <div className="text-xs text-slate-400 mt-0.5">hospitals accepting your policy</div>
+                                            <div className="text-xs text-slate-400 mt-0.5">{t("rpt.accepting")}</div>
                                         </div>
                                     )}
                                 </div>
 
                                 {data.network_limitations?.major_hospitals_included?.length > 0 && (
                                     <div className="mb-4">
-                                        <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">Major Chains Included</div>
+                                        <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">{t("rpt.chains")}</div>
                                         <div className="flex gap-2 flex-wrap">
                                             {data.network_limitations.major_hospitals_included.map((h, i) => (
                                                 <span key={i} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded border border-blue-100">{h}</span>
@@ -1446,7 +1448,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             ? "bg-green-50 text-green-700 border-green-200"
                                             : "bg-slate-50 text-slate-500 border-slate-200"
                                     )}>
-                                        {data.network_limitations?.reimbursement_allowed ? "✓ Reimbursement Available" : "Cashless Only"}
+                                        {data.network_limitations?.reimbursement_allowed ? t("rpt.reimb") : t("rpt.cashless_only")}
                                     </span>
                                 </div>
                             </div>
@@ -1460,13 +1462,13 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     <section className="mb-16">
                         <div className="flex items-center gap-3 mb-6">
                             <Zap className="w-6 h-6 text-amber-500" />
-                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">Recommendations</h3>
+                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.recs")}</h3>
                         </div>
 
                         {data.recommendations.critical_actions?.length > 0 && (
                             <div className="border border-red-100 bg-red-50/30 p-6 rounded-lg mb-6">
                                 <div className="text-sm font-bold uppercase tracking-wider text-red-700 mb-4 flex items-center gap-2">
-                                    <AlertCircle className="w-4 h-4" /> Critical Actions
+                                    <AlertCircle className="w-4 h-4" /> {t("rpt.critical")}
                                 </div>
                                 <ul className="space-y-4">
                                     {data.recommendations.critical_actions.map((action, i) => (
@@ -1475,7 +1477,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             <span className="text-xs text-slate-600">{action.reason}</span>
                                             {action.oop_risk_if_ignored && (
                                                 <span className="text-xs text-red-500 font-mono block mt-0.5">
-                                                    Risk if ignored: {action.oop_risk_if_ignored}
+                                                    {t("rpt.risk_ignored", { risk: action.oop_risk_if_ignored })}
                                                 </span>
                                             )}
                                         </li>
@@ -1492,16 +1494,16 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                         "bg-green-50 border-green-200"
                             )}>
                                 <div className="flex items-center gap-2 mb-3">
-                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-navy-900)]">Port to Better Policy?</div>
+                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-navy-900)]">{t("rpt.port_q")}</div>
                                     <span className={cn(
                                         "text-xs font-bold px-2 py-0.5 rounded-full",
                                         portingRec.recommendation === "yes" ? "bg-red-100 text-red-700" :
                                             portingRec.recommendation === "consider" ? "bg-amber-100 text-amber-700" :
                                                 "bg-green-100 text-green-700"
                                     )}>
-                                        {portingRec.recommendation === "yes" ? "⚠ ACTION REQUIRED" :
-                                            portingRec.recommendation === "consider" ? "→ CONSIDER" :
-                                                "✓ NO ACTION NEEDED"}
+                                        {portingRec.recommendation === "yes" ? t("rpt.badge_yes") :
+                                            portingRec.recommendation === "consider" ? t("rpt.badge_consider") :
+                                                t("rpt.badge_no")}
                                     </span>
                                 </div>
                                 <p className="text-sm">{portingRec.reason}</p>
@@ -1531,7 +1533,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                                 }, 100);
                                             }}
                                         >
-                                            Talk to an IndSure Advisor about this →
+                                            {t("rpt.talk_cta")}
                                         </Button>
                                     </>
                                 )}
@@ -1550,7 +1552,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                                 }, 100);
                                             }}
                                         >
-                                            Find a Better Policy Now →
+                                            {t("rpt.better_cta")}
                                         </Button>
                                     </>
                                 )}
@@ -1560,7 +1562,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         {(data.recommendations.medium_priority?.length > 0 || data.recommendations.low_priority?.length > 0) && (
                             <div className="bg-white border border-[var(--color-border-light)] p-6 rounded-lg">
                                 <div className="text-sm font-bold uppercase tracking-wider text-slate-600 mb-4 flex items-center gap-2">
-                                    <Info className="w-4 h-4" /> Other Recommendations
+                                    <Info className="w-4 h-4" /> {t("rpt.other_recs")}
                                 </div>
                                 <ul className="space-y-3">
                                     {[...data.recommendations.medium_priority ?? [], ...data.recommendations.low_priority ?? []].map((item, i) => (
@@ -1596,7 +1598,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         <button onClick={() => setShowDeductions(!showDeductions)} className="flex items-center gap-3 mb-4 w-full text-left group">
                             <FileText className="w-5 h-5 text-slate-400" />
                             <span className="font-serif text-lg text-slate-500 group-hover:text-[var(--color-navy-900)] transition-colors">
-                                Score Deductions ({data.audit_score.deductions?.length} rules triggered)
+                                {t("rpt.deductions_btn", { n: data.audit_score.deductions?.length ?? 0 })}
                             </span>
                             {showDeductions ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                         </button>
@@ -1607,25 +1609,25 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                     <table className="table-cards w-full text-sm">
                                         <thead>
                                             <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
-                                                <th className="px-4 py-3">Category</th>
-                                                <th className="px-4 py-3">Severity</th>
-                                                <th className="px-4 py-3">Points</th>
-                                                <th className="px-4 py-3">Reason</th>
+                                                <th className="px-4 py-3">{t("rpt.th_category")}</th>
+                                                <th className="px-4 py-3">{t("rpt.th_severity")}</th>
+                                                <th className="px-4 py-3">{t("rpt.th_points")}</th>
+                                                <th className="px-4 py-3">{t("rpt.th_reason")}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {data.audit_score.deductions.map((entry, i) => (
                                                 <tr key={i} className="border-t border-slate-100 hover:bg-slate-50/50">
-                                                    <td className="px-4 py-3" data-label="Category" data-cell="title">
-                                                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{DEDUCTION_CATEGORY_LABELS[entry.category] ?? entry.category}</span>
+                                                    <td className="px-4 py-3" data-label={t("rpt.th_category")} data-cell="title">
+                                                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{tOr(t, `rpt.cat_${entry.category}`, DEDUCTION_CATEGORY_LABELS[entry.category] ?? entry.category)}</span>
                                                     </td>
-                                                    <td className="px-4 py-3" data-label="Severity">
+                                                    <td className="px-4 py-3" data-label={t("rpt.th_severity")}>
                                                         <span className={cn("text-xs font-bold uppercase px-2 py-0.5 rounded border", getRiskColor(entry.severity))}>
-                                                            {entry.severity}
+                                                            {tOr(t, `rpt.sev_${entry.severity}`, entry.severity)}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 font-mono font-bold text-red-600" data-label="Points">{entry.points}</td>
-                                                    <td className="px-4 py-3 text-slate-600 text-xs leading-relaxed" data-label="Reason" data-cell="stack">{entry.reason}</td>
+                                                    <td className="px-4 py-3 font-mono font-bold text-red-600" data-label={t("rpt.th_points")}>{entry.points}</td>
+                                                    <td className="px-4 py-3 text-slate-600 text-xs leading-relaxed" data-label={t("rpt.th_reason")} data-cell="stack">{entry.reason}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

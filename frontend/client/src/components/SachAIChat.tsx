@@ -6,6 +6,7 @@ import { Send, X, Trash2, Bot, Sparkles, Loader2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { CLAUSE_LIBRARY } from "@/data/clause-library";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Simple markdown parser for bold, italic, and lists
 const SimpleMarkdown = ({ content }: { content: string }) => {
@@ -45,11 +46,14 @@ const SimpleMarkdown = ({ content }: { content: string }) => {
 
 // Every one of these resolves from stored data, so each is a zero-cost answer
 // rather than a prompt. They double as a hint at what Sach can actually read.
+//
+// `q` is what is sent. It stays English because the server matches English
+// clause names; `label` is the translation key shown on the button.
 const SUGGESTED_QUESTIONS = [
-  "Am I covered for robotic surgery?",
-  "What is my room rent limit?",
-  "Is there a co-pay on my policy?",
-  "How long is my pre-existing disease waiting?",
+  { q: "Am I covered for robotic surgery?", label: "sach.q1" },
+  { q: "What is my room rent limit?", label: "sach.q2" },
+  { q: "Is there a co-pay on my policy?", label: "sach.q3" },
+  { q: "How long is my pre-existing disease waiting?", label: "sach.q4" },
 ];
 
 type Message = {
@@ -99,6 +103,7 @@ function answerFromGlossary(question: string): string | null {
 
 export default function SachAIChat() {
   const [location] = useLocation();
+  const { t, locale } = useLanguage();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -190,7 +195,7 @@ export default function SachAIChat() {
         userMessage,
         {
           role: "assistant",
-          content: `Please keep your message under ${SACH_AI_MAX_INPUT_CHARS} characters and try again.`,
+          content: t("sach.too_long", { n: SACH_AI_MAX_INPUT_CHARS }),
         },
       ]);
       setInput("");
@@ -201,7 +206,7 @@ export default function SachAIChat() {
       setMessages((prev: Message[]) => [
         ...prev,
         userMessage,
-        { role: "assistant", content: `Rate limit reached (${SACH_AI_RATE_LIMIT} messages). Please wait and try again.` },
+        { role: "assistant", content: t("sach.rate_limit", { n: SACH_AI_RATE_LIMIT }) },
       ]);
       setInput("");
       return;
@@ -213,8 +218,7 @@ export default function SachAIChat() {
         userMessage,
         {
           role: "assistant",
-          content:
-            "Please remove personal identifiers (Aadhaar, phone, email, policy numbers) and resend your question. I never need them to read your cover.",
+          content: t("sach.personal"),
         },
       ]);
       setInput("");
@@ -232,9 +236,7 @@ export default function SachAIChat() {
         userMessage,
         {
           role: "assistant",
-          content:
-            general ??
-            "I can explain any insurance term here. To ask about **your own policy** — your room rent limit, your waiting periods, your co-pay — sign in and upload it, and I will read it back to you in plain language.",
+          content: general ?? t("sach.signed_out"),
         },
       ]);
       setInput("");
@@ -299,20 +301,18 @@ export default function SachAIChat() {
       // either side of this call.
       let content = typeof data?.content === "string" ? data.content : "";
       if (!content && data?.kind === "general") {
-        content =
-          answerFromGlossary(messageText) ??
-          "I answer from your policy document and from the plan catalogue, so I can tell you what your cover actually says. I do not have a general answer for that one. Try asking about a specific clause, like your room rent limit, co-pay, waiting periods or modern treatments.";
+        content = answerFromGlossary(messageText) ?? t("sach.no_general");
       }
       if (Array.isArray(data?.links) && data.links.length) {
         content += "\n\n" + data.links.map((l: any) => `${l.label}: ${l.href}`).join("\n");
       }
-      setLastAssistantContent(content || "Sach could not answer that right now.");
+      setLastAssistantContent(content || t("sach.no_answer"));
 
       // success
     } catch (err: any) {
       // Error handling
       setLastAssistantContent(
-        err?.message ? `Sach could not answer: ${err.message}` : "Sach is currently unavailable."
+        err?.message ? t("sach.err_with", { msg: err.message }) : t("sach.unavailable")
       );
     } finally {
       setLoading(false);
@@ -333,7 +333,9 @@ export default function SachAIChat() {
   // still explains any insurance term from the bundled clause library. Admin is excluded
   // because it is an internal tool operating on other people's data, not a place to ask about
   // "your" cover.
-  if (location.startsWith("/admin")) {
+  // The docs keep their previous/next links in the bottom corner the bubble
+  // sits on, and a reader there wants the page, not a chat.
+  if (location.startsWith("/admin") || location.startsWith("/docs")) {
     return null;
   }
 
@@ -344,7 +346,7 @@ export default function SachAIChat() {
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 group flex items-center justify-center w-14 h-14 bg-[var(--color-green-primary)] text-white rounded-full shadow-xl border border-[var(--color-green-secondary)] hover:scale-105 transition-all duration-300 hover:shadow-2xl"
-          aria-label="Open Sach, your policy assistant"
+          aria-label={t("sach.open")}
         >
           <Bot className="w-6 h-6" />
         </button>
@@ -363,15 +365,15 @@ export default function SachAIChat() {
               <div>
                 <h3 className="text-white font-serif font-bold text-lg leading-none tracking-wide">Sach</h3>
                 <p className="text-white/60 text-xs uppercase tracking-widest mt-1">
-                  Reads your policy
+                  {t("sach.reads")}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={clearChat} className="text-white/60 hover:text-white transition-colors" title="Clear">
+              <button onClick={clearChat} className="text-white/60 hover:text-white transition-colors" title={t("sach.clear")} aria-label={t("sach.clear")}>
                 <Trash2 className="w-4 h-4" />
               </button>
-              <button onClick={() => setOpen(false)} className="text-white/60 hover:text-white transition-colors" title="Close">
+              <button onClick={() => setOpen(false)} className="text-white/60 hover:text-white transition-colors" title={t("sach.close")} aria-label={t("sach.close")}>
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -384,30 +386,33 @@ export default function SachAIChat() {
                 <div className="w-12 h-12 bg-[var(--color-green-primary)]/10 text-[var(--color-green-primary)] rounded-full flex items-center justify-center mb-4">
                   <Sparkles className="w-5 h-5" />
                 </div>
-                <p className="font-serif text-[var(--color-text-main)] text-xl mb-2 font-bold">How can I help?</p>
+                <p className="font-serif text-[var(--color-text-main)] text-xl mb-2 font-bold">{t("sach.help")}</p>
                 <p className="text-xs font-mono text-[var(--color-text-secondary)] uppercase tracking-wide mb-4">
-                  Ask what your policy actually covers.
+                  {t("sach.ask_what")}
                 </p>
+                {locale === "hi" && (
+                  <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t("sach.english_note")}</p>
+                )}
 
                 {!hasPolicy && (
                   <div className="w-full mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-left">
-                    <p className="text-xs font-semibold text-amber-700 mb-1">No policy loaded</p>
+                    <p className="text-xs font-semibold text-amber-700 mb-1">{t("sach.no_policy")}</p>
                     <p className="text-xs text-amber-600 leading-relaxed">
-                      For specific analysis,{" "}
-                      <a href="/policychecker" className="underline font-medium">upload a policy first</a>.
-                      I can still explain how any clause works.
+                      {t("sach.for_specific")}{" "}
+                      <a href="/policychecker" className="underline font-medium">{t("sach.upload_first")}</a>.{" "}
+                      {t("sach.still_explain")}
                     </p>
                   </div>
                 )}
 
                 <div className="w-full space-y-2">
-                  {SUGGESTED_QUESTIONS.map((q, i) => (
+                  {SUGGESTED_QUESTIONS.map((sq, i) => (
                     <button
                       key={i}
-                      onClick={() => sendMessage(q)}
+                      onClick={() => sendMessage(sq.q)}
                       className="w-full text-left text-xs p-3 bg-white border border-[var(--color-border-light)] hover:border-[var(--color-green-primary)] rounded-lg transition-colors text-[var(--color-text-secondary)] shadow-sm"
                     >
-                      {q}
+                      {t(sq.label)}
                     </button>
                   ))}
                 </div>
@@ -433,7 +438,7 @@ export default function SachAIChat() {
 
             {isTyping && (
               <div className="flex gap-2 items-center text-[var(--color-green-primary)] text-xs font-mono uppercase tracking-widest pl-2">
-                <Loader2 className="w-3 h-3 animate-spin" /> Thinking...
+                <Loader2 className="w-3 h-3 animate-spin" /> {t("sach.thinking")}
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -447,20 +452,21 @@ export default function SachAIChat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                placeholder="Type your question..."
+                placeholder={t("sach.placeholder")}
                 className="w-full pl-4 pr-12 py-3 bg-[var(--color-cream-main)] border border-[var(--color-border-light)] focus:border-[var(--color-green-primary)] rounded-lg outline-none text-sm transition-all placeholder:text-[var(--color-text-muted)] text-[var(--color-text-main)]"
                 disabled={loading}
               />
               <button
                 onClick={() => sendMessage()}
                 disabled={!input.trim() || loading}
+                aria-label={t("sach.send")}
                 className="absolute right-2 p-1.5 bg-[var(--color-green-primary)] text-white rounded-md hover:bg-[var(--color-green-secondary)] transition-colors disabled:opacity-50"
               >
                 <Send className="w-3 h-3" />
               </button>
             </div>
             <p className="text-xs text-center text-[var(--color-text-muted)] mt-2 font-mono uppercase tracking-wider">
-              Read from your documents • Always confirm with your insurer
+              {t("sach.footer")}
             </p>
           </div>
         </div>

@@ -618,9 +618,7 @@ export default function PolicyDetail() {
             )
           ) : reportData ? (
             <>
-            {locale === "hi" && (
-              <p className="text-sm text-slate-500">{t("policy_detail.report_in_english")}</p>
-            )}
+            {/* PolicyAuditReport carries its own note about English findings. */}
             {/* reportData is validated at runtime by validateForensicAuditReport.
                 The double cast this used to carry existed only because the frontend
                 and backend each had their own ForensicAuditReport; there is now one. */}

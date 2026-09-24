@@ -7,6 +7,7 @@ import { loadSampleReport, mockReportHealth } from "@/lib/mock-data";
 import { Reveal, Stagger, RevealItem } from "@/components/motion";
 import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
 import { ClauseDecoder, ScoreDial, SpotlightCard } from "@/components/marketing/showcase";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /* ============================================================
    POLICY CHECKER — value page
@@ -21,39 +22,39 @@ import { ClauseDecoder, ScoreDial, SpotlightCard } from "@/components/marketing/
 
 /* Every check below maps to a clause class the engine extracts.
    Grouped the way a customer would ask about them, not the way the
-   pipeline is organised. */
+   pipeline is organised. Visible strings are translation keys. */
 const CHECK_GROUPS = [
   {
-    title: "What you get paid",
+    title: "pcl.g1",
     accent: "var(--lob-health)",
     wash: "var(--lob-health-wash)",
     icon: Ruler,
     items: [
-      { icon: Ruler, label: "Room rent caps", note: "and the proportionate deduction they trigger" },
-      { icon: Percent, label: "Co-pay percentages", note: "including the ones that start at a birthday" },
-      { icon: Layers, label: "Disease sub-limits", note: "cataract, knee, maternity, and the rest" },
+      { icon: Ruler, label: "pcl.i1", note: "pcl.i1n" },
+      { icon: Percent, label: "pcl.i2", note: "pcl.i2n" },
+      { icon: Layers, label: "pcl.i3", note: "pcl.i3n" },
     ],
   },
   {
-    title: "When you get paid",
+    title: "pcl.g2",
     accent: "var(--lob-life)",
     wash: "var(--lob-life-wash)",
     icon: CalendarClock,
     items: [
-      { icon: CalendarClock, label: "Waiting periods", note: "pre-existing, specific surgeries, maternity" },
-      { icon: Ban, label: "Permanent exclusions", note: "the ones written into the annexure" },
-      { icon: RotateCcw, label: "Restoration terms", note: "whether it refills for the same illness" },
+      { icon: CalendarClock, label: "pcl.i4", note: "pcl.i4n" },
+      { icon: Ban, label: "pcl.i5", note: "pcl.i5n" },
+      { icon: RotateCcw, label: "pcl.i6", note: "pcl.i6n" },
     ],
   },
   {
-    title: "Where you stand",
+    title: "pcl.g3",
     accent: "var(--lob-motor)",
     wash: "var(--lob-motor-wash)",
     icon: MapPin,
     items: [
-      { icon: MapPin, label: "Zone limitations", note: "what changes if you are treated in a metro" },
-      { icon: Building2, label: "Employer dependency", note: "what you lose the day you leave the job" },
-      { icon: Shield, label: "Rider effectiveness", note: "which add-ons change a claim, and which do not" },
+      { icon: MapPin, label: "pcl.i7", note: "pcl.i7n" },
+      { icon: Building2, label: "pcl.i8", note: "pcl.i8n" },
+      { icon: Shield, label: "pcl.i9", note: "pcl.i9n" },
     ],
   },
 ];
@@ -63,27 +64,28 @@ const OUTCOMES = [
     icon: Search,
     accent: "var(--lob-health)",
     wash: "var(--lob-health-wash)",
-    title: "A clear verdict",
-    body: "Correctly insured, under-insured, or exposed. One score, and the sentence that explains it.",
+    title: "pcl.o1",
+    body: "pcl.o1b",
   },
   {
     icon: FileText,
     accent: "var(--lob-life)",
     wash: "var(--lob-life-wash)",
-    title: "Plain English throughout",
-    body: "\"Co-pay on Zone B treatment\" becomes \"you pay 20% of the bill in Mumbai\". Every clause, that treatment.",
+    title: "pcl.o2",
+    body: "pcl.o2b",
   },
   {
     icon: Zap,
     accent: "var(--lob-motor)",
     wash: "var(--lob-motor-wash)",
-    title: "Something to do about it",
-    body: "Specific next steps for the gaps we find. We never tell you which policy to buy, because we cannot earn on it.",
+    title: "pcl.o3",
+    body: "pcl.o3b",
   },
 ];
 
 export function PolicyCheckerLanding() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
 
   return (
     <>
@@ -102,41 +104,40 @@ export function PolicyCheckerLanding() {
             {/* The eyebrow sits INSIDE the h1 so the heading carries the words
                 people search for; the slogan alone told Google nothing. */}
             <h1 className="flex flex-col items-start gap-6">
-              <Eyebrow className="font-sans">Health insurance policy checker</Eyebrow>
+              <Eyebrow className="font-sans">{t("pcl.eyebrow")}</Eyebrow>
               <span className="block font-serif font-bold tracking-[-0.035em] leading-[1.05] text-4xl sm:text-6xl text-[var(--color-navy-900)]">
-                The fine print,
+                {t("pcl.h_a")}
                 <br />
-                <span className="italic text-[var(--color-teal-600)]">translated.</span>
+                <span className="italic text-[var(--color-teal-600)]">{t("pcl.h_b")}</span>
               </span>
             </h1>
 
             <p className="max-w-xl text-lg leading-relaxed text-[var(--color-text-secondary)]">
-              Upload the policy you already own. The engine reads every clause, exclusion and rider,
-              and tells you what you are actually covered for, in the words you would use yourself.
+              {t("pcl.sub")}
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <CTA href="/signup" icon={ArrowRight}>Check my policy</CTA>
+              <CTA href="/signup" icon={ArrowRight}>{t("pcl.check")}</CTA>
               <CTA
                 variant="secondary"
                 onClick={() => { loadSampleReport(mockReportHealth); setLocation("/report?sample=health"); }}
               >
-                See a finished report
+                {t("pcl.finished")}
               </CTA>
             </div>
 
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[15px] text-[var(--color-text-secondary)]">
               <span className="flex items-center gap-1.5">
                 <Lock className="h-4 w-4 shrink-0 text-[var(--color-teal-600)]" aria-hidden="true" />
-                Private to your account
+                {t("pcl.private")}
               </span>
               <span className="flex items-center gap-1.5">
                 <Clock className="h-4 w-4 shrink-0 text-[var(--color-teal-600)]" aria-hidden="true" />
-                About a minute
+                {t("pcl.minute")}
               </span>
               <span className="flex items-center gap-1.5">
                 <FileText className="h-4 w-4 shrink-0 text-[var(--color-teal-600)]" aria-hidden="true" />
-                PDF or a photo of the printout
+                {t("pcl.pdf_photo")}
               </span>
             </div>
           </Reveal>
@@ -150,16 +151,16 @@ export function PolicyCheckerLanding() {
             >
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
-                  Insurance health score
+                  {t("pcl.score")}
                 </span>
                 <span className="rounded-md bg-[var(--color-cream-dark)] px-2 py-1 text-sm font-semibold text-[var(--color-text-secondary)]">
-                  Illustrative
+                  {t("pcl.illustrative")}
                 </span>
               </div>
 
               <ScoreDial
                 score={63}
-                caption="A ₹10 L family floater with a room-rent cap and a co-pay after sixty."
+                caption={t("pcl.dial_caption")}
               />
             </div>
           </Reveal>
@@ -170,9 +171,9 @@ export function PolicyCheckerLanding() {
       <Section surface="mint">
         <div className="container-editorial flex flex-col gap-10">
           <SectionHeading
-            eyebrow="What a decode looks like"
-            title="One clause, both ways round"
-            sub="This is the whole product. On the left, the sentence exactly as your policy words it. On the right, what it does to you at the hospital counter. Pick a clause."
+            eyebrow={t("pcl.dec_eyebrow")}
+            title={t("pcl.dec_h")}
+            sub={t("pcl.dec_sub")}
           />
 
           <Reveal>
@@ -181,7 +182,7 @@ export function PolicyCheckerLanding() {
 
           <Reveal className="text-center">
             <p className="text-[15px] text-[var(--color-text-secondary)]">
-              Your own report reads like this for every clause in the document, not just three.
+              {t("pcl.every_clause")}
             </p>
           </Reveal>
         </div>
@@ -191,9 +192,9 @@ export function PolicyCheckerLanding() {
       <Section surface="white">
         <div className="container-editorial flex flex-col gap-10">
           <SectionHeading
-            eyebrow="The checks"
-            title="What the engine looks for"
-            sub="Grouped the way a customer asks about them rather than the way the pipeline runs."
+            eyebrow={t("pcl.chk_eyebrow")}
+            title={t("pcl.chk_h")}
+            sub={t("pcl.chk_sub")}
           />
 
           <Stagger className="grid gap-6 md:grid-cols-3">
@@ -209,7 +210,7 @@ export function PolicyCheckerLanding() {
                         <g.icon className="h-5 w-5" aria-hidden="true" />
                       </span>
                       <h3 className="font-serif text-xl font-bold text-[var(--color-navy-900)]">
-                        {g.title}
+                        {t(g.title)}
                       </h3>
                     </div>
 
@@ -223,10 +224,10 @@ export function PolicyCheckerLanding() {
                           />
                           <span className="min-w-0">
                             <span className="block text-[15px] font-semibold text-[var(--color-navy-900)]">
-                              {it.label}
+                              {t(it.label)}
                             </span>
                             <span className="block text-sm leading-snug text-[var(--color-text-secondary)]">
-                              {it.note}
+                              {t(it.note)}
                             </span>
                           </span>
                         </li>
@@ -244,8 +245,8 @@ export function PolicyCheckerLanding() {
       <Section surface="cream" bordered>
         <div className="container-editorial flex flex-col gap-10">
           <SectionHeading
-            eyebrow="What comes back"
-            title="Three things, and nothing to buy"
+            eyebrow={t("pcl.back_eyebrow")}
+            title={t("pcl.back_h")}
             align="center"
           />
 
@@ -263,10 +264,10 @@ export function PolicyCheckerLanding() {
                     <o.icon className="h-5 w-5" aria-hidden="true" />
                   </span>
                   <h3 className="font-serif text-xl font-bold text-[var(--color-navy-900)]">
-                    {o.title}
+                    {t(o.title)}
                   </h3>
                   <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                    {o.body}
+                    {t(o.body)}
                   </p>
                 </div>
               </RevealItem>
@@ -276,14 +277,14 @@ export function PolicyCheckerLanding() {
           {/* Samples run on mock data and are open to signed-out visitors. */}
           <Reveal className="flex flex-col items-center gap-4 pt-4">
             <span className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
-              Read a finished one first
+              {t("pcl.read_first")}
             </span>
 
             <div className="flex flex-wrap justify-center gap-3">
               {[
-                { label: "Health policy", href: "/report?sample=health", accent: "var(--lob-health)" },
-                { label: "Term life", href: "/report?sample=life", accent: "var(--lob-life)" },
-                { label: "Car insurance", href: "/report?sample=vehicle", accent: "var(--lob-motor)" },
+                { label: "pcl.s1", href: "/report?sample=health", accent: "var(--lob-health)" },
+                { label: "pcl.s2", href: "/report?sample=life", accent: "var(--lob-life)" },
+                { label: "pcl.s3", href: "/report?sample=vehicle", accent: "var(--lob-motor)" },
               ].map((s) => (
                 <Link
                   key={s.href}
@@ -292,7 +293,7 @@ export function PolicyCheckerLanding() {
                   style={{ borderColor: `${s.accent}44`, color: s.accent }}
                 >
                   <FileText className="h-4 w-4" aria-hidden="true" />
-                  {s.label}
+                  {t(s.label)}
                 </Link>
               ))}
             </div>

@@ -4,6 +4,7 @@ import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import SharedPolicySummary from "@/components/SharedPolicySummary";
 import { validateForensicAuditReport } from "@shared/policy";
 import { getApiBase } from "@/lib/queryClient";
+import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext";
 
 /** The data-entry lane's payload. `kind` comes from the server, which is the
  *  only side that knows which lane produced the row. */
@@ -25,6 +26,7 @@ interface SharedReportProps {
 /** Header and footer shared by both lanes. Extracted rather than copied: the
  *  two views differ in their body and in one label, and nothing else. */
 function PageChrome({ label, children }: { label: string; children: React.ReactNode }) {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)]">
       <div className="bg-white border-b border-[var(--color-border-light)] py-4 px-6">
@@ -33,7 +35,10 @@ function PageChrome({ label, children }: { label: string; children: React.ReactN
             <img src="/logo.png" alt="IndSure" className="h-8" />
             <span className="text-lg font-semibold text-[var(--color-navy-900)]">IndSure</span>
           </div>
-          <div className="text-sm text-[var(--color-text-muted)]">{label}</div>
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline text-sm text-[var(--color-text-muted)]">{label}</span>
+            <LanguageToggle />
+          </div>
         </div>
       </div>
 
@@ -42,8 +47,8 @@ function PageChrome({ label, children }: { label: string; children: React.ReactN
       <div className="bg-white border-t border-[var(--color-border-light)] py-6 px-6 mt-12">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-sm text-[var(--color-text-muted)]">
-            Powered by <span className="font-semibold text-[var(--color-teal-600)]">IndSure</span> ·
-            Policy Analysis Platform
+            {t("shared.powered")} <span className="font-semibold text-[var(--color-teal-600)]">IndSure</span> ·{" "}
+            {t("shared.platform")}
           </p>
         </div>
       </div>
@@ -52,6 +57,7 @@ function PageChrome({ label, children }: { label: string; children: React.ReactN
 }
 
 export default function SharedReport({ token }: SharedReportProps) {
+  const { t } = useLanguage();
   const [data, setData] = useState<any | null>(null);
   const [dataEntry, setDataEntry] = useState<DataEntryPayload | null>(null);
   // Identity for the PDF. The report payload has no insurer or plan name; the
@@ -124,7 +130,7 @@ export default function SharedReport({ token }: SharedReportProps) {
       <div className="min-h-screen bg-[var(--color-cream-main)] flex items-center justify-center px-6">
         <div className="flex flex-col items-center text-center">
           <Loader2 className="w-12 h-12 text-[var(--color-teal-600)] animate-spin mb-4" />
-          <p className="text-sm text-[var(--color-text-secondary)]">Loading report…</p>
+          <p className="text-sm text-[var(--color-text-secondary)]">{t("shared.loading")}</p>
         </div>
       </div>
     );
@@ -138,13 +144,13 @@ export default function SharedReport({ token }: SharedReportProps) {
             <AlertCircle className="w-8 h-8" />
           </div>
           <h2 className="text-2xl font-serif text-[var(--color-navy-900)] mb-4">
-            Report Not Available
+            {t("shared.na_h")}
           </h2>
           <p className="text-[var(--color-text-secondary)] mb-8">
-            This report link is no longer available. It may have been revoked by the agent or has expired.
+            {t("shared.na_d")}
           </p>
           <div className="text-xs text-[var(--color-text-muted)] pt-6 border-t border-[var(--color-border-light)]">
-            Powered by <span className="font-semibold">IndSure</span>
+            {t("shared.powered")} <span className="font-semibold">IndSure</span>
           </div>
         </div>
       </div>
@@ -159,19 +165,19 @@ export default function SharedReport({ token }: SharedReportProps) {
             <Loader2 className="w-8 h-8 animate-spin" />
           </div>
           <h2 className="text-2xl font-serif text-[var(--color-navy-900)] mb-4">
-            Report In Progress
+            {t("shared.prog_h")}
           </h2>
           <p className="text-[var(--color-text-secondary)] mb-8">
-            This report is still being generated. Please check back in a few minutes.
+            {t("shared.prog_d")}
           </p>
           <button
             onClick={() => window.location.reload()}
             className="px-6 py-3 bg-[var(--color-cta)] text-white rounded-lg hover:bg-[var(--color-teal-700)] transition-colors"
           >
-            Refresh Page
+            {t("shared.refresh")}
           </button>
           <div className="text-xs text-[var(--color-text-muted)] pt-6 mt-6 border-t border-[var(--color-border-light)]">
-            Powered by <span className="font-semibold">IndSure</span>
+            {t("shared.powered")} <span className="font-semibold">IndSure</span>
           </div>
         </div>
       </div>
@@ -186,13 +192,13 @@ export default function SharedReport({ token }: SharedReportProps) {
             <AlertCircle className="w-8 h-8" />
           </div>
           <h2 className="text-2xl font-serif text-[var(--color-navy-900)] mb-4">
-            Too Many Requests
+            {t("shared.rate_h")}
           </h2>
           <p className="text-[var(--color-text-secondary)] mb-8">
-            Please wait a moment before trying again.
+            {t("shared.rate_d")}
           </p>
           <div className="text-xs text-[var(--color-text-muted)] pt-6 border-t border-[var(--color-border-light)]">
-            Powered by <span className="font-semibold">IndSure</span>
+            {t("shared.powered")} <span className="font-semibold">IndSure</span>
           </div>
         </div>
       </div>
@@ -203,7 +209,7 @@ export default function SharedReport({ token }: SharedReportProps) {
      audit payload and would otherwise reject a perfectly good summary. */
   if (dataEntry) {
     return (
-      <PageChrome label="Shared Policy Summary">
+      <PageChrome label={t("shared.summary_label")}>
         <SharedPolicySummary
           insuranceType={dataEntry.insurance_type}
           fields={dataEntry.fields}
@@ -225,13 +231,13 @@ export default function SharedReport({ token }: SharedReportProps) {
             <AlertCircle className="w-8 h-8" />
           </div>
           <h2 className="text-2xl font-serif text-[var(--color-navy-900)] mb-4">
-            Unable to Load Report
+            {t("shared.err_h")}
           </h2>
           <p className="text-[var(--color-text-secondary)] mb-8">
-            There was an error loading this report. Please contact the agent who shared this link.
+            {t("shared.err_d")}
           </p>
           <div className="text-xs text-[var(--color-text-muted)] pt-6 border-t border-[var(--color-border-light)]">
-            Powered by <span className="font-semibold">IndSure</span>
+            {t("shared.powered")} <span className="font-semibold">IndSure</span>
           </div>
         </div>
       </div>
@@ -240,7 +246,7 @@ export default function SharedReport({ token }: SharedReportProps) {
 
   // Render the report with hideNav=true to hide agent-only controls
   return (
-    <PageChrome label="Shared Policy Report">
+    <PageChrome label={t("shared.report_label")}>
       <PolicyAuditReport data={data} hideNav={true} pdfMeta={meta} />
     </PageChrome>
   );

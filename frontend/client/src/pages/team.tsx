@@ -7,27 +7,29 @@ import { FOUNDERS as founders, displayName } from "@/data/team";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 
+import { useLanguage } from "@/i18n/LanguageContext";
+
 export default function Team() {
+  const { t } = useLanguage();
   useSEO(seoFor("/team"));
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
       <Header />
-      <Breadcrumbs items={[{ label: "Team" }]} />
+      <Breadcrumbs items={[{ label: t("teampage.crumb") }]} />
 
       <main className="flex-grow pt-24 sm:pt-28 lg:pt-32 pb-12 sm:pb-16 lg:pb-20 px-6 w-full">
 
         {/* HERO */}
         <section className="max-w-4xl mx-auto text-center mb-20 animate-reveal">
           <div className="inline-block py-1 px-3 border border-[var(--color-border-main)] rounded-full text-xs font-mono uppercase tracking-widest text-[var(--color-text-secondary)] mb-6 bg-white">
-            The Team
+            {t("teampage.eyebrow")}
           </div>
           <h1 className="text-3xl sm:text-5xl md:text-7xl font-serif mb-8 tracking-tight text-[var(--color-text-main)] leading-tight">
-            Three people, <br />
-            <span className="italic text-[var(--color-green-primary)]">one fine-print problem.</span>
+            {t("teampage.h_a")} <br />
+            <span className="italic text-[var(--color-green-primary)]">{t("teampage.h_b")}</span>
           </h1>
           <p className="text-xl md:text-2xl text-[var(--color-text-secondary)] font-light leading-relaxed max-w-2xl mx-auto">
-            IndSure is built by a small team that got tired of watching people
-            find out what their policy actually covers only after a claim gets rejected.
+            {t("teampage.sub")}
           </p>
         </section>
 
@@ -52,7 +54,7 @@ export default function Team() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full border border-[var(--color-border-main)] flex items-center justify-center text-[var(--color-text-secondary)] hover:bg-[var(--color-green-primary)] hover:text-white hover:border-[var(--color-green-primary)] transition-colors"
-                aria-label={`${displayName(f)} on LinkedIn`}
+                aria-label={t("teampage.on_linkedin", { name: displayName(f) })}
               >
                 <Linkedin className="w-4 h-4" />
               </a>
@@ -62,12 +64,9 @@ export default function Team() {
 
         {/* BEHIND THE SCENES */}
         <section className="max-w-3xl mx-auto mb-12 sm:mb-16 lg:mb-24 text-center">
-          <h2 className="text-3xl font-serif mb-6">And everyone else who builds this</h2>
+          <h2 className="text-3xl font-serif mb-6">{t("teampage.everyone")}</h2>
           <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed font-light">
-            Behind the three names above is a small crew of engineers, insurance
-            domain experts, and advisor-support folks who read policy wordings
-            for a living so you don't have to. We're keeping this page short on
-            purpose — as the team grows, they'll get their own spot here too.
+            {t("teampage.behind")}
           </p>
         </section>
 
@@ -77,15 +76,15 @@ export default function Team() {
             <div className="absolute top-[-50%] left-[-20%] w-[500px] h-[500px] bg-[var(--color-green-primary)] rounded-full blur-[100px]"></div>
           </div>
           <div className="relative z-10">
-            <h2 className="text-3xl md:text-5xl font-serif mb-6">Want to work on this with us?</h2>
+            <h2 className="text-3xl md:text-5xl font-serif mb-6">{t("teampage.work")}</h2>
             <p className="text-xl text-white/80 max-w-2xl mx-auto mb-10 font-light">
-              We're a small team solving a genuinely annoying problem. If that sounds fun, say hello.
+              {t("teampage.small")}
             </p>
             <a
               href="mailto:careers@indsure.in"
               className="inline-flex items-center justify-center bg-[var(--color-green-primary)] hover:bg-[var(--color-green-secondary)] text-white h-14 px-8 text-lg rounded-full font-medium transition-colors"
             >
-              Get in Touch
+              {t("teampage.touch")}
             </a>
           </div>
         </section>

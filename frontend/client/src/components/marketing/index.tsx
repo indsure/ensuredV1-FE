@@ -19,6 +19,8 @@
 import { Link } from "wouter";
 import type { LucideIcon } from "lucide-react";
 import { Reveal } from "@/components/motion";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
 
 /* ─────────────────── LINE OF BUSINESS ─────────────────── */
 
@@ -187,13 +189,14 @@ export function LobChip({
   className?: string;
 }) {
   const t = LOB[lob];
+  const { t: tr } = useLanguage();
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${className}`}
       style={{ color: t.accent, backgroundColor: t.wash, border: `1px solid ${t.accent}22` }}
     >
       {Icon ? <Icon className="w-4 h-4 shrink-0" aria-hidden="true" /> : null}
-      {label ?? t.label}
+      {label ?? tOr(tr, `mkt.lob_${lob}`, t.label)}
     </span>
   );
 }
@@ -313,6 +316,7 @@ export function Panel({
   className?: string;
   illustrative?: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <div
       className={`overflow-hidden rounded-xl bg-white ${className}`}
@@ -335,7 +339,7 @@ export function Panel({
 
         {illustrative ? (
           <span className="rounded-md bg-[var(--color-cream-dark)] px-2 py-1 text-sm font-semibold text-[var(--color-text-secondary)]">
-            Illustrative
+            {t("mkt.illustrative")}
           </span>
         ) : null}
       </div>

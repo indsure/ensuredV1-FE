@@ -13,6 +13,13 @@ import { pdf } from "@react-pdf/renderer";
 import { CalculatorPDFDocument } from "@/components/CalculatorPDFDocument";
 import { registerPdfFonts } from "@/components/PolicyPDFDocument";
 import { showError } from "@/lib/calculator-notifications";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { tOr } from "@/i18n";
+
+// Answer values are stored in English ("Couple + kids"); this shows them in the
+// reader's language using the calculator's own option labels.
+const optLabel = (t: (k: string) => string, v?: string) =>
+    v ? tOr(t, `calc.opt_${v.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")}`, v) : "";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -33,6 +40,7 @@ import { formatINRFull as formatINR } from "@/lib/format";
 
 function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
     const [visible, setVisible] = useState(false);
+    const { t } = useLanguage();
     return (
         <span className="relative inline-flex items-center">
             {children}
@@ -42,7 +50,7 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
                 onMouseLeave={() => setVisible(false)}
                 onFocus={() => setVisible(true)}
                 onBlur={() => setVisible(false)}
-                aria-label="More information"
+                aria-label={t("crep.more_info")}
                 type="button"
             >
                 <Info className="w-3.5 h-3.5" />
@@ -73,6 +81,7 @@ function CoverageTiles({
     totalNote: string;
     premium?: EngineResult["premiumEstimate"];
 }) {
+    const { t } = useLanguage();
     return (
         <div
             className={cn(
@@ -82,7 +91,7 @@ function CoverageTiles({
         >
             <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
                 <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
-                    Base Policy
+                    {t("crep.base")}
                 </div>
                 <div className="text-3xl font-serif text-[var(--color-navy-900)]">{baseLabel}</div>
                 <div className="text-xs text-[var(--color-text-muted)] mt-2">{baseNote}</div>
@@ -91,8 +100,8 @@ function CoverageTiles({
             {topUpLabel && (
                 <div className="bg-[var(--color-cta)] text-white p-6 rounded-xl shadow-md col-span-1 md:transform md:-translate-y-3">
                     <div className="text-xs font-bold text-white/80 uppercase tracking-wider mb-2 flex items-center">
-                        <Tooltip text="A super top-up policy pays only after your base cover is used up in a year. Because it starts high, it costs a fraction of a base policy of the same size.">
-                            <span>Super Top-Up</span>
+                        <Tooltip text={t("crep.topup_tip")}>
+                            <span>{t("crep.topup")}</span>
                         </Tooltip>
                     </div>
                     <div className="text-3xl font-serif">{topUpLabel}</div>
@@ -102,7 +111,7 @@ function CoverageTiles({
 
             <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
                 <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
-                    Total Shield
+                    {t("crep.total")}
                 </div>
                 <div className="text-3xl font-serif text-[var(--color-navy-900)]">{totalLabel}</div>
                 <div className="text-xs text-[var(--color-text-muted)] mt-2">{totalNote}</div>
@@ -111,16 +120,16 @@ function CoverageTiles({
             {premium && (
                 <div className="bg-white p-6 rounded-xl border border-[var(--color-border-light)] shadow-sm col-span-1">
                     <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
-                        Est. Monthly Premium
+                        {t("crep.monthly")}
                     </div>
                     <div className="text-2xl font-serif text-[var(--color-navy-900)] leading-tight">
                         {formatINR(premium.monthly.min)}
                         {" – "}
                         {formatINR(premium.monthly.max)}
-                        <span className="text-base font-sans font-normal text-[var(--color-text-muted)]">/mo</span>
+                        <span className="text-base font-sans font-normal text-[var(--color-text-muted)]">{t("crep.per_mo")}</span>
                     </div>
                     <div className="text-xs text-[var(--color-text-muted)] mt-2">
-                        Annual: {formatINR(premium.annual.min)} – {formatINR(premium.annual.max)}
+                        {t("crep.annual", { min: formatINR(premium.annual.min), max: formatINR(premium.annual.max) })}
                     </div>
                 </div>
             )}
@@ -134,16 +143,17 @@ function CoverageTiles({
 function CoverageOptions({ result, cityTier }: { result: EngineResult; cityTier?: string }) {
     const plans = result.plans;
     const [view, setView] = useState<"optimal" | "efficient">("optimal");
+    const { t } = useLanguage();
 
-    const costNote = `Covers the worst-case scenario the engine derived for ${cityTier ?? "your city"} costs.`;
+    const costNote = t("crep.cost_note", { tier: cityTier ?? t("crep.your_city") });
 
     if (!plans) {
         return (
             <CoverageTiles
                 baseLabel={result.baseCover}
-                baseNote="Primary layer for standard hospitalisations."
+                baseNote={t("crep.primary")}
                 topUpLabel={result.superTopUp !== "None" ? result.superTopUp : null}
-                topUpNote="Pays after the base cover is used up."
+                topUpNote={t("crep.pays_after")}
                 totalLabel={result.totalProtection}
                 totalNote={costNote}
                 premium={result.premiumEstimate}
@@ -159,7 +169,7 @@ function CoverageOptions({ result, cityTier }: { result: EngineResult; cityTier?
             {plans.hasSplit && (
                 <>
                     <div className="flex justify-center">
-                        <div role="tablist" aria-label="How to structure the cover" className="inline-flex p-1 bg-slate-100 rounded-full">
+                        <div role="tablist" aria-label={t("crep.structure_aria")} className="inline-flex p-1 bg-slate-100 rounded-full">
                             {(["optimal", "efficient"] as const).map((key) => (
                                 <button
                                     key={key}
@@ -174,9 +184,9 @@ function CoverageOptions({ result, cityTier }: { result: EngineResult; cityTier?
                                             : "text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)]",
                                     )}
                                 >
-                                    {key === "optimal" ? "Optimal" : "Cost efficient"}
+                                    {key === "optimal" ? t("crep.optimal") : t("crep.efficient")}
                                     {key === "efficient" && saving > 0 && (
-                                        <span className="ml-2 text-[var(--color-teal-600)]">save {saving}%</span>
+                                        <span className="ml-2 text-[var(--color-teal-600)]">{t("crep.save", { n: saving })}</span>
                                     )}
                                 </button>
                             ))}
@@ -185,19 +195,15 @@ function CoverageOptions({ result, cityTier }: { result: EngineResult; cityTier?
 
                     <p className="text-center text-sm text-[var(--color-text-secondary)] max-w-2xl mx-auto">
                         {view === "optimal"
-                            ? `One policy of ${formatLakhs(active.baseSI)}, plus the riders below. One insurer, one claim, nothing to co-ordinate.`
-                            : `The same ${formatLakhs(active.totalSI)} of cover, split into ${formatLakhs(active.baseSI)} of base and ${formatLakhs(active.topUpSI)} of super top-up, plus the riders below. Two policies to manage, ${saving}% less premium.`}
+                            ? t("crep.opt_desc", { base: formatLakhs(active.baseSI) })
+                            : t("crep.eff_desc", { total: formatLakhs(active.totalSI), base: formatLakhs(active.baseSI), topup: formatLakhs(active.topUpSI), n: saving })}
                     </p>
                 </>
             )}
 
             {result.coverCap?.applied && (
                 <p className="text-center text-sm text-[var(--color-text-secondary)] max-w-2xl mx-auto">
-                    Capped at {formatLakhs(result.coverCap.limit)}, the most we recommend
-                    {result.coverCap.global
-                        ? " for someone who travels abroad"
-                        : " for cover that only has to work in India"}.
-                    The uncapped calculation came to {formatINR(result.coverCap.uncapped)}.
+                    {t(result.coverCap.global ? "crep.capped_abroad" : "crep.capped_india", { limit: formatLakhs(result.coverCap.limit), uncapped: formatINR(result.coverCap.uncapped) })}
                 </p>
             )}
 
@@ -205,14 +211,14 @@ function CoverageOptions({ result, cityTier }: { result: EngineResult; cityTier?
                 baseLabel={formatLakhs(active.baseSI)}
                 baseNote={
                     active.topUpSI > 0
-                        ? "Primary layer for standard hospitalisations."
-                        : "A single policy covering the whole amount."
+                        ? t("crep.primary")
+                        : t("crep.single")
                 }
                 topUpLabel={active.topUpSI > 0 ? formatLakhs(active.topUpSI) : null}
                 topUpNote={
                     saving > 0
-                        ? `Carries most of the cover for ${saving}% less total premium.`
-                        : "Pays after the base cover is used up."
+                        ? t("crep.carries", { n: saving })
+                        : t("crep.pays_after")
                 }
                 totalLabel={formatLakhs(active.totalSI)}
                 totalNote={costNote}
@@ -235,6 +241,7 @@ export default function CalculatorReportPage() {
     const isUuidRoute = pathname.includes("/calculator/report/") && lastSegment !== "report";
     const matchUuid = isUuidRoute ? lastSegment : null;
 
+    const { t, locale } = useLanguage();
     const [result, setResult] = useState<EngineResult | null>(null);
     const [inputs, setInputs] = useState<UserInputs | null>(null);
     const [loading, setLoading] = useState(isUuidRoute);
@@ -268,8 +275,8 @@ export default function CalculatorReportPage() {
         } catch (err) {
             console.error("Cover calculation download failed:", err);
             showError(
-                "Could not build the PDF",
-                "The report is still on screen. Please try the download again.",
+                t("crep.pdf_failed"),
+                t("crep.pdf_failed_d"),
             );
         } finally {
             setDownloading(false);
@@ -299,7 +306,7 @@ export default function CalculatorReportPage() {
                         sessionStorage.removeItem("calculator_saved_timestamp");
                     }
                 } catch (err: any) {
-                    setError("This report link is invalid or has expired.");
+                    setError(t("crep.invalid"));
                 } finally {
                     setLoading(false);
                 }
@@ -331,10 +338,10 @@ export default function CalculatorReportPage() {
         return (
             <div className="h-screen flex flex-col items-center justify-center bg-[var(--color-cream-main)] p-6">
                 <AlertTriangle className="w-16 h-16 text-yellow-500 mb-4" />
-                <h1 className="text-3xl font-serif text-[var(--color-navy-900)] mb-2">Report Not Found</h1>
+                <h1 className="text-3xl font-serif text-[var(--color-navy-900)] mb-2">{t("crep.not_found")}</h1>
                 <p className="text-[var(--color-text-secondary)] text-center max-w-md mb-8">{error}</p>
                 <Button onClick={() => setLocation("/calculator")} className="bg-[var(--color-cta)] text-white px-8">
-                    Create New Report
+                    {t("crep.create_new")}
                 </Button>
             </div>
         );
@@ -344,12 +351,12 @@ export default function CalculatorReportPage() {
         return (
             <div className="h-screen flex flex-col items-center justify-center bg-[var(--color-cream-main)] p-6 text-center">
                 <AlertTriangle className="w-16 h-16 text-yellow-500 mb-5" />
-                <h1 className="text-3xl font-serif text-[var(--color-navy-900)] mb-2">Report data missing</h1>
+                <h1 className="text-3xl font-serif text-[var(--color-navy-900)] mb-2">{t("crep.missing")}</h1>
                 <p className="text-[var(--color-text-secondary)] max-w-md mb-8">
-                    This report link doesn’t have the required calculator data in the current session. Start a new calculator run.
+                    {t("crep.missing_d")}
                 </p>
                 <Button onClick={() => setLocation("/calculator")} className="bg-[var(--color-cta)] text-white px-8">
-                    Back to Calculator
+                    {t("crep.back_calc")}
                 </Button>
             </div>
         );
@@ -387,8 +394,12 @@ export default function CalculatorReportPage() {
 
                     {/* ── Regulatory Disclaimer ─────────────────────────────────────── */}
                     <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
-                        <strong>Not insurance or financial advice.</strong> This analysis is for informational purposes only and does not constitute a recommendation to purchase any insurance product. Premium estimates are indicative only and not based on insurer-specific data. Consult a licensed insurance advisor before making any decision.
+                        <strong>{t("crep.disc_b")}</strong> {t("crep.disc")}
                     </div>
+
+                    {locale === "hi" && (
+                        <p className="text-sm text-[var(--color-text-secondary)]">{t("crep.english_note")}</p>
+                    )}
 
                     {/* ── Success Banner (only shows after fresh save) ─────────────── */}
                     {showSavedBanner && (
@@ -398,15 +409,15 @@ export default function CalculatorReportPage() {
                                     <Check className="w-5 h-5 text-white" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-bold text-[var(--color-teal-900)]">Report Saved Successfully</p>
+                                    <p className="font-bold text-[var(--color-teal-900)]">{t("crep.saved")}</p>
                                     <p className="text-sm text-[var(--color-teal-700)]">
-                                        Your coverage analysis has been saved. You can share this link anytime.
+                                        {t("crep.saved_d")}
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setShowSavedBanner(false)}
                                     className="text-[var(--color-teal-600)] hover:text-[var(--color-teal-800)] transition-colors"
-                                    aria-label="Close"
+                                    aria-label={t("crep.close")}
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -419,14 +430,17 @@ export default function CalculatorReportPage() {
                     {/* ── Header ───────────────────────────────────────────────────── */}
                     <div className="text-center space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-teal-50)] text-[var(--color-teal-700)] rounded-full text-sm font-bold tracking-wide">
-                            <Check className="w-4 h-4" /> ANALYSIS COMPLETE
+                            <Check className="w-4 h-4" /> {t("crep.complete")}
                         </div>
                         <h1 className="text-4xl md:text-5xl font-serif text-[var(--color-navy-900)]">
-                            Your Optimised Coverage Plan
+                            {t("crep.h")}
                         </h1>
                         <p className="text-[var(--color-text-secondary)] max-w-2xl mx-auto text-lg">
-                            Designed for {inputs.cityTier} costs, {inputs.familyStructure} risk, and{" "}
-                            {inputs.riskPosture?.toLowerCase()} posture.
+                            {t("crep.designed", {
+                                tier: inputs.cityTier ?? "",
+                                family: optLabel(t, inputs.familyStructure),
+                                posture: locale === "hi" ? optLabel(t, inputs.riskPosture) : (inputs.riskPosture?.toLowerCase() ?? ""),
+                            })}
                         </p>
                     </div>
 
@@ -441,7 +455,7 @@ export default function CalculatorReportPage() {
                             className="border-[var(--color-border-medium)] text-[var(--color-navy-900)] hover:bg-[var(--color-cream-dark)]"
                         >
                             <Download className="w-4 h-4 mr-2" />
-                            {downloading ? "Preparing…" : "Download report"}
+                            {downloading ? t("crep.preparing") : t("crep.download")}
                         </Button>
                     </div>
 
@@ -451,17 +465,11 @@ export default function CalculatorReportPage() {
                             <div className="flex items-start gap-3 bg-[var(--color-teal-50)] border border-[var(--color-teal-200)] rounded-2xl px-6 py-4">
                                 <Shield className="w-5 h-5 text-[var(--color-teal-600)] shrink-0 mt-0.5" />
                                 <p className="text-sm text-[var(--color-teal-900)] leading-relaxed">
-                                    <span className="font-bold">Employer cover noted.</span> Your employer policy
-                                    covers{" "}
-                                    <span className="font-bold">
-                                        {formatLakhs(result.corporateGap!.corporateSI)}
-                                    </span>
-                                    . You need{" "}
-                                    <span className="font-bold">
-                                        {formatLakhs(result.corporateGap!.personalNeeded)}
-                                    </span>{" "}
-                                    more in personal cover — employer policies don't follow you when you change
-                                    jobs or retire.
+                                    <span className="font-bold">{t("crep.emp_b")}</span>{" "}
+                                    {t("crep.emp", {
+                                        corp: formatLakhs(result.corporateGap!.corporateSI),
+                                        personal: formatLakhs(result.corporateGap!.personalNeeded),
+                                    })}
                                 </p>
                             </div>
                         </div>
@@ -471,7 +479,7 @@ export default function CalculatorReportPage() {
                     {hasBreakdown && (
                         <div className="bg-white rounded-2xl p-8 border border-[var(--color-border-light)] animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
                             <h3 className="font-serif text-2xl text-[var(--color-navy-900)] mb-6 flex items-center gap-3">
-                                <Activity className="text-[var(--color-teal-600)]" /> How We Calculated This
+                                <Activity className="text-[var(--color-teal-600)]" /> {t("crep.how")}
                             </h3>
                             <div className="space-y-0 divide-y divide-[var(--color-border-light)]">
                                 {ledger.map((row, i) => (
@@ -493,7 +501,7 @@ export default function CalculatorReportPage() {
                                     </div>
                                 ))}
                                 <div className="flex justify-between items-center py-4 bg-[var(--color-cream-dark)] -mx-8 px-8 rounded-b-2xl">
-                                    <span className="font-bold text-[var(--color-navy-900)]">What you need</span>
+                                    <span className="font-bold text-[var(--color-navy-900)]">{t("crep.need")}</span>
                                     {/* Full rupees, like the PDF. Rounded to lakhs, this column
                                         visibly summed to half a lakh less than its own total. */}
                                     <span className="font-bold font-mono text-lg text-[var(--color-navy-900)]">
@@ -507,7 +515,7 @@ export default function CalculatorReportPage() {
                     {/* ── Reasoning ────────────────────────────────────────────────── */}
                     <div className="bg-white rounded-2xl p-8 border border-[var(--color-border-light)] animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
                         <h3 className="font-serif text-2xl text-[var(--color-navy-900)] mb-6 flex items-center gap-3">
-                            <Activity className="text-[var(--color-teal-600)]" /> Why this structure?
+                            <Activity className="text-[var(--color-teal-600)]" /> {t("crep.why")}
                         </h3>
                         <ul className="space-y-4">
                             {result.reasoning.map((r: string, i: number) => (
@@ -524,7 +532,7 @@ export default function CalculatorReportPage() {
                     {/* ── Riders ───────────────────────────────────────────────────── */}
                     <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
                         <h3 className="font-serif text-2xl text-[var(--color-navy-900)] mb-6 flex items-center gap-3 ml-2">
-                            <Shield className="text-[var(--color-teal-600)]" /> Recommended Riders
+                            <Shield className="text-[var(--color-teal-600)]" /> {t("crep.riders")}
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {result.riders.map((rider: any, i: number) => (
@@ -538,17 +546,17 @@ export default function CalculatorReportPage() {
                                         </h4>
                                         {rider.priority === "High" && (
                                             <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded font-bold uppercase shrink-0 ml-2">
-                                                Must Have
+                                                {t("crep.must")}
                                             </span>
                                         )}
                                         {rider.priority === "Medium" && (
                                             <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded font-bold uppercase shrink-0 ml-2">
-                                                Recommended
+                                                {t("crep.recommended")}
                                             </span>
                                         )}
                                         {rider.priority === "Optional" && (
                                             <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded font-bold uppercase shrink-0 ml-2">
-                                                Optional
+                                                {t("crep.optional")}
                                             </span>
                                         )}
                                     </div>
@@ -557,7 +565,7 @@ export default function CalculatorReportPage() {
                             ))}
                             {result.riders.length === 0 && (
                                 <div className="col-span-2 p-6 bg-[var(--color-cream-dark)] rounded-xl text-center text-[var(--color-text-muted)] italic">
-                                    Standard comprehensive policy covers your needs. No extra riders required.
+                                    {t("crep.no_riders")}
                                 </div>
                             )}
                         </div>
@@ -567,20 +575,20 @@ export default function CalculatorReportPage() {
                     {hasProjection && (
                         <div className="bg-white rounded-2xl p-8 border border-[var(--color-border-light)] animate-in fade-in slide-in-from-bottom-8 duration-700 delay-600">
                             <h3 className="font-serif text-2xl text-[var(--color-navy-900)] mb-6">
-                                What You'll Pay Over 5 Years
+                                {t("crep.five")}
                             </h3>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b border-[var(--color-border-light)]">
                                             <th className="text-left pb-3 text-[var(--color-text-muted)] font-semibold uppercase tracking-wider text-xs">
-                                                Year
+                                                {t("crep.year")}
                                             </th>
                                             <th className="text-right pb-3 text-[var(--color-text-muted)] font-semibold uppercase tracking-wider text-xs">
-                                                Annual Premium
+                                                {t("crep.annual_premium")}
                                             </th>
                                             <th className="text-right pb-3 text-[var(--color-text-muted)] font-semibold uppercase tracking-wider text-xs">
-                                                Cumulative Spend
+                                                {t("crep.cumulative")}
                                             </th>
                                         </tr>
                                     </thead>
@@ -588,7 +596,7 @@ export default function CalculatorReportPage() {
                                         {result.fiveYearProjection!.map((row) => (
                                             <tr key={row.year} className="hover:bg-[var(--color-cream-dark)] transition-colors">
                                                 <td className="py-3 text-[var(--color-text-main)] font-medium">
-                                                    Year {row.year}
+                                                    {t("crep.year_n", { n: row.year })}
                                                 </td>
                                                 <td className="py-3 text-right font-mono text-[var(--color-text-main)]">
                                                     {formatINR(row.premium)}
@@ -609,8 +617,7 @@ export default function CalculatorReportPage() {
                                 </table>
                             </div>
                             <p className="text-xs text-[var(--color-text-muted)] mt-4 pt-4 border-t border-[var(--color-border-light)]">
-                                * Assumes 10% annual premium escalation — industry average. Actual premiums vary
-                                at renewal based on your insurer and claims history.
+                                {t("crep.assumes")}
                             </p>
                         </div>
                     )}
@@ -619,7 +626,7 @@ export default function CalculatorReportPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-700">
                         <div className="bg-red-50 p-8 rounded-2xl border border-red-100">
                             <h3 className="font-serif text-xl text-red-800 mb-4 flex items-center gap-2">
-                                <AlertTriangle className="w-5 h-5" /> What Most People Get Wrong
+                                <AlertTriangle className="w-5 h-5" /> {t("crep.wrong")}
                             </h3>
                             <ul className="space-y-4">
                                 {result.commonMistakes.map((m: string, i: number) => (
@@ -632,10 +639,10 @@ export default function CalculatorReportPage() {
 
                         <div className="bg-[var(--color-teal-50)] p-8 rounded-2xl border border-[var(--color-teal-100)]">
                             <h3 className="font-serif text-xl text-[var(--color-teal-800)] mb-4 flex items-center gap-2">
-                                <RefreshCcw className="w-5 h-5" /> Sensitivity Check
+                                <RefreshCcw className="w-5 h-5" /> {t("crep.sensitivity")}
                             </h3>
                             <p className="text-sm text-[var(--color-teal-900)] mb-3 opacity-80">
-                                This recommendation changes if:
+                                {t("crep.changes_if")}
                             </p>
                             <ul className="space-y-4">
                                 {result.sensitivityAnalysis.map((s: string, i: number) => (
@@ -651,7 +658,7 @@ export default function CalculatorReportPage() {
                     <div className="animate-in fade-in duration-1000 delay-1000 pt-4">
                         <div className="bg-white rounded-2xl border border-[var(--color-border-light)] shadow-sm p-8 space-y-4">
                             <h3 className="font-serif text-xl text-[var(--color-navy-900)] text-center mb-6">
-                                What do you want to do next?
+                                {t("crep.next")}
                             </h3>
 
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -662,7 +669,7 @@ export default function CalculatorReportPage() {
                                         setLocation(minSI > 0 ? `/compare?minSI=${minSI}` : "/compare")
                                     }
                                 >
-                                    Compare Plans With This Coverage
+                                    {t("crep.compare")}
                                 </Button>
 
                                 <Button
@@ -671,7 +678,7 @@ export default function CalculatorReportPage() {
                                     className="border-[var(--color-border-medium)] text-[var(--color-navy-900)] hover:bg-[var(--color-cream-dark)] px-8 py-5 text-base"
                                     onClick={() => setLocation("/analyze")}
                                 >
-                                    Analyse My Existing Policy
+                                    {t("crep.analyse")}
                                 </Button>
 
                                 <Button
@@ -684,13 +691,12 @@ export default function CalculatorReportPage() {
                                         setLocation("/calculator");
                                     }}
                                 >
-                                    Start New Analysis
+                                    {t("crep.start_new")}
                                 </Button>
                             </div>
 
                             <p className="text-center text-xs text-[var(--color-text-muted)] pt-4 border-t border-[var(--color-border-light)]">
-                                IndSure does not sell insurance or earn commissions. These recommendations are
-                                purely analytical.
+                                {t("crep.no_sell")}
                             </p>
                         </div>
                     </div>

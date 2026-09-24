@@ -9,6 +9,11 @@ import {
   type ShareFormat,
 } from "@shared/dataEntryShare";
 import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { intlLocale, tOr, type Locale } from "@/i18n";
+
+// Same key scheme the advisor data-entry form uses, so both share one set of labels.
+const labelKey = (s: string) => "xform.f_" + s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 
 /**
  * The customer-facing view of a data-entry policy.
@@ -37,7 +42,7 @@ interface Props {
   createdAt?: string | null;
 }
 
-function formatValue(value: unknown, format: ShareFormat): string {
+function formatValue(value: unknown, format: ShareFormat, locale: Locale = "en"): string {
   if (value === null || value === undefined) return "";
 
   if (format === "money") {
@@ -54,7 +59,7 @@ function formatValue(value: unknown, format: ShareFormat): string {
     const d = new Date(String(value));
     // An unparseable date is shown as written rather than as "Invalid Date".
     if (Number.isNaN(d.getTime())) return String(value);
-    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    return d.toLocaleDateString(intlLocale(locale), { day: "numeric", month: "short", year: "numeric" });
   }
 
   return String(value);
@@ -69,11 +74,12 @@ export default function SharedPolicySummary({
   policyholderName,
   createdAt,
 }: Props) {
+  const { t, locale } = useLanguage();
   if (!isShareableType(insuranceType)) return null;
 
   // Server order is not guaranteed by JSON; the registry is the reading order.
   const rows = SHAREABLE_FIELDS[insuranceType]
-    .map((f) => ({ label: f.label, value: formatValue(fields[f.key], f.format) }))
+    .map((f) => ({ label: tOr(t, labelKey(f.label), f.label), value: formatValue(fields[f.key], f.format, locale) }))
     .filter((r) => r.value !== "");
 
   const heading = [insurer, policyName].filter(Boolean).join(" · ");
@@ -82,13 +88,13 @@ export default function SharedPolicySummary({
     <div className="mx-auto max-w-3xl px-6 py-10">
       <header className="mb-8">
         <p className="mb-2 text-sm font-medium uppercase tracking-wide text-slate-500">
-          Your policy at a glance
+          {t("share_sum.glance")}
         </p>
         <h1 className="font-serif text-3xl leading-tight text-[var(--color-navy-900)]">
-          {heading || "Policy summary"}
+          {heading || t("share_sum.summary")}
         </h1>
         {policyholderName && (
-          <p className="mt-2 text-base text-slate-600">Held by {policyholderName}</p>
+          <p className="mt-2 text-base text-slate-600">{t("share_sum.held_by", { name: policyholderName })}</p>
         )}
       </header>
 
@@ -118,9 +124,8 @@ export default function SharedPolicySummary({
       <p className="mt-8 flex items-start gap-2 text-sm leading-relaxed text-slate-500">
         <FileText className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <span>
-          Read from your policy document{createdAt ? ` on ${formatValue(createdAt, "date")}` : ""}.
-          Your policy wording is the final word on what is covered. Identifiers such as the policy,
-          engine and chassis numbers are deliberately left out of this page.
+          {createdAt ? t("share_sum.read_on", { date: formatValue(createdAt, "date", locale) }) : t("share_sum.read")}{" "}
+          {t("share_sum.final_word")}
         </span>
       </p>
     </div>

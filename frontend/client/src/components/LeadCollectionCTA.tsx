@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle2, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface LeadCollectionCTAProps {
   policyData?: {
@@ -16,6 +17,7 @@ interface LeadCollectionCTAProps {
 }
 
 export function LeadCollectionCTA({ policyData, className, isOpen, onClose, variant = "consider" }: LeadCollectionCTAProps) {
+  const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -81,6 +83,7 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 hover:bg-white/50 rounded-full transition-colors"
+          aria-label={t("leadcta.close")}
         >
           <X className="w-4 h-4 text-gray-500" />
         </button>
@@ -89,10 +92,10 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
             <CheckCircle2 className="w-8 h-8 text-green-600" />
           </div>
           <h3 className="text-xl font-serif text-[var(--color-navy-900)] mb-2">
-            Thank You!
+            {t("leadcta.thanks")}
           </h3>
           <p className="text-sm text-[var(--color-text-secondary)] max-w-md">
-            Our advisor will reach out to you within 24 hours to discuss your policy options.
+            {t("leadcta.thanks_d")}
           </p>
         </div>
       </div>
@@ -110,6 +113,7 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
       <button
         onClick={onClose}
         className="absolute top-4 right-4 p-2 hover:bg-white/50 rounded-full transition-colors z-10"
+        aria-label={t("leadcta.close")}
       >
         <X className="w-4 h-4 text-gray-500" />
       </button>
@@ -117,29 +121,29 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
       <div className="relative z-10">
         <div className="mb-6">
           <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-4 ${badgeBg} ${badgeText} border ${badgeBorder}`}>
-            {variant === "yes" ? "⚠ ACTION REQUIRED" : "→ CONSIDER"}
+            {variant === "yes" ? t("leadcta.badge_yes") : t("leadcta.badge_consider")}
           </span>
           <h3 className="text-2xl font-serif text-[var(--color-navy-900)] mb-3">
-            {variant === "yes" ? "Find a Better Policy Now" : "Talk to an IndSure Advisor"}
+            {variant === "yes" ? t("leadcta.h_yes") : t("leadcta.h_consider")}
           </h3>
           <p className="text-[var(--color-text-secondary)] leading-relaxed mb-2">
-            {variant === "yes" 
-              ? "Your current policy has critical gaps that could leave you exposed during claims. Our advisors can help you find comprehensive coverage."
-              : "While the policy is mature (6 years old), the base cover is low and the room rent proportional deduction is a major risk. Porting to a policy with 'Any Room' coverage and no proportional deductions is highly recommended."
-            }
+            {/* The "consider" text used to describe one particular policy (six years
+                old, low base cover) and was shown on every report. It now says only
+                what is true of any policy that reaches this card. */}
+            {variant === "yes" ? t("leadcta.d_yes") : t("leadcta.d_consider")}
           </p>
           <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 mt-0.5 text-green-600 flex-shrink-0" />
-              <span>No room rent limits (Any Room category)</span>
+              <span>{t("leadcta.b1")}</span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 mt-0.5 text-green-600 flex-shrink-0" />
-              <span>No proportional deductions</span>
+              <span>{t("leadcta.b2")}</span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 mt-0.5 text-green-600 flex-shrink-0" />
-              <span>Consumables cover rider</span>
+              <span>{t("leadcta.b3")}</span>
             </li>
           </ul>
         </div>
@@ -149,7 +153,7 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="name" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
-                  Full Name
+                  {t("leadcta.name")}
                 </label>
                 <input
                   type="text"
@@ -159,12 +163,12 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
                   onChange={handleChange}
                   required
                   className={`w-full px-4 py-2.5 border ${inputBorder} rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-sm`}
-                  placeholder="Enter your name"
+                  placeholder={t("leadcta.name_ph")}
                 />
               </div>
               <div>
                 <label htmlFor="phone" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
-                  Phone Number
+                  {t("leadcta.phone")}
                 </label>
                 <input
                   type="tel"
@@ -175,14 +179,14 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
                   required
                   pattern="[0-9]{10}"
                   className={`w-full px-4 py-2.5 border ${inputBorder} rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-sm`}
-                  placeholder="10-digit mobile number"
+                  placeholder={t("leadcta.phone_ph")}
                 />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="email" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
-                  Email Address
+                  {t("leadcta.email")}
                 </label>
                 <input
                   type="email"
@@ -197,7 +201,7 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
               </div>
               <div>
                 <label htmlFor="city" className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5 uppercase tracking-wider">
-                  City
+                  {t("leadcta.city")}
                 </label>
                 <input
                   type="text"
@@ -207,7 +211,7 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
                   onChange={handleChange}
                   required
                   className={`w-full px-4 py-2.5 border ${inputBorder} rounded-lg focus:outline-none focus:ring-2 focus:border-transparent bg-white text-sm`}
-                  placeholder="Your city"
+                  placeholder={t("leadcta.city_ph")}
                 />
               </div>
             </div>
@@ -219,17 +223,17 @@ export function LeadCollectionCTA({ policyData, className, isOpen, onClose, vari
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Submitting...
+                  {t("leadcta.submitting")}
                 </>
               ) : (
                 <>
-                  Talk to an IndSure Advisor about this
+                  {t("leadcta.submit")}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </>
               )}
             </Button>
             <p className="text-xs text-center text-[var(--color-text-muted)] mt-2">
-              Our advisors will help you find the best policy for your needs
+              {t("leadcta.foot")}
             </p>
           </form>
         </div>

@@ -98,6 +98,16 @@ export const PAGE_SEO: Record<string, PageSeo> = {
     description:
       "IndSure's daily tools for insurance advisors are free forever. The Agent plan is ₹1,499 a month or ₹14,990 a year, with 12 policy checks every month.",
   },
+  "/advisors/features": {
+    title: "Features for Insurance Advisors | IndSure",
+    description:
+      "Every tool in the IndSure advisor portal: customers, leads, renewals, policy checks, compare, cover calculator, claims and your own website.",
+  },
+  "/advisors/how-to-use": {
+    title: "How to Use the IndSure Advisor Portal | IndSure",
+    description:
+      "Step-by-step guides for IndSure advisors: check a policy, share a report, compare plans, follow up leads, send renewal reminders on WhatsApp.",
+  },
   "/learn": {
     // No term count in the title: it would go stale the day an entry is added.
     title: "Insurance Clause Library: Every Term Explained | IndSure",

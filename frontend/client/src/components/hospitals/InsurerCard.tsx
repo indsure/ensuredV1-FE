@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Building2, MapPin } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { clsx } from "clsx";
 import { apiFetch } from "@/lib/api";
 
@@ -27,6 +28,7 @@ interface InsurerCardProps {
 
 export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSelected = false, onToggleSelect }: InsurerCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
+    const { t } = useLanguage();
     const [hospitalSamples, setHospitalSamples] = useState<HospitalSample[]>([]);
     const [loadingHospitals, setLoadingHospitals] = useState(true);
 
@@ -92,7 +94,7 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                                 ? "bg-[var(--color-cta)] border-[var(--color-teal-600)] text-white"
                                 : "border-[var(--color-border-subtle)] text-transparent hover:border-[var(--color-teal-400)]"
                         )}
-                        aria-label={isSelected ? "Unselect for comparison" : "Select for comparison"}
+                        aria-label={isSelected ? t("hosp.unselect") : t("hosp.select")}
                     >
                         {isSelected && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
                     </button>
@@ -123,7 +125,7 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                 {/* Right side: Hospital samples */}
                 <div className="border-l border-[var(--color-border-light)] pl-4">
                     <div className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
-                        Sample Hospitals
+                        {t("hosp.samples")}
                     </div>
                     {loadingHospitals ? (
                         <div className="space-y-2">
@@ -146,8 +148,8 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                         </div>
                     ) : (
                         <div className="text-xs text-[var(--color-text-muted)] space-y-1">
-                            <p className="italic">No hospital names available</p>
-                            <p className="text-xs">This insurer has not shared its hospital list with us yet.</p>
+                            <p className="italic">{t("hosp.no_names")}</p>
+                            <p className="text-xs">{t("hosp.not_shared")}</p>
                         </div>
                     )}
                 </div>
@@ -159,7 +161,7 @@ export function InsurerCard({ title, subtitle, insurers, type, delay = 0, isSele
                         onClick={() => setIsExpanded(!isExpanded)}
                         className="text-xs font-medium text-[var(--color-text-muted)] hover:text-[var(--color-teal-600)] transition-colors w-full text-center py-1 outline-none focus:text-[var(--color-teal-600)]"
                     >
-                        {isExpanded ? "Show less" : `+${remainingCount} more insurers active`}
+                        {isExpanded ? t("hosp.show_less") : t("hosp.more", { n: remainingCount })}
                     </button>
                 </div>
             )}

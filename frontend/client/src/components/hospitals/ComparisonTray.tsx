@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { X, ArrowRight, Copy } from "lucide-react";
 import { useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ComparisonView } from "./ComparisonView";
 import { InsurerCount } from "./InsurerCard"; // Assuming we can iterate on shared types later
@@ -21,6 +22,7 @@ interface ComparisonTrayProps {
 
 export function ComparisonTray({ selectedItems, onRemoveItem, onClearAll }: ComparisonTrayProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const { t } = useLanguage();
 
     // Don't render if empty
     if (selectedItems.length === 0) return null;
@@ -38,11 +40,11 @@ export function ComparisonTray({ selectedItems, onRemoveItem, onClearAll }: Comp
                         <div className="bg-[var(--color-navy-900)] text-white p-4 rounded-xl shadow-2xl flex items-center gap-6 pointer-events-auto border border-[var(--color-teal-900)] max-w-2xl w-full mx-auto">
                             <div className="flex-1">
                                 <p className="text-sm font-bold text-[var(--color-teal-400)] mb-1 uppercase tracking-wider">
-                                    Compare Analysis
+                                    {t("hosp.tray_h")}
                                 </p>
                                 <p className="text-white text-sm">
                                     <span className="font-bold text-lg mr-1">{selectedItems.length}</span>
-                                    locations selected
+                                    {t("hosp.tray_sel")}
                                 </p>
                             </div>
 
@@ -51,7 +53,7 @@ export function ComparisonTray({ selectedItems, onRemoveItem, onClearAll }: Comp
                                     onClick={onClearAll}
                                     className="text-[var(--color-white-muted)] hover:text-white text-sm font-medium px-3 py-2 transition-colors"
                                 >
-                                    Clear all
+                                    {t("hosp.clear")}
                                 </button>
 
                                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -60,7 +62,7 @@ export function ComparisonTray({ selectedItems, onRemoveItem, onClearAll }: Comp
                                             className="bg-[var(--color-cta)] hover:bg-[var(--color-teal-500)] text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-teal-900/40"
                                             disabled={selectedItems.length < 2}
                                         >
-                                            Compare Now
+                                            {t("hosp.compare_now")}
                                             <ArrowRight className="w-4 h-4" />
                                         </button>
                                     </DialogTrigger>

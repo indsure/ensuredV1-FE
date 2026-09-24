@@ -8,13 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, CheckCircle2, PhoneCall } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
+// value is what the server stores and stays English; label is a translation key.
 const TOPICS = [
-  { value: "renew", label: "Renew a policy" },
-  { value: "new-cover", label: "Buy new cover" },
-  { value: "review", label: "Review my cover" },
-  { value: "claim", label: "Help with a claim" },
-  { value: "other", label: "Something else" },
+  { value: "renew", label: "connect.t_renew" },
+  { value: "new-cover", label: "connect.t_new" },
+  { value: "review", label: "connect.t_review" },
+  { value: "claim", label: "connect.t_claim" },
+  { value: "other", label: "connect.t_other" },
 ];
 
 // Consumer-initiated, consented request to be contacted by a licensed advisor.
@@ -35,6 +37,7 @@ export function ConnectAgentDialog({
   defaultTopic?: string;
   onSubmitted?: () => void;
 }) {
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [topic, setTopic] = useState<string>("review");
@@ -59,9 +62,9 @@ export function ConnectAgentDialog({
   }, [open, defaultName, defaultPhone, defaultTopic]);
 
   async function submit() {
-    if (!name.trim()) { setError("Please share your name."); return; }
-    if (phone.replace(/\D/g, "").length < 7) { setError("Please share a valid phone number."); return; }
-    if (!consent) { setError("Please tick the box so we can have an advisor contact you."); return; }
+    if (!name.trim()) { setError(t("connect.err_name")); return; }
+    if (phone.replace(/\D/g, "").length < 7) { setError(t("connect.err_phone")); return; }
+    if (!consent) { setError(t("connect.err_consent")); return; }
     setSubmitting(true);
     setError(null);
     try {
@@ -72,12 +75,12 @@ export function ConnectAgentDialog({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Could not submit. Please try again.");
+        throw new Error(body.error || t("connect.err_submit"));
       }
       setDone(true);
       onSubmitted?.();
     } catch (e: any) {
-      setError(e.message || "Could not submit. Please try again.");
+      setError(e.message || t("connect.err_submit"));
     } finally {
       setSubmitting(false);
     }
@@ -92,70 +95,70 @@ export function ConnectAgentDialog({
               <CheckCircle2 className="w-7 h-7 text-[var(--color-teal-600)]" />
             </div>
             <div className="space-y-1.5">
-              <h3 className="font-serif text-xl font-bold text-[var(--color-navy-900)]">An advisor will reach out soon</h3>
+              <h3 className="font-serif text-xl font-bold text-[var(--color-navy-900)]">{t("connect.done_h")}</h3>
               <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                Thanks{name ? `, ${name.trim().split(/\s+/)[0]}` : ""}. A licensed advisor will call you on the
-                number you shared. No obligation — they're here to help.
+                {name.trim()
+                  ? t("connect.done_named", { name: name.trim().split(/\s+/)[0] })
+                  : t("connect.done_plain")}
               </p>
             </div>
             <Button
               onClick={() => onOpenChange(false)}
               className="w-full h-11 bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl font-bold"
             >
-              Done
+              {t("connect.done")}
             </Button>
           </div>
         ) : (
           <>
             <DialogHeader>
               <DialogTitle className="font-serif text-xl font-bold text-[var(--color-navy-900)] flex items-center gap-2">
-                <PhoneCall className="w-5 h-5 text-[var(--color-teal-600)]" /> Talk to an advisor
+                <PhoneCall className="w-5 h-5 text-[var(--color-teal-600)]" /> {t("connect.title")}
               </DialogTitle>
               <DialogDescription className="text-sm text-[var(--color-text-secondary)]">
-                Have a real person help you understand or fix your cover. Share your details and we'll have a
-                licensed advisor reach out.
+                {t("connect.desc")}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 pt-1">
               <div className="space-y-1.5">
-                <label htmlFor="ca-name" className="text-sm font-semibold text-[var(--color-navy-900)]">Your name</label>
+                <label htmlFor="ca-name" className="text-sm font-semibold text-[var(--color-navy-900)]">{t("connect.your_name")}</label>
                 <Input
                   id="ca-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="h-11 rounded-xl bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white"
-                  placeholder="Full name"
+                  placeholder={t("connect.full_name")}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="ca-phone" className="text-sm font-semibold text-[var(--color-navy-900)]">Phone number</label>
+                <label htmlFor="ca-phone" className="text-sm font-semibold text-[var(--color-navy-900)]">{t("connect.phone")}</label>
                 <Input
                   id="ca-phone"
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="h-11 rounded-xl bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white"
-                  placeholder="10-digit mobile"
+                  placeholder={t("connect.phone_ph")}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-[var(--color-navy-900)]">What do you need help with?</label>
+                <label className="text-sm font-semibold text-[var(--color-navy-900)]">{t("connect.need")}</label>
                 <div className="flex flex-wrap gap-2">
-                  {TOPICS.map((t) => (
+                  {TOPICS.map((tp) => (
                     <button
-                      key={t.value}
+                      key={tp.value}
                       type="button"
-                      onClick={() => setTopic(t.value)}
+                      onClick={() => setTopic(tp.value)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                        topic === t.value
+                        topic === tp.value
                           ? "bg-[var(--color-cta)] text-white border-[var(--color-teal-600)]"
                           : "bg-white text-[var(--color-text-secondary)] border-[var(--color-border-light)] hover:border-[var(--color-teal-600)]"
                       }`}
                     >
-                      {t.label}
+                      {t(tp.label)}
                     </button>
                   ))}
                 </div>
@@ -163,7 +166,7 @@ export function ConnectAgentDialog({
 
               <div className="space-y-1.5">
                 <label htmlFor="ca-msg" className="text-sm font-semibold text-[var(--color-navy-900)]">
-                  Anything specific? <span className="font-normal text-[var(--color-text-muted)]">(optional)</span>
+                  {t("connect.specific")} <span className="font-normal text-[var(--color-text-muted)]">{t("connect.optional")}</span>
                 </label>
                 <Textarea
                   id="ca-msg"
@@ -172,7 +175,7 @@ export function ConnectAgentDialog({
                   rows={3}
                   maxLength={1000}
                   className="rounded-xl bg-[var(--color-cream-main)] border-[var(--color-border-light)] focus:border-[var(--color-teal-600)] focus:bg-white resize-none"
-                  placeholder="e.g. My health policy renews next month and I want to check if it's still right for my family."
+                  placeholder={t("connect.msg_ph")}
                 />
               </div>
 
@@ -183,8 +186,7 @@ export function ConnectAgentDialog({
                   className="mt-0.5"
                 />
                 <span className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                  I agree IndSure may share these details with a licensed advisor who will contact me,
-                  and may record this request. I can opt out any time.
+                  {t("connect.consent")}
                 </span>
               </label>
 
@@ -199,7 +201,7 @@ export function ConnectAgentDialog({
                 disabled={submitting}
                 className="w-full h-11 bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl font-bold disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >
-                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : "Request a callback"}
+                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> {t("connect.sending")}</> : t("connect.request")}
               </Button>
             </div>
           </>

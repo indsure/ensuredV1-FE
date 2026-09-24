@@ -1,5 +1,11 @@
 // Shared formatting + derivation helpers for the consumer portfolio (/app).
 // Kept out of the page component so the page reads as layout, not arithmetic.
+//
+// Words shown to the user take an optional translator `t`. Without one they
+// stay English, which is what the pricing pages and older callers expect.
+import { intlLocale, tOr, type Locale, type TranslateVars } from "@/i18n";
+
+type Tr = (key: string, vars?: TranslateVars) => string;
 
 export const LOBS = [
   {
@@ -17,13 +23,13 @@ export const LOBS = [
   {
     type: "life",
     label: "Life",
-    blurb: "Savings-linked plans — worth checking what you're actually paying for.",
-    why: "Endowment and ULIP plans mix insurance with investment. Worth auditing what the returns really are.",
+    blurb: "Savings-linked plans. Worth checking what you're actually paying for.",
+    why: "Endowment and ULIP plans mix insurance with investment. Worth checking what the returns really are.",
   },
   {
     type: "motor",
     label: "Vehicle",
-    blurb: "Mandatory by law — but most people are under-covered on own-damage.",
+    blurb: "Mandatory by law, but most people are under-covered on own-damage.",
     why: "Third-party cover is the legal minimum. Own-damage and zero-dep decide what you actually get paid.",
   },
 ] as const;
@@ -32,6 +38,11 @@ export type LobType = (typeof LOBS)[number]["type"];
 
 export const labelFor = (t: string) => LOBS.find((l) => l.type === t)?.label ?? t;
 export const lobFor = (t: string) => LOBS.find((l) => l.type === t);
+
+/** The same three texts, in the reader's language. */
+export const lobLabel = (t: Tr, type: string) => tOr(t, `pf.lob_${type}`, labelFor(type));
+export const lobBlurb = (t: Tr, type: string) => tOr(t, `pf.lob_${type}_blurb`, lobFor(type)?.blurb ?? "");
+export const lobWhy = (t: Tr, type: string) => tOr(t, `pf.lob_${type}_why`, lobFor(type)?.why ?? "");
 
 /* ── Score bands ──────────────────────────────────────────────────────── */
 
@@ -62,16 +73,20 @@ export const scoreClasses = (s: number) =>
     },
   })[bandFor(s)];
 
-export const scoreVerdict = (s: number) =>
-  s >= 75 ? "Strong cover" : s >= 50 ? "Decent, has gaps" : "Needs attention";
+export const scoreVerdict = (s: number, t?: Tr) => {
+  const en = s >= 75 ? "Strong cover" : s >= 50 ? "Decent, has gaps" : "Needs attention";
+  return t ? tOr(t, `pf.verdict_${bandFor(s)}`, en) : en;
+};
 
 // Plain-language reading of the number, for people who've never seen a policy score.
-export const scoreMeaning = (s: number) =>
-  s >= 75
+export const scoreMeaning = (s: number, t?: Tr) => {
+  const en = s >= 75
     ? "Your policies would mostly hold up at claim time. Keep them renewed."
     : s >= 50
       ? "You're covered, but a few clauses could cost you at claim time."
       : "There are clauses here that could get a claim reduced or rejected.";
+  return t ? tOr(t, `pf.meaning_${bandFor(s)}`, en) : en;
+};
 
 /* ── Dates ────────────────────────────────────────────────────────────── */
 
@@ -94,16 +109,18 @@ export const daysUntil = (d: string | null): number | null => {
   return Math.ceil((t - Date.now()) / 86_400_000);
 };
 
-export const fmtDate = (d: string | null) => {
+export const fmtDate = (d: string | null, locale: Locale = "en") => {
   if (!d) return "";
   const dt = new Date(dayPart(d) + "T00:00:00");
   return Number.isNaN(dt.getTime())
     ? d
-    : dt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    : dt.toLocaleDateString(intlLocale(locale), { day: "numeric", month: "short", year: "numeric" });
 };
 
-export const renewalPhrase = (days: number) =>
-  days === 0 ? "renews today" : days === 1 ? "renews tomorrow" : `renews in ${days} days`;
+export const renewalPhrase = (days: number, t?: Tr) => {
+  if (t) return days === 0 ? t("pf.renews_today") : days === 1 ? t("pf.renews_tomorrow") : t("pf.renews_in", { n: days });
+  return days === 0 ? "renews today" : days === 1 ? "renews tomorrow" : `renews in ${days} days`;
+};
 
 /* ── Money ────────────────────────────────────────────────────────────── */
 

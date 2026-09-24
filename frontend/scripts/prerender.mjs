@@ -47,6 +47,7 @@ async function loadBlogData() {
       `export { FOUNDERS, authorForId, displayName } from "../client/src/data/team.ts";`,
       `export { CLAUSE_LIBRARY } from "../client/src/data/clause-library.ts";`,
       `export { PAGE_SEO, clauseTitle, blogTitle, blogDescription, metaDescription, TITLE_MAX } from "../client/src/data/seo-pages.ts";`,
+      `export { DOC_PAGES, DOC_SECTIONS, docPath } from "../client/src/docs/content.ts";`,
     ].join("\n"),
   );
   const outfile = join(__dirname, ".blog-bundle.mjs");
@@ -306,6 +307,20 @@ const STATIC_ROUTES = [
       "Your daily tools (leads, renewals, the cover calculator and WhatsApp drafts) are free forever. The Agent plan is ₹1,499 a month or ₹14,990 a year and adds 12 policy checks every month. IndSure takes no commission on anything you sell.",
   },
   {
+    path: "/advisors/features",
+    src: ["pages/advisors-guide.tsx", "lib/advisorGuide.ts", "components/advisor-guide/FeatureGrid.tsx"],
+    h1: "Everything the IndSure advisor portal does",
+    intro:
+      "One place for your customers, their policies and your follow-ups: customers and leads, renewal reminders on WhatsApp, policy checks in plain language, plan comparison, the cover calculator, a claims desk and your own advisor website.",
+  },
+  {
+    path: "/advisors/how-to-use",
+    src: ["pages/advisors-guide.tsx", "lib/advisorGuide.ts", "components/advisor-guide/HowToGuides.tsx"],
+    h1: "How to use the IndSure advisor portal",
+    intro:
+      "Short, step-by-step guides for the jobs advisors do every day: checking a customer's policy, sharing the report, comparing plans, following up leads, sending renewal reminders and setting up your own website.",
+  },
+  {
     path: "/blog",
     src: ["pages/blog.tsx"],
     h1: "IndSure insurance guides",
@@ -470,6 +485,9 @@ async function main() {
     blogDescription,
     metaDescription,
     TITLE_MAX,
+    DOC_PAGES,
+    DOC_SECTIONS,
+    docPath,
   } = await loadBlogData();
   checkPageSeo(PAGE_SEO);
 
@@ -774,8 +792,55 @@ async function main() {
     await writeRoute(path, html);
   }
 
+  // Advisor docs (/docs). The whole article goes into the static body, not just
+  // a title and intro: these pages exist to answer questions, so a crawler and
+  // a no-JavaScript reader should get the answer itself.
+  const docInline = (t) =>
+    escText(t)
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, href) => `<a href="${escAttr(href)}">${label}</a>`);
+  const docBlockHtml = (b) => {
+    switch (b.t) {
+      case "p": return `<p>${docInline(b.text)}</p>`;
+      case "h2": return `<h2 id="${escAttr(b.id)}">${escText(b.text)}</h2>`;
+      case "steps": return `<ol>${b.items.map((i) => `<li>${docInline(i)}</li>`).join("")}</ol>`;
+      case "list": return `<ul>${b.items.map((i) => `<li>${docInline(i)}</li>`).join("")}</ul>`;
+      case "img": return `<figure><img src="/docs/screens/${escAttr(b.name)}.webp" alt="${escAttr(b.alt)}" loading="lazy">${b.caption ? `<figcaption>${escText(b.caption)}</figcaption>` : ""}</figure>`;
+      case "note": return `<aside><p>${docInline(b.text)}</p></aside>`;
+      case "faq": return b.items.map((f) => `<h3>${escText(f.q)}</h3><p>${docInline(f.a)}</p>`).join("");
+      case "cards": return `<ul>${b.slugs.map((s) => { const d = DOC_PAGES.find((x) => x.slug === s); return d ? `<li><a href="${docPath(s)}">${escText(d.title)}</a></li>` : ""; }).join("")}</ul>`;
+      default: return "";
+    }
+  };
+  for (const page of DOC_PAGES) {
+    const path = docPath(page.slug);
+    const canonical = SITE + path;
+    const title = page.slug ? `${page.title} | IndSure Docs` : "IndSure Docs for Advisors";
+    let html = applyHead(template, { title, description: page.description, canonical, ogType: "article" });
+    const section = DOC_SECTIONS.find((s) => s.pages.includes(page));
+    const crumbs = [{ name: "Home", url: `${SITE}/` }, { name: "Docs", url: `${SITE}/docs` }];
+    if (page.slug) crumbs.push({ name: page.title, url: canonical });
+    const jsonLd = [breadcrumbLd(crumbs)];
+    const faqs = page.blocks.filter((b) => b.t === "faq").flatMap((b) => b.items);
+    if (faqs.length) {
+      const plain = (t) => t.replace(/\*\*/g, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+      jsonLd.push({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: plain(f.a) } })),
+      });
+    }
+    html = injectJsonLd(html, jsonLd);
+    const nav = DOC_SECTIONS.map((s) => `<h2>${escText(s.title)}</h2><ul>${s.pages.map((d) => `<li><a href="${docPath(d.slug)}">${escText(d.title)}</a></li>`).join("")}</ul>`).join("");
+    const body =
+      `<article><p>${section ? escText(section.title) : ""}</p><h1>${escText(page.title)}</h1>` +
+      `<p>${escText(page.lead)}</p>${page.blocks.map(docBlockHtml).join("")}</article><nav>${nav}</nav>`;
+    html = injectBody(html, body, path);
+    await writeRoute(path, html);
+  }
+
   await checkRoutesServed(POST_SLUGS);
-  const urlCount = await writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_SEO);
+  const urlCount = await writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_SEO, DOC_PAGES, docPath);
 
   if (longTitles.length) {
     // A warning, not a failure: these are article headlines, and Google
@@ -783,7 +848,7 @@ async function main() {
     console.warn(`[prerender] ${longTitles.length} blog/clause titles exceed ${TITLE_MAX} chars.`);
   }
   console.log(
-    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + ${FOUNDERS.length} author pages + ${CLAUSE_LIBRARY.length} clause pages + 404/app shells + sitemap (${urlCount} URLs).`,
+    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + ${FOUNDERS.length} author pages + ${CLAUSE_LIBRARY.length} clause pages + ${DOC_PAGES.length} docs pages + 404/app shells + sitemap (${urlCount} URLs).`,
   );
 }
 
@@ -798,7 +863,7 @@ async function checkRoutesServed(POST_SLUGS) {
   const rewrites = vercel.rewrites
     .filter((r) => !r.source.includes(":"))
     .map((r) => new RegExp(`^${r.source}$`));
-  const exempt = new Set(["/a/:slug", "/blog/:id", "/learn/:slug", "/author/:slug"]);
+  const exempt = new Set(["/a/:slug", "/blog/:id", "/learn/:slug", "/author/:slug", "/docs/:slug"]);
   const unserved = [];
   // A <Route> whose path is not a plain string literal cannot be checked, so
   // it fails loudly rather than being skipped.
@@ -831,7 +896,7 @@ async function checkRoutesServed(POST_SLUGS) {
 // sitemap is a contradiction Search Console reports). lastmod is the post date
 // for blog posts and the last git commit of the page's source for everything
 // else, and is left out when neither is known.
-async function writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_SEO) {
+async function writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_SEO, DOC_PAGES, docPath) {
   const priority = {
     "/": ["1.0", "weekly"],
     "/policychecker": ["0.9", "weekly"],
@@ -870,6 +935,8 @@ async function writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_S
   for (const c of CLAUSE_LIBRARY) add(`/learn/${c.slug}`, clauseDate, "monthly", "0.7");
   const teamDate = gitDate(["data/team.ts"]);
   for (const f of FOUNDERS) add(`/author/${f.slug}`, teamDate, "monthly", "0.4");
+  const docsDate = gitDate(["docs/content.ts"]);
+  for (const d of DOC_PAGES) add(docPath(d.slug), docsDate, "monthly", d.slug ? "0.6" : "0.8");
   for (const post of blogPosts) {
     const lastmod = /^\d{4}-\d{2}-\d{2}$/.test(post.date || "") ? post.date : null;
     add(`/blog/${slugFor(post.id)}`, lastmod, "monthly", "0.6");

@@ -9,6 +9,7 @@ import PolicyFactsheet from "@/components/app/PolicyFactsheet";
 import { isDataEntryType } from "@/lib/insuranceTypes";
 import { validateForensicAuditReport } from "@shared/policy";
 import { ArrowLeft, AlertCircle, Loader2, ShieldCheck, Download, PhoneCall } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 type PolicyRow = {
   id: string;
@@ -34,6 +35,7 @@ type PolicyRow = {
 // hideNav (no marketing chrome inside the app) and hideLeadCTA (signed-in
 // consumers are never lead-captured — that's the promise).
 export default function PolicyDetail({ id }: { id: string }) {
+  const { t } = useLanguage();
   const [row, setRow] = useState<PolicyRow | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error" | "notfound">("loading");
   const [downloading, setDownloading] = useState(false);
@@ -63,7 +65,7 @@ export default function PolicyDetail({ id }: { id: string }) {
   }
 
   useEffect(() => {
-    document.title = "Policy report — IndSure";
+    document.title = t("pf.pd_doc_title");
     let cancelled = false;
     apiFetch(`/api/me/policy/${id}`)
       .then(async (res) => {
@@ -99,7 +101,7 @@ export default function PolicyDetail({ id }: { id: string }) {
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/app">
             <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)] transition-colors cursor-pointer">
-              <ArrowLeft className="w-4 h-4" /> Back to portfolio
+              <ArrowLeft className="w-4 h-4" /> {t("pf.pd_back")}
             </span>
           </Link>
           <div className="flex items-center gap-4">
@@ -110,17 +112,17 @@ export default function PolicyDetail({ id }: { id: string }) {
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-teal-600)] transition-colors disabled:opacity-50"
               >
                 {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                <span className="hidden sm:inline">Download</span>
+                <span className="hidden sm:inline">{t("pf.c_download")}</span>
               </button>
             )}
             <button
               onClick={() => setConnectOpen(true)}
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-teal-600)] hover:text-[var(--color-teal-400)] transition-colors"
             >
-              <PhoneCall className="w-4 h-4" /> <span className="hidden sm:inline">Talk to an advisor</span>
+              <PhoneCall className="w-4 h-4" /> <span className="hidden sm:inline">{t("pf.talk_advisor")}</span>
             </button>
             <span className="hidden md:inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-muted)]">
-              <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-teal-600)]" /> Private to your account
+              <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-teal-600)]" /> {t("pf.pd_private")}
             </span>
           </div>
         </div>
@@ -131,7 +133,7 @@ export default function PolicyDetail({ id }: { id: string }) {
       {state === "loading" && (
         <div className="max-w-5xl mx-auto px-6 py-14 sm:py-20 lg:py-24 flex flex-col items-center text-center">
           <Loader2 className="w-8 h-8 text-[var(--color-teal-600)] animate-spin" />
-          <p className="mt-4 text-sm text-slate-500">Loading your report…</p>
+          <p className="mt-4 text-sm text-slate-500">{t("pf.pd_loading")}</p>
         </div>
       )}
 
@@ -185,20 +187,20 @@ export default function PolicyDetail({ id }: { id: string }) {
             <AlertCircle className="w-7 h-7" />
           </div>
           <h2 className="text-2xl font-serif font-bold text-slate-900 mb-3">
-            {state === "notfound" ? "Policy not found" : "Report unavailable"}
+            {state === "notfound" ? t("pf.pd_notfound") : t("pf.pd_unavailable")}
           </h2>
           <p className="text-slate-500 mb-8 max-w-md mx-auto">
             {state === "notfound"
-              ? "This policy isn't in your portfolio."
+              ? t("pf.pd_notfound_d")
               : row?.status === "error"
-                ? (row.error_message || "We couldn't read this policy document.")
+                ? (row.error_message || t("pf.pd_cant_read"))
                 : row?.status === "processing" || row?.status === "pending"
-                  ? "This policy is still being analyzed. Check back in a moment."
-                  : "The stored report for this policy is missing or in an old format."}
+                  ? t("pf.pd_still")
+                  : t("pf.pd_missing")}
           </p>
           <Link href="/app">
             <span className="inline-flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] transition-colors cursor-pointer">
-              <ArrowLeft className="w-4 h-4" /> Back to portfolio
+              <ArrowLeft className="w-4 h-4" /> {t("pf.pd_back")}
             </span>
           </Link>
         </div>

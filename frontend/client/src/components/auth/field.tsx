@@ -1,4 +1,5 @@
 import { AlertCircle } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
  * Shared bits for the auth forms (/signup, /login).
@@ -20,6 +21,7 @@ export function FieldLabel({
   children: React.ReactNode;
   required?: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <label htmlFor={htmlFor} className="block text-sm font-semibold text-[var(--color-navy-900)]">
       {children}
@@ -28,7 +30,7 @@ export function FieldLabel({
           {/* Red, but never the ONLY signal — colour alone fails anyone who
               cannot distinguish it, and the input carries aria-required too. */}
           <span aria-hidden="true" className="text-red-500 ml-0.5 font-bold">*</span>
-          <span className="sr-only"> (required)</span>
+          <span className="sr-only">{t("cauth.required_sr")}</span>
         </>
       )}
     </label>
@@ -65,9 +67,10 @@ export function inputStateClass(hasError?: boolean): string {
 
 /** Legend for the asterisk, so the mark is explained rather than assumed. */
 export function RequiredLegend() {
+  const { t } = useLanguage();
   return (
     <p className="text-xs text-[var(--color-text-muted)]">
-      <span aria-hidden="true" className="text-red-500 font-bold">*</span> All fields are required
+      <span aria-hidden="true" className="text-red-500 font-bold">*</span> {t("cauth.all_required")}
     </p>
   );
 }

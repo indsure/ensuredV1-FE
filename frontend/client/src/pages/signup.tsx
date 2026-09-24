@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, ArrowRight, MailCheck, FileText, ShieldCheck, AlertCircle } from "lucide-react";
 import { loadSampleReport, mockReportHealth } from "@/lib/mock-data";
 import { MpEvent, identifyUser, track } from "@/lib/mixpanel";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Consumer (D2C individual) signup — name + mobile + email + password, SELF-SERVE,
 // no invite. Restricted to personal email providers (no business/Workspace domains
@@ -42,6 +43,7 @@ type FieldName = "name" | "phone" | "email" | "password";
 
 export default function SignupPublic() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -81,16 +83,16 @@ export default function SignupPublic() {
     // time. Being told about the mobile number, fixing it, and only then being
     // told about the password is three round trips for one form.
     const next: Partial<Record<FieldName, string>> = {};
-    if (!name) next.name = "Please enter your name.";
-    if (!digits) next.phone = "Please enter your mobile number.";
+    if (!name) next.name = t("cauth.su_err_name");
+    if (!digits) next.phone = t("cauth.su_err_phone");
     else if (!/^[6-9][0-9]{9}$/.test(digits))
-      next.phone = "That doesn't look like a 10-digit Indian mobile number.";
-    if (!email) next.email = "Please enter your email.";
+      next.phone = t("cauth.su_err_phone_bad");
+    if (!email) next.email = t("cauth.su_err_email");
     // Personal providers only — reject business/Workspace/custom domains.
     else if (!isPersonalEmail(email))
-      next.email = "Please use a personal email (Gmail, Outlook, Yahoo, iCloud…). Work email? That's the agent portal.";
-    if (!password) next.password = "Please choose a password.";
-    else if (password.length < 6) next.password = "Use at least 6 characters.";
+      next.email = t("cauth.su_err_email_work");
+    if (!password) next.password = t("cauth.su_err_pw");
+    else if (password.length < 6) next.password = t("cauth.su_err_pw_short");
 
     setFieldErrors(next);
     const firstBad = (["name", "phone", "email", "password"] as FieldName[]).find((f) => next[f]);
@@ -188,28 +190,27 @@ export default function SignupPublic() {
   if (needsConfirm) {
     return (
       <AuthShell
-        eyebrow="Almost there"
-        title={<>Check your <span className="italic text-[var(--color-teal-400)]">inbox.</span></>}
-        subtitle="One tap on the link we just sent and your portfolio is ready."
+        eyebrow={t("cauth.rp_eyebrow")}
+        title={<>{t("cauth.su_inbox_a")} <span className="italic text-[var(--color-teal-400)]">{t("cauth.su_inbox_b")}</span></>}
+        subtitle={t("cauth.su_inbox_sub")}
       >
         <div className="text-center space-y-5 py-2">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-[var(--color-teal-600)]/10 flex items-center justify-center">
             <MailCheck className="w-8 h-8 text-[var(--color-teal-600)]" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">Confirm your email</h2>
+            <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">{t("cauth.su_confirm_h")}</h2>
             <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
-              We sent a link to <span className="font-semibold text-[var(--color-navy-900)]">{email}</span>.
-              Click it to activate your account, then sign in.
+              {t("cauth.su_confirm_body", { email })}
             </p>
           </div>
           <Link href="/login">
             <Button className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold">
-              Go to sign in
+              {t("cauth.su_go_signin")}
             </Button>
           </Link>
           <p className="text-xs text-[var(--color-text-muted)]">
-            Didn't get it? Check spam. It's the only mail we'll ever send you.
+            {t("cauth.su_no_mail")}
           </p>
         </div>
       </AuthShell>
@@ -218,10 +219,10 @@ export default function SignupPublic() {
 
   return (
     <AuthShell
-      eyebrow="Free account"
-      title={<>See what your policy <span className="italic text-[var(--color-teal-400)]">won't</span> pay for.</>}
-      subtitle="Upload your policies, get an unbiased audit in about a minute, and keep everything in one private dashboard."
-      promise="No OTP, no spam calls, no messages you didn't ask for. We will never sell your data."
+      eyebrow={t("cauth.su_eyebrow")}
+      title={<>{t("cauth.su_title_a")} <span className="italic text-[var(--color-teal-400)]">{t("cauth.su_title_b")}</span> {t("cauth.su_title_c")}</>}
+      subtitle={t("cauth.su_sub")}
+      promise={t("cauth.su_promise")}
     >
       {/* A real form, for the same reason as /login: Enter only submitted from
           the last field that happened to carry a keydown handler, and a browser
@@ -231,18 +232,18 @@ export default function SignupPublic() {
         onSubmit={(e) => { e.preventDefault(); void handleSignUp(); }}
       >
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">Create your free account</h2>
+          <h2 className="text-2xl font-bold text-[var(--color-navy-900)]">{t("cauth.su_h")}</h2>
           <p className="text-sm text-[var(--color-text-secondary)]">
-            Already have one?{" "}
+            {t("cauth.su_have")}{" "}
             <Link href="/login">
-              <span className="font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">Log in</span>
+              <span className="font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">{t("cauth.log_in")}</span>
             </Link>
           </p>
         </div>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <FieldLabel htmlFor="su-name" required>Full name</FieldLabel>
+            <FieldLabel htmlFor="su-name" required>{t("cauth.su_name")}</FieldLabel>
             <Input
               id="su-name"
               ref={refs.name}
@@ -261,7 +262,7 @@ export default function SignupPublic() {
           </div>
 
           <div className="space-y-1.5">
-            <FieldLabel htmlFor="su-phone" required>Mobile number</FieldLabel>
+            <FieldLabel htmlFor="su-phone" required>{t("cauth.su_mobile")}</FieldLabel>
             {/* +91 is a static prefix, not part of the value: we store 10 digits.
                 z-10 is doing the real work here. The Input component wraps its
                 own field in a `relative` div, so the wrapper and this span are
@@ -301,14 +302,13 @@ export default function SignupPublic() {
           <div className="flex items-start gap-2.5 rounded-xl border border-[var(--color-border-light)] bg-[var(--color-cream-main)] p-3">
             <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-[var(--color-teal-600)]" />
             <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
-              <span className="font-semibold text-[var(--color-navy-900)]">No OTP. Nothing to verify.</span>{" "}
-              We ask for your name and number only to understand who our early users are.
-              We will never spam you, and we will never sell or share your details.
+              <span className="font-semibold text-[var(--color-navy-900)]">{t("cauth.su_why_b")}</span>{" "}
+              {t("cauth.su_why")}
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <FieldLabel htmlFor="su-email" required>Email</FieldLabel>
+            <FieldLabel htmlFor="su-email" required>{t("cauth.email")}</FieldLabel>
             <Input
               id="su-email"
               ref={refs.email}
@@ -326,13 +326,13 @@ export default function SignupPublic() {
               <FieldError id="su-email-err" message={fieldErrors.email} />
             ) : (
               <p id="su-email-hint" className="text-xs text-[var(--color-text-muted)] pl-1">
-                Personal email only. This is your login.
+                {t("cauth.su_email_hint")}
               </p>
             )}
           </div>
 
           <div className="space-y-1.5">
-            <FieldLabel htmlFor="su-password" required>Password</FieldLabel>
+            <FieldLabel htmlFor="su-password" required>{t("cauth.password")}</FieldLabel>
             <div className="relative">
               <Input
                 id="su-password"
@@ -345,13 +345,13 @@ export default function SignupPublic() {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
                 className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.password))} transition-all font-medium px-4 pr-12 rounded-xl`}
-                placeholder="At least 6 characters"
+                placeholder={t("cauth.su_pw_ph")}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
                 className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] transition-colors"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t("cauth.hide_pw") : t("cauth.show_pw")}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -362,7 +362,7 @@ export default function SignupPublic() {
               // A requirement that lives only in the placeholder vanishes the
               // moment someone starts typing, which is exactly when it matters.
               <p id="su-password-hint" className="text-xs text-[var(--color-text-muted)] pl-1">
-                At least 6 characters.
+                {t("cauth.su_pw_hint")}
               </p>
             )}
           </div>
@@ -387,7 +387,7 @@ export default function SignupPublic() {
           disabled={loading}
           className="w-full h-[52px] bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white rounded-xl text-base font-bold shadow-lg shadow-teal-900/20 transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center justify-center gap-2"
         >
-          {loading ? "Creating your account…" : <>Analyse my policy for free <ArrowRight className="w-4 h-4" /></>}
+          {loading ? t("cauth.su_creating") : <>{t("cauth.su_cta")} <ArrowRight className="w-4 h-4" /></>}
         </Button>
 
         {/* Low-commitment escape hatch — warms up browsers instead of losing them. */}
@@ -397,7 +397,7 @@ export default function SignupPublic() {
           className="w-full min-h-11 text-sm font-semibold text-[var(--color-teal-600)] hover:underline inline-flex items-center justify-center gap-2"
         >
           <FileText className="w-4 h-4" />
-          Just browsing? See a sample audit
+          {t("cauth.su_sample")}
         </button>
       </form>
     </AuthShell>

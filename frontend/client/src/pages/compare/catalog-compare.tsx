@@ -15,6 +15,7 @@ import { DiffRows } from "@/components/marketing/showcase";
 import { LifeInsuranceComparer } from "@/components/LifeInsuranceComparer";
 import { TermInsuranceComparer } from "@/components/TermInsuranceComparer";
 import { VehicleInsuranceComparer } from "@/components/VehicleInsuranceComparer";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
  * PUBLIC catalog compare — the consumer version of the agent's
@@ -69,6 +70,7 @@ function AddPlanPicker({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const reset = () => { setOpen(false); setQuery(""); setOpenInsurer(null); };
+  const { t } = useLanguage();
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -130,7 +132,7 @@ function AddPlanPicker({
         onClick={() => { setOpen((o) => !o); setTimeout(() => inputRef.current?.focus(), 0); }}
         className="h-12 w-full sm:w-auto px-5 rounded-xl border-2 border-dashed border-[var(--color-border-medium)] text-[var(--color-text-secondary)] font-semibold flex items-center justify-center gap-2 hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)] hover:bg-[var(--color-teal-600)]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
       >
-        <Plus className="h-5 w-5" /> Add a plan
+        <Plus className="h-5 w-5" /> {t("ccmp.add")}
       </button>
 
       {open && (
@@ -142,7 +144,7 @@ function AddPlanPicker({
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search insurer or plan…"
+                placeholder={t("ccmp.search")}
                 className="w-full h-10 pl-8 pr-3 text-sm rounded-lg border border-[var(--color-border-light)] bg-[var(--color-cream-main)] outline-none focus:bg-white focus:border-[var(--color-border-medium)] placeholder:text-[var(--color-text-muted)]"
               />
             </div>
@@ -151,7 +153,7 @@ function AddPlanPicker({
             {searching ? (
               /* Typing searches every plan at once, across all insurers. */
               filtered.length === 0 ? (
-                <div className="px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">No plans match that.</div>
+                <div className="px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">{t("ccmp.no_match")}</div>
               ) : (
                 filtered.map(([insurer, items]) => (
                   <div key={insurer}>
@@ -168,13 +170,13 @@ function AddPlanPicker({
                   onClick={() => setOpenInsurer(null)}
                   className="w-full text-left px-3 py-2 flex items-center gap-1.5 text-sm font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-teal-600)] border-b border-[var(--color-border-light)] cursor-pointer transition-colors"
                 >
-                  <ChevronLeft className="h-3.5 w-3.5" /> All insurers
+                  <ChevronLeft className="h-3.5 w-3.5" /> {t("ccmp.all_insurers")}
                 </button>
                 <div className="sticky top-0 z-10 bg-white px-3 pt-2 pb-1 text-sm font-bold text-[var(--color-text-secondary)]">{openInsurer}</div>
                 {drilledPlans.map(planRow)}
               </>
             ) : insurers.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">No more plans available.</div>
+              <div className="px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">{t("ccmp.no_more")}</div>
             ) : (
               /* Level 1: the insurers. */
               insurers.map(([insurer, items]) => (
@@ -187,7 +189,7 @@ function AddPlanPicker({
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-[var(--color-navy-900)] truncate">{insurer}</span>
                     <span className="block text-sm text-[var(--color-text-secondary)]">
-                      {items.length} plan{items.length === 1 ? "" : "s"}
+                      {items.length === 1 ? t("ccmp.n_plans_one") : t("ccmp.n_plans", { n: items.length })}
                     </span>
                   </span>
                   <ChevronRight className="h-4 w-4 text-[var(--color-border-medium)] flex-shrink-0" />
@@ -204,6 +206,7 @@ function AddPlanPicker({
 // ─── Selected plan card ─────────────────────────────────────────────────────
 function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number; onRemove: () => void }) {
   const pal = SIDE_PALETTE[index % SIDE_PALETTE.length];
+  const { t } = useLanguage();
   return (
     <div className="relative rounded-xl border-2 bg-white p-3.5 pr-9 w-full sm:w-56 flex-shrink-0" style={{ borderColor: pal.accent }}>
       <span className="inline-block text-xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full mb-1.5" style={{ backgroundColor: pal.accent }}>
@@ -217,7 +220,7 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
       <button
         onClick={onRemove}
         className="absolute top-2 right-2 h-7 w-7 rounded-full bg-[var(--color-cream-dark)] hover:bg-red-50 hover:text-red-500 text-[var(--color-text-muted)] flex items-center justify-center transition-colors cursor-pointer"
-        aria-label="Remove plan"
+        aria-label={t("ccmp.remove")}
       >
         <X className="h-4 w-4" />
       </button>
@@ -240,6 +243,7 @@ export default function PublicCatalogCompare() {
 function HealthCatalogCompare() {
   useSEO(seoFor("/compare"));
 
+  const { t } = useLanguage();
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
@@ -255,7 +259,7 @@ function HealthCatalogCompare() {
         const json = await res.json();
         setCatalog(json.policies ?? []);
       } catch {
-        setError("Could not load the catalog. Please try again in a minute.");
+        setError(t("ccmp.load_failed"));
       } finally {
         setLoadingCatalog(false);
       }
@@ -303,7 +307,7 @@ function HealthCatalogCompare() {
           });
         }
       } catch (e: any) {
-        if (alive) setError(e.message || "Compare failed");
+        if (alive) setError(e.message || t("ccmp.failed"));
       } finally {
         if (alive) setComparing(false);
       }
@@ -318,27 +322,26 @@ function HealthCatalogCompare() {
       <Header />
 
       <main className="flex-grow pt-24 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 max-w-5xl mx-auto w-full">
-        <Breadcrumbs items={[{ label: "Compare" }]} />
+        <Breadcrumbs items={[{ label: t("ccmp.crumb") }]} />
 
         {/* Hero */}
         <div className="mt-6 mb-10 max-w-2xl">
-          <Eyebrow icon={Scale}>Compare plans</Eyebrow>
+          <Eyebrow icon={Scale}>{t("ccmp.eyebrow")}</Eyebrow>
           <h1 className="mt-4 text-4xl md:text-5xl font-serif font-bold leading-[1.1]">
-            The fine print, <span className="italic text-[var(--color-teal-600)]">compared.</span>
+            {t("ccmp.h_a")} <span className="italic text-[var(--color-teal-600)]">{t("ccmp.h_b")}</span>
           </h1>
           <p className="mt-4 text-lg text-[var(--color-text-secondary)] leading-relaxed">
-            Pick up to {MAX_PLANS} real health plans and we'll compare the actual policy
-            wordings — room limits, waiting periods, co-pays, exclusions. Instant, free, no signup.
+            {t("ccmp.sub", { n: MAX_PLANS })}
           </p>
           <p className="mt-3 text-[15px] text-[var(--color-text-secondary)] flex items-center gap-1.5">
             <Zap className="h-4 w-4 shrink-0 text-[var(--color-teal-600)]" aria-hidden="true" />
-            {catalog.length > 0 ? `${catalog.length} pre-analysed plans across ${Object.keys(grouped).length} insurers` : "Pre-analysed policy wordings, decoded"}
+            {catalog.length > 0 ? t("ccmp.count", { plans: catalog.length, insurers: Object.keys(grouped).length }) : t("ccmp.decoded")}
           </p>
         </div>
 
         {loadingCatalog ? (
           <div className="flex flex-col items-center py-14 sm:py-20 lg:py-24 text-[var(--color-text-muted)]">
-            <Loader2 className="h-7 w-7 animate-spin mb-2" /> Loading catalog…
+            <Loader2 className="h-7 w-7 animate-spin mb-2" /> {t("ccmp.loading")}
           </div>
         ) : (
           <>
@@ -353,8 +356,8 @@ function HealthCatalogCompare() {
                 )}
               </div>
               <p className="text-xs text-[var(--color-text-muted)] mt-3">
-                {selected.length}/{MAX_PLANS} selected ·{" "}
-                {selected.length < 2 ? "add at least 2 to compare" : comparing ? "comparing…" : "instant result below"}
+                {t("ccmp.selected", { n: selected.length, max: MAX_PLANS })} ·{" "}
+                {selected.length < 2 ? t("ccmp.add_two") : comparing ? t("ccmp.comparing_l") : t("ccmp.instant")}
               </p>
             </div>
 
@@ -362,7 +365,7 @@ function HealthCatalogCompare() {
 
             {comparing && (
               <div className="flex items-center justify-center gap-2 py-16 text-[var(--color-text-muted)]">
-                <Loader2 className="h-5 w-5 animate-spin" /> Comparing…
+                <Loader2 className="h-5 w-5 animate-spin" /> {t("ccmp.comparing")}
               </div>
             )}
 
@@ -385,29 +388,27 @@ function HealthCatalogCompare() {
               <div className="mt-10 flex flex-col gap-5">
                 <div className="flex flex-col items-center gap-2 text-center">
                   <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
-                    What a comparison looks like
+                    {t("ccmp.example_h")}
                   </span>
                   <p className="max-w-xl text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                    Pick two plans above and you get this, built from the filed wordings rather than
-                    the brochures. The example below is illustrative.
+                    {t("ccmp.example_d")}
                   </p>
                 </div>
 
                 <DiffRows
-                  left="Plan A"
-                  right="Plan B"
+                  left={t("ccmp.plan_a")}
+                  right={t("ccmp.plan_b")}
                   rows={[
-                    { label: "Room rent cap", a: "No cap", b: "₹5,000 / day", better: "a" },
-                    { label: "Co-pay", a: "None", b: "20% after 60", better: "a" },
-                    { label: "Knee and hip waiting", a: "2 years", b: "4 years", better: "a" },
-                    { label: "Restoration", a: "Same illness too", b: "Different illness only", better: "a" },
-                    { label: "Annual premium", a: "₹42,000", b: "₹38,700", better: "b" },
+                    { label: t("ccmp.r_room"), a: t("ccmp.v_nocap"), b: t("ccmp.v_perday"), better: "a" },
+                    { label: t("ccmp.r_copay"), a: t("ccmp.v_none"), b: t("ccmp.v_after60"), better: "a" },
+                    { label: t("ccmp.r_knee"), a: t("ccmp.v_2y"), b: t("ccmp.v_4y"), better: "a" },
+                    { label: t("ccmp.r_restore"), a: t("ccmp.v_same"), b: t("ccmp.v_diff"), better: "a" },
+                    { label: t("ccmp.r_premium"), a: "₹42,000", b: "₹38,700", better: "b" },
                   ]}
                 />
 
                 <p className="text-center text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                  Plan B is ₹3,300 cheaper and costs more at the first hospital bill. That is the
-                  trade the brochures do not show you.
+                  {t("ccmp.trade")}
                 </p>
               </div>
             )}
@@ -416,19 +417,18 @@ function HealthCatalogCompare() {
             {!comparing && result && (
               <div className="mt-10 bg-[var(--color-navy-900)] rounded-2xl p-8 sm:p-10 text-center text-white">
                 <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white">
-                  That's the market. Now — how does <span className="italic text-[var(--color-teal-400)]">your</span> policy score?
+                  {t("ccmp.market_a")} <span className="italic text-[var(--color-teal-400)]">{t("ccmp.market_b")}</span> {t("ccmp.market_c")}
                 </h2>
                 <p className="mt-3 text-white/70 max-w-lg mx-auto">
-                  Upload the policy you actually own and get an unbiased 50-point audit
-                  in about a minute, saved to your private portfolio.
+                  {t("ccmp.upload_own")}
                 </p>
                 <Link href="/signup">
                   <button className="mt-6 inline-flex items-center gap-2 bg-[var(--color-cta)] hover:bg-[var(--color-cta-hover)] text-white px-8 py-4 rounded-xl font-bold text-lg transition-colors cursor-pointer">
-                    Analyze my policy — free <ArrowRight className="w-5 h-5" />
+                    {t("ccmp.analyze_free")} <ArrowRight className="w-5 h-5" />
                   </button>
                 </Link>
                 <p className="mt-4 text-xs text-white/50 flex items-center justify-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5" /> No spam. No cold calls. An advisor reaches out only if you ask.
+                  <Lock className="w-3.5 h-3.5" /> {t("ccmp.no_spam")}
                 </p>
               </div>
             )}
@@ -437,7 +437,7 @@ function HealthCatalogCompare() {
             <div className="mt-8 text-center">
               <Link href="/report?sample=health">
                 <span className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">
-                  <FileText className="w-4 h-4" /> See what a full policy audit looks like
+                  <FileText className="w-4 h-4" /> {t("ccmp.see_full")}
                 </span>
               </Link>
             </div>

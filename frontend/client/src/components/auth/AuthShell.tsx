@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "wouter";
 import { Lock, ShieldCheck, Clock, Scale } from "lucide-react";
+import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext";
 
 /**
  * Shared shell for the consumer auth pages (/signup, /login).
@@ -11,27 +12,28 @@ import { Lock, ShieldCheck, Clock, Scale } from "lucide-react";
  */
 
 const TRUST_PILLS = [
-  { icon: Lock, label: "No spam, ever" },
-  { icon: Scale, label: "₹0 commission" },
-  { icon: Clock, label: "~60-sec audit" },
+  // label and the benefits below are translation keys.
+  { icon: Lock, label: "cauth.pill_spam" },
+  { icon: Scale, label: "cauth.pill_commission" },
+  { icon: Clock, label: "cauth.pill_fast" },
 ];
 
 const BENEFITS = [
-  "Unbiased audit. We earn ₹0 commission, so we have no reason to sell you anything.",
-  "50+ risk checks per policy: room-rent caps, waiting periods, silent exclusions.",
-  "Private by default. No agent ever sees your policy.",
+  "cauth.benefit_1",
+  "cauth.benefit_2",
+  "cauth.benefit_3",
 ];
 
 // The standing promise, shown twice (desktop panel + mobile card). Pages that
 // ask for a phone number override it — claiming "we will never message you"
 // while collecting a mobile reads as a contradiction, not as reassurance.
-const DEFAULT_PROMISE = "We will never call you, message you, or sell your data. Ever.";
+const DEFAULT_PROMISE = "cauth.promise";
 
 export function AuthShell({
   eyebrow,
   title,
   subtitle,
-  promise = DEFAULT_PROMISE,
+  promise,
   children,
 }: {
   eyebrow: string;
@@ -40,6 +42,8 @@ export function AuthShell({
   promise?: string;
   children: ReactNode;
 }) {
+  const { t } = useLanguage();
+  const promiseText = promise ?? t(DEFAULT_PROMISE);
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] lg:grid lg:grid-cols-[1.05fr_1fr]">
       {/* ─── BRAND PANEL (dark) ─── */}
@@ -49,13 +53,17 @@ export function AuthShell({
         <div className="pointer-events-none absolute bottom-0 -left-20 w-72 h-72 rounded-full bg-[var(--color-teal-400)]/10 blur-3xl" />
 
         <div className="relative z-10">
-          <Link href="/">
-            <img
-              src="/logo-white.png"
-              alt="IndSure"
-              className="h-9 lg:h-10 w-auto object-contain cursor-pointer"
-            />
-          </Link>
+          {/* These pages have no site header, so the language switch sits by the logo. */}
+          <div className="flex items-center justify-between gap-4">
+            <Link href="/">
+              <img
+                src="/logo-white.png"
+                alt="IndSure"
+                className="h-9 lg:h-10 w-auto object-contain cursor-pointer"
+              />
+            </Link>
+            <LanguageToggle variant="dark" />
+          </div>
 
           <div className="mt-6 lg:mt-16 max-w-lg">
             <span className="inline-block py-1 px-3 rounded-full border border-white/15 bg-white/5 text-[11px] font-mono uppercase tracking-widest text-[var(--color-teal-400)]">
@@ -86,7 +94,7 @@ export function AuthShell({
                   className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/85"
                 >
                   <Icon className="w-3.5 h-3.5 text-[var(--color-teal-400)]" />
-                  {label}
+                  {t(label)}
                 </span>
               ))}
             </div>
@@ -97,7 +105,7 @@ export function AuthShell({
             {BENEFITS.map((b) => (
               <li key={b} className="flex gap-3 text-sm text-[var(--color-white-muted)] leading-relaxed">
                 <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-[var(--color-teal-400)]" />
-                <span>{b}</span>
+                <span>{t(b)}</span>
               </li>
             ))}
           </ul>
@@ -106,7 +114,7 @@ export function AuthShell({
         {/* The promise. This is the brand — it stays on screen. */}
         <div className="relative z-10 hidden lg:flex items-start gap-2.5 mt-12 text-sm text-white/60">
           <Lock className="w-4 h-4 mt-0.5 shrink-0 text-[var(--color-teal-400)]" />
-          <span>{promise}</span>
+          <span>{promiseText}</span>
         </div>
       </div>
 
@@ -119,7 +127,7 @@ export function AuthShell({
           {/* promise repeated at the moment of hesitation (mobile especially) */}
           <div className="lg:hidden mt-6 flex items-start gap-2 text-sm text-[var(--color-text-muted)] leading-relaxed">
             <Lock className="w-4 h-4 mt-0.5 shrink-0 text-[var(--color-teal-600)]" />
-            <span>{promise}</span>
+            <span>{promiseText}</span>
           </div>
         </div>
 
@@ -133,7 +141,7 @@ export function AuthShell({
               className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border-light)] bg-white/70 px-3 py-1.5 text-sm font-semibold text-[var(--color-text-secondary)]"
             >
               <Icon className="w-4 h-4 text-[var(--color-teal-600)]" />
-              {label}
+              {t(label)}
             </li>
           ))}
         </ul>

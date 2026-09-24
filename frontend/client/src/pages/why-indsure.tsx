@@ -8,6 +8,7 @@ import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /* ============================================================
    WHY INDSURE
@@ -19,46 +20,47 @@ import { apiFetch } from "@/lib/api";
    base stylesheet, and it sat on a navy card.
    ============================================================ */
 
+// Visible strings in the data below are translation keys, rendered with t().
 const pillars = [
   {
     n: "01",
     icon: Database,
-    title: "The Catalog",
+    title: "why.p1",
     accent: "var(--lob-health)",
     wash: "var(--lob-health-wash)",
-    lead: "We read what insurers file, not what they advertise.",
+    lead: "why.p1_lead",
     // "hand-built rather than scraped" was true when the catalog was assembled by hand. It is
     // not any more: most entries are now read out of the filed wordings by a model and marked
     // unverified until reviewed. The differentiator that survives is the SOURCE — the document
     // insurers file with the regulator, not the brochure — so the claim now rests on that.
-    body: "A wording-level database of {PLANS} health insurance plans across {INSURERS} insurers, built from the documents insurers file with the regulator rather than from brochures: every room-rent clause, co-pay clause, sub-limit and waiting period, taken out of the filed wording itself. That is the document the exclusions actually live in, and it is not the one a price comparison reads.",
+    body: "why.p1_body",
   },
   {
     n: "02",
     icon: Cpu,
-    title: "The Engine",
+    title: "why.p2",
     accent: "var(--lob-life)",
     wash: "var(--lob-life-wash)",
-    lead: "The same policy produces the same answer every time.",
-    body: "Reading one policy properly takes a trained human the better part of an hour, and two humans will not agree. The engine works clause by clause and deterministically, so the audit a first-time buyer gets is the audit a lawyer would get.",
+    lead: "why.p2_lead",
+    body: "why.p2_body",
   },
   {
     n: "03",
     icon: Share2,
-    title: "Distribution",
+    title: "why.p3",
     accent: "var(--lob-motor)",
     wash: "var(--lob-motor-wash)",
-    lead: "The best analysis is useless if it never reaches the person deciding.",
-    body: "So we built for the channel Indian households already buy through: the insurance advisor. Compare, the Cover Calculator and the client tools sit in an advisor's hand, with WhatsApp as the front door rather than a CRM login.",
+    lead: "why.p3_lead",
+    body: "why.p3_body",
   },
   {
     n: "04",
     icon: ShieldOff,
-    title: "The Business Model",
+    title: "why.p4",
     accent: "var(--lob-home)",
     wash: "var(--lob-home-wash)",
-    lead: "We could not take a commission even if we wanted to.",
-    body: "IndSure is not an IRDAI-registered broker or agent, which means there is no commission available to us on anything we recommend. That is not a promise about our character. It is a structural fact about our licence, and most of this industry cannot claim it.",
+    lead: "why.p4_lead",
+    body: "why.p4_body",
   },
 ];
 
@@ -77,10 +79,10 @@ const pillars = [
 const FALLBACK_COUNTS = { plans: 288, insurers: 29 };
 
 const buildStats = (c: { plans: number; insurers: number }) => [
-  { value: c.plans, suffix: "", label: "Plans indexed", accent: "var(--lob-health)" },
-  { value: c.insurers, suffix: "", label: "Insurers covered", accent: "var(--lob-life)" },
-  { value: 0, suffix: "", label: "Commission earned, ever", accent: "var(--lob-motor)" },
-  { value: 0, suffix: "", label: "Leads sold, ever", accent: "var(--lob-home)" },
+  { value: c.plans, suffix: "", label: "why.st_plans", accent: "var(--lob-health)" },
+  { value: c.insurers, suffix: "", label: "why.st_insurers", accent: "var(--lob-life)" },
+  { value: 0, suffix: "", label: "why.st_commission", accent: "var(--lob-motor)" },
+  { value: 0, suffix: "", label: "why.st_leads", accent: "var(--lob-home)" },
 ];
 
 /* The strip used to carry "50+ risk checks per audit" as its third figure. Nothing in the
@@ -90,6 +92,7 @@ const buildStats = (c: { plans: number; insurers: number }) => [
 
 export default function WhyIndSure() {
   const [counts, setCounts] = useState(FALLBACK_COUNTS);
+  const { t } = useLanguage();
 
   useEffect(() => {
     let alive = true;
@@ -129,17 +132,16 @@ export default function WhyIndSure() {
 
           <div className="container-editorial relative">
             <Reveal className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
-              <Eyebrow>Why IndSure</Eyebrow>
+              <Eyebrow>{t("why.eyebrow")}</Eyebrow>
 
               <h1 className="font-serif font-bold tracking-[-0.035em] leading-[1.05] text-4xl sm:text-6xl lg:text-7xl text-[var(--color-navy-900)]">
-                Insurance,
+                {t("why.h_a")}
                 <br />
-                <span className="italic text-[var(--color-teal-600)]">decoded.</span>
+                <span className="italic text-[var(--color-teal-600)]">{t("why.h_b")}</span>
               </h1>
 
               <p className="max-w-2xl text-lg sm:text-xl leading-relaxed text-[var(--color-text-secondary)]">
-                Everyone promises unbiased advice. Almost nobody can back it with the data, the
-                technology and the business model to prove it. Here is ours.
+                {t("why.sub")}
               </p>
             </Reveal>
 
@@ -154,7 +156,7 @@ export default function WhyIndSure() {
                     <AnimatedNumber value={s.value} suffix={s.suffix} />
                   </span>
                   <span className="max-w-[10rem] text-sm font-semibold uppercase tracking-[0.1em] leading-snug text-[var(--color-text-secondary)]">
-                    {s.label}
+                    {t(s.label)}
                   </span>
                 </RevealItem>
               ))}
@@ -166,9 +168,9 @@ export default function WhyIndSure() {
         <Section surface="mint">
           <div className="container-editorial flex flex-col gap-12">
             <SectionHeading
-              eyebrow="The proof"
-              title="Four things that have to be true"
-              sub="Any of these on its own is a marketing line. Together they are the reason the answer you get is not shaped by what somebody earns on it."
+              eyebrow={t("why.proof")}
+              title={t("why.proof_h")}
+              sub={t("why.proof_sub")}
             />
 
             <Stagger className="grid gap-6 md:grid-cols-2">
@@ -202,7 +204,7 @@ export default function WhyIndSure() {
                           {p.n}
                         </span>
                         <h3 className="font-serif text-2xl font-bold text-[var(--color-navy-900)]">
-                          {p.title}
+                          {t(p.title)}
                         </h3>
                       </div>
                     </div>
@@ -211,13 +213,11 @@ export default function WhyIndSure() {
                       className="font-serif text-xl leading-snug"
                       style={{ color: p.accent }}
                     >
-                      {p.lead}
+                      {t(p.lead)}
                     </p>
 
                     <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                      {p.body
-                        .replace("{PLANS}", String(counts.plans))
-                        .replace("{INSURERS}", String(counts.insurers))}
+                      {t(p.body, { plans: counts.plans, insurers: counts.insurers })}
                     </p>
                   </article>
                 </RevealItem>
@@ -231,8 +231,8 @@ export default function WhyIndSure() {
           <div className="container-editorial grid gap-12 lg:grid-cols-[1fr_minmax(0,460px)] lg:items-center">
             <div className="flex flex-col gap-6">
               <SectionHeading
-                eyebrow="The problem"
-                title={<>The clause nobody read out loud</>}
+                eyebrow={t("why.problem")}
+                title={<>{t("why.problem_h")}</>}
               />
 
               {/* The original opened with an unsourced count of claims
@@ -241,15 +241,10 @@ export default function WhyIndSure() {
                   number at all. */}
               <div className="flex flex-col gap-5 text-lg leading-relaxed text-[var(--color-text-secondary)]">
                 <p>
-                  Claims are refused for reasons that were on page 42 the whole time. A room-rent
-                  cap. A co-pay that starts at sixty. A waiting period that had two years left to
-                  run. None of it is hidden, exactly. It is just never the part anyone reads at the
-                  time of sale.
+                  {t("why.para1")}
                 </p>
                 <p>
-                  No advisor can hold ten insurers worth of fine print in their head, consistently,
-                  for every customer, every time. A system built to do exactly that, and nothing
-                  else, can.
+                  {t("why.para2")}
                 </p>
               </div>
 
@@ -263,11 +258,10 @@ export default function WhyIndSure() {
                   aria-hidden="true"
                 />
                 <p className="pr-10 font-serif text-xl leading-snug text-[var(--color-navy-900)] sm:text-2xl">
-                  Codify the fine print once, apply it consistently, and never let a commission
-                  check the outcome.
+                  {t("why.quote")}
                 </p>
                 <p className="mt-3 text-sm font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
-                  The bet IndSure is built on
+                  {t("why.bet")}
                 </p>
               </Reveal>
             </div>
@@ -281,10 +275,10 @@ export default function WhyIndSure() {
               >
                 <div className="flex items-center justify-between border-b border-[var(--color-border-light)] bg-[var(--color-cream-main)] px-4 py-3">
                   <span className="text-sm font-semibold text-[var(--color-text-secondary)]">
-                    policy-wording.pdf · page 42
+                    {t("why.pdf_route")}
                   </span>
                   <span className="rounded-md bg-[var(--color-cream-dark)] px-2 py-1 text-sm font-semibold text-[var(--color-text-secondary)]">
-                    Illustrative
+                    {t("why.illustrative")}
                   </span>
                 </div>
 
@@ -309,17 +303,16 @@ export default function WhyIndSure() {
                   <div className="h-px bg-[var(--color-border-light)]" />
 
                   <div className="flex flex-col gap-2">
-                    <Eyebrow accent="var(--lob-health)">What that means</Eyebrow>
+                    <Eyebrow accent="var(--lob-health)">{t("why.means")}</Eyebrow>
                     <p className="font-serif text-xl font-bold leading-snug text-[var(--color-navy-900)]">
-                      Your knee replacement is not covered for two more years, and after sixty you
-                      pay a fifth of every bill.
+                      {t("why.means_b")}
                     </p>
                   </div>
                 </div>
               </div>
 
               <p className="text-center text-sm text-[var(--color-text-secondary)]">
-                Wording shown is representative, not from any one insurer.
+                {t("why.representative")}
               </p>
             </Reveal>
           </div>
@@ -339,21 +332,20 @@ export default function WhyIndSure() {
             {/* This heading carried no colour class, so it inherited navy from
                 the base stylesheet and rendered invisible on the navy card. */}
             <h2 className="font-serif text-3xl font-bold tracking-[-0.03em] leading-[1.1] text-white sm:text-5xl">
-              Stop guessing. Start knowing.
+              {t("why.stop")}
             </h2>
 
             <p className="max-w-2xl text-lg leading-relaxed text-white/80">
-              Check the policy you already own, or put two plans side by side before you buy the
-              next one.
+              {t("why.cta_sub")}
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <CTA href="/policychecker" icon={ArrowRight}>Check my policy</CTA>
-              <CTA href="/compare" variant="ghost-ink">Compare plans</CTA>
+              <CTA href="/policychecker" icon={ArrowRight}>{t("why.check")}</CTA>
+              <CTA href="/compare" variant="ghost-ink">{t("why.compare")}</CTA>
             </div>
 
             <p className="text-sm text-white/60">
-              Free to start. No sales calls, and no commission on either answer.
+              {t("why.free")}
             </p>
           </Reveal>
         </Section>
