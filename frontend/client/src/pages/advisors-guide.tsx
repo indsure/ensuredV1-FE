@@ -76,9 +76,16 @@ export default function AdvisorsGuide({ view }: { view: View }) {
           ))}
         </nav>
 
-        <div className="max-w-6xl mx-auto mb-16">
+        <div className="max-w-6xl mx-auto mb-10">
           {view === "features" ? <FeatureGrid mode="public" /> : <HowToGuides mode="public" />}
         </div>
+
+        <p className="max-w-6xl mx-auto mb-16 text-center text-lg text-[var(--color-text-secondary)]">
+          {t("aguide.docs_more")}{" "}
+          <Link href="/docs" className="font-semibold text-[var(--color-teal-700)] underline underline-offset-4">
+            {t("aguide.docs_link")}
+          </Link>
+        </p>
 
         <section className="max-w-4xl mx-auto rounded-2xl bg-[var(--color-navy-900)] text-white p-6 sm:p-10 text-center">
           <h2 className="text-2xl sm:text-3xl font-serif mb-3">{t("aguide.cta_h")}</h2>

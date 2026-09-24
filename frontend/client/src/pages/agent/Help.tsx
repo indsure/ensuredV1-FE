@@ -1,5 +1,5 @@
 import { Link, useSearch } from "wouter";
-import { MessageCircle, PlayCircle } from "lucide-react";
+import { BookOpen, MessageCircle, PlayCircle } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAgent } from "@/context/AgentContext";
 import { FeatureGrid } from "@/components/advisor-guide/FeatureGrid";
@@ -60,6 +60,19 @@ export default function AgentHelp() {
       </nav>
 
       {view === "features" ? <FeatureGrid mode="portal" isOwner={!!team?.isOwner} /> : <HowToGuides mode="portal" />}
+
+      <Link
+        href="/docs"
+        className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 hover:border-[#0D9488]"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F0FDFA] text-[#0F766E]">
+          <BookOpen className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <span className="flex flex-col">
+          <span className="text-lg font-bold text-slate-900">{t("aguide.docs_h")}</span>
+          <span className="text-base text-slate-600">{t("aguide.docs_sub")}</span>
+        </span>
+      </Link>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
         <div>

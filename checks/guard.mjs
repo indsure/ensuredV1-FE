@@ -28,6 +28,7 @@ const PUBLIC_PAGES = [
   "pages/vision.tsx", "pages/team.tsx", "pages/help.tsx", "pages/life.tsx",
   "pages/term.tsx", "pages/vehicle.tsx", "pages/blog.tsx",
   "pages/agent/Landing.tsx", "pages/start.tsx", "pages/advisors-guide.tsx",
+  "pages/docs.tsx",
 ];
 
 const findings = [];

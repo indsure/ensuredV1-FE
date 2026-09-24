@@ -31,6 +31,7 @@ const columns: { heading: string; links: { label: string; href: string }[] }[] =
       { label: "site.f_why", href: "/why-indsure" },
       { label: "site.f_pricing", href: "/pricing" },
       { label: "site.f_advisors", href: "/agent" },
+      { label: "site.f_docs", href: "/docs" },
       { label: "site.f_blog", href: "/blog" },
       { label: "site.f_team", href: "/team" },
       { label: "site.f_help", href: "/help" },

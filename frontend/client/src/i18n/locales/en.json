@@ -2306,7 +2306,8 @@
     "m_blog": "Blog",
     "m_nav": "Mobile navigation",
     "m_progress": "View check progress",
-    "m_analyzing": "Checking"
+    "m_analyzing": "Checking",
+    "f_docs": "Advisor docs"
   },
   "home": {
     "illustrative": "Illustrative",
@@ -4174,7 +4175,7 @@
     "f_team_d": "Invite advisors to your agency, manage seats, and move policy checks between them.",
     "g_check_t": "Check a customer's policy",
     "g_check_s1": "Press {{check_policy}} at the top of the menu.",
-    "g_check_s2": "Drop the policy PDF on the page, or tap to choose it. If the PDF has a password, unlock it first.",
+    "g_check_s2": "Choose the type of policy at the top, then drop the PDF on the page, or tap to choose it. If the PDF has a password, remove it first.",
     "g_check_s3": "Add the customer's name and phone number if you like. It helps you find the policy later.",
     "g_check_s4": "Press {{check}}. While the policy is being read, it waits under {{needs_attention}}.",
     "g_check_s5": "When it is done, press {{view_results}} to open the report.",
@@ -4197,7 +4198,7 @@
     "g_renewals_t": "Send renewal reminders",
     "g_renewals_s1": "On a lead's page, add the policies they already hold. {{renewals}} then lists them by due date, soonest first.",
     "g_renewals_s2": "Open {{people}}, then {{renewals}}.",
-    "g_renewals_s3": "Press {{draft}}, pick {{renewal_reminder}}, choose the language, and press {{send_wa}}.",
+    "g_renewals_s3": "Press the ✍️ button on a card, pick a message, choose the language, and press {{send_wa}}.",
     "g_renewals_s4": "Once you have talked to them, press {{mark_spoken}}.",
     "g_calculator_t": "Work out how much cover a family needs",
     "g_calculator_s1": "Open {{services}}, then {{calculator}}.",
@@ -4213,7 +4214,11 @@
     "g_website_s2": "Add a clear photo of your face, your city and the languages you speak.",
     "g_website_s3": "Press {{publish}} when you are ready. Nothing goes online before that.",
     "g_website_s4": "Share the link on WhatsApp, or press {{download_qr}} to print it.",
-    "g_website_s5": "When a customer messages you from the page, they show up in your Leads."
+    "g_website_s5": "When a customer messages you from the page, they show up in your Leads.",
+    "docs_h": "Read the full docs",
+    "docs_sub": "Every screen explained with pictures, plus answers to common questions.",
+    "docs_more": "Want every screen explained with pictures?",
+    "docs_link": "Read the full advisor docs"
   },
   "tour": {
     "take_tour": "Take the tour",
@@ -4239,10 +4244,13 @@
     "leads_t": "Leads",
     "leads_d": "Everyone you are following up with. Move them from {{st_new}} to {{st_won}}, and draft a WhatsApp follow-up from here.",
     "renewals_t": "Renewals",
-    "renewals_d": "Your leads' policies coming up for renewal, soonest first. Draft a reminder and send it on WhatsApp.",
+    "renewals_d": "Your leads' policies coming up for renewal, soonest first. Draft a WhatsApp message and send it from here.",
     "website_t": "My Website",
     "website_d": "Your own page with your photo and city. Share it on WhatsApp or print its QR code. Messages from it land in your Leads.",
     "done_t": "That is the tour",
     "done_d": "You have seen the main tools. Keep exploring the demo, or start your free account."
+  },
+  "docs": {
+    "hindi_note": "These docs are in English. The portal itself works in Hindi: press हिंदी at the top of any portal screen."
   }
 }

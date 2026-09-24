@@ -333,7 +333,9 @@ export default function SachAIChat() {
   // still explains any insurance term from the bundled clause library. Admin is excluded
   // because it is an internal tool operating on other people's data, not a place to ask about
   // "your" cover.
-  if (location.startsWith("/admin")) {
+  // The docs keep their previous/next links in the bottom corner the bubble
+  // sits on, and a reader there wants the page, not a chat.
+  if (location.startsWith("/admin") || location.startsWith("/docs")) {
     return null;
   }
 

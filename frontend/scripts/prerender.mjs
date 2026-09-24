@@ -45,6 +45,7 @@ async function loadBlogData() {
       `export { POST_SLUGS, slugFor } from "../client/src/pages/blog/slugs.ts";`,
       `export { FOUNDERS, authorForId, displayName } from "../client/src/data/team.ts";`,
       `export { CLAUSE_LIBRARY } from "../client/src/data/clause-library.ts";`,
+      `export { DOC_PAGES, DOC_SECTIONS, docPath } from "../client/src/docs/content.ts";`,
     ].join("\n"),
   );
   const outfile = join(__dirname, ".blog-bundle.mjs");
@@ -504,7 +505,7 @@ async function main() {
   }
 
   // Blog posts
-  const { blogPosts, slugFor, FOUNDERS, authorForId, displayName, CLAUSE_LIBRARY } =
+  const { blogPosts, slugFor, FOUNDERS, authorForId, displayName, CLAUSE_LIBRARY, DOC_PAGES, DOC_SECTIONS, docPath } =
     await loadBlogData();
   let postCount = 0;
   for (const post of blogPosts) {
@@ -740,16 +741,63 @@ async function main() {
     await writeRoute(path, html);
   }
 
-  await writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY);
+  // Advisor docs (/docs). The whole article goes into the static body, not just
+  // a title and intro: these pages exist to answer questions, so a crawler and
+  // a no-JavaScript reader should get the answer itself.
+  const docInline = (t) =>
+    escText(t)
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, href) => `<a href="${escAttr(href)}">${label}</a>`);
+  const docBlockHtml = (b) => {
+    switch (b.t) {
+      case "p": return `<p>${docInline(b.text)}</p>`;
+      case "h2": return `<h2 id="${escAttr(b.id)}">${escText(b.text)}</h2>`;
+      case "steps": return `<ol>${b.items.map((i) => `<li>${docInline(i)}</li>`).join("")}</ol>`;
+      case "list": return `<ul>${b.items.map((i) => `<li>${docInline(i)}</li>`).join("")}</ul>`;
+      case "img": return `<figure><img src="/docs/screens/${escAttr(b.name)}.webp" alt="${escAttr(b.alt)}" loading="lazy">${b.caption ? `<figcaption>${escText(b.caption)}</figcaption>` : ""}</figure>`;
+      case "note": return `<aside><p>${docInline(b.text)}</p></aside>`;
+      case "faq": return b.items.map((f) => `<h3>${escText(f.q)}</h3><p>${docInline(f.a)}</p>`).join("");
+      case "cards": return `<ul>${b.slugs.map((s) => { const d = DOC_PAGES.find((x) => x.slug === s); return d ? `<li><a href="${docPath(s)}">${escText(d.title)}</a></li>` : ""; }).join("")}</ul>`;
+      default: return "";
+    }
+  };
+  for (const page of DOC_PAGES) {
+    const path = docPath(page.slug);
+    const canonical = SITE + path;
+    const title = page.slug ? `${page.title} | IndSure Docs` : "IndSure Docs for Advisors";
+    let html = applyHead(template, { title, description: page.description, canonical, ogType: "article" });
+    const section = DOC_SECTIONS.find((s) => s.pages.includes(page));
+    const crumbs = [{ name: "Home", url: `${SITE}/` }, { name: "Docs", url: `${SITE}/docs` }];
+    if (page.slug) crumbs.push({ name: page.title, url: canonical });
+    const jsonLd = [breadcrumbLd(crumbs)];
+    const faqs = page.blocks.filter((b) => b.t === "faq").flatMap((b) => b.items);
+    if (faqs.length) {
+      const plain = (t) => t.replace(/\*\*/g, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+      jsonLd.push({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: plain(f.a) } })),
+      });
+    }
+    html = injectJsonLd(html, jsonLd);
+    const nav = DOC_SECTIONS.map((s) => `<h2>${escText(s.title)}</h2><ul>${s.pages.map((d) => `<li><a href="${docPath(d.slug)}">${escText(d.title)}</a></li>`).join("")}</ul>`).join("");
+    const body =
+      `<article><p>${section ? escText(section.title) : ""}</p><h1>${escText(page.title)}</h1>` +
+      `<p>${escText(page.lead)}</p>${page.blocks.map(docBlockHtml).join("")}</article><nav>${nav}</nav>`;
+    html = injectBody(html, body, path);
+    await writeRoute(path, html);
+  }
+
+  await writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, DOC_PAGES, docPath);
 
   console.log(
-    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + ${FOUNDERS.length} author pages + ${CLAUSE_LIBRARY.length} clause pages + sitemap.`,
+    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + ${FOUNDERS.length} author pages + ${CLAUSE_LIBRARY.length} clause pages + ${DOC_PAGES.length} docs pages + sitemap.`,
   );
 }
 
 // Regenerate dist/sitemap.xml with honest lastmod: blog posts use their own
 // publish date; marketing pages use the build date.
-async function writeSitemap(blogPosts, slugFor, FOUNDERS = [], CLAUSE_LIBRARY = []) {
+async function writeSitemap(blogPosts, slugFor, FOUNDERS = [], CLAUSE_LIBRARY = [], DOC_PAGES = [], docPath = (s) => s) {
   const buildDate = new Date().toISOString().slice(0, 10);
   const marketing = [
     { path: "/", priority: "1.0", changefreq: "weekly" },
@@ -783,6 +831,7 @@ async function writeSitemap(blogPosts, slugFor, FOUNDERS = [], CLAUSE_LIBRARY = 
   rows.push(url("/learn", buildDate, "weekly", "0.8"));
   for (const c of CLAUSE_LIBRARY) rows.push(url(`/learn/${c.slug}`, buildDate, "monthly", "0.7"));
   for (const f of FOUNDERS) rows.push(url(`/author/${f.slug}`, buildDate, "monthly", "0.4"));
+  for (const d of DOC_PAGES) rows.push(url(docPath(d.slug), buildDate, "monthly", d.slug ? "0.6" : "0.8"));
   for (const post of blogPosts) {
     const lastmod = /^\d{4}-\d{2}-\d{2}$/.test(post.date || "") ? post.date : buildDate;
     rows.push(url(`/blog/${slugFor(post.id)}`, lastmod, "monthly", "0.6"));

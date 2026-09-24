@@ -81,6 +81,7 @@ const HowItWorks = lazy(() => import("@/pages/how-it-works"));
 const Pricing = lazy(() => import("@/pages/pricing"));
 const AdvisorsPricing = lazy(() => import("@/pages/advisors-pricing"));
 const AdvisorsGuide = lazy(() => import("@/pages/advisors-guide"));
+const Docs = lazy(() => import("@/pages/docs"));
 const Start = lazy(() => import("@/pages/start"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Processing = lazy(() => import("@/pages/processing"));
@@ -156,6 +157,8 @@ function App() {
                       <Route path="/advisors/pricing" component={AdvisorsPricing} />
                       <Route path="/advisors/features">{() => <AdvisorsGuide view="features" />}</Route>
                       <Route path="/advisors/how-to-use">{() => <AdvisorsGuide view="howto" />}</Route>
+                      <Route path="/docs">{() => <Docs />}</Route>
+                      <Route path="/docs/:slug">{(params) => <Docs slug={params.slug} />}</Route>
                       <Route path="/start" component={Start} />
                       <Route path="/processing" component={Processing} />
 
