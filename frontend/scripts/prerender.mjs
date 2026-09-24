@@ -327,6 +327,24 @@ const STATIC_ROUTES = [
       "Your daily tools — leads, customer portfolios, renewals, the cover calculator and message drafts — are free forever. The full plan is ₹999 a month or ₹9,999 a year and adds monthly policy checks, the Sach assistant and priority support. IndSure takes no commission on anything you sell.",
   },
   {
+    path: "/advisors/features",
+    title: "Features for Insurance Advisors | IndSure",
+    description:
+      "Every tool in the IndSure advisor portal: customers, leads, renewals, policy checks, compare, cover calculator, claims and your own website.",
+    h1: "Everything the IndSure advisor portal does",
+    intro:
+      "One place for your customers, their policies and your follow-ups: customers and leads, renewal reminders on WhatsApp, policy checks in plain language, plan comparison, the cover calculator, a claims desk and your own advisor website.",
+  },
+  {
+    path: "/advisors/how-to-use",
+    title: "How to Use the IndSure Advisor Portal | IndSure",
+    description:
+      "Step-by-step guides for IndSure advisors: check a policy, share a report, compare plans, follow up leads, send renewal reminders on WhatsApp.",
+    h1: "How to use the IndSure advisor portal",
+    intro:
+      "Short, step-by-step guides for the jobs advisors do every day: checking a customer's policy, sharing the report, comparing plans, following up leads, sending renewal reminders and setting up your own website.",
+  },
+  {
     path: "/blog",
     title: "Insurance Guides for India: Health, Life & Motor | IndSure Blog",
     description:
@@ -747,6 +765,8 @@ async function writeSitemap(blogPosts, slugFor, FOUNDERS = [], CLAUSE_LIBRARY = 
     { path: "/why-indsure", priority: "0.7", changefreq: "monthly" },
     { path: "/pricing", priority: "0.8", changefreq: "monthly" },
     { path: "/advisors/pricing", priority: "0.7", changefreq: "monthly" },
+    { path: "/advisors/features", priority: "0.7", changefreq: "monthly" },
+    { path: "/advisors/how-to-use", priority: "0.6", changefreq: "monthly" },
     { path: "/blog", priority: "0.8", changefreq: "weekly" },
     { path: "/signup", priority: "0.9", changefreq: "monthly" },
     { path: "/agent", priority: "0.9", changefreq: "monthly" },

@@ -27,7 +27,7 @@ const PUBLIC_PAGES = [
   "pages/how-it-works.tsx", "pages/why-indsure.tsx", "pages/mission.tsx",
   "pages/vision.tsx", "pages/team.tsx", "pages/help.tsx", "pages/life.tsx",
   "pages/term.tsx", "pages/vehicle.tsx", "pages/blog.tsx",
-  "pages/agent/Landing.tsx", "pages/start.tsx",
+  "pages/agent/Landing.tsx", "pages/start.tsx", "pages/advisors-guide.tsx",
 ];
 
 const findings = [];

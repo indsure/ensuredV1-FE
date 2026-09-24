@@ -91,12 +91,16 @@ export default function AgentLanding() {
           </div>
 
           <div className="hidden lg:flex items-center gap-1">
-            <a
-              href="#what-you-get"
-              className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors"
-            >
-              {t("agent_landing.nav_what")}
-            </a>
+            <Link href="/advisors/features">
+              <span className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
+                {t("agent_landing.nav_features")}
+              </span>
+            </Link>
+            <Link href="/advisors/how-to-use">
+              <span className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
+                {t("agent_landing.nav_howto")}
+              </span>
+            </Link>
             <Link href="/advisors/pricing">
               <span className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
                 {t("agent_landing.nav_pricing")}
@@ -135,12 +139,16 @@ export default function AgentLanding() {
         {/* The same links the lg bar carries, for everyone below lg. Without this
            row a phone has no route to the price list or the playground. */}
         <div className="lg:hidden flex items-center gap-1 h-10 px-4 sm:px-10 border-t border-[var(--color-border-light)] overflow-x-auto">
-          <a
-            href="#what-you-get"
-            className="shrink-0 px-1.5 py-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors"
-          >
-            {t("agent_landing.nav_what")}
-          </a>
+          <Link href="/advisors/features">
+            <span className="shrink-0 px-1.5 py-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
+              {t("agent_landing.nav_features")}
+            </span>
+          </Link>
+          <Link href="/advisors/how-to-use">
+            <span className="shrink-0 px-1.5 py-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
+              {t("agent_landing.nav_howto")}
+            </span>
+          </Link>
           <Link href="/advisors/pricing">
             <span className="shrink-0 px-1.5 py-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
               {t("agent_landing.nav_pricing")}
@@ -338,6 +346,11 @@ export default function AgentLanding() {
               );
             })}
           </div>
+          <Link href="/advisors/features">
+            <span className="self-start inline-flex min-h-11 items-center gap-2 text-base font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">
+              {t("agent_landing.see_all_features")} <ArrowRight className="w-4 h-4" />
+            </span>
+          </Link>
         </div>
       </section>
 

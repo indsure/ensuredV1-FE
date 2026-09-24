@@ -33,6 +33,9 @@ export function enterPlayground(): void {
 export function exitPlayground(): void {
   try {
     window.sessionStorage.removeItem(PLAYGROUND_KEY);
+    // The guided tour's position (lib/playground/tour.ts). Cleared here, not in
+    // tour.ts, so every way out of the demo ends the tour too.
+    window.sessionStorage.removeItem("indsure_playground_tour");
   } catch {
     /* ignore */
   }
