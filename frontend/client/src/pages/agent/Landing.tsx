@@ -77,7 +77,7 @@ export default function AgentLanding() {
       <nav className="sticky top-0 z-50 bg-white border-b border-[var(--color-border-light)]">
         <div className="h-14 flex items-center justify-between px-4 sm:px-10 gap-2 sm:gap-4">
           <div className="flex items-center gap-5 min-w-0">
-            <Link href="/agent">
+            <Link href="/" aria-label="IndSure home">
               <img src="/logo.png" alt="IndSure" className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity" />
             </Link>
             <span className="hidden md:inline-flex px-2.5 py-1 rounded-lg bg-[#EAF3F1] text-sm font-semibold text-[#0F766E]">
