@@ -57,7 +57,10 @@ export function Footer() {
           <div className="grid grid-cols-2 lg:grid-cols-12 gap-y-10 gap-x-8 mb-10">
 
             {/* Brand */}
-            <div className="col-span-2 lg:col-span-4 pr-4">
+            {/* data-nosnippet: Google quoted "IndSure. We do not sell insurance..."
+                as the snippet for /calculator because this was the only text
+                on the page naming the brand. Same for the disclaimer below. */}
+            <div className="col-span-2 lg:col-span-4 pr-4" data-nosnippet>
               <Link href="/">
                 <span className="font-serif text-3xl font-bold tracking-tighter inline-flex items-center mb-4 cursor-pointer text-[var(--color-gold-500)] hover:text-white transition-colors">
                   IndSure.
@@ -112,7 +115,7 @@ export function Footer() {
           </div>
 
           {/* Bottom bar */}
-          <div className="pt-6 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row md:items-end justify-between gap-5 text-sm text-[var(--color-white-muted)]">
+          <div data-nosnippet className="pt-6 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row md:items-end justify-between gap-5 text-sm text-[var(--color-white-muted)]">
             <div className="flex flex-col gap-1">
               <p>© {currentYear} Indsuretech Intelligence Private Limited</p>
               <p className="opacity-60">CIN: U62099MR2026PTC473468</p>

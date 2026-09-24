@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { PolicyCheckerLanding } from "@/components/PolicyCheckerLanding";
 import { PolicyUploadGate } from "@/components/PolicyUploadGate";
 import { Section, SectionHeading } from "@/components/marketing";
@@ -15,12 +16,7 @@ import { Reveal } from "@/components/motion";
 // met was a file picker for a decision they had not made yet. It now closes the
 // page, after the decode has shown them what they get for it.
 export default function PolicyChecker() {
-  useSEO({
-    title: "Health Insurance Policy Checker: Room Rent, Co-pay & Gaps | IndSure",
-    description: "Upload your health or mediclaim policy PDF and see your room-rent cap, co-pay, sub-limits, waiting periods, and coverage gaps explained in plain language. Free and private, no sales calls.",
-    keywords: "health insurance policy checker, mediclaim analyzer India, room rent cap, co-pay, sub-limits, waiting period, health insurance gaps",
-    canonical: "/policychecker",
-  });
+  useSEO(seoFor("/policychecker"));
 
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] flex flex-col font-sans text-[var(--color-navy-900)]">

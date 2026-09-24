@@ -99,12 +99,15 @@ export function PolicyCheckerLanding() {
 
         <div className="container-editorial relative grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)] lg:items-center">
           <Reveal className="flex flex-col items-start gap-6">
-            <Eyebrow>Policy decoder</Eyebrow>
-
-            <h1 className="font-serif font-bold tracking-[-0.035em] leading-[1.05] text-4xl sm:text-6xl text-[var(--color-navy-900)]">
-              The fine print,
-              <br />
-              <span className="italic text-[var(--color-teal-600)]">translated.</span>
+            {/* The eyebrow sits INSIDE the h1 so the heading carries the words
+                people search for; the slogan alone told Google nothing. */}
+            <h1 className="flex flex-col items-start gap-6">
+              <Eyebrow className="font-sans">Health insurance policy checker</Eyebrow>
+              <span className="block font-serif font-bold tracking-[-0.035em] leading-[1.05] text-4xl sm:text-6xl text-[var(--color-navy-900)]">
+                The fine print,
+                <br />
+                <span className="italic text-[var(--color-teal-600)]">translated.</span>
+              </span>
             </h1>
 
             <p className="max-w-xl text-lg leading-relaxed text-[var(--color-text-secondary)]">

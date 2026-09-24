@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { useLanguage, LanguageToggle } from '@/i18n/LanguageContext';
 import { ShieldCheck, Eye, EyeOff, FolderKanban, MessageCircle, Scale } from 'lucide-react';
 import { preloadAgentRoutes } from '@/pages/agent/lazyRoutes';
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 /**
  * Where to land after a successful sign-in.
@@ -40,6 +42,7 @@ export default function LoginNew() {
   // screen is about to be an advisor, and paying for the odd bounce is worth a
   // workspace that is ready the moment they land.
   useEffect(() => { preloadAgentRoutes() }, []);
+  useSEO(seoFor("/agent/login"));
 
   const [, setLocation] = useLocation();
   const search = useSearch();

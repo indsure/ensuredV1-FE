@@ -7,6 +7,7 @@ import {
 import { Reveal, Stagger, RevealItem } from "@/components/motion";
 import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
 import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 /* ============================================================
    HOW IT WORKS
@@ -116,12 +117,7 @@ const faqs = [
 ];
 
 export default function HowItWorks() {
-  useSEO({
-    title: "How IndSure Reads Your Policy: Upload, Decipher, Audit, Report | IndSure",
-    description:
-      "Four steps from a policy PDF to a plain-language verdict. See what the engine reads, what it checks against, and what you get back. Free to start, no commission, no sales calls.",
-    canonical: "https://indsure.in/how-it-works",
-  });
+  useSEO(seoFor("/how-it-works"));
 
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
@@ -140,12 +136,15 @@ export default function HowItWorks() {
           </div>
 
           <Reveal className="container-editorial relative mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
-            <Eyebrow>How it works</Eyebrow>
-
-            <h1 className="font-serif font-bold tracking-[-0.035em] leading-[1.05] text-4xl sm:text-6xl lg:text-7xl text-[var(--color-navy-900)]">
-              From chaos
-              <br />
-              to <span className="italic text-[var(--color-teal-600)]">clarity.</span>
+            {/* The eyebrow sits INSIDE the h1 so the heading carries the words
+                people search for; the slogan alone told Google nothing. */}
+            <h1 className="flex flex-col items-center gap-6">
+              <Eyebrow className="font-sans">How IndSure works</Eyebrow>
+              <span className="block font-serif font-bold tracking-[-0.035em] leading-[1.05] text-4xl sm:text-6xl lg:text-7xl text-[var(--color-navy-900)]">
+                From chaos
+                <br />
+                to <span className="italic text-[var(--color-teal-600)]">clarity.</span>
+              </span>
             </h1>
 
             {/* This used to read "No forms. No sales calls." while step 01 asks

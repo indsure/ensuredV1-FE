@@ -5,6 +5,7 @@ import { Database, Cpu, Share2, ShieldOff, ArrowRight, Quote } from "lucide-reac
 import { AnimatedNumber, Reveal, Stagger, RevealItem } from "@/components/motion";
 import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
 import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
@@ -108,12 +109,7 @@ export default function WhyIndSure() {
 
   const stats = buildStats(counts);
 
-  useSEO({
-    title: "Why IndSure: The Catalog, The Engine, The Business Model | IndSure",
-    description:
-      "Everyone promises unbiased insurance advice. IndSure can prove it: a wording-level catalog of health plans, a deterministic engine that reads clause by clause, and a licence that makes commission impossible.",
-    canonical: "https://indsure.in/why-indsure",
-  });
+  useSEO(seoFor("/why-indsure"));
 
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">

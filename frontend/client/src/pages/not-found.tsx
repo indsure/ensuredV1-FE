@@ -1,12 +1,20 @@
 import { Link } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { useSEO } from "@/hooks/use-seo";
 
 // The catch-all route. It used to ship developer scaffolding ("Did you forget to
 // add the page to the router?") with no header, footer or way back. A visitor who
 // lands here followed a broken or mistyped link, so give them the site's own
 // navigation plus the three places most people were actually trying to reach.
 export default function NotFound() {
+  // The server already answers unknown paths with a 404 status (vercel.json);
+  // this covers in-app navigation to a dead link.
+  useSEO({
+    title: "Page not found | IndSure",
+    description: "This page does not exist on IndSure.",
+    noindex: true,
+  });
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header />

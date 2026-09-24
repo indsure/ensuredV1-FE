@@ -24,6 +24,8 @@ export default function AnalyzePage() {
     description: "Choose your insurance type: Health, Life, or Vehicle. Upload your policy PDF and get instant analysis of your coverage, gaps, and recommendations.",
     keywords: "insurance analyzer, health insurance analyzer, life insurance analyzer, vehicle insurance analyzer, policy analyzer",
     canonical: "/analyze",
+    // Superseded by /policychecker, /life, /term and /vehicle; not in the sitemap.
+    noindex: true,
   });
 
   const insuranceTypes = [

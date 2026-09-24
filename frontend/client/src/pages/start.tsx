@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { PolicyUploadGate } from "@/components/PolicyUploadGate";
 import { FileText, Search, Bell, ShieldCheck, Lock, IndianRupee } from "lucide-react";
 
@@ -46,12 +47,7 @@ const trust = [
 ];
 
 export default function Start() {
-  useSEO({
-    title: "Review Your Insurance. Make Your Portfolio Today | IndSure",
-    // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
-    description:
-      "Upload your health, term life or vehicle policy and see what it actually covers in plain language. Keep every policy in one portfolio with renewal reminders. Free forever for one policy of each type, no card needed.",
-  });
+  useSEO(seoFor("/start"));
 
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">

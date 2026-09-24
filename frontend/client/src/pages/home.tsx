@@ -9,6 +9,7 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { AnimatedNumber, GrowBar, Reveal } from "@/components/motion";
 import { calculatorIllustration } from "@/lib/calculator-illustration";
 
@@ -844,12 +845,7 @@ function HowItWorks() {
 /* ─────────────── PAGE ─────────────── */
 
 export default function Home() {
-  useSEO({
-    title: "All Your Insurance in One Place, in Plain Language | IndSure India",
-    description:
-      "IndSure keeps every policy your family owns — health, term life, car, travel — in one private dashboard. See what each really covers, what it will not pay, and what renews next. Free to start, no sales calls.",
-    canonical: "https://indsure.in/",
-  });
+  useSEO(seoFor("/"));
 
   return (
     <div className="bg-[var(--color-cream-main)] text-[var(--color-text-main)] font-sans selection:bg-[var(--color-cta)] selection:text-white min-h-screen flex flex-col overflow-x-hidden">

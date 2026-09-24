@@ -20,6 +20,8 @@ import {
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { useState } from "react";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 const visionGoals = [
   {
@@ -101,6 +103,7 @@ const visionMilestones = [
 ];
 
 export default function Vision() {
+  useSEO(seoFor("/vision"));
   const [hoveredGoal, setHoveredGoal] = useState<number | null>(null);
 
   return (

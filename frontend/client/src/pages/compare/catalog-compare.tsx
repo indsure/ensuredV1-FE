@@ -9,6 +9,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { Eyebrow } from "@/components/marketing";
 import { DiffRows } from "@/components/marketing/showcase";
 import { LifeInsuranceComparer } from "@/components/LifeInsuranceComparer";
@@ -237,12 +238,7 @@ export default function PublicCatalogCompare() {
 }
 
 function HealthCatalogCompare() {
-  useSEO({
-    title: "Compare Health Insurance Policies Side-by-Side | IndSure",
-    description: "Compare real health insurance policy wordings side by side — room limits, waiting periods, co-pays, exclusions. Up to 4 plans, instant, free, no signup.",
-    keywords: "compare health insurance, insurance comparison tool, compare insurance policies, health insurance comparison India, side-by-side insurance comparison",
-    canonical: "/compare",
-  });
+  useSEO(seoFor("/compare"));
 
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);

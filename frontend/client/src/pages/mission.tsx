@@ -3,6 +3,8 @@ import { motion, useScroll, useTransform } from "motion/react";
 import { Target, Users, Zap, Shield, Eye, Lock, ArrowRight, Heart } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 // --- Components ---
 
@@ -36,6 +38,7 @@ const InfiniteMarquee = () => {
 };
 
 export default function Mission() {
+  useSEO(seoFor("/mission"));
   const { scrollYProgress } = useScroll();
   const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
 

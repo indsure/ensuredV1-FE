@@ -3,6 +3,8 @@
 // <Route path="/cookie-policy" component={CookiePolicy} />
 
 import { useEffect } from "react";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 const LAST_UPDATED = "25 March 2025";
 
@@ -75,8 +77,8 @@ const sessionStorageItems = [
 export default function CookiePolicy() {
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Cookie Policy — IndSure";
   }, []);
+  useSEO(seoFor("/cookie-policy"));
 
   return (
     <div className="min-h-screen bg-white">

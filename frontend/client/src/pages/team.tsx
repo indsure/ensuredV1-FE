@@ -4,8 +4,11 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Link } from "wouter";
 import { Linkedin } from "lucide-react";
 import { FOUNDERS as founders, displayName } from "@/data/team";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 export default function Team() {
+  useSEO(seoFor("/team"));
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] font-sans text-[var(--color-text-main)] flex flex-col">
       <Header />

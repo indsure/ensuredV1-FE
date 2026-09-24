@@ -9,6 +9,8 @@
 // 4. GRIEVANCE_EMAIL — dedicated email (e.g. grievance@indsure.in) — create this mailbox
 
 import { useEffect, useState } from "react";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { apiFetch } from "@/lib/api";
 
 // ─── FILL THESE IN BEFORE GOING LIVE ────────────────────────────────────────
@@ -54,8 +56,8 @@ export default function GrievanceOfficer() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Grievance Officer — IndSure";
   }, []);
+  useSEO(seoFor("/grievance"));
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof FormState, string>> = {};

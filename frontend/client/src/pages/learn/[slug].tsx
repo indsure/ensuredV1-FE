@@ -5,6 +5,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BookOpen, AlertTriangle, Lightbulb } from "lucide-react";
 import { useSEO } from "@/hooks/use-seo";
+import { clauseTitle, metaDescription } from "@/data/seo-pages";
 import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
 import { clauseBySlug, CLAUSE_LIBRARY } from "@/data/clause-library";
 
@@ -15,9 +16,9 @@ export default function ClauseDetail() {
   const clause = clauseBySlug(params?.slug || "");
 
   useSEO({
-    title: clause ? `What is a ${clause.term}? Meaning, Examples & Mistakes | IndSure` : "Insurance Clause Library | IndSure",
+    title: clause ? clauseTitle(clause.term) : "Insurance Clause Library | IndSure",
     description: clause
-      ? clause.shortAnswer.slice(0, 300)
+      ? metaDescription(clause.shortAnswer)
       : "Plain-language explanations of Indian insurance clauses, waiting periods, and benefits.",
     keywords: clause ? [clause.term, ...(clause.aka || [])].join(", ") : undefined,
     canonical: clause ? `/learn/${clause.slug}` : "/learn",
@@ -81,7 +82,7 @@ export default function ClauseDetail() {
           <p className="text-xs uppercase tracking-widest text-[var(--color-green-primary)] font-semibold mb-3">
             {clause.category}
           </p>
-          <h1 className="text-3xl md:text-4xl font-serif font-bold mb-4">What is a {clause.term}?</h1>
+          <h1 className="text-3xl md:text-4xl font-serif font-bold mb-4">{clause.term}, explained</h1>
 
           {/* Answer-first block */}
           <div className="bg-white rounded-xl border border-[var(--color-border-light)] border-l-4 border-l-[var(--color-green-primary)] p-5 mb-8">

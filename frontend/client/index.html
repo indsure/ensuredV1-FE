@@ -3,25 +3,26 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta name="robots" content="index, follow" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
   <!-- Default SEO - Will be overridden by useSEO hook on each page -->
-  <title>Understand Any Insurance Policy in Plain Language | IndSure India</title>
+  <title>IndSure: Your Family's Insurance, Explained in One Place</title>
   <meta name="description"
-    content="IndSure decodes your health, term life, or motor insurance policy. See your limits, co-pay, waiting periods, and coverage gaps in plain language in about 60 seconds. Free, private, no sales calls." />
+    content="IndSure keeps your health, term life and motor policies in one private dashboard and explains what each covers and won't pay. Free to start, no sales calls." />
   <meta name="keywords"
     content="insurance policy checker India, health insurance analyzer, room rent cap, co-pay, waiting period, mediclaim explained, term insurance, car insurance IDV, compare insurance policy" />
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://indsure.in/" />
-  <meta property="og:title" content="Understand Any Insurance Policy in Plain Language | IndSure India" />
+  <meta property="og:title" content="IndSure: Your Family's Insurance, Explained in One Place" />
   <meta property="og:description"
-    content="IndSure decodes your health, term life, or motor insurance policy. See your limits, co-pay, waiting periods, and coverage gaps in plain language in about 60 seconds. Free, private, no sales calls." />
+    content="IndSure keeps your health, term life and motor policies in one private dashboard and explains what each covers and won't pay. Free to start, no sales calls." />
   <meta property="og:image" content="https://indsure.in/opengraph.jpg" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="IndSure — understand any insurance policy in plain language." />
+  <meta property="og:image:alt" content="IndSure: your family's insurance, explained in one place." />
   <meta property="og:site_name" content="IndSure" />
   <meta property="og:locale" content="en_IN" />
 
@@ -29,11 +30,11 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@IndSure_Ind" />
   <meta name="twitter:url" content="https://indsure.in/" />
-  <meta name="twitter:title" content="Understand Any Insurance Policy in Plain Language | IndSure India" />
+  <meta name="twitter:title" content="IndSure: Your Family's Insurance, Explained in One Place" />
   <meta name="twitter:description"
-    content="IndSure decodes your health, term life, or motor insurance policy. See your limits, co-pay, waiting periods, and coverage gaps in plain language in about 60 seconds. Free, private, no sales calls." />
+    content="IndSure keeps your health, term life and motor policies in one private dashboard and explains what each covers and won't pay. Free to start, no sales calls." />
   <meta name="twitter:image" content="https://indsure.in/opengraph.jpg" />
-  <meta name="twitter:image:alt" content="IndSure — understand any insurance policy in plain language." />
+  <meta name="twitter:image:alt" content="IndSure: your family's insurance, explained in one place." />
 
   <!-- Canonical -->
   <link rel="canonical" href="https://indsure.in/" />
@@ -47,40 +48,101 @@
   <!-- Performance hints -->
   <meta http-equiv="x-dns-prefetch-control" content="on" />
 
-  <!-- Static structured data (visible to non-JS crawlers incl. AI answer engines) -->
+  <!-- Site-wide structured data, one graph. Every prerendered page inherits it
+       from this template, so no page component may inject a second copy of
+       these types. The old SearchAction was dropped: Google retired the
+       sitelinks search box in November 2024. No WebApplication either: Google
+       treats it as a software-app rich result and flags it invalid without
+       ratings or reviews, on every page that carries it. -->
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "IndSure",
-    "alternateName": "IndSure Insurance Policy Analyzer",
-    "url": "https://indsure.in",
-    "logo": "https://indsure.in/favicon.png",
-    "description": "IndSure reads your Indian health, term life, and motor insurance policy PDF and explains your coverage limits, room-rent cap, co-pay, waiting periods, and gaps in plain language. Free and private.",
-    "areaServed": "IN",
-    "sameAs": [
-      "https://www.instagram.com/indsure.in/",
-      "https://x.com/IndSure_Ind"
-    ],
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "contactType": "Customer Service",
-      "email": "support@indsure.in"
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://indsure.in/#org",
+      "name": "IndSure",
+      "alternateName": "IndSure India",
+      "url": "https://indsure.in/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://indsure.in/logo-512.png",
+        "width": 512,
+        "height": 512
+      },
+      "description": "IndSure keeps your family's health, term life and motor insurance policies in one private dashboard and explains what each covers and won't pay, in plain language. No commissions, no sales calls.",
+      "areaServed": "IN",
+      "email": "support@indsure.in",
+      "sameAs": [
+        "https://www.instagram.com/indsure.in/",
+        "https://x.com/IndSure_Ind",
+        "https://www.linkedin.com/company/indsure"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://indsure.in/#website",
+      "name": "IndSure",
+      "alternateName": [
+        "IndSure India",
+        "indsure.in"
+      ],
+      "url": "https://indsure.in/",
+      "publisher": {
+        "@id": "https://indsure.in/#org"
+      },
+      "inLanguage": "en-IN"
+    },
+    {
+      "@type": "ItemList",
+      "name": "IndSure main navigation",
+      "itemListElement": [
+        {
+          "@type": "SiteNavigationElement",
+          "position": 1,
+          "name": "Health policy checker",
+          "url": "https://indsure.in/policychecker"
+        },
+        {
+          "@type": "SiteNavigationElement",
+          "position": 2,
+          "name": "How it works",
+          "url": "https://indsure.in/how-it-works"
+        },
+        {
+          "@type": "SiteNavigationElement",
+          "position": 3,
+          "name": "Cover calculator",
+          "url": "https://indsure.in/calculator"
+        },
+        {
+          "@type": "SiteNavigationElement",
+          "position": 4,
+          "name": "Compare policies",
+          "url": "https://indsure.in/compare"
+        },
+        {
+          "@type": "SiteNavigationElement",
+          "position": 5,
+          "name": "Pricing",
+          "url": "https://indsure.in/pricing"
+        },
+        {
+          "@type": "SiteNavigationElement",
+          "position": 6,
+          "name": "Clause library",
+          "url": "https://indsure.in/learn"
+        },
+        {
+          "@type": "SiteNavigationElement",
+          "position": 7,
+          "name": "Advisor Portal",
+          "url": "https://indsure.in/agent"
+        }
+      ]
     }
-  }
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "IndSure",
-    "url": "https://indsure.in",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": "https://indsure.in/blog?q={search_term_string}",
-      "query-input": "required name=search_term_string"
-    }
-  }
+  ]
+}
   </script>
 </head>
 

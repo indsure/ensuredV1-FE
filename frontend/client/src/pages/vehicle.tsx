@@ -27,6 +27,7 @@ import { useDropzone } from "react-dropzone";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
 import { loadSampleReport, mockReportVehicle } from "@/lib/mock-data";
 
@@ -34,12 +35,7 @@ export default function VehiclePage() {
   const [, setLocation] = useLocation();
 
   // SEO
-  useSEO({
-    title: "Know Your Vehicle Coverage Before Claim Time | Vehicle Insurance Analyzer | IndSure",
-    description: "Upload your car or bike policy. Instantly see if you're third-party or comprehensive, your actual deductibles, IDV, no-claim bonus impact, and what a ₹50k or ₹2L accident will really cost you.",
-    keywords: "vehicle insurance analyzer, car insurance checker, motor insurance policy checker, vehicle insurance explained, comprehensive vs third party, IDV calculator, NCB impact",
-    canonical: "/vehicle",
-  });
+  useSEO(seoFor("/vehicle"));
 
   // FAQ Schema
   const faqData = createFAQSchema([

@@ -4,6 +4,8 @@
 // Update the Footer.tsx links from href="#" to href="/terms"
 
 import { useEffect } from "react";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 const LAST_UPDATED = "25 March 2025";
 const EFFECTIVE_DATE = "25 March 2025";
@@ -11,8 +13,8 @@ const EFFECTIVE_DATE = "25 March 2025";
 export default function TermsOfService() {
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Terms of Service — IndSure";
   }, []);
+  useSEO(seoFor("/terms"));
 
   return (
     <div className="min-h-screen bg-white">

@@ -2,8 +2,281 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/blog/1",
+      "destination": "/blog/health-insurance-sufficiency-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/2",
+      "destination": "/blog/top-5-health-insurance-gaps",
+      "permanent": true
+    },
+    {
+      "source": "/blog/3",
+      "destination": "/blog/right-sum-insured-for-your-city",
+      "permanent": true
+    },
+    {
+      "source": "/blog/4",
+      "destination": "/blog/room-rent-caps-hidden-cost",
+      "permanent": true
+    },
+    {
+      "source": "/blog/5",
+      "destination": "/blog/pre-existing-disease-waiting-periods",
+      "permanent": true
+    },
+    {
+      "source": "/blog/6",
+      "destination": "/blog/family-floater-vs-individual-policies",
+      "permanent": true
+    },
+    {
+      "source": "/blog/7",
+      "destination": "/blog/restoration-benefit-explained",
+      "permanent": true
+    },
+    {
+      "source": "/blog/8",
+      "destination": "/blog/cashless-vs-reimbursement-claims",
+      "permanent": true
+    },
+    {
+      "source": "/blog/9",
+      "destination": "/blog/what-is-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/10",
+      "destination": "/blog/what-is-life-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/11",
+      "destination": "/blog/third-party-vs-comprehensive-car-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/12",
+      "destination": "/blog/home-insurance-building-vs-contents",
+      "permanent": true
+    },
+    {
+      "source": "/blog/13",
+      "destination": "/blog/travel-insurance-domestic-vs-international",
+      "permanent": true
+    },
+    {
+      "source": "/blog/14",
+      "destination": "/blog/what-is-general-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/15",
+      "destination": "/blog/health-insurance-vs-mediclaim",
+      "permanent": true
+    },
+    {
+      "source": "/blog/16",
+      "destination": "/blog/term-life-insurance-basics",
+      "permanent": true
+    },
+    {
+      "source": "/blog/17",
+      "destination": "/blog/property-insurance-explained",
+      "permanent": true
+    },
+    {
+      "source": "/blog/18",
+      "destination": "/blog/personal-accident-insurance-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/19",
+      "destination": "/blog/business-insurance-101",
+      "permanent": true
+    },
+    {
+      "source": "/blog/20",
+      "destination": "/blog/liability-insurance-explained",
+      "permanent": true
+    },
+    {
+      "source": "/blog/21",
+      "destination": "/blog/workers-compensation-guide",
+      "permanent": true
+    },
+    {
+      "source": "/blog/22",
+      "destination": "/blog/marine-cargo-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/23",
+      "destination": "/blog/cyber-insurance-explained",
+      "permanent": true
+    },
+    {
+      "source": "/blog/24",
+      "destination": "/blog/what-is-reinsurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/25",
+      "destination": "/blog/retirement-pension-plans",
+      "permanent": true
+    },
+    {
+      "source": "/blog/26",
+      "destination": "/blog/agricultural-crop-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/27",
+      "destination": "/blog/micro-insurance-explained",
+      "permanent": true
+    },
+    {
+      "source": "/blog/28",
+      "destination": "/blog/top-types-of-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/29",
+      "destination": "/blog/claim-health-insurance-for-existing-disease",
+      "permanent": true
+    },
+    {
+      "source": "/blog/30",
+      "destination": "/blog/missed-insurance-premium-payment",
+      "permanent": true
+    },
+    {
+      "source": "/blog/31",
+      "destination": "/blog/is-normal-delivery-covered-by-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/32",
+      "destination": "/blog/does-car-insurance-cover-flood-damage",
+      "permanent": true
+    },
+    {
+      "source": "/blog/33",
+      "destination": "/blog/can-i-have-two-health-insurance-policies",
+      "permanent": true
+    },
+    {
+      "source": "/blog/34",
+      "destination": "/blog/is-ambulance-covered-by-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/35",
+      "destination": "/blog/what-is-not-covered-in-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/36",
+      "destination": "/blog/how-many-health-insurance-claims-per-year",
+      "permanent": true
+    },
+    {
+      "source": "/blog/37",
+      "destination": "/blog/health-insurance-claim-rejected-what-to-do",
+      "permanent": true
+    },
+    {
+      "source": "/blog/38",
+      "destination": "/blog/how-to-file-a-cashless-claim-step-by-step",
+      "permanent": true
+    },
+    {
+      "source": "/blog/39",
+      "destination": "/blog/how-to-port-health-insurance-without-losing-benefits",
+      "permanent": true
+    },
+    {
+      "source": "/blog/40",
+      "destination": "/blog/health-insurance-for-parents-senior-citizens",
+      "permanent": true
+    },
+    {
+      "source": "/blog/41",
+      "destination": "/blog/how-much-health-cover-do-you-need-by-life-stage",
+      "permanent": true
+    },
+    {
+      "source": "/blog/42",
+      "destination": "/blog/term-vs-whole-life-vs-endowment",
+      "permanent": true
+    },
+    {
+      "source": "/blog/43",
+      "destination": "/blog/best-age-to-buy-health-and-term-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/44",
+      "destination": "/blog/cover-size-5-lakh-vs-10-lakh-vs-1-crore",
+      "permanent": true
+    },
+    {
+      "source": "/blog/45",
+      "destination": "/blog/individual-vs-group-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/46",
+      "destination": "/blog/top-up-vs-super-top-up-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/47",
+      "destination": "/blog/common-hidden-clauses-in-indian-health-policies",
+      "permanent": true
+    },
+    {
+      "source": "/blog/48",
+      "destination": "/blog/why-insurers-reject-claims-how-to-claim-proof",
+      "permanent": true
+    },
+    {
+      "source": "/blog/49",
+      "destination": "/blog/how-to-read-a-policy-wording-in-10-minutes",
+      "permanent": true
+    },
+    {
+      "source": "/blog/50",
+      "destination": "/blog/health-insurance-myths-that-cost-you-money",
+      "permanent": true
+    },
+    {
+      "source": "/blog/51",
+      "destination": "/blog/irdai-rule-changes-what-they-mean-for-your-policy",
+      "permanent": true
+    },
+    {
+      "source": "/blog/52",
+      "destination": "/blog/tax-benefits-health-life-insurance-80d-80c",
+      "permanent": true
+    },
+    {
+      "source": "/blog/53",
+      "destination": "/blog/buying-insurance-before-or-after-a-diagnosis",
+      "permanent": true
+    }
+  ],
   "rewrites": [
-    { "source": "/a/:slug", "destination": "/api/advisor-page?slug=:slug" },
-    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+    {
+      "source": "/a/:slug",
+      "destination": "/api/advisor-page?slug=:slug"
+    },
+    {
+      "source": "/(processing|report|shared|analyze|calculator/report|compare/report|compare/sample|agent|admin|account|login|signup|forgot-password|reset-password|app|hospitals)(/.*)?",
+      "destination": "/app-shell.html"
+    }
   ]
 }

@@ -4,20 +4,14 @@ import { Footer } from "@/components/Footer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ArrowRight } from "lucide-react";
 import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { SchemaMarkup } from "@/components/SEO";
 import { CLAUSE_LIBRARY } from "@/data/clause-library";
 
 const SITE = "https://indsure.in";
 
 export default function LearnHub() {
-  useSEO({
-    title: "Insurance Clause Library: Every Term Explained Plainly | IndSure",
-    description:
-      "A plain-language library of Indian insurance clauses, waiting periods, sub-limits, and benefits. Understand room-rent caps, co-pay, PED, restoration, IDV, and more before you claim.",
-    keywords:
-      "insurance clause library, insurance terms explained India, room rent cap, co-pay, sub-limit, waiting period, restoration benefit, IDV",
-    canonical: "/learn",
-  });
+  useSEO(seoFor("/learn"));
 
   // Group entries by their category label, preserving first-seen order.
   const groups: { name: string; items: typeof CLAUSE_LIBRARY }[] = [];

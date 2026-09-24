@@ -22,6 +22,7 @@ import { useDropzone } from "react-dropzone";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
 import { loadSampleReport, mockReportLife } from "@/lib/mock-data";
 
@@ -130,12 +131,7 @@ export default function TermPage() {
   const [, setLocation] = useLocation();
 
   // SEO
-  useSEO({
-    title: "Understand Your Term Life Insurance Policy | Pure Protection Analyzer | IndSure",
-    description: "Upload your term life insurance PDF. Instantly see if your sum assured is enough for your family's future, understand claim conditions, exclusions, and maximize coverage per rupee. Pure protection, maximum affordability.",
-    keywords: "term life insurance analyzer, term insurance policy checker, term life insurance explained, pure protection insurance, affordable term life, term insurance calculator",
-    canonical: "/term",
-  });
+  useSEO(seoFor("/term"));
 
   // FAQ Schema - Term-specific
   const faqList = [

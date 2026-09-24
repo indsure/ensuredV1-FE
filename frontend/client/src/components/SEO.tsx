@@ -9,6 +9,8 @@ export function SchemaMarkup({ type, data }: SchemaMarkupProps) {
   useEffect(() => {
     const script = document.createElement("script");
     script.type = "application/ld+json";
+    // The prerender (scripts/prerender.mjs) gives its copy of this type the same
+    // id, so the removal below replaces it rather than leaving two copies.
     script.id = `schema-${type.toLowerCase()}`;
     
     const schema = {
@@ -37,23 +39,6 @@ export function SchemaMarkup({ type, data }: SchemaMarkupProps) {
   
   return null;
 }
-
-// Organization Schema (for homepage)
-export const organizationSchema = {
-  name: "IndSure",
-  description: "AI-powered insurance policy analyzer for India. Decode your health, term life, and vehicle insurance policies in 60 seconds. Free, private, no sales.",
-  url: "https://indsure.in",
-  logo: "https://indsure.in/favicon.png",
-  sameAs: [
-    "https://www.instagram.com/indsure.in/",
-    "https://x.com/IndSure_Ind",
-  ],
-  contactPoint: {
-    "@type": "ContactPoint",
-    contactType: "Customer Service",
-    email: "support@indsure.in",
-  },
-};
 
 // FAQ Schema helper
 export function createFAQSchema(faqs: Array<{ question: string; answer: string }>) {

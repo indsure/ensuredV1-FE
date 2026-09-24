@@ -16,6 +16,8 @@ import { toast } from "@/hooks/use-toast";
 import { Info } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { Eyebrow } from "@/components/marketing";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 // Local interfaces using the shared InsurerCount
 interface CityResult {
@@ -67,6 +69,7 @@ const CollapsibleSection = ({ title, children, className = "", titleClassName = 
 };
 
 export default function HospitalFilter() {
+  useSEO(seoFor("/find-provider"));
     const [state, setState] = useState("");
     const [city, setCity] = useState("");
     const [pincode, setPincode] = useState("");

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { Link, useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
@@ -36,8 +38,8 @@ export default function LoginPublic() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Sign in | IndSure";
   }, []);
+  useSEO(seoFor("/login"));
 
   /** Ten digits after stripping punctuation and any +91 / leading 0 = a mobile.
    *  Anything containing "@" is an email. Everything else falls through to the

@@ -14,6 +14,7 @@
 
 import { build } from "esbuild";
 import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,6 +46,7 @@ async function loadBlogData() {
       `export { POST_SLUGS, slugFor } from "../client/src/pages/blog/slugs.ts";`,
       `export { FOUNDERS, authorForId, displayName } from "../client/src/data/team.ts";`,
       `export { CLAUSE_LIBRARY } from "../client/src/data/clause-library.ts";`,
+      `export { PAGE_SEO, clauseTitle, blogTitle, blogDescription, metaDescription, TITLE_MAX } from "../client/src/data/seo-pages.ts";`,
     ].join("\n"),
   );
   const outfile = join(__dirname, ".blog-bundle.mjs");
@@ -73,9 +75,13 @@ const escText = (s = "") =>
 
 function applyHead(
   template,
-  { title, description, canonical, ogType = "website", image = "/opengraph.jpg", imageAlt },
+  { title, description, canonical, ogType = "website", image = "/opengraph.jpg", imageAlt, noindex = false },
 ) {
   let html = template;
+  html = html.replace(
+    /(<meta name="robots" content=")[\s\S]*?("\s*\/>)/,
+    `$1${noindex ? "noindex, follow" : "index, follow"}$2`,
+  );
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escText(title)}</title>`);
   // description / og:description / twitter:description
   html = html.replace(
@@ -102,11 +108,11 @@ function applyHead(
   // urls
   html = html.replace(
     /(<meta property="og:url" content=")[\s\S]*?("\s*\/>)/,
-    `$1${escAttr(canonical)}$2`,
+    `$1${escAttr(canonical || `${SITE}/`)}$2`,
   );
   html = html.replace(
     /(<meta name="twitter:url" content=")[\s\S]*?("\s*\/>)/,
-    `$1${escAttr(canonical)}$2`,
+    `$1${escAttr(canonical || `${SITE}/`)}$2`,
   );
   html = html.replace(/(<meta property="og:type" content=")[\s\S]*?("\s*\/>)/, `$1${ogType}$2`);
   // og:image / twitter:image (per-route social preview). Always rewritten so
@@ -131,10 +137,11 @@ function applyHead(
       `$1${escAttr(imageAlt)}$2`,
     );
   }
-  // canonical link
+  // canonical link (none at all for the 404 and app shells: a page that is not
+  // a page has nothing to be canonical to)
   html = html.replace(
     /(<link rel="canonical" href=")[\s\S]*?("\s*\/>)/,
-    `$1${escAttr(canonical)}$2`,
+    canonical ? `$1${escAttr(canonical)}$2` : "",
   );
   return html;
 }
@@ -142,7 +149,13 @@ function applyHead(
 function injectJsonLd(html, blocks) {
   if (!blocks.length) return html;
   const scripts = blocks
-    .map((b) => `<script type="application/ld+json">${JSON.stringify(b)}</script>`)
+    // The id matches the one SchemaMarkup (components/SEO.tsx) gives the same
+    // type, so when React mounts it replaces this block instead of adding a
+    // second copy. Search Console saw Article, FAQPage and friends twice.
+    .map(
+      (b) =>
+        `<script type="application/ld+json" id="schema-${String(b["@type"]).toLowerCase()}">${JSON.stringify(b)}</script>`,
+    )
     .join("\n  ");
   return html.replace("</head>", `  ${scripts}\n</head>`);
 }
@@ -153,10 +166,7 @@ function injectJsonLd(html, blocks) {
 // and paragraph fill the screen. <noscript> keeps the markup in the document
 // for the crawlers that need it and renders nothing for everyone else.
 function injectBody(html, bodyHtml, currentPath) {
-  if (currentPath !== undefined) {
-    html = injectJsonLd(html, [siteNavLd()]);
-    bodyHtml += navHtml(currentPath);
-  }
+  if (currentPath !== undefined) bodyHtml += navHtml(currentPath);
   return html.replace(
     /<div id="root">[\s\S]*?<\/div>/,
     `<div id="root"><noscript>${bodyHtml}</noscript></div>`,
@@ -174,16 +184,18 @@ function injectBody(html, bodyHtml, currentPath) {
 // /find-provider were reachable only from the footer.
 //
 // These are the pages we want treated as the site's primary entry points,
-// with the anchor text we want them labelled by.
+// with the anchor text we want them labelled by. The first seven match the
+// ItemList in client/index.html, in the same order.
 const SITE_NAV = [
-  { name: "Policy check", url: "/policychecker" },
-  { name: "Cover Calculator", url: "/calculator" },
+  { name: "Health policy checker", url: "/policychecker" },
+  { name: "How it works", url: "/how-it-works" },
+  { name: "Cover calculator", url: "/calculator" },
   { name: "Compare policies", url: "/compare" },
-  { name: "Advisor Portal", url: "/agent" },
-  { name: "Your Insurance Portfolio", url: "/start" },
-  { name: "Network hospital finder", url: "/find-provider" },
-  { name: "Clause library", url: "/learn" },
   { name: "Pricing", url: "/pricing" },
+  { name: "Clause library", url: "/learn" },
+  { name: "Advisor Portal", url: "/agent" },
+  { name: "Your insurance portfolio", url: "/start" },
+  { name: "Network hospital finder", url: "/find-provider" },
 ];
 
 // Rendered into every prerendered page's seed, minus a self-link.
@@ -192,22 +204,6 @@ function navHtml(currentPath) {
     .map((x) => `<li><a href="${x.url}">${escText(x.name)}</a></li>`)
     .join("");
   return `<nav aria-label="Site"><h2>IndSure</h2><ul>${items}</ul></nav>`;
-}
-
-// The only machine-readable way to say which pages we consider the main
-// sections. A weak signal by itself, and Google is free to ignore it.
-function siteNavLd() {
-  return {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: "IndSure main navigation",
-    itemListElement: SITE_NAV.map((x, i) => ({
-      "@type": "SiteNavigationElement",
-      position: i + 1,
-      name: x.name,
-      url: SITE + x.url,
-    })),
-  };
 }
 
 // BreadcrumbList JSON-LD from [{name, url}] items.
@@ -233,194 +229,222 @@ async function writeRoute(path, html) {
 
 // ---------------------------------------------------------------------------
 // Static marketing / product routes
+//
+// Title and description come from PAGE_SEO (client/src/data/seo-pages.ts), the
+// same table the pages hand to useSEO, so the raw HTML and the rendered page
+// can no longer disagree. `src` is the page's source, used for sitemap lastmod.
 // ---------------------------------------------------------------------------
 const STATIC_ROUTES = [
   {
     path: "/",
-    title: "Understand Any Insurance Policy in Plain Language | IndSure India",
-    description:
-      "IndSure decodes your health, term life, or motor insurance policy. See your limits, co-pay, waiting periods, and coverage gaps in plain language in about 60 seconds. Free, private, no sales calls.",
-    imageAlt: "IndSure — understand any insurance policy in plain language.",
-    h1: "Understand your insurance policy, in plain language",
+    src: ["pages/home.tsx"],
+    h1: "Your family's insurance, explained in one place",
     intro:
       "IndSure reads your Indian health, term life, or motor insurance policy PDF and explains what it actually covers: room-rent cap, co-pay, sub-limits, waiting periods, exclusions, and the gaps that cost people money at claim time. Free, private, and with no sales calls.",
   },
   {
     path: "/how-it-works",
-    title: "How IndSure Works: Upload, Decode, Understand | IndSure",
-    description:
-      "See how IndSure turns a confusing insurance policy PDF into a clear, plain-language breakdown of your coverage, limits, and gaps in about 60 seconds.",
+    src: ["pages/how-it-works.tsx"],
     h1: "How IndSure works",
     intro:
       "Upload your policy PDF, and IndSure reads it clause by clause, extracts the terms that matter, and shows you a plain-language verdict on your coverage, limits, and gaps.",
   },
   {
     path: "/policychecker",
-    title: "Health Insurance Policy Checker: Room Rent, Co-pay & Gaps | IndSure",
-    description:
-      "Upload your health or mediclaim policy PDF and see your room-rent cap, co-pay, sub-limits, waiting periods, and coverage gaps explained in plain language. Free and private, no sales calls.",
+    src: ["pages/policychecker.tsx", "components/PolicyCheckerLanding.tsx"],
     h1: "Health insurance policy checker",
     intro:
       "Upload a health or mediclaim policy and IndSure shows your room-rent cap, co-pay, sub-limits, pre-existing-disease waiting periods, and the coverage gaps that matter, in plain language.",
   },
   {
     path: "/life",
-    title: "Life & Term Insurance Policy Checker: Sum Assured, Riders, Claims | IndSure",
-    description:
-      "Upload your life or term insurance PDF and instantly see whether your sum assured is enough for your family, plus claim conditions, exclusions, and how your riders actually protect you. Free and private.",
+    src: ["pages/life.tsx"],
     h1: "Life and term insurance policy checker",
     intro:
       "Upload a life or term insurance policy and IndSure explains your sum assured, riders, claim conditions, and exclusions, so you know whether your family is actually protected.",
   },
   {
     path: "/term",
-    title: "Term Life Insurance Policy Checker: Sum Assured & Claims | IndSure",
-    description:
-      "Upload your term life insurance PDF and see whether your sum assured is enough, understand claim conditions and exclusions, and maximise pure protection per rupee. Free and private.",
+    src: ["pages/term.tsx"],
     h1: "Term life insurance policy checker",
     intro:
       "Upload a term life policy and IndSure explains your sum assured, claim conditions, and exclusions, so you can see whether your pure-protection cover is enough for your family.",
   },
   {
     path: "/vehicle",
-    title: "Car & Bike Insurance Checker: IDV, NCB, Deductibles | IndSure",
-    description:
-      "Upload your car or bike policy and instantly see whether you are third-party or comprehensive, your IDV, deductibles, no-claim bonus impact, and what an accident will really cost you. Free and private.",
+    src: ["pages/vehicle.tsx"],
     h1: "Vehicle insurance policy checker",
     intro:
       "Upload a car or bike policy and IndSure shows whether you are third-party or comprehensive, your IDV, deductibles, and No Claim Bonus, plus what a claim will really cost you.",
   },
   {
     path: "/compare",
-    title: "Compare Insurance Policies Side by Side, Clause by Clause | IndSure",
-    description:
-      "Compare two insurance policies side by side, clause by clause. See the real differences in coverage, limits, waiting periods, and exclusions in plain language.",
-    h1: "Compare insurance policies",
+    src: ["pages/compare/catalog-compare.tsx"],
+    h1: "Compare health insurance policies",
     intro:
-      "Put two policies side by side and IndSure compares them wording to wording, so you can see the real differences in coverage, limits, waiting periods, and exclusions.",
+      "Put up to four health plans side by side and IndSure compares them wording to wording, so you can see the real differences in room limits, waiting periods, co-pay and exclusions.",
   },
   {
     path: "/pricing",
-    title: "IndSure Pricing: Free Plan, ₹99 a Month or ₹999 a Year | IndSure",
-    description:
-      "One policy of each type checked free, forever, no card needed. Personal is ₹99 a month or ₹999 a year: 4 health policy checks, room for 12 term life and vehicle policies, renewal reminders and unlimited consultation. No commissions.",
+    src: ["pages/pricing.tsx"],
     h1: "IndSure pricing",
     intro:
-      "The free plan does not expire: one policy of each type — health, term life and vehicle — checked in plain language, with renewal reminders and PDF reports. The Personal plan is ₹99 a month or ₹999 a year, and covers 4 health policy checks, space for 12 more term life and vehicle policies, and unlimited consultation. IndSure earns zero commissions and never sells your data as a lead.",
+      "The free plan does not expire: one health policy checked in plain language and one of each other type stored, with renewal reminders and PDF reports. The Personal plan is ₹99 a month or ₹999 a year, and covers 4 health policy checks a year, room for 12 more term life and vehicle policies, and replies from our team within 2 working days. IndSure earns zero commissions and never sells your data as a lead.",
   },
   {
     path: "/start",
-    title: "Your Insurance Portfolio: Add Your First Policy Free | IndSure",
-    description:
-      "Upload your health, term life or vehicle policy and see what it actually covers in plain language. Keep every policy in one portfolio with renewal reminders. Free forever for one policy of each type, no card needed.",
-    h1: "Review your insurance. Make your portfolio today.",
+    src: ["pages/start.tsx"],
+    h1: "Start your insurance portfolio",
     intro:
-      "Add your policy, and IndSure reads the wording — room rent limits, co-pay, sub-limits and waiting periods — in plain language. Every policy sits in one portfolio with a reminder 30 days before anything expires. One policy of each type is free forever, with no card needed. IndSure earns no commission from any insurer.",
+      "Add your policy, and IndSure reads the wording (room rent limits, co-pay, sub-limits and waiting periods) in plain language. Every policy sits in one portfolio with a reminder 30 days before anything expires. One policy of each type is free forever, with no card needed. IndSure earns no commission from any insurer.",
   },
   {
     path: "/advisors/pricing",
-    title: "Pricing for Insurance Advisors: Free, ₹999, ₹9,999 | IndSure",
-    description:
-      "IndSure plans for insurance agents and advisors. Free daily tools, ₹999 a month for the full plan, ₹9,999 a year. Leads, customer portfolios, renewals and policy checks. No commissions.",
+    src: ["pages/advisors-pricing.tsx"],
     h1: "IndSure pricing for advisors",
     intro:
-      "Your daily tools — leads, customer portfolios, renewals, the cover calculator and message drafts — are free forever. The full plan is ₹999 a month or ₹9,999 a year and adds monthly policy checks, the Sach assistant and priority support. IndSure takes no commission on anything you sell.",
+      "Your daily tools (leads, renewals, the cover calculator and WhatsApp drafts) are free forever. The Agent plan is ₹1,499 a month or ₹14,990 a year and adds 12 policy checks every month. IndSure takes no commission on anything you sell.",
   },
   {
     path: "/blog",
-    title: "Insurance Guides for India: Health, Life & Motor | IndSure Blog",
-    description:
-      "Plain-language guides to Indian insurance: room-rent caps, co-pay, waiting periods, term insurance, car insurance IDV, and more. Understand your cover before you claim.",
+    src: ["pages/blog.tsx"],
     h1: "IndSure insurance guides",
     intro:
       "Plain-language guides to Indian insurance, covering health, term life, and motor: room-rent caps, co-pay, waiting periods, IDV, No Claim Bonus, and the concepts that decide your claim.",
   },
   {
     path: "/why-indsure",
-    title: "Why IndSure: Unbiased Insurance Clarity, No Sales | IndSure",
-    description:
-      "IndSure earns zero commissions and sells zero leads. We decode your insurance policy so you understand it, not so we can sell you another one.",
+    src: ["pages/why-indsure.tsx"],
     h1: "Why IndSure",
     intro:
       "IndSure earns zero commissions and sells zero leads. We decode your policy so you understand your cover, with no cold calls and no pressure to buy.",
   },
   {
-    path: "/signup",
-    title: "Create a Free IndSure Account | IndSure",
-    description:
-      "Create a free IndSure account to store every policy, get renewal reminders before they lapse, and see exactly where your family is under-covered. Private, no sales calls.",
-    h1: "Your insurance portfolio, all in one place",
-    intro:
-      "Create a free IndSure account to keep every policy in one place. Store your health, term life, and motor policies, get renewal reminders before they lapse, and see exactly where your cover falls short, in plain language.",
-    image: "/opengraph-signup.jpg",
-    imageAlt: "IndSure — all your insurance policies, organised in one clear place.",
-  },
-  {
     path: "/agent",
-    title: "Advisor Portal: The CRM Built for Insurance Agents | IndSure",
-    description:
-      "Manage clients, never miss a renewal, and decode any policy for your customers — all from one simple dashboard. IndSure is the CRM built for Indian insurance advisors.",
+    src: ["pages/agent/Landing.tsx"],
     h1: "The CRM built for insurance advisors",
     intro:
       "IndSure gives insurance advisors one simple dashboard to manage clients, track every renewal, and decode any policy for their customers in plain language. Built for how Indian agents actually work.",
     image: "/opengraph-agent.jpg",
-    imageAlt: "IndSure for advisors — the CRM built for insurance agents.",
+    imageAlt: "IndSure for advisors: the CRM built for insurance agents.",
   },
   {
     path: "/calculator",
-    title: "Cover Calculator: How Much Health Insurance You Need | IndSure",
-    description:
-      "Work out how much health cover your family actually needs, from hospital costs in your city, your ages and your obligations. No policy upload, no medical history, nothing to buy.",
-    h1: "Cover calculator",
+    src: ["pages/calculator.tsx", "components/CalculatorLanding.tsx"],
+    h1: "Health cover calculator",
     intro:
       "How much health cover your family actually needs, worked out from hospital costs in your city, your ages and your obligations. It takes two to three minutes, asks for no policy upload and no medical history, and there is nothing to buy at the end of it.",
   },
   {
     path: "/find-provider",
-    title: "Network Hospital Finder: Is Your Hospital Cashless? | IndSure",
-    description:
-      "A policy is only cashless at hospitals the insurer has a tie-up with. Check which insurers actually cover the hospitals in your area before you buy, not after a claim.",
-    h1: "Is your hospital on their list?",
+    src: ["pages/hospitals.tsx"],
+    h1: "Cashless network hospital finder",
     intro:
       "A policy is only cashless at hospitals the insurer has a tie-up with. Check which insurers actually cover your area before you buy, not after a claim.",
   },
   {
     path: "/team",
-    title: "Meet the IndSure Team | IndSure",
-    description:
-      "IndSure is built by a small team that got tired of watching people find out what their policy actually covers only after a claim gets rejected.",
+    src: ["pages/team.tsx"],
     h1: "Three people, one fine-print problem",
     intro:
       "IndSure is built by a small team that got tired of watching people find out what their policy actually covers only after a claim gets rejected.",
   },
   {
     path: "/help",
-    title: "Help and Support | IndSure",
-    description:
-      "Answers to common questions about reading your policy, your IndSure account and your privacy, plus how to reach the IndSure support team.",
+    src: ["pages/help.tsx"],
     h1: "Help and support",
-    intro:
-      "Find answers to common questions or get in touch with our support team.",
+    intro: "Find answers to common questions or get in touch with our support team.",
   },
   {
     path: "/mission",
-    title: "Our Mission: Insurance You Can Actually Understand | IndSure",
-    description:
-      "Insurance was designed to protect you. Somewhere along the way it became about confusing you. IndSure exists to put the plain meaning back into the policy.",
+    src: ["pages/mission.tsx"],
     h1: "Why IndSure?",
     intro:
       "Insurance was designed to protect you. Somewhere along the way, it became about confusing you.",
   },
   {
     path: "/vision",
-    title: "Our Vision: Insurance Decisions Made With Clarity | IndSure",
-    description:
-      "A future where insurance decisions are made with complete clarity, and every policyholder understands exactly what they are buying and how it protects them.",
+    src: ["pages/vision.tsx"],
     h1: "Our vision",
     intro:
       "A future where insurance decisions are made with complete clarity, where every policyholder understands exactly what they are buying and how it protects them.",
   },
+
+  // noindex (PAGE_SEO marks them). Prerendered anyway so the raw HTML carries
+  // their own title, a self-canonical and the noindex. Before this the legal
+  // pages served the HOMEPAGE head, canonical and all, to any crawler.
+  { path: "/privacy-policy", h1: "Privacy Policy" },
+  { path: "/terms", h1: "Terms of Service" },
+  { path: "/cookie-policy", h1: "Cookie Policy" },
+  { path: "/grievance", h1: "Grievance Officer" },
+  {
+    path: "/signup",
+    h1: "Create your free IndSure account",
+    image: "/opengraph-signup.jpg",
+    imageAlt: "IndSure: all your insurance policies, organised in one clear place.",
+  },
+  { path: "/login", h1: "Sign in to IndSure" },
+  { path: "/agent/login", h1: "Advisor sign in" },
+  { path: "/agent/signup", h1: "Create your advisor account" },
+  { path: "/agent/playground", h1: "Advisor Portal demo" },
 ];
+
+// ---------------------------------------------------------------------------
+// Build-time checks on the SEO table. A failure stops the build, so a title
+// that grows past what Google shows, or a description that drops the brand
+// name, never reaches production. (The brand check is the one that matters:
+// without "IndSure" in the description, Google quotes whatever other line on
+// the page names the brand, which is how the footer tagline became a sitelink.)
+// ---------------------------------------------------------------------------
+function checkPageSeo(PAGE_SEO) {
+  const problems = [];
+  for (const r of STATIC_ROUTES) {
+    if (!PAGE_SEO[r.path]) problems.push(`${r.path}: no PAGE_SEO entry`);
+  }
+  for (const [path, p] of Object.entries(PAGE_SEO)) {
+    if (!STATIC_ROUTES.some((r) => r.path === path) && path !== "/learn") {
+      problems.push(`${path}: in PAGE_SEO but not prerendered`);
+    }
+    if (p.noindex) continue;
+    if (p.title.length > 60) problems.push(`${path}: title is ${p.title.length} chars (max 60)`);
+    if (p.description.length > 160)
+      problems.push(`${path}: description is ${p.description.length} chars (max 160)`);
+    if (!p.description.includes("IndSure")) problems.push(`${path}: description never says IndSure`);
+  }
+  if (problems.length) {
+    console.error("[prerender] PAGE_SEO problems:\n  " + problems.join("\n  "));
+    process.exit(1);
+  }
+}
+
+// Last commit date (YYYY-MM-DD) touching any of `files`, or null when git has
+// no answer (no .git in the build, or a shallow clone that never saw the file).
+// A missing lastmod is honest; stamping every URL with the build date, as the
+// sitemap used to, told Google that all 125 pages changed on every deploy.
+// Vercel builds from a shallow clone, where `git log -- file` for a file not
+// touched in the fetched window returns the OLDEST fetched commit's date: a
+// made-up date that moves every deploy. So a shallow clone means no dates.
+let shallow;
+function gitDate(files) {
+  if (!files?.length) return null;
+  try {
+    shallow ??=
+      execFileSync("git", ["rev-parse", "--is-shallow-repository"], {
+        cwd: ROOT,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim() !== "false";
+    if (shallow) return null;
+    const out = execFileSync("git", ["log", "-1", "--format=%cs", "--", ...files], {
+      cwd: join(ROOT, "client", "src"),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(out) ? out : null;
+  } catch {
+    return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Build
@@ -432,20 +456,63 @@ async function main() {
   }
   const template = await readFile(join(DIST, "index.html"), "utf8");
 
+  const {
+    blogPosts,
+    slugFor,
+    POST_SLUGS,
+    FOUNDERS,
+    authorForId,
+    displayName,
+    CLAUSE_LIBRARY,
+    PAGE_SEO,
+    clauseTitle,
+    blogTitle,
+    blogDescription,
+    metaDescription,
+    TITLE_MAX,
+  } = await loadBlogData();
+  checkPageSeo(PAGE_SEO);
+
+  // Shells for everything that is not a prerendered page. Written first, from
+  // the pristine template, before "/" overwrites dist/index.html.
+  //
+  // app-shell.html: vercel.json rewrites the app's own routes (dashboards,
+  // reports, password reset...) here. They used to get the homepage's head,
+  // canonical included, so each one told Google it was the homepage.
+  //
+  // 404.html: Vercel serves it with a real 404 status for any path that is
+  // neither a file nor one of those rewrites. Before, every unknown URL
+  // answered 200 with the homepage (a soft 404).
+  const shell = (title) =>
+    applyHead(template, {
+      title,
+      description: "IndSure explains your insurance policy in plain language.",
+      canonical: null,
+      noindex: true,
+    })
+      .replace(/<div id="root">[\s\S]*?<\/div>/, `<div id="root"></div>`)
+      .replace(/\s*<meta (?:property="og:url"|name="twitter:url") content="[^"]*"\s*\/>/g, "");
+  // (applyHead points og:url at the homepage when there is no canonical; drop
+  // it here so a shared /report/<token> link does not preview as the homepage.)
+  await writeFile(join(DIST, "app-shell.html"), shell("IndSure"));
+  await writeFile(join(DIST, "404.html"), shell("Page not found | IndSure"));
+
   // Static pages
   for (const r of STATIC_ROUTES) {
+    const seo = PAGE_SEO[r.path];
     const canonical = SITE + (r.path === "/" ? "/" : r.path);
     let html = applyHead(template, {
-      title: r.title,
-      description: r.description,
+      title: seo.title,
+      description: seo.description,
       canonical,
       image: r.image,
       imageAlt: r.imageAlt,
+      noindex: seo.noindex,
     });
 
     const blocks = [];
-    // Breadcrumbs (Home > Page) for every non-home page.
-    if (r.path !== "/") {
+    // Breadcrumbs (Home > Page) for every indexable non-home page.
+    if (r.path !== "/" && !seo.noindex) {
       blocks.push(
         breadcrumbLd([
           { name: "Home", url: `${SITE}/` },
@@ -458,7 +525,7 @@ async function main() {
         "@context": "https://schema.org",
         "@type": "HowTo",
         name: "How to understand your insurance policy with IndSure",
-        description: r.description,
+        description: seo.description,
         step: [
           { "@type": "HowToStep", position: 1, name: "Upload your policy", text: "Upload your health, term life, or motor insurance policy PDF." },
           { "@type": "HowToStep", position: 2, name: "IndSure reads it", text: "IndSure reads the policy clause by clause and extracts the terms that matter." },
@@ -466,35 +533,23 @@ async function main() {
         ],
       });
     }
-    if (r.path === "/") {
-      blocks.push({
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        name: "IndSure",
-        url: `${SITE}/`,
-        applicationCategory: "FinanceApplication",
-        operatingSystem: "Web",
-        description: r.description,
-        offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
-      });
-    }
     if (blocks.length) html = injectJsonLd(html, blocks);
 
-    const body = `<main><h1>${escText(r.h1)}</h1><p>${escText(r.intro)}</p></main>`;
+    const body = `<main><h1>${escText(r.h1)}</h1><p>${escText(r.intro || seo.description)}</p></main>`;
     html = injectBody(html, body, r.path);
     await writeRoute(r.path, html);
   }
 
   // Blog posts
-  const { blogPosts, slugFor, FOUNDERS, authorForId, displayName, CLAUSE_LIBRARY } =
-    await loadBlogData();
   let postCount = 0;
+  const longTitles = [];
   for (const post of blogPosts) {
     const slug = slugFor(post.id);
     const path = `/blog/${slug}`;
     const canonical = SITE + path;
-    const title = `${post.title} | IndSure Blog`;
-    const description = post.excerpt;
+    const title = blogTitle(post.title, slug);
+    if (title.length > TITLE_MAX) longTitles.push(path);
+    const description = blogDescription(post.excerpt, slug);
     const author = authorForId(post.id);
 
     let html = applyHead(template, { title, description, canonical, ogType: "article" });
@@ -515,11 +570,7 @@ async function main() {
         },
         datePublished: post.date,
         dateModified: post.date,
-        publisher: {
-          "@type": "Organization",
-          name: "IndSure",
-          logo: { "@type": "ImageObject", url: `${SITE}/favicon.png` },
-        },
+        publisher: { "@id": `${SITE}/#org` },
         mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
       },
     ];
@@ -567,7 +618,7 @@ async function main() {
     const name = displayName(f);
     let html = applyHead(template, {
       title: `${name}, ${f.role} at IndSure`,
-      description: `${name} is ${f.role} at IndSure. ${f.bio}`.slice(0, 300),
+      description: metaDescription(`${name} is ${f.role} at IndSure. ${f.bio}`),
       canonical,
       ogType: "profile",
     });
@@ -587,7 +638,7 @@ async function main() {
         description: f.bio,
         url: canonical,
         sameAs: [f.linkedin],
-        worksFor: { "@type": "Organization", name: "IndSure", url: SITE },
+        worksFor: { "@id": `${SITE}/#org` },
       },
     ];
     html = injectJsonLd(html, blocks);
@@ -608,9 +659,8 @@ async function main() {
   {
     const canonical = `${SITE}/learn`;
     let html = applyHead(template, {
-      title: "Insurance Clause Library: Every Term Explained Plainly | IndSure",
-      description:
-        "A plain-language library of Indian insurance clauses, waiting periods, sub-limits, and benefits. Understand room-rent caps, co-pay, PED, restoration, IDV, and more before you claim.",
+      title: PAGE_SEO["/learn"].title,
+      description: PAGE_SEO["/learn"].description,
       canonical,
     });
     html = injectJsonLd(html, [
@@ -634,7 +684,7 @@ async function main() {
     ]);
     const list = CLAUSE_LIBRARY.map(
       (c) =>
-        `<li><a href="/learn/${c.slug}">${escText(c.term)}</a> — ${escText(c.shortAnswer)}</li>`,
+        `<li><a href="/learn/${c.slug}">${escText(c.term)}</a>: ${escText(c.shortAnswer)}</li>`,
     ).join("");
     const body =
       `<main><h1>Every insurance clause, explained plainly</h1>` +
@@ -648,9 +698,11 @@ async function main() {
   for (const c of CLAUSE_LIBRARY) {
     const path = `/learn/${c.slug}`;
     const canonical = SITE + path;
+    const title = clauseTitle(c.term);
+    if (title.length > TITLE_MAX) longTitles.push(path);
     let html = applyHead(template, {
-      title: `What is a ${c.term}? Meaning, Examples & Mistakes | IndSure`,
-      description: c.shortAnswer.slice(0, 300),
+      title,
+      description: metaDescription(c.shortAnswer),
       canonical,
       ogType: "article",
     });
@@ -715,64 +767,132 @@ async function main() {
             .join("")}</ul>`
         : "";
     const body =
-      `<article><h1>What is a ${escText(c.term)}?</h1>` +
+      `<article><h1>${escText(c.term)}, explained</h1>` +
       `<p>${escText(c.shortAnswer)}</p>` +
       `${sectionsHtml}${exampleHtml}${mistakesHtml}${faqHtml}${relatedHtml}</article>`;
     html = injectBody(html, body, path);
     await writeRoute(path, html);
   }
 
-  await writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY);
+  await checkRoutesServed(POST_SLUGS);
+  const urlCount = await writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_SEO);
 
+  if (longTitles.length) {
+    // A warning, not a failure: these are article headlines, and Google
+    // truncating the tail of a long headline is acceptable.
+    console.warn(`[prerender] ${longTitles.length} blog/clause titles exceed ${TITLE_MAX} chars.`);
+  }
   console.log(
-    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + ${FOUNDERS.length} author pages + ${CLAUSE_LIBRARY.length} clause pages + sitemap.`,
+    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + ${FOUNDERS.length} author pages + ${CLAUSE_LIBRARY.length} clause pages + 404/app shells + sitemap (${urlCount} URLs).`,
   );
 }
 
-// Regenerate dist/sitemap.xml with honest lastmod: blog posts use their own
-// publish date; marketing pages use the build date.
-async function writeSitemap(blogPosts, slugFor, FOUNDERS = [], CLAUSE_LIBRARY = []) {
-  const buildDate = new Date().toISOString().slice(0, 10);
-  const marketing = [
-    { path: "/", priority: "1.0", changefreq: "weekly" },
-    { path: "/policychecker", priority: "0.9", changefreq: "weekly" },
-    { path: "/life", priority: "0.8", changefreq: "monthly" },
-    { path: "/term", priority: "0.8", changefreq: "monthly" },
-    { path: "/vehicle", priority: "0.8", changefreq: "monthly" },
-    { path: "/compare", priority: "0.9", changefreq: "weekly" },
-    { path: "/calculator", priority: "0.9", changefreq: "monthly" },
-    { path: "/start", priority: "0.9", changefreq: "monthly" },
-    { path: "/find-provider", priority: "0.7", changefreq: "monthly" },
-    { path: "/how-it-works", priority: "0.7", changefreq: "monthly" },
-    { path: "/why-indsure", priority: "0.7", changefreq: "monthly" },
-    { path: "/pricing", priority: "0.8", changefreq: "monthly" },
-    { path: "/advisors/pricing", priority: "0.7", changefreq: "monthly" },
-    { path: "/blog", priority: "0.8", changefreq: "weekly" },
-    { path: "/signup", priority: "0.9", changefreq: "monthly" },
-    { path: "/agent", priority: "0.9", changefreq: "monthly" },
-    { path: "/mission", priority: "0.5", changefreq: "monthly" },
-    { path: "/vision", priority: "0.5", changefreq: "monthly" },
-    { path: "/team", priority: "0.5", changefreq: "monthly" },
-    { path: "/help", priority: "0.6", changefreq: "monthly" },
-  ];
-  const url = (loc, lastmod, changefreq, priority) =>
-    `  <url>\n    <loc>${SITE}${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+// vercel.json no longer rewrites every path to the SPA; unknown paths get a
+// real 404. The price is that a client route which is neither prerendered nor
+// in the rewrite allowlist would 404 when someone refreshes it. This fails the
+// build instead. Routes whose valid URLs are all prerendered (blog posts,
+// clause pages, authors) are exempt: an unknown slug SHOULD 404.
+async function checkRoutesServed(POST_SLUGS) {
+  const app = await readFile(join(ROOT, "client", "src", "App.tsx"), "utf8");
+  const vercel = JSON.parse(await readFile(join(ROOT, "vercel.json"), "utf8"));
+  const rewrites = vercel.rewrites
+    .filter((r) => !r.source.includes(":"))
+    .map((r) => new RegExp(`^${r.source}$`));
+  const exempt = new Set(["/a/:slug", "/blog/:id", "/learn/:slug", "/author/:slug"]);
+  const unserved = [];
+  // A <Route> whose path is not a plain string literal cannot be checked, so
+  // it fails loudly rather than being skipped.
+  for (const [tag] of app.matchAll(/<Route\b[^>]*>/g)) {
+    if (/\bpath=/.test(tag) && !/\bpath="[^"]+"/.test(tag)) unserved.push(`uncheckable: ${tag}`);
+  }
+  // Old numeric blog links (/blog/4) are no longer rewritten to the SPA, so
+  // each needs its 301 to the slug URL in vercel.json.
+  const redirected = new Set((vercel.redirects ?? []).map((r) => r.source));
+  for (const [id, slug] of Object.entries(POST_SLUGS)) {
+    if (!redirected.has(`/blog/${id}`)) unserved.push(`/blog/${id} (needs a redirect to /blog/${slug})`);
+  }
+  for (const [, route] of app.matchAll(/<Route\b[^>]*?\bpath="([^"]+)"/g)) {
+    if (exempt.has(route)) continue;
+    const sample = route.replace(/:[A-Za-z]+\*?/g, "x");
+    const file = sample === "/" ? join(DIST, "index.html") : join(DIST, sample.slice(1), "index.html");
+    if (existsSync(file) || rewrites.some((re) => re.test(sample))) continue;
+    unserved.push(route);
+  }
+  if (unserved.length) {
+    console.error(
+      "[prerender] routes that would 404 on refresh (add to vercel.json rewrites or prerender them):\n  " +
+        unserved.join("\n  "),
+    );
+    process.exit(1);
+  }
+}
+
+// Regenerate dist/sitemap.xml. Only indexable pages go in (a noindex URL in a
+// sitemap is a contradiction Search Console reports). lastmod is the post date
+// for blog posts and the last git commit of the page's source for everything
+// else, and is left out when neither is known.
+async function writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_SEO) {
+  const priority = {
+    "/": ["1.0", "weekly"],
+    "/policychecker": ["0.9", "weekly"],
+    "/compare": ["0.9", "weekly"],
+    "/calculator": ["0.9", "monthly"],
+    "/start": ["0.9", "monthly"],
+    "/agent": ["0.9", "monthly"],
+    "/life": ["0.8", "monthly"],
+    "/term": ["0.8", "monthly"],
+    "/vehicle": ["0.8", "monthly"],
+    "/pricing": ["0.8", "monthly"],
+    "/blog": ["0.8", "weekly"],
+    "/help": ["0.6", "monthly"],
+    "/mission": ["0.5", "monthly"],
+    "/vision": ["0.5", "monthly"],
+    "/team": ["0.5", "monthly"],
+  };
+  const url = (loc, lastmod, changefreq, prio) =>
+    `  <url>\n    <loc>${SITE}${loc}</loc>\n` +
+    (lastmod ? `    <lastmod>${lastmod}</lastmod>\n` : "") +
+    `    <changefreq>${changefreq}</changefreq>\n    <priority>${prio}</priority>\n  </url>`;
 
   const rows = [];
-  for (const m of marketing) rows.push(url(m.path, buildDate, m.changefreq, m.priority));
-  rows.push(url("/learn", buildDate, "weekly", "0.8"));
-  for (const c of CLAUSE_LIBRARY) rows.push(url(`/learn/${c.slug}`, buildDate, "monthly", "0.7"));
-  for (const f of FOUNDERS) rows.push(url(`/author/${f.slug}`, buildDate, "monthly", "0.4"));
-  for (const post of blogPosts) {
-    const lastmod = /^\d{4}-\d{2}-\d{2}$/.test(post.date || "") ? post.date : buildDate;
-    rows.push(url(`/blog/${slugFor(post.id)}`, lastmod, "monthly", "0.6"));
+  const locs = [];
+  const add = (loc, ...rest) => {
+    rows.push(url(loc, ...rest));
+    locs.push(loc);
+  };
+  for (const r of STATIC_ROUTES) {
+    if (PAGE_SEO[r.path].noindex) continue;
+    const [prio, freq] = priority[r.path] ?? ["0.7", "monthly"];
+    add(r.path, gitDate(r.src), freq, prio);
   }
+  const clauseDate = gitDate(["data/clause-library.ts"]);
+  add("/learn", clauseDate, "weekly", "0.8");
+  for (const c of CLAUSE_LIBRARY) add(`/learn/${c.slug}`, clauseDate, "monthly", "0.7");
+  const teamDate = gitDate(["data/team.ts"]);
+  for (const f of FOUNDERS) add(`/author/${f.slug}`, teamDate, "monthly", "0.4");
+  for (const post of blogPosts) {
+    const lastmod = /^\d{4}-\d{2}-\d{2}$/.test(post.date || "") ? post.date : null;
+    add(`/blog/${slugFor(post.id)}`, lastmod, "monthly", "0.6");
+  }
+
+  // Every sitemap URL must have a prerendered file behind it. Without one,
+  // Vercel would now answer 404 (see vercel.json), and before that it served
+  // the homepage head, which is how /calculator once got the homepage's title.
+  const missing = locs.filter(
+    (loc) => !existsSync(loc === "/" ? join(DIST, "index.html") : join(DIST, loc.slice(1), "index.html")),
+  );
+  if (missing.length) {
+    console.error("[prerender] sitemap URLs with no prerendered page:\n  " + missing.join("\n  "));
+    process.exit(1);
+  }
+
   const xml =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     rows.join("\n") +
     `\n</urlset>\n`;
   await writeFile(join(DIST, "sitemap.xml"), xml);
+  return locs.length;
 }
 
 main().catch((err) => {

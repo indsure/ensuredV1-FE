@@ -5,6 +5,8 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 /* Rebuilt 2026-08-25. The page this replaces sold four things the product does
    not have: commission tracking (the word appeared in no other file), IRDAI
@@ -22,6 +24,7 @@ const cardShadow =
   "0 0 0 1px rgba(0,0,0,0.06), 0 3px 3px -1.5px rgba(0,0,0,0.014), 0 8px 8px -4px rgba(0,0,0,0.012)";
 
 export default function AgentLanding() {
+  useSEO(seoFor("/agent"));
   const { t } = useLanguage();
 
   useEffect(() => {

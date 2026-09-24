@@ -16,8 +16,11 @@ import {
   Phone
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 export default function Help() {
+  useSEO(seoFor("/help"));
   const faqItems = [
     {
       question: "How does the policy analysis work?",

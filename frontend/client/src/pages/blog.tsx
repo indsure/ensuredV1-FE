@@ -25,6 +25,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { blogPosts } from "./blog/blog-data";
 import { blogPath } from "./blog/slugs";
 import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { BlogListingCTA } from "@/components/BlogCTA";
 import { BlogCover } from "@/components/BlogCover";
 import { ArrowRight } from "lucide-react";
@@ -70,12 +71,7 @@ export default function Blog() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // SEO
-  useSEO({
-    title: "Insurance Insights & Guides | Health Insurance Explained | IndSure",
-    description: "Expert guides, tips, and insights to help you make informed decisions about your health insurance. Learn about room limits, co-pay, exclusions, and more.",
-    keywords: "insurance insights, health insurance explained, insurance guides, insurance tips, room limit explained, co-pay explained, insurance education",
-    canonical: "/blog",
-  });
+  useSEO(seoFor("/blog"));
 
   const filteredPosts = blogPosts.filter((post) => {
     const matchesCategory = selectedCategory === "All" || post.category === selectedCategory;

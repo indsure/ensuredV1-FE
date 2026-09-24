@@ -31,6 +31,7 @@ import { useDropzone } from "react-dropzone";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
 import { loadSampleReport, mockReportLife } from "@/lib/mock-data";
 
@@ -38,12 +39,7 @@ export default function LifePage() {
   const [, setLocation] = useLocation();
 
   // SEO
-  useSEO({
-    title: "Life & Term Insurance Policy Checker: Sum Assured, Riders, Claims | IndSure",
-    description: "Upload your life or term insurance PDF and instantly see whether your sum assured is enough for your family, plus claim conditions, exclusions, and how your riders actually protect you. Free and private.",
-    keywords: "life insurance analyzer, term life insurance, life insurance policy checker, sum assured calculator, life insurance riders",
-    canonical: "/life",
-  });
+  useSEO(seoFor("/life"));
 
   // FAQ Schema
   const faqData = createFAQSchema([

@@ -5,6 +5,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { Linkedin, ArrowRight } from "lucide-react";
 import { useSEO } from "@/hooks/use-seo";
+import { metaDescription } from "@/data/seo-pages";
 import { SchemaMarkup } from "@/components/SEO";
 import { founderBySlug, displayName, authorForId } from "@/data/team";
 import { blogPosts } from "./blog/blog-data";
@@ -17,7 +18,7 @@ export default function AuthorPage() {
   useSEO({
     title: founder ? `${displayName(founder)}, ${founder.role} at IndSure` : "Author | IndSure",
     description: founder
-      ? `${displayName(founder)} is ${founder.role} at IndSure. ${founder.bio.slice(0, 150)}`
+      ? metaDescription(`${displayName(founder)} is ${founder.role} at IndSure. ${founder.bio}`)
       : "IndSure author profile.",
     canonical: founder ? `/author/${founder.slug}` : "/team",
   });
@@ -49,7 +50,7 @@ export default function AuthorPage() {
     description: founder.bio,
     url: `https://indsure.in/author/${founder.slug}`,
     sameAs: [founder.linkedin],
-    worksFor: { "@type": "Organization", name: "IndSure", url: "https://indsure.in" },
+    worksFor: { "@id": "https://indsure.in/#org" },
   };
 
   return (

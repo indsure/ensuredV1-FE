@@ -7,6 +7,8 @@ import { Link } from "wouter";
 import { Check, Minus, ShieldCheck, ArrowRight, Plus } from "lucide-react";
 import { Reveal, Stagger, RevealItem } from "@/components/motion";
 import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 // Consumer pricing. The advisor plans (Free / ₹1,499 / ₹1,199 a seat) moved to
 // /advisors/pricing — this URL is the one the portfolio's own upgrade CTAs
@@ -150,6 +152,7 @@ const faqs = [
 ];
 
 export default function Pricing() {
+  useSEO(seoFor("/pricing"));
   // Annual is the default view: it is the better deal and the price the reel
   // and prerendered copy both quote.
   const [annual, setAnnual] = useState(true);

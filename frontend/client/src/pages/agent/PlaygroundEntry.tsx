@@ -3,6 +3,8 @@ import { useLocation } from "wouter";
 import { enterPlayground } from "@/lib/playground/mode";
 import { installPlaygroundFetch } from "@/lib/playground/mockClient";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 /**
  * Clean, shareable entry point for the demo: visiting /agent/playground turns on
@@ -13,6 +15,8 @@ import { useLanguage } from "@/i18n/LanguageContext";
 export default function PlaygroundEntry() {
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
+  // A demo dashboard ("Good evening, Rajesh") is not a page anyone should land on from search.
+  useSEO(seoFor("/agent/playground"));
 
   useEffect(() => {
     enterPlayground();

@@ -4,6 +4,8 @@
 // Update the Footer.tsx links from href="#" to href="/privacy-policy"
 
 import { useEffect } from "react";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 const LAST_UPDATED = "23 September 2026";
 const EFFECTIVE_DATE = "23 September 2026";
@@ -196,8 +198,8 @@ If you are not satisfied with our response, you may escalate your complaint to t
 export default function PrivacyPolicy() {
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Privacy Policy — IndSure";
   }, []);
+  useSEO(seoFor("/privacy-policy"));
 
   return (
     <div className="min-h-screen bg-white">

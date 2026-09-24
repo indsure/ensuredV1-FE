@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Calendar, Clock, User, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
 import { blogPosts } from "../blog/blog-data";
-import { postFromParam, blogPath } from "../blog/slugs";
+import { postFromParam, blogPath, slugFor } from "../blog/slugs";
 import { useSEO } from "@/hooks/use-seo";
+import { blogTitle, blogDescription } from "@/data/seo-pages";
 import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
 import { authorForId, displayName } from "@/data/team";
 import { TableOfContents } from "@/components/TableOfContents";
@@ -31,8 +32,8 @@ export default function BlogPost() {
 
   // SEO — canonical always points at the slug URL, even on legacy /blog/4 hits.
   useSEO({
-    title: post ? `${post.title} | IndSure Blog` : "Blog Article | IndSure",
-    description: post ? post.excerpt : "Insurance insights and guides",
+    title: post ? blogTitle(post.title, slugFor(post.id)) : "Blog Article | IndSure",
+    description: post ? blogDescription(post.excerpt, slugFor(post.id)) : "Insurance insights and guides",
     keywords: post ? `${post.category.toLowerCase()}, insurance, ${post.title.toLowerCase()}` : "insurance blog",
     canonical: post ? blogPath(post.id) : "/blog",
   });
@@ -73,14 +74,10 @@ export default function BlogPost() {
     },
     datePublished: post.date,
     dateModified: post.date,
-    publisher: {
-      "@type": "Organization",
-      name: "IndSure",
-      logo: {
-        "@type": "ImageObject",
-        url: "https://indsure.in/favicon.png",
-      },
-    },
+    // Same shape as the prerendered block this replaces (scripts/prerender.mjs):
+    // the publisher is the one Organization defined in index.html.
+    publisher: { "@id": "https://indsure.in/#org" },
+    mainEntityOfPage: { "@type": "WebPage", "@id": `https://indsure.in${blogPath(post.id)}` },
   } : null;
 
   // Get related articles

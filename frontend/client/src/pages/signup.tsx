@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 import { Link, useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
@@ -61,8 +63,8 @@ export default function SignupPublic() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = "Create your free account | IndSure";
   }, []);
+  useSEO(seoFor("/signup"));
 
   /** Clear a field's error as soon as the person starts fixing it — leaving red
    *  text under a field someone is actively correcting reads as nagging. */

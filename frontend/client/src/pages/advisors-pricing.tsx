@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { teamWaLink } from "@/components/app/portfolio-utils";
 import { Check, Minus, Sparkles, ArrowRight } from "lucide-react";
+import { useSEO } from "@/hooks/use-seo";
+import { seoFor } from "@/data/seo-pages";
 
 type TierFeature = { label: string; soon?: boolean };
 
@@ -172,6 +174,7 @@ const faqs = [
 ];
 
 export default function Pricing() {
+  useSEO(seoFor("/advisors/pricing"));
   const [annual, setAnnual] = useState(false);
 
   return (

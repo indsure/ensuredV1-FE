@@ -73,7 +73,7 @@ export function useSEO({
 
     // Robots
     if (noindex) {
-      updateMetaTag("robots", "noindex, nofollow");
+      updateMetaTag("robots", "noindex, follow");
     } else {
       updateMetaTag("robots", "index, follow");
     }
