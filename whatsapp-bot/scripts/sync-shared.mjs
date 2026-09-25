@@ -9,7 +9,7 @@ import { copyFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 const here = path.dirname(fileURLToPath(import.meta.url));
-export const SHARED = ["draftMessage.ts", "health-engine-logic.ts", "data/rider-data.ts", "data/insurer-aliases.ts"];
+export const SHARED = ["draftMessage.ts", "health-engine-logic.ts", "data/rider-data.ts", "data/insurer-aliases.ts", "city-tier-util.ts", "data/zones.ts"];
 for (const rel of SHARED) {
   const src = path.resolve(here, "../../frontend/client/src/lib", rel);
   const dst = path.resolve(here, "../src/shared", rel);

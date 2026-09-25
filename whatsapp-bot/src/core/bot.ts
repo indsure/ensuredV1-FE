@@ -30,7 +30,8 @@ import type { UserInputs } from "../shared/health-engine-logic.js";
 import {
   CALC_AGE_ASK, CALC_QUESTIONS, COMPARE_ASK, INTERESTS, LEAD_ASK, ageBandFor, calcQuestionText, calcReply,
   compareReply, interestIn, leadSavedReply, matchPlans, parseAge, parseCompareNames, parseLeadLine, planLabel,
-  runCalculator, websiteReply, clientsReply, typeIn,
+  runCalculator, websiteReply, clientsReply, typeIn, pickCalcOption, cityAnswer, CALC_CITY_ASK, CALC_CITY_AGAIN,
+  TIER_LABEL, toolShareDraft, type Shareable,
 } from "./tools.js";
 import { log, redact } from "../log.js";
 
@@ -194,6 +195,7 @@ export class Bot {
   private async loadConv(agentId: string, to: string): Promise<Conv> {
     const c = (await this.d.engine.getConversation(agentId)) as Conv;
     const pending = c.pending && typeof c.pending === "object" ? c.pending : {};
+    if (pending.last && !this.lastShare.has(agentId)) this.lastShare.set(agentId, pending.last);
     let conv: Conv = { state: (c.state as State) || "IDLE", currentClientId: c.currentClientId, pending, updatedAt: c.updatedAt };
     // Any AWAITING_* state lapses after 15 minutes. Defaults: nothing is sent, the customer
     // stays unassigned, a held file is dropped.
@@ -209,7 +211,18 @@ export class Bot {
   }
 
   private async saveConv(agentId: string, c: Conv) {
-    await this.d.engine.putConversation(agentId, { state: c.state, currentClientId: c.currentClientId, pending: c.pending });
+    const last = this.lastShare.get(agentId);
+    const pending = last ? { ...(c.pending || {}), last } : c.pending;
+    await this.d.engine.putConversation(agentId, { state: c.state, currentClientId: c.currentClientId, pending });
+  }
+
+  /** The last thing SHARE refers to: a policy report, a calculator result or a comparison.
+   *  Kept here and written into every conversation save, so it survives state changes and
+   *  restarts. */
+  private readonly lastShare = new Map<string, Shareable>();
+
+  private setLast(agentId: string, s: Shareable) {
+    this.lastShare.set(agentId, s);
   }
 
   private async setState(agentId: string, to: string, state: State, currentClientId: string | null, extra: Record<string, unknown> = {}) {
@@ -413,6 +426,7 @@ export class Bot {
 
     // This report becomes the one follow-up questions and SHARE refer to. An AWAITING_*
     // state from another flow is left as it is; only the current report moves.
+    this.setLast(agentId, { kind: "policy", clientId });
     const conv = await this.loadConv(agentId, to);
     const busy = conv.state.startsWith("AWAITING");
     conv.currentClientId = clientId;
@@ -509,7 +523,7 @@ export class Bot {
       case "lead":
         return this.leadStart(agentId, conv, to, text);
       case "calc":
-        await this.setState(agentId, to, "AWAITING_CALC", conv.currentClientId, { step: -1, inputs: {} });
+        await this.setState(agentId, to, "AWAITING_CALC", conv.currentClientId, { step: -2, inputs: {} });
         return this.say(to, agentId, CALC_AGE_ASK, "calc");
       case "compare":
         return this.compareStart(agentId, conv, to, text);
@@ -597,8 +611,9 @@ export class Bot {
         const n = pickNumber(text, 3);
         const lang = n ? LANGS[n - 1] : langIn(text);
         if (!lang) { await this.say(to, agentId, T.pickLang(), "pick_lang"); return true; }
-        await this.rest(agentId, to, p.clientId);
-        await this.doShare(agentId, to, p.clientId, lang, p.phone ?? null);
+        await this.rest(agentId, to, p.tool ? conv.currentClientId : p.clientId);
+        if (p.tool) await this.shareTool(agentId, to, p.tool, lang, p.phone ?? null);
+        else await this.doShare(agentId, to, p.clientId, lang, p.phone ?? null);
         return true;
       }
       case "AWAITING_CLIENT_PICK": {
@@ -666,6 +681,7 @@ export class Bot {
       // Data-entry policies have no audit to answer from.
       return this.say(to, agentId, `This is a ${c.insuranceType || "non-health"} policy, so there's no report to answer from. Its details are in the portal: ${url}`, "ask");
     }
+    this.setLast(agentId, { kind: "policy", clientId });
     const ruled = question ? ruleAnswer(question, c) : null;
     if (ruled) return this.say(to, agentId, `${ruled}\n\nFull report: ${url}`, "ask");
     const phrased = await this.d.engine.llmPhrase(agentId, clientId, question).catch(() => ({ answer: null }));
@@ -691,6 +707,13 @@ export class Bot {
     const phone = parseCaption(text).phone;
     const name = phone ? null : namedPerson(text);
     let clientId = conv.currentClientId;
+    const last = this.lastShare.get(agentId);
+    if (!name && last && last.kind !== "policy") {
+      if (lang) return this.shareTool(agentId, to, last, lang, phone);
+      await this.setState(agentId, to, "AWAITING_SHARE_LANG", conv.currentClientId, { tool: last, phone });
+      return this.say(to, agentId, T.pickLang(), "pick_lang");
+    }
+    if (!name && last?.kind === "policy") clientId = last.clientId;
     if (name) {
       const found = await this.d.engine.findClients(agentId, name);
       if (found.length === 0) return this.say(to, agentId, T.noSuchCustomer(name), "share");
@@ -706,12 +729,22 @@ export class Bot {
     return this.say(to, agentId, T.pickLang(), "pick_lang");
   }
 
+  /** Share a calculator result or a comparison. No view tracking exists for these links, so
+   *  the reply does not promise any. */
+  private async shareTool(agentId: string, to: string, s: Shareable, lang: Lang, phone: string | null) {
+    if (s.kind === "policy") return this.doShare(agentId, to, s.clientId, lang, phone);
+    const draft = toolShareDraft(lang, s);
+    const link = waMeLink(phone, draft);
+    return this.say(to, agentId, shareReply(null, draft, link, /wa\.me\/\d/.test(link), false), "share_tool");
+  }
+
   /** `phone`: a number the advisor typed with SHARE. It wins over the one on file, and is
    *  used only for this link; nothing is saved to the customer. */
   private async doShare(agentId: string, to: string, clientId: string, lang: Lang, phone: string | null = null) {
     const c = await this.d.engine.getClient(agentId, clientId);
     if (!c) return this.say(to, agentId, T.noReport(), "share");
     if (c.status !== "done") return this.say(to, agentId, T.stillChecking(), "share");
+    this.setLast(agentId, { kind: "policy", clientId });
     const token = await this.d.engine.share(agentId, clientId);
     if (!token) return this.say(to, agentId, T.genericError(), "share");
     const draft = shareDraft(lang, c.policyholderName, c.policyName || c.insurer, sharedReportUrl(this.d.links, token));
@@ -806,29 +839,46 @@ export class Bot {
 
   private async calcStep(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
     const p = conv.pending || {};
-    const step: number = typeof p.step === "number" ? p.step : -1;
+    // Steps: -2 age, -1 city, then CALC_QUESTIONS[0..].
+    const step: number = typeof p.step === "number" ? p.step : -2;
     const inputs: Partial<UserInputs> = { ...(p.inputs || {}) };
-    if (step === -1) {
+    let ack = "";
+    if (step === -2) {
       const age = parseAge(text);
       if (!age) { await this.say(to, agentId, "Please reply with the age as a number, for example 42.", "calc"); return true; }
       inputs.exactAge = age;
       inputs.ageBand = ageBandFor(age);
+      // "27, Mumbai" answers the city too.
+      const c = cityAnswer(text);
+      if (c) { inputs.cityTier = c.tier; if (c.city) inputs.city = c.city; }
+    } else if (step === -1) {
+      const c = cityAnswer(text);
+      if (!c) { await this.say(to, agentId, CALC_CITY_AGAIN, "calc"); return true; }
+      inputs.cityTier = c.tier;
+      if (c.city) inputs.city = c.city;
+      ack = c.city ? `${c.city}: ${TIER_LABEL[c.tier]} rates.\n\n` : "";
     } else {
-      const q = CALC_QUESTIONS[step];
-      const n = pickNumber(text, q.options.length);
-      if (!n) { await this.say(to, agentId, calcQuestionText(step), "calc"); return true; }
-      (inputs as any)[q.key] = q.options[n - 1].value;
+      const v = pickCalcOption(step, text);
+      if (!v) { await this.say(to, agentId, `Sorry, I didn't get that. ${calcQuestionText(step)}`, "calc"); return true; }
+      (inputs as any)[CALC_QUESTIONS[step].key] = v;
     }
-    const next = step + 1;
+    const next = step === -2 && !inputs.cityTier ? -1 : Math.max(step + 1, 0);
+    if (next === -1) {
+      await this.setState(agentId, to, "AWAITING_CALC", conv.currentClientId, { step: -1, inputs });
+      await this.say(to, agentId, CALC_CITY_ASK, "calc");
+      return true;
+    }
     if (next < CALC_QUESTIONS.length) {
       await this.setState(agentId, to, "AWAITING_CALC", conv.currentClientId, { step: next, inputs });
-      await this.say(to, agentId, calcQuestionText(next), "calc");
+      await this.say(to, agentId, calcQuestionText(next, ack), "calc");
       return true;
     }
     await this.rest(agentId, to, conv.currentClientId);
     const profile = await this.d.engine.profile(agentId);
     const result = runCalculator(inputs as UserInputs, profile.partneredCompanies);
     const uuid = await this.d.engine.saveCalculator(agentId, inputs, result);
+    this.setLast(agentId, { kind: "calc", url: `${this.d.links.origin}/calculator/report/${uuid}` });
+    await this.rest(agentId, to, conv.currentClientId);
     await this.say(to, agentId, calcReply(this.d.links, inputs as UserInputs, result, uuid), "calc_done");
     return true;
   }
@@ -865,6 +915,8 @@ export class Bot {
     const keys = [...new Set(resolved)];
     if (keys.length < 2) return this.say(to, agentId, "Those are the same plan. Pick two different plans to compare.", "compare");
     const r = await this.d.engine.compare(agentId, keys);
+    this.setLast(agentId, { kind: "compare", url: `${this.d.links.origin}/compare/report/${r.uuid}`, names: r.names.filter(Boolean).join(" and ") });
+    await this.rest(agentId, to, conv.currentClientId);
     return this.say(to, agentId, compareReply(this.d.links, r), "compare_done");
   }
 }

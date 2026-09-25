@@ -86,7 +86,7 @@ export function pickNumber(textRaw: string, max: number): number | null {
 
 export const isYes = (t: string) => /^(yes|y|haan|ha|han|ok|okay|sure|yes please)[.!]*$/.test(norm(t));
 export const isNo = (t: string) => /^(no|n|nahi|nahin|na|nope)[.!]*$/.test(norm(t));
-export const isSkip = (t: string) => /^(skip|later|none|leave it)[.!]*$/.test(norm(t));
+export const isSkip = (t: string) => /^(skip|later|none|leave it|no|na|n\/a|nahi|don'?t have|dont know|not now|pass)[.!]*$/.test(norm(t));
 
 /** Caption on a PDF: "Ramesh Kumar 9812345678" -> name + phone. */
 export function parseCaption(textRaw: string): { name: string | null; phone: string | null } {

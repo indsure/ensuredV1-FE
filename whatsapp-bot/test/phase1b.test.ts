@@ -81,14 +81,15 @@ test("calculator: 5 answers, runs the portal engine, saves, links the report", a
   await bot.handle(text("calculator"));
   assert.match(transport.last(), /How old is the eldest adult/);
   await bot.handle(text("42"));
-  assert.match(transport.last(), /Where do they live\?\n1\) Metro city/);
-  await bot.handle(text("1"));
+  assert.match(transport.last(), /Which city do they live in\?/);
+  await bot.handle(text("Metro, mumbai"));
+  assert.match(transport.last(), /^Mumbai: metro rates\.\n\nWho needs to be covered\?/);
   await bot.handle(text("3"));
   await bot.handle(text("1"));
   await bot.handle(text("2"));
   const saved = engine.calcSaved[0];
   assert.deepEqual(saved.inputs, {
-    exactAge: 42, ageBand: "31-45", cityTier: "Metro", familyStructure: "Couple + kids", employerCover: "None", riskPosture: "Balanced",
+    exactAge: 42, ageBand: "31-45", cityTier: "Metro", city: "Mumbai", familyStructure: "Couple + kids", employerCover: "None", riskPosture: "Balanced",
   });
   // The bot's numbers ARE the engine's numbers for the same inputs.
   const expected = calculateHealthCover(saved.inputs, { partnerCompanies: [] });
@@ -106,8 +107,8 @@ test("calculator: a non-number answer re-asks instead of guessing", async () => 
   await bot.handle(text("forty"));
   assert.match(transport.last(), /age as a number/);
   await bot.handle(text("35"));
-  await bot.handle(text("metro please"));
-  assert.match(transport.last(), /Where do they live\?/);
+  await bot.handle(text("somewhere nice"));
+  assert.match(transport.last(), /I don't know that city/);
   assert.equal(engine.calcSaved.length, 0);
 });
 
@@ -196,4 +197,71 @@ test("my clients: all types, and an empty book says so", async () => {
   await bot.handle(text("my clients"));
   assert.deepEqual(engine.policyType, [null]);
   assert.match(transport.last(), /no checked policies yet/);
+});
+
+/* ── Conversational answers (no model) ── */
+
+test("calculator understands words: city in the age reply, family, lakhs, risk", async () => {
+  const { bot, transport, engine } = makeBot();
+  await bot.handle(text("calculator"));
+  await bot.handle(text("27, Bengaluru"));
+  assert.match(transport.last(), /Who needs to be covered\?/);
+  await bot.handle(text("just him"));
+  await bot.handle(text("company gives 3 lakh"));
+  await bot.handle(text("balanced"));
+  assert.deepEqual(engine.calcSaved[0].inputs, {
+    exactAge: 27, ageBand: "18-30", cityTier: "Tier-1", city: "Bangalore", familyStructure: "Individual", employerCover: "< 5L", riskPosture: "Balanced",
+  });
+});
+
+test("city tier comes from the portal's own zone table", async () => {
+  const { cityAnswer } = await import("../src/core/tools.js");
+  const { getCityTier } = await import("../src/shared/city-tier-util.js");
+  for (const c of ["Mumbai", "Pune", "Indore", "Nagpur", "Guwahati"]) {
+    const t = getCityTier(c);
+    assert.equal(cityAnswer(`they live in ${c}`)!.tier, t === 1 ? "Metro" : t === 2 ? "Tier-1" : "Tier-2", c);
+  }
+  assert.equal(cityAnswer("bombay")!.city, "Mumbai");
+  assert.equal(cityAnswer("tier 2")!.tier, "Tier-2");
+  assert.equal(cityAnswer("xyzabc"), null);
+});
+
+test("family with parents wins over kids when both are said", async () => {
+  const { pickCalcOption } = await import("../src/core/tools.js");
+  assert.equal(pickCalcOption(0, "me, wife, 2 kids and my parents"), "Parents included");
+  assert.equal(pickCalcOption(0, "wife and kids"), "Couple + kids");
+  assert.equal(pickCalcOption(1, "no"), "None");
+  assert.equal(pickCalcOption(1, "12 lakh"), "> 10L");
+  assert.equal(pickCalcOption(1, "3"), "5-10L");
+  assert.equal(pickCalcOption(2, "maximum"), "Zero financial shock");
+});
+
+test("SHARE after the calculator shares the calculator result, not the old policy", async () => {
+  const { bot, transport, engine } = makeBot();
+  const id = "88888888-8888-4888-8888-888888888888";
+  engine.clients.set(id, healthClient(id, { policyholderName: "Santosh Vartak" }));
+  engine.conv = { state: "REPORT_READY", currentClientId: id, pending: {}, updatedAt: null };
+  for (const m of ["calculator", "27 mumbai", "1", "1", "2"]) await bot.handle(text(m));
+  await bot.handle(text("share it with +919987148125"));
+  assert.match(transport.last(), /Which language/);
+  await bot.handle(text("3"));
+  const r = transport.last();
+  assert.match(r, /https:\/\/wa\.me\/919987148125\?text=/);
+  assert.match(r, /हेल्थ कवर का हिसाब/);
+  assert.match(r, /\/calculator\/report\/calc-uuid-1/);
+  assert.doesNotMatch(r, /Santosh/);
+  assert.doesNotMatch(r, /when they open the report/);
+  assert.equal(engine.shared.length, 0);
+});
+
+test("SHARE after a compare shares the comparison; asking about a policy switches back", async () => {
+  const { bot, transport, engine } = makeBot();
+  const id = "99999999-9999-4999-8999-999999999999";
+  engine.clients.set(id, healthClient(id, { policyholderName: "Santosh Vartak" }));
+  await bot.handle(text("compare Care Supreme vs Niva ReAssure 2.0"));
+  await bot.handle(text("share in english"));
+  assert.match(transport.last(), /side-by-side comparison of Care Health Insurance Care Supreme and Niva Bupa Health Insurance ReAssure 2\.0: https:\/\/indsure\.in\/compare\/report\/cmp-uuid-1/);
+  await bot.handle(text("Santosh's policy room rent?"));
+  await bot.handle(text("share in english"));
+  assert.match(transport.last(), /Namaste Santosh, here is the report/);
 });

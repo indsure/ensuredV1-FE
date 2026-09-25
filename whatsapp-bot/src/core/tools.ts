@@ -9,6 +9,8 @@
 import type { CatalogPlan, CompareResult, PolicyRow, Profile } from "../engine.js";
 import { calculateHealthCover, type UserInputs, type EngineResult } from "../shared/health-engine-logic.js";
 import { resolvePartnerCompanies } from "../shared/data/insurer-aliases.js";
+import { getCityTier } from "../shared/city-tier-util.js";
+import { CITY_ZONE_MAP } from "../shared/data/zones.js";
 import { parseCaption } from "./intents.js";
 import type { Links } from "./templates.js";
 
@@ -72,36 +74,30 @@ export function leadSavedReply(l: Links, lead: { id: string; duplicateOf?: strin
 
 /* ── Calculator ──────────────────────────────────────────────────────── */
 
-type Q = { key: keyof UserInputs; ask: string; options: { label: string; value: string }[] };
+type Opt = { label: string; value: string; words?: RegExp };
+type Q = { key: keyof UserInputs; ask: string; options: Opt[] };
 
 /** The five answers the engine needs (UserInputs level 1), in plain words. Values are the
  *  engine's own enum strings, unchanged. */
+// City comes first and is free text (see cityAnswer); these follow it. `words` lets an advisor
+// answer in plain words instead of the number. Checked in order, so the more specific
+// option comes first where two could match.
 export const CALC_QUESTIONS: Q[] = [
-  {
-    key: "cityTier",
-    ask: "Where do they live?",
-    options: [
-      { label: "Metro city", value: "Metro" },
-      { label: "Other big city (Tier-1)", value: "Tier-1" },
-      { label: "Smaller city (Tier-2)", value: "Tier-2" },
-      { label: "Town or village", value: "Other" },
-    ],
-  },
   {
     key: "familyStructure",
     ask: "Who needs to be covered?",
     options: [
-      { label: "Just them", value: "Individual" },
-      { label: "Couple", value: "Couple" },
-      { label: "Couple with kids", value: "Couple + kids" },
-      { label: "Family including parents", value: "Parents included" },
+      { label: "Just them", value: "Individual", words: /\b(just|only|self|single|alone|individual|myself|me|him|her)\b/ },
+      { label: "Couple", value: "Couple", words: /\b(couple|wife|husband|spouse|two of (us|them))\b/ },
+      { label: "Couple with kids", value: "Couple + kids", words: /\b(kids?|child|children|son|daughter|baby)\b/ },
+      { label: "Family including parents", value: "Parents included", words: /\b(parents?|mother|father|mom|dad|in-?laws?)\b/ },
     ],
   },
   {
     key: "employerCover",
-    ask: "Health cover from their employer?",
+    ask: "Health cover from their employer? (A number of lakhs is fine too, like 5 lakh.)",
     options: [
-      { label: "None", value: "None" },
+      { label: "None", value: "None", words: /\b(none|no|nil|nothing|zero|not|self.?employed|business)\b/ },
       { label: "Under ₹5 lakh", value: "< 5L" },
       { label: "₹5 to 10 lakh", value: "5-10L" },
       { label: "Over ₹10 lakh", value: "> 10L" },
@@ -111,12 +107,76 @@ export const CALC_QUESTIONS: Q[] = [
     key: "riskPosture",
     ask: "How much risk are they comfortable with?",
     options: [
-      { label: "Minimum cover, but safe", value: "Minimum but safe" },
-      { label: "Balanced", value: "Balanced" },
-      { label: "No financial shock at all", value: "Zero financial shock" },
+      { label: "Minimum cover, but safe", value: "Minimum but safe", words: /\b(min|minimum|low|basic|cheap|budget|less)\b/ },
+      { label: "Balanced", value: "Balanced", words: /\b(balanced?|medium|normal|moderate|average|mid)\b/ },
+      { label: "No financial shock at all", value: "Zero financial shock", words: /\b(zero|max|maximum|full|high|best|no shock|fully)\b/ },
     ],
   },
 ];
+
+/** "5 lakh", "3L", "12 lakhs", "₹5,00,000" as employer cover. A bare 1-4 is an option
+ *  number, not lakhs, so this only reads amounts that say lakh or are in rupees. */
+function employerFromAmount(t: string): string | null {
+  const lakh = t.match(/(\d+(?:\.\d+)?)\s*(l|lakh|lakhs|lac|lacs)\b/);
+  const rupees = t.match(/₹?\s*(\d{1,2},\d{2},\d{3}|\d{6,8})\b/);
+  const n = lakh ? Number(lakh[1]) : rupees ? Number(rupees[1].replace(/,/g, "")) / 100000 : NaN;
+  if (!Number.isFinite(n)) return null;
+  if (n <= 0) return "None";
+  if (n < 5) return "< 5L";
+  if (n <= 10) return "5-10L";
+  return "> 10L";
+}
+
+/** The option a reply means: its number, a lakh amount (employer cover), or its words. */
+export function pickCalcOption(step: number, textRaw: string): string | null {
+  const q = CALC_QUESTIONS[step];
+  const t = textRaw.toLowerCase().trim();
+  const n = t.match(/^(\d)\)?\.?$/);
+  if (n) {
+    const i = Number(n[1]);
+    return i >= 1 && i <= q.options.length ? q.options[i - 1].value : null;
+  }
+  if (q.key === "employerCover") {
+    const amt = employerFromAmount(t);
+    if (amt) return amt;
+  }
+  // Most specific first: parents over kids over couple over just them.
+  const order = q.key === "familyStructure" ? [...q.options].reverse() : q.options;
+  for (const o of order) if (o.words && o.words.test(t)) return o.value;
+  const byLabel = q.options.find((o) => t === o.label.toLowerCase() || t === o.value.toLowerCase());
+  return byLabel ? byLabel.value : null;
+}
+
+/* The city. The portal asks for the city and derives the tier with getCityTier (zones.ts):
+ * zone A = Metro, B/D = Tier-1, else Tier-2. The bot does exactly that, so the same city
+ * gives the same tier. It never produces "Other", because the portal never does. */
+
+const CITY_ALIASES: Record<string, string> = {
+  bombay: "Mumbai", bengaluru: "Bangalore", gurugram: "Gurgaon", calcutta: "Kolkata", madras: "Chennai",
+  "new delhi": "Delhi", poona: "Pune", trivandrum: "Thiruvananthapuram", cochin: "Kochi", baroda: "Vadodara",
+};
+const CITY_KEYS = Object.keys(CITY_ZONE_MAP).sort((a, b) => b.length - a.length);
+
+export const TIER_LABEL: Record<string, string> = { Metro: "metro", "Tier-1": "tier-1 city", "Tier-2": "tier-2 city" };
+
+export function cityAnswer(textRaw: string): { city: string | null; tier: UserInputs["cityTier"] } | null {
+  const t = ` ${textRaw.toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ")} `;
+  for (const [alias, city] of Object.entries(CITY_ALIASES)) if (t.includes(` ${alias} `)) return fromCity(city);
+  const hit = CITY_KEYS.find((k) => t.includes(` ${k.toLowerCase()} `));
+  if (hit) return fromCity(hit);
+  if (/\bmetro\b/.test(t)) return { city: null, tier: "Metro" };
+  if (/\btier ?1\b|\bbig city\b/.test(t)) return { city: null, tier: "Tier-1" };
+  if (/\btier ?[23]\b|\bsmall(er)? (city|town)\b|\btown\b|\bvillage\b/.test(t)) return { city: null, tier: "Tier-2" };
+  return null;
+}
+
+function fromCity(city: string) {
+  const tier = getCityTier(city);
+  return { city, tier: (tier === 1 ? "Metro" : tier === 2 ? "Tier-1" : "Tier-2") as UserInputs["cityTier"] };
+}
+
+export const CALC_CITY_ASK = "Which city do they live in? (Or just say metro, tier 1 or tier 2.)";
+export const CALC_CITY_AGAIN = "I don't know that city. Type the nearest big city, or reply METRO, TIER 1 or TIER 2.";
 
 export const CALC_AGE_ASK = "Cover calculator. How old is the eldest adult to be covered? Reply with the age, e.g. 42.";
 
@@ -133,9 +193,9 @@ export function parseAge(text: string): number | null {
   return n >= 18 && n <= 99 ? n : null;
 }
 
-export function calcQuestionText(i: number): string {
+export function calcQuestionText(i: number, lead = ""): string {
   const q = CALC_QUESTIONS[i];
-  return `${q.ask}\n${q.options.map((o, j) => `${j + 1}) ${o.label}`).join("\n")}`;
+  return `${lead}${q.ask}\n${q.options.map((o, j) => `${j + 1}) ${o.label}`).join("\n")}`;
 }
 
 /** Runs the portal's calculator engine on these answers, with the advisor's partner insurers
@@ -147,14 +207,15 @@ export function runCalculator(inputs: UserInputs, partnered: string[]): EngineRe
 export function calcReply(l: Links, inputs: UserInputs, r: EngineResult, uuid: string): string {
   const label = (key: keyof UserInputs) =>
     CALC_QUESTIONS.find((q) => q.key === key)?.options.find((o) => o.value === inputs[key])?.label ?? String(inputs[key] ?? "");
+  const where = inputs.city ? `${inputs.city} (${TIER_LABEL[inputs.cityTier] ?? inputs.cityTier})` : TIER_LABEL[inputs.cityTier] ?? inputs.cityTier;
   return [
-    `Cover suggestion for age ${inputs.exactAge}, ${label("cityTier").toLowerCase()}, ${label("familyStructure").toLowerCase()}:`,
+    `Cover suggestion for age ${inputs.exactAge}, ${where}, ${label("familyStructure").toLowerCase()}:`,
     `Base cover: ${r.baseCover}`,
     `Super top-up: ${r.superTopUp}`,
     `Total protection: ${r.totalProtection}`,
     "",
-    `Full report with premiums and riders (you can share this link with the customer): ${l.origin}/calculator/report/${uuid}`,
-    "Based on 5 answers. For a finer result, use the calculator in the portal.",
+    `Full report with premiums and riders: ${l.origin}/calculator/report/${uuid}`,
+    "Reply SHARE to send it to the customer. Based on 5 answers; the portal calculator asks more for a finer result.",
   ].join("\n");
 }
 
@@ -202,7 +263,7 @@ export function compareReply(l: Links, r: CompareResult): string {
     if (v.reasons?.length) out.push(`Why: ${v.reasons.slice(0, 2).join("; ")}.`);
     if (v.counterpoint) out.push(`But: ${v.counterpoint}.`);
   }
-  out.push("", `Full side-by-side (you can share this link): ${l.origin}/compare/report/${r.uuid}`);
+  out.push("", `Full side-by-side: ${l.origin}/compare/report/${r.uuid}`, "Reply SHARE to send it to the customer.");
   return out.join("\n").replace(/\.\./g, ".");
 }
 
@@ -229,4 +290,23 @@ export function clientsReply(l: Links, type: string | null, data: { total: numbe
   });
   const more = data.total > data.rows.length ? `\n…and ${data.total - data.rows.length} more: ${l.origin}/agent/policies` : "";
   return `Your ${what} (${data.total}), newest first:\n${lines.join("\n")}${more}\n\nAsk about one by name, for example: Ramesh's policy room rent?`;
+}
+
+/* ── Share drafts for a calculator result or a comparison ────────────────
+   Like the policy share (templates.ts), the message only says what the link is. */
+
+export type Shareable =
+  | { kind: "policy"; clientId: string }
+  | { kind: "calc"; url: string }
+  | { kind: "compare"; url: string; names: string };
+
+export function toolShareDraft(lang: "english" | "hinglish" | "hindi", s: Exclude<Shareable, { kind: "policy" }>): string {
+  if (s.kind === "calc") {
+    if (lang === "hinglish") return `Namaste, maine aapke liye health cover ka hisaab nikala hai. Yahan dekhiye: ${s.url}`;
+    if (lang === "hindi") return `नमस्ते, मैंने आपके लिए हेल्थ कवर का हिसाब निकाला है। यहाँ देखिए: ${s.url}`;
+    return `Namaste, I have worked out how much health cover makes sense for you. Here it is: ${s.url}`;
+  }
+  if (lang === "hinglish") return `Namaste, ${s.names} ka side-by-side comparison yahan hai: ${s.url}`;
+  if (lang === "hindi") return `नमस्ते, ${s.names} की तुलना यहाँ देखिए: ${s.url}`;
+  return `Namaste, here is a side-by-side comparison of ${s.names}: ${s.url}`;
 }
