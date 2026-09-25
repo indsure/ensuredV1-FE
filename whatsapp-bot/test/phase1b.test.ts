@@ -36,7 +36,7 @@ test("one line: lead name + phone + interest is saved straight away", async () =
   const { bot, transport, engine } = makeBot();
   await bot.handle(text("lead Ramesh Kumar 9812345678 health"));
   assert.deepEqual(engine.leads.map((l) => [l.name, l.phone, l.interest]), [["Ramesh Kumar", "9812345678", "Health"]]);
-  assert.match(transport.last(), /Saved lead: Ramesh Kumar, 98123 45678, Health\.\nIt's in your Leads: https:\/\/indsure\.in\/agent\/leads\//);
+  assert.match(transport.last(), /^Saved lead \*Ramesh Kumar\*, 98123 45678, Health\.\nhttps:\/\/indsure\.in\/agent\/leads\/\S+\nNext: follow up Ramesh Friday$/);
 });
 
 test("'enter a lead' asks name, phone, interest in turn", async () => {
@@ -95,9 +95,10 @@ test("calculator: 5 answers, runs the portal engine, saves, links the report", a
   const expected = calculateHealthCover(saved.inputs, { partnerCompanies: [] });
   assert.equal(saved.result.totalProtection, expected.totalProtection);
   const r = transport.last();
-  assert.ok(r.includes(`Base cover: ${expected.baseCover}`), r);
-  assert.ok(r.includes(`Super top-up: ${expected.superTopUp}`), r);
-  assert.ok(r.includes(`Total protection: ${expected.totalProtection}`), r);
+  // Answer first: the total, bold. Then the split. All three strings are the engine's own.
+  assert.ok(r.startsWith(`🧮 *${expected.totalProtection}* total cover for age 42, Mumbai (metro), couple with kids.`), r);
+  assert.ok(r.includes(`Base cover ${expected.baseCover} + super top-up ${expected.superTopUp}.`), r);
+  assert.match(r, /Reply SHARE to send it to the customer/);
   assert.match(r, /https:\/\/indsure\.in\/calculator\/report\/calc-uuid-1/);
 });
 
@@ -119,7 +120,7 @@ test("compare two plans by name: engine verdict and the report link", async () =
   await bot.handle(text("compare Care Supreme vs Niva ReAssure 2.0"));
   assert.deepEqual(engine.compared[0], ["UIN-CARE-SUP", "UIN-NIVA-RA2"]);
   const r = transport.last();
-  assert.match(r, /Stronger on the wording: Care Health Insurance Care Supreme\./);
+  assert.match(r, /^⚖️ \*Care Supreme\* is stronger on the wording than Niva Bupa ReAssure 2\.0\./);
   assert.match(r, /Why: No room rent cap; Shorter PED wait\./);
   assert.match(r, /But: ReAssure 2\.0 has a bigger bonus\./);
   assert.match(r, /https:\/\/indsure\.in\/compare\/report\/cmp-uuid-1/);
@@ -154,6 +155,9 @@ test("compare name parsing and matching", () => {
 test("the help menu lists the new tools", async () => {
   const { bot, transport } = makeBot();
   await bot.handle(text("help"));
+  assert.ok(transport.last().split("\n").length <= 6, "help stays short");
+  assert.match(transport.last(), /Or just tell me what you need\./);
+  await bot.handle(text("more"));
   for (const w of ["CALCULATOR", "COMPARE", "LEAD", "LINK", "FOLLOW UPS", "CLAIMS", "VIEWS", "CHECKS", "FIND", "SURRENDER VALUE", "UPGRADE MESSAGE", "MY CLIENTS"]) {
     assert.ok(transport.last().includes(w), w);
   }
@@ -191,7 +195,7 @@ test("'Calculate' and 'List of all health clients name' route to their tools, no
   await bot.handle(text("cancel"));
   await bot.handle(text("List of all health clients name"));
   assert.deepEqual(engine.policyType, ["health"]);
-  assert.match(transport.last(), /Your health policies \(1\), newest first:\n1\) Santosh Vartak · ManipalCigna ProHealth · 75\/100/);
+  assert.match(transport.last(), /^📋 Your health policies \(1\), newest first:\n1\) \*Santosh Vartak\* · ManipalCigna ProHealth · 75\/100/);
 });
 
 test("my clients: all types, and an empty book says so", async () => {
@@ -262,7 +266,7 @@ test("SHARE after a compare shares the comparison; asking about a policy switche
   engine.clients.set(id, healthClient(id, { policyholderName: "Santosh Vartak" }));
   await bot.handle(text("compare Care Supreme vs Niva ReAssure 2.0"));
   await bot.handle(text("share in english"));
-  assert.match(transport.last(), /side-by-side comparison of Care Health Insurance Care Supreme and Niva Bupa Health Insurance ReAssure 2\.0: https:\/\/indsure\.in\/compare\/report\/cmp-uuid-1/);
+  assert.match(transport.last(), /side-by-side comparison of Care Supreme and Niva Bupa ReAssure 2\.0: https:\/\/indsure\.in\/compare\/report\/cmp-uuid-1/);
   await bot.handle(text("Santosh's policy room rent?"));
   await bot.handle(text("share in english"));
   assert.match(transport.last(), /Namaste Santosh, here is the report/);

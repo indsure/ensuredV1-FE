@@ -13,6 +13,7 @@ import { getCityTier } from "../shared/city-tier-util.js";
 import { CITY_ZONE_MAP } from "../shared/data/zones.js";
 import { parseCaption } from "./intents.js";
 import type { Links } from "./templates.js";
+import { b, cleanPlanText, dayMonth, firstName, planLabel as nicePlan } from "./format.js";
 
 /* ── Website ─────────────────────────────────────────────────────────── */
 
@@ -25,8 +26,8 @@ export function websiteReply(p: Profile, l: Links): string {
   if (!p.page.live) return `Your website is set up but not live yet. Publish it in the portal: ${portal}`;
   return [
     `Your website: ${websiteUrl(l, p.page.slug)}`,
-    "",
-    "Forward it to customers or put it in your WhatsApp status. Leads from it land in your Leads in the portal.",
+    "Leads from it land in your Leads in the portal.",
+    "Next: forward it to a customer, or put it in your WhatsApp status.",
   ].join("\n");
 }
 
@@ -67,9 +68,13 @@ export const LEAD_ASK = {
 
 export function leadSavedReply(l: Links, lead: { id: string; duplicateOf?: string }, d: { name: string; phone: string | null; interest: string | null }): string {
   const url = `${l.origin}/agent/leads/${lead.id}`;
-  if (lead.duplicateOf) return `${lead.duplicateOf} is already in your leads with this number, so I didn't add it again: ${url}`;
+  if (lead.duplicateOf) return `${b(lead.duplicateOf)} is already in your leads with this number, so I didn't add it again.\n${url}`;
   const phone = d.phone ? `${d.phone.slice(0, 5)} ${d.phone.slice(5)}` : null;
-  return `Saved lead: ${[d.name, phone, d.interest].filter(Boolean).join(", ")}.\nIt's in your Leads: ${url}`;
+  return [
+    `Saved lead ${b(d.name)}${[phone, d.interest].filter(Boolean).length ? `, ${[phone, d.interest].filter(Boolean).join(", ")}` : ""}.`,
+    url,
+    `Next: follow up ${firstName(d.name)} Friday`,
+  ].join("\n");
 }
 
 /* ── Calculator ──────────────────────────────────────────────────────── */
@@ -208,14 +213,12 @@ export function calcReply(l: Links, inputs: UserInputs, r: EngineResult, uuid: s
   const label = (key: keyof UserInputs) =>
     CALC_QUESTIONS.find((q) => q.key === key)?.options.find((o) => o.value === inputs[key])?.label ?? String(inputs[key] ?? "");
   const where = inputs.city ? `${inputs.city} (${TIER_LABEL[inputs.cityTier] ?? inputs.cityTier})` : TIER_LABEL[inputs.cityTier] ?? inputs.cityTier;
+  // The answer first: total protection. Then how it splits, then the next action.
   return [
-    `Cover suggestion for age ${inputs.exactAge}, ${where}, ${label("familyStructure").toLowerCase()}:`,
-    `Base cover: ${r.baseCover}`,
-    `Super top-up: ${r.superTopUp}`,
-    `Total protection: ${r.totalProtection}`,
-    "",
+    `🧮 ${b(r.totalProtection)} total cover for age ${inputs.exactAge}, ${where}, ${label("familyStructure").toLowerCase()}.`,
+    `Base cover ${r.baseCover} + super top-up ${r.superTopUp}.`,
     `Full report with premiums and riders: ${l.origin}/calculator/report/${uuid}`,
-    "Reply SHARE to send it to the customer. Based on 5 answers; the portal calculator asks more for a finer result.",
+    "Reply SHARE to send it to the customer. (Based on 5 answers; the portal calculator asks more.)",
   ].join("\n");
 }
 
@@ -225,8 +228,7 @@ const STOP = new Set(["health", "insurance", "plan", "policy", "the", "company",
 const words = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9. ]/g, " ").split(/\s+/).filter((w) => w && !STOP.has(w));
 
-export const planLabel = (p: CatalogPlan) =>
-  [p.insurer, p.plan_name].filter(Boolean).join(" ") + (p.variant ? ` (${p.variant})` : "");
+export const planLabel = (p: CatalogPlan) => nicePlan(p.insurer, p.plan_name) + (p.variant ? ` (${p.variant})` : "");
 
 /** "compare Care Supreme vs Niva ReAssure 2.0" -> ["Care Supreme", "Niva ReAssure 2.0"]. */
 export function parseCompareNames(textRaw: string): string[] {
@@ -253,17 +255,18 @@ export function matchPlans(query: string, catalog: CatalogPlan[]): CatalogPlan[]
 }
 
 export function compareReply(l: Links, r: CompareResult): string {
-  const names = r.names.map((n, i) => n || `Plan ${i + 1}`);
+  const names = r.names.map((n, i) => cleanPlanText(n) || `Plan ${i + 1}`);
   const v = r.verdict;
-  const out = [`Compared: ${names.join(" vs ")}.`];
+  const out: string[] = [];
   if (!v || v.winner_index < 0) {
-    out.push("On the policy wordings these are too close to call.");
+    out.push(`⚖️ ${names.join(" and ")} are too close to call on the wording.`);
   } else {
-    out.push(`Stronger on the wording: ${names[v.winner_index] ?? v.winner_name}.`);
+    const others = names.filter((_, i) => i !== v.winner_index);
+    out.push(`⚖️ ${b(names[v.winner_index])} is stronger on the wording than ${others.join(" and ")}.`);
     if (v.reasons?.length) out.push(`Why: ${v.reasons.slice(0, 2).join("; ")}.`);
     if (v.counterpoint) out.push(`But: ${v.counterpoint}.`);
   }
-  out.push("", `Full side-by-side: ${l.origin}/compare/report/${r.uuid}`, "Reply SHARE to send it to the customer.");
+  out.push(`Full side-by-side: ${l.origin}/compare/report/${r.uuid}`, "Reply SHARE to send it to the customer.");
   return out.join("\n").replace(/\.\./g, ".");
 }
 
@@ -285,11 +288,12 @@ export function clientsReply(l: Links, type: string | null, data: { total: numbe
   const what = type ? `${type} policies` : "policies";
   if (data.total === 0) return `You have no checked ${what} yet. Send me a policy PDF to add one.`;
   const lines = data.rows.map((r, i) => {
-    const plan = [r.insurer, r.policyName].filter(Boolean).join(" ");
-    return `${i + 1}) ${r.name || "Unnamed"}${plan ? ` · ${plan}` : ""}${r.score != null ? ` · ${r.score}/100` : ""}`;
+    const plan = nicePlan(r.insurer, r.policyName);
+    return `${i + 1}) ${b(r.name || "Unnamed")}${plan ? ` · ${plan}` : ""}${r.score != null ? ` · ${r.score}/100` : ""}`;
   });
   const more = data.total > data.rows.length ? `\n…and ${data.total - data.rows.length} more: ${l.origin}/agent/policies` : "";
-  return `Your ${what} (${data.total}), newest first:\n${lines.join("\n")}${more}\n\nAsk about one by name, for example: Ramesh's policy room rent?`;
+  const first = firstName(data.rows[0]?.name) || "Ramesh";
+  return `📋 Your ${what} (${data.total}), newest first:\n${lines.join("\n")}${more}\n\nAsk about one by name, for example: ${first}'s policy room rent?`;
 }
 
 /* ── Share drafts for a calculator result or a comparison ────────────────

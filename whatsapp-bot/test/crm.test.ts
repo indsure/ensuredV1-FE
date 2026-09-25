@@ -59,7 +59,7 @@ test("'Ramesh won' updates the one matching lead", async () => {
   const r = lead(); engine.leadRows = [r, lead({ name: "Alok Verma", phone: "9800000001" })];
   await bot.handle(text("Ramesh won"));
   assert.deepEqual(engine.leadUpdates, [{ id: r.id, status: "won", nextFollowUp: undefined, note: undefined }]);
-  assert.match(transport.last(), /^Ramesh Kumar: marked won\.\nhttps:\/\/indsure\.in\/agent\/leads\//);
+  assert.match(transport.last(), /^\*Ramesh Kumar\*: marked won\.\nhttps:\/\/indsure\.in\/agent\/leads\/\S+\nNext: thank you message for Ramesh$/);
 });
 
 test("'ok done' and 'alok'-style near misses change nothing", async () => {
@@ -89,7 +89,7 @@ test("follow-ups list: overdue and today", async () => {
   const { bot, transport, engine } = makeBot();
   engine.followupRows = [lead({ days: -2 }), lead({ name: "Sunita Rao", phone: null, days: 0 })];
   await bot.handle(text("who do I call today?"));
-  assert.match(transport.last(), /Follow-ups due \(2\):\n1\) Ramesh Kumar · 9812345678 · overdue 2d · Health\n2\) Sunita Rao · today · Health/);
+  assert.match(transport.last(), /^📋 2 follow-ups due:\n1\) \*Ramesh Kumar\* · 9812345678 · overdue 2d · Health\n2\) \*Sunita Rao\* · today · Health/);
   engine.followupRows = [];
   await bot.handle(text("follow ups"));
   assert.match(transport.last(), /No follow-ups due today/);
@@ -122,10 +122,10 @@ test("find: policies and leads on a name; a bare number too", async () => {
   engine.clients.set(id, healthClient(id, { policyholderName: "Ramesh Kumar", expiryDate: "2026-12-01" }));
   engine.leadRows = [lead()];
   await bot.handle(text("find Ramesh"));
-  assert.match(transport.last(), /Policies \(1\):\n1\) Ramesh Kumar · health · Care Health Care Supreme · 65\/100 · expires 2026-12-01/);
-  assert.match(transport.last(), /Leads \(1\):\n• Ramesh Kumar · 9812345678 · new/);
+  assert.match(transport.last(), /^📋 1 policy and 1 lead for "Ramesh":\n1\) \*Ramesh Kumar\* · health · Care Supreme · expires Tue 1 Dec · 65\/100/);
+  assert.match(transport.last(), /• Lead: \*Ramesh Kumar\* · 9812345678 · new/);
   await bot.handle(text("98123 45678"));
-  assert.match(transport.last(), /Leads \(1\)/);
+  assert.match(transport.last(), /1 lead for "98123 45678"/);
 });
 
 test("a phone number answering 'whose policy?' is not treated as a lookup", async () => {
@@ -143,13 +143,13 @@ test("checks left, views, claims", async () => {
   const { bot, transport, engine } = makeBot();
   engine.checks = 7;
   await bot.handle(text("how many checks do I have"));
-  assert.match(transport.last(), /You have 7 policy checks left\./);
+  assert.match(transport.last(), /You have \*7\* policy checks left\.\nNext: send a health policy PDF to use one\./);
   engine.viewRows = [{ clientId: "x", name: "Santosh Vartak", insurer: "ManipalCigna", policyName: "ProHealth", views: 3, lastViewed: "2026-09-25T06:07:00Z" }];
   await bot.handle(text("who opened my reports"));
-  assert.match(transport.last(), /1\) Santosh Vartak · ProHealth · 3 views · last 25 Sep 11:37/);
+  assert.match(transport.last(), /1\) \*Santosh Vartak\* · ProHealth · 3 views · last 25 Sep 11:37\n\nA good moment to call\. Their details: FIND Santosh/);
   engine.claimRows = [{ id: "cl1", status: "query_raised", claim_type: "cashless", insurer: "Star Health", hospital: "Apollo", ailment: "Knee replacement", claimed_amount: "240000", settled_amount: null, admitted_on: "2026-09-10", customer_name: "Ramesh Kumar", openQueries: [{ seq: 1, question: "Send discharge summary", raisedOn: "2026-09-20" }] }];
   await bot.handle(text("claims"));
-  assert.match(transport.last(), /Open claims \(1\):\n1\) Ramesh Kumar · Apollo, Knee replacement · Query \(1 open query\) · ₹2,40,000/);
+  assert.match(transport.last(), /📋 1 open claim:\n1\) \*Ramesh Kumar\* · Apollo, Knee replacement · Query \(1 open query\) · ₹2,40,000/);
   await bot.handle(text("claim Ramesh"));
   assert.deepEqual(engine.claimQueries, [null, "Ramesh"]);
   assert.match(transport.last(), /Status: Query \(cashless\)/);
@@ -161,7 +161,7 @@ test("motor policy question shows its stored details with the portal's labels", 
   const id = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
   engine.clients.set(id, { ...healthClient(id, { policyholderName: "Anil Mehta", insuranceType: "motor", report: null, score: null }), details: [{ label: "IDV (sum insured)", value: "640000" }, { label: "No-claim bonus (%)", value: "20" }] });
   await bot.handle(text("Anil's policy IDV?"));
-  assert.match(transport.last(), /Anil Mehta · motor policy \(no score: scores are for health only\)\n• IDV \(sum insured\): 640000\n• No-claim bonus \(%\): 20/);
+  assert.match(transport.last(), /\*Anil Mehta\* · Care Supreme · motor policy \(scores are for health only\)\n• IDV \(sum insured\): 640000\n• No-claim bonus \(%\): 20/);
 });
 
 test("surrender value runs the portal's value engine on the stored life fields", async () => {
@@ -175,7 +175,7 @@ test("surrender value runs the portal's value engine on the stored life fields",
   const r = transport.last();
   const v: any = computePolicyValue("life", fields, { asOf: new Date(NOW) });
   assert.ok(!("missing" in v), JSON.stringify(v));
-  assert.match(r, /^Ramesh Kumar · LIC Jeevan Anand/);
+  assert.match(r, /^\*Ramesh Kumar\* · LIC Jeevan Anand/);
   assert.match(r, /At maturity \(year 20\)/);
   const row = v.rows.find((x: any) => x.year === v.currentYear);
   assert.ok(row, "engine placed the policy year");
@@ -198,4 +198,28 @@ test("a pure term plan: no surrender value, said plainly (never 'Rs 0 back')", a
   await bot.handle(text("surrender value Vikram"));
   assert.match(transport.last(), /term cover only, so it has no surrender or maturity value/);
   assert.doesNotMatch(transport.last(), /₹0/);
+});
+
+/* ── Chat polish (advisor feedback, 25 Sep) ── */
+
+test("legal insurer names shortened, ALL-CAPS names title-cased, everywhere", async () => {
+  const { bot, transport, engine } = makeBot();
+  const id = "12121212-1212-4121-8121-121212121212";
+  engine.clients.set(id, healthClient(id, {
+    policyholderName: "JIGNESH RAMNIKLAL BHAGAT", insurer: "ManipalCigna Health Insurance Company Limited", policyName: "ProHealth", score: 75,
+  }));
+  await bot.handle(text("my clients"));
+  assert.match(transport.last(), /1\) \*Jignesh Ramniklal Bhagat\* · ManipalCigna ProHealth · 75\/100/);
+  assert.doesNotMatch(transport.last(), /Company Limited|JIGNESH/);
+});
+
+test("every reply has at most one emoji", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.leadRows = [lead()];
+  engine.followupRows = [lead({ days: 0 })];
+  for (const m of ["help", "more", "renewals", "follow ups", "find Ramesh", "calculator", "27 mumbai", "1", "1", "2", "compare Care Supreme vs Niva ReAssure 2.0", "my clients", "checks"]) {
+    await bot.handle(text(m));
+  }
+  const emoji = /\p{Extended_Pictographic}/gu;
+  for (const s of transport.texts()) assert.ok((s.match(emoji) || []).length <= 1, s);
 });

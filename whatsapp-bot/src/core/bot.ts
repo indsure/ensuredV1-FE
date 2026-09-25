@@ -34,6 +34,7 @@ import {
   TIER_LABEL, toolShareDraft, type Shareable,
 } from "./tools.js";
 import { log, redact } from "../log.js";
+import { b, planLabel as nicePlan, prettyEngine } from "./format.js";
 import {
   CLIENT_ONLY, VALUE_TYPES, claimsReply, detailsReply, followupsReply, leadUpdatedReply, lookupReply,
   nameMatches, parseDraft, parseLeadUpdate, valueReply, viewsReply, type LeadRow, type LeadUpdate,
@@ -109,7 +110,13 @@ export class Bot {
   private readonly now: () => number;
   private readonly replyDelay: () => number;
 
-  constructor(private readonly d: BotDeps) {
+  private readonly d: BotDeps;
+
+  constructor(deps: BotDeps) {
+    // Every name the bot shows passes through prettyEngine: short insurer names, no
+    // ALL-CAPS customers. Display only; nothing stored changes.
+    const d = { ...deps, engine: prettyEngine(deps.engine) };
+    this.d = d;
     this.t = { ...DEFAULT_TIMINGS, ...(d.timings || {}) };
     this.sleep = d.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
     this.now = d.now ?? (() => Date.now());
@@ -527,6 +534,8 @@ export class Bot {
     switch (intent) {
       case "help":
         return this.say(to, agentId, T.help(), "help");
+      case "more":
+        return this.say(to, agentId, T.more(), "more");
       case "renewals":
         return this.say(to, agentId, renewalsReply(await this.d.engine.renewals(agentId), this.d.links), "renewals");
       case "remind":
@@ -546,7 +555,7 @@ export class Bot {
         return this.say(to, agentId, followupsReply(this.d.links, await this.d.engine.followups(agentId)), "followups");
       case "checks": {
         const n = await this.d.engine.checksLeft(agentId);
-        return this.say(to, agentId, `You have ${n} policy ${n === 1 ? "check" : "checks"} left.${n <= 0 ? ` To get more: ${this.d.teamLink}` : ""}`, "checks");
+        return this.say(to, agentId, `You have ${b(String(n))} policy ${n === 1 ? "check" : "checks"} left.\n${n <= 0 ? `To get more: ${this.d.teamLink}` : "Next: send a health policy PDF to use one."}`, "checks");
       }
       case "views":
         return this.say(to, agentId, viewsReply(await this.d.engine.views(agentId)), "views");
@@ -746,7 +755,7 @@ export class Bot {
     await this.setState(agentId, to, "AWAITING_CLIENT_PICK", current, { ...extra, options: rows.map((r) => r.clientId) });
     return this.say(
       to, agentId,
-      T.whichPolicy(rows.map((r) => ({ name: r.policyholderName || "Unnamed", label: [r.insurer, r.policyName].filter(Boolean).join(" ") || r.insuranceType || "policy" }))),
+      T.whichPolicy(rows.map((r) => ({ name: r.policyholderName || "Unnamed", label: nicePlan(r.insurer, r.policyName) || r.insuranceType || "policy" }))),
       "pick_client",
     );
   }

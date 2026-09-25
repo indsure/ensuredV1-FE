@@ -9,6 +9,7 @@ import type { ClientSummary } from "../engine.js";
 import { computePolicyValue, isValueGap, type ValueSchedule } from "../shared/policyValue.js";
 import type { DraftKind } from "../shared/draftMessage.js";
 import { inr, portalPolicyUrl, type Links } from "./templates.js";
+import { b, dayMonth, firstName, planLabel } from "./format.js";
 
 export type LeadRow = {
   id: string; name: string; phone: string | null; status: string | null;
@@ -121,7 +122,12 @@ export function leadUpdatedReply(l: Links, lead: LeadRow, u: LeadUpdate): string
   if (u.status) bits.push(`marked ${u.status}`);
   if (u.nextFollowUp) bits.push(`follow-up set for ${prettyDate(u.nextFollowUp)}`);
   if (u.note) bits.push("note added");
-  return `${lead.name}: ${bits.join(", ")}.\n${l.origin}/agent/leads/${lead.id}`;
+  const n = firstName(lead.name);
+  const next =
+    u.status === "won" ? `Next: thank you message for ${n}` :
+    u.status === "lost" ? "" :
+    !u.nextFollowUp && !lead.next_follow_up ? `Next: follow up ${n} next week` : "";
+  return [`${b(lead.name)}: ${bits.join(", ")}.`, `${l.origin}/agent/leads/${lead.id}`, next].filter(Boolean).join("\n");
 }
 
 /* ── Follow-ups ──────────────────────────────────────────────────────── */
@@ -130,11 +136,10 @@ export function followupsReply(l: Links, leads: LeadRow[]): string {
   if (!leads.length) return "No follow-ups due today. Set one with: follow up Ramesh Friday";
   const lines = leads.slice(0, 15).map((r, i) => {
     const when = (r.days ?? 0) < 0 ? `overdue ${-(r.days ?? 0)}d` : "today";
-    const phone = r.phone ? ` · ${r.phone}` : "";
-    return `${i + 1}) ${r.name}${phone} · ${when}${r.insurance_interest ? ` · ${r.insurance_interest}` : ""}`;
+    return `${i + 1}) ${[b(r.name), r.phone, when, r.insurance_interest].filter(Boolean).join(" · ")}`;
   });
   const more = leads.length > 15 ? `\n…and ${leads.length - 15} more: ${l.origin}/agent/leads` : "";
-  return `Follow-ups due (${leads.length}):\n${lines.join("\n")}${more}\n\nDone with one? Reply for example: Ramesh contacted, or follow up Ramesh next week`;
+  return `📋 ${leads.length} ${leads.length === 1 ? "follow-up" : "follow-ups"} due:\n${lines.join("\n")}${more}\n\nDone with one? Reply for example: ${firstName(leads[0].name)} contacted`;
 }
 
 /* ── Message drafts (the portal's own templates) ─────────────────────── */
@@ -167,26 +172,21 @@ export const CLIENT_ONLY: DraftKind[] = ["upgrade_weak", "renewal", "premium_due
 
 export function lookupReply(l: Links, q: string, policies: ClientSummary[], leads: LeadRow[]): string {
   if (!policies.length && !leads.length) return `Nothing in your book for "${q}". Add them with: lead ${q} 98xxxxxxxx health`;
-  const out: string[] = [];
-  if (policies.length) {
-    out.push(`Policies (${policies.length}):`);
-    policies.forEach((p, i) => {
-      const plan = [p.insurer, p.policyName].filter(Boolean).join(" ");
-      const score = p.insuranceType === "health" && p.score != null ? ` · ${p.score}/100` : "";
-      const exp = p.expiryDate ? ` · expires ${String(p.expiryDate).slice(0, 10)}` : "";
-      out.push(`${i + 1}) ${p.policyholderName || "Unnamed"} · ${p.insuranceType || "policy"}${plan ? ` · ${plan}` : ""}${score}${exp}`);
-      out.push(`   ${portalPolicyUrl(l, p.clientId)}`);
-    });
-  }
-  if (leads.length) {
-    out.push(`${policies.length ? "\n" : ""}Leads (${leads.length}):`);
-    leads.forEach((r) => {
-      const fu = r.next_follow_up ? ` · follow up ${prettyDate(r.next_follow_up)}` : "";
-      out.push(`• ${r.name}${r.phone ? ` · ${r.phone}` : ""} · ${r.status || "new"}${fu}`);
-      out.push(`   ${l.origin}/agent/leads/${r.id}`);
-    });
-  }
-  if (policies.length) out.push("", "Ask about one by name, for example: " + (policies[0].policyholderName?.split(" ")[0] || "Ramesh") + "'s policy room rent?");
+  const out: string[] = [`📋 ${policies.length} ${policies.length === 1 ? "policy" : "policies"} and ${leads.length} ${leads.length === 1 ? "lead" : "leads"} for "${q}":`];
+  policies.forEach((p, i) => {
+    const bits = [
+      b(p.policyholderName || "Unnamed"), p.insuranceType || "policy", planLabel(p.insurer, p.policyName) || null,
+      p.expiryDate ? `expires ${dayMonth(String(p.expiryDate))}` : null,
+      p.insuranceType === "health" && p.score != null ? `${p.score}/100` : null,
+    ].filter(Boolean);
+    out.push(`${i + 1}) ${bits.join(" · ")}`, `   ${portalPolicyUrl(l, p.clientId)}`);
+  });
+  leads.forEach((r) => {
+    const fu = r.next_follow_up ? `follow up ${dayMonth(r.next_follow_up)}` : null;
+    out.push(`• Lead: ${[b(r.name), r.phone, r.status || "new", fu].filter(Boolean).join(" · ")}`, `   ${l.origin}/agent/leads/${r.id}`);
+  });
+  const n = firstName(policies[0]?.policyholderName || leads[0]?.name);
+  out.push("", policies.length ? `Ask about it: ${n}'s policy room rent?` : `Next: follow up ${n} Friday`);
   return out.join("\n");
 }
 
@@ -198,9 +198,9 @@ export function viewsReply(rows: { name: string | null; insurer: string | null; 
     const d = new Date(new Date(s).getTime() + 5.5 * 3600_000);
     return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()].replace(/^./, (c) => c.toUpperCase())} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
   };
-  return "Reports customers opened, latest first:\n" + rows.map((r, i) =>
-    `${i + 1}) ${r.name || "Unnamed"}${r.policyName ? ` · ${r.policyName}` : ""} · ${r.views} ${r.views === 1 ? "view" : "views"} · last ${fmt(r.lastViewed)}`
-  ).join("\n") + "\n\nA good moment to call them.";
+  return `📋 ${rows.length} ${rows.length === 1 ? "customer has" : "customers have"} opened their report, latest first:\n` + rows.map((r, i) =>
+    `${i + 1}) ${b(r.name || "Unnamed")}${r.policyName ? ` · ${r.policyName}` : ""} · ${r.views} ${r.views === 1 ? "view" : "views"} · last ${fmt(r.lastViewed)}`
+  ).join("\n") + `\n\nA good moment to call. Their details: FIND ${firstName(rows[0].name)}`;
 }
 
 /* ── Claims (the Claims desk) ────────────────────────────────────────── */
@@ -222,7 +222,7 @@ export function claimsReply(l: Links, rows: ClaimRow[], q: string | null): strin
   if (rows.length === 1 && q) {
     const c = rows[0];
     const out = [
-      `${c.customer_name || "Claim"} · ${[c.hospital, c.ailment].filter(Boolean).join(", ") || c.claim_type}`,
+      `📋 ${b(c.customer_name || "Claim")} · ${[c.hospital, c.ailment].filter(Boolean).join(", ") || c.claim_type}`,
       `Status: ${CLAIM_LABEL[c.status] ?? c.status} (${c.claim_type})`,
     ];
     if (c.insurer) out.push(`Insurer: ${c.insurer}`);
@@ -239,9 +239,9 @@ export function claimsReply(l: Links, rows: ClaimRow[], q: string | null): strin
   const lines = rows.map((c, i) => {
     const q = c.openQueries.length ? ` (${c.openQueries.length} open ${c.openQueries.length === 1 ? "query" : "queries"})` : "";
     const amt = c.claimed_amount != null ? ` · ${inr(c.claimed_amount)}` : "";
-    return `${i + 1}) ${c.customer_name || "Unnamed"} · ${[c.hospital, c.ailment].filter(Boolean).join(", ") || c.claim_type} · ${CLAIM_LABEL[c.status] ?? c.status}${q}${amt}`;
+    return `${i + 1}) ${b(c.customer_name || "Unnamed")} · ${[c.hospital, c.ailment].filter(Boolean).join(", ") || c.claim_type} · ${CLAIM_LABEL[c.status] ?? c.status}${q}${amt}`;
   });
-  return `${q ? `Claims matching "${q}"` : "Open claims"} (${rows.length}):\n${lines.join("\n")}\n\nDetails on one: claim Ramesh\n${l.origin}/agent/claims`;
+  return `📋 ${rows.length} ${q ? `${rows.length === 1 ? "claim" : "claims"} matching "${q}"` : `open ${rows.length === 1 ? "claim" : "claims"}`}:\n${lines.join("\n")}\n\nDetails on one: claim ${firstName(rows[0].customer_name) || "Ramesh"}\n${l.origin}/agent/claims`;
 }
 
 /* ── Surrender value (life / term) ───────────────────────────────────── */
@@ -256,7 +256,7 @@ export function valueReply(l: Links, c: ClientSummary, nowMs: number): string {
     return `I can't work out ${c.policyholderName || "this"}'s policy value yet. Missing: ${v.missing.join(", ")}. Fill these in on the policy in the portal: ${url}`;
   }
   const s = v as ValueSchedule;
-  const head = `${c.policyholderName || "Policy"} · ${[c.insurer, c.policyName].filter(Boolean).join(" ") || c.insuranceType}`;
+  const head = `${b(c.policyholderName || "Policy")} · ${planLabel(c.insurer, c.policyName) || c.insuranceType}`;
   if (s.shape === "pure_term") {
     return `${head}\nThis is term cover only, so it has no surrender or maturity value. It pays only on a claim.\n${url}`;
   }
@@ -279,5 +279,5 @@ export function detailsReply(l: Links, c: ClientSummary): string {
   const d = (c.details || []).slice(0, 14);
   if (!d.length) return `This ${c.insuranceType || ""} policy has no details filled in yet. See it in the portal: ${url}`;
   const extra = VALUE_TYPES.includes(c.insuranceType || "") ? "\nSurrender value: reply SURRENDER VALUE " + (c.policyholderName?.split(" ")[0] || "") : "";
-  return `${c.policyholderName || "Policy"} · ${c.insuranceType} policy (no score: scores are for health only)\n${d.map((x) => `• ${x.label}: ${x.value}`).join("\n")}${extra}\n${url}`;
+  return `${b(c.policyholderName || "Policy")} · ${planLabel(c.insurer, c.policyName) || c.insuranceType} · ${c.insuranceType} policy (scores are for health only)\n${d.map((x) => `• ${x.label}: ${x.value}`).join("\n")}${extra}\n${url}`;
 }

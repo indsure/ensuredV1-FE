@@ -6,6 +6,7 @@
 
 import type { ClientSummary, RenewalRow } from "../engine.js";
 import { TYPE_LABEL, type PolicyType } from "./pdfInspect.js";
+import { b, dayMonth, firstName, planLabel } from "./format.js";
 
 export type Lang = "english" | "hinglish" | "hindi";
 
@@ -54,10 +55,20 @@ export const T = {
     `You've used all your data entry for now, so I couldn't save this policy. Message the IndSure team to get more: ${url}`,
   notInReport: (url: string) =>
     `The report doesn't cover that. Here it is in full: ${url}. For exact coverage questions, it's best to check with the insurer.`,
+  // Short on purpose: the four things advisors do most. MORE lists everything.
   help: () =>
     [
-      "I can:",
-      "• Check a health policy: send the PDF. Then ask: room rent? co-pay?",
+      "📋 Here's what I do most:",
+      "• Send a health policy PDF and I'll check it",
+      "• RENEWALS or FOLLOW UPS: who to call",
+      "• LEAD Ramesh 98123 45678 health",
+      "• CALCULATOR, or COMPARE Care Supreme vs ReAssure 2.0",
+      "Or just tell me what you need. Reply MORE for everything else.",
+    ].join("\n"),
+  more: () =>
+    [
+      "📋 Everything I can do:",
+      "• Send a health policy PDF, then ask: room rent? co-pay?",
       "• SHARE: a message for the customer (report, calculator or comparison)",
       "• RENEWALS · FOLLOW UPS · MY CLIENTS · CLAIMS · VIEWS · CHECKS",
       "• LEAD Ramesh 98123 45678 health · Ramesh won · follow up Ramesh Friday · note Ramesh: wants family floater",
@@ -99,7 +110,7 @@ export const T = {
     `You've run out of policy checks, so I've stopped here. ${waiting} ${waiting === 1 ? "file is" : "files are"} still waiting and ${waiting === 1 ? "was" : "were"} not checked. Message the IndSure team to get more: ${url}`,
   gaveUp: (url: string) =>
     `I couldn't get a result for this policy. Please check it in the portal: ${url}`,
-  didNotCatch: () => `I didn't catch that. ${T.help()}`,
+  didNotCatch: () => `I didn't catch that.\n\n${T.help()}`,
   resendFile: () => "I no longer have that file. Please send the PDF again.",
   genericError: () => "Something went wrong on my side. Please try again in a minute.",
   stillChecking: () => "I'm still checking a policy. I'll send the report as soon as it's ready.",
@@ -130,30 +141,24 @@ export function verdictLabel(label: string | null | undefined): string | null {
 }
 
 export function reportCard(c: ClientSummary, l: Links): string {
-  const who = c.policyholderName ? `${c.policyholderName}'s ` : "";
-  const what = [c.insurer, c.policyName].filter(Boolean).join(" ") || "health policy";
-  const head = c.score != null ? `${who}${what}: ${c.score}/100` : `${who}${what}`;
+  // Answer first: who, which plan, the score. Then why, then the one next action.
+  const plan = planLabel(c.insurer, c.policyName) || "Health policy";
+  const who = c.policyholderName ? `${b(c.policyholderName)} · ` : "";
+  const lines = [`📄 ${who}${plan}${c.score != null ? ` · ${c.score}/100` : ""}`];
   const label = verdictLabel(c.report?.verdictLabel);
-  const parts = [label ? `${head}, ${label}.` : `${head}.`];
-  if (c.report?.verdictSummary) parts.push(c.report.verdictSummary.trim().replace(/\.?$/, "."));
-
+  const summary = c.report?.verdictSummary?.trim().replace(/\.?$/, ".");
+  if (label || summary) lines.push([label ? `${label}.` : "", summary ?? ""].filter(Boolean).join(" "));
   const watch = (c.report?.whereItMayCost || []).filter((w) => w.issue).slice(0, 2);
   if (watch.length) {
-    parts.push(
-      "Watch out for: " +
-        watch.map((w) => (w.outOfPocket ? `${w.issue} (${w.outOfPocket})` : `${w.issue}`)).join("; ") + "."
-    );
+    lines.push("Watch out for: " + watch.map((w) => (w.outOfPocket ? `${w.issue} (${w.outOfPocket})` : `${w.issue}`)).join("; ") + ".");
   }
-  parts.push(`Full report: ${portalPolicyUrl(l, c.clientId)}`);
-  parts.push(`Reply SHARE to send it to ${c.policyholderName || "your customer"}, or ask me anything about it.`);
-  return clean(parts.join("\n"));
+  lines.push(`Full report: ${portalPolicyUrl(l, c.clientId)}`);
+  lines.push(`Reply SHARE to send it to ${firstName(c.policyholderName) || "the customer"}, or ask me anything about it.`);
+  return clean(lines.join("\n"));
 }
 
 /* ── T11 share draft ── */
 
-function firstName(n: string | null | undefined): string {
-  return String(n || "").trim().split(/\s+/)[0] || "";
-}
 
 /** The customer-facing text. Like the portal's (PolicyDetail.tsx), it asserts only that a
  *  report exists at the link: no score, no gaps, so it is true for every policy type. */
@@ -187,35 +192,30 @@ const RENEWALS_CAP = 10;
 function renewalLine(r: RenewalRow): string {
   const d = r.days_left;
   const when = d < 0 ? `overdue ${-d}d` : d === 0 ? "due today" : `${d}d left`;
-  const bits = [
-    r.name || "Unnamed",
-    [r.insurance_type, r.insurer].filter(Boolean).join(", ") || null,
-    `${r.due_date.slice(0, 10)} (${when})`,
-    inr(r.premium),
-  ].filter(Boolean);
-  return bits.join(" · ");
+  const what = [r.insurance_type, planLabel(r.insurer, r.policy_name)].filter(Boolean).join(", ");
+  return [b(r.name || "Unnamed"), what || null, `${dayMonth(r.due_date)} (${when})`, inr(r.premium)].filter(Boolean).join(" · ");
 }
 
 export function renewalsReply(data: { leads: RenewalRow[]; customers: RenewalRow[] }, l: Links): string {
   const overdue = data.leads.filter((r) => r.days_left < 0);
   const week = data.leads.filter((r) => r.days_left >= 0 && r.days_left <= 7);
   const own = data.customers;
-  if (!overdue.length && !week.length && !own.length) {
-    return "Nothing due. No lead renewals this week and none of your customers' policies expire in the next 30 days.";
+  const total = overdue.length + week.length + own.length;
+  if (!total) {
+    return "🔄 Nothing due. No lead renewals this week, and none of your customers' policies expire in the next 30 days.";
   }
-  const out: string[] = [];
+  const out: string[] = [`🔄 ${total} ${total === 1 ? "renewal" : "renewals"} to handle, soonest first:`];
   let budget = RENEWALS_CAP;
   const section = (title: string, rows: RenewalRow[]) => {
-    if (!rows.length) return;
-    out.push(`*${title}*`);
-    for (const r of rows.slice(0, Math.max(0, budget))) out.push(renewalLine(r));
-    budget -= Math.min(rows.length, Math.max(0, budget));
+    if (!rows.length || budget <= 0) return;
+    out.push("", title);
+    for (const r of rows.slice(0, budget)) out.push(renewalLine(r));
+    budget -= Math.min(rows.length, budget);
   };
-  section("Leads: overdue", overdue);
-  section("Leads: due this week", week);
-  section("Your customers: expiring in 30 days", own);
-  const total = overdue.length + week.length + own.length;
+  section("Leads, overdue:", overdue);
+  section("Leads, due this week:", week);
+  section("Your customers, expiring in 30 days:", own);
   if (total > RENEWALS_CAP) out.push(`…and ${total - RENEWALS_CAP} more: ${l.origin}/agent/renewals`);
-  out.push("", "Reply REMIND followed by a name for a ready-to-send reminder, for example: REMIND Ramesh");
+  out.push("", "Reply REMIND and a name for a ready-to-send reminder, for example: REMIND Ramesh");
   return clean(out.join("\n"));
 }

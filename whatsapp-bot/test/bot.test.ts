@@ -47,8 +47,10 @@ test("health PDF: acknowledge, report card from stored fields, report becomes cu
   await settle(bot);
   const all = transport.texts().join("\n---\n");
   assert.match(transport.texts()[0], /Got it\. Checking this policy now/);
-  assert.match(all, /Ramesh Kumar's Care Health Care Supreme: 65\/100, Good Core Coverage with Areas to Improve\./);
+  // Answer first (who, short plan name, score), then why, then the one next action.
+  assert.match(all, /📄 \*Ramesh Kumar\* · Care Supreme · 65\/100\nGood Core Coverage with Areas to Improve\. Decent base cover with a costly room rent cap\./);
   assert.match(all, /Watch out for: Room rent capped at 1% of sum insured \(₹40,000 on a ₹3L bill\); Cataract sub-limit\./);
+  assert.match(all, /Reply SHARE to send it to Ramesh, or ask me anything about it\./);
   assert.match(all, /Full report: https:\/\/indsure\.in\/agent\/policies\//);
   assert.equal(engine.analyzeCalls[0].type, "health");
   assert.equal(engine.analyzeCalls[0].policyholderName, "Ramesh Kumar");
@@ -221,7 +223,8 @@ test("RENEWALS: both lists, soonest first, capped at 10 with a portal link; REMI
   };
   await bot.handle(text("renewals this week"));
   const r = transport.last();
-  assert.match(r, /\*Leads: overdue\*\nLead 1 · health, Niva Bupa · 2026-10-01 \(overdue 2d\) · ₹12,000/);
+  assert.match(r, /^🔄 11 renewals to handle, soonest first:/);
+  assert.match(r, /Leads, overdue:\n\*Lead 1\* · health, Niva Bupa · Thu 1 Oct \(overdue 2d\) · ₹12,000/);
   assert.match(r, /and 1 more: https:\/\/indsure\.in\/agent\/renewals/);
   await bot.handle(text("remind kavita"));
   assert.match(transport.last(), /Here's a message for Kavita Rao/);
@@ -241,13 +244,13 @@ test("a pending question lapses after 15 minutes", async () => {
   engine.conv = { state: "AWAITING_TYPE", currentClientId: null, pending: { to: `${ADVISOR}@s.whatsapp.net` }, updatedAt: new Date(0).toISOString() };
   await bot.handle(text("5"));
   // "5" is no longer a type pick; with no report and no rule it falls to the help menu.
-  assert.match(transport.last(), /I can:/);
+  assert.match(transport.last(), /Here's what I do most:/);
 });
 
 test("unrecognised text with no report: help menu", async () => {
   const { bot, transport } = makeBot();
   await bot.handle(text("what's up with the market"));
-  assert.match(transport.last(), /I can:/);
+  assert.match(transport.last(), /Here's what I do most:/);
 });
 
 test("house copy rules: no em dash, never 'AI' or 'credits' in anything sent", async () => {

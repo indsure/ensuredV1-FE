@@ -6,7 +6,7 @@
 export type Intent =
   | "link" | "unlink" | "cancel" | "help" | "renewals" | "remind" | "share" | "ask" | "unknown"
   | "website" | "lead" | "calc" | "compare" | "clients"
-  | "followups" | "draft" | "lookup" | "checks" | "views" | "claims" | "surrender";
+  | "followups" | "draft" | "lookup" | "checks" | "views" | "claims" | "surrender" | "more";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -20,6 +20,7 @@ export function ruleIntent(textRaw: string): Intent | null {
   if (!t) return null;
   if (linkCode(t)) return "link";
   if (/^unlink$/.test(t)) return "unlink";
+  if (/^(more|all commands|everything|full menu|help all|all features|what else)[.!?]*$/.test(t)) return "more";
   // Bare "link" (no code) is the advisor's own website. "LINK 123456" is connecting, above.
   if (/^(link|my link|website|my website|my site|my page|site link|website link|share my (website|page|link))[.!?]*$/.test(t)) return "website";
   if (/^((please\s+)?(enter|add|new|create|save)\s+(a\s+)?(new\s+)?leads?\b|leads?\b(?!s?\s*(list|page)))/.test(t)) return "lead";
