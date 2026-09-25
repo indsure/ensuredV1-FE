@@ -266,3 +266,25 @@ test("house copy rules: no em dash, never 'AI' or 'credits' in anything sent", a
     assert.doesNotMatch(s, /\bcredits?\b/i, s);
   }
 });
+
+test("SHARE with a number: the link goes to that number, even with none on file", async () => {
+  const { bot, transport, engine } = makeBot();
+  const id = "44444444-4444-4444-8444-444444444444";
+  engine.clients.set(id, healthClient(id, { customerPhone: null }));
+  engine.conv = { state: "REPORT_READY", currentClientId: id, pending: {}, updatedAt: null };
+  await bot.handle(text("Share to +919987148125"));
+  assert.match(transport.last(), /Which language/);
+  await bot.handle(text("1"));
+  assert.match(transport.last(), /https:\/\/wa\.me\/919987148125\?text=/);
+  assert.doesNotMatch(transport.last(), /pick the chat/);
+  await bot.handle(text("share to 98765 43210 in hindi"));
+  assert.match(transport.last(), /https:\/\/wa\.me\/919876543210\?text=/);
+});
+
+test("a forwarded PDF whose caption is its file name is not filed under that name", async () => {
+  const { bot, transport, engine } = makeBot();
+  await bot.handle(pdf(transport, "HEALTH", { caption: "Policy Kit_PROHLV050040281.pdf", name: "Policy Kit_PROHLV050040281.pdf" }));
+  await settle(bot);
+  assert.equal(engine.analyzeCalls[0].policyholderName, null);
+  assert.match(transport.last(), /Whose policy is this\?/);
+});

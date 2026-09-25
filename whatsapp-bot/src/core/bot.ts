@@ -573,7 +573,7 @@ export class Bot {
         const lang = n ? LANGS[n - 1] : langIn(text);
         if (!lang) { await this.say(to, agentId, T.pickLang(), "pick_lang"); return true; }
         await this.rest(agentId, to, p.clientId);
-        await this.doShare(agentId, to, p.clientId, lang);
+        await this.doShare(agentId, to, p.clientId, lang, p.phone ?? null);
         return true;
       }
       case "AWAITING_CLIENT_PICK": {
@@ -583,9 +583,9 @@ export class Bot {
         const clientId = ids[n - 1];
         await this.rest(agentId, to, clientId);
         if (p.purpose === "share") {
-          if (p.lang) await this.doShare(agentId, to, clientId, p.lang);
+          if (p.lang) await this.doShare(agentId, to, clientId, p.lang, p.phone ?? null);
           else {
-            await this.setState(agentId, to, "AWAITING_SHARE_LANG", clientId, { clientId });
+            await this.setState(agentId, to, "AWAITING_SHARE_LANG", clientId, { clientId, phone: p.phone ?? null });
             await this.say(to, agentId, T.pickLang(), "pick_lang");
           }
         } else {
@@ -650,31 +650,35 @@ export class Bot {
 
   private async shareStart(agentId: string, conv: Conv, to: string, text: string) {
     const lang = langIn(text);
-    const name = namedPerson(text);
+    // "share to 98123 45678": a number typed with SHARE is used for this link.
+    const phone = parseCaption(text).phone;
+    const name = phone ? null : namedPerson(text);
     let clientId = conv.currentClientId;
     if (name) {
       const found = await this.d.engine.findClients(agentId, name);
       if (found.length === 0) return this.say(to, agentId, T.noSuchCustomer(name), "share");
-      if (found.length > 1) return this.pickClient(agentId, to, conv.currentClientId, found, { purpose: "share", lang });
+      if (found.length > 1) return this.pickClient(agentId, to, conv.currentClientId, found, { purpose: "share", lang, phone });
       clientId = found[0].clientId;
     }
     if (!clientId) return this.say(to, agentId, T.noReport(), "share");
     if (lang) {
       await this.rest(agentId, to, clientId);
-      return this.doShare(agentId, to, clientId, lang);
+      return this.doShare(agentId, to, clientId, lang, phone);
     }
-    await this.setState(agentId, to, "AWAITING_SHARE_LANG", clientId, { clientId });
+    await this.setState(agentId, to, "AWAITING_SHARE_LANG", clientId, { clientId, phone });
     return this.say(to, agentId, T.pickLang(), "pick_lang");
   }
 
-  private async doShare(agentId: string, to: string, clientId: string, lang: Lang) {
+  /** `phone`: a number the advisor typed with SHARE. It wins over the one on file, and is
+   *  used only for this link; nothing is saved to the customer. */
+  private async doShare(agentId: string, to: string, clientId: string, lang: Lang, phone: string | null = null) {
     const c = await this.d.engine.getClient(agentId, clientId);
     if (!c) return this.say(to, agentId, T.noReport(), "share");
     if (c.status !== "done") return this.say(to, agentId, T.stillChecking(), "share");
     const token = await this.d.engine.share(agentId, clientId);
     if (!token) return this.say(to, agentId, T.genericError(), "share");
     const draft = shareDraft(lang, c.policyholderName, c.policyName || c.insurer, sharedReportUrl(this.d.links, token));
-    const link = waMeLink(c.customerPhone, draft);
+    const link = waMeLink(phone || c.customerPhone, draft);
     return this.say(to, agentId, shareReply(c.policyholderName, draft, link, /wa\.me\/\d/.test(link)), "share");
   }
 
