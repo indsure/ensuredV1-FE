@@ -40,6 +40,7 @@ if (/[\/]IndSure[\/]/i.test(fs.realpathSync(authDir))) {
 const transport = new BaileysTransport({
   authDir,
   onDownTooLong: (ms) => log.error("ALERT whatsapp down", { downForMs: ms }),
+  pairPhone: process.env.WA_PAIR_PHONE,
 });
 const engine = new HttpEngine(process.env.BACKEND_URL || "http://127.0.0.1:5000", key);
 const bot = new Bot({

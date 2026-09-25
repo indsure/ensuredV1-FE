@@ -29,6 +29,10 @@ export type BaileysOptions = {
   /** Called when the socket has been down longer than `downAlertMs`. */
   onDownTooLong?: (downForMs: number) => void;
   downAlertMs?: number;
+  /** When set (E.164 digits) and the session is not yet paired, log an 8-character pairing
+   *  code instead of relying on the QR. On the phone: Linked devices > Link a device >
+   *  "Link with phone number instead". Easier than scanning a QR out of a server log. */
+  pairPhone?: string;
 };
 
 /** Phone number digits from a JID, or null for LIDs, groups, broadcasts. */
@@ -44,6 +48,7 @@ export class BaileysTransport implements Transport {
   private downSince: number | null = null;
   private downTimer: NodeJS.Timeout | null = null;
   private retry = 0;
+  private pairingRequested = false;
 
   constructor(private readonly opts: BaileysOptions) {}
 
@@ -67,8 +72,19 @@ export class BaileysTransport implements Transport {
 
     sock.ev.on("connection.update", (u) => {
       if (u.qr) {
-        log.info("scan this QR with the bot phone: WhatsApp > Linked devices > Link a device");
-        qrcode.generate(u.qr, { small: true });
+        const pair = (this.opts.pairPhone || "").replace(/\D/g, "");
+        if (pair && !state.creds.registered) {
+          // The QR event means the socket is ready to pair; ask once for a code instead.
+          if (!this.pairingRequested) {
+            this.pairingRequested = true;
+            sock.requestPairingCode(pair)
+              .then((code) => console.log(`PAIRING CODE: ${code}  (bot phone: Linked devices > Link a device > Link with phone number instead)`))
+              .catch((e) => { this.pairingRequested = false; log.error("pairing code failed", { error: e?.message }); });
+          }
+        } else {
+          log.info("scan this QR with the bot phone: WhatsApp > Linked devices > Link a device");
+          qrcode.generate(u.qr, { small: true });
+        }
       }
       if (u.connection === "open") {
         this.retry = 0;
