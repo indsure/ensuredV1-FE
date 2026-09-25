@@ -20,6 +20,12 @@ export type ClientSummary = {
   shareToken: string | null;
   views: number;
   expiryDate: string | null;
+  /** First key failure point: what the portal's "Suggest an upgrade" message names. */
+  weakPoint?: string | null;
+  /** Data-entry fields with the portal's labels (motor, life, travel...). */
+  details?: { label: string; value: string }[];
+  /** Raw stored fields for life/term, for the policy-value engine. */
+  extracted?: Record<string, unknown> | null;
   report: null | {
     verdictLabel: string | null;
     verdictSummary: string | null;
@@ -78,6 +84,9 @@ export type PolicyRow = {
   insurer: string | null; policyName: string | null; score: number | null;
 };
 
+import type { LeadRow, ClaimRow } from "./core/crm.js";
+export type { LeadRow, ClaimRow };
+
 export type Conversation = { state: string; currentClientId: string | null; pending: any; updatedAt: string | null };
 
 export interface Engine {
@@ -108,6 +117,12 @@ export interface Engine {
   catalog(agentId: string): Promise<CatalogPlan[]>;
   compare(agentId: string, keys: string[]): Promise<CompareResult>;
   policies(agentId: string, type: string | null): Promise<{ total: number; rows: PolicyRow[] }>;
+  leadSearch(agentId: string, q: string): Promise<LeadRow[]>;
+  leadUpdate(agentId: string, id: string, u: { status?: string; nextFollowUp?: string; note?: string }): Promise<LeadRow>;
+  followups(agentId: string): Promise<LeadRow[]>;
+  lookup(agentId: string, q: string): Promise<{ policies: ClientSummary[]; leads: LeadRow[] }>;
+  views(agentId: string): Promise<{ name: string | null; insurer: string | null; policyName: string | null; views: number; lastViewed: string; clientId: string }[]>;
+  claims(agentId: string, q: string | null): Promise<ClaimRow[]>;
   llmPhrase(agentId: string, clientId: string, question: string): Promise<{ answer: string | null; notInReport?: boolean; guardFired?: boolean }>;
 }
 
@@ -212,6 +227,18 @@ export class HttpEngine implements Engine {
     return rows;
   }
   compare(agentId: string, keys: string[]) { return this.call("/api/internal/wa/compare", { method: "POST", agentId, body: { keys } }); }
+  async leadSearch(agentId: string, q: string) {
+    return (await this.call(`/api/internal/wa/leads/search?q=${encodeURIComponent(q)}`, { agentId })).matches;
+  }
+  async leadUpdate(agentId: string, id: string, u: any) {
+    return (await this.call(`/api/internal/wa/leads/${id}/update`, { method: "POST", agentId, body: u })).lead;
+  }
+  async followups(agentId: string) { return (await this.call("/api/internal/wa/followups", { agentId })).leads; }
+  lookup(agentId: string, q: string) { return this.call(`/api/internal/wa/lookup?q=${encodeURIComponent(q)}`, { agentId }); }
+  async views(agentId: string) { return (await this.call("/api/internal/wa/views", { agentId })).views; }
+  async claims(agentId: string, q: string | null) {
+    return (await this.call(`/api/internal/wa/claims${q ? `?q=${encodeURIComponent(q)}` : ""}`, { agentId })).claims;
+  }
   policies(agentId: string, type: string | null) {
     return this.call(`/api/internal/wa/policies${type ? `?type=${encodeURIComponent(type)}` : ""}`, { agentId });
   }

@@ -34,6 +34,11 @@ import {
   TIER_LABEL, toolShareDraft, type Shareable,
 } from "./tools.js";
 import { log, redact } from "../log.js";
+import {
+  CLIENT_ONLY, VALUE_TYPES, claimsReply, detailsReply, followupsReply, leadUpdatedReply, lookupReply,
+  nameMatches, parseDraft, parseLeadUpdate, valueReply, viewsReply, type LeadRow, type LeadUpdate,
+} from "./crm.js";
+import type { DraftKind } from "../shared/draftMessage.js";
 
 export const MAX_BYTES = 25 * 1024 * 1024;
 /** How long free-text questions keep going to the last report without naming a topic. */
@@ -77,7 +82,7 @@ type FileRef = { path: string; sha: string; name: string; waMessageId: string; c
 type State =
   | "IDLE" | "REPORT_READY" | "AWAITING_TYPE" | "AWAITING_DUP_CONFIRM" | "AWAITING_CUSTOMER"
   | "AWAITING_SHARE_LANG" | "AWAITING_CLIENT_PICK" | "AWAITING_REMIND_PICK"
-  | "AWAITING_LEAD" | "AWAITING_CALC" | "AWAITING_COMPARE_PICK";
+  | "AWAITING_LEAD" | "AWAITING_CALC" | "AWAITING_COMPARE_PICK" | "AWAITING_LEAD_PICK";
 
 type Conv = { state: State; currentClientId: string | null; pending: any; updatedAt: string | null };
 
@@ -483,7 +488,10 @@ export class Bot {
   private async onText(agentId: string, conv: Conv, msg: InboundMessage) {
     const to = msg.replyTo;
     const text = msg.text.trim();
-    const intent = ruleIntent(text);
+    let intent = ruleIntent(text);
+    // While a question is pending, a bare number is an answer to it (a phone number for
+    // "whose policy?" or a new lead), never a lookup.
+    if (intent === "lookup" && conv.state.startsWith("AWAITING") && /^\+?[\d\s-]+$/.test(text)) intent = null;
 
     if (intent === "cancel") {
       await this.dropHeldFile(conv);
@@ -496,6 +504,13 @@ export class Bot {
     }
     if (/^(ok|okay|thanks|thank you|thx|ty|great|done|👍|🙏)[.! ]*$/i.test(text)) {
       if (!conv.state.startsWith("AWAITING")) return this.say(to, agentId, "Happy to help.", "thanks");
+    }
+
+    // "Ramesh won" / "follow up Ramesh Friday" / "note Ramesh: ...": only when no other
+    // command matched and no question is pending.
+    if (!intent && !conv.state.startsWith("AWAITING")) {
+      const u = parseLeadUpdate(text, this.now());
+      if (u && (await this.leadUpdateStart(agentId, conv, to, u))) return;
     }
 
     // A pending question gets first go at the reply, unless it is a clear command.
@@ -527,6 +542,28 @@ export class Bot {
         return this.say(to, agentId, CALC_AGE_ASK, "calc");
       case "compare":
         return this.compareStart(agentId, conv, to, text);
+      case "followups":
+        return this.say(to, agentId, followupsReply(this.d.links, await this.d.engine.followups(agentId)), "followups");
+      case "checks": {
+        const n = await this.d.engine.checksLeft(agentId);
+        return this.say(to, agentId, `You have ${n} policy ${n === 1 ? "check" : "checks"} left.${n <= 0 ? ` To get more: ${this.d.teamLink}` : ""}`, "checks");
+      }
+      case "views":
+        return this.say(to, agentId, viewsReply(await this.d.engine.views(agentId)), "views");
+      case "claims": {
+        const q = text.replace(/^(show\s+)?(open\s+)?claims?\s*(status)?\s*(of|for)?\s*/i, "").trim() || null;
+        return this.say(to, agentId, claimsReply(this.d.links, await this.d.engine.claims(agentId, q), q), "claims");
+      }
+      case "lookup": {
+        const q = text.replace(/^(find|search|lookup|look up|who is|details (of|for))\s+/i, "").trim();
+        const r = await this.d.engine.lookup(agentId, q);
+        if (r.policies.length === 1) this.setLast(agentId, { kind: "policy", clientId: r.policies[0].clientId });
+        return this.say(to, agentId, lookupReply(this.d.links, q, r.policies, r.leads), "lookup");
+      }
+      case "surrender":
+        return this.surrender(agentId, conv, to, text);
+      case "draft":
+        return this.draft(agentId, conv, to, text);
       case "clients": {
         const type = typeIn(text);
         return this.say(to, agentId, clientsReply(this.d.links, type, await this.d.engine.policies(agentId, type)), "clients");
@@ -622,7 +659,9 @@ export class Bot {
         if (!n) return false;
         const clientId = ids[n - 1];
         await this.rest(agentId, to, clientId);
-        if (p.purpose === "share") {
+        if (p.purpose === "draft") {
+          await this.draftForClient(agentId, to, clientId, p.draftKind, p.lang || "english");
+        } else if (p.purpose === "share") {
           if (p.lang) await this.doShare(agentId, to, clientId, p.lang, p.phone ?? null);
           else {
             await this.setState(agentId, to, "AWAITING_SHARE_LANG", clientId, { clientId, phone: p.phone ?? null });
@@ -643,6 +682,15 @@ export class Bot {
         if (!n) return false;
         const resolved: string[] = [...(p.resolved || []), q.options[n - 1].key];
         await this.compareContinue(agentId, conv, to, resolved, (p.queue || []).slice(1));
+        return true;
+      }
+      case "AWAITING_LEAD_PICK": {
+        const rows: LeadRow[] = p.rows || [];
+        const n = pickNumber(text, rows.length);
+        if (!n) return false;
+        await this.rest(agentId, to, conv.currentClientId);
+        if (p.update) await this.leadApply(agentId, to, rows[n - 1], p.update);
+        else if (p.draftKind) await this.sendDraft(agentId, to, { type: "lead", id: rows[n - 1].id, name: rows[n - 1].name, phone: rows[n - 1].phone }, p.draftKind, p.lang);
         return true;
       }
       case "AWAITING_REMIND_PICK": {
@@ -678,8 +726,12 @@ export class Bot {
     if (!c) return this.say(to, agentId, T.noReport(), "ask");
     if (c.status !== "done") return this.say(to, agentId, T.stillChecking(), "ask");
     if (!c.report) {
-      // Data-entry policies have no audit to answer from.
-      return this.say(to, agentId, `This is a ${c.insuranceType || "non-health"} policy, so there's no report to answer from. Its details are in the portal: ${url}`, "ask");
+      // Data-entry policies have no audit, but their stored fields answer most questions.
+      this.setLast(agentId, { kind: "policy", clientId });
+      if (VALUE_TYPES.includes(c.insuranceType || "") && /\b(surrender|loan|value|maturity)\b/i.test(question)) {
+        return this.say(to, agentId, valueReply(this.d.links, c, this.now()), "surrender");
+      }
+      return this.say(to, agentId, detailsReply(this.d.links, c), "details");
     }
     this.setLast(agentId, { kind: "policy", clientId });
     const ruled = question ? ruleAnswer(question, c) : null;
@@ -918,5 +970,105 @@ export class Bot {
     this.setLast(agentId, { kind: "compare", url: `${this.d.links.origin}/compare/report/${r.uuid}`, names: r.names.filter(Boolean).join(" and ") });
     await this.rest(agentId, to, conv.currentClientId);
     return this.say(to, agentId, compareReply(this.d.links, r), "compare_done");
+  }
+
+  /* ══ CRM: lead updates ════════════════════════════════════════════════ */
+
+  /** Returns false when the name matches no lead, so the text falls through to normal
+   *  handling ("ok done" must not become "no lead called Ok"). */
+  private async leadUpdateStart(agentId: string, conv: Conv, to: string, u: LeadUpdate): Promise<boolean> {
+    // The search is a loose substring match; a typed name that changes data must match
+    // word starts, so "ok done" can never touch "Alok".
+    const rows = (await this.d.engine.leadSearch(agentId, u.name)).filter((r) => nameMatches(u.name, r.name));
+    if (!rows.length) {
+      // A follow-up or a note is clearly about a lead; a bare status word may not be.
+      if (!u.nextFollowUp && !u.note) return false;
+      await this.say(to, agentId, `I couldn't find a lead called "${u.name}". Add them with: lead ${u.name} 98xxxxxxxx health`, "lead_update");
+      return true;
+    }
+    if (rows.length > 1) {
+      await this.setState(agentId, to, "AWAITING_LEAD_PICK", conv.currentClientId, { rows, update: u });
+      await this.say(to, agentId, `Which ${u.name}?\n${rows.map((r, i) => `${i + 1}) ${r.name}${r.phone ? ` · ${r.phone}` : ""} · ${r.status || "new"}`).join("\n")}`, "lead_pick");
+      return true;
+    }
+    await this.leadApply(agentId, to, rows[0], u);
+    return true;
+  }
+
+  private async leadApply(agentId: string, to: string, lead: LeadRow, u: LeadUpdate) {
+    const updated = await this.d.engine.leadUpdate(agentId, lead.id, { status: u.status, nextFollowUp: u.nextFollowUp, note: u.note });
+    return this.say(to, agentId, leadUpdatedReply(this.d.links, updated, u), "lead_update");
+  }
+
+  /* ══ CRM: message drafts (portal templates) ═══════════════════════════ */
+
+  private async draft(agentId: string, conv: Conv, to: string, text: string) {
+    const d = parseDraft(text);
+    if (!d) return this.say(to, agentId, "Which message, and for whom? For example: upgrade message for Santosh, or Diwali message for Ramesh.", "draft");
+    const lang = langIn(text) ?? "english";
+    const name = d.name;
+    if (!name) {
+      const last = this.lastShare.get(agentId);
+      const clientId = last?.kind === "policy" ? last.clientId : conv.currentClientId;
+      if (!clientId) return this.say(to, agentId, "Who is it for? For example: upgrade message for Santosh.", "draft");
+      return this.draftForClient(agentId, to, clientId, d.kind, lang);
+    }
+    // Policy-based messages need a customer with a policy; the rest can go to a lead too.
+    const clients = await this.d.engine.findClients(agentId, name);
+    if (CLIENT_ONLY.includes(d.kind) || !clients.length) {
+      if (clients.length === 1) return this.draftForClient(agentId, to, clients[0].clientId, d.kind, lang);
+      if (clients.length > 1) return this.pickClient(agentId, to, conv.currentClientId, clients, { purpose: "draft", draftKind: d.kind, lang });
+      if (CLIENT_ONLY.includes(d.kind)) return this.say(to, agentId, T.noSuchCustomer(name), "draft");
+    } else if (clients.length === 1) {
+      return this.draftForClient(agentId, to, clients[0].clientId, d.kind, lang);
+    }
+    const leads = (await this.d.engine.leadSearch(agentId, name)).filter((r) => nameMatches(name, r.name));
+    if (!leads.length) return this.say(to, agentId, `I couldn't find "${name}" in your policies or leads.`, "draft");
+    if (leads.length > 1) {
+      await this.setState(agentId, to, "AWAITING_LEAD_PICK", conv.currentClientId, { rows: leads, draftKind: d.kind, lang });
+      return this.say(to, agentId, `Which ${name}?\n${leads.map((r, i) => `${i + 1}) ${r.name}${r.phone ? ` · ${r.phone}` : ""}`).join("\n")}`, "lead_pick");
+    }
+    return this.sendDraft(agentId, to, { type: "lead", id: leads[0].id, name: leads[0].name, phone: leads[0].phone, interest: leads[0].insurance_interest }, d.kind, lang);
+  }
+
+  private async draftForClient(agentId: string, to: string, clientId: string, kind: DraftKind, lang: Lang) {
+    const c = await this.d.engine.getClient(agentId, clientId);
+    if (!c) return this.say(to, agentId, T.noReport(), "draft");
+    this.setLast(agentId, { kind: "policy", clientId });
+    return this.sendDraft(agentId, to, {
+      type: "client", id: c.clientId, name: c.policyholderName, phone: c.customerPhone,
+      insurer: c.insurer, renewalDate: c.expiryDate, weakPoint: c.weakPoint ?? null,
+    }, kind, lang);
+  }
+
+  private async sendDraft(agentId: string, to: string, target: any, kind: DraftKind, lang: Lang) {
+    const profile = await this.d.engine.profile(agentId).catch(() => null);
+    const draft = buildMessage(target, kind, lang, profile?.name ?? null);
+    const link = waMeLink(target.phone, draft);
+    const hint = lang === "english" ? "\n\nWant it in Hinglish or Hindi? Add: in hindi" : "";
+    return this.say(to, agentId, shareReply(target.name, draft, link, /wa\.me\/\d/.test(link), false) + hint, "draft_done");
+  }
+
+  /* ══ CRM: surrender value ═════════════════════════════════════════════ */
+
+  private async surrender(agentId: string, conv: Conv, to: string, text: string) {
+    const name = text.replace(/^.*?\b(surrender value|surrender|loan value|policy value|paid[\s-]?up value)\b\s*(of|for)?\s*/i, "").replace(/'s.*$/, "").trim();
+    let candidates: ClientSummary[] = [];
+    if (name.length >= 2) {
+      candidates = (await this.d.engine.findClients(agentId, name)).filter((c) => VALUE_TYPES.includes(c.insuranceType || ""));
+      if (!candidates.length) return this.say(to, agentId, `I couldn't find a life or term policy for "${name}". Surrender value is for life policies.`, "surrender");
+    } else {
+      const last = this.lastShare.get(agentId);
+      const id = last?.kind === "policy" ? last.clientId : conv.currentClientId;
+      const c = id ? await this.d.engine.getClient(agentId, id) : null;
+      if (c && VALUE_TYPES.includes(c.insuranceType || "")) candidates = [c];
+      else return this.say(to, agentId, "Whose policy? For example: surrender value Ramesh", "surrender");
+    }
+    if (candidates.length > 1) return this.pickClient(agentId, to, conv.currentClientId, candidates, { purpose: "ask", question: "surrender value" });
+    const c = candidates[0];
+    const full = c.extracted !== undefined ? c : await this.d.engine.getClient(agentId, c.clientId);
+    if (!full) return this.say(to, agentId, T.noReport(), "surrender");
+    this.setLast(agentId, { kind: "policy", clientId: full.clientId });
+    return this.say(to, agentId, valueReply(this.d.links, full, this.now()), "surrender");
   }
 }

@@ -154,7 +154,9 @@ test("compare name parsing and matching", () => {
 test("the help menu lists the new tools", async () => {
   const { bot, transport } = makeBot();
   await bot.handle(text("help"));
-  assert.match(transport.last(), /CALCULATOR.*COMPARE.*LEAD.*LINK/s);
+  for (const w of ["CALCULATOR", "COMPARE", "LEAD", "LINK", "FOLLOW UPS", "CLAIMS", "VIEWS", "CHECKS", "FIND", "SURRENDER VALUE", "UPGRADE MESSAGE", "MY CLIENTS"]) {
+    assert.ok(transport.last().includes(w), w);
+  }
 });
 
 /* ── Context: the last report must not swallow everything ── */

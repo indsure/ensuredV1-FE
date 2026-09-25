@@ -29,6 +29,7 @@ import { AIService } from "../services/aiService";
 import { AI_CONFIG } from "../config/ai_config";
 import { checkAnswerNumbers, parseIntent } from "./answerGuard";
 import { compareMany, type WordingProfile } from "../types/wordingProfile";
+import { EXTRACTION_FIELDS } from "../services/extractionFields";
 
 type VerifyJwt = (req: any, res: any) => Promise<string | null>;
 
@@ -150,6 +151,9 @@ function reportSummary(row: any) {
     shareToken: row.share_enabled ? row.share_token : null,
     views: row.views ?? 0,
     expiryDate: row.expiry_date ?? null,
+    weakPoint: row.report_data?.final_verdict?.key_failure_points?.[0] ?? null,
+    details: dataEntryDetails(row.insurance_type, row.extracted_data),
+    extracted: row.insurance_type === "life" || row.insurance_type === "term" ? row.extracted_data ?? null : null,
     report: row.report_data
       ? {
           verdictLabel: fv.label ?? null,
@@ -197,10 +201,24 @@ function reportSummary(row: any) {
   };
 }
 
+/** A data-entry policy's fields with the portal's own labels (EXTRACTION_FIELDS), empty ones
+ *  left out. Displayed as stored; nothing is calculated. */
+function dataEntryDetails(type: string, data: any): { label: string; value: string }[] {
+  const fields = (EXTRACTION_FIELDS as any)[type] as { key: string; label: string; type: string }[] | undefined;
+  if (!fields || !data || typeof data !== "object") return [];
+  const out: { label: string; value: string }[] = [];
+  for (const f of fields) {
+    const v = data[f.key];
+    if (v === null || v === undefined || v === "" || f.type === "json" || typeof v === "object") continue;
+    out.push({ label: f.label, value: String(v) });
+  }
+  return out;
+}
+
 const CLIENT_SELECT = `
   SELECT c.id, c.status, c.error_message, c.insurance_type, c.policyholder_name, c.client_phone,
          c.insurer, c.policy_name, c.score, c.share_token, c.share_enabled, c.views,
-         c.expiry_date, c.report_data, c.customer_id,
+         c.expiry_date, c.report_data, c.extracted_data, c.customer_id,
          cu.name AS customer_name, cu.phone AS customer_phone
     FROM clients c
     LEFT JOIN customers cu ON cu.id = c.customer_id AND cu.agent_id = c.agent_id`;
@@ -950,6 +968,187 @@ FACTS: ${JSON.stringify(facts)}`,
       });
     } catch (err: any) {
       log.error("wa policies list failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── CRM over WhatsApp: leads, follow-ups, lookup, views, claims. No model calls. ── */
+
+  const LEAD_COLS = "id, name, phone, status, insurance_interest, next_follow_up, notes, updated_at";
+
+  /** Leads by name or phone, for "Ramesh won" / "follow up Ramesh Friday". */
+  app.get("/api/internal/wa/leads/search", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const q = String(req.query.q || "").trim();
+      const digits = q.replace(/\D/g, "");
+      if (q.length < 2) return res.json({ matches: [] });
+      const like = `%${q.replace(/[%_\\]/g, "\\$&")}%`;
+      const r = await pool.query(
+        `SELECT ${LEAD_COLS} FROM agent_leads
+          WHERE agent_id = $1
+            AND (name ILIKE $2 OR ($3 <> '' AND right(regexp_replace(coalesce(phone, ''), '\\D', '', 'g'), 10) = $3))
+          ORDER BY updated_at DESC NULLS LAST LIMIT 6`,
+        [agentId, like, digits.length >= 10 ? digits.slice(-10) : ""]
+      );
+      res.json({ matches: r.rows });
+    } catch (err: any) {
+      log.error("wa lead search failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Status, follow-up date and a dated note, the same fields the Leads page edits.
+   *  A note is appended to the existing notes, never replaces them. */
+  app.post("/api/internal/wa/leads/:id/update", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: "bad id" });
+      const b = req.body || {};
+      const status = ["new", "contacted", "interested", "won", "lost"].includes(b.status) ? b.status : null;
+      const follow = typeof b.nextFollowUp === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.nextFollowUp) ? b.nextFollowUp : null;
+      const note = typeof b.note === "string" && b.note.trim() ? b.note.trim().slice(0, 1000) : null;
+      if (!status && !follow && !note) return res.status(400).json({ error: "nothing to update" });
+      const r = await pool.query(
+        `UPDATE agent_leads SET
+           status = COALESCE($3, status),
+           next_follow_up = COALESCE($4::date, next_follow_up),
+           notes = CASE WHEN $5::text IS NULL THEN notes
+                        ELSE concat_ws(E'\n', nullif(notes, ''), to_char(now() AT TIME ZONE 'Asia/Kolkata', 'DD Mon') || ': ' || $5::text) END,
+           updated_at = now()
+         WHERE id = $1 AND agent_id = $2
+         RETURNING ${LEAD_COLS}`,
+        [req.params.id, agentId, status, follow, note]
+      );
+      if (!r.rows.length) return res.status(404).json({ error: "Not found" });
+      res.json({ lead: r.rows[0] });
+    } catch (err: any) {
+      log.error("wa lead update failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Leads to call: follow-up date today or earlier, not yet won or lost. */
+  app.get("/api/internal/wa/followups", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const r = await pool.query(
+        `SELECT ${LEAD_COLS}, (next_follow_up - (now() AT TIME ZONE 'Asia/Kolkata')::date) AS days
+           FROM agent_leads
+          WHERE agent_id = $1 AND next_follow_up IS NOT NULL
+            AND next_follow_up <= (now() AT TIME ZONE 'Asia/Kolkata')::date
+            AND coalesce(status, 'new') NOT IN ('won', 'lost')
+          ORDER BY next_follow_up ASC LIMIT 30`,
+        [agentId]
+      );
+      res.json({ leads: r.rows });
+    } catch (err: any) {
+      log.error("wa followups failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Everything filed under a name or number: policies (with the customer they are filed
+   *  under) and leads. */
+  app.get("/api/internal/wa/lookup", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const q = String(req.query.q || "").trim();
+      const digits = q.replace(/\D/g, "");
+      if (q.length < 2) return res.json({ policies: [], leads: [] });
+      const like = `%${q.replace(/[%_\\]/g, "\\$&")}%`;
+      const phone = digits.length >= 10 ? digits.slice(-10) : "";
+      const p = await pool.query(
+        `${CLIENT_SELECT}
+          WHERE c.agent_id = $1
+            AND (c.policyholder_name ILIKE $2 OR cu.name ILIKE $2
+                 OR ($3 <> '' AND (right(regexp_replace(coalesce(c.client_phone, ''), '\\D', '', 'g'), 10) = $3
+                                OR right(regexp_replace(coalesce(cu.phone, ''), '\\D', '', 'g'), 10) = $3)))
+          ORDER BY c.created_at DESC LIMIT 10`,
+        [agentId, like, phone]
+      );
+      const l = await pool.query(
+        `SELECT ${LEAD_COLS} FROM agent_leads
+          WHERE agent_id = $1
+            AND (name ILIKE $2 OR ($3 <> '' AND right(regexp_replace(coalesce(phone, ''), '\\D', '', 'g'), 10) = $3))
+          ORDER BY updated_at DESC NULLS LAST LIMIT 5`,
+        [agentId, like, phone]
+      );
+      res.json({ policies: p.rows.map(reportSummary), leads: l.rows });
+    } catch (err: any) {
+      log.error("wa lookup failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Shared reports customers have opened, most recently opened first (report_views, the
+   *  source of the portal's Views column). */
+  app.get("/api/internal/wa/views", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const r = await pool.query(
+        `SELECT c.id, c.policyholder_name, c.insurer, c.policy_name, c.views, cu.name AS customer_name,
+                c.report_data, max(v.viewed_at) AS last_viewed
+           FROM clients c
+           JOIN report_views v ON v.client_id = c.id
+           LEFT JOIN customers cu ON cu.id = c.customer_id AND cu.agent_id = c.agent_id
+          WHERE c.agent_id = $1
+          GROUP BY c.id, cu.name
+          ORDER BY last_viewed DESC LIMIT 10`,
+        [agentId]
+      );
+      res.json({
+        views: r.rows.map((row: any) => ({
+          clientId: row.id, name: displayName(row), insurer: row.insurer, policyName: row.policy_name,
+          views: row.views ?? 0, lastViewed: row.last_viewed,
+        })),
+      });
+    } catch (err: any) {
+      log.error("wa views failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Claims from the Claims desk. Open ones by default; with q, any matching the customer
+   *  name, hospital or ailment, each with its open insurer queries. */
+  app.get("/api/internal/wa/claims", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const q = String(req.query.q || "").trim();
+      const like = `%${q.replace(/[%_\\]/g, "\\$&")}%`;
+      const r = await pool.query(
+        `SELECT cl.id, cl.status, cl.claim_type, cl.insurer, cl.hospital, cl.ailment,
+                cl.claimed_amount, cl.settled_amount, cl.admitted_on, cl.updated_at, cu.name AS customer_name
+           FROM claims cl
+           LEFT JOIN customers cu ON cu.id = cl.customer_id AND cu.agent_id = cl.agent_id
+          WHERE cl.agent_id = $1
+            AND ${q ? "(cu.name ILIKE $2 OR cl.hospital ILIKE $2 OR cl.ailment ILIKE $2 OR cl.insurer ILIKE $2)" : "cl.status NOT IN ('settled', 'rejected')"}
+          ORDER BY cl.updated_at DESC LIMIT 10`,
+        q ? [agentId, like] : [agentId]
+      );
+      const ids = r.rows.map((x: any) => x.id);
+      const qs = ids.length
+        ? await pool.query(
+            `SELECT claim_id, seq, question, raised_on FROM claim_queries
+              WHERE agent_id = $1 AND claim_id = ANY($2::uuid[]) AND resolved_on IS NULL
+              ORDER BY seq`,
+            [agentId, ids]
+          )
+        : { rows: [] as any[] };
+      res.json({
+        claims: r.rows.map((c: any) => ({
+          ...c,
+          openQueries: qs.rows.filter((x: any) => x.claim_id === c.id).map((x: any) => ({ seq: x.seq, question: x.question, raisedOn: x.raised_on })),
+        })),
+      });
+    } catch (err: any) {
+      log.error("wa claims failed", { error: err?.message });
       res.status(500).json({ error: "Internal server error" });
     }
   });

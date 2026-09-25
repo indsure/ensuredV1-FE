@@ -12,7 +12,7 @@ import { waMeLink, inr } from "../src/core/templates.js";
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 test("the bot's copies of the portal's modules are identical to the portal's", () => {
-  for (const rel of ["draftMessage.ts", "health-engine-logic.ts", "data/rider-data.ts", "data/insurer-aliases.ts", "city-tier-util.ts", "data/zones.ts"]) {
+  for (const rel of ["draftMessage.ts", "health-engine-logic.ts", "data/rider-data.ts", "data/insurer-aliases.ts", "city-tier-util.ts", "data/zones.ts", "policyValue.ts", "policyParams.ts"]) {
     const a = fs.readFileSync(path.resolve(here, "../src/shared", rel), "utf8");
     const b = fs.readFileSync(path.resolve(here, "../../frontend/client/src/lib", rel), "utf8");
     assert.equal(a, b, `${rel} drifted: run npm run sync`);

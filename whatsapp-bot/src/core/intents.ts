@@ -5,7 +5,8 @@
 
 export type Intent =
   | "link" | "unlink" | "cancel" | "help" | "renewals" | "remind" | "share" | "ask" | "unknown"
-  | "website" | "lead" | "calc" | "compare" | "clients";
+  | "website" | "lead" | "calc" | "compare" | "clients"
+  | "followups" | "draft" | "lookup" | "checks" | "views" | "claims" | "surrender";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -23,6 +24,15 @@ export function ruleIntent(textRaw: string): Intent | null {
   if (/^(link|my link|website|my website|my site|my page|site link|website link|share my (website|page|link))[.!?]*$/.test(t)) return "website";
   if (/^((please\s+)?(enter|add|new|create|save)\s+(a\s+)?(new\s+)?leads?\b|leads?\b(?!s?\s*(list|page)))/.test(t)) return "lead";
   if (/^compare\b/.test(t)) return "compare";
+  // Order matters below: a "follow up message for X" is a draft, "follow ups" is the list,
+  // "follow up X Friday" is a lead update (handled in bot.ts before intents).
+  if (/\b(message|msg|wishes|greeting)\b/.test(t) && !/^share\b/.test(t)) return "draft";
+  if (/^(follow[\s-]?ups?|followups|pending follow[\s-]?ups?|today'?s (calls|follow[\s-]?ups?)|calls today|who (do|should) i call( today)?)[?.!]*$/.test(t)) return "followups";
+  if (/\b(checks? left|how many checks|my balance|balance|credits? left|policy checks)\b/.test(t)) return "checks";
+  if (/\b(views|who (opened|viewed|saw|read)|opened (my|the) reports?|report views)\b/.test(t)) return "views";
+  if (/^claims?\b|\bclaim status\b|\bopen claims\b/.test(t)) return "claims";
+  if (/\b(surrender|loan value|policy value|paid[\s-]?up value)\b/.test(t)) return "surrender";
+  if (/^(find|search|lookup|look up|who is|details (of|for))\s+\S/.test(t) || /^\+?[\d\s-]{10,15}$/.test(t)) return "lookup";
   if (/^(my |all )?(clients?|customers?|policies|book)$/.test(t) ||
       /\b(list|show|all|my)\b.*\b(clients?|customers?|policies|policyholders?)\b/.test(t)) return "clients";
   if (/\b(calculator|calculate|calc|cover calculator)\b/.test(t)) return "calc";

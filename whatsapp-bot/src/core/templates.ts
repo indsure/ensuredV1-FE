@@ -55,7 +55,18 @@ export const T = {
   notInReport: (url: string) =>
     `The report doesn't cover that. Here it is in full: ${url}. For exact coverage questions, it's best to check with the insurer.`,
   help: () =>
-    "I can:\n1) check a health policy (send the PDF)\n2) answer questions about a policy I've checked\n3) draft a share message for your customer (SHARE)\n4) show this week's renewals (RENEWALS)\n5) work out how much cover someone needs (CALCULATOR)\n6) compare plans (COMPARE Care Supreme vs Niva ReAssure 2.0)\n7) add a lead (LEAD Ramesh 9812345678 health)\n8) send your website link (LINK)\n9) list your clients (MY CLIENTS, or LIST HEALTH CLIENTS)",
+    [
+      "I can:",
+      "• Check a health policy: send the PDF. Then ask: room rent? co-pay?",
+      "• SHARE: a message for the customer (report, calculator or comparison)",
+      "• RENEWALS · FOLLOW UPS · MY CLIENTS · CLAIMS · VIEWS · CHECKS",
+      "• LEAD Ramesh 98123 45678 health · Ramesh won · follow up Ramesh Friday · note Ramesh: wants family floater",
+      "• FIND Ramesh: everything on a name or number",
+      "• CALCULATOR · COMPARE Care Supreme vs Niva ReAssure 2.0",
+      "• SURRENDER VALUE Ramesh (life policies)",
+      "• UPGRADE MESSAGE for Santosh · DIWALI MESSAGE for Ramesh in hindi",
+      "• LINK: your website",
+    ].join("\n"),
   unknownNumber: () => "This number is for IndSure advisors. To get started, visit indsure.in/agent.",
 
   /* Extras the brief's flows need, in the same voice. */

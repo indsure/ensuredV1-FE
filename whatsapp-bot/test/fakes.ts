@@ -149,6 +149,30 @@ export class FakeEngine implements Engine {
   }
   async saveCalculator(_a: string, inputs: any, result: any) { this.calcSaved.push({ inputs, result }); return "calc-uuid-1"; }
   async catalog() { return this.catalogRows; }
+  leadRows: any[] = [];
+  leadUpdates: any[] = [];
+  followupRows: any[] = [];
+  viewRows: any[] = [];
+  claimRows: any[] = [];
+  claimQueries: (string | null)[] = [];
+  async leadSearch(_a: string, q: string) {
+    const d = q.replace(/\D/g, "");
+    return this.leadRows.filter((r) => r.name.toLowerCase().includes(q.toLowerCase()) || (d.length >= 10 && (r.phone || "").endsWith(d.slice(-10))));
+  }
+  async leadUpdate(_a: string, id: string, u: any) {
+    this.leadUpdates.push({ id, ...u });
+    const r = this.leadRows.find((x) => x.id === id);
+    if (u.status) r.status = u.status;
+    if (u.nextFollowUp) r.next_follow_up = u.nextFollowUp;
+    if (u.note) r.notes = [r.notes, u.note].filter(Boolean).join("\n");
+    return r;
+  }
+  async followups() { return this.followupRows; }
+  async lookup(_a: string, q: string) {
+    return { policies: [...this.clients.values()].filter((c) => (c.policyholderName || "").toLowerCase().includes(q.toLowerCase())), leads: await this.leadSearch(_a, q) };
+  }
+  async views() { return this.viewRows; }
+  async claims(_a: string, q: string | null) { this.claimQueries.push(q); return this.claimRows; }
   policyType: (string | null)[] = [];
   async policies(_a: string, type: string | null) {
     this.policyType.push(type);
