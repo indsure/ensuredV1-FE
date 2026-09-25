@@ -3,3 +3,4 @@ node_modules/
 auth*/
 wa-auth*/
 *.session
+DEPLOYED_VERSION

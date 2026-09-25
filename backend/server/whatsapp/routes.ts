@@ -109,6 +109,24 @@ const sha256 = (s: string) => crypto.createHash("sha256").update(s).digest("hex"
 /** Last 4 digits only, for logs. */
 const maskNumber = (n: string) => (n.length > 4 ? "…" + n.slice(-4) : "…");
 
+/** A saved "name" that is really a file name ("Policy Kit_PROHLV050040281.pdf"): an early bot
+ *  build filed forwarded PDFs under their caption, which WhatsApp fills with the file name. */
+export function looksLikeFileName(name: unknown): boolean {
+  return /\.(pdf|docx?|jpe?g|png)\s*$/i.test(String(name ?? "").trim());
+}
+
+/** Who the policy is for, in the order the advisor would expect: the customer it is filed
+ *  under, the name on the row, then the insured named in the report itself. A name that is
+ *  really a file name is skipped, never shown or put in a customer message. Read-only. */
+export function displayName(row: any): string | null {
+  const reportName = row.report_data?.identity?.insured_names?.[0] ?? null;
+  for (const n of [row.customer_name, row.policyholder_name, reportName]) {
+    const v = typeof n === "string" ? n.trim() : "";
+    if (v && !looksLikeFileName(v)) return v;
+  }
+  return null;
+}
+
 /** Pull the fields the bot is allowed to talk about out of a stored report. Everything the
  *  advisor is told comes from this object and nothing else. */
 function reportSummary(row: any) {
@@ -122,7 +140,7 @@ function reportSummary(row: any) {
     status: row.status,
     errorMessage: row.status === "done" ? null : row.error_message ?? null,
     insuranceType: row.insurance_type,
-    policyholderName: row.customer_name || row.policyholder_name || null,
+    policyholderName: displayName(row),
     customerId: row.customer_id ?? null,
     customerPhone: row.customer_phone || row.client_phone || null,
     insurer: row.insurer ?? null,

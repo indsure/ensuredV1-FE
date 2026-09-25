@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { checkAnswerNumbers, numbersIn, parseIntent } from "../whatsapp/answerGuard";
-import { normaliseWaNumber, resolveWaBotAgent } from "../whatsapp/routes";
+import { normaliseWaNumber, resolveWaBotAgent, displayName } from "../whatsapp/routes";
 
 const KEY = "k".repeat(40);
 
@@ -107,4 +107,12 @@ test("plug-in OFF (no WA_BOT_KEY): no routes, auth hook steps aside, no limiter 
   } finally {
     server.close();
   }
+});
+
+test("display name: a saved file name is skipped in favour of the report's insured", () => {
+  const report_data = { identity: { insured_names: ["Rajesh Iyer"] } };
+  assert.equal(displayName({ policyholder_name: "Policy Kit PROHLV .pdf", report_data }), "Rajesh Iyer");
+  assert.equal(displayName({ customer_name: "Sunita Rao", policyholder_name: "x.pdf", report_data }), "Sunita Rao");
+  assert.equal(displayName({ policyholder_name: "Ramesh Kumar", report_data }), "Ramesh Kumar");
+  assert.equal(displayName({ policyholder_name: "scan.PDF" }), null);
 });

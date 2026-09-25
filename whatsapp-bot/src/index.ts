@@ -54,4 +54,7 @@ const bot = new Bot({
 transport.onMessage((m) => bot.handle(m));
 await transport.start();
 await bot.resumeOpenJobs();
-log.info("bot started");
+// Written by the deploy script, so the log says exactly which commit is running.
+let version = "dev";
+try { version = fs.readFileSync(new URL("../DEPLOYED_VERSION", import.meta.url), "utf8").trim(); } catch {}
+log.info("bot started", { version });
