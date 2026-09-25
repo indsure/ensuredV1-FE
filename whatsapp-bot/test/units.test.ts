@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { guessType, devanagariShare, looksLikePdf, inspectPdf } from "../src/core/pdfInspect.js";
 import { parseCaption, ruleIntent, namedPerson, linkCode } from "../src/core/intents.js";
 import { redact } from "../src/log.js";
+import { captionIsFileName } from "../src/core/bot.js";
 import { waMeLink, inr } from "../src/core/templates.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -88,3 +89,11 @@ function makePdf(textStr: string): Buffer {
   out += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
   return Buffer.from(out, "latin1");
 }
+
+test("a caption that is just the file name is not a customer", () => {
+  assert.equal(captionIsFileName("Policy Kit_PROHLV050040281.pdf", "Policy Kit_PROHLV050040281.pdf"), true);
+  assert.equal(captionIsFileName("Policy Kit_PROHLV050040281", "Policy Kit_PROHLV050040281.pdf"), true);
+  assert.equal(captionIsFileName("scan.PDF", null), true);
+  assert.equal(captionIsFileName("Ramesh Kumar 9812345678", "Policy Kit.pdf"), false);
+  assert.equal(captionIsFileName("", "x.pdf"), false);
+});

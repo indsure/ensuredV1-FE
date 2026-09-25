@@ -75,6 +75,16 @@ type QueueItem = { agentId: string; to: string; file: FileRef; type: PolicyType;
 
 type Remindable = RenewalRow & { source: "lead" | "client" };
 
+/** "Policy Kit_PROHLV050040281.pdf" as the caption of a file with that name, or any caption
+ *  that is itself a file name. */
+export function captionIsFileName(caption: string | null | undefined, fileName: string | null | undefined): boolean {
+  const c = String(caption || "").trim().toLowerCase();
+  if (!c) return false;
+  if (/\.(pdf|docx?|jpe?g|png)$/.test(c)) return true;
+  const f = String(fileName || "").trim().toLowerCase();
+  return !!f && (c === f || c === f.replace(/\.[a-z0-9]+$/, ""));
+}
+
 const sha256 = (b: Buffer | string) => crypto.createHash("sha256").update(b).digest("hex");
 
 export class Bot {
@@ -240,7 +250,9 @@ export class Bot {
       sha,
       name: (msg.fileName || "policy.pdf").slice(0, 120),
       waMessageId: msg.id,
-      caption: msg.text || "",
+      // A forwarded document often carries its own file name as the caption. That is not a
+      // customer, so it is ignored rather than filed as the policyholder's name.
+      caption: captionIsFileName(msg.text, msg.fileName) ? "" : msg.text || "",
     };
     await fs.writeFile(file.path, buf);
 
