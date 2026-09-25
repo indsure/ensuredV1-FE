@@ -11,10 +11,12 @@ import { waMeLink, inr } from "../src/core/templates.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-test("the bot's copy of draftMessage.ts is identical to the portal's", () => {
-  const a = fs.readFileSync(path.resolve(here, "../src/shared/draftMessage.ts"), "utf8");
-  const b = fs.readFileSync(path.resolve(here, "../../frontend/client/src/lib/draftMessage.ts"), "utf8");
-  assert.equal(a, b, "run: npm run sync");
+test("the bot's copies of the portal's modules are identical to the portal's", () => {
+  for (const rel of ["draftMessage.ts", "health-engine-logic.ts", "data/rider-data.ts", "data/insurer-aliases.ts"]) {
+    const a = fs.readFileSync(path.resolve(here, "../src/shared", rel), "utf8");
+    const b = fs.readFileSync(path.resolve(here, "../../frontend/client/src/lib", rel), "utf8");
+    assert.equal(a, b, `${rel} drifted: run npm run sync`);
+  }
 });
 
 test("type guess: clear health and motor texts, ambiguous text asks", () => {

@@ -3,7 +3,9 @@
  * and even then it may only pick from this fixed list.
  */
 
-export type Intent = "link" | "unlink" | "cancel" | "help" | "renewals" | "remind" | "share" | "ask" | "unknown";
+export type Intent =
+  | "link" | "unlink" | "cancel" | "help" | "renewals" | "remind" | "share" | "ask" | "unknown"
+  | "website" | "lead" | "calc" | "compare";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -17,6 +19,11 @@ export function ruleIntent(textRaw: string): Intent | null {
   if (!t) return null;
   if (linkCode(t)) return "link";
   if (/^unlink$/.test(t)) return "unlink";
+  // Bare "link" (no code) is the advisor's own website. "LINK 123456" is connecting, above.
+  if (/^(link|my link|website|my website|my site|my page|site link|website link|share my (website|page|link))[.!?]*$/.test(t)) return "website";
+  if (/^((please\s+)?(enter|add|new|create|save)\s+(a\s+)?(new\s+)?leads?\b|leads?\b(?!s?\s*(list|page)))/.test(t)) return "lead";
+  if (/^compare\b/.test(t)) return "compare";
+  if (/\b(calculator|calculate|calc|cover calculator)\b/.test(t)) return "calc";
   if (/^(cancel|stop|band karo|rehne do)$/.test(t)) return "cancel";
   if (/^(hi|hello|hey|hii+|namaste|namaskar|help|menu|start|\?)[.!]*$/.test(t)) return "help";
   if (/^remind\b/.test(t)) return "remind";

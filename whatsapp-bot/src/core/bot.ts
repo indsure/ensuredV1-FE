@@ -26,6 +26,12 @@ import {
   sharedReportUrl, waMeLink, type Lang, type Links,
 } from "./templates.js";
 import { buildMessage } from "../shared/draftMessage.js";
+import type { UserInputs } from "../shared/health-engine-logic.js";
+import {
+  CALC_AGE_ASK, CALC_QUESTIONS, COMPARE_ASK, INTERESTS, LEAD_ASK, ageBandFor, calcQuestionText, calcReply,
+  compareReply, interestIn, leadSavedReply, matchPlans, parseAge, parseCompareNames, parseLeadLine, planLabel,
+  runCalculator, websiteReply,
+} from "./tools.js";
 import { log, redact } from "../log.js";
 
 export const MAX_BYTES = 25 * 1024 * 1024;
@@ -67,7 +73,8 @@ type FileRef = { path: string; sha: string; name: string; waMessageId: string; c
 
 type State =
   | "IDLE" | "REPORT_READY" | "AWAITING_TYPE" | "AWAITING_DUP_CONFIRM" | "AWAITING_CUSTOMER"
-  | "AWAITING_SHARE_LANG" | "AWAITING_CLIENT_PICK" | "AWAITING_REMIND_PICK";
+  | "AWAITING_SHARE_LANG" | "AWAITING_CLIENT_PICK" | "AWAITING_REMIND_PICK"
+  | "AWAITING_LEAD" | "AWAITING_CALC" | "AWAITING_COMPARE_PICK";
 
 type Conv = { state: State; currentClientId: string | null; pending: any; updatedAt: string | null };
 
@@ -495,6 +502,15 @@ export class Bot {
         return this.remind(agentId, to, namedPerson(text), langIn(text) ?? "english");
       case "share":
         return this.shareStart(agentId, conv, to, text);
+      case "website":
+        return this.say(to, agentId, websiteReply(await this.d.engine.profile(agentId), this.d.links), "website");
+      case "lead":
+        return this.leadStart(agentId, conv, to, text);
+      case "calc":
+        await this.setState(agentId, to, "AWAITING_CALC", conv.currentClientId, { step: -1, inputs: {} });
+        return this.say(to, agentId, CALC_AGE_ASK, "calc");
+      case "compare":
+        return this.compareStart(agentId, conv, to, text);
     }
 
     // No rule matched: a question about the current report, or a named one.
@@ -591,6 +607,18 @@ export class Bot {
         } else {
           await this.answerFor(agentId, to, clientId, p.question || "");
         }
+        return true;
+      }
+      case "AWAITING_LEAD":
+        return this.leadStep(agentId, conv, to, text);
+      case "AWAITING_CALC":
+        return this.calcStep(agentId, conv, to, text);
+      case "AWAITING_COMPARE_PICK": {
+        const q = (p.queue || [])[0];
+        const n = q ? pickNumber(text, q.options.length) : null;
+        if (!n) return false;
+        const resolved: string[] = [...(p.resolved || []), q.options[n - 1].key];
+        await this.compareContinue(agentId, conv, to, resolved, (p.queue || []).slice(1));
         return true;
       }
       case "AWAITING_REMIND_PICK": {
@@ -712,5 +740,122 @@ export class Bot {
     );
     const link = waMeLink(r.phone, draft);
     return this.say(to, agentId, shareReply(r.name, draft, link, /wa\.me\/\d/.test(link), false), "remind");
+  }
+
+  /* ══ Leads (phase 1b) ═════════════════════════════════════════════════ */
+
+  private async leadStart(agentId: string, conv: Conv, to: string, text: string) {
+    const d = parseLeadLine(text);
+    if (d.name && d.phone && d.interest) return this.leadSave(agentId, to, { name: d.name, phone: d.phone, interest: d.interest });
+    const step = !d.name ? "name" : !d.phone ? "phone" : "interest";
+    await this.setState(agentId, to, "AWAITING_LEAD", conv.currentClientId, { step, draft: d });
+    return this.say(to, agentId, LEAD_ASK[step], "lead");
+  }
+
+  private async leadStep(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    const p = conv.pending || {};
+    const d = { name: null, phone: null, interest: null, ...(p.draft || {}) } as { name: string | null; phone: string | null; interest: string | null };
+    if (p.step === "name") {
+      const got = parseLeadLine(text);
+      if (!got.name) { await this.say(to, agentId, LEAD_ASK.name, "lead"); return true; }
+      d.name = got.name; d.phone = d.phone || got.phone; d.interest = d.interest || got.interest;
+    } else if (p.step === "phone") {
+      if (!isSkip(text)) {
+        const ph = parseCaption(text).phone;
+        if (!ph) { await this.say(to, agentId, "That doesn't look like a 10-digit mobile number. Send it again, or SKIP.", "lead"); return true; }
+        d.phone = ph;
+      }
+      d.interest = d.interest || interestIn(text);
+    } else {
+      if (!isSkip(text)) {
+        const n = pickNumber(text, INTERESTS.length);
+        const i = n ? INTERESTS[n - 1] : interestIn(text);
+        if (!i) { await this.say(to, agentId, LEAD_ASK.interest, "lead"); return true; }
+        d.interest = i;
+      }
+      await this.rest(agentId, to, conv.currentClientId);
+      await this.leadSave(agentId, to, { name: d.name!, phone: d.phone, interest: d.interest });
+      return true;
+    }
+    const next = !d.phone && p.step !== "phone" ? "phone" : !d.interest ? "interest" : null;
+    if (!next) {
+      await this.rest(agentId, to, conv.currentClientId);
+      await this.leadSave(agentId, to, { name: d.name!, phone: d.phone, interest: d.interest });
+      return true;
+    }
+    await this.setState(agentId, to, "AWAITING_LEAD", conv.currentClientId, { step: next, draft: d });
+    await this.say(to, agentId, LEAD_ASK[next], "lead");
+    return true;
+  }
+
+  private async leadSave(agentId: string, to: string, d: { name: string; phone: string | null; interest: string | null }) {
+    const r = await this.d.engine.createLead(agentId, d);
+    return this.say(to, agentId, leadSavedReply(this.d.links, r, d), "lead_saved");
+  }
+
+  /* ══ Cover calculator (phase 1b) ══════════════════════════════════════ */
+
+  private async calcStep(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    const p = conv.pending || {};
+    const step: number = typeof p.step === "number" ? p.step : -1;
+    const inputs: Partial<UserInputs> = { ...(p.inputs || {}) };
+    if (step === -1) {
+      const age = parseAge(text);
+      if (!age) { await this.say(to, agentId, "Please reply with the age as a number, for example 42.", "calc"); return true; }
+      inputs.exactAge = age;
+      inputs.ageBand = ageBandFor(age);
+    } else {
+      const q = CALC_QUESTIONS[step];
+      const n = pickNumber(text, q.options.length);
+      if (!n) { await this.say(to, agentId, calcQuestionText(step), "calc"); return true; }
+      (inputs as any)[q.key] = q.options[n - 1].value;
+    }
+    const next = step + 1;
+    if (next < CALC_QUESTIONS.length) {
+      await this.setState(agentId, to, "AWAITING_CALC", conv.currentClientId, { step: next, inputs });
+      await this.say(to, agentId, calcQuestionText(next), "calc");
+      return true;
+    }
+    await this.rest(agentId, to, conv.currentClientId);
+    const profile = await this.d.engine.profile(agentId);
+    const result = runCalculator(inputs as UserInputs, profile.partneredCompanies);
+    const uuid = await this.d.engine.saveCalculator(agentId, inputs, result);
+    await this.say(to, agentId, calcReply(this.d.links, inputs as UserInputs, result, uuid), "calc_done");
+    return true;
+  }
+
+  /* ══ Compare (phase 1b, catalogue only: no model cost) ════════════════ */
+
+  private async compareStart(agentId: string, conv: Conv, to: string, text: string) {
+    const names = parseCompareNames(text);
+    if (names.length < 2) return this.say(to, agentId, COMPARE_ASK, "compare");
+    const catalog = await this.d.engine.catalog(agentId);
+    const resolved: string[] = [];
+    const queue: { q: string; options: { key: string; label: string }[] }[] = [];
+    for (const name of names) {
+      const hits = matchPlans(name, catalog);
+      if (hits.length === 0) {
+        return this.say(to, agentId, `I couldn't find "${name}" in the plan catalogue. Try the insurer and plan name, for example: Care Supreme, Niva ReAssure 2.0.`, "compare");
+      }
+      if (hits.length > 8) {
+        return this.say(to, agentId, `"${name}" matches ${hits.length} plans. Add the insurer or the exact plan name.`, "compare");
+      }
+      if (hits.length === 1) resolved.push(hits[0].plan_key);
+      else queue.push({ q: name, options: hits.map((h) => ({ key: h.plan_key, label: planLabel(h) })) });
+    }
+    return this.compareContinue(agentId, conv, to, resolved, queue);
+  }
+
+  private async compareContinue(agentId: string, conv: Conv, to: string, resolved: string[], queue: { q: string; options: { key: string; label: string }[] }[]) {
+    if (queue.length) {
+      const q = queue[0];
+      await this.setState(agentId, to, "AWAITING_COMPARE_PICK", conv.currentClientId, { resolved, queue });
+      return this.say(to, agentId, `Which "${q.q}"?\n${q.options.map((o, i) => `${i + 1}) ${o.label}`).join("\n")}`, "compare_pick");
+    }
+    await this.rest(agentId, to, conv.currentClientId);
+    const keys = [...new Set(resolved)];
+    if (keys.length < 2) return this.say(to, agentId, "Those are the same plan. Pick two different plans to compare.", "compare");
+    const r = await this.d.engine.compare(agentId, keys);
+    return this.say(to, agentId, compareReply(this.d.links, r), "compare_done");
   }
 }

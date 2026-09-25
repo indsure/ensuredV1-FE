@@ -59,6 +59,20 @@ export type JobStatus =
   | { status: "error"; clientId: string | null; error: string }
   | { status: "not_found"; clientId: null };
 
+export type Profile = {
+  name: string | null;
+  partneredCompanies: string[];
+  page: null | { slug: string; live: boolean; enabled: boolean; published: boolean };
+};
+
+export type CatalogPlan = { plan_key: string; insurer: string | null; plan_name: string | null; variant: string | null };
+
+export type CompareResult = {
+  uuid: string;
+  names: (string | null)[];
+  verdict: null | { winner_index: number; winner_name: string | null; reasons: string[]; counterpoint: string | null };
+};
+
 export type Conversation = { state: string; currentClientId: string | null; pending: any; updatedAt: string | null };
 
 export interface Engine {
@@ -83,6 +97,11 @@ export interface Engine {
   searchCustomers(agentId: string, q: string): Promise<{ id: string; name: string; phone: string | null }[]>;
   renewals(agentId: string): Promise<{ leads: RenewalRow[]; customers: RenewalRow[] }>;
   llmIntent(agentId: string, text: string, hasReport: boolean): Promise<string>;
+  profile(agentId: string): Promise<Profile>;
+  createLead(agentId: string, lead: { name: string; phone: string | null; interest: string | null }): Promise<{ id: string; duplicateOf?: string }>;
+  saveCalculator(agentId: string, inputs: unknown, result: unknown): Promise<string>;
+  catalog(agentId: string): Promise<CatalogPlan[]>;
+  compare(agentId: string, keys: string[]): Promise<CompareResult>;
   llmPhrase(agentId: string, clientId: string, question: string): Promise<{ answer: string | null; notInReport?: boolean; guardFired?: boolean }>;
 }
 
@@ -173,6 +192,20 @@ export class HttpEngine implements Engine {
   async llmIntent(agentId: string, text: string, hasReport: boolean) {
     return (await this.call("/api/internal/wa/llm/intent", { method: "POST", agentId, body: { text, hasReport } })).intent;
   }
+  profile(agentId: string) { return this.call("/api/internal/wa/profile", { agentId }); }
+  createLead(agentId: string, lead: any) { return this.call("/api/internal/wa/leads", { method: "POST", agentId, body: lead }); }
+  async saveCalculator(agentId: string, inputs: unknown, result: unknown) {
+    return (await this.call("/api/internal/wa/calculator", { method: "POST", agentId, body: { inputs, result } })).uuid;
+  }
+  private catalogCache: { at: number; rows: CatalogPlan[] } | null = null;
+  async catalog(agentId: string) {
+    // The catalogue changes rarely; one fetch per 10 minutes is plenty.
+    if (this.catalogCache && Date.now() - this.catalogCache.at < 600_000) return this.catalogCache.rows;
+    const rows = (await this.call("/api/internal/wa/catalog", { agentId })).policies as CatalogPlan[];
+    this.catalogCache = { at: Date.now(), rows };
+    return rows;
+  }
+  compare(agentId: string, keys: string[]) { return this.call("/api/internal/wa/compare", { method: "POST", agentId, body: { keys } }); }
   llmPhrase(agentId: string, clientId: string, question: string) {
     return this.call("/api/internal/wa/llm/phrase", { method: "POST", agentId, body: { clientId, question } });
   }

@@ -131,6 +131,28 @@ export class FakeEngine implements Engine {
   async searchCustomers(_a: string, q: string) { return this.customers.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()) || (c.phone || "").endsWith(q)); }
   async renewals() { return this.renewalData; }
   async llmIntent() { this.llmIntentCalls++; return "unknown"; }
+  profileData: any = { name: "Deep Shah", partneredCompanies: [], page: { slug: "deep-shah", live: true, enabled: true, published: true } };
+  leads: any[] = [];
+  calcSaved: any[] = [];
+  compared: string[][] = [];
+  catalogRows = [
+    { plan_key: "UIN-CARE-SUP", insurer: "Care Health Insurance", plan_name: "Care Supreme", variant: "" },
+    { plan_key: "UIN-NIVA-RA2", insurer: "Niva Bupa Health Insurance", plan_name: "ReAssure 2.0", variant: "" },
+    { plan_key: "UIN-HDFC-OPT:Silver", insurer: "HDFC ERGO", plan_name: "Optima Secure", variant: "Silver" },
+    { plan_key: "UIN-HDFC-OPT:Gold", insurer: "HDFC ERGO", plan_name: "Optima Secure", variant: "Gold" },
+  ];
+  async profile() { return this.profileData; }
+  async createLead(_a: string, l: any) {
+    const dup = this.leads.find((x) => x.phone && x.phone === l.phone);
+    if (dup) return { id: dup.id, duplicateOf: dup.name };
+    const id = crypto.randomUUID(); this.leads.push({ id, ...l }); return { id };
+  }
+  async saveCalculator(_a: string, inputs: any, result: any) { this.calcSaved.push({ inputs, result }); return "calc-uuid-1"; }
+  async catalog() { return this.catalogRows; }
+  async compare(_a: string, keys: string[]) {
+    this.compared.push(keys);
+    return { uuid: "cmp-uuid-1", names: ["Care Health Insurance Care Supreme", "Niva Bupa Health Insurance ReAssure 2.0"], verdict: { winner_index: 0, winner_name: "Care Supreme", reasons: ["No room rent cap", "Shorter PED wait"], counterpoint: "ReAssure 2.0 has a bigger bonus" } };
+  }
   async llmPhrase() { this.llmPhraseCalls++; return this.phraseAnswer; }
 }
 

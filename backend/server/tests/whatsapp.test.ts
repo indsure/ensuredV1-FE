@@ -79,6 +79,11 @@ test("routes over real HTTP: bot surface hides behind the key, portal routes nee
     assert.equal((await fetch(`${base}/api/internal/wa/renewals`, { headers: { "x-wa-bot-key": KEY, "x-forwarded-for": "1.2.3.4" } })).status, 404);
     // Right key but no linked advisor id: refused before any data.
     assert.equal((await fetch(`${base}/api/internal/wa/renewals`, { headers: { "x-wa-bot-key": KEY, "x-wa-agent-id": "bad" } })).status, 403);
+    // Phase 1b routes: right key, no linked advisor: refused before any data.
+    for (const path of ["profile", "catalog", "leads", "calculator", "compare"]) {
+      const method = ["profile", "catalog"].includes(path) ? "GET" : "POST";
+      assert.equal((await fetch(`${base}/api/internal/wa/${path}`, { method, headers: { "x-wa-bot-key": KEY, "x-wa-agent-id": "bad" } })).status, 403, path);
+    }
     // Portal routes go through verifyJwt.
     assert.equal((await fetch(`${base}/api/agent/whatsapp`)).status, 401);
     assert.equal((await fetch(`${base}/api/agent/whatsapp/link-code`, { method: "POST" })).status, 401);

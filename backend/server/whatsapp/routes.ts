@@ -28,6 +28,7 @@ import { log } from "../lib/logger";
 import { AIService } from "../services/aiService";
 import { AI_CONFIG } from "../config/ai_config";
 import { checkAnswerNumbers, parseIntent } from "./answerGuard";
+import { compareMany, type WordingProfile } from "../types/wordingProfile";
 
 type VerifyJwt = (req: any, res: any) => Promise<string | null>;
 
@@ -791,6 +792,133 @@ FACTS: ${JSON.stringify(facts)}`,
     } catch (err: any) {
       log.warn("wa llm phrase failed", { error: err?.message });
       res.json({ answer: null, used: false });
+    }
+  });
+
+  /* ── Phase 1b: website link, lead entry, calculator report, catalogue compare ──
+     Same tables and the same deterministic engines the portal uses. No model calls. */
+
+  /** The advisor's name, partner insurers (calculator rider bias) and website page. */
+  app.get("/api/internal/wa/profile", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const a = await pool.query("SELECT full_name, name, partnered_companies FROM agents WHERE id = $1", [agentId]);
+      const p = await pool.query("SELECT slug, enabled, published FROM agent_pages WHERE agent_id = $1", [agentId]);
+      const row = a.rows[0] || {};
+      const page = p.rows[0];
+      res.json({
+        name: row.full_name || row.name || null,
+        partneredCompanies: Array.isArray(row.partnered_companies) ? row.partnered_companies : [],
+        page: page ? { slug: page.slug, live: !!(page.enabled && page.published), enabled: !!page.enabled, published: !!page.published } : null,
+      });
+    } catch (err: any) {
+      log.error("wa profile failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Add a lead, as the portal's Leads page does (lib/leads.ts createLead). A lead with the
+   *  same phone number already in this advisor's book is returned instead of duplicated. */
+  app.post("/api/internal/wa/leads", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const b = req.body || {};
+      const name = String(b.name || "").trim().slice(0, 120);
+      if (name.length < 2) return res.status(400).json({ error: "name required" });
+      const digits = String(b.phone || "").replace(/\D/g, "").slice(-10);
+      const phone = /^[6-9]\d{9}$/.test(digits) ? digits : null;
+      const interest = typeof b.interest === "string" && b.interest.trim() ? b.interest.trim().slice(0, 40) : null;
+      if (phone) {
+        const dup = await pool.query(
+          `SELECT id, name FROM agent_leads
+            WHERE agent_id = $1 AND right(regexp_replace(coalesce(phone, ''), '\\D', '', 'g'), 10) = $2
+            LIMIT 1`,
+          [agentId, phone]
+        );
+        if (dup.rows.length) return res.json({ id: dup.rows[0].id, duplicateOf: dup.rows[0].name });
+      }
+      const r = await pool.query(
+        `INSERT INTO agent_leads (agent_id, name, phone, insurance_interest, status)
+         VALUES ($1, $2, $3, $4, 'new') RETURNING id`,
+        [agentId, name, phone, interest]
+      );
+      res.json({ id: r.rows[0].id });
+    } catch (err: any) {
+      log.error("wa lead create failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Save a calculator result the bot computed with the portal's own engine
+   *  (health-engine-logic.ts), stamped to this advisor, exactly like /api/calculator/save-report. */
+  app.post("/api/internal/wa/calculator", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const { inputs, result } = req.body || {};
+      if (!inputs || typeof inputs !== "object" || !result || typeof result !== "object") {
+        return res.status(400).json({ error: "inputs and result required" });
+      }
+      const r = await pool.query(
+        "INSERT INTO calculator_reports (inputs, result_data, agent_id) VALUES ($1, $2, $3) RETURNING id",
+        [JSON.stringify(inputs), JSON.stringify(result), agentId]
+      );
+      res.json({ uuid: r.rows[0].id });
+    } catch (err: any) {
+      log.error("wa calculator save failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** The health catalogue the portal's compare page lists (same query as /api/compare/catalog). */
+  app.get("/api/internal/wa/catalog", async (req, res) => {
+    try {
+      if (!(await scopedAgent(req, res))) return;
+      const { rows } = await pool.query(
+        `SELECT plan_key, insurer, plan_name, variant FROM policy_catalog
+          WHERE is_active = true AND product_type = 'comprehensive_health_indemnity'
+          ORDER BY insurer, plan_name, variant`
+      );
+      res.json({ policies: rows });
+    } catch (err: any) {
+      log.error("wa catalog failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Compare 2 to 4 catalogue plans with the portal's deterministic engine (compareMany, as in
+   *  /api/compare/from-catalog) and save the report stamped to this advisor (as
+   *  /api/compare/save-report). No model call. */
+  app.post("/api/internal/wa/compare", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const keys = [...new Set((Array.isArray(req.body?.keys) ? req.body.keys : []).filter((k: any) => typeof k === "string" && k))] as string[];
+      if (keys.length < 2 || keys.length > 4) return res.status(400).json({ error: "2 to 4 plans" });
+      const { rows } = await pool.query(
+        `SELECT plan_key, profile FROM policy_catalog WHERE is_active = true AND plan_key = ANY($1::text[])`,
+        [keys]
+      );
+      const byKey: Record<string, WordingProfile> = {};
+      for (const r of rows) byKey[r.plan_key] = r.profile as WordingProfile;
+      if (keys.some((k) => !byKey[k])) return res.status(404).json({ error: "plan not found" });
+      const result: any = compareMany(keys.map((k) => byKey[k]));
+      const sides = Array.isArray(result?.sides) ? result.sides : [];
+      const ins = await pool.query(
+        `INSERT INTO comparison_reports (result, profiles, name_a, name_b, agent_id)
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [JSON.stringify(result), null, sides[0]?.plan_name || sides[0]?.insurer || null, sides[1]?.plan_name || sides[1]?.insurer || null, agentId]
+      );
+      res.json({
+        uuid: ins.rows[0].id,
+        names: sides.map((x: any) => [x?.insurer, x?.plan_name].filter(Boolean).join(" ") || null),
+        verdict: result?.verdict ?? null,
+      });
+    } catch (err: any) {
+      log.error("wa compare failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 }
