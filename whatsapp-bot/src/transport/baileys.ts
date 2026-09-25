@@ -57,6 +57,7 @@ export class BaileysTransport implements Transport {
   }
 
   async start(): Promise<void> {
+    this.pairingRequested = false; // each new socket gets a fresh code; old ones expire
     const { state, saveCreds } = await useMultiFileAuthState(this.opts.authDir);
     const { version } = await fetchLatestBaileysVersion();
     const sock = makeWASocket({
