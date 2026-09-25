@@ -16,7 +16,11 @@ import { AnimatedNumber, GrowBar, Reveal } from "@/components/motion";
 import { calculatorIllustration, ILLUSTRATION_PROFILE } from "@/lib/calculator-illustration";
 
 /* Every rupee figure inside a product panel on this page is illustrative and is
-   labelled as such inside the panel border. Nothing here is a product output. */
+   labelled as such inside the panel border. Nothing here is a product output.
+   So the panels name no real insurer (the clause text is invented, and must not
+   be pinned on a real company), carry no calendar dates (they went stale within
+   weeks of shipping), and never add sums insured across kinds of cover (a travel
+   medical limit and a term life payout are not one pile of money). */
 
 const rise: Variants = {
   hidden: { opacity: 0, y: 16 },
@@ -158,7 +162,7 @@ function HeroPanels() {
                     {t("home.sharmas")}
                   </span>
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-3xl font-extrabold tracking-tight text-[var(--color-navy-900)]">₹1.6 Cr</span>
+                    <span className="text-3xl font-extrabold tracking-tight text-[var(--color-navy-900)]">{t("home.big_count")}</span>
                     <span className="text-sm text-[var(--color-text-secondary)]">{t("home.across")}</span>
                   </div>
                 </div>
@@ -172,7 +176,7 @@ function HeroPanels() {
                   { k: "home.lob_health", v: "₹10 L", m: "home.m_health", c: "var(--lob-health)", w: "var(--lob-health-wash)", i: HeartPulse },
                   { k: "home.lob_term", v: "₹1 Cr", m: "home.m_term", c: "var(--lob-life)", w: "var(--lob-life-wash)", i: Umbrella },
                   { k: "home.lob_car", v: "₹6.4 L", m: "home.m_car", c: "var(--lob-motor)", w: "var(--lob-motor-wash)", i: Car },
-                  { k: "home.lob_bike", v: "₹84 K", m: "Bajaj Allianz", c: "var(--lob-motor)", w: "var(--lob-motor-wash)", i: Bike },
+                  { k: "home.lob_bike", v: "₹84 K", m: "home.m_bike", c: "var(--lob-motor)", w: "var(--lob-motor-wash)", i: Bike },
                   { k: "home.lob_travel", v: "₹42 L", m: "home.m_travel", c: "var(--lob-travel)", w: "var(--lob-travel-wash)", i: Plane },
                 ].map((p) => (
                   <div
@@ -251,7 +255,7 @@ function HeroPanels() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-bold text-[#B91C1C]">{t("home.short_by", { amount: illustration.shortLabel })}</span>
                     <span className="text-[var(--color-text-muted)]">
-                      {t("home.per_month", { amount: illustration.monthly.toLocaleString("en-IN") })}
+                      {t("home.per_month", { need: illustration.needLabel, amount: illustration.monthly.toLocaleString("en-IN") })}
                     </span>
                   </div>
                 </div>
@@ -329,9 +333,9 @@ function Score({ n, tone }: { n: number; tone: "red" | "amber" | "teal" }) {
 }
 
 const QUEUE_ROWS = [
-  { name: "Vikram Singh", meta: "Star Health · ₹42,000", due: 3, tone: "red" as const, score: 49, s: "red" as const },
-  { name: "Meena Patel", meta: "HDFC Ergo · ₹28,500", due: 6, tone: "amber" as const, score: 63, s: "amber" as const },
-  { name: "Imran Qureshi", meta: "Niva Bupa · ₹19,200", due: 11, tone: "slate" as const, score: 78, s: "teal" as const },
+  { name: "Vikram Singh", premium: "₹42,000", due: 3, tone: "red" as const, score: 49, s: "red" as const },
+  { name: "Meena Patel", premium: "₹28,500", due: 6, tone: "amber" as const, score: 63, s: "amber" as const },
+  { name: "Imran Qureshi", premium: "₹19,200", due: 11, tone: "slate" as const, score: 78, s: "teal" as const },
 ];
 
 function AdvisorPanel() {
@@ -399,13 +403,15 @@ function AdvisorPanel() {
                   >
                     <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                       <span className="text-base font-semibold text-[var(--color-navy-900)]">{r.name}</span>
-                      <span className="text-sm text-[var(--color-text-secondary)]">{r.meta}</span>
+                      <span className="text-sm text-[var(--color-text-secondary)]">{t("home.lob_health")} · {r.premium}</span>
                     </div>
                     <Chip tone={r.tone}>{t("home.renews_in", { n: r.due })}</Chip>
                     <Score n={r.score} tone={r.s} />
                   </div>
                 ))}
               </div>
+              {/* An unlabelled 49 next to a name reads as anything at all. */}
+              <p className="text-sm text-[var(--color-text-muted)]">{t("home.score_hint")}</p>
               <div className="rounded-xl bg-[#F0FDFA] border border-[#CCFBF1] p-3.5 flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-sm font-bold text-[#0F766E]">{t("home.draft_ready")}</span>
@@ -416,8 +422,7 @@ function AdvisorPanel() {
                   </span>
                 </div>
                 <p className="text-sm leading-relaxed text-[#115E59]">
-                  Namaste Vikram ji, your Star Health policy renews on 4 September. Shall I send you
-                  the check before you pay?
+                  {t("home.draft_text")}
                 </p>
               </div>
             </>
@@ -486,14 +491,14 @@ function AdvisorPanel() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-[#CCFBF1] bg-[#F0FDFA] p-3.5 flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-base font-bold text-[var(--color-navy-900)]">Star Health</span>
+                    <span className="text-base font-bold text-[var(--color-navy-900)]">{t("home.plan_a")}</span>
                     <Score n={78} tone="teal" />
                   </div>
                   <span className="text-sm font-semibold text-[#0F766E]">₹10 L · ₹42,000</span>
                 </div>
                 <div className="rounded-xl border border-[var(--color-border-light)] bg-[var(--color-cream-main)] p-3.5 flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-base font-bold text-[var(--color-navy-900)]">Niva Bupa</span>
+                    <span className="text-base font-bold text-[var(--color-navy-900)]">{t("home.plan_b")}</span>
                     <Score n={63} tone="amber" />
                   </div>
                   <span className="text-sm font-semibold text-[var(--color-text-secondary)]">₹10 L · ₹38,700</span>
@@ -523,7 +528,7 @@ function AdvisorPanel() {
               <div className="border border-[var(--color-border-light)] rounded-xl p-4 flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-base font-bold text-[var(--color-navy-900)]">Meena Patel · HDFC Ergo</span>
+                    <span className="text-base font-bold text-[var(--color-navy-900)]">Meena Patel · {t("home.lob_health")}</span>
                     <span className="text-sm text-[var(--color-text-secondary)]">{t("home.cl_where")}</span>
                   </div>
                   <Chip tone="amber">{t("home.cl_query")}</Chip>
@@ -765,7 +770,7 @@ function HowItWorks() {
               <div className="relative rounded-xl bg-white px-5 py-4 flex flex-col items-center gap-1" style={{ boxShadow: panelShadow }}>
                 <span className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">{t("home.one_family")}</span>
                 <span className="font-serif text-3xl font-bold tracking-tight text-[var(--color-navy-900)]">
-                  ₹<AnimatedNumber value={1.6} decimals={1} /> Cr
+                  <AnimatedNumber value={5} /> {t("home.policies_word")}
                 </span>
                 <span className="text-sm text-[var(--color-text-secondary)]">{t("home.five_three")}</span>
               </div>
