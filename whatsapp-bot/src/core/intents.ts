@@ -1,0 +1,77 @@
+/**
+ * Intent routing, rules first (brief §6). The model is only asked when no rule matches,
+ * and even then it may only pick from this fixed list.
+ */
+
+export type Intent = "link" | "unlink" | "cancel" | "help" | "renewals" | "remind" | "share" | "ask" | "unknown";
+
+const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
+
+export function linkCode(text: string): string | null {
+  const m = norm(text).match(/^link\s*[:#-]?\s*(\d{3}\s?\d{3})$/);
+  return m ? m[1].replace(/\s/g, "") : null;
+}
+
+export function ruleIntent(textRaw: string): Intent | null {
+  const t = norm(textRaw);
+  if (!t) return null;
+  if (linkCode(t)) return "link";
+  if (/^unlink$/.test(t)) return "unlink";
+  if (/^(cancel|stop|band karo|rehne do)$/.test(t)) return "cancel";
+  if (/^(hi|hello|hey|hii+|namaste|namaskar|help|menu|start|\?)[.!]*$/.test(t)) return "help";
+  if (/^remind\b/.test(t)) return "remind";
+  if (/\b(renewals?|renew|who'?s due|due this week|expiring|expiry list)\b/.test(t)) return "renewals";
+  if (/^share\b|\bsend (it |this |the report )?to (the )?(customer|client)\b|\bshare .*report\b|\bbhej do\b/.test(t)) return "share";
+  return null;
+}
+
+/** "share Ramesh's report", "Ramesh's policy", "for ramesh kumar" -> "ramesh" / "ramesh kumar". */
+export function namedPerson(textRaw: string): string | null {
+  const t = norm(textRaw);
+  const poss = t.match(/\b([a-z]+(?: [a-z]+)?)'s (policy|report|plan)\b/);
+  if (poss) return cleanName(poss[1]);
+  const share = t.match(/^share\s+(?:the )?(?:report\s+)?(?:with|for|of)?\s*([a-z]+(?: [a-z]+)?)$/);
+  if (share) return cleanName(share[1]);
+  const remind = t.match(/^remind\s+([a-z]+(?: [a-z]+)?)(?:\s+(?:in\s+)?(english|hinglish|hindi))?$/);
+  if (remind) return cleanName(remind[1]);
+  return null;
+}
+
+const STOP = new Set([
+  "the", "my", "this", "that", "it", "report", "policy", "customer", "client", "english", "hinglish", "hindi", "in",
+  "share", "send", "remind", "what", "whats", "is", "about", "check", "show", "open", "for", "of", "with", "and",
+]);
+function cleanName(s: string): string | null {
+  const words = s.split(" ").filter((w) => !STOP.has(w));
+  return words.length ? words.join(" ") : null;
+}
+
+export function langIn(textRaw: string): "english" | "hinglish" | "hindi" | null {
+  const t = norm(textRaw);
+  if (/\bhinglish\b/.test(t)) return "hinglish";
+  if (/\bhindi\b|हिंदी/.test(t)) return "hindi";
+  if (/\benglish\b/.test(t)) return "english";
+  return null;
+}
+
+/** A numbered reply "2" or "2)" to a pick list. */
+export function pickNumber(textRaw: string, max: number): number | null {
+  const m = norm(textRaw).match(/^(\d{1,2})\)?\.?$/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return n >= 1 && n <= max ? n : null;
+}
+
+export const isYes = (t: string) => /^(yes|y|haan|ha|han|ok|okay|sure|yes please)[.!]*$/.test(norm(t));
+export const isNo = (t: string) => /^(no|n|nahi|nahin|na|nope)[.!]*$/.test(norm(t));
+export const isSkip = (t: string) => /^(skip|later|none|leave it)[.!]*$/.test(norm(t));
+
+/** Caption on a PDF: "Ramesh Kumar 9812345678" -> name + phone. */
+export function parseCaption(textRaw: string): { name: string | null; phone: string | null } {
+  const t = String(textRaw || "").trim();
+  if (!t) return { name: null, phone: null };
+  const digits = t.match(/(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}/);
+  const phone = digits ? digits[0].replace(/\D/g, "").slice(-10) : null;
+  const name = t.replace(digits ? digits[0] : "", "").replace(/[^A-Za-zऀ-ॿ .]/g, " ").replace(/\s+/g, " ").trim();
+  return { name: name.length >= 2 ? name.slice(0, 80) : null, phone };
+}

@@ -35,6 +35,7 @@ import { pool } from "./lib/db";
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
 import { registerTeamRoutes } from "./teamRoutes";
+import { mountWhatsapp, whatsappBotAuth } from "./whatsapp"; // WHATSAPP-PLUGIN
 import { registerAccountDeletionRoutes } from "./services/accountDeletion";
 import { log } from "./lib/logger";
 
@@ -779,6 +780,19 @@ export async function getUserIdFromToken(token: string): Promise<string | null> 
 }
 
 const verifyJwt = async (req: any, res: any): Promise<string | null> => {
+  // WHATSAPP-PLUGIN: the WhatsApp bot acting for a linked advisor, on exactly two routes
+  // (analyze + its status poll), see whatsapp/routes.ts. Bot headers anywhere else are a
+  // hard 401. Returns undefined when the plug-in is off. Remove this block to unplug.
+  const botAgent = await whatsappBotAuth(req);
+  if (botAgent !== undefined) {
+    if (!botAgent) {
+      res.status(401).json({ error: "Invalid bot credentials" });
+      return null;
+    }
+    return botAgent;
+  }
+  // /WHATSAPP-PLUGIN
+
   const authHeader = req.headers["authorization"] as string | undefined;
 
   if (!authHeader?.startsWith("Bearer ")) {
@@ -6720,6 +6734,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      that makes "you see each time your owner opens your book" true. See the
      header of teamRoutes.ts before adding any route that reads member data. */
   registerTeamRoutes(app, verifyJwt, isAdmin);
+  mountWhatsapp(app, verifyJwt); // WHATSAPP-PLUGIN: WhatsApp channel (beta), a no-op unless WA_BOT_KEY is set
 
   /* ── Account deletion ────────────────────────────────────────────────────
      DELETE /api/me/account and DELETE /api/agent/account. The mirror of the

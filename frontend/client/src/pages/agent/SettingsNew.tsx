@@ -10,6 +10,7 @@ import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import { toast } from "@/hooks/use-toast"
 import { apiFetch } from "@/lib/api"
+import WhatsAppConnectCard from "@/features/whatsapp/WhatsAppConnectCard" // WHATSAPP-PLUGIN
 import { useLanguage } from "@/i18n/LanguageContext"
 
 type AgentProfile = {
@@ -240,6 +241,10 @@ export default function SettingsNew() {
             </Card>
           </div>
       </div>
+
+      {/* WHATSAPP-PLUGIN: renders only for allow-listed advisors, and nothing at all when
+          the backend plug-in is off. */}
+      <WhatsAppConnectCard />
 
       {/* Your data, on request. The privacy policy has always promised people
           control over what we hold; until now there was no way to exercise any
