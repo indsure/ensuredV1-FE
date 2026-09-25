@@ -18,7 +18,7 @@ import type { Engine, ClientSummary, RenewalRow } from "../engine.js";
 import type { InboundMessage, Transport } from "../transport/types.js";
 import { inspectPdf, looksLikePdf, POLICY_TYPES, type Inspection, type PolicyType } from "./pdfInspect.js";
 import {
-  isNo, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, pickNumber, ruleIntent,
+  isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, pickNumber, ruleIntent,
 } from "./intents.js";
 import { ruleAnswer } from "./answers.js";
 import {
@@ -30,11 +30,13 @@ import type { UserInputs } from "../shared/health-engine-logic.js";
 import {
   CALC_AGE_ASK, CALC_QUESTIONS, COMPARE_ASK, INTERESTS, LEAD_ASK, ageBandFor, calcQuestionText, calcReply,
   compareReply, interestIn, leadSavedReply, matchPlans, parseAge, parseCompareNames, parseLeadLine, planLabel,
-  runCalculator, websiteReply,
+  runCalculator, websiteReply, clientsReply, typeIn,
 } from "./tools.js";
 import { log, redact } from "../log.js";
 
 export const MAX_BYTES = 25 * 1024 * 1024;
+/** How long free-text questions keep going to the last report without naming a topic. */
+const REPORT_FRESH_MS = 30 * 60_000;
 const LANGS: Lang[] = ["english", "hinglish", "hindi"];
 
 export type Timings = {
@@ -511,15 +513,22 @@ export class Bot {
         return this.say(to, agentId, CALC_AGE_ASK, "calc");
       case "compare":
         return this.compareStart(agentId, conv, to, text);
+      case "clients": {
+        const type = typeIn(text);
+        return this.say(to, agentId, clientsReply(this.d.links, type, await this.d.engine.policies(agentId, type)), "clients");
+      }
     }
 
-    // No rule matched: a question about the current report, or a named one.
-    if (conv.currentClientId || namedPerson(text)) return this.ask(agentId, conv, to, text);
+    // No rule matched. A named policy ("Ramesh's policy") is always a question. The current
+    // report only gets free text that is about a policy topic, or a question while the report
+    // is fresh; it must not swallow everything else the advisor says.
+    const fresh = !!conv.updatedAt && this.now() - new Date(conv.updatedAt).getTime() < REPORT_FRESH_MS;
+    if (namedPerson(text) || (conv.currentClientId && isReportQuestion(text, fresh))) return this.ask(agentId, conv, to, text);
 
     const guess = await this.d.engine.llmIntent(agentId, text, false).catch(() => "unknown");
     if (guess === "renewals") return this.say(to, agentId, renewalsReply(await this.d.engine.renewals(agentId), this.d.links), "renewals");
     if (guess === "share" || guess === "ask") return this.say(to, agentId, T.noReport(), guess);
-    return this.say(to, agentId, T.help(), "unknown");
+    return this.say(to, agentId, T.didNotCatch(), "unknown");
   }
 
   /** Returns true when the reply was consumed by the pending question. */

@@ -149,6 +149,13 @@ export class FakeEngine implements Engine {
   }
   async saveCalculator(_a: string, inputs: any, result: any) { this.calcSaved.push({ inputs, result }); return "calc-uuid-1"; }
   async catalog() { return this.catalogRows; }
+  policyType: (string | null)[] = [];
+  async policies(_a: string, type: string | null) {
+    this.policyType.push(type);
+    const rows = [...this.clients.values()].filter((c) => !type || c.insuranceType === type)
+      .map((c) => ({ clientId: c.clientId, name: c.policyholderName, insuranceType: c.insuranceType, insurer: c.insurer, policyName: c.policyName, score: c.score }));
+    return { total: rows.length, rows };
+  }
   async compare(_a: string, keys: string[]) {
     this.compared.push(keys);
     return { uuid: "cmp-uuid-1", names: ["Care Health Insurance Care Supreme", "Niva Bupa Health Insurance ReAssure 2.0"], verdict: { winner_index: 0, winner_name: "Care Supreme", reasons: ["No room rent cap", "Shorter PED wait"], counterpoint: "ReAssure 2.0 has a bigger bonus" } };

@@ -73,6 +73,11 @@ export type CompareResult = {
   verdict: null | { winner_index: number; winner_name: string | null; reasons: string[]; counterpoint: string | null };
 };
 
+export type PolicyRow = {
+  clientId: string; name: string | null; insuranceType: string | null;
+  insurer: string | null; policyName: string | null; score: number | null;
+};
+
 export type Conversation = { state: string; currentClientId: string | null; pending: any; updatedAt: string | null };
 
 export interface Engine {
@@ -102,6 +107,7 @@ export interface Engine {
   saveCalculator(agentId: string, inputs: unknown, result: unknown): Promise<string>;
   catalog(agentId: string): Promise<CatalogPlan[]>;
   compare(agentId: string, keys: string[]): Promise<CompareResult>;
+  policies(agentId: string, type: string | null): Promise<{ total: number; rows: PolicyRow[] }>;
   llmPhrase(agentId: string, clientId: string, question: string): Promise<{ answer: string | null; notInReport?: boolean; guardFired?: boolean }>;
 }
 
@@ -206,6 +212,9 @@ export class HttpEngine implements Engine {
     return rows;
   }
   compare(agentId: string, keys: string[]) { return this.call("/api/internal/wa/compare", { method: "POST", agentId, body: { keys } }); }
+  policies(agentId: string, type: string | null) {
+    return this.call(`/api/internal/wa/policies${type ? `?type=${encodeURIComponent(type)}` : ""}`, { agentId });
+  }
   llmPhrase(agentId: string, clientId: string, question: string) {
     return this.call("/api/internal/wa/llm/phrase", { method: "POST", agentId, body: { clientId, question } });
   }

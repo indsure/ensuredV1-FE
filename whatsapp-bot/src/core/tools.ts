@@ -6,7 +6,7 @@
  * backend's compareMany. Nothing here computes a rupee amount.
  */
 
-import type { CatalogPlan, CompareResult, Profile } from "../engine.js";
+import type { CatalogPlan, CompareResult, PolicyRow, Profile } from "../engine.js";
 import { calculateHealthCover, type UserInputs, type EngineResult } from "../shared/health-engine-logic.js";
 import { resolvePartnerCompanies } from "../shared/data/insurer-aliases.js";
 import { parseCaption } from "./intents.js";
@@ -207,3 +207,26 @@ export function compareReply(l: Links, r: CompareResult): string {
 }
 
 export const COMPARE_ASK = "Which plans? For example: compare Care Supreme vs Niva ReAssure 2.0 (up to 4, separated by vs).";
+
+/* ── Client list ─────────────────────────────────────────────────────── */
+
+const TYPE_WORDS: Record<string, string> = {
+  health: "health", mediclaim: "health", motor: "motor", car: "motor", bike: "motor", vehicle: "motor",
+  life: "life", term: "term", travel: "travel", property: "property", home: "property", fire: "fire", marine: "marine",
+};
+
+export function typeIn(text: string): string | null {
+  for (const w of text.toLowerCase().split(/[^a-z]+/)) if (TYPE_WORDS[w]) return TYPE_WORDS[w];
+  return null;
+}
+
+export function clientsReply(l: Links, type: string | null, data: { total: number; rows: PolicyRow[] }): string {
+  const what = type ? `${type} policies` : "policies";
+  if (data.total === 0) return `You have no checked ${what} yet. Send me a policy PDF to add one.`;
+  const lines = data.rows.map((r, i) => {
+    const plan = [r.insurer, r.policyName].filter(Boolean).join(" ");
+    return `${i + 1}) ${r.name || "Unnamed"}${plan ? ` · ${plan}` : ""}${r.score != null ? ` · ${r.score}/100` : ""}`;
+  });
+  const more = data.total > data.rows.length ? `\n…and ${data.total - data.rows.length} more: ${l.origin}/agent/policies` : "";
+  return `Your ${what} (${data.total}), newest first:\n${lines.join("\n")}${more}\n\nAsk about one by name, for example: Ramesh's policy room rent?`;
+}

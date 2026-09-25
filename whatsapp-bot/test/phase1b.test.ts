@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeBot, text } from "./fakes.js";
+import { makeBot, text, healthClient } from "./fakes.js";
 import { calculateHealthCover } from "../src/shared/health-engine-logic.js";
 import { matchPlans, parseCompareNames, parseLeadLine } from "../src/core/tools.js";
 import { ruleIntent } from "../src/core/intents.js";
@@ -154,4 +154,46 @@ test("the help menu lists the new tools", async () => {
   const { bot, transport } = makeBot();
   await bot.handle(text("help"));
   assert.match(transport.last(), /CALCULATOR.*COMPARE.*LEAD.*LINK/s);
+});
+
+/* ── Context: the last report must not swallow everything ── */
+
+test("with a report open, unrelated text is NOT answered as a report question", async () => {
+  const { bot, transport, engine } = makeBot();
+  const id = "55555555-5555-4555-8555-555555555555";
+  engine.clients.set(id, healthClient(id));
+  engine.conv = { state: "REPORT_READY", currentClientId: id, pending: {}, updatedAt: new Date(1_000_000 - 2 * 3600_000).toISOString() };
+  await bot.handle(text("what's the weather like"));
+  assert.match(transport.last(), /I didn't catch that/);
+  assert.doesNotMatch(transport.last(), /report doesn't cover/);
+  assert.equal(engine.llmPhraseCalls, 0);
+});
+
+test("a policy-topic question still goes to the open report, even hours later", async () => {
+  const { bot, transport, engine } = makeBot();
+  const id = "66666666-6666-4666-8666-666666666666";
+  engine.clients.set(id, healthClient(id));
+  engine.conv = { state: "REPORT_READY", currentClientId: id, pending: {}, updatedAt: new Date(1_000_000 - 5 * 3600_000).toISOString() };
+  await bot.handle(text("room rent?"));
+  assert.match(transport.last(), /Room rent limit/);
+});
+
+test("'Calculate' and 'List of all health clients name' route to their tools, not the report", async () => {
+  const { bot, transport, engine } = makeBot();
+  const id = "77777777-7777-4777-8777-777777777777";
+  engine.clients.set(id, healthClient(id, { policyholderName: "Santosh Vartak", insurer: "ManipalCigna", policyName: "ProHealth", score: 75 }));
+  engine.conv = { state: "REPORT_READY", currentClientId: id, pending: {}, updatedAt: new Date(1_000_000).toISOString() };
+  await bot.handle(text("Calculate"));
+  assert.match(transport.last(), /How old is the eldest adult/);
+  await bot.handle(text("cancel"));
+  await bot.handle(text("List of all health clients name"));
+  assert.deepEqual(engine.policyType, ["health"]);
+  assert.match(transport.last(), /Your health policies \(1\), newest first:\n1\) Santosh Vartak · ManipalCigna ProHealth · 75\/100/);
+});
+
+test("my clients: all types, and an empty book says so", async () => {
+  const { bot, transport, engine } = makeBot();
+  await bot.handle(text("my clients"));
+  assert.deepEqual(engine.policyType, [null]);
+  assert.match(transport.last(), /no checked policies yet/);
 });

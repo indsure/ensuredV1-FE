@@ -5,7 +5,7 @@
 
 export type Intent =
   | "link" | "unlink" | "cancel" | "help" | "renewals" | "remind" | "share" | "ask" | "unknown"
-  | "website" | "lead" | "calc" | "compare";
+  | "website" | "lead" | "calc" | "compare" | "clients";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -23,6 +23,8 @@ export function ruleIntent(textRaw: string): Intent | null {
   if (/^(link|my link|website|my website|my site|my page|site link|website link|share my (website|page|link))[.!?]*$/.test(t)) return "website";
   if (/^((please\s+)?(enter|add|new|create|save)\s+(a\s+)?(new\s+)?leads?\b|leads?\b(?!s?\s*(list|page)))/.test(t)) return "lead";
   if (/^compare\b/.test(t)) return "compare";
+  if (/^(my |all )?(clients?|customers?|policies|book)$/.test(t) ||
+      /\b(list|show|all|my)\b.*\b(clients?|customers?|policies|policyholders?)\b/.test(t)) return "clients";
   if (/\b(calculator|calculate|calc|cover calculator)\b/.test(t)) return "calc";
   if (/^(cancel|stop|band karo|rehne do)$/.test(t)) return "cancel";
   if (/^(hi|hello|hey|hii+|namaste|namaskar|help|menu|start|\?)[.!]*$/.test(t)) return "help";
@@ -51,6 +53,19 @@ const STOP = new Set([
 function cleanName(s: string): string | null {
   const words = s.split(" ").filter((w) => !STOP.has(w));
   return words.length ? words.join(" ") : null;
+}
+
+/** Words that make free text a question ABOUT a policy report. */
+const REPORT_TOPIC = /\b(room|rent|co-?pay|sub-?limits?|waiting|ped|pre-?existing|claim|cover(ed|age)?|sum insured|premium|restor|bonus|ncb|cashless|network|maternity|exclu|deductible|score|verdict|gap|risk|works|cataract|icu|ayush|opd|day ?care|hospital|renewal date|expiry)/;
+const QUESTION = /\?|^(what|how|does|do|is|are|can|will|why|which|when|kya|kitna|kitni|kaun|any)\b/;
+
+/** Should free text be answered from the current report? Only if it is about a policy
+ *  topic, or it is a question asked while the report is still fresh. Everything else is
+ *  "I didn't catch that", never "the report doesn't cover that". */
+export function isReportQuestion(textRaw: string, reportFresh: boolean): boolean {
+  const t = norm(textRaw);
+  if (REPORT_TOPIC.test(t)) return true;
+  return reportFresh && QUESTION.test(t);
 }
 
 export function langIn(textRaw: string): "english" | "hinglish" | "hindi" | null {

@@ -55,7 +55,7 @@ export const T = {
   notInReport: (url: string) =>
     `The report doesn't cover that. Here it is in full: ${url}. For exact coverage questions, it's best to check with the insurer.`,
   help: () =>
-    "I can:\n1) check a health policy (send the PDF)\n2) answer questions about a policy I've checked\n3) draft a share message for your customer (SHARE)\n4) show this week's renewals (RENEWALS)\n5) work out how much cover someone needs (CALCULATOR)\n6) compare plans (COMPARE Care Supreme vs Niva ReAssure 2.0)\n7) add a lead (LEAD Ramesh 9812345678 health)\n8) send your website link (LINK)",
+    "I can:\n1) check a health policy (send the PDF)\n2) answer questions about a policy I've checked\n3) draft a share message for your customer (SHARE)\n4) show this week's renewals (RENEWALS)\n5) work out how much cover someone needs (CALCULATOR)\n6) compare plans (COMPARE Care Supreme vs Niva ReAssure 2.0)\n7) add a lead (LEAD Ramesh 9812345678 health)\n8) send your website link (LINK)\n9) list your clients (MY CLIENTS, or LIST HEALTH CLIENTS)",
   unknownNumber: () => "This number is for IndSure advisors. To get started, visit indsure.in/agent.",
 
   /* Extras the brief's flows need, in the same voice. */
@@ -88,6 +88,7 @@ export const T = {
     `You've run out of policy checks, so I've stopped here. ${waiting} ${waiting === 1 ? "file is" : "files are"} still waiting and ${waiting === 1 ? "was" : "were"} not checked. Message the IndSure team to get more: ${url}`,
   gaveUp: (url: string) =>
     `I couldn't get a result for this policy. Please check it in the portal: ${url}`,
+  didNotCatch: () => `I didn't catch that. ${T.help()}`,
   resendFile: () => "I no longer have that file. Please send the PDF again.",
   genericError: () => "Something went wrong on my side. Please try again in a minute.",
   stillChecking: () => "I'm still checking a policy. I'll send the report as soon as it's ready.",

@@ -921,4 +921,36 @@ FACTS: ${JSON.stringify(facts)}`,
       res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  /** The advisor's policies for "my clients" / "list health clients": newest first, one
+   *  optional type filter. Read-only; the name shown follows displayName(). */
+  app.get("/api/internal/wa/policies", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const type = String(req.query.type || "").toLowerCase();
+      const typed = /^[a-z_]{3,30}$/.test(type) ? type : null;
+      const where = `c.agent_id = $1 AND c.status = 'done'${typed ? " AND c.insurance_type = $2" : ""}`;
+      const params = typed ? [agentId, typed] : [agentId];
+      const total = await pool.query(`SELECT count(*)::int AS n FROM clients c WHERE ${where}`, params);
+      const r = await pool.query(
+        `${CLIENT_SELECT} WHERE ${where} ORDER BY c.created_at DESC LIMIT 15`,
+        params
+      );
+      res.json({
+        total: total.rows[0].n,
+        rows: r.rows.map((row: any) => ({
+          clientId: row.id,
+          name: displayName(row),
+          insuranceType: row.insurance_type,
+          insurer: row.insurer,
+          policyName: row.policy_name,
+          score: row.insurance_type === "health" ? row.score : null,
+        })),
+      });
+    } catch (err: any) {
+      log.error("wa policies list failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 }
