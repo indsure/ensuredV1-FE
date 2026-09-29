@@ -4,3 +4,4 @@ auth*/
 wa-auth*/
 *.session
 DEPLOYED_VERSION
+eval/results/

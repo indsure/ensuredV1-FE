@@ -32,14 +32,17 @@ test("website not live or not set up: says so and points to the portal", async (
 
 /* ── Leads ── */
 
-test("one line: lead name + phone + interest is saved straight away", async () => {
+test("one line: lead name + phone + interest, confirmed with YES, then saved", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(text("lead Ramesh Kumar 9812345678 health"));
+  assert.equal(engine.leads.length, 0);
+  assert.match(transport.last(), /^Please confirm:\n• Add lead \*Ramesh Kumar\*: 98123 45678, Health\n\nReply YES to save, or NO\.$/);
+  await bot.handle(text("yes"));
   assert.deepEqual(engine.leads.map((l) => [l.name, l.phone, l.interest]), [["Ramesh Kumar", "9812345678", "Health"]]);
-  assert.match(transport.last(), /^Saved lead \*Ramesh Kumar\*, 98123 45678, Health\.\nhttps:\/\/indsure\.in\/agent\/leads\/\S+\nNext: follow up Ramesh Friday$/);
+  assert.match(transport.last(), /^Saved lead \*Ramesh Kumar\*, 98123 45678, Health\.\nhttps:\/\/indsure\.in\/agent\/leads\/\S+\nNext: follow up Ramesh Friday/);
 });
 
-test("'enter a lead' asks name, phone, interest in turn", async () => {
+test("'enter a lead' asks name, phone, interest in turn, then YES", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(text("enter a lead"));
   assert.match(transport.last(), /What's their name\?/);
@@ -48,10 +51,12 @@ test("'enter a lead' asks name, phone, interest in turn", async () => {
   await bot.handle(text("98111 22233"));
   assert.match(transport.last(), /interested in\?/);
   await bot.handle(text("2"));
+  assert.match(transport.last(), /Add lead \*Sunita Rao\*: 98111 22233, Motor/);
+  await bot.handle(text("yes"));
   assert.deepEqual(engine.leads.map((l) => [l.name, l.phone, l.interest]), [["Sunita Rao", "9811122233", "Motor"]]);
 });
 
-test("lead: SKIP phone and interest still saves; a bad number is asked again", async () => {
+test("lead: SKIP phone and interest still saves (after YES); a bad number is asked again", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(text("add lead Anil"));
   assert.match(transport.last(), /phone number/);
@@ -59,57 +64,85 @@ test("lead: SKIP phone and interest still saves; a bad number is asked again", a
   assert.match(transport.last(), /doesn't look like a 10-digit/);
   await bot.handle(text("skip"));
   await bot.handle(text("skip"));
+  await bot.handle(text("yes"));
   assert.deepEqual(engine.leads.map((l) => [l.name, l.phone, l.interest]), [["Anil", null, null]]);
 });
 
 test("lead with a number already in the book is not duplicated", async () => {
   const { bot, transport } = makeBot();
   await bot.handle(text("lead Ramesh 9812345678 health"));
+  await bot.handle(text("yes"));
   await bot.handle(text("lead R Kumar 9812345678 motor"));
+  await bot.handle(text("yes"));
   assert.match(transport.last(), /already in your leads/);
 });
 
 test("lead line parsing", () => {
-  assert.deepEqual(parseLeadLine("enter a lead Priya Nair 98765 43210 car"), { name: "Priya Nair", phone: "9876543210", interest: "Motor" });
-  assert.deepEqual(parseLeadLine("new lead"), { name: null, phone: null, interest: null });
+  assert.deepEqual(parseLeadLine("enter a lead Priya Nair 98765 43210 car"), { name: "Priya Nair", phone: "9876543210", interest: "Motor", status: null });
+  assert.deepEqual(parseLeadLine("new lead"), { name: null, phone: null, interest: null, status: null });
+  // The original bug: a status word is never part of the name.
+  assert.deepEqual(parseLeadLine("lead Ramesh won"), { name: "Ramesh", phone: null, interest: null, status: "won" });
 });
 
 /* ── Calculator ── */
 
-test("calculator: 5 answers, runs the portal engine, saves, links the report", async () => {
+/** Walk the portal's calculator: Mumbai, rarely abroad, couple with kids. */
+async function portalCalc(bot: any) {
+  for (const m of ["calculator", "Mumbai", "1", "3", "42", "12 lakh", "38", "2", "none", "balanced", "2", "1", "yes"]) await bot.handle(text(m));
+}
+
+test("calculator: the portal's steps, the portal's engine, saved, report link", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(text("calculator"));
-  assert.match(transport.last(), /How old is the eldest adult/);
-  await bot.handle(text("42"));
   assert.match(transport.last(), /Which city do they live in\?/);
-  await bot.handle(text("Metro, mumbai"));
-  assert.match(transport.last(), /^Mumbai: metro rates\.\n\nWho needs to be covered\?/);
-  await bot.handle(text("3"));
+  await bot.handle(text("Mumbai"));
+  assert.match(transport.last(), /Do they travel outside India\?/);
   await bot.handle(text("1"));
+  assert.match(transport.last(), /Who needs to be covered\?/);
+  await bot.handle(text("3"));
+  assert.match(transport.last(), /How old are they\?/);
+  await bot.handle(text("42"));
+  assert.match(transport.last(), /annual income\?/);
+  await bot.handle(text("12 lakh"));
+  assert.match(transport.last(), /Spouse's age\?/);
+  await bot.handle(text("38"));
+  assert.match(transport.last(), /How many children\?/);
   await bot.handle(text("2"));
+  assert.match(transport.last(), /employer\?/);
+  await bot.handle(text("none"));
+  await bot.handle(text("balanced"));
+  assert.match(transport.last(), /Which hospitals do they prefer\?/); // metro, like the portal
+  await bot.handle(text("2"));
+  assert.match(transport.last(), /regular medical costs\?/); // not "minimum" risk, like the portal
+  await bot.handle(text("1"));
+  assert.match(transport.last(), /^Please check:/);
+  assert.equal(engine.calcSaved.length, 0, "nothing is calculated before YES");
+  await bot.handle(text("yes"));
   const saved = engine.calcSaved[0];
   assert.deepEqual(saved.inputs, {
-    exactAge: 42, ageBand: "31-45", cityTier: "Metro", city: "Mumbai", familyStructure: "Couple + kids", employerCover: "None", riskPosture: "Balanced",
+    cityTier: "Metro", city: "Mumbai", globalTravel: "Rarely or never", familyStructure: "Couple + kids",
+    exactAge: 42, ageBand: "31-45", annualIncome: "10-20L", spouseAge: 38, childCount: 2,
+    employerCover: "None", riskPosture: "Balanced", hospitalPreference: "Large private hospitals", recurringExpenses: "None",
   });
-  // The bot's numbers ARE the engine's numbers for the same inputs.
   const expected = calculateHealthCover(saved.inputs, { partnerCompanies: [] });
-  assert.equal(saved.result.totalProtection, expected.totalProtection);
   const r = transport.last();
-  // Answer first: the total, bold. Then the split. All three strings are the engine's own.
-  assert.ok(r.startsWith(`🧮 *${expected.totalProtection}* total cover for age 42, Mumbai (metro), couple with kids.`), r);
-  assert.ok(r.includes(`Base cover ${expected.baseCover} + super top-up ${expected.superTopUp}.`), r);
-  assert.match(r, /Reply SHARE to send it to the customer/);
+  assert.ok(r.startsWith(`🧮 *${expected.totalProtection}* recommended cover for age 42, Mumbai (metro), a couple with kids.`), r);
   assert.match(r, /https:\/\/indsure\.in\/calculator\/report\/calc-uuid-1/);
+  assert.match(r, /Reply SHARE to send it to the customer/);
 });
 
-test("calculator: a non-number answer re-asks instead of guessing", async () => {
+test("calculator: answers it can't read are asked again, never guessed", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(text("calculate cover"));
-  await bot.handle(text("forty"));
-  assert.match(transport.last(), /age as a number/);
-  await bot.handle(text("35"));
   await bot.handle(text("somewhere nice"));
   assert.match(transport.last(), /I don't know that city/);
+  await bot.handle(text("Pune"));
+  await bot.handle(text("maybe"));
+  assert.match(transport.last(), /Reply 1 \(rarely or never\) or 2/);
+  await bot.handle(text("no"));
+  await bot.handle(text("1"));
+  await bot.handle(text("90"));
+  assert.match(transport.last(), /ages 18 to 75/);
   assert.equal(engine.calcSaved.length, 0);
 });
 
@@ -191,7 +224,7 @@ test("'Calculate' and 'List of all health clients name' route to their tools, no
   engine.clients.set(id, healthClient(id, { policyholderName: "Santosh Vartak", insurer: "ManipalCigna", policyName: "ProHealth", score: 75 }));
   engine.conv = { state: "REPORT_READY", currentClientId: id, pending: {}, updatedAt: new Date(1_000_000).toISOString() };
   await bot.handle(text("Calculate"));
-  assert.match(transport.last(), /How old is the eldest adult/);
+  assert.match(transport.last(), /Which city do they live in\?/);
   await bot.handle(text("cancel"));
   await bot.handle(text("List of all health clients name"));
   assert.deepEqual(engine.policyType, ["health"]);
@@ -207,17 +240,38 @@ test("my clients: all types, and an empty book says so", async () => {
 
 /* ── Conversational answers (no model) ── */
 
-test("calculator understands words: city in the age reply, family, lakhs, risk", async () => {
+test("calculator understands words, and CHANGE at the review goes back", async () => {
   const { bot, transport, engine } = makeBot();
-  await bot.handle(text("calculator"));
-  await bot.handle(text("27, Bengaluru"));
-  assert.match(transport.last(), /Who needs to be covered\?/);
-  await bot.handle(text("just him"));
-  await bot.handle(text("company gives 3 lakh"));
-  await bot.handle(text("balanced"));
+  for (const m of ["calculator", "Bengaluru", "no", "just him", "27", "8 lakh", "company gives 3 lakh", "maximum", "premium", "diabetes"]) await bot.handle(text(m));
+  assert.match(transport.last(), /^Please check:/);
+  await bot.handle(text("change age"));
+  assert.match(transport.last(), /How old are they\?/);
+  await bot.handle(text("30"));
+  assert.match(transport.last(), /^Please check:[\s\S]*• Age: 30/);
+  await bot.handle(text("yes"));
   assert.deepEqual(engine.calcSaved[0].inputs, {
-    exactAge: 27, ageBand: "18-30", cityTier: "Tier-1", city: "Bangalore", familyStructure: "Individual", employerCover: "< 5L", riskPosture: "Balanced",
+    cityTier: "Tier-1", city: "Bangalore", globalTravel: "Rarely or never", familyStructure: "Individual",
+    exactAge: 30, ageBand: "18-30", annualIncome: "5-10L", employerCover: "< 5L", riskPosture: "Zero financial shock",
+    hospitalPreference: "Premium corporate hospitals", recurringExpenses: "Chronic but stable",
   });
+});
+
+test("calculator for a customer: age and city from their record, saved to them, portal share text", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.customers = [{ id: "c1", name: "Ramesh Kumar", phone: "9812345678", dob: "1930-01-01", city: "Pune" }];
+  await bot.handle(text("calculator for Ramesh"));
+  assert.match(transport.last(), /^Cover calculator for \*Ramesh Kumar\*\.\n\nDo they travel outside India\?/);
+  // travel, family, income, employer, risk. City and age come from the record; hospital and
+  // regular-costs are skipped for a tier-1 city at minimum risk, exactly as the portal does.
+  for (const m of ["1", "1", "8 lakh", "none", "1"]) await bot.handle(text(m));
+  assert.match(transport.last(), /• City: Pune, tier-1 city \(from Ramesh's record\)/);
+  assert.match(transport.last(), /• Age: 40 \(from Ramesh's record\)/);
+  await bot.handle(text("yes"));
+  assert.equal(engine.calcSaved[0].customerId, "c1");
+  assert.match(transport.last(), /Saved to Ramesh's record\./);
+  await bot.handle(text("share in english"));
+  assert.match(transport.last(), /wa\.me\/919812345678\?text=/);
+  assert.match(transport.last(), /Hi Ramesh, I ran a health-cover needs analysis for you on IndSure\. Recommended protection: /);
 });
 
 test("city tier comes from the portal's own zone table", async () => {
@@ -247,13 +301,13 @@ test("SHARE after the calculator shares the calculator result, not the old polic
   const id = "88888888-8888-4888-8888-888888888888";
   engine.clients.set(id, healthClient(id, { policyholderName: "Santosh Vartak" }));
   engine.conv = { state: "REPORT_READY", currentClientId: id, pending: {}, updatedAt: null };
-  for (const m of ["calculator", "27 mumbai", "1", "1", "2"]) await bot.handle(text(m));
+  for (const m of ["calculator", "Mumbai", "1", "1", "27", "8 lakh", "1", "2", "1", "1", "yes"]) await bot.handle(text(m));
   await bot.handle(text("share it with +919987148125"));
   assert.match(transport.last(), /Which language/);
   await bot.handle(text("3"));
   const r = transport.last();
   assert.match(r, /https:\/\/wa\.me\/919987148125\?text=/);
-  assert.match(r, /हेल्थ कवर का हिसाब/);
+  assert.match(r, /हेल्थ कवर का विश्लेषण/);
   assert.match(r, /\/calculator\/report\/calc-uuid-1/);
   assert.doesNotMatch(r, /Santosh/);
   assert.doesNotMatch(r, /when they open the report/);

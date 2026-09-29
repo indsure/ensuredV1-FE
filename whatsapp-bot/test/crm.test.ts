@@ -54,12 +54,16 @@ test("draft requests parse to the portal's template kinds", () => {
 
 /* ── Flows ── */
 
-test("'Ramesh won' updates the one matching lead", async () => {
+test("'Ramesh won' asks for YES first, then updates the one matching lead", async () => {
   const { bot, transport, engine } = makeBot();
   const r = lead(); engine.leadRows = [r, lead({ name: "Alok Verma", phone: "9800000001" })];
   await bot.handle(text("Ramesh won"));
+  assert.equal(engine.leadUpdates.length, 0, "nothing is saved before YES");
+  assert.match(transport.last(), /^Please confirm:\n• \*Ramesh Kumar\* \(98123 45678\): mark won\n\nReply YES to save, or NO\.$/);
+  await bot.handle(text("yes"));
   assert.deepEqual(engine.leadUpdates, [{ id: r.id, status: "won", nextFollowUp: undefined, note: undefined }]);
-  assert.match(transport.last(), /^\*Ramesh Kumar\*: marked won\.\nhttps:\/\/indsure\.in\/agent\/leads\/\S+\nNext: thank you message for Ramesh$/);
+  assert.match(transport.last(), /^\*Ramesh Kumar\*: marked won\./);
+  assert.match(transport.last(), /Reply UNDO within 15 minutes/);
 });
 
 test("'ok done' and 'alok'-style near misses change nothing", async () => {
@@ -71,17 +75,20 @@ test("'ok done' and 'alok'-style near misses change nothing", async () => {
   assert.doesNotMatch(transport.texts().join("\n"), /marked/);
 });
 
-test("follow-up date and a note; two matching leads ask which", async () => {
+test("follow-up date and a note; two matching leads ask which; each needs YES", async () => {
   const { bot, transport, engine } = makeBot();
   const a = lead(), b = lead({ name: "Ramesh Shah", phone: "9811111111" });
   engine.leadRows = [a, b];
   await bot.handle(text("follow up Ramesh Friday"));
   assert.match(transport.last(), /Which Ramesh\?\n1\) Ramesh Kumar/);
   await bot.handle(text("2"));
+  assert.match(transport.last(), /\*Ramesh Shah\* \(98111 11111\): follow-up Fri 2 Jan/);
+  await bot.handle(text("haan"));
   assert.equal(engine.leadUpdates[0].id, b.id);
   assert.equal(engine.leadUpdates[0].nextFollowUp, "1970-01-02");
   assert.match(transport.last(), /follow-up set for Fri 2 Jan/);
   await bot.handle(text("note Ramesh Kumar: wants family floater"));
+  await bot.handle(text("yes"));
   assert.equal(engine.leadUpdates[1].note, "wants family floater");
 });
 

@@ -87,7 +87,9 @@ export function prettyEngine(e: Engine): Engine {
     lookup: (r: any) => ({ policies: r.policies.map(cleanClient), leads: r.leads.map(cleanLead) }),
     policies: (r: any) => ({ ...r, rows: r.rows.map((x: any) => ({ ...x, name: titleName(x.name), insurer: shortInsurer(x.insurer) })) }),
     leadSearch: (rows: any[]) => rows.map(cleanLead),
-    leadUpdate: cleanLead,
+    leadUpdate: (r: any) => ({ ...r, lead: cleanLead(r.lead) }),
+    leadRestore: cleanLead,
+    leadsList: (r: any) => ({ ...r, leads: (r.leads || []).map(cleanLead) }),
     followups: (rows: any[]) => rows.map(cleanLead),
     renewals: (r: any) => ({
       leads: r.leads.map((x: any) => ({ ...x, name: titleName(x.name), insurer: shortInsurer(x.insurer) })),

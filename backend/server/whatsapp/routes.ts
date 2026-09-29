@@ -30,6 +30,8 @@ import { AI_CONFIG } from "../config/ai_config";
 import { checkAnswerNumbers, parseIntent } from "./answerGuard";
 import { compareMany, type WordingProfile } from "../types/wordingProfile";
 import { EXTRACTION_FIELDS } from "../services/extractionFields";
+import { extractUsage, isOverDailyCeiling, logGeminiUsage } from "../services/geminiUsage";
+import { RESPONSE_SCHEMA, normalise, systemPrompt, userPrompt, type Context } from "./understand";
 
 type VerifyJwt = (req: any, res: any) => Promise<string | null>;
 
@@ -686,7 +688,7 @@ export function registerWhatsappRoutes(app: Express, verifyJwt: VerifyJwt): void
       if (q.length < 2) return res.json({ matches: [] });
       const like = `%${q.replace(/[%_\\]/g, "\\$&")}%`;
       const r = await pool.query(
-        `SELECT id, name, phone FROM customers
+        `SELECT id, name, phone, dob, city FROM customers
           WHERE agent_id = $1
             AND (name ILIKE $2 OR ($3 <> '' AND regexp_replace(coalesce(phone, ''), '\\D', '', 'g') LIKE '%' || $3))
           ORDER BY name ASC LIMIT 6`,
@@ -848,6 +850,9 @@ FACTS: ${JSON.stringify(facts)}`,
       const digits = String(b.phone || "").replace(/\D/g, "").slice(-10);
       const phone = /^[6-9]\d{9}$/.test(digits) ? digits : null;
       const interest = typeof b.interest === "string" && b.interest.trim() ? b.interest.trim().slice(0, 40) : null;
+      const status = ["new", "contacted", "interested", "won", "lost"].includes(b.status) ? b.status : "new";
+      const follow = typeof b.nextFollowUp === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.nextFollowUp) ? b.nextFollowUp : null;
+      const note = typeof b.note === "string" && b.note.trim() ? b.note.trim().slice(0, 1000) : null;
       if (phone) {
         const dup = await pool.query(
           `SELECT id, name FROM agent_leads
@@ -858,13 +863,56 @@ FACTS: ${JSON.stringify(facts)}`,
         if (dup.rows.length) return res.json({ id: dup.rows[0].id, duplicateOf: dup.rows[0].name });
       }
       const r = await pool.query(
-        `INSERT INTO agent_leads (agent_id, name, phone, insurance_interest, status)
-         VALUES ($1, $2, $3, $4, 'new') RETURNING id`,
-        [agentId, name, phone, interest]
+        `INSERT INTO agent_leads (agent_id, name, phone, insurance_interest, status, next_follow_up, notes)
+         VALUES ($1, $2, $3, $4, $5, $6::date,
+                 CASE WHEN $7::text IS NULL THEN NULL
+                      ELSE to_char(now() AT TIME ZONE 'Asia/Kolkata', 'DD Mon') || ': ' || $7::text END)
+         RETURNING id`,
+        [agentId, name, phone, interest, status, follow, note]
       );
       res.json({ id: r.rows[0].id });
     } catch (err: any) {
       log.error("wa lead create failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Undo a lead the bot added moments ago. Only a lead created in the last 15 minutes, by
+   *  this advisor, can be removed this way; anything older is the portal's job. */
+  app.post("/api/internal/wa/leads/:id/undo-create", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: "bad id" });
+      const r = await pool.query(
+        `DELETE FROM agent_leads
+          WHERE id = $1 AND agent_id = $2 AND created_at > now() - interval '15 minutes'
+          RETURNING id`,
+        [req.params.id, agentId]
+      );
+      if (!r.rowCount) return res.status(409).json({ error: "too old to undo" });
+      res.json({ ok: true });
+    } catch (err: any) {
+      log.error("wa lead undo-create failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** The advisor's leads, most recently touched first (list_leads). */
+  app.get("/api/internal/wa/leads/list", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const r = await pool.query(
+        `SELECT id, name, phone, status, insurance_interest, next_follow_up, notes, updated_at
+           FROM agent_leads WHERE agent_id = $1
+          ORDER BY updated_at DESC NULLS LAST, created_at DESC LIMIT 15`,
+        [agentId]
+      );
+      const total = await pool.query("SELECT count(*)::int AS n FROM agent_leads WHERE agent_id = $1", [agentId]);
+      res.json({ total: total.rows[0].n, leads: r.rows });
+    } catch (err: any) {
+      log.error("wa leads list failed", { error: err?.message });
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -879,9 +927,16 @@ FACTS: ${JSON.stringify(facts)}`,
       if (!inputs || typeof inputs !== "object" || !result || typeof result !== "object") {
         return res.status(400).json({ error: "inputs and result required" });
       }
+      // Filed under a customer only when that customer is this advisor's (as save-report does).
+      let customerId: string | null = null;
+      const cid = String(req.body?.customerId || "");
+      if (UUID_RE.test(cid)) {
+        const owned = await pool.query("SELECT id FROM customers WHERE id = $1 AND agent_id = $2", [cid, agentId]);
+        if (owned.rows.length) customerId = cid;
+      }
       const r = await pool.query(
-        "INSERT INTO calculator_reports (inputs, result_data, agent_id) VALUES ($1, $2, $3) RETURNING id",
-        [JSON.stringify(inputs), JSON.stringify(result), agentId]
+        "INSERT INTO calculator_reports (inputs, result_data, agent_id, customer_id) VALUES ($1, $2, $3, $4) RETURNING id",
+        [JSON.stringify(inputs), JSON.stringify(result), agentId, customerId]
       );
       res.json({ uuid: r.rows[0].id });
     } catch (err: any) {
@@ -1007,6 +1062,25 @@ FACTS: ${JSON.stringify(facts)}`,
       if (!agentId) return;
       if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: "bad id" });
       const b = req.body || {};
+      const before = await pool.query(
+        `SELECT ${LEAD_COLS} FROM agent_leads WHERE id = $1 AND agent_id = $2`,
+        [req.params.id, agentId]
+      );
+      if (!before.rows.length) return res.status(404).json({ error: "Not found" });
+
+      // Undo: put back exactly what was there before the bot's change.
+      if (b.restore && typeof b.restore === "object") {
+        const x = b.restore;
+        const st = ["new", "contacted", "interested", "won", "lost"].includes(x.status) ? x.status : null;
+        const fu = typeof x.next_follow_up === "string" && /^\d{4}-\d{2}-\d{2}/.test(x.next_follow_up) ? x.next_follow_up.slice(0, 10) : null;
+        const r = await pool.query(
+          `UPDATE agent_leads SET status = $3, next_follow_up = $4::date, notes = $5, updated_at = now()
+            WHERE id = $1 AND agent_id = $2 RETURNING ${LEAD_COLS}`,
+          [req.params.id, agentId, st, fu, typeof x.notes === "string" ? x.notes : null]
+        );
+        return res.json({ lead: r.rows[0], before: before.rows[0] });
+      }
+
       const status = ["new", "contacted", "interested", "won", "lost"].includes(b.status) ? b.status : null;
       const follow = typeof b.nextFollowUp === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.nextFollowUp) ? b.nextFollowUp : null;
       const note = typeof b.note === "string" && b.note.trim() ? b.note.trim().slice(0, 1000) : null;
@@ -1022,8 +1096,7 @@ FACTS: ${JSON.stringify(facts)}`,
          RETURNING ${LEAD_COLS}`,
         [req.params.id, agentId, status, follow, note]
       );
-      if (!r.rows.length) return res.status(404).json({ error: "Not found" });
-      res.json({ lead: r.rows[0] });
+      res.json({ lead: r.rows[0], before: before.rows[0] });
     } catch (err: any) {
       log.error("wa lead update failed", { error: err?.message });
       res.status(500).json({ error: "Internal server error" });
@@ -1150,6 +1223,62 @@ FACTS: ${JSON.stringify(facts)}`,
     } catch (err: any) {
       log.error("wa claims failed", { error: err?.message });
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Understanding a free-form message (model fills a fixed form; code does the rest) ──
+     Model: WA_UNDERSTAND_MODEL (default gemini-3.1-flash-lite, the bake-off winner of
+     2026-09-29: 96.6% correct, 0 dangerous, 0 inconsistent). Thinking off. Every call is in
+     the usage ledger as wa_understand. OFF unless WA_LLM_ENABLED=true, and off whenever
+     the daily Gemini ceiling is reached. */
+  app.post("/api/internal/wa/understand", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const key = process.env.GEMINI_API_KEY;
+      if (process.env.WA_LLM_ENABLED !== "true" || !key) return res.json({ enabled: false });
+      if (await isOverDailyCeiling()) return res.json({ enabled: false, reason: "daily ceiling" });
+      const text = String(req.body?.text || "").slice(0, 500);
+      if (!text.trim()) return res.json({ enabled: true, understanding: null });
+      const ctx: Context = req.body?.ctx && typeof req.body.ctx === "object" ? req.body.ctx : {};
+      const today = new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
+      const model = process.env.WA_UNDERSTAND_MODEL || "gemini-3.1-flash-lite";
+      const thinking = /3\.5/.test(model) ? { thinkingLevel: "minimal" } : { thinkingBudget: 0 };
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      const t0 = Date.now();
+      let json: any = null;
+      let status = 0;
+      try {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: "POST",
+          signal: ctrl.signal,
+          headers: { "content-type": "application/json", "x-goog-api-key": key },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt() }] },
+            contents: [{ role: "user", parts: [{ text: userPrompt(text, ctx, today) }] }],
+            generationConfig: { temperature: 0, responseMimeType: "application/json", responseSchema: RESPONSE_SCHEMA, thinkingConfig: thinking },
+          }),
+        });
+        status = r.status;
+        json = await r.json().catch(() => null);
+      } finally {
+        clearTimeout(timer);
+      }
+      const latencyMs = Date.now() - t0;
+      const ok = status === 200 && json;
+      void logGeminiUsage(
+        { feature: "wa_understand", route: "/api/internal/wa/understand", sourceType: "agent", actorId: agentId },
+        { model, tokens: ok ? extractUsage(json) : {}, status: ok ? "ok" : "error", latencyMs, errorMessage: ok ? null : `HTTP ${status}` }
+      );
+      if (!ok) return res.json({ enabled: true, understanding: null, error: `HTTP ${status}` });
+      const raw = json?.candidates?.[0]?.content?.parts?.map((p: any) => p.text ?? "").join("") ?? "";
+      let parsed: unknown = null;
+      try { parsed = JSON.parse(raw); } catch { /* malformed: treated as not understood */ }
+      res.json({ enabled: true, understanding: parsed ? normalise(parsed) : null });
+    } catch (err: any) {
+      log.warn("wa understand failed", { error: err?.message });
+      res.json({ enabled: true, understanding: null, error: "failed" });
     }
   });
 }

@@ -46,8 +46,12 @@ export function interestIn(text: string): string | null {
 }
 
 /** "lead Ramesh Kumar 9812345678 health" / "enter a lead Ramesh" -> parts found. */
-export function parseLeadLine(textRaw: string): { name: string | null; phone: string | null; interest: string | null } {
-  const rest = textRaw.replace(/^\s*(please\s+)?((enter|add|new|create|save)\s+(a\s+)?(new\s+)?)?leads?\b[:\-\s]*/i, "");
+export function parseLeadLine(textRaw: string): { name: string | null; phone: string | null; interest: string | null; status: string | null } {
+  const stripped = textRaw.replace(/^\s*(please\s+)?((enter|add|new|create|save)\s+(a\s+)?(new\s+)?)?leads?\b[:\-\s]*/i, "");
+  // A status word is never part of a name: "lead Ramesh won" is Ramesh, status won.
+  const sm = stripped.match(/\b(not interested|won|lost|interested|contacted|converted)\b/i);
+  const status = sm ? ({ "not interested": "lost", converted: "won" } as Record<string, string>)[sm[1].toLowerCase()] ?? sm[1].toLowerCase() : null;
+  const rest = sm ? stripped.replace(sm[0], " ") : stripped;
   const interest = interestIn(rest);
   const { phone } = parseCaption(rest);
   let name = rest
@@ -57,7 +61,7 @@ export function parseLeadLine(textRaw: string): { name: string | null; phone: st
     .replace(/\s+/g, " ")
     .trim();
   if (name.length < 2) name = "";
-  return { name: name ? name.slice(0, 80) : null, phone, interest };
+  return { name: name ? name.slice(0, 80) : null, phone, interest, status };
 }
 
 export const LEAD_ASK = {

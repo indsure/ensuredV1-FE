@@ -281,3 +281,15 @@ export function detailsReply(l: Links, c: ClientSummary): string {
   const extra = VALUE_TYPES.includes(c.insuranceType || "") ? "\nSurrender value: reply SURRENDER VALUE " + (c.policyholderName?.split(" ")[0] || "") : "";
   return `${b(c.policyholderName || "Policy")} · ${planLabel(c.insurer, c.policyName) || c.insuranceType} · ${c.insuranceType} policy (scores are for health only)\n${d.map((x) => `• ${x.label}: ${x.value}`).join("\n")}${extra}\n${url}`;
 }
+
+/* ── Lead list ───────────────────────────────────────────────────────── */
+
+export function leadsListReply(l: Links, data: { total: number; leads: LeadRow[] }): string {
+  if (!data.total) return "You have no leads yet. Add one with: lead Ramesh 98123 45678 health";
+  const lines = data.leads.map((r, i) => {
+    const fu = r.next_follow_up ? `follow up ${dayMonth(r.next_follow_up)}` : null;
+    return `${i + 1}) ${[b(r.name), r.phone, r.status || "new", r.insurance_interest, fu].filter(Boolean).join(" · ")}`;
+  });
+  const more = data.total > data.leads.length ? `\n…and ${data.total - data.leads.length} more: ${l.origin}/agent/leads` : "";
+  return `📋 Your leads (${data.total}), latest first:\n${lines.join("\n")}${more}\n\nUpdate one, for example: ${firstName(data.leads[0]?.name) || "Ramesh"} interested`;
+}

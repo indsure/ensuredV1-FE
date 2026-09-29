@@ -65,7 +65,7 @@ export class FakeEngine implements Engine {
   /** Per engine job: how many polls before it finishes, and how it finishes. */
   plan = new Map<string, { polls: number; end: "completed" | "error"; error?: string }>();
   nextOutcome: { type?: string; end?: "completed" | "error"; error?: string; polls?: number } = {};
-  customers: { id: string; name: string; phone: string | null }[] = [];
+  customers: { id: string; name: string; phone: string | null; dob?: string | null; city?: string | null }[] = [];
   attached: [string, string][] = [];
   shared: string[] = [];
   renewalData: { leads: RenewalRow[]; customers: RenewalRow[] } = { leads: [], customers: [] };
@@ -143,11 +143,40 @@ export class FakeEngine implements Engine {
   ];
   async profile() { return this.profileData; }
   async createLead(_a: string, l: any) {
-    const dup = this.leads.find((x) => x.phone && x.phone === l.phone);
+    const dup = [...this.leads, ...this.leadRows].find((x) => x.phone && x.phone === l.phone);
     if (dup) return { id: dup.id, duplicateOf: dup.name };
-    const id = crypto.randomUUID(); this.leads.push({ id, ...l }); return { id };
+    const id = crypto.randomUUID();
+    this.leads.push({ id, ...l });
+    // Created leads are findable afterwards, like the real table.
+    this.leadRows.push({ id, name: l.name, phone: l.phone ?? null, status: l.status ?? "new", insurance_interest: l.interest ?? null, next_follow_up: l.nextFollowUp ?? null, notes: l.note ?? null });
+    return { id };
   }
-  async saveCalculator(_a: string, inputs: any, result: any) { this.calcSaved.push({ inputs, result }); return "calc-uuid-1"; }
+  async saveCalculator(_a: string, inputs: any, result: any, customerId: string | null = null) { this.calcSaved.push({ inputs, result, customerId }); return "calc-uuid-1"; }
+  /** Model stand-in: tests script what the model would return for a message. Off by default,
+   *  exactly like production until WA_LLM_ENABLED=true. */
+  understandMap = new Map<string, any>();
+  understandCalls: { text: string; ctx: any }[] = [];
+  modelOn = false;
+  async understand(_a: string, text: string, ctx: any) {
+    this.understandCalls.push({ text, ctx });
+    if (!this.modelOn) return { enabled: false, understanding: null };
+    const u = this.understandMap.get(text);
+    return { enabled: true, understanding: u ?? { actions: [{ type: "unknown" }], clarify: null } };
+  }
+  async leadsList() { return { total: this.leadRows.length, leads: this.leadRows.slice(0, 15) }; }
+  restored: any[] = [];
+  async leadRestore(_a: string, id: string, before: any) {
+    this.restored.push({ id, before });
+    const r = this.leadRows.find((x) => x.id === id);
+    if (r) Object.assign(r, { status: before.status, next_follow_up: before.next_follow_up, notes: before.notes });
+    return r ?? null;
+  }
+  undoneCreates: string[] = [];
+  async leadUndoCreate(_a: string, id: string) {
+    this.undoneCreates.push(id);
+    this.leadRows = this.leadRows.filter((x) => x.id !== id);
+    return true;
+  }
   async catalog() { return this.catalogRows; }
   leadRows: any[] = [];
   leadUpdates: any[] = [];
@@ -162,10 +191,11 @@ export class FakeEngine implements Engine {
   async leadUpdate(_a: string, id: string, u: any) {
     this.leadUpdates.push({ id, ...u });
     const r = this.leadRows.find((x) => x.id === id);
+    const before = { ...r };
     if (u.status) r.status = u.status;
     if (u.nextFollowUp) r.next_follow_up = u.nextFollowUp;
     if (u.note) r.notes = [r.notes, u.note].filter(Boolean).join("\n");
-    return r;
+    return { lead: r, before };
   }
   async followups() { return this.followupRows; }
   async lookup(_a: string, q: string) {

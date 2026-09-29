@@ -29,7 +29,7 @@ export function ruleIntent(textRaw: string): Intent | null {
   // "follow up X Friday" is a lead update (handled in bot.ts before intents).
   if (/\b(message|msg|wishes|greeting)\b/.test(t) && !/^share\b/.test(t)) return "draft";
   if (/^(follow[\s-]?ups?|followups|pending follow[\s-]?ups?|today'?s (calls|follow[\s-]?ups?)|calls today|who (do|should) i call( today)?)[?.!]*$/.test(t)) return "followups";
-  if (/\b(checks? left|how many checks|my balance|balance|credits? left|policy checks)\b/.test(t)) return "checks";
+  if (/^checks?[?.!]*$/.test(t) || /\b(checks? left|how many checks|my balance|balance|credits? left|policy checks)\b/.test(t)) return "checks";
   if (/\b(views|who (opened|viewed|saw|read)|opened (my|the) reports?|report views)\b/.test(t)) return "views";
   if (/^claims?\b|\bclaim status\b|\bopen claims\b/.test(t)) return "claims";
   if (/\b(surrender|loan value|policy value|paid[\s-]?up value)\b/.test(t)) return "surrender";

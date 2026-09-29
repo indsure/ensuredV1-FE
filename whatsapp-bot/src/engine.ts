@@ -108,17 +108,22 @@ export interface Engine {
   findClients(agentId: string, name: string): Promise<ClientSummary[]>;
   share(agentId: string, clientId: string): Promise<string | null>;
   attachCustomer(agentId: string, clientId: string, customerId: string): Promise<boolean>;
-  searchCustomers(agentId: string, q: string): Promise<{ id: string; name: string; phone: string | null }[]>;
+  searchCustomers(agentId: string, q: string): Promise<{ id: string; name: string; phone: string | null; dob?: string | null; city?: string | null }[]>;
   renewals(agentId: string): Promise<{ leads: RenewalRow[]; customers: RenewalRow[] }>;
   llmIntent(agentId: string, text: string, hasReport: boolean): Promise<string>;
   profile(agentId: string): Promise<Profile>;
-  createLead(agentId: string, lead: { name: string; phone: string | null; interest: string | null }): Promise<{ id: string; duplicateOf?: string }>;
-  saveCalculator(agentId: string, inputs: unknown, result: unknown): Promise<string>;
+  createLead(agentId: string, lead: { name: string; phone: string | null; interest: string | null; status?: string | null; nextFollowUp?: string | null; note?: string | null }): Promise<{ id: string; duplicateOf?: string }>;
+  saveCalculator(agentId: string, inputs: unknown, result: unknown, customerId?: string | null): Promise<string>;
+  /** The model fills the form (backend, switched off unless WA_LLM_ENABLED=true). */
+  understand(agentId: string, text: string, ctx: import("./core/understand.js").Context): Promise<{ enabled: boolean; understanding: import("./core/understand.js").Understanding | null }>;
+  leadsList(agentId: string): Promise<{ total: number; leads: LeadRow[] }>;
+  leadRestore(agentId: string, id: string, before: { status: string | null; next_follow_up: string | null; notes: string | null }): Promise<LeadRow | null>;
+  leadUndoCreate(agentId: string, id: string): Promise<boolean>;
   catalog(agentId: string): Promise<CatalogPlan[]>;
   compare(agentId: string, keys: string[]): Promise<CompareResult>;
   policies(agentId: string, type: string | null): Promise<{ total: number; rows: PolicyRow[] }>;
   leadSearch(agentId: string, q: string): Promise<LeadRow[]>;
-  leadUpdate(agentId: string, id: string, u: { status?: string; nextFollowUp?: string; note?: string }): Promise<LeadRow>;
+  leadUpdate(agentId: string, id: string, u: { status?: string; nextFollowUp?: string; note?: string }): Promise<{ lead: LeadRow; before: LeadRow }>;
   followups(agentId: string): Promise<LeadRow[]>;
   lookup(agentId: string, q: string): Promise<{ policies: ClientSummary[]; leads: LeadRow[] }>;
   views(agentId: string): Promise<{ name: string | null; insurer: string | null; policyName: string | null; views: number; lastViewed: string; clientId: string }[]>;
@@ -215,8 +220,19 @@ export class HttpEngine implements Engine {
   }
   profile(agentId: string) { return this.call("/api/internal/wa/profile", { agentId }); }
   createLead(agentId: string, lead: any) { return this.call("/api/internal/wa/leads", { method: "POST", agentId, body: lead }); }
-  async saveCalculator(agentId: string, inputs: unknown, result: unknown) {
-    return (await this.call("/api/internal/wa/calculator", { method: "POST", agentId, body: { inputs, result } })).uuid;
+  async saveCalculator(agentId: string, inputs: unknown, result: unknown, customerId: string | null = null) {
+    return (await this.call("/api/internal/wa/calculator", { method: "POST", agentId, body: { inputs, result, customerId } })).uuid;
+  }
+  async understand(agentId: string, text: string, ctx: unknown) {
+    return this.call("/api/internal/wa/understand", { method: "POST", agentId, body: { text, ctx } });
+  }
+  leadsList(agentId: string) { return this.call("/api/internal/wa/leads/list", { agentId }); }
+  async leadRestore(agentId: string, id: string, before: unknown) {
+    return (await this.call(`/api/internal/wa/leads/${id}/update`, { method: "POST", agentId, body: { restore: before } })).lead ?? null;
+  }
+  async leadUndoCreate(agentId: string, id: string) {
+    try { await this.call(`/api/internal/wa/leads/${id}/undo-create`, { method: "POST", agentId, body: {} }); return true; }
+    catch { return false; }
   }
   private catalogCache: { at: number; rows: CatalogPlan[] } | null = null;
   async catalog(agentId: string) {
@@ -230,8 +246,8 @@ export class HttpEngine implements Engine {
   async leadSearch(agentId: string, q: string) {
     return (await this.call(`/api/internal/wa/leads/search?q=${encodeURIComponent(q)}`, { agentId })).matches;
   }
-  async leadUpdate(agentId: string, id: string, u: any) {
-    return (await this.call(`/api/internal/wa/leads/${id}/update`, { method: "POST", agentId, body: u })).lead;
+  leadUpdate(agentId: string, id: string, u: any) {
+    return this.call(`/api/internal/wa/leads/${id}/update`, { method: "POST", agentId, body: u });
   }
   async followups(agentId: string) { return (await this.call("/api/internal/wa/followups", { agentId })).leads; }
   lookup(agentId: string, q: string) { return this.call(`/api/internal/wa/lookup?q=${encodeURIComponent(q)}`, { agentId }); }
