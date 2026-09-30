@@ -208,3 +208,37 @@ test("a follow-up years overdue shows its date, not '9423d'; Hinglish lists say 
   assert.match(hl, / · 31 din se pending · /);
   assert.match(hl, /\*Tester Sharma\* · 9812345678 · aaj · Health/);
 });
+
+test("THE SCREENSHOT: 'Sabse hogayi, all remind on Nov 3' = spoke to all, remind all on 3 Nov; never a new lead for the last customer", async () => {
+  const { parseBulkUpdate } = await import("../src/core/crm.js");
+  assert.deepEqual(parseBulkUpdate("Sabse hogayi, all remind on Nov 3", NOW), { nextFollowUp: "2026-11-03", status: "contacted" });
+  assert.deepEqual(parseBulkUpdate("called everyone", NOW), { status: "contacted" });
+  assert.deepEqual(parseBulkUpdate("sabko kal follow up", NOW), null, "date before the word: not read, so nothing changes");
+  assert.deepEqual(parseBulkUpdate("sab ko follow up kal", NOW), { nextFollowUp: "2026-10-01" });
+  assert.equal(parseBulkUpdate("ok all done thanks", NOW), null);
+  assert.equal(parseBulkUpdate("sab clients ko call karna hai", NOW), null);
+
+  const { bot, transport, engine, advance } = makeBot();
+  advance(NOW - bot["now"]());
+  engine.modelOn = true;
+  const a = lead({ name: "Deep Shah", phone: "7021585537", days: -3 });
+  const b = lead({ name: "Aniket Bang", phone: "9284142611", days: -31 });
+  engine.leadRows = [a, b];
+  engine.followupRows = [a, b];
+  await bot.handle(text("Followups"));
+  await bot.handle(text("Sabse hogayi, all remind on Nov 3"));
+  const ask = transport.last();
+  assert.match(ask, /\*Deep Shah\* \(70215 85537\): status contacted, follow-up Tue 3 Nov/);
+  assert.match(ask, /\*Aniket Bang\* \(92841 42611\): status contacted, follow-up Tue 3 Nov/);
+  assert.doesNotMatch(ask, /Palash|Nayi lead/);
+  assert.equal(engine.understandCalls.length, 0);
+});
+
+test("a name the model made up (not in the message, no he/she/uska) is dropped: it asks which lead", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.modelOn = true;
+  engine.understandMap.set("mark as contacted please", { actions: [{ type: "update_lead", name: "Palash Baheti", phone: null, status: "contacted", follow_up_date: null, note: null, interest: null, draft_kind: null, language: null, plans: null, question: null, policy_type: null }], clarify: null });
+  await bot.handle(text("mark as contacted please"));
+  assert.match(transport.last(), /^Which lead\?/);
+  assert.equal(engine.leads.length, 0);
+});

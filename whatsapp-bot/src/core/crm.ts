@@ -154,6 +154,31 @@ export function parseLeadUpdate(textRaw: string, nowMs: number): LeadUpdate | nu
   return null;
 }
 
+const ALL = /(?:^|[\s,])(?:all|everyone'?s?|everybody|all of them|sab|sabse|sabko|sabke|sab ke|sabka|sabhi|in sab|inke|in sabko|सब|सबसे|सबको|सबके|सबका|सभी)(?=[\s,]|$)/;
+const FU_WORD = /(remind|reminder|follow[\s-]?ups?|followups?|\bcalls?\b|रिमाइंडर|फॉलो[\s-]?अप|कॉल)/;
+const DONE_WORD = /(ho ?gayi|ho ?gaya|ho ?gai|baat ho|baat kar li|spoke|talked|called|contacted|हो गई|हो गया|बात हो)/;
+
+/** A change for EVERY lead on the follow-up list: "Sabke reminders 1st November kardo",
+ *  "Sabse hogayi, all remind on Nov 3" (spoke to all, remind all on 3 Nov), "move all follow
+ *  ups to Monday", "called everyone". Null when the message is not about all of them. */
+export function parseBulkUpdate(textRaw: string, nowMs: number): { nextFollowUp?: string; status?: string } | null {
+  const t = textRaw.trim().toLowerCase().replace(/[.!?।]+$/, "");
+  if (!ALL.test(t)) return null;
+  const out: { nextFollowUp?: string; status?: string } = {};
+  // The date is whatever follows the follow-up word ("... remind on Nov 3", "... follow up kal").
+  const fu = t.match(FU_WORD);
+  if (fu && fu.index !== undefined) {
+    const tail = t.slice(fu.index + fu[0].length).replace(/^\s*(?:s\b)?\s*(?:on|to|for|ko|को|par)?\s*/, "")
+      .replace(/\s+(?:kardo|kar do|karo|set karo|rakho|move karo|shift karo|daal do|करो|कर दो|रखो)$/, "").trim();
+    const w = tail ? parseWhen(tail, nowMs) : null;
+    if (w && !w.rest) out.nextFollowUp = w.date;
+  }
+  if (DONE_WORD.test(t)) out.status = "contacted";
+  if (!out.nextFollowUp && !out.status) return null;
+  // "move all follow ups" with no date it could read is not a change.
+  return out;
+}
+
 /** "Sabke reminders 1st November kardo", "move all follow ups to Monday": one new date for
  *  every lead on the follow-up list. The date, or null when it is not such a message. */
 export function parseBulkFollowUp(textRaw: string, nowMs: number): string | null {

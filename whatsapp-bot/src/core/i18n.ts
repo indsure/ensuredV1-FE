@@ -26,7 +26,8 @@ const HINGLISH_WORDS = new Set([
   "bhai", "ji", "yaar", "dekho", "dikhao", "bolo", "hoga", "kaise", "kab", "kahan", "kyun", "aur", "bhi", "toh", "ne", "ko",
   "ka", "ki", "ke", "mein", "sab", "sabhi", "wapas", "mana", "baat", "batana", "jodo", "naya", "nayi", "dobara",
   "le", "li", "lena", "diya", "kiya", "gaye", "hogi", "lega", "legi", "janmdin", "badhai", "bhejiye", "chahte",
-  "sabke", "sabka", "sabko", "sabhi", "inke", "unke", "daal", "rakho", "lagao", "kal", "karwa",
+  "sabke", "sabka", "sabko", "sabhi", "sabse", "inke", "unke", "daal", "rakho", "lagao", "kal", "karwa",
+  "hogayi", "hogaya", "hogai", "kardo", "kardiya", "bhai", "accha", "theek",
 ]);
 /** Everyday English function words: two of these and no Hinglish words is English. */
 const ENGLISH_WORDS = new Set([

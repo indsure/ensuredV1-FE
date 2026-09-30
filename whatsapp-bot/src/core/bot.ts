@@ -38,7 +38,7 @@ import { log, redact } from "../log.js";
 import { b, dayMonth, planLabel as nicePlan, prettyEngine } from "./format.js";
 import {
   CLIENT_ONLY, VALUE_TYPES, claimsReply, detailsReply, followupsReply, leadUpdatedReply, lookupReply,
-  nameMatches, parseDraft, parseLeadUpdate, parseBulkFollowUp, valueReply, viewsReply, leadsListReply, prettyDate, type LeadRow, type LeadUpdate,
+  nameMatches, parseDraft, parseLeadUpdate, parseBulkFollowUp, parseBulkUpdate, valueReply, viewsReply, leadsListReply, prettyDate, type LeadRow, type LeadUpdate,
 } from "./crm.js";
 import type { DraftKind } from "../shared/draftMessage.js";
 import {
@@ -49,7 +49,7 @@ import {
 import type { Action, Context as ModelContext, Understanding } from "./understand.js";
 import { MORNING, inMorningWindow, istClock, morningBrief, sincePreviousWorkday } from "./morning.js";
 import type { CatalogPlan, SachStatus } from "../engine.js";
-import { LANG_SET, detectLang, langCommand, localise, type ReplyLang } from "./i18n.js";
+import { LANG_SET, detectLang, devanagariToLatin, hasDevanagari, langCommand, localise, type ReplyLang } from "./i18n.js";
 import { outsideCustomer, polish, stripMarkers } from "./style.js";
 
 export const MAX_BYTES = 25 * 1024 * 1024;
@@ -130,6 +130,15 @@ export function captionIsFileName(caption: string | null | undefined, fileName: 
   if (/\.(pdf|docx?|jpe?g|png)$/.test(c)) return true;
   const f = String(fileName || "").trim().toLowerCase();
   return !!f && (c === f || c === f.replace(/\.[a-z0-9]+$/, ""));
+}
+
+/** Words that point at the person the chat was last about. */
+const PRONOUN = /\b(he|she|him|her|his|hers|them|they|their|uska|uski|uske|unka|unki|unke|usko|unko|use|unhe|isko|iska|iski|inka)\b|उसका|उसकी|उसके|उनका|उनकी|उनके|उसको|उनको|उसे|उन्हें/i;
+
+/** Is any word of `name` (3+ letters) actually in the message, in English or Hindi letters? */
+function nameInMessage(name: string, text: string): boolean {
+  const msg = (hasDevanagari(text) ? `${text} ${devanagariToLatin(text)}` : text).toLowerCase();
+  return name.toLowerCase().split(/\s+/).filter((w) => w.length >= 3).some((w) => new RegExp(`(^|[^a-z])${w.replace(/[^a-z]/g, "")}`).test(msg) || msg.includes(w));
 }
 
 const normName = (s: string | null | undefined) => String(s ?? "").toLowerCase().replace(/[^a-z\u0900-\u097F ]/g, " ").replace(/\s+/g, " ").trim();
@@ -614,7 +623,8 @@ export class Bot {
     // "Ramesh won", "sabke reminders 1st November kardo") goes straight to its confirmation:
     // no model needed, and every change still waits for YES.
     if (!intent && !conv.state.startsWith("AWAITING")) {
-      const all = parseBulkFollowUp(text, this.now());
+      const one = parseBulkFollowUp(text, this.now());
+      const all = one ? { nextFollowUp: one } : parseBulkUpdate(text, this.now());
       if (all) return this.bulkFollowUp(agentId, conv, to, all);
       const u = parseLeadUpdate(text, this.now());
       if (u && (await this.leadUpdateStart(agentId, conv, to, u))) return;
@@ -1408,6 +1418,9 @@ export class Bot {
   private async dispatch(agentId: string, conv: Conv, to: string, text: string, u: Understanding) {
     const writes: Action[] = [];
     for (const a of u.actions) {
+      // A name the model filled in that the advisor never typed (and no he/she/uska to point
+      // at the last person) is dropped: a change is never aimed at someone by guesswork.
+      if (a.name && !nameInMessage(a.name, text) && !PRONOUN.test(text)) a.name = null;
       if (a.type === "add_lead" || a.type === "update_lead") { writes.push(a); continue; }
       await this.runAction(agentId, conv, to, text, a, u.clarify);
     }
@@ -1577,11 +1590,11 @@ export class Bot {
   }
 
   /** One new follow-up date for every lead on the follow-up list, after one YES. */
-  private async bulkFollowUp(agentId: string, conv: Conv, to: string, date: string) {
+  private async bulkFollowUp(agentId: string, conv: Conv, to: string, u: { nextFollowUp?: string; status?: string }) {
     const rows = this.lastFollowups.get(agentId) ?? (await this.d.engine.followups(agentId));
     if (!rows.length) return this.say(to, agentId, "There are no follow-ups due to move. Set one with: follow up Ramesh Friday", "bulk_none");
     return this.confirm(agentId, conv, to, rows.slice(0, 30).map((r) => ({
-      kind: "update" as const, leadId: r.id, name: r.name, phone: r.phone, status: null, nextFollowUp: date, note: null,
+      kind: "update" as const, leadId: r.id, name: r.name, phone: r.phone, status: u.status ?? null, nextFollowUp: u.nextFollowUp ?? null, note: null,
     })));
   }
 
