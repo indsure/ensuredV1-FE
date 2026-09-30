@@ -13,7 +13,7 @@ import { getCityTier } from "../shared/city-tier-util.js";
 import { CITY_ZONE_MAP } from "../shared/data/zones.js";
 import { parseCaption } from "./intents.js";
 import type { Links } from "./templates.js";
-import { b, cleanPlanText, dayMonth, firstName, planLabel as nicePlan } from "./format.js";
+import { b, cleanPlanText, dayMonth, firstName, planLabel as nicePlan, shortInsurer } from "./format.js";
 
 /* ── Website ─────────────────────────────────────────────────────────── */
 
@@ -256,6 +256,32 @@ export function matchPlans(query: string, catalog: CatalogPlan[]): CatalogPlan[]
   const qn = q.join(" ");
   const exact = hits.filter((p) => words(p.plan_name ?? "").join(" ") === qn || words(planLabel(p)).join(" ") === qn);
   return exact.length ? exact : hits;
+}
+
+/** Every insurer in the catalogue, A to Z by the name advisors use ("HDFC ERGO", "Care"). */
+export function companyOptions(catalog: CatalogPlan[]): { key: string; label: string }[] {
+  const seen = new Map<string, string>();
+  for (const p of catalog) if (p.insurer && !seen.has(p.insurer)) seen.set(p.insurer, shortInsurer(p.insurer) || p.insurer);
+  return [...seen].map(([key, label]) => ({ key, label })).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** One insurer's plans, A to Z, each variant on its own line. */
+export function planOptions(catalog: CatalogPlan[], insurer: string): { key: string; label: string }[] {
+  return catalog
+    .filter((p) => p.insurer === insurer)
+    .map((p) => ({ key: p.plan_key, label: `${p.plan_name ?? "Plan"}${p.variant ? ` (${p.variant})` : ""}` }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** A typed company name ("hdfc", "niva bupa", "star") to the one insurer it means, if exactly one. */
+export function matchCompany(text: string, catalog: CatalogPlan[]): string | null {
+  const q = words(text);
+  if (!q.length) return null;
+  const hits = companyOptions(catalog).filter((c) => {
+    const hay = words(`${c.key} ${c.label}`);
+    return q.every((w) => hay.some((h) => h.startsWith(w)));
+  });
+  return hits.length === 1 ? hits[0].key : null;
 }
 
 /** The closest catalogue plans to a name that matched none: most typed words shared first

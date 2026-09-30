@@ -176,12 +176,26 @@ test("compare: a plan not in the catalogue keeps the comparison going; a new nam
   assert.deepEqual(engine.compared[0].sort(), ["UIN-CARE-SUP", "UIN-NIVA-RA2"]);
 });
 
-test("compare: bare COMPARE asks, and the next message is taken as the plans", async () => {
+test("compare: bare COMPARE lists companies, then that company's plans, twice, then compares", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(text("compare"));
-  assert.match(transport.last(), /Which plans\?/);
+  assert.match(transport.last(), /^Plan 1 of 2: which company\?\n1\) Care\n2\) HDFC ERGO\n3\) Niva Bupa\nReply with the number, or type the plan name\.$/);
+  await bot.handle(text("2"));
+  assert.match(transport.last(), /^Which HDFC ERGO plan\?\n1\) Optima Secure \(Gold\)\n2\) Optima Secure \(Silver\)\nReply with the number\.$/);
+  await bot.handle(text("1"));
+  assert.match(transport.last(), /^Plan 2 of 2: which company\?/);
+  await bot.handle(text("niva"), );
+  assert.match(transport.last(), /^Which Niva Bupa plan\?\n1\) ReAssure 2\.0/, "a company can be typed by name");
+  await bot.handle(text("1"));
+  assert.deepEqual(engine.compared[0], ["UIN-HDFC-OPT:Gold", "UIN-NIVA-RA2"]);
+  assert.match(transport.last(), /Full side-by-side/);
+});
+
+test("compare: typing plan names still works at any step", async () => {
+  const { bot, transport, engine } = makeBot();
+  await bot.handle(text("compare"));
   await bot.handle(text("Care Supreme"));
-  assert.match(transport.last(), /Which plan should I compare it with\?/);
+  assert.match(transport.last(), /^Plan 2 of 2: which company\?/);
   await bot.handle(text("ReAssure 2.0"));
   assert.equal(engine.compared.length, 1);
 });

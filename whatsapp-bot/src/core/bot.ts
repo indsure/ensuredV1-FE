@@ -30,6 +30,7 @@ import type { UserInputs } from "../shared/health-engine-logic.js";
 import {
   CALC_AGE_ASK, CALC_QUESTIONS, COMPARE_ASK, INTERESTS, LEAD_ASK, ageBandFor, calcQuestionText, calcReply,
   compareReply, interestIn, leadSavedReply, matchPlans, parseAge, parseCompareNames, parseLeadLine, planLabel, suggestPlans,
+  companyOptions, planOptions, matchCompany,
   runCalculator, websiteReply, clientsReply, typeIn, pickCalcOption, cityAnswer, CALC_CITY_ASK, CALC_CITY_AGAIN,
   TIER_LABEL, toolShareDraft, type Shareable,
 } from "./tools.js";
@@ -117,7 +118,7 @@ type Remindable = RenewalRow & { source: "lead" | "client" };
 
 /** A compare question: pick one of several matches, a name not in the catalogue (with the
  *  closest plans), a name matching too many, or "which other plan?". */
-type CompareQ = { q: string; kind: "pick" | "missing" | "many" | "ask"; options: { key: string; label: string }[] };
+type CompareQ = { q: string; kind: "pick" | "missing" | "many" | "ask" | "company" | "plan"; options: { key: string; label: string }[] };
 
 /** "Policy Kit_PROHLV050040281.pdf" as the caption of a file with that name, or any caption
  *  that is itself a file name. */
@@ -888,21 +889,33 @@ export class Bot {
         const queue: CompareQ[] = p.queue || [];
         const q = queue[0];
         const n = q && q.options.length ? pickNumber(text, q.options.length) : null;
+        if (n && q.kind === "company") {
+          const plans = planOptions(await this.d.engine.catalog(agentId), q.options[n - 1].key);
+          await this.compareContinue(agentId, conv, to, p.resolved || [], [{ q: q.options[n - 1].label, kind: "plan", options: plans }, ...queue.slice(1)]);
+          return true;
+        }
         if (n) {
           await this.compareContinue(agentId, conv, to, [...(p.resolved || []), q.options[n - 1].key], queue.slice(1));
+          return true;
+        }
+        const catalog = await this.d.engine.catalog(agentId);
+        // A company typed by name ("hdfc") while a company is being asked: its plan list.
+        const company = q?.kind === "company" ? matchCompany(text, catalog) : null;
+        if (company) {
+          const label = q.options.find((o) => o.key === company)?.label ?? company;
+          await this.compareContinue(agentId, conv, to, p.resolved || [], [{ q: label, kind: "plan", options: planOptions(catalog, company) }, ...queue.slice(1)]);
           return true;
         }
         // Anything else is another plan name (or two) in place of the one being asked about.
         const names = parseCompareNames(text);
         if (!names.length) return false;
-        const catalog = await this.d.engine.catalog(agentId);
         const resolved: string[] = [...(p.resolved || [])];
         const fresh: CompareQ[] = [];
         for (const name of names) {
           const r = this.comparePlan(name, catalog);
           if (typeof r === "string") resolved.push(r); else fresh.push(r);
         }
-        const rest = queue.slice(1).filter((x) => x.kind !== "ask");
+        const rest = queue.slice(1).filter((x) => x.kind !== "ask" && x.kind !== "company");
         const next = [...fresh, ...rest];
         if (resolved.length + next.length < 2) next.push({ q: "", kind: "ask", options: [] });
         await this.compareContinue(agentId, conv, to, resolved, next);
@@ -1225,12 +1238,25 @@ export class Bot {
   }
 
   private async compareContinue(agentId: string, conv: Conv, to: string, resolved: string[], queue: CompareQ[]) {
+    // Two different plans are needed; the same plan twice asks again.
+    if (!queue.length && new Set(resolved).size < 2) {
+      if (resolved.length >= 2) await this.say(to, agentId, "Those are the same plan. Pick a different one to compare.", "compare");
+      resolved = [...new Set(resolved)];
+      queue = [{ q: "", kind: "ask", options: [] }];
+    }
     if (queue.length) {
+      // "Which other plan?" is asked as a list: the company first, then its plans.
+      if (queue[0].kind === "ask") {
+        const companies = companyOptions(await this.d.engine.catalog(agentId));
+        if (companies.length) queue = [{ q: "", kind: "company", options: companies }, ...queue.slice(1)];
+      }
       const q = queue[0];
       await this.setState(agentId, to, "AWAITING_COMPARE_PICK", conv.currentClientId, { resolved, queue });
       const list = q.options.map((o, i) => `${i + 1}) ${o.label}`).join("\n");
       const msg =
-        q.kind === "ask" ? (resolved.length ? "Which plan should I compare it with? Type the plan name, for example: Care Supreme." : COMPARE_ASK)
+        q.kind === "company" ? `Plan ${Math.min(resolved.length + 1, 2)} of 2: which company?\n${list}\nReply with the number, or type the plan name.`
+        : q.kind === "plan" ? `Which ${q.q} plan?\n${list}\nReply with the number.`
+        : q.kind === "ask" ? (resolved.length ? "Which plan should I compare it with? Type the plan name, for example: Care Supreme." : COMPARE_ASK)
         : q.kind === "many" ? `"${q.q}" matches too many plans. Type the insurer and plan name, for example: HDFC Optima Secure.`
         : q.kind === "missing" && q.options.length ? `"${q.q}" isn't in the plan catalogue yet. The closest ones:\n${list}\nReply with a number, or type another plan name.`
         : q.kind === "missing" ? `"${q.q}" isn't in the plan catalogue yet. Type another plan name, or CANCEL.`
@@ -1239,7 +1265,6 @@ export class Bot {
     }
     await this.rest(agentId, to, conv.currentClientId);
     const keys = [...new Set(resolved)];
-    if (keys.length < 2) return this.say(to, agentId, "Those are the same plan. Pick two different plans to compare.", "compare");
     const r = await this.d.engine.compare(agentId, keys);
     this.setLast(agentId, { kind: "compare", url: `${this.d.links.origin}/compare/report/${r.uuid}`, names: r.names.filter(Boolean).join(" and ") });
     await this.rest(agentId, to, conv.currentClientId);
