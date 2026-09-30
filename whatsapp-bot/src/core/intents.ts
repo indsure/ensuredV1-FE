@@ -16,11 +16,35 @@ export function linkCode(text: string): string | null {
   return m ? m[1].replace(/\s/g, "") : null;
 }
 
+/** Everyday Hindi and Hinglish ways of asking for the same commands. */
+function hindiIntent(t: string): Intent | null {
+  const end = "[?.!।]*$";
+  if (new RegExp(`^(aaj\\s+)?(kisko|kise|kis ko)\\s+(call|phone)(\\s+(karna|karu|karun|karoon|karni))?(\\s+(hai|h))?${end}`).test(t)) return "followups";
+  if (new RegExp(`^(आज\\s+)?(किसे|किसको|किस को)\\s+(कॉल|फ़ोन|फोन)(\\s+(करना|करूँ|करूं))?(\\s+है)?${end}`).test(t)) return "followups";
+  if (new RegExp(`^(aaj ke|आज के)\\s+(calls?|follow[\\s-]?ups?|कॉल|फॉलो[\\s-]?अप)${end}`).test(t)) return "followups";
+  if (new RegExp(`^(follow[\\s-]?ups?|फॉलो[\\s-]?अप)\\s+(dikhao|batao|दिखाओ|बताओ)${end}`).test(t)) return "followups";
+  if (/रिन्यूअल|नवीनीकरण/.test(t)) return "renewals";
+  if (new RegExp(`^(madad|help karo|kya kya kar sakte ho|kya kar sakte ho|मदद|हेल्प|क्या कर सकते हो|क्या क्या कर सकते हो)${end}`).test(t)) return "help";
+  if (new RegExp(`^(mere|meri|sab|saare|sare|मेरे|सारे|सब)\\s+(clients?|customers?|policies|policy|क्लाइंट|कस्टमर|ग्राहक|पॉलिसी)(\\s+(dikhao|batao|दिखाओ|बताओ))?${end}`).test(t)) return "clients";
+  if (new RegExp(`^(aaj ka kaam|aaj kya karna hai|aaj ka to-?do|आज का काम|आज क्या करना है)${end}`).test(t)) return "today";
+  if (new RegExp(`^((mera |मेरा )?(balance|बैलेंस)( kitna hai| कितना है)?|kitne (checks|replies|jawab) bache( hain)?|कितने (चेक|जवाब) बचे( हैं)?)${end}`).test(t)) return "balance";
+  if (/कैलकुलेटर|kitna cover chahiye|कितना कवर चाहिए/.test(t)) return "calc";
+  if (/^(naya|nayi|नया|नई)\s+(lead|लीड)\b|^(lead|लीड)\s+(jodo|add karo|जोड़ो|जोड़ें)/.test(t)) return "lead";
+  if (/\bclaim\s+(ka\s+)?(status|kya hua|kahan tak)|क्लेम/.test(t)) return "claims";
+  if (/\b(kisne|kis ne)\s+(report\s+)?(dekhi|kholi|dekha|khola)|किसने\s+(रिपोर्ट\s+)?(देखी|खोली)/.test(t)) return "views";
+  if (new RegExp(`^(chhodo|chodo|rehne do|cancel karo|band karo|रहने दो|छोड़ो|बंद करो|कैंसल)${end}`).test(t)) return "cancel";
+  if (new RegExp(`^(subah ka (message|brief) band karo|सुबह का मैसेज बंद करो)${end}`).test(t)) return "morning_off";
+  if (new RegExp(`^(subah ka (message|brief) (chalu|shuru) karo|सुबह का मैसेज (चालू|शुरू) करो)${end}`).test(t)) return "morning_on";
+  return null;
+}
+
 export function ruleIntent(textRaw: string): Intent | null {
   const t = norm(textRaw);
   if (!t) return null;
   if (linkCode(t)) return "link";
   if (/^unlink$/.test(t)) return "unlink";
+  const hindi = hindiIntent(t);
+  if (hindi) return hindi;
   if (/^(more|all commands|everything|full menu|help all|all features|what else)[.!?]*$/.test(t)) return "more";
   // Bare "link" (no code) is the advisor's own website. "LINK 123456" is connecting, above.
   if (/^(link|my link|website|my website|my site|my page|site link|website link|share my (website|page|link))[.!?]*$/.test(t)) return "website";
@@ -28,7 +52,7 @@ export function ruleIntent(textRaw: string): Intent | null {
   if (/^compare\b/.test(t)) return "compare";
   // Order matters below: a "follow up message for X" is a draft, "follow ups" is the list,
   // "follow up X Friday" is a lead update (handled in bot.ts before intents).
-  if (/\b(message|msg|wishes|greeting)\b/.test(t) && !/^share\b/.test(t)) return "draft";
+  if ((/\b(message|msg|wishes|greeting)\b/.test(t) || /^wish\s/.test(t) || /\b(birthday|anniversary)\s+(wish|message|msg)\b|जन्मदिन|सालगिरह/.test(t)) && !/^share\b/.test(t)) return "draft";
   if (/^(follow[\s-]?ups?|followups|pending follow[\s-]?ups?|today'?s (calls|follow[\s-]?ups?)|calls today|who (do|should) i call( today)?)[?.!]*$/.test(t)) return "followups";
   if (/^((my |check )?balance|sach( assistant)?|smart replies( left)?|how many replies( left)?)[?.!]*$/.test(t)) return "balance";
   if (/^(today|my day|to[\s-]?do|my to[\s-]?do|brief|morning brief|aaj ka kaam)[?.!]*$/.test(t)) return "today";
@@ -100,8 +124,8 @@ export function pickNumber(textRaw: string, max: number): number | null {
   return n >= 1 && n <= max ? n : null;
 }
 
-export const isYes = (t: string) => /^(yes|y|haan|ha|han|ok|okay|sure|yes please)[.!]*$/.test(norm(t));
-export const isNo = (t: string) => /^(no|n|nahi|nahin|na|nope)[.!]*$/.test(norm(t));
+export const isYes = (t: string) => /^(yes|y|haan|ha|han|ok|okay|sure|yes please|haan ji|ji haan|ha ji|theek hai|thik hai|kar do|हाँ|हां|हाँ जी|जी हाँ|ठीक है|कर दो)[.!।]*$/.test(norm(t));
+export const isNo = (t: string) => /^(no|n|nahi|nahin|na|nope|nahi ji|mat karo|नहीं|ना|मत करो|नहीं चाहिए)[.!।]*$/.test(norm(t));
 export const isSkip = (t: string) => /^(skip|later|none|leave it|no|na|n\/a|nahi|don'?t have|dont know|not now|pass)[.!]*$/.test(norm(t));
 
 /** Caption on a PDF: "Ramesh Kumar 9812345678" -> name + phone. */

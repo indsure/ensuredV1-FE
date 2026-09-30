@@ -258,6 +258,23 @@ export function matchPlans(query: string, catalog: CatalogPlan[]): CatalogPlan[]
   return exact.length ? exact : hits;
 }
 
+/** The closest catalogue plans to a name that matched none: most typed words shared first
+ *  ("manipal" finds ManipalCigna plans). Empty when nothing is even close. */
+export function suggestPlans(query: string, catalog: CatalogPlan[], max = 5): CatalogPlan[] {
+  const q = words(query);
+  if (!q.length) return [];
+  const near = (w: string, h: string) => h === w || h.startsWith(w) || w.startsWith(h) || (w.length >= 4 && h.length >= 4 && h.slice(0, 4) === w.slice(0, 4));
+  return catalog
+    .map((p) => {
+      const hay = words(`${p.insurer ?? ""} ${p.plan_name ?? ""} ${p.variant ?? ""}`);
+      return { p, score: q.filter((w) => hay.some((h) => near(w, h))).length };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, max)
+    .map((x) => x.p);
+}
+
 export function compareReply(l: Links, r: CompareResult): string {
   const names = r.names.map((n, i) => cleanPlanText(n) || `Plan ${i + 1}`);
   const v = r.verdict;

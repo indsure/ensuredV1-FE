@@ -78,6 +78,7 @@ export const T = {
       "• UPGRADE MESSAGE for Santosh · DIWALI MESSAGE for Ramesh in hindi",
       "• LINK: your website",
       "• TODAY: your to-do · BALANCE: checks and Sach Assistant replies left · MORNING OFF / ON",
+      "• HINDI, HINGLISH or ENGLISH: the language I reply in",
     ].join("\n"),
   unknownNumber: () => "This number is for IndSure advisors. To get started, visit indsure.in/agent.",
 

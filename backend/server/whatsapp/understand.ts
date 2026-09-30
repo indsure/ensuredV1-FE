@@ -19,7 +19,7 @@ export const ACTION_TYPES = [
   "update_lead",     // change a lead's status, follow-up date or add a note
   "lookup",          // everything on a name or number
   "list_clients",    // list my policies / customers
-  "draft_message",   // a ready-to-send message (upgrade, renewal, premium due, review, follow up, thank you, festival)
+  "draft_message",   // a ready-to-send message (upgrade, renewal, premium due, review, follow up, thank you, festival, birthday, anniversary)
   "calculator",      // cover calculator
   "compare",         // compare plans by name
   "website",         // the advisor's own website link
@@ -39,7 +39,7 @@ export const WRITE_ACTIONS: ActionType[] = ["add_lead", "update_lead", "undo"];
 
 export const STATUSES = ["new", "contacted", "interested", "won", "lost"] as const;
 export const INTERESTS = ["Health", "Motor", "Life", "Term", "Travel", "Property"] as const;
-export const DRAFT_KINDS = ["upgrade_weak", "renewal", "premium_due", "review", "follow_up", "thank_you", "festival"] as const;
+export const DRAFT_KINDS = ["upgrade_weak", "renewal", "premium_due", "review", "follow_up", "thank_you", "festival", "birthday", "anniversary"] as const;
 
 export type Action = {
   type: ActionType;
@@ -110,22 +110,23 @@ export function systemPrompt(): string {
     "",
     "Rules:",
     "1. name: the person exactly as written, in English letters (transliterate Hindi script). Never put status or command words in a name: in 'lead Ramesh won', name is Ramesh and status is won.",
-    "2. he/she/him/her/uska/unka/it: use CONTEXT.lastPerson. If there is no context person, leave name null. Never invent a name.",
+    "2. he/she/him/her/uska/unka/it: use CONTEXT.lastPerson. Use CONTEXT.lastPerson ONLY for such a pronoun; a message that names no person and has no pronoun has name null. Never invent a name.",
     "3. status: bought, took the policy, policy le li, converted, signed = won. not interested, said no, mana kar diya, dropped = lost. spoke, called, baat ho gayi = contacted. interested, keen = interested.",
     "4. 'lead X won' or 'convert X into a lead that is won' is ONE action: add_lead or update_lead with name X and status won.",
     "5. follow_up_date: YYYY-MM-DD, worked out from TODAY. kal = tomorrow (for plans), parso = day after tomorrow. A weekday means its next occurrence after today.",
     "6. Two requests in one message: up to 3 actions, in order.",
     "7. Deleting or removing anything is not supported: use unknown with a clarify question.",
     "8. Sports, weather, jokes, or 'I won' about the advisor themself: unknown. Only lead updates change a status.",
-    "9. If you are unsure what they want, use unknown and put a short question in clarify. Guessing is worse than asking.",
+    "9. If you are unsure what they want, use unknown and put a short question in clarify, written in the same language and script as the message. Guessing is worse than asking.",
     "10. phone: 10 digits only. interest: Health, Motor (car, bike), Life, Term, Travel, Property.",
     "11. A status, follow-up or note about a named person ('Vikram is interested', 'Neha said no', 'Pooja bought', 'spoke to Rohit') is update_lead. Use add_lead only when they ask to add, save or create a lead (add, new lead, naya lead, jodo) or give a new person to save.",
     "12. 'mark' at the start is the command, not a name: in 'mark won' or 'mark as lost' no person is named, so name is null and clarify asks who. A name must be a person actually written in the message or CONTEXT.lastPerson.",
     "13. Keep every word of a person's name together, even words that look like commands: 'Share Khan', 'Link Singh', 'Help Desai' are full names.",
     "14. While CONTEXT.pending is set, 'no', 'don't', 'wait', 'stop', 'never mind', 'chhodo' mean cancel. Use undo only to reverse a change already made (CONTEXT.lastChange).",
     "15. Whether a customer opened, saw or read their report is views (with name), not ask_report. Anything about a claim (status, queries, settlement) is claims (with name), not ask_report.",
-    "16. Every draft_message action needs its draft_kind: renewal message or reminder = renewal, premium or payment due = premium_due, upgrade or better plan = upgrade_weak, thank you = thank_you, festival or wishes = festival, follow up = follow_up, review = review.",
+    "16. Every draft_message action needs its draft_kind: renewal message or reminder = renewal, premium or payment due = premium_due, upgrade or better plan = upgrade_weak, thank you = thank_you, birthday (janmdin) = birthday, wedding anniversary (saalgirah) = anniversary, a festival (Diwali, Holi, Eid, New Year...) = festival, follow up = follow_up, review = review. 'Wish X happy birthday' is draft_message birthday for X.",
     "17. How much cover or insurance someone needs is calculator.",
+    "18. A message that is only an insurer or plan name ('Manipal Lifetime Health', 'Optima Secure', 'Care Supreme and ReAssure') is compare with those plans. It is never calculator.",
   ].join("\n");
 }
 

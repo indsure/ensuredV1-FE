@@ -29,7 +29,7 @@ import { buildMessage } from "../shared/draftMessage.js";
 import type { UserInputs } from "../shared/health-engine-logic.js";
 import {
   CALC_AGE_ASK, CALC_QUESTIONS, COMPARE_ASK, INTERESTS, LEAD_ASK, ageBandFor, calcQuestionText, calcReply,
-  compareReply, interestIn, leadSavedReply, matchPlans, parseAge, parseCompareNames, parseLeadLine, planLabel,
+  compareReply, interestIn, leadSavedReply, matchPlans, parseAge, parseCompareNames, parseLeadLine, planLabel, suggestPlans,
   runCalculator, websiteReply, clientsReply, typeIn, pickCalcOption, cityAnswer, CALC_CITY_ASK, CALC_CITY_AGAIN,
   TIER_LABEL, toolShareDraft, type Shareable,
 } from "./tools.js";
@@ -47,7 +47,8 @@ import {
 } from "./calcflow.js";
 import type { Action, Context as ModelContext, Understanding } from "./understand.js";
 import { MORNING, inMorningWindow, istClock, morningBrief, sincePreviousWorkday } from "./morning.js";
-import type { SachStatus } from "../engine.js";
+import type { CatalogPlan, SachStatus } from "../engine.js";
+import { LANG_SET, detectLang, langCommand, localise, type ReplyLang } from "./i18n.js";
 
 export const MAX_BYTES = 25 * 1024 * 1024;
 /** How long free-text questions keep going to the last report without naming a topic. */
@@ -114,6 +115,10 @@ type QueueItem = { agentId: string; to: string; file: FileRef; type: PolicyType;
 
 type Remindable = RenewalRow & { source: "lead" | "client" };
 
+/** A compare question: pick one of several matches, a name not in the catalogue (with the
+ *  closest plans), a name matching too many, or "which other plan?". */
+type CompareQ = { q: string; kind: "pick" | "missing" | "many" | "ask"; options: { key: string; label: string }[] };
+
 /** "Policy Kit_PROHLV050040281.pdf" as the caption of a file with that name, or any caption
  *  that is itself a file name. */
 export function captionIsFileName(caption: string | null | undefined, fileName: string | null | undefined): boolean {
@@ -162,8 +167,10 @@ export class Bot {
   /* ══ Sending ══════════════════════════════════════════════════════════ */
 
   /** The ONLY way the bot sends anything. `to` is always the advisor's own chat. */
-  private async say(to: string, agentId: string | null, text: string, intent: string | null = null) {
+  private async say(to: string, agentId: string | null, textEn: string, intent: string | null = null) {
     const tr = this.d.transport;
+    // Written in English; shown in the advisor's language (fixed wording only, see i18n.ts).
+    const text = localise(textEn, agentId ? this.replyLang.get(agentId) : null);
     try {
       await tr.sendTyping(to, true);
       await this.sleep(this.replyDelay());
@@ -240,6 +247,7 @@ export class Bot {
     if (pending.last && !this.lastShare.has(agentId)) this.lastShare.set(agentId, pending.last);
     if (pending.lastPerson && !this.lastPerson.has(agentId)) this.lastPerson.set(agentId, pending.lastPerson);
     if (pending.lastChange && !this.lastChange.has(agentId)) this.lastChange.set(agentId, pending.lastChange);
+    if (pending.replyLang && !this.replyLang.has(agentId)) this.replyLang.set(agentId, pending.replyLang);
     let conv: Conv = { state: (c.state as State) || "IDLE", currentClientId: c.currentClientId, pending, updatedAt: c.updatedAt };
     // Any AWAITING_* state lapses after 15 minutes. Defaults: nothing is sent, the customer
     // stays unassigned, a held file is dropped.
@@ -256,12 +264,26 @@ export class Bot {
 
   private readonly lastPerson = new Map<string, string>();
   private readonly lastChange = new Map<string, LastChange>();
+  /** The language the advisor last wrote in (or chose with HINDI / HINGLISH / ENGLISH). */
+  private readonly replyLang = new Map<string, ReplyLang>();
+
+  /** Loads the advisor's reply language when nothing has been said yet this run (the 9 AM
+   *  brief goes out before they write). */
+  private async langOf(agentId: string): Promise<ReplyLang> {
+    if (!this.replyLang.has(agentId)) {
+      const c = await this.d.engine.getConversation(agentId).catch(() => null);
+      const l = c?.pending?.replyLang;
+      if (l === "hindi" || l === "hinglish" || l === "english") this.replyLang.set(agentId, l);
+    }
+    return this.replyLang.get(agentId) ?? "english";
+  }
 
   private async saveConv(agentId: string, c: Conv) {
     const last = this.lastShare.get(agentId);
     const person = this.lastPerson.get(agentId);
     const change = this.lastChange.get(agentId);
-    const pending = { ...(c.pending || {}), ...(last ? { last } : {}), ...(person ? { lastPerson: person } : {}), ...(change ? { lastChange: change } : {}) };
+    const lang = this.replyLang.get(agentId);
+    const pending = { ...(c.pending || {}), ...(last ? { last } : {}), ...(person ? { lastPerson: person } : {}), ...(change ? { lastChange: change } : {}), ...(lang ? { replyLang: lang } : {}) };
     await this.d.engine.putConversation(agentId, { state: c.state, currentClientId: c.currentClientId, pending });
   }
 
@@ -532,6 +554,21 @@ export class Bot {
   private async onText(agentId: string, conv: Conv, msg: InboundMessage) {
     const to = msg.replyTo;
     const text = msg.text.trim();
+
+    // Reply language: HINDI / HINGLISH / ENGLISH set it; otherwise it follows whatever the
+    // advisor clearly writes in (a bare command or a name keeps the current one).
+    const chosen = conv.state.startsWith("AWAITING") ? null : langCommand(text);
+    if (chosen) {
+      this.replyLang.set(agentId, chosen);
+      await this.saveConv(agentId, conv);
+      return this.say(to, agentId, LANG_SET[chosen], "lang");
+    }
+    const seen = detectLang(text);
+    if (seen && seen !== (this.replyLang.get(agentId) ?? "english")) {
+      this.replyLang.set(agentId, seen);
+      await this.saveConv(agentId, conv);
+    }
+
     let intent = ruleIntent(text);
     // While a question is pending, a bare number is an answer to it (a phone number for
     // "whose policy?" or a new lead), never a lookup.
@@ -542,7 +579,7 @@ export class Bot {
       await this.rest(agentId, to, conv.currentClientId);
       return this.say(to, agentId, T.cancelled(), "cancel");
     }
-    if (/^(undo|undo that|wapas karo|revert)[.!]*$/i.test(text)) return this.proposeUndo(agentId, conv, to);
+    if (/^(undo|undo that|undo karo|wapas karo|pehle jaisa karo|revert|वापस करो|अनडू|पहले जैसा करो)[.!।]*$/i.test(text)) return this.proposeUndo(agentId, conv, to);
     if (intent === "unlink") {
       await this.d.engine.unlink(agentId);
       return this.say(to, agentId, T.unlinked(), "unlink");
@@ -739,6 +776,7 @@ export class Bot {
           return null;
         });
         if (!brief) continue;
+        await this.langOf(r.agentId);
         if (sent > 0) await this.sleep(20_000 + Math.floor(Math.random() * 20_000));
         await this.say(`${r.waNumber}@s.whatsapp.net`, r.agentId, brief, "morning_brief");
         sent++;
@@ -847,11 +885,27 @@ export class Bot {
       case "AWAITING_CALC":
         return this.calcStep(agentId, conv, to, text);
       case "AWAITING_COMPARE_PICK": {
-        const q = (p.queue || [])[0];
-        const n = q ? pickNumber(text, q.options.length) : null;
-        if (!n) return false;
-        const resolved: string[] = [...(p.resolved || []), q.options[n - 1].key];
-        await this.compareContinue(agentId, conv, to, resolved, (p.queue || []).slice(1));
+        const queue: CompareQ[] = p.queue || [];
+        const q = queue[0];
+        const n = q && q.options.length ? pickNumber(text, q.options.length) : null;
+        if (n) {
+          await this.compareContinue(agentId, conv, to, [...(p.resolved || []), q.options[n - 1].key], queue.slice(1));
+          return true;
+        }
+        // Anything else is another plan name (or two) in place of the one being asked about.
+        const names = parseCompareNames(text);
+        if (!names.length) return false;
+        const catalog = await this.d.engine.catalog(agentId);
+        const resolved: string[] = [...(p.resolved || [])];
+        const fresh: CompareQ[] = [];
+        for (const name of names) {
+          const r = this.comparePlan(name, catalog);
+          if (typeof r === "string") resolved.push(r); else fresh.push(r);
+        }
+        const rest = queue.slice(1).filter((x) => x.kind !== "ask");
+        const next = [...fresh, ...rest];
+        if (resolved.length + next.length < 2) next.push({ q: "", kind: "ask", options: [] });
+        await this.compareContinue(agentId, conv, to, resolved, next);
         return true;
       }
       case "AWAITING_LEAD_PICK": {
@@ -1145,31 +1199,43 @@ export class Bot {
 
   /* ══ Compare (phase 1b, catalogue only: no model cost) ════════════════ */
 
+  /** One typed plan name against the catalogue: a plan key, or a question to ask. */
+  private comparePlan(name: string, catalog: CatalogPlan[]): string | CompareQ {
+    const hits = matchPlans(name, catalog);
+    if (hits.length === 1) return hits[0].plan_key;
+    const opt = (h: CatalogPlan) => ({ key: h.plan_key, label: planLabel(h) });
+    if (hits.length === 0) return { q: name, kind: "missing", options: suggestPlans(name, catalog).map(opt) };
+    if (hits.length > 8) return { q: name, kind: "many", options: [] };
+    return { q: name, kind: "pick", options: hits.map(opt) };
+  }
+
+  /** COMPARE, with or without plan names. Asks until there are two plans, and never drops
+   *  the comparison because one name was not in the catalogue. */
   private async compareStart(agentId: string, conv: Conv, to: string, text: string, namesOver?: string[]) {
     const names = namesOver && namesOver.length ? namesOver : parseCompareNames(text);
-    if (names.length < 2) return this.say(to, agentId, COMPARE_ASK, "compare");
-    const catalog = await this.d.engine.catalog(agentId);
+    const catalog = names.length ? await this.d.engine.catalog(agentId) : [];
     const resolved: string[] = [];
-    const queue: { q: string; options: { key: string; label: string }[] }[] = [];
+    const queue: CompareQ[] = [];
     for (const name of names) {
-      const hits = matchPlans(name, catalog);
-      if (hits.length === 0) {
-        return this.say(to, agentId, `I couldn't find "${name}" in the plan catalogue. Try the insurer and plan name, for example: Care Supreme, Niva ReAssure 2.0.`, "compare");
-      }
-      if (hits.length > 8) {
-        return this.say(to, agentId, `"${name}" matches ${hits.length} plans. Add the insurer or the exact plan name.`, "compare");
-      }
-      if (hits.length === 1) resolved.push(hits[0].plan_key);
-      else queue.push({ q: name, options: hits.map((h) => ({ key: h.plan_key, label: planLabel(h) })) });
+      const r = this.comparePlan(name, catalog);
+      if (typeof r === "string") resolved.push(r); else queue.push(r);
     }
+    if (resolved.length + queue.length < 2) queue.push({ q: "", kind: "ask", options: [] });
     return this.compareContinue(agentId, conv, to, resolved, queue);
   }
 
-  private async compareContinue(agentId: string, conv: Conv, to: string, resolved: string[], queue: { q: string; options: { key: string; label: string }[] }[]) {
+  private async compareContinue(agentId: string, conv: Conv, to: string, resolved: string[], queue: CompareQ[]) {
     if (queue.length) {
       const q = queue[0];
       await this.setState(agentId, to, "AWAITING_COMPARE_PICK", conv.currentClientId, { resolved, queue });
-      return this.say(to, agentId, `Which "${q.q}"?\n${q.options.map((o, i) => `${i + 1}) ${o.label}`).join("\n")}`, "compare_pick");
+      const list = q.options.map((o, i) => `${i + 1}) ${o.label}`).join("\n");
+      const msg =
+        q.kind === "ask" ? (resolved.length ? "Which plan should I compare it with? Type the plan name, for example: Care Supreme." : COMPARE_ASK)
+        : q.kind === "many" ? `"${q.q}" matches too many plans. Type the insurer and plan name, for example: HDFC Optima Secure.`
+        : q.kind === "missing" && q.options.length ? `"${q.q}" isn't in the plan catalogue yet. The closest ones:\n${list}\nReply with a number, or type another plan name.`
+        : q.kind === "missing" ? `"${q.q}" isn't in the plan catalogue yet. Type another plan name, or CANCEL.`
+        : `Which "${q.q}"?\n${list}\nReply with the number, or type another plan name.`;
+      return this.say(to, agentId, msg, "compare_pick");
     }
     await this.rest(agentId, to, conv.currentClientId);
     const keys = [...new Set(resolved)];

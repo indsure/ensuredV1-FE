@@ -147,7 +147,7 @@ test("Hinglish: 'Ramesh ne policy le li' becomes an update to Ramesh, after YES"
   engine.leadRows = [lead()];
   engine.understandMap.set("Ramesh ne policy le li", says(act("update_lead", { name: "Ramesh", status: "won" })));
   await bot.handle(text("Ramesh ne policy le li"));
-  assert.match(transport.last(), /mark won/);
+  assert.match(transport.last(), /^Pakka kijiye:\n• \*Ramesh Kumar\* \(98123 45678\): status won/, "a Hinglish message gets a Hinglish reply");
   await bot.handle(text("haan"));
   assert.equal(engine.leadUpdates[0].status, "won");
 });

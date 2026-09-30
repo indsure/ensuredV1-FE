@@ -984,6 +984,8 @@
     "kind_follow_up": "दोबारा बात करें",
     "kind_thank_you": "धन्यवाद कहें",
     "kind_festival": "त्योहार की शुभकामना",
+    "kind_birthday": "जन्मदिन की शुभकामना",
+    "kind_anniversary": "सालगिरह की बधाई",
     "kind_custom": "खुद लिखें",
     "language": "संदेश की भाषा",
     "your_message": "आपका संदेश (चाहें तो बदलें)",

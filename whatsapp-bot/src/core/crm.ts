@@ -10,6 +10,7 @@ import { computePolicyValue, isValueGap, type ValueSchedule } from "../shared/po
 import type { DraftKind } from "../shared/draftMessage.js";
 import { inr, portalPolicyUrl, type Links } from "./templates.js";
 import { b, dayMonth, firstName, planLabel } from "./format.js";
+import { devanagariToLatin, hasDevanagari } from "./i18n.js";
 
 export type LeadRow = {
   id: string; name: string; phone: string | null; status: string | null;
@@ -34,7 +35,18 @@ export function parseWhen(textRaw: string, nowMs: number): { date: string; rest:
   const t = textRaw.toLowerCase().trim().replace(/[.!?]+$/, "");
   const today = istToday(nowMs);
   const tries: [RegExp, (m: RegExpMatchArray) => Date | null][] = [
-    [/\s*(on\s+)?today$/, () => today],
+    [/\s*(on\s+)?(today|aaj|आज)$/, () => today],
+    [/\s*(kal|कल)$/, () => addDays(today, 1)],
+    [/\s*(parso|parson|परसों|परसो)$/, () => addDays(today, 2)],
+    [/\s*(agle|next)\s+(hafte|week)$|\s*अगले\s+(हफ़्ते|हफ्ते)$/, () => addDays(today, 7)],
+    [/\s*(ravivar|itvaar|somvar|mangalvar|budhvar|guruvar|brihaspativar|shukravar|shanivar|रविवार|सोमवार|मंगलवार|बुधवार|गुरुवार|बृहस्पतिवार|शुक्रवार|शनिवार)(\s+(ko|को))?$/, (m) => {
+      const w = m[1];
+      const want = /ravi|itv|रवि/.test(w) ? 0 : /som|सोम/.test(w) ? 1 : /mangal|मंगल/.test(w) ? 2 : /budh|बुध/.test(w) ? 3
+        : /guru|brihas|गुरु|बृहस्पति/.test(w) ? 4 : /shukra|शुक्र/.test(w) ? 5 : 6;
+      let diff = (want - today.getUTCDay() + 7) % 7;
+      if (diff === 0) diff = 7;
+      return addDays(today, diff);
+    }],
     [/\s*(on\s+)?(tomorrow|tmrw|tmr)$/, () => addDays(today, 1)],
     [/\s*(on\s+)?day after tomorrow$/, () => addDays(today, 2)],
     [/\s*next week$/, () => addDays(today, 7)],
@@ -76,12 +88,26 @@ export function prettyDate(isoDate: string): string {
 
 export type LeadUpdate = { name: string; status?: string; nextFollowUp?: string; note?: string };
 
+// Hinglish and Hindi phrasings end the same way ("Ramesh ne policy le li", "रमेश ने मना कर
+// दिया"); the particle (ne, se, ko) is part of the match, so it never ends up in the name.
+// Order matters: "interested nahi hai" is lost, not interested.
 const STATUS_WORDS: [RegExp, string][] = [
+  [/(?:^|\s)(?:(?:ne|ko)\s+)?(?:mana kar diya|mana kar di|mana kiya|policy nahi li|nahi li|nahi lega|nahi legi|nahi chahiye|interested nahi(?: hai)?)$|(?:^|\s)(?:ने|को)?\s*(?:मना कर दिया|मना किया|पॉलिसी नहीं ली|नहीं ली|नहीं चाहिए|इंटरेस्टेड नहीं है)$/, "lost"],
   [/\b(not interested|no interest|dropped|lost|rejected)$/, "lost"],
+  [/(?:^|\s)(?:ne\s+)?(?:policy le li|policy le liya|policy li|policy kharid li|le li|le liya|kharid li)$|(?:^|\s)ने\s+(?:पॉलिसी\s+)?(?:ले ली|ले लिया|ख़रीद ली|खरीद ली)$/, "won"],
   [/\b(won|converted|bought|signed up|signed)$/, "won"],
+  [/(?:^|\s)(?:(?:ko\s+)?interest hai|interested hai|ready hai)$|(?:^|\s)(?:को\s+)?(?:इंटरेस्ट है|इंटरेस्टेड है|तैयार है)$/, "interested"],
   [/\b(interested|keen|hot)$/, "interested"],
+  [/(?:^|\s)(?:(?:se|ko)\s+)?(?:baat ho gayi|baat hui|baat kar li|call kiya|call kar diya|call kar liya)$|(?:^|\s)(?:से|को)\s+(?:बात हो गई|बात हुई|कॉल किया|कॉल कर दिया)$/, "contacted"],
   [/\b(contacted|called|spoke|spoken to|talked to)$/, "contacted"],
 ];
+
+/** A typed name as the book stores it: Devanagari converted, words capitalised. */
+function bookName(name: string): string {
+  return hasDevanagari(name) ? devanagariToLatin(name) : name.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+const HINDI_WHEN = /^(kal|parso|parson|aaj|agle hafte|कल|परसों|आज|अगले हफ़्ते|अगले हफ्ते)\s+/i;
 
 /** "Ramesh won" / "mark Ramesh interested" / "follow up Ramesh Friday" / "note Ramesh: wants
  *  a family floater". Null when it is none of these. */
@@ -93,8 +119,19 @@ export function parseLeadUpdate(textRaw: string, nowMs: number): LeadUpdate | nu
   const fu = t.match(/^(?:follow[\s-]?up|call|call back|remind me to call)\s+(?:with\s+)?(.+)$/i);
   if (fu) {
     const w = parseWhen(fu[1], nowMs);
-    if (w && w.rest.length >= 2) return { name: w.rest, nextFollowUp: w.date };
+    if (w && w.rest.length >= 2) return { name: bookName(w.rest), nextFollowUp: w.date };
     return null;
+  }
+
+  // "Ramesh ko kal call karna hai", "kal Ramesh ko follow up", "रमेश को शुक्रवार फॉलो अप"
+  const hfu = t.replace(/[.!?।]+$/, "").match(/^(.+?)\s+(?:ko|को)\s+(.*?)\s*(?:call|phone|follow[\s-]?up|कॉल|फ़ोन|फोन|फॉलो[\s-]?अप)(?:\s+(?:karna|karo|karunga|karungi|karni|kar do|करना|करो|कर दो))?(?:\s+(?:hai|है))?$/i);
+  if (hfu) {
+    let who = hfu[1].trim();
+    let when = hfu[2].trim();
+    const lead = who.match(HINDI_WHEN);
+    if (lead && !when) { when = lead[1]; who = who.slice(lead[0].length).trim(); }
+    const w = when ? parseWhen(when, nowMs) : null;
+    if (w && !w.rest && who.length >= 2 && who.split(/\s+/).length <= 4) return { name: bookName(who), nextFollowUp: w.date };
   }
 
   const lower = t.toLowerCase().replace(/[.!]+$/, "").replace(/^mark\s+/, "").replace(/\s+(?:is|as)\s+(?=[a-z ]+$)/, " ");
@@ -103,7 +140,7 @@ export function parseLeadUpdate(textRaw: string, nowMs: number): LeadUpdate | nu
     if (!m || m.index === undefined) continue;
     const name = lower.slice(0, m.index).trim();
     if (name.length >= 2 && name.split(/\s+/).length <= 4 && /^[a-zऀ-ॿ .']+$/.test(name)) {
-      return { name: name.replace(/\b\w/g, (c) => c.toUpperCase()), status };
+      return { name: bookName(name), status };
     }
   }
   return null;
@@ -150,6 +187,8 @@ const DRAFT_WORDS: [RegExp, DraftKind][] = [
   [/\brenewal\b/, "renewal"],
   [/\breview\b/, "review"],
   [/\bthank/, "thank_you"],
+  [/\b(birthday|bday|b'day|janmdin|janamdin)\b|जन्मदिन/, "birthday"],
+  [/\b(anniversary|saalgirah|salgirah)\b|सालगिरह/, "anniversary"],
   [/\b(diwali|holi|eid|festival|christmas|new year|pongal|onam|navratri|dussehra|ganesh|raksha|rakhi|lohri|baisakhi|greeting|wishes)\b/, "festival"],
   [/\bfollow[\s-]?up\b/, "follow_up"],
 ];
@@ -157,7 +196,15 @@ const DRAFT_WORDS: [RegExp, DraftKind][] = [
 /** "upgrade message for Santosh in hindi" -> kind + name. Null when not a draft request. */
 export function parseDraft(textRaw: string): { kind: DraftKind; name: string | null } | null {
   const t = textRaw.toLowerCase();
-  if (!/\b(message|msg|wish|wishes|greeting|note to|text to)\b/.test(t)) return null;
+  if (!/\b(message|msg|wish|wishes|greeting|note to|text to|badhai|shubhkamna)\b|बधाई|शुभकामना/.test(t)) return null;
+  // "wish Aniket happy birthday" / "Aniket ko birthday wish bhejo"
+  const wish = textRaw.match(/^\s*wish\s+(.+?)\s+(?:a\s+)?(?:very\s+)?(?:happy\s+)?(?:birthday|bday|b'day|anniversary|diwali|holi|eid|new year|christmas)\b/i)
+    || textRaw.match(/^\s*(.+?)\s+(?:ko|को)\s+/i);
+  const wishKind = DRAFT_WORDS.find(([re]) => re.test(t))?.[1];
+  if (wish && wishKind && !/\b(for|to)\s/i.test(textRaw)) {
+    const n = wish[1].trim();
+    if (n.length >= 2 && n.split(/\s+/).length <= 4) return { kind: wishKind, name: bookName(n) };
+  }
   const kind = DRAFT_WORDS.find(([re]) => re.test(t))?.[1];
   if (!kind) return null;
   const m = textRaw.match(/\b(?:for|to)\s+(.+?)(?:\s+in\s+(?:english|hinglish|hindi))?\s*[.!?]*$/i);

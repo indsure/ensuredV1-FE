@@ -20,6 +20,8 @@ export const DRAFT_KINDS = [
   "follow_up",
   "thank_you",
   "festival",
+  "birthday",
+  "anniversary",
   "custom",
 ] as const;
 export type DraftKind = (typeof DRAFT_KINDS)[number];
@@ -33,6 +35,8 @@ export const DRAFT_KIND_META: Record<DraftKind, { label: string; emoji: string; 
   follow_up:    { label: "Follow up",          emoji: "👋" },
   thank_you:    { label: "Say thank you",      emoji: "🙏" },
   festival:     { label: "Festival greeting",  emoji: "🎉" },
+  birthday:     { label: "Birthday wishes",    emoji: "🎂" },
+  anniversary:  { label: "Anniversary wishes", emoji: "💐" },
   custom:       { label: "Write my own",       emoji: "✍️" },
 };
 
@@ -182,6 +186,20 @@ function english(kind: DraftKind, f: Frame, c: Ctx): string {
         `May this year bring you good health, happiness and peace of mind.`,
         ``, f.sign,
       );
+    case "birthday":
+      return lines(
+        f.hi,
+        `Wishing you a very happy birthday!`,
+        `May the year ahead bring you good health, happiness and success.`,
+        ``, f.sign,
+      );
+    case "anniversary":
+      return lines(
+        f.hi,
+        `Wishing you both a very happy anniversary!`,
+        `May your years together be full of good health and happiness.`,
+        ``, f.sign,
+      );
     case "custom":
     default:
       return scaffold(f);
@@ -243,6 +261,20 @@ function hinglish(kind: DraftKind, f: Frame, c: Ctx): string {
         `Ye saal aapke liye sehat, khushi aur sukoon laaye.`,
         ``, f.sign,
       );
+    case "birthday":
+      return lines(
+        f.hi,
+        `Janmdin ki bahut bahut shubhkamnaayein!`,
+        `Aane wala saal aapke liye achhi sehat, khushi aur safalta laaye.`,
+        ``, f.sign,
+      );
+    case "anniversary":
+      return lines(
+        f.hi,
+        `Aap dono ko shaadi ki saalgirah ki bahut bahut badhai!`,
+        `Aapka saath hamesha sehat aur khushiyon se bhara rahe.`,
+        ``, f.sign,
+      );
     case "custom":
     default:
       return scaffold(f);
@@ -302,6 +334,20 @@ function hindi(kind: DraftKind, f: Frame, c: Ctx): string {
         f.hi,
         `आपको और आपके परिवार को त्योहारों की बहुत बहुत शुभकामनाएँ।`,
         `यह साल आपके लिए सेहत, ख़ुशी और शांति लाए।`,
+        ``, f.sign,
+      );
+    case "birthday":
+      return lines(
+        f.hi,
+        `जन्मदिन की बहुत बहुत शुभकामनाएँ!`,
+        `आने वाला साल आपके लिए अच्छी सेहत, ख़ुशी और सफलता लाए।`,
+        ``, f.sign,
+      );
+    case "anniversary":
+      return lines(
+        f.hi,
+        `आप दोनों को शादी की सालगिरह की बहुत बहुत बधाई!`,
+        `आपका साथ हमेशा सेहत और ख़ुशियों से भरा रहे।`,
         ``, f.sign,
       );
     case "custom":

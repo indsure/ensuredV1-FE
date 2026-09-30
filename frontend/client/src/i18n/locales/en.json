@@ -984,6 +984,8 @@
     "kind_follow_up": "Follow up",
     "kind_thank_you": "Say thank you",
     "kind_festival": "Festival greeting",
+    "kind_birthday": "Birthday wishes",
+    "kind_anniversary": "Anniversary wishes",
     "kind_custom": "Write my own",
     "language": "Message language",
     "your_message": "Your message (edit if you like)",

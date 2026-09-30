@@ -167,13 +167,34 @@ test("compare: a name with several variants asks which one", async () => {
   assert.deepEqual(engine.compared[0].sort(), ["UIN-CARE-SUP", "UIN-HDFC-OPT:Gold"].sort());
 });
 
-test("compare: unknown plan or a single name gets a plain reply, no report", async () => {
+test("compare: a plan not in the catalogue keeps the comparison going; a new name finishes it", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(text("compare Star Comprehensive vs Care Supreme"));
-  assert.match(transport.last(), /couldn't find "Star Comprehensive"/);
+  assert.match(transport.last(), /"Star Comprehensive" isn't in the plan catalogue yet/);
+  assert.equal(engine.compared.length, 0);
+  await bot.handle(text("ReAssure 2.0"));
+  assert.deepEqual(engine.compared[0].sort(), ["UIN-CARE-SUP", "UIN-NIVA-RA2"]);
+});
+
+test("compare: bare COMPARE asks, and the next message is taken as the plans", async () => {
+  const { bot, transport, engine } = makeBot();
   await bot.handle(text("compare"));
   assert.match(transport.last(), /Which plans\?/);
-  assert.equal(engine.compared.length, 0);
+  await bot.handle(text("Care Supreme"));
+  assert.match(transport.last(), /Which plan should I compare it with\?/);
+  await bot.handle(text("ReAssure 2.0"));
+  assert.equal(engine.compared.length, 1);
+});
+
+test("compare: an unknown name offers the closest plans (Manipal Lifetime Health case)", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.catalogRows.push({ plan_key: "UIN-MC-PRO", insurer: "ManipalCigna Health Insurance", plan_name: "ProHealth Prime", variant: "" });
+  await bot.handle(text("compare Manipal Lifetime Health vs Care Supreme"));
+  assert.match(transport.last(), /"Manipal Lifetime Health" isn't in the plan catalogue yet\. The closest ones:\n1\) .*ProHealth Prime/);
+  await bot.handle(text("Manipal LTH"));
+  assert.doesNotMatch(transport.last(), /Nothing in your book/, "still comparing, not a customer search");
+  await bot.handle(text("1"));
+  assert.equal(engine.compared.length, 1);
 });
 
 test("compare name parsing and matching", () => {
