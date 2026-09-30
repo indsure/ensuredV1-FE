@@ -360,3 +360,28 @@ test("SHARE after a compare shares the comparison; asking about a policy switche
   await bot.handle(text("share in english"));
   assert.match(transport.last(), /Namaste Santosh, here is the report/);
 });
+
+test("THE SCREENSHOT: two companies in one reply, 'NUMBER 6', and a typo never loses the list", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.catalogRows.push(
+    { plan_key: "UIN-MC-LTH", insurer: "ManipalCigna Health Insurance", plan_name: "Lifetime Health", variant: "" },
+    { plan_key: "UIN-MC-PRO", insurer: "ManipalCigna Health Insurance", plan_name: "ProHealth Prime", variant: "" },
+    { plan_key: "UIN-HDFC-MY:Lite", insurer: "HDFC ERGO", plan_name: "my: Optima Secure", variant: "Optima Lite" },
+  );
+  await bot.handle(text("compare"));
+  await bot.handle(text("hdfc and manipal cigna"));
+  assert.match(transport.last(), /^Which HDFC ERGO plan\?\n1\) Optima Secure \(Gold\)\n2\) Optima Secure \(Optima Lite\)/, "no 'my:' and no 'too many'");
+  await bot.handle(text("xyz plan"));
+  assert.match(transport.last(), /"xyz plan" isn't a plan I know\. Reply with a number from 1 to 3/);
+  await bot.handle(text("NUMBER 2"));
+  assert.match(transport.last(), /^Which ManipalCigna plan\?\n1\) Lifetime Health\n2\) ProHealth Prime/);
+  await bot.handle(text("1"));
+  assert.deepEqual(engine.compared[0], ["UIN-HDFC-MY:Lite", "UIN-MC-LTH"]);
+});
+
+test("pickNumber reads the ways people type a choice", async () => {
+  const { pickNumber } = await import("../src/core/intents.js");
+  for (const t of ["6", "6)", "6.", "number 6", "NUMBER 6", "no. 6", "option 6", "#6", "6th", "6 number", "6 wala", "६"]) assert.equal(pickNumber(t, 7), 6, t);
+  assert.equal(pickNumber("8", 7), null);
+  assert.equal(pickNumber("Care Supreme 6", 7), null);
+});

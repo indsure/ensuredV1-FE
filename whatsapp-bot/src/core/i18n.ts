@@ -385,6 +385,7 @@ const LINES: Line[] = [
   L("Why: {x}.", "Kyon: {x}.", "क्यों: {x}।"),
   L("But: {x}.", "Lekin: {x}.", "लेकिन: {x}।"),
   L("Full side-by-side: {url}", "Poori tulna: {url}", "पूरी तुलना: {url}"),
+  L("\"{x}\" isn't a plan I know. Reply with a number from 1 to {n}, or type another plan name.", "\"{x}\" koi plan nahi mila. 1 se {n} tak number likhiye, ya koi aur plan ka naam.", "\"{x}\" कोई प्लान नहीं मिला। 1 से {n} तक नंबर लिखिए, या कोई और प्लान का नाम।"),
   L("Plan {n} of 2: which company?", "Plan {n} (2 mein se): kaunsi company?", "प्लान {n} (2 में से): कौन सी कंपनी?"),
   L("Reply with the number, or type the plan name.", "Number likhiye, ya plan ka naam.", "नंबर लिखिए, या प्लान का नाम।"),
   L("Which {x} plan?", "{x} ka kaunsa plan?", "{x} का कौन सा प्लान?"),

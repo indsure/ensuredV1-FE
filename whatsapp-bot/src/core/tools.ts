@@ -232,7 +232,10 @@ const STOP = new Set(["health", "insurance", "plan", "policy", "the", "company",
 const words = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9. ]/g, " ").split(/\s+/).filter((w) => w && !STOP.has(w));
 
-export const planLabel = (p: CatalogPlan) => nicePlan(p.insurer, p.plan_name) + (p.variant ? ` (${p.variant})` : "");
+/** HDFC's catalogue names start "my: Optima Secure"; advisors say "Optima Secure". */
+const planName = (n: string | null | undefined) => String(n ?? "").replace(/^\s*my\s*:\s*/i, "").trim();
+
+export const planLabel = (p: CatalogPlan) => nicePlan(p.insurer, planName(p.plan_name)) + (p.variant ? ` (${p.variant})` : "");
 
 /** "compare Care Supreme vs Niva ReAssure 2.0" -> ["Care Supreme", "Niva ReAssure 2.0"]. */
 export function parseCompareNames(textRaw: string): string[] {
@@ -269,7 +272,7 @@ export function companyOptions(catalog: CatalogPlan[]): { key: string; label: st
 export function planOptions(catalog: CatalogPlan[], insurer: string): { key: string; label: string }[] {
   return catalog
     .filter((p) => p.insurer === insurer)
-    .map((p) => ({ key: p.plan_key, label: `${p.plan_name ?? "Plan"}${p.variant ? ` (${p.variant})` : ""}` }))
+    .map((p) => ({ key: p.plan_key, label: `${planName(p.plan_name) || "Plan"}${p.variant ? ` (${p.variant})` : ""}` }))
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
@@ -279,7 +282,8 @@ export function matchCompany(text: string, catalog: CatalogPlan[]): string | nul
   if (!q.length) return null;
   const hits = companyOptions(catalog).filter((c) => {
     const hay = words(`${c.key} ${c.label}`);
-    return q.every((w) => hay.some((h) => h.startsWith(w)));
+    // "manipal cigna" is ManipalCigna: the typed words run together also count.
+    return q.every((w) => hay.some((h) => h.startsWith(w))) || hay.join("").includes(q.join(""));
   });
   return hits.length === 1 ? hits[0].key : null;
 }

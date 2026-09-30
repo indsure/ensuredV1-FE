@@ -899,20 +899,19 @@ export class Bot {
           return true;
         }
         const catalog = await this.d.engine.catalog(agentId);
-        // A company typed by name ("hdfc") while a company is being asked: its plan list.
-        const company = q?.kind === "company" ? matchCompany(text, catalog) : null;
-        if (company) {
-          const label = q.options.find((o) => o.key === company)?.label ?? company;
-          await this.compareContinue(agentId, conv, to, p.resolved || [], [{ q: label, kind: "plan", options: planOptions(catalog, company) }, ...queue.slice(1)]);
-          return true;
-        }
-        // Anything else is another plan name (or two) in place of the one being asked about.
+        // Anything else is plan or company names ("hdfc and manipal cigna") in place of the
+        // one being asked about. A company gives its plan list (see comparePlan).
         const names = parseCompareNames(text);
         if (!names.length) return false;
+        const tried = names.map((name) => this.comparePlan(name, catalog));
+        // Nothing usable ("number six", a typo): keep the question on screen, don't lose it.
+        if (q?.options.length && tried.every((r) => typeof r !== "string" && (r.kind === "many" || (r.kind === "missing" && !r.options.length)))) {
+          await this.say(to, agentId, `"${text}" isn't a plan I know. Reply with a number from 1 to ${q.options.length}, or type another plan name.`, "compare_pick");
+          return true;
+        }
         const resolved: string[] = [...(p.resolved || [])];
         const fresh: CompareQ[] = [];
-        for (const name of names) {
-          const r = this.comparePlan(name, catalog);
+        for (const r of tried) {
           if (typeof r === "string") resolved.push(r); else fresh.push(r);
         }
         const rest = queue.slice(1).filter((x) => x.kind !== "ask" && x.kind !== "company");
@@ -1214,6 +1213,11 @@ export class Bot {
 
   /** One typed plan name against the catalogue: a plan key, or a question to ask. */
   private comparePlan(name: string, catalog: CatalogPlan[]): string | CompareQ {
+    const company = matchCompany(name, catalog);
+    if (company) {
+      const label = companyOptions(catalog).find((c) => c.key === company)?.label ?? company;
+      return { q: label, kind: "plan", options: planOptions(catalog, company) };
+    }
     const hits = matchPlans(name, catalog);
     if (hits.length === 1) return hits[0].plan_key;
     const opt = (h: CatalogPlan) => ({ key: h.plan_key, label: planLabel(h) });

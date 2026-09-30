@@ -118,7 +118,9 @@ export function langIn(textRaw: string): "english" | "hinglish" | "hindi" | null
 
 /** A numbered reply "2" or "2)" to a pick list. */
 export function pickNumber(textRaw: string, max: number): number | null {
-  const m = norm(textRaw).match(/^(\d{1,2})\)?\.?$/);
+  // "6", "6)", "number 6", "no. 6", "option 6", "#6", "6th", "6 number", "6 wala", "६"
+  const t = norm(textRaw).replace(/[०-९]/g, (d) => String("०१२३४५६७८९".indexOf(d)));
+  const m = t.match(/^(?:(?:number|num|no\.?|option|opt|#|नंबर)\s*)?(\d{1,2})(?:st|nd|rd|th)?\)?\.?(?:\s*(?:number|no|wala|vala|वाला|नंबर))?$/);
   if (!m) return null;
   const n = Number(m[1]);
   return n >= 1 && n <= max ? n : null;
