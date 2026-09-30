@@ -3,6 +3,8 @@
  * and even then it may only pick from this fixed list.
  */
 
+import { devanagariToLatin } from "./i18n.js";
+
 export type Intent =
   | "link" | "unlink" | "cancel" | "help" | "renewals" | "remind" | "share" | "ask" | "unknown"
   | "website" | "lead" | "calc" | "compare" | "clients"
@@ -79,6 +81,9 @@ export function namedPerson(textRaw: string): string | null {
   const t = norm(textRaw);
   const poss = t.match(/\b([a-z]+(?: [a-z]+)?)'s (policy|report|plan)\b/);
   if (poss) return cleanName(poss[1]);
+  // "Palash ki policy", "Palash ka plan", "पलाश की पॉलिसी" (Hindi names are matched as spoken)
+  const hi = t.match(/^([a-z]+(?: [a-z]+)?) (?:ki|ka|ke) (policy|report|plan)\b/) || t.match(/^([ऀ-ॿ]+(?: [ऀ-ॿ]+)?) (?:की|का|के) (?:पॉलिसी|रिपोर्ट|प्लान)/);
+  if (hi) return cleanName(/[ऀ-ॿ]/.test(hi[1]) ? devanagariToLatin(hi[1]) : hi[1]);
   const share = t.match(/^share\s+(?:the )?(?:report\s+)?(?:with|for|of)?\s*([a-z]+(?: [a-z]+)?)$/);
   if (share) return cleanName(share[1]);
   const remind = t.match(/^remind\s+([a-z]+(?: [a-z]+)?)(?:\s+(?:in\s+)?(english|hinglish|hindi))?$/);

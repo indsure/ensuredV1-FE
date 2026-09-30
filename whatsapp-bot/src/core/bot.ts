@@ -20,7 +20,7 @@ import { inspectPdf, looksLikePdf, POLICY_TYPES, type Inspection, type PolicyTyp
 import {
   isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, pickNumber, ruleIntent,
 } from "./intents.js";
-import { ruleAnswer } from "./answers.js";
+import { basics, ruleAnswer } from "./answers.js";
 import {
   T, failureReasonFix, portalPolicyUrl, renewalsReply, reportCard, shareDraft, shareReply,
   sharedReportUrl, waMeLink, type Lang, type Links,
@@ -985,7 +985,8 @@ export class Bot {
     if (ruled) return this.say(to, agentId, `${ruled}\n\nFull report: ${url}`, "ask");
     const phrased = await this.d.engine.llmPhrase(agentId, clientId, question).catch(() => ({ answer: null }));
     if (phrased.answer) return this.say(to, agentId, `${phrased.answer}\n\nFull report: ${url}`, "ask_phrased");
-    return this.say(to, agentId, T.notInReport(url), (phrased as any).guardFired ? "ask_guard_fired" : "ask_not_in_report");
+    // Never a bare "not in the report": show what the Policies list shows about it too.
+    return this.say(to, agentId, `${basics(c)}\n\n${T.notInReport(url)}`, (phrased as any).guardFired ? "ask_guard_fired" : "ask_not_in_report");
   }
 
   private async pickClient(agentId: string, to: string, current: string | null, found: ClientSummary[], extra: Record<string, unknown>) {

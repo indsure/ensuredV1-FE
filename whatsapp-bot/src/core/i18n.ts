@@ -216,6 +216,18 @@ const LINES: Line[] = [
     "Report mein iski jaankari nahi hai. Exact coverage ke liye insurer se confirm kar lijiye. Poori report: {url}",
     "रिपोर्ट में इसकी जानकारी नहीं है। सही कवरेज के लिए बीमा कंपनी से पक्का कर लीजिए। पूरी रिपोर्ट: {url}"),
 
+  /* Policy basics (the Policies list) */
+  L("Insurer: {x}", "Insurance company: {x}", "बीमा कंपनी: {x}"),
+  L("Plan: {x}", "Plan: {x}", "प्लान: {x}"),
+  L("Next premium date: {x}", "Agla premium: {x}", "अगला प्रीमियम: {x}"),
+  L("Score: {s}/100 · Keep", "Score: {s}/100 · Rakhiye (Keep)", "स्कोर: {s}/100 · रखिए (Keep)"),
+  L("Score: {s}/100 · Switch", "Score: {s}/100 · Badliye (Switch)", "स्कोर: {s}/100 · बदलिए (Switch)"),
+  L("Sum insured: {x}", "Sum insured: {x}", "बीमा राशि: {x}"),
+  L("Premium: {x}", "Premium: {x}", "प्रीमियम: {x}"),
+  L("The policy has no renewal date recorded. Add it on the policy in the portal.", "Is policy ki renewal date save nahi hai. Portal mein policy par daal dijiye.", "इस पॉलिसी की रिन्यूअल तारीख़ सेव नहीं है। पोर्टल में पॉलिसी पर डाल दीजिए।"),
+  L("Keep. It scores {s}/100, so it should hold up at claim time.", "Rakhiye. Iska score {s}/100 hai, claim ke waqt kaam aayegi.", "रखिए। इसका स्कोर {s}/100 है, क्लेम के समय काम आएगी।"),
+  L("Switch. It scores {s}/100, under 70, so it has gaps worth fixing. Reply UPGRADE MESSAGE for a ready message.", "Badliye. Iska score {s}/100 hai, 70 se kam, kuch kamiyan hain. Taiyaar message ke liye UPGRADE MESSAGE likhiye.", "बदलिए। इसका स्कोर {s}/100 है, 70 से कम, कुछ कमियाँ हैं। तैयार मैसेज के लिए UPGRADE MESSAGE लिखिए।"),
+
   /* Report card and sharing */
   L("Watch out for: {x}.", "Dhyaan dein: {x}.", "ध्यान दें: {x}।"),
   L("Full report: {url}", "Poori report: {url}", "पूरी रिपोर्ट: {url}"),
