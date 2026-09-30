@@ -96,7 +96,7 @@ test("follow-ups list: overdue and today", async () => {
   const { bot, transport, engine } = makeBot();
   engine.followupRows = [lead({ days: -2 }), lead({ name: "Sunita Rao", phone: null, days: 0 })];
   await bot.handle(text("who do I call today?"));
-  assert.match(transport.last(), /^📋 2 follow-ups due:\n1\) \*Ramesh Kumar\* · 9812345678 · overdue 2d · Health\n2\) \*Sunita Rao\* · today · Health/);
+  assert.match(transport.last(), /^📋 2 follow-ups due:\n1\) \*Ramesh Kumar\* · 98123 45678 · overdue 2d · Health\n2\) \*Sunita Rao\* · today · Health/);
   engine.followupRows = [];
   await bot.handle(text("follow ups"));
   assert.match(transport.last(), /No follow-ups due today/);
@@ -129,8 +129,8 @@ test("find: policies and leads on a name; a bare number too", async () => {
   engine.clients.set(id, healthClient(id, { policyholderName: "Ramesh Kumar", expiryDate: "2026-12-01" }));
   engine.leadRows = [lead()];
   await bot.handle(text("find Ramesh"));
-  assert.match(transport.last(), /^📋 1 policy and 1 lead for "Ramesh":\n1\) \*Ramesh Kumar\* · health · Care Supreme · expires Tue 1 Dec · 65\/100/);
-  assert.match(transport.last(), /• Lead: \*Ramesh Kumar\* · 9812345678 · new/);
+  assert.match(transport.last(), /^📋 1 policy and 1 lead for "Ramesh":\n1\) \*Ramesh Kumar\* · Health · Care Supreme · expires Tue 1 Dec · 65\/100/);
+  assert.match(transport.last(), /• Lead: \*Ramesh Kumar\* · 98123 45678 · New/);
   await bot.handle(text("98123 45678"));
   assert.match(transport.last(), /1 lead for "98123 45678"/);
 });
@@ -160,7 +160,7 @@ test("checks left, views, claims", async () => {
   await bot.handle(text("claim Ramesh"));
   assert.deepEqual(engine.claimQueries, [null, "Ramesh"]);
   assert.match(transport.last(), /Status: Query \(cashless\)/);
-  assert.match(transport.last(), /• Q1 \(2026-09-20\): Send discharge summary/);
+  assert.match(transport.last(), /• Q1 \(20 Sep 2026\): Send discharge summary/);
 });
 
 test("motor policy question shows its stored details with the portal's labels", async () => {

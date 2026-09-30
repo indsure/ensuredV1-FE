@@ -13,6 +13,14 @@ export const ADVISOR = "919800000001";
 export const ADVISOR_JID = `${ADVISOR}@s.whatsapp.net`;
 export const STRANGER = "919800000009";
 
+const COMMAND_WORDS = /\*(MORNING OFF \/ ON|MORNING OFF|MORNING ON|FOLLOW UPS|MY CLIENTS|SURRENDER VALUE|UPGRADE MESSAGE|DIWALI MESSAGE|TIER 1|TIER 2|RENEWALS|CALCULATOR|COMPARE|BALANCE|HINGLISH|ENGLISH|HINDI|REMIND|CANCEL|CHANGE|CHECKS|CLAIMS|VIEWS|SHARE|TODAY|METRO|UNDO|HELP|MORE|SKIP|NONE|LEAD|FIND|LINK|YES|NO)\*/g;
+export function plainText(t: string): string {
+  return t
+    .replace(/^(📝|✅|👋|🌐|📊|⚠️|🤔|⚖️|🧮|👤|⏳|📤|ℹ️) /u, "")
+    .replace(COMMAND_WORDS, "$1")
+    .replace(/^(\d{1,2})\. /gm, "$1) ");
+}
+
 export class FakeTransport implements Transport {
   sent: { to: string; text: string }[] = [];
   files = new Map<string, Buffer>();
@@ -22,8 +30,11 @@ export class FakeTransport implements Transport {
   async sendTyping() {}
   async downloadMedia(m: InboundMessage) { return this.files.get(m.id) ?? Buffer.from("%PDF-1.4 x"); }
   async markRead() {}
-  texts() { return this.sent.map((s) => s.text); }
-  last() { return this.sent[this.sent.length - 1]?.text ?? ""; }
+  /** The words of each message, without the house style (a leading emoji, bold commands,
+   *  "1." lists), so tests read content. style.test.ts checks the styling on lastRaw(). */
+  texts() { return this.sent.map((s) => plainText(s.text)); }
+  last() { return plainText(this.sent[this.sent.length - 1]?.text ?? ""); }
+  lastRaw() { return this.sent[this.sent.length - 1]?.text ?? ""; }
 }
 
 export function healthClient(id: string, over: Partial<ClientSummary> = {}): ClientSummary {

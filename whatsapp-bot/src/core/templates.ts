@@ -4,6 +4,7 @@
  * Numbers shown here are ONLY ones the engine stored; this file formats, never computes.
  */
 
+import { customerText } from "./style.js";
 import type { ClientSummary, RenewalRow } from "../engine.js";
 import { TYPE_LABEL, type PolicyType } from "./pdfInspect.js";
 import { b, dayMonth, firstName, planLabel } from "./format.js";
@@ -182,7 +183,7 @@ export function shareReply(customer: string | null, draft: string, waLink: strin
     waLink,
   ];
   if (!hasPhone) lines.push("(I don't have their number, so WhatsApp will ask you to pick the chat.)");
-  lines.push("", "The message:", draft);
+  lines.push("", "The message:", customerText(draft));
   if (tracksViews) lines.push("", "You'll see in the portal when they open the report.");
   return clean(lines.join("\n"));
 }

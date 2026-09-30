@@ -125,10 +125,10 @@ test("calculator: the portal's steps, the portal's engine, saved, report link", 
     employerCover: "None", riskPosture: "Balanced", hospitalPreference: "Large private hospitals", recurringExpenses: "None",
   });
   const expected = calculateHealthCover(saved.inputs, { partnerCompanies: [] });
-  const r = transport.last();
+  const r = transport.lastRaw();
   assert.ok(r.startsWith(`🧮 *${expected.totalProtection}* recommended cover for age 42, Mumbai (metro), a couple with kids.`), r);
   assert.match(r, /https:\/\/indsure\.in\/calculator\/report\/calc-uuid-1/);
-  assert.match(r, /Reply SHARE to send it to the customer/);
+  assert.match(transport.last(), /Reply SHARE to send it to the customer/);
 });
 
 test("calculator: answers it can't read are asked again, never guessed", async () => {
@@ -152,7 +152,7 @@ test("compare two plans by name: engine verdict and the report link", async () =
   const { bot, transport, engine } = makeBot();
   await bot.handle(text("compare Care Supreme vs Niva ReAssure 2.0"));
   assert.deepEqual(engine.compared[0], ["UIN-CARE-SUP", "UIN-NIVA-RA2"]);
-  const r = transport.last();
+  const r = transport.lastRaw();
   assert.match(r, /^⚖️ \*Care Supreme\* is stronger on the wording than Niva Bupa ReAssure 2\.0\./);
   assert.match(r, /Why: No room rent cap; Shorter PED wait\./);
   assert.match(r, /But: ReAssure 2\.0 has a bigger bonus\./);

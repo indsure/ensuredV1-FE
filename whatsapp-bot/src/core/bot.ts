@@ -50,6 +50,7 @@ import type { Action, Context as ModelContext, Understanding } from "./understan
 import { MORNING, inMorningWindow, istClock, morningBrief, sincePreviousWorkday } from "./morning.js";
 import type { CatalogPlan, SachStatus } from "../engine.js";
 import { LANG_SET, detectLang, langCommand, localise, type ReplyLang } from "./i18n.js";
+import { outsideCustomer, polish, stripMarkers } from "./style.js";
 
 export const MAX_BYTES = 25 * 1024 * 1024;
 /** How long free-text questions keep going to the last report without naming a topic. */
@@ -170,8 +171,10 @@ export class Bot {
   /** The ONLY way the bot sends anything. `to` is always the advisor's own chat. */
   private async say(to: string, agentId: string | null, textEn: string, intent: string | null = null) {
     const tr = this.d.transport;
-    // Written in English; shown in the advisor's language (fixed wording only, see i18n.ts).
-    const text = localise(textEn, agentId ? this.replyLang.get(agentId) : null);
+    // Written in English; shown in the advisor's language (fixed wording only, see i18n.ts),
+    // then in the house style (style.ts). A customer's message inside is left exactly as is.
+    const lang = agentId ? this.replyLang.get(agentId) : null;
+    const text = stripMarkers(polish(outsideCustomer(textEn, (t) => localise(t, lang)), intent));
     try {
       await tr.sendTyping(to, true);
       await this.sleep(this.replyDelay());
