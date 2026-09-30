@@ -80,10 +80,12 @@ test("routes over real HTTP: bot surface hides behind the key, portal routes nee
     // Right key but no linked advisor id: refused before any data.
     assert.equal((await fetch(`${base}/api/internal/wa/renewals`, { headers: { "x-wa-bot-key": KEY, "x-wa-agent-id": "bad" } })).status, 403);
     // Phase 1b routes: right key, no linked advisor: refused before any data.
-    for (const path of ["profile", "catalog", "leads", "calculator", "compare", "leads/search?q=ram", "followups", "lookup?q=ram", "views", "claims", "policies", "leads/00000000-0000-4000-8000-000000000000/update", "understand", "leads/list", "leads/00000000-0000-4000-8000-000000000000/undo-create"]) {
+    for (const path of ["profile", "catalog", "leads", "calculator", "compare", "leads/search?q=ram", "followups", "lookup?q=ram", "views", "claims", "policies", "leads/00000000-0000-4000-8000-000000000000/update", "understand", "leads/list", "leads/00000000-0000-4000-8000-000000000000/undo-create", "sach", "morning/pref"]) {
       const method = ["leads", "calculator", "compare", "understand"].includes(path) || path.endsWith("/update") || path.endsWith("/undo-create") ? "POST" : "GET";
       assert.equal((await fetch(`${base}/api/internal/wa/${path}`, { method, headers: { "x-wa-bot-key": KEY, "x-wa-agent-id": "bad" } })).status, 403, path);
     }
+    // The morning list is not per-advisor, so the key alone guards it.
+    assert.equal((await fetch(`${base}/api/internal/wa/morning/recipients`)).status, 404);
     // Portal routes go through verifyJwt.
     assert.equal((await fetch(`${base}/api/agent/whatsapp`)).status, 401);
     assert.equal((await fetch(`${base}/api/agent/whatsapp/link-code`, { method: "POST" })).status, 401);

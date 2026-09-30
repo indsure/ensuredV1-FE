@@ -34,7 +34,7 @@ import {
   TIER_LABEL, toolShareDraft, type Shareable,
 } from "./tools.js";
 import { log, redact } from "../log.js";
-import { b, planLabel as nicePlan, prettyEngine } from "./format.js";
+import { b, dayMonth, planLabel as nicePlan, prettyEngine } from "./format.js";
 import {
   CLIENT_ONLY, VALUE_TYPES, claimsReply, detailsReply, followupsReply, leadUpdatedReply, lookupReply,
   nameMatches, parseDraft, parseLeadUpdate, valueReply, viewsReply, leadsListReply, prettyDate, type LeadRow, type LeadUpdate,
@@ -46,6 +46,8 @@ import {
   type CalcState,
 } from "./calcflow.js";
 import type { Action, Context as ModelContext, Understanding } from "./understand.js";
+import { MORNING, inMorningWindow, istClock, morningBrief, sincePreviousWorkday } from "./morning.js";
+import type { SachStatus } from "../engine.js";
 
 export const MAX_BYTES = 25 * 1024 * 1024;
 /** How long free-text questions keep going to the last report without naming a topic. */
@@ -104,7 +106,7 @@ type LastChange =
 
 const UNDO_WINDOW_MS = 15 * 60_000;
 /** Short, unambiguous read-only commands go straight to the rules (no model call). */
-const FAST_RULE = new Set(["help", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender"]);
+const FAST_RULE = new Set(["help", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
 
 type Conv = { state: State; currentClientId: string | null; pending: any; updatedAt: string | null };
 
@@ -134,6 +136,11 @@ export class Bot {
   private readonly replyDelay: () => number;
 
   private readonly d: BotDeps;
+  /** Sach Assistant notices, each said once: free-plan pointer (per day), limit reached (per month). */
+  private readonly sachNudged = new Map<string, string>();
+  private readonly limitTold = new Map<string, string>();
+  private morningDoneDay: string | null = null;
+  private morningRunning = false;
 
   constructor(deps: BotDeps) {
     // Every name the bot shows passes through prettyEngine: short insurer names, no
@@ -561,15 +568,23 @@ export class Bot {
     const words = text.split(/\s+/).length;
     const fastRule = !!intent && FAST_RULE.has(intent) && (words <= 4 || /^(compare|find|search|lookup|share|remind|help)\b/i.test(text));
     const answering = conv.state.startsWith("AWAITING") && !intent;
+    let sachReason: string | undefined;
     if (!fastRule && !answering) {
       const r = await this.d.engine.understand(agentId, text, this.modelContext(agentId, conv)).catch(() => null);
+      sachReason = r?.reason;
+      if (r?.reason === "limit" && r.usage) await this.sachLimitNotice(agentId, to, r.usage);
       if (r?.enabled && r.understanding) {
         if (conv.state.startsWith("AWAITING")) {
           await this.dropHeldFile(conv);
           await this.rest(agentId, to, conv.currentClientId);
           conv = { ...conv, state: conv.currentClientId ? "REPORT_READY" : "IDLE", pending: { to } };
         }
-        return this.dispatch(agentId, conv, to, text, r.understanding);
+        await this.dispatch(agentId, conv, to, text, r.understanding);
+        const u = r.usage;
+        if (u && u.limit > 0 && u.used === Math.ceil(u.limit * 0.8)) {
+          await this.say(to, agentId, `Heads up: you've used ${u.used} of ${u.limit} Sach Assistant replies this month. They reset on ${dayMonth(u.resetsOn)}.`, "sach_warn");
+        }
+        return;
       }
     }
 
@@ -594,6 +609,16 @@ export class Bot {
     switch (intent) {
       case "help":
         return this.say(to, agentId, T.help(), "help");
+      case "balance":
+        return this.balance(agentId, to);
+      case "today":
+        return this.today(agentId, to);
+      case "morning_off":
+      case "morning_on": {
+        const s = await this.d.engine.sach(agentId);
+        if (!s.paid) return this.say(to, agentId, MORNING.paidOnly(this.d.teamLink), "sach_paid_only");
+        return this.say(to, agentId, intent === "morning_off" ? MORNING.off() : MORNING.on(), intent);
+      }
       case "more":
         return this.say(to, agentId, T.more(), "more");
       case "renewals":
@@ -649,7 +674,82 @@ export class Bot {
     const guess = await this.d.engine.llmIntent(agentId, text, false).catch(() => "unknown");
     if (guess === "renewals") return this.say(to, agentId, renewalsReply(await this.d.engine.renewals(agentId), this.d.links), "renewals");
     if (guess === "share" || guess === "ask") return this.say(to, agentId, T.noReport(), guess);
+    // Free plan: one line a day on what Sach Assistant would add, never more.
+    const day = istClock(this.now()).iso;
+    if (sachReason === "free_plan" && this.sachNudged.get(agentId) !== day && words > 2) {
+      this.sachNudged.set(agentId, day);
+      return this.say(to, agentId, `${T.didNotCatch()}\n\nWith Sach Assistant (paid plan) you can just type it your way, in English, Hinglish or Hindi: ${this.d.teamLink}`, "unknown");
+    }
     return this.say(to, agentId, T.didNotCatch(), "unknown");
+  }
+
+  /* ══ Sach Assistant: BALANCE, TODAY and the 9 AM brief ════════════════ */
+
+  private async balance(agentId: string, to: string) {
+    const [s, checks] = await Promise.all([this.d.engine.sach(agentId), this.d.engine.checksLeft(agentId)]);
+    const lines = [`${b("Policy checks left:")} ${checks}`];
+    if (s.paid) {
+      lines.unshift(`${b("Sach Assistant:")} ${s.used} of ${s.limit} replies used this month. Resets on ${dayMonth(s.resetsOn)}.`);
+      lines.push("", "Short commands like RENEWALS, HELP and YES never count.");
+    } else {
+      lines.push("", `Sach Assistant (type it your way, plus a 9 AM to-do Monday to Friday) comes with the paid plan: ${this.d.teamLink}`);
+    }
+    return this.say(to, agentId, lines.join("\n"), "balance");
+  }
+
+  private async sachLimitNotice(agentId: string, to: string, u: SachStatus) {
+    const month = istClock(this.now()).iso.slice(0, 7);
+    if (this.limitTold.get(agentId) === month) return;
+    this.limitTold.set(agentId, month);
+    await this.say(to, agentId,
+      `You've used all ${u.limit} Sach Assistant replies this month. Until ${dayMonth(u.resetsOn)} I'll work on short commands (reply HELP to see them).`,
+      "sach_limit");
+  }
+
+  private async buildBrief(agentId: string, name: string | null): Promise<string | null> {
+    const e = this.d.engine;
+    const [followups, renewals, views, claims] = await Promise.all([e.followups(agentId), e.renewals(agentId), e.views(agentId), e.claims(agentId, null)]);
+    return morningBrief({ name, followups, renewals, views, claims, sinceMs: sincePreviousWorkday(this.now()) });
+  }
+
+  private async today(agentId: string, to: string) {
+    const s = await this.d.engine.sach(agentId);
+    if (!s.paid) return this.say(to, agentId, MORNING.paidOnly(this.d.teamLink), "sach_paid_only");
+    const profile = await this.d.engine.profile(agentId);
+    return this.say(to, agentId, (await this.buildBrief(agentId, profile.name)) ?? MORNING.empty(), "today");
+  }
+
+  /**
+   * Called every minute by index.ts. On weekdays from 9 AM IST, sends each paid advisor
+   * their to-do, 20-40 seconds apart (a personal number must not burst). The backend only
+   * lists advisors not yet sent one today, so a restart never double-sends. An empty list
+   * is not sent.
+   */
+  async morningTick(): Promise<number> {
+    if (!inMorningWindow(this.now()) || this.morningRunning) return 0;
+    const day = istClock(this.now()).iso;
+    if (this.morningDoneDay === day) return 0;
+    this.morningRunning = true;
+    let sent = 0;
+    try {
+      const list = await this.d.engine.morningRecipients();
+      for (const r of list) {
+        const brief = await this.buildBrief(r.agentId, r.name).catch((e) => {
+          log.error("morning brief failed", { error: e?.message });
+          return null;
+        });
+        if (!brief) continue;
+        if (sent > 0) await this.sleep(20_000 + Math.floor(Math.random() * 20_000));
+        await this.say(`${r.waNumber}@s.whatsapp.net`, r.agentId, brief, "morning_brief");
+        sent++;
+      }
+      this.morningDoneDay = day;
+    } catch (e: any) {
+      log.error("morning run failed", { error: e?.message });
+    } finally {
+      this.morningRunning = false;
+    }
+    return sent;
   }
 
   /** Returns true when the reply was consumed by the pending question. */

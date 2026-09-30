@@ -87,6 +87,8 @@ export type PolicyRow = {
 import type { LeadRow, ClaimRow } from "./core/crm.js";
 export type { LeadRow, ClaimRow };
 
+export type SachStatus = { plan: string; paid: boolean; used: number; limit: number; resetsOn: string };
+
 export type Conversation = { state: string; currentClientId: string | null; pending: any; updatedAt: string | null };
 
 export interface Engine {
@@ -115,7 +117,12 @@ export interface Engine {
   createLead(agentId: string, lead: { name: string; phone: string | null; interest: string | null; status?: string | null; nextFollowUp?: string | null; note?: string | null }): Promise<{ id: string; duplicateOf?: string }>;
   saveCalculator(agentId: string, inputs: unknown, result: unknown, customerId?: string | null): Promise<string>;
   /** The model fills the form (backend, switched off unless WA_LLM_ENABLED=true). */
-  understand(agentId: string, text: string, ctx: import("./core/understand.js").Context): Promise<{ enabled: boolean; understanding: import("./core/understand.js").Understanding | null }>;
+  understand(agentId: string, text: string, ctx: import("./core/understand.js").Context): Promise<{ enabled: boolean; understanding: import("./core/understand.js").Understanding | null; reason?: string; usage?: SachStatus }>;
+  /** Sach Assistant: plan and this month's smart replies (BALANCE). */
+  sach(agentId: string): Promise<SachStatus>;
+  /** Advisors due a morning brief today (paid, linked, not opted out, not yet sent). */
+  morningRecipients(): Promise<{ agentId: string; waNumber: string; name: string | null }[]>;
+  morningOn(agentId: string): Promise<boolean>;
   leadsList(agentId: string): Promise<{ total: number; leads: LeadRow[] }>;
   leadRestore(agentId: string, id: string, before: { status: string | null; next_follow_up: string | null; notes: string | null }): Promise<LeadRow | null>;
   leadUndoCreate(agentId: string, id: string): Promise<boolean>;
@@ -223,6 +230,9 @@ export class HttpEngine implements Engine {
   async saveCalculator(agentId: string, inputs: unknown, result: unknown, customerId: string | null = null) {
     return (await this.call("/api/internal/wa/calculator", { method: "POST", agentId, body: { inputs, result, customerId } })).uuid;
   }
+  async sach(agentId: string) { return this.call("/api/internal/wa/sach", { agentId }); }
+  async morningRecipients() { return (await this.call("/api/internal/wa/morning/recipients")).recipients; }
+  async morningOn(agentId: string) { return !!(await this.call("/api/internal/wa/morning/pref", { agentId })).on; }
   async understand(agentId: string, text: string, ctx: unknown) {
     return this.call("/api/internal/wa/understand", { method: "POST", agentId, body: { text, ctx } });
   }

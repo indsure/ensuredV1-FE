@@ -77,6 +77,7 @@ export const T = {
       "• SURRENDER VALUE Ramesh (life policies)",
       "• UPGRADE MESSAGE for Santosh · DIWALI MESSAGE for Ramesh in hindi",
       "• LINK: your website",
+      "• TODAY: your to-do · BALANCE: checks and Sach Assistant replies left · MORNING OFF / ON",
     ].join("\n"),
   unknownNumber: () => "This number is for IndSure advisors. To get started, visit indsure.in/agent.",
 

@@ -1231,12 +1231,118 @@ FACTS: ${JSON.stringify(facts)}`,
      2026-09-29: 96.6% correct, 0 dangerous, 0 inconsistent). Thinking off. Every call is in
      the usage ledger as wa_understand. OFF unless WA_LLM_ENABLED=true, and off whenever
      the daily Gemini ceiling is reached. */
+  /* ── Sach Assistant allowance ──
+     Smart replies (the model above) are for paid plans only (agents.plan 'agent' | 'agency').
+     Each advisor gets WA_SACH_MONTHLY_LIMIT readings a calendar month (IST), default 500;
+     WA_SACH_LIMIT_OVERRIDES="<agentId>:2000,<agentId>:100" changes it for one advisor.
+     All advisors together stop at WA_SACH_MONTHLY_INR_CAP rupees a month (default 500).
+     Counted from the usage ledger (successful wa_understand calls), so no new table. The
+     rupee cap prices tokens itself, so it works even when the ledger's price rates are unset. */
+  const SACH_USD_PER_M = { in: 0.25, out: 1.5 }; // gemini-3.1-flash-lite list price
+  const USD_INR = 85;
+  const MONTH_START_IST = `(date_trunc('month', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata')`;
+
+  function sachLimit(agentId: string): number {
+    for (const pair of String(process.env.WA_SACH_LIMIT_OVERRIDES || "").split(",")) {
+      const [id, n] = pair.split(":").map((s) => s.trim());
+      if (id === agentId && Number.isFinite(Number(n))) return Math.max(0, Number(n));
+    }
+    const raw = process.env.WA_SACH_MONTHLY_LIMIT;
+    const d = raw ? Number(raw) : NaN;
+    return Number.isFinite(d) && d >= 0 ? d : 500;
+  }
+
+  async function sachStatus(agentId: string) {
+    const a = await pool.query("SELECT plan FROM agents WHERE id = $1", [agentId]);
+    const plan = String(a.rows[0]?.plan || "free");
+    const u = await pool.query(
+      `SELECT count(*)::int AS n FROM gemini_usage_log
+        WHERE feature = 'wa_understand' AND status = 'ok' AND actor_id = $1 AND created_at >= ${MONTH_START_IST}`,
+      [agentId]
+    );
+    const ist = new Date(Date.now() + 5.5 * 3600_000);
+    const next = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
+    return { plan, paid: plan === "agent" || plan === "agency", used: Number(u.rows[0]?.n) || 0, limit: sachLimit(agentId), resetsOn: next };
+  }
+
+  async function sachOverMonthlyCap(): Promise<boolean> {
+    const cap = process.env.WA_SACH_MONTHLY_INR_CAP === undefined ? 500 : Number(process.env.WA_SACH_MONTHLY_INR_CAP);
+    if (!Number.isFinite(cap) || cap <= 0) return false;
+    const r = await pool.query(
+      `SELECT COALESCE(sum(prompt_tokens), 0)::float8 AS p,
+              COALESCE(sum(GREATEST(COALESCE(total_tokens, 0) - COALESCE(prompt_tokens, 0), COALESCE(output_tokens, 0))), 0)::float8 AS o
+         FROM gemini_usage_log WHERE feature = 'wa_understand' AND created_at >= ${MONTH_START_IST}`
+    );
+    const p = Number(r.rows[0]?.p) || 0, o = Number(r.rows[0]?.o) || 0;
+    return ((p * SACH_USD_PER_M.in + o * SACH_USD_PER_M.out) / 1_000_000) * USD_INR >= cap;
+  }
+
+  /** BALANCE: plan, this month's smart replies, and when they reset. */
+  app.get("/api/internal/wa/sach", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      res.json(await sachStatus(agentId));
+    } catch (err: any) {
+      log.error("wa sach status failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Morning brief (Mon-Fri 9 AM IST, paid plans) ──
+     Who gets one today: linked, allowlisted, paid, has not sent MORNING OFF (the latest of
+     the bot's morning_off / morning_on replies wins), and not already sent one today. The
+     bot's own logged replies are the record, so a restart never double-sends. */
+  app.get("/api/internal/wa/morning/recipients", async (_req, res) => {
+    try {
+      const r = await pool.query(
+        `SELECT l.agent_id, l.wa_number, COALESCE(a.full_name, a.name) AS name
+           FROM whatsapp_link l
+           JOIN wa_allowlist w ON w.agent_id = l.agent_id
+           JOIN agents a ON a.id = l.agent_id
+          WHERE l.status = 'active' AND a.plan IN ('agent', 'agency')
+            AND COALESCE((SELECT m.intent FROM wa_message m
+                           WHERE m.agent_id = l.agent_id AND m.direction = 'out' AND m.intent IN ('morning_off', 'morning_on')
+                           ORDER BY m.created_at DESC LIMIT 1), 'morning_on') = 'morning_on'
+            AND NOT EXISTS (SELECT 1 FROM wa_message m
+                             WHERE m.agent_id = l.agent_id AND m.direction = 'out' AND m.intent = 'morning_brief'
+                               AND m.created_at >= (date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'))
+          ORDER BY l.linked_at ASC`
+      );
+      res.json({ recipients: r.rows.map((x: any) => ({ agentId: x.agent_id, waNumber: x.wa_number, name: x.name ?? null })) });
+    } catch (err: any) {
+      log.error("wa morning recipients failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Is the morning brief on for this advisor? (MORNING ON / OFF) */
+  app.get("/api/internal/wa/morning/pref", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const r = await pool.query(
+        `SELECT intent FROM wa_message WHERE agent_id = $1 AND direction = 'out' AND intent IN ('morning_off', 'morning_on')
+          ORDER BY created_at DESC LIMIT 1`,
+        [agentId]
+      );
+      res.json({ on: (r.rows[0]?.intent ?? "morning_on") === "morning_on" });
+    } catch (err: any) {
+      log.error("wa morning pref failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.post("/api/internal/wa/understand", async (req, res) => {
     try {
       const agentId = await scopedAgent(req, res);
       if (!agentId) return;
       const key = process.env.GEMINI_API_KEY;
       if (process.env.WA_LLM_ENABLED !== "true" || !key) return res.json({ enabled: false });
+      const sach = await sachStatus(agentId);
+      if (!sach.paid) return res.json({ enabled: false, reason: "free_plan" });
+      if (sach.used >= sach.limit) return res.json({ enabled: false, reason: "limit", usage: sach });
+      if (await sachOverMonthlyCap()) return res.json({ enabled: false, reason: "monthly cap" });
       if (await isOverDailyCeiling()) return res.json({ enabled: false, reason: "daily ceiling" });
       const text = String(req.body?.text || "").slice(0, 500);
       if (!text.trim()) return res.json({ enabled: true, understanding: null });
@@ -1275,7 +1381,7 @@ FACTS: ${JSON.stringify(facts)}`,
       const raw = json?.candidates?.[0]?.content?.parts?.map((p: any) => p.text ?? "").join("") ?? "";
       let parsed: unknown = null;
       try { parsed = JSON.parse(raw); } catch { /* malformed: treated as not understood */ }
-      res.json({ enabled: true, understanding: parsed ? normalise(parsed) : null });
+      res.json({ enabled: true, understanding: parsed ? normalise(parsed) : null, usage: { ...sach, used: sach.used + 1 } });
     } catch (err: any) {
       log.warn("wa understand failed", { error: err?.message });
       res.json({ enabled: true, understanding: null, error: "failed" });

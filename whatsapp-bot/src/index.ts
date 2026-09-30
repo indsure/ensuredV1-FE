@@ -54,6 +54,11 @@ const bot = new Bot({
 transport.onMessage((m) => bot.handle(m));
 await transport.start();
 await bot.resumeOpenJobs();
+// Morning brief: checked every minute, sent Mon-Fri from 9 AM IST (paid plans only).
+// WA_MORNING_BRIEF=off stops it without a redeploy of anything else.
+if (process.env.WA_MORNING_BRIEF !== "off") {
+  setInterval(() => { bot.morningTick().catch((e) => log.error("morning tick failed", { error: e?.message })); }, 60_000);
+}
 // Written by the deploy script, so the log says exactly which commit is running.
 let version = "dev";
 try { version = fs.readFileSync(new URL("../DEPLOYED_VERSION", import.meta.url), "utf8").trim(); } catch {}

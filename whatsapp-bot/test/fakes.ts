@@ -157,11 +157,21 @@ export class FakeEngine implements Engine {
   understandMap = new Map<string, any>();
   understandCalls: { text: string; ctx: any }[] = [];
   modelOn = false;
+  /** Sach Assistant: the plan and this month's count, as the backend reports them. */
+  sachData = { plan: "agent", paid: true, used: 0, limit: 500, resetsOn: "2026-10-01" };
+  /** Why the backend would not call the model (free_plan, limit...), when it would not. */
+  sachReason: string | null = null;
+  async sach() { return { ...this.sachData }; }
+  morningList: { agentId: string; waNumber: string; name: string | null }[] = [];
+  async morningRecipients() { return this.morningList; }
+  async morningOn() { return true; }
   async understand(_a: string, text: string, ctx: any) {
     this.understandCalls.push({ text, ctx });
+    if (this.sachReason) return { enabled: false, understanding: null, reason: this.sachReason, usage: { ...this.sachData } };
     if (!this.modelOn) return { enabled: false, understanding: null };
     const u = this.understandMap.get(text);
-    return { enabled: true, understanding: u ?? { actions: [{ type: "unknown" }], clarify: null } };
+    this.sachData.used++;
+    return { enabled: true, understanding: u ?? { actions: [{ type: "unknown" }], clarify: null }, usage: { ...this.sachData } };
   }
   async leadsList() { return { total: this.leadRows.length, leads: this.leadRows.slice(0, 15) }; }
   restored: any[] = [];
