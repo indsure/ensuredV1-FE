@@ -123,6 +123,14 @@ export function parseLeadUpdate(textRaw: string, nowMs: number): LeadUpdate | nu
     return null;
   }
 
+  // "Aniket ka followup 3rd November", "Deep ki call kal", "रमेश का फॉलो अप शुक्रवार"
+  const kaFu = t.replace(/[.!?।]+$/, "").match(/^(.+?)\s+(?:ka|ki|ke|ko|का|की|के|को)\s+(?:follow[\s-]?up|followup|call|reminder|फॉलो[\s-]?अप|कॉल|रिमाइंडर)\s+(?:(?:on|for|ko|को)\s+)?(.+?)(?:\s+(?:karo|kardo|kar do|set karo|rakho|lagao|karna hai|करो|कर दो|रखो))?$/i);
+  if (kaFu) {
+    const who = kaFu[1].trim();
+    const w = parseWhen(kaFu[2], nowMs);
+    if (w && !w.rest && who.length >= 2 && who.split(/\s+/).length <= 4) return { name: bookName(who), nextFollowUp: w.date };
+  }
+
   // "Ramesh ko kal call karna hai", "kal Ramesh ko follow up", "रमेश को शुक्रवार फॉलो अप"
   const hfu = t.replace(/[.!?।]+$/, "").match(/^(.+?)\s+(?:ko|को)\s+(.*?)\s*(?:call|phone|follow[\s-]?up|कॉल|फ़ोन|फोन|फॉलो[\s-]?अप)(?:\s+(?:karna|karo|karunga|karungi|karni|kar do|करना|करो|कर दो))?(?:\s+(?:hai|है))?$/i);
   if (hfu) {
@@ -144,6 +152,18 @@ export function parseLeadUpdate(textRaw: string, nowMs: number): LeadUpdate | nu
     }
   }
   return null;
+}
+
+/** "Sabke reminders 1st November kardo", "move all follow ups to Monday": one new date for
+ *  every lead on the follow-up list. The date, or null when it is not such a message. */
+export function parseBulkFollowUp(textRaw: string, nowMs: number): string | null {
+  const t = textRaw.trim().toLowerCase().replace(/[.!?।]+$/, "");
+  const hi = t.match(/^(?:sab|sabke|sab ke|sabka|sabko|sabhi|sabhi ke|in sab ke|inke|all|everyone'?s?|सबके|सब के|सबका|सबको|सभी)(?:\s+(?:ka|ke|ki|ko|का|के|की|को))?\s+(?:reminders?|follow[\s-]?ups?|followups?|calls?|रिमाइंडर|फॉलो[\s-]?अप|कॉल)\s+(?:(?:on|to|for|ko|को)\s+)?(.+?)(?:\s+(?:kardo|kar do|karo|set karo|rakho|move karo|shift karo|daal do|करो|कर दो|रखो))?$/);
+  const en = t.match(/^(?:move|set|shift|push|change)\s+(?:all|every|everyone'?s?)\s+(?:the\s+|my\s+)?(?:follow[\s-]?ups?|reminders?|calls?)\s+(?:to|for|on)\s+(.+)$/);
+  const when = (hi || en)?.[1];
+  if (!when) return null;
+  const w = parseWhen(when, nowMs);
+  return w && !w.rest ? w.date : null;
 }
 
 /** Every word typed is the start of a word in the lead's name: "ram" and "ramesh k" match
@@ -172,7 +192,10 @@ export function leadUpdatedReply(l: Links, lead: LeadRow, u: LeadUpdate): string
 export function followupsReply(l: Links, leads: LeadRow[]): string {
   if (!leads.length) return "No follow-ups due today. Set one with: follow up Ramesh Friday";
   const lines = leads.slice(0, 15).map((r, i) => {
-    const when = (r.days ?? 0) < 0 ? `overdue ${-(r.days ?? 0)}d` : "today";
+    const late = -(r.days ?? 0);
+    // Past two months a day count stops meaning anything ("overdue 9423d"): show the date.
+    const since = r.next_follow_up ? String(r.next_follow_up).slice(0, 10) : "";
+    const when = late <= 0 ? "today" : late <= 60 || !since ? `overdue ${late}d` : `overdue since ${since}`;
     return `${i + 1}) ${[b(r.name), r.phone, when, r.insurance_interest].filter(Boolean).join(" · ")}`;
   });
   const more = leads.length > 15 ? `\n…and ${leads.length - 15} more: ${l.origin}/agent/leads` : "";

@@ -26,6 +26,7 @@ const HINGLISH_WORDS = new Set([
   "bhai", "ji", "yaar", "dekho", "dikhao", "bolo", "hoga", "kaise", "kab", "kahan", "kyun", "aur", "bhi", "toh", "ne", "ko",
   "ka", "ki", "ke", "mein", "sab", "sabhi", "wapas", "mana", "baat", "batana", "jodo", "naya", "nayi", "dobara",
   "le", "li", "lena", "diya", "kiya", "gaye", "hogi", "lega", "legi", "janmdin", "badhai", "bhejiye", "chahte",
+  "sabke", "sabka", "sabko", "sabhi", "inke", "unke", "daal", "rakho", "lagao", "kal", "karwa",
 ]);
 /** Everyday English function words: two of these and no Hinglish words is English. */
 const ENGLISH_WORDS = new Set([
@@ -424,6 +425,12 @@ const LINES: Line[] = [
   L("Details on one: claim {n}", "Ek ki details: claim {n}", "एक की जानकारी: claim {n}"),
   L("Who should I look up? For example: find Ramesh", "Kisko dhoondhna hai? Jaise: find Ramesh", "किसे ढूँढना है? जैसे: find Ramesh"),
 
+  L("There are no follow-ups due to move. Set one with: follow up Ramesh Friday", "Koi pending follow-up nahi hai. Aise set kijiye: Ramesh ko Friday follow up", "कोई बाकी फॉलो-अप नहीं है। ऐसे सेट कीजिए: रमेश को शुक्रवार फॉलो अप"),
+  L("• Undo: put {n} leads back as they were", "• Undo: {n} leads pehle jaisi karein", "• अनडू: {n} लीड पहले जैसी करें"),
+  L("Undone: {n} leads are back as they were.", "Undo ho gaya: {n} leads pehle jaisi hain.", "अनडू हो गया: {n} लीड पहले जैसी हैं।"),
+  L("Which one?", "Kaunsa?", "कौन सा?"),
+  L("Which {n}?", "Kaunsa {n}?", "कौन सा {n}?"),
+
   /* Generic "Next:" suggestions last: the command after it stays as typed. */
   L("Next: {x}", "Aage: {x}", "आगे: {x}"),
 ];
@@ -438,6 +445,13 @@ const FRAGMENTS: { re: RegExp; hinglish: string; hindi: string }[] = [
   { re: /\bfollow-up (?=\w{3} \d)/g, hinglish: "follow-up ", hindi: "फॉलो-अप " },
   { re: /\bnote added\b/g, hinglish: "note jud gaya", hindi: "नोट जुड़ गया" },
   { re: /\bnote "/g, hinglish: "note \"", hindi: "नोट \"" },
+  // Inside list lines: "· overdue 31d", "· overdue since 2000-01-01", "· today", "· 5d left", "(due today)"
+  { re: / · overdue (\d+)d\b/g, hinglish: " · $1 din se pending", hindi: " · $1 दिन से बाकी" },
+  { re: / · overdue since ([\d-]+)/g, hinglish: " · $1 se pending", hindi: " · $1 से बाकी" },
+  { re: / · today(?= ·|$)/g, hinglish: " · aaj", hindi: " · आज" },
+  { re: /\((\d+)d left\)/g, hinglish: "($1 din baaki)", hindi: "($1 दिन बाकी)" },
+  { re: /\(overdue (\d+)d\)/g, hinglish: "($1 din se pending)", hindi: "($1 दिन से बाकी)" },
+  { re: /\(due today\)/g, hinglish: "(aaj due)", hindi: "(आज बाकी)" },
 ];
 
 /** A reply in the advisor's language. English is returned untouched. */

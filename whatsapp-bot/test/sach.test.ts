@@ -61,12 +61,13 @@ test("limit reached: told once a month, then the rules carry on", async () => {
   engine.sachReason = "limit";
   engine.sachData.used = 500;
   engine.leadRows = [lead("Ramesh Kumar", 0, { phone: "9812345678" })];
-  await bot.handle(text("Ramesh won"));
+  await bot.handle(text("can you mark the guy from pune as done"));
   const all = transport.texts();
   assert.ok(all.some((t) => /You've used all 500 Sach Assistant replies this month\. Until Thu 1 Oct/.test(t)));
-  assert.match(transport.last(), /Please confirm:/, "the rules still handled it");
+  await bot.handle(text("Ramesh won"));
+  assert.match(transport.last(), /Please confirm:/, "the rules still work");
   const before = transport.sent.length;
-  await bot.handle(text("Ramesh lost"));
+  await bot.handle(text("and the other one from delhi too please"));
   assert.equal(transport.texts().slice(before).filter((t) => /used all 500/.test(t)).length, 0, "not repeated");
 });
 

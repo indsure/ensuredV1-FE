@@ -38,7 +38,7 @@ import { log, redact } from "../log.js";
 import { b, dayMonth, planLabel as nicePlan, prettyEngine } from "./format.js";
 import {
   CLIENT_ONLY, VALUE_TYPES, claimsReply, detailsReply, followupsReply, leadUpdatedReply, lookupReply,
-  nameMatches, parseDraft, parseLeadUpdate, valueReply, viewsReply, leadsListReply, prettyDate, type LeadRow, type LeadUpdate,
+  nameMatches, parseDraft, parseLeadUpdate, parseBulkFollowUp, valueReply, viewsReply, leadsListReply, prettyDate, type LeadRow, type LeadUpdate,
 } from "./crm.js";
 import type { DraftKind } from "../shared/draftMessage.js";
 import {
@@ -105,7 +105,8 @@ type Op =
 /** What the last saved change was, so UNDO can put things back (15 minutes). */
 type LastChange =
   | { kind: "create"; leadId: string; name: string; at: number }
-  | { kind: "update"; leadId: string; name: string; before: { status: string | null; next_follow_up: string | null; notes: string | null }; at: number };
+  | { kind: "update"; leadId: string; name: string; before: { status: string | null; next_follow_up: string | null; notes: string | null }; at: number }
+  | { kind: "bulk"; items: LastChange[]; name: string; at: number };
 
 const UNDO_WINDOW_MS = 15 * 60_000;
 /** Short, unambiguous read-only commands go straight to the rules (no model call). */
@@ -609,6 +610,16 @@ export class Bot {
     const words = text.split(/\s+/).length;
     const fastRule = !!intent && FAST_RULE.has(intent) && (words <= 4 || /^(compare|find|search|lookup|share|remind|help)\b/i.test(text));
     const answering = conv.state.startsWith("AWAITING") && !intent;
+    // A lead change the rules read with certainty ("Aniket ka followup 3rd November",
+    // "Ramesh won", "sabke reminders 1st November kardo") goes straight to its confirmation:
+    // no model needed, and every change still waits for YES.
+    if (!intent && !conv.state.startsWith("AWAITING")) {
+      const all = parseBulkFollowUp(text, this.now());
+      if (all) return this.bulkFollowUp(agentId, conv, to, all);
+      const u = parseLeadUpdate(text, this.now());
+      if (u && (await this.leadUpdateStart(agentId, conv, to, u))) return;
+    }
+
     let sachReason: string | undefined;
     if (!fastRule && !answering) {
       const r = await this.d.engine.understand(agentId, text, this.modelContext(agentId, conv)).catch(() => null);
@@ -631,11 +642,6 @@ export class Bot {
 
     // "Ramesh won" / "follow up Ramesh Friday" / "note Ramesh: ...": only when no other
     // command matched and no question is pending.
-    if (!intent && !conv.state.startsWith("AWAITING")) {
-      const u = parseLeadUpdate(text, this.now());
-      if (u && (await this.leadUpdateStart(agentId, conv, to, u))) return;
-    }
-
     // A pending question gets first go at the reply, unless it is a clear command.
     if (conv.state.startsWith("AWAITING") && !intent) {
       const handled = await this.onAwaiting(agentId, conv, to, text);
@@ -677,7 +683,7 @@ export class Bot {
       case "compare":
         return this.compareStart(agentId, conv, to, text);
       case "followups":
-        return this.say(to, agentId, followupsReply(this.d.links, await this.d.engine.followups(agentId)), "followups");
+        return this.showFollowups(agentId, to);
       case "checks": {
         const n = await this.d.engine.checksLeft(agentId);
         return this.say(to, agentId, `You have ${b(String(n))} policy ${n === 1 ? "check" : "checks"} left.\n${n <= 0 ? `To get more: ${this.d.teamLink}` : "Next: send a health policy PDF to use one."}`, "checks");
@@ -1421,7 +1427,7 @@ export class Bot {
       case "ask_report": return this.ask(agentId, conv, to, text, a.name);
       case "share": return this.shareStart(agentId, conv, to, text, { name: a.name, phone: a.phone, lang });
       case "renewals": return this.say(to, agentId, renewalsReply(await e.renewals(agentId), this.d.links), "renewals");
-      case "followups": return this.say(to, agentId, followupsReply(this.d.links, await e.followups(agentId)), "followups");
+      case "followups": return this.showFollowups(agentId, to);
       case "list_leads": return this.say(to, agentId, leadsListReply(this.d.links, await e.leadsList(agentId)), "list_leads");
       case "checks": {
         const n = await e.checksLeft(agentId);
@@ -1505,6 +1511,7 @@ export class Bot {
   private describe(op: Op): string {
     const ph = (p: string | null) => (p ? `${p.slice(0, 5)} ${p.slice(5)}` : null);
     if (op.kind === "undo") {
+      if (op.change.kind === "bulk") return `Undo: put ${op.change.items.length} leads back as they were`;
       return op.change.kind === "create" ? `Undo: remove the lead ${b(op.change.name)} you just added` : `Undo: put ${b(op.change.name)} back as it was`;
     }
     const bits = [
@@ -1529,28 +1536,53 @@ export class Bot {
     const ops: Op[] = conv.pending?.ops || [];
     await this.rest(agentId, to, conv.currentClientId);
     const out: string[] = [];
+    const changes: LastChange[] = [];
     for (const op of ops) {
       if (op.kind === "create") {
         const r = await this.d.engine.createLead(agentId, { name: op.name, phone: op.phone, interest: op.interest, status: op.status, nextFollowUp: op.nextFollowUp, note: op.note });
-        if (!r.duplicateOf) this.lastChange.set(agentId, { kind: "create", leadId: r.id, name: op.name, at: this.now() });
+        if (!r.duplicateOf) changes.push({ kind: "create", leadId: r.id, name: op.name, at: this.now() });
         this.lastPerson.set(agentId, r.duplicateOf ?? op.name);
         out.push(leadSavedReply(this.d.links, r, { name: op.name, phone: op.phone, interest: op.interest }));
       } else if (op.kind === "update") {
         const r = await this.d.engine.leadUpdate(agentId, op.leadId, { status: op.status ?? undefined, nextFollowUp: op.nextFollowUp ?? undefined, note: op.note ?? undefined });
-        this.lastChange.set(agentId, { kind: "update", leadId: op.leadId, name: r.lead.name, before: { status: r.before.status, next_follow_up: r.before.next_follow_up, notes: r.before.notes }, at: this.now() });
+        changes.push({ kind: "update", leadId: op.leadId, name: r.lead.name, before: { status: r.before.status, next_follow_up: r.before.next_follow_up, notes: r.before.notes }, at: this.now() });
         this.lastPerson.set(agentId, r.lead.name);
         out.push(leadUpdatedReply(this.d.links, r.lead, { name: op.name, status: op.status ?? undefined, nextFollowUp: op.nextFollowUp ?? undefined, note: op.note ?? undefined }));
       } else {
         const c = op.change;
-        const ok = c.kind === "create"
-          ? await this.d.engine.leadUndoCreate(agentId, c.leadId)
-          : !!(await this.d.engine.leadRestore(agentId, c.leadId, c.before));
+        const undoOne = async (x: LastChange): Promise<boolean> =>
+          x.kind === "create" ? this.d.engine.leadUndoCreate(agentId, x.leadId)
+          : x.kind === "update" ? !!(await this.d.engine.leadRestore(agentId, x.leadId, x.before))
+          : (await Promise.all(x.items.map(undoOne))).every(Boolean);
+        const ok = await undoOne(c);
         this.lastChange.delete(agentId);
-        out.push(ok ? `Undone: ${c.kind === "create" ? `removed the lead ${b(c.name)}` : `${b(c.name)} is back as it was`}.` : "That change is too old to undo here. Please fix it in the portal.");
+        out.push(!ok ? "That change is too old to undo here. Please fix it in the portal."
+          : c.kind === "bulk" ? `Undone: ${c.items.length} leads are back as they were.`
+          : `Undone: ${c.kind === "create" ? `removed the lead ${b(c.name)}` : `${b(c.name)} is back as it was`}.`);
       }
     }
+    if (changes.length === 1) this.lastChange.set(agentId, changes[0]);
+    else if (changes.length > 1) this.lastChange.set(agentId, { kind: "bulk", items: changes, name: `${changes.length} leads`, at: this.now() });
     await this.saveConv(agentId, { state: conv.currentClientId ? "REPORT_READY" : "IDLE", currentClientId: conv.currentClientId, pending: { to }, updatedAt: null });
     return this.say(to, agentId, out.join("\n\n") + (ops.some((o) => o.kind !== "undo") ? "\n\n(Wrong? Reply UNDO within 15 minutes.)" : ""), "confirm_saved");
+  }
+
+  /** The follow-up list, remembered so "sabke reminders 1st November" means these leads. */
+  private readonly lastFollowups = new Map<string, LeadRow[]>();
+
+  private async showFollowups(agentId: string, to: string) {
+    const rows = await this.d.engine.followups(agentId);
+    this.lastFollowups.set(agentId, rows);
+    return this.say(to, agentId, followupsReply(this.d.links, rows), "followups");
+  }
+
+  /** One new follow-up date for every lead on the follow-up list, after one YES. */
+  private async bulkFollowUp(agentId: string, conv: Conv, to: string, date: string) {
+    const rows = this.lastFollowups.get(agentId) ?? (await this.d.engine.followups(agentId));
+    if (!rows.length) return this.say(to, agentId, "There are no follow-ups due to move. Set one with: follow up Ramesh Friday", "bulk_none");
+    return this.confirm(agentId, conv, to, rows.slice(0, 30).map((r) => ({
+      kind: "update" as const, leadId: r.id, name: r.name, phone: r.phone, status: null, nextFollowUp: date, note: null,
+    })));
   }
 
   private async proposeUndo(agentId: string, conv: Conv, to: string) {

@@ -191,5 +191,5 @@ test("model off (production default): free text still works through the rules", 
   engine.leadRows = [lead()];
   await bot.handle(text("Ramesh won"));
   assert.match(transport.last(), /Please confirm:/);
-  assert.equal(engine.understandCalls.length > 0, true, "it asked, and was told the model is off");
+  assert.equal(engine.understandCalls.length, 0, "a change the rules read with certainty never calls the model");
 });

@@ -161,3 +161,50 @@ test("coverage: menus, PDF replies and every calculator question have Hindi and 
   }
   assert.deepEqual(missing, []);
 });
+
+/* ── The follow-up screenshot ── */
+
+test("'Aniket ka followup 3rd November' and 'Deep ki call kal' are follow-ups, without the model", () => {
+  assert.deepEqual(parseLeadUpdate("Aniket ka followup 3rd November", NOW), { name: "Aniket", nextFollowUp: "2026-11-03" });
+  assert.deepEqual(parseLeadUpdate("Deep ka followup 1st november", NOW), { name: "Deep", nextFollowUp: "2026-11-01" });
+  assert.deepEqual(parseLeadUpdate("Deep ki call kal", NOW), { name: "Deep", nextFollowUp: "2026-10-01" });
+  assert.deepEqual(parseLeadUpdate("Aniket ka reminder 5 nov set karo", NOW), { name: "Aniket", nextFollowUp: "2026-11-05" });
+});
+
+test("THE SCREENSHOT: 'Sabke reminders 1st November kardo' moves every listed follow-up, after one YES, and UNDO puts them all back", async () => {
+  const { bot, transport, engine, advance } = makeBot();
+  advance(NOW - bot["now"]());
+  const a = lead({ name: "Deep Shah", phone: "7021585537", days: -40, next_follow_up: "2026-08-21" });
+  const b = lead({ name: "Aniket Bang", phone: "9284142611", days: -31, next_follow_up: "2026-08-30" });
+  const c = lead({ name: "Tester Sharma", phone: "7021585524", days: 0, next_follow_up: "2026-09-30" });
+  engine.leadRows = [a, b, c];
+  engine.followupRows = [a, b, c];
+  await bot.handle(text("Followups"));
+  await bot.handle(text("Sabke reminders 1st November kardo"));
+  const ask = transport.last();
+  assert.match(ask, /^Pakka kijiye:/);
+  for (const n of ["Deep Shah", "Aniket Bang", "Tester Sharma"]) assert.match(ask, new RegExp(`\\*${n}\\* \\(\\d{5} \\d{5}\\): follow-up Sun 1 Nov`));
+  assert.equal(engine.understandCalls.length, 0, "no model needed");
+  await bot.handle(text("haan"));
+  assert.deepEqual(engine.leadUpdates.map((u: any) => [u.id, u.nextFollowUp]), [[a.id, "2026-11-01"], [b.id, "2026-11-01"], [c.id, "2026-11-01"]]);
+  await bot.handle(text("undo"));
+  assert.match(transport.last(), /Undo: 3 leads pehle jaisi karein/);
+  await bot.handle(text("yes"));
+  assert.equal(engine.restored.length, 3);
+  assert.match(transport.last(), /Undo ho gaya: 3 leads pehle jaisi hain/);
+});
+
+test("a follow-up years overdue shows its date, not '9423d'; Hinglish lists say aaj / din se pending", async () => {
+  const { followupsReply } = await import("../src/core/crm.js");
+  const r = followupsReply({ origin: "https://indsure.in" }, [
+    lead({ name: "Old Lead", days: -9423, next_follow_up: "2001-01-15" }),
+    lead({ name: "Aniket Bang", days: -31 }),
+    lead({ name: "Tester Sharma", days: 0 }),
+  ] as any);
+  assert.match(r, /\*Old Lead\* · 98123 45678|\*Old Lead\* · 9812345678/);
+  assert.match(r, /overdue since 2001-01-15/);
+  assert.doesNotMatch(r, /9423d/);
+  const hl = localise(r, "hinglish");
+  assert.match(hl, / · 31 din se pending · /);
+  assert.match(hl, /\*Tester Sharma\* · 9812345678 · aaj · Health/);
+});
