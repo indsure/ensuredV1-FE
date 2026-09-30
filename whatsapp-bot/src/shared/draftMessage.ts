@@ -102,7 +102,8 @@ export function buildMessage(
   const insurer = (target.insurer || "").trim();
   const date = prettyDate(target.renewalDate);
   const weak = (target.weakPoint || "").trim();
-  const interest = (target.interest || "").trim();
+  // "Health, Motor": a lead can want several kinds (see lib/leadLabels.ts).
+  const interestParts = (target.interest || "").split(",").map((p) => p.trim()).filter(Boolean);
   const agent = (agentName || "").trim();
 
   const en = {
@@ -120,12 +121,17 @@ export function buildMessage(
 
   switch (language) {
     case "hinglish":
-      return hinglish(kind, hg, { first, insurer, date, weak, interest });
+      return hinglish(kind, hg, { first, insurer, date, weak, interest: listWith(interestParts, "aur") });
     case "hindi":
-      return hindi(kind, hn, { first, insurer, date, weak, interest });
+      return hindi(kind, hn, { first, insurer, date, weak, interest: listWith(interestParts, "और") });
     default:
-      return english(kind, en, { first, insurer, date, weak, interest });
+      return english(kind, en, { first, insurer, date, weak, interest: listWith(interestParts, "and") });
   }
+}
+
+/** "Health", "Health and Motor", "Health, Motor and Life". */
+function listWith(parts: string[], and: string): string {
+  return parts.length < 2 ? parts.join("") : `${parts.slice(0, -1).join(", ")} ${and} ${parts[parts.length - 1]}`;
 }
 
 type Ctx = { first: string; insurer: string; date: string | null; weak: string; interest: string };

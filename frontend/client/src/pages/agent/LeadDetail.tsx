@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { dateLocale } from "@/i18n";
 import { statusLabel, sourceLabel, interestLabel } from "@/lib/leadLabels";
+import { InterestPicker } from "@/components/agent/InterestPicker";
 import { formatAmount } from "@/lib/customers";
 import {
   convertLeadToCustomer,
@@ -30,7 +31,6 @@ import {
 } from "@/lib/leads";
 
 const inputCls = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30";
-const INTEREST_OPTIONS = ["Health", "Motor", "Life", "Term", "Travel", "Property"];
 
 type DraftState = {
   name: string; phone: string; email: string; city: string; source: string;
@@ -247,12 +247,7 @@ export default function LeadDetail() {
                 <Field label={t("leads.f_phone")}><input value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} inputMode="tel" className={inputCls} /></Field>
                 <Field label={t("leads.f_city")}><input value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} className={inputCls} /></Field>
                 <Field label={t("lead_detail.f_email")}><input value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} inputMode="email" className={inputCls} /></Field>
-                <Field label={t("leads.f_interest")}>
-                  <select value={draft.insurance_interest} onChange={(e) => setDraft({ ...draft, insurance_interest: e.target.value })} className={inputCls}>
-                    <option value="">{t("leads.select")}</option>
-                    {INTEREST_OPTIONS.map((o) => <option key={o} value={o}>{interestLabel(t, o)}</option>)}
-                  </select>
-                </Field>
+                <InterestPicker value={draft.insurance_interest} onChange={(v) => setDraft({ ...draft, insurance_interest: v })} />
                 <Field label={t("leads.f_source")}>
                   <select value={draft.source} onChange={(e) => setDraft({ ...draft, source: e.target.value })} className={inputCls}>
                     <option value="">{t("leads.select")}</option>

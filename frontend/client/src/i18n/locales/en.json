@@ -859,6 +859,7 @@
     "ph_phone": "10-digit number",
     "f_city": "City",
     "f_interest": "Interested in",
+    "f_interest_hint": "tap all that apply",
     "select": "Select…",
     "f_source": "How did they come?",
     "f_premium": "Expected premium (₹)",

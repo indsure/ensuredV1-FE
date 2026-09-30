@@ -29,6 +29,7 @@ import { format } from "date-fns";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { dateLocale } from "@/i18n";
 import { statusLabel, sourceLabel, interestLabel } from "@/lib/leadLabels";
+import { InterestPicker } from "@/components/agent/InterestPicker";
 
 type DraftState = {
   name: string;
@@ -44,8 +45,6 @@ const EMPTY_DRAFT: DraftState = {
   name: "", phone: "", city: "", source: "", insurance_interest: "",
   expected_value: "", next_follow_up: "", notes: "",
 };
-
-const INTEREST_OPTIONS = ["Health", "Motor", "Life", "Term", "Travel", "Property"];
 
 type Filter = "all" | "open" | LeadStatus;
 
@@ -212,12 +211,7 @@ export default function LeadsNew() {
             <Labeled label={t("leads.f_city")}>
               <input value={draft.city} onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))} placeholder={t("leads.f_city")} className={inputCls} />
             </Labeled>
-            <Labeled label={t("leads.f_interest")}>
-              <select value={draft.insurance_interest} onChange={(e) => setDraft((d) => ({ ...d, insurance_interest: e.target.value }))} className={inputCls}>
-                <option value="">{t("leads.select")}</option>
-                {INTEREST_OPTIONS.map((o) => <option key={o} value={o}>{interestLabel(t, o)}</option>)}
-              </select>
-            </Labeled>
+            <InterestPicker value={draft.insurance_interest} onChange={(v) => setDraft((d) => ({ ...d, insurance_interest: v }))} />
             <Labeled label={t("leads.f_source")}>
               <select value={draft.source} onChange={(e) => setDraft((d) => ({ ...d, source: e.target.value }))} className={inputCls}>
                 <option value="">{t("leads.select")}</option>
