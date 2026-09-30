@@ -1232,7 +1232,7 @@ FACTS: ${JSON.stringify(facts)}`,
      the usage ledger as wa_understand. OFF unless WA_LLM_ENABLED=true, and off whenever
      the daily Gemini ceiling is reached. */
   /* ── Sach Assistant allowance ──
-     Smart replies (the model above) are for paid plans only (agents.plan 'agent' | 'agency').
+     Smart replies (the model above) are for paid plans only: any agents.plan other than 'free', the same rule the admin app's plan badge uses.
      Each advisor gets WA_SACH_MONTHLY_LIMIT readings a calendar month (IST), default 500;
      WA_SACH_LIMIT_OVERRIDES="<agentId>:2000,<agentId>:100" changes it for one advisor.
      All advisors together stop at WA_SACH_MONTHLY_INR_CAP rupees a month (default 500).
@@ -1262,7 +1262,7 @@ FACTS: ${JSON.stringify(facts)}`,
     );
     const ist = new Date(Date.now() + 5.5 * 3600_000);
     const next = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
-    return { plan, paid: plan === "agent" || plan === "agency", used: Number(u.rows[0]?.n) || 0, limit: sachLimit(agentId), resetsOn: next };
+    return { plan, paid: plan !== "free", used: Number(u.rows[0]?.n) || 0, limit: sachLimit(agentId), resetsOn: next };
   }
 
   async function sachOverMonthlyCap(): Promise<boolean> {
@@ -1300,7 +1300,7 @@ FACTS: ${JSON.stringify(facts)}`,
            FROM whatsapp_link l
            JOIN wa_allowlist w ON w.agent_id = l.agent_id
            JOIN agents a ON a.id = l.agent_id
-          WHERE l.status = 'active' AND a.plan IN ('agent', 'agency')
+          WHERE l.status = 'active' AND COALESCE(a.plan, 'free') <> 'free'
             AND COALESCE((SELECT m.intent FROM wa_message m
                            WHERE m.agent_id = l.agent_id AND m.direction = 'out' AND m.intent IN ('morning_off', 'morning_on')
                            ORDER BY m.created_at DESC LIMIT 1), 'morning_on') = 'morning_on'
