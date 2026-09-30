@@ -126,7 +126,7 @@ test("calculator: the portal's steps, the portal's engine, saved, report link", 
   });
   const expected = calculateHealthCover(saved.inputs, { partnerCompanies: [] });
   const r = transport.lastRaw();
-  assert.ok(r.startsWith(`🧮 *${expected.totalProtection}* recommended cover for age 42, Mumbai (metro), a couple with kids.`), r);
+  assert.ok(r.startsWith(`🧮 *${String(expected.totalProtection).replace(/ Lakhs?/, " lakh").replace(/ Crores?/, " crore")}* recommended cover for age 42, Mumbai (metro), a couple with kids.`), r);
   assert.match(r, /https:\/\/indsure\.in\/calculator\/report\/calc-uuid-1/);
   assert.match(transport.last(), /Reply SHARE to send it to the customer/);
 });
