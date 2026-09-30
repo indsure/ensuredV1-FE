@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { checkAnswerNumbers, numbersIn, parseIntent } from "../whatsapp/answerGuard";
-import { normaliseWaNumber, resolveWaBotAgent, displayName } from "../whatsapp/routes";
+import { normaliseWaNumber, resolveWaBotAgent, displayName, openOrigin } from "../whatsapp/routes";
 
 const KEY = "k".repeat(40);
 
@@ -122,4 +122,21 @@ test("display name: a saved file name is skipped in favour of the report's insur
   assert.equal(displayName({ customer_name: "Sunita Rao", policyholder_name: "x.pdf", report_data }), "Sunita Rao");
   assert.equal(displayName({ policyholder_name: "Ramesh Kumar", report_data }), "Ramesh Kumar");
   assert.equal(displayName({ policyholder_name: "scan.PDF" }), null);
+});
+
+test("open beta: only the listed site opens WhatsApp to everyone; the main site stays invite-only", () => {
+  const prev = process.env.WA_OPEN_ORIGINS;
+  const req = (origin?: string) => ({ headers: origin ? { origin } : {} });
+  try {
+    delete process.env.WA_OPEN_ORIGINS;
+    assert.equal(openOrigin(req("https://beta.indsure.in")), false, "off unless set");
+    process.env.WA_OPEN_ORIGINS = "https://beta.indsure.in/";
+    assert.equal(openOrigin(req("https://beta.indsure.in")), true);
+    assert.equal(openOrigin(req("https://indsure.in")), false);
+    assert.equal(openOrigin(req("https://www.indsure.in")), false);
+    assert.equal(openOrigin(req("https://beta.indsure.in.evil.com")), false);
+    assert.equal(openOrigin(req()), false, "no Origin header");
+  } finally {
+    if (prev === undefined) delete process.env.WA_OPEN_ORIGINS; else process.env.WA_OPEN_ORIGINS = prev;
+  }
 });

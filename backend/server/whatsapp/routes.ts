@@ -227,15 +227,30 @@ const CLIENT_SELECT = `
 
 /* ── Routes ─────────────────────────────────────────────────────────────── */
 
+/**
+ * Open beta: WA_OPEN_ORIGINS="https://beta.indsure.in" lets ANY advisor using that site
+ * connect WhatsApp, not only the invited ones. Beta and the main site share this backend,
+ * so the site is told apart by the browser's Origin header; the main site stays invite-only.
+ * Connecting from an open site adds the advisor to wa_allowlist, so the bot and the morning
+ * brief treat them exactly like an invited advisor. Unset it and nobody new can connect;
+ * advisors already connected keep working (remove their wa_allowlist row to stop one).
+ */
+export function openOrigin(req: any): boolean {
+  const open = String(process.env.WA_OPEN_ORIGINS || "").split(",").map((o) => o.trim().replace(/\/$/, "")).filter(Boolean);
+  const origin = String(req.headers?.origin || "").replace(/\/$/, "");
+  return !!origin && open.includes(origin);
+}
+
 export function registerWhatsappRoutes(app: Express, verifyJwt: VerifyJwt): void {
 
-  /* ── Portal: link status. `eligible` hides the whole card for non-beta accounts. ── */
+  /* ── Portal: link status. `eligible` hides the whole card for accounts not invited
+     (and not on an open-beta site). ── */
   app.get("/api/agent/whatsapp", async (req, res) => {
     try {
       const agentId = await verifyJwt(req, res);
       if (!agentId) return;
       const allow = await pool.query("SELECT 1 FROM wa_allowlist WHERE agent_id = $1", [agentId]);
-      if (allow.rows.length === 0) return res.json({ eligible: false });
+      if (allow.rows.length === 0 && !openOrigin(req)) return res.json({ eligible: false });
       const link = await pool.query(
         `SELECT wa_number, status, linked_at, code_expires_at FROM whatsapp_link
           WHERE agent_id = $1 AND status IN ('active', 'pending')
@@ -263,7 +278,7 @@ export function registerWhatsappRoutes(app: Express, verifyJwt: VerifyJwt): void
       const agentId = await verifyJwt(req, res);
       if (!agentId) return;
       const allow = await pool.query("SELECT 1 FROM wa_allowlist WHERE agent_id = $1", [agentId]);
-      if (allow.rows.length === 0) return res.status(403).json({ error: "NOT_IN_BETA" });
+      if (allow.rows.length === 0 && !openOrigin(req)) return res.status(403).json({ error: "NOT_IN_BETA" });
       const number = normaliseWaNumber(req.body?.number);
       if (!number) return res.status(400).json({ error: "BAD_NUMBER", message: "Enter a 10-digit Indian mobile number." });
 
@@ -275,6 +290,12 @@ export function registerWhatsappRoutes(app: Express, verifyJwt: VerifyJwt): void
         return res.status(409).json({ error: "NUMBER_IN_USE", message: "This number is already connected to another IndSure account." });
       }
 
+      if (allow.rows.length === 0) {
+        await pool.query(
+          "INSERT INTO wa_allowlist (agent_id, note) VALUES ($1, $2) ON CONFLICT (agent_id) DO NOTHING",
+          [agentId, `open beta: ${String(req.headers.origin || "").slice(0, 80)}`]
+        );
+      }
       const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
       await pool.query("DELETE FROM whatsapp_link WHERE agent_id = $1 AND status = 'pending'", [agentId]);
       const ins = await pool.query(
