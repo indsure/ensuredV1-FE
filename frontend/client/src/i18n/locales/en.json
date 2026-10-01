@@ -4407,7 +4407,10 @@
     "ocr_page_one": "Page {{pages}} was a scanned picture and was read by OCR. Check its numbers carefully.",
     "confirm_all": "Confirm all {{count}} in this section",
     "confirm_all_hint": "Only after you have checked them against the policy document.",
-    "confirm_all_ocr": "{{count}} read from scanned pages: confirm those one by one."
+    "confirm_all_ocr": "{{count}} read from scanned pages: confirm those one by one.",
+    "f_surrender_gsv_factor_table": "GSV factor for each policy year",
+    "f_surrender_payout_deduction": "Payouts GSV takes off",
+    "f_death_min_pct_of_premiums_paid": "Death cover is at least this share of premiums paid"
   },
   "psum": {
     "title": "Policy summary",

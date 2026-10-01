@@ -11,12 +11,14 @@
  */
 
 import type { ParseOutcome } from "../../../../shared/policyDocTypes";
+import { absliNishchitAayushV01 } from "./adapters/absliNishchitAayushV01";
 import { hdfcClick2AchieveV02 } from "./adapters/hdfcClick2AchieveV02";
 import { identifyAndParse, register, registeredAdapters } from "./registry";
 import { acquireText, DocumentReadError, EXTRACTOR_ID, EXTRACTOR_VERSION, type DocumentText, type PageOcr } from "./textLayer";
 
 // Registration: one line per supported product.
 if (!registeredAdapters().some((a) => a.id === hdfcClick2AchieveV02.id)) register(hdfcClick2AchieveV02);
+if (!registeredAdapters().some((a) => a.id === absliNishchitAayushV01.id)) register(absliNishchitAayushV01);
 
 export interface DocumentParseResult {
   outcome: ParseOutcome;

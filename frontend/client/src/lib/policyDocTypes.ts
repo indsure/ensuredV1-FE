@@ -101,7 +101,7 @@ export interface PolicyFields {
   "benefits.maturity": { amount: Paise; date: string };
   "benefits.income": { amount: Paise };
 
-  "definitions.policy_anniversary_anchor": "risk_commencement_date";
+  "definitions.policy_anniversary_anchor": "risk_commencement_date" | "policy_issue_date";
   "definitions.total_premiums_paid_excludes": string[];
   "definitions.annualized_premium_excludes": string[];
 
@@ -111,6 +111,12 @@ export interface PolicyFields {
   "surrender.gsv_acquisition_min_premium_years": number;
   "surrender.gsv_formula": Expr;
   "surrender.gsv_factor_bands": GsvBand[];
+  /** The GSV factor for each policy year of THIS policy's term, read from a printed table. */
+  "surrender.gsv_factor_table": { year: number; pct: Bps }[];
+  /** Which payouts GSV takes off: those paid before the surrender date. */
+  "surrender.payout_deduction": "paid_before_surrender_date";
+  /** Sum assured on death is the higher of the sum assured and this % of total premiums paid. */
+  "death.min_pct_of_premiums_paid": Bps;
   "surrender.ssv_basis": "discounted_outstanding_survival_and_maturity_benefits";
   "surrender.ssv_reference_tenor": { upToTermYears: number; tenorUpTo: number; tenorAbove: number };
   "surrender.ssv_discount_rule": RateRule;

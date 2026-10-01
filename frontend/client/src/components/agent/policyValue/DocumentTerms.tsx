@@ -51,6 +51,8 @@ const FIELD_LABEL: Partial<Record<FieldKey, string>> = {
   "loan.cap_pct_of_surrender_value": "Loan limit", "loan.deduction_before_benefits": "Loan deducted before benefits", "loan.foreclosure": "Foreclosure condition",
   "loan.foreclosure_exemption": "Foreclosure exemption", "loan.rate_fixed_for_term_clause": "Clause: rate fixed for the term", "loan.rate_revised_until_next_revision_clause": "Clause: revised rate applies until next revision",
   "loan.rate_rule": "Loan interest rule", "loan.printed_rate": "Loan interest printed in the document", "loan.msme_concessions": "MSME interest reductions",
+  "surrender.gsv_factor_table": "GSV factor for each policy year", "surrender.payout_deduction": "Payouts GSV takes off",
+  "death.min_pct_of_premiums_paid": "Death cover is at least this share of premiums paid",
   "options.deferral_available": "Deferral option exists in the product", "options.premium_offset_available": "Premium offset option exists in the product",
 };
 
@@ -63,6 +65,8 @@ const ENUM_TEXT: Record<string, string> = {
   non_linked: "Non-linked",
   non_participating: "Non-participating",
   risk_commencement_date: "Date of risk commencement",
+  policy_issue_date: "Policy issue date",
+  paid_before_surrender_date: "Income already paid before the surrender date",
   lapsed_cover_ceases_no_benefits: "Policy lapses, cover ends, no benefits payable",
   paid_up: "Policy becomes paid-up",
   discounted_outstanding_survival_and_maturity_benefits: "Discounted value of outstanding survival and maturity benefits",
@@ -80,6 +84,18 @@ export function formatValue(key: string, v: any): string {
   if (Array.isArray(v)) {
     if (key === "surrender.gsv_factor_bands") {
       return v.map((b: any) => `${b.from === "term_minus_1" ? "term less 1" : b.from} to ${b.to === "term_minus_2" ? "term less 2" : b.to === "term" ? "term" : b.to}: ${isExpr(b.factor) ? describeExpr(b.factor) : b.raw}`).join("; ");
+    }
+    if (key === "surrender.gsv_factor_table") {
+      // Runs of years with the same factor collapse: "1: 0%; 2: 30%; 4 to 7: 50%; ...".
+      const out: string[] = [];
+      for (let i = 0; i < v.length; ) {
+        let j = i;
+        while (j + 1 < v.length && v[j + 1].pct.bps === v[i].pct.bps) j++;
+        const pct = `${(v[i].pct.bps / 100).toFixed(2).replace(/\.00$/, "")}%`;
+        out.push(`${v[i].year}${j > i ? ` to ${v[j].year}` : ""}: ${pct}`);
+        i = j + 1;
+      }
+      return "Year " + out.join("; ");
     }
     if (key === "loan.msme_concessions") return v.map((c: any) => `${c.who === "female" ? "female" : "other"} policyholders minus ${(c.reductionBps / 100).toFixed(1)}%`).join("; ");
     return v.join(", ");
@@ -198,7 +214,7 @@ export default function DocumentTerms({ clientId, data }: { clientId: string; da
           {t("pdt.read_again")}
         </Button>
 
-        {p && p.status === "supported" && results && (
+        {p && p.status === "supported" && results && !rules?.fields.some((f) => f.field_key === "surrender.gsv_factor_table") && (
           <section className="space-y-3 rounded-xl border border-slate-200 p-4" aria-labelledby="pdt-results">
             <h3 id="pdt-results" className="text-base font-bold text-slate-900">{t("pdt.results_title")}</h3>
             <ResultLine label={t("pdt.res_gsv")} amount={results.gsv.amount} lines={summarise([...results.gsv.missing, ...results.gsv.conditions])} />

@@ -18,8 +18,8 @@
  */
 
 import { documentValues, type ConfirmedFacts } from "./documentRules";
-import { addMonthsIso, compareIso } from "./policyNumbers";
-import type { Paise } from "./exactMath";
+import { addMonthsIso, compareIso, completedPolicyYears } from "./policyNumbers";
+import { mul, rat, rationalToPaiseFloor, type Bps, type Paise } from "./exactMath";
 import type { FieldKey, ReviewFlag } from "./policyDocTypes";
 
 export interface SnapshotFieldRow {
@@ -78,8 +78,10 @@ export function policySnapshot(fields: SnapshotFieldRow[], flags: ReviewFlag[], 
   const missing: string[] = [];
   const run = (on: string) => documentValues({ facts: facts as ConfirmedFacts, flags: gsvFlags, flagDecisions: flagDecisions as any, evidence: null, asOf: on, assumePremiumsPaidOnDueDates: true });
 
-  // Premium schedule.
-  const start = val<string>("schedule.risk_commencement_date") ?? val<string>("schedule.commencement_date") ?? null;
+  // Premium schedule. Anniversaries follow the anchor the document defines.
+  const start = val<string>("definitions.policy_anniversary_anchor") === "policy_issue_date"
+    ? val<string>("schedule.commencement_date") ?? null
+    : val<string>("schedule.risk_commencement_date") ?? val<string>("schedule.commencement_date") ?? null;
   const ppt = val<number>("schedule.premium_paying_term_years") ?? null;
   const freq = val<string>("schedule.frequency") ?? null;
   const perYear = freq ? PER_YEAR[freq] : undefined;
@@ -97,9 +99,34 @@ export function policySnapshot(fields: SnapshotFieldRow[], flags: ReviewFlag[], 
   const paidCount = dues.filter((d) => compareIso(d, asOf) <= 0).length;
 
   // GSV today and at the next premium due date (that premium paid on the day).
-  const today = run(asOf).gsv;
+  // A per-year factor table (with "payouts already paid" deducted) is worked out
+  // here; the formula-and-bands kind goes through documentValues.
+  const table = val<{ year: number; pct: Bps }[]>("surrender.gsv_factor_table");
+  const gsvAt = (on: string): { amount: Paise | null; missing: string[] } => {
+    if (!table) return run(on).gsv;
+    const term = val<number>("schedule.policy_term_years");
+    const minYears = val<number>("surrender.gsv_acquisition_min_premium_years");
+    const rec0 = val<{ amount: Paise; from: string; to: string }>("benefits.survival_recurring");
+    if (!start || !term || !minYears || !perYear || !dues.length || val<string>("surrender.payout_deduction") !== "paid_before_surrender_date") return { amount: null, missing: ["gsv_terms_incomplete"] };
+    const paid = dues.filter((d) => compareIso(d, on) <= 0).length;
+    if (paid < minYears * perYear) return { amount: paise(0), missing: [] };
+    const year = completedPolicyYears(start, on) + 1;
+    if (year > term) return { amount: null, missing: ["policy_term_ended"] };
+    const f = table.find((r) => r.year === year);
+    const tpp = sum(paid);
+    if (!f || !tpp) return { amount: null, missing: ["factor_missing_for_year"] };
+    let paidOut = 0;
+    if (rec0) for (let k = 0; k < 1200; k++) {
+      const d = addMonthsIso(rec0.from, k);
+      if (compareIso(d, rec0.to) > 0 || compareIso(d, on) >= 0) break;
+      paidOut += rec0.amount.paise;
+    }
+    const gross = rationalToPaiseFloor(mul(rat(tpp.paise, 100), rat(f.pct.bps, 10000)));
+    return { amount: paise(Math.max(0, gross.paise - paidOut)), missing: [] };
+  };
+  const today = gsvAt(asOf);
   const nextDate = dues.find((d) => compareIso(d, asOf) > 0) ?? null;
-  const next = nextDate ? run(nextDate).gsv : null;
+  const next = nextDate ? gsvAt(nextDate) : null;
   if (today.amount === null) missing.push(...today.missing);
 
   // Payouts.
@@ -130,7 +157,14 @@ export function policySnapshot(fields: SnapshotFieldRow[], flags: ReviewFlag[], 
     regularPayout,
     totalReceived: anyPayout ? paise(received) : null,
     gainOverPremiums: anyPayout && totalPayable ? paise(received - totalPayable.paise) : null,
-    lifeCover: val<Paise>("schedule.sum_assured_on_death") ?? null,
+    lifeCover: (() => {
+      const sa = val<Paise>("schedule.sum_assured_on_death");
+      const pct = val<Bps>("death.min_pct_of_premiums_paid");
+      const paidSoFar = dues.length ? sum(paidCount) : null;
+      if (!sa || !pct || !paidSoFar) return sa ?? null;
+      const floor = rationalToPaiseFloor(mul(rat(paidSoFar.paise, 100), rat(pct.bps, 10000)));
+      return floor.paise > sa.paise ? floor : sa;
+    })(),
     usedIllustrationMethod,
     missing: Array.from(new Set(missing)),
   };

@@ -45,6 +45,8 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
   const { rules } = useDocumentRules(clientId);
   const doc = useMemo(() => {
     if (!rules?.parse || rules.parse.status !== "supported") return null;
+    // Factor-table plans: the Policy summary card carries the GSV; this card adds only the maturity note.
+    if (rules.fields.some((f) => f.field_key === "surrender.gsv_factor_table")) return { gsv: null, termsPending: false, noMaturity: false };
     const r = docResults(rules, effective.value_evidence);
     const maturity = rules.fields.find((f) => f.field_key === "benefits.maturity");
     return {
