@@ -27,7 +27,7 @@ export function pages(variant = {}) {
       `<h2>POLICY SCHEDULE</h2>`,
       `<table>${[
         row("Name of the Policyholder", "SYNTHETIC TEST HOLDER"),
-        row("Policy Number", "00000000"),
+        row("Policy Number", "SYN-POL-4471"),
         row("Address", "1 Example Road, Testville"),
         row("Plan Option", option),
         row("Benefit Chosen (as per cashflow chosen at inception)", benefit),

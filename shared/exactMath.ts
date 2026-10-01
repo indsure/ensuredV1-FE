@@ -141,6 +141,7 @@ export function ceilBps(b: Bps, step: number): Bps {
 export type VarName =
   | "policy_year"
   | "policy_term"
+  | "gsv_factor"
   | "total_premiums_paid"
   | "survival_benefits_till_date"
   | "premiums_paid_count"
@@ -157,7 +158,7 @@ export const v = (name: VarName): Expr => ({ k: "var", name });
 export const op = (k: "add" | "sub" | "mul" | "div" | "max" | "min", ...args: Expr[]): Expr => ({ k, args });
 
 const VARS: ReadonlySet<string> = new Set([
-  "policy_year", "policy_term", "total_premiums_paid", "survival_benefits_till_date",
+  "policy_year", "policy_term", "gsv_factor", "total_premiums_paid", "survival_benefits_till_date",
   "premiums_paid_count", "premiums_payable_count", "payout",
 ]);
 
@@ -209,7 +210,7 @@ export function evaluate(e: Expr, env: Partial<Record<VarName, Rational>>): Eval
 /** Plain-English rendering of a tree, for the review screen. */
 export function describe(e: Expr): string {
   const NAMES: Record<VarName, string> = {
-    policy_year: "Policy Year", policy_term: "Policy Term", total_premiums_paid: "Total premiums paid",
+    policy_year: "Policy Year", policy_term: "Policy Term", gsv_factor: "GSV Factor", total_premiums_paid: "Total premiums paid",
     survival_benefits_till_date: "Survival benefits till date", premiums_paid_count: "Number of premiums paid",
     premiums_payable_count: "Total number of premiums payable", payout: "Payout",
   };

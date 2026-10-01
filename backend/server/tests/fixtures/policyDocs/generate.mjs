@@ -45,6 +45,23 @@ const imgs = await imagesOf(ps);
 await pdfOf(imgs.map(imgPage).join(""), "c2a-scanned.pdf");
 await pdfOf(ps.map((p, i) => (i === 3 ? imgPage(imgs[i]) : pageHtml(p))).join(""), "c2a-mixed.pdf");
 
+// Variants, digital only, each with one deliberate difference.
+const VARIANTS = {
+  "other-version": { uin: "101N186V03" },
+  "other-option": { option: "Dream Builder" },
+  "no-uin": { noUin: true },
+  "two-uins": { secondUin: "101N186V03" },
+  "conflicting-premium": { duplicateSchedule: true },
+  "truncated-gsv": { truncateGsv: true },
+  "reordered": { reorder: true },
+  "deferral-yes": { deferral: "Yes" },
+  "ramp-altered": { gsvRamp: "50% + 40% × (Policy Year – 7) ÷ (Policy Term – 9)" },
+};
+fs.mkdirSync(path.join(here, "variants"), { recursive: true });
+for (const [name, variant] of Object.entries(VARIANTS)) {
+  await pdfOf(pages(variant).map(pageHtml).join(""), `variants/${name}.pdf`);
+}
+
 await browser.close();
 for (const f of ["c2a-digital.pdf", "c2a-scanned.pdf", "c2a-mixed.pdf"]) {
   console.log(f, fs.statSync(path.join(here, f)).size, "bytes");

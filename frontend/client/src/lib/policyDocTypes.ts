@@ -154,7 +154,8 @@ export interface ReviewFlag {
     | "loan_rate_clauses_conflict"
     | "ssv_needs_current_rate"
     | "msme_concession_needs_eligibility"
-    | "foreclosure_exemption_wording";
+    | "foreclosure_exemption_wording"
+    | "read_by_ocr";
   fieldKeys: FieldKey[];
   /** Plain explanation, contract-level, no customer data. */
   note: string;

@@ -56,6 +56,9 @@ export interface PageText {
   lines: Line[];
   /** The lines joined in reading order. */
   text: string;
+  /** Positioned fragments (PDF units, y up), for tables whose cells wrap. */
+  items: TextItem[];
+  width: number;
   quality: { letters: number; usable: boolean };
 }
 
@@ -192,6 +195,8 @@ export async function acquireText(buf: Uint8Array, opts: { ocr?: PageOcr | null 
     } catch {
       items = [];
     }
+    let pageItems = items.filter((it) => it.s.trim() !== "");
+    let pageWidth = width;
     let { columns, lines } = layoutLines(items, width);
     let method: ExtractionMethod = "embedded_text";
     let ocrConfidence: number | null = null;
@@ -203,6 +208,8 @@ export async function acquireText(buf: Uint8Array, opts: { ocr?: PageOcr | null 
       const g = grade(laid.lines);
       if (g.letters > quality.letters) {
         ({ columns, lines } = laid);
+        pageItems = r.items;
+        pageWidth = r.width;
         method = "ocr";
         ocrConfidence = r.confidence;
         quality = g;
@@ -211,7 +218,7 @@ export async function acquireText(buf: Uint8Array, opts: { ocr?: PageOcr | null 
     }
     const text = lines.map((l) => l.text).join("\n");
     const label = PAGE_LABEL_RE.exec(text);
-    pages.push({ index: i, printedLabel: label ? label[1] : null, method, ocrConfidence, columns, lines, text, quality });
+    pages.push({ index: i, printedLabel: label ? label[1] : null, method, ocrConfidence, columns, lines, text, quality, items: pageItems, width: pageWidth });
   }
   await pdf.destroy?.();
   if (!pages.some((p) => p.quality.usable)) throw new DocumentReadError(opts.ocr ? "empty" : "ocr_unavailable");
