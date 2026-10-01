@@ -17,7 +17,7 @@ import {
   type ConfirmedFacts,
 } from "../../../frontend/client/src/lib/documentRules";
 import { add, eqR, num, op, rat, v } from "../../../frontend/client/src/lib/exactMath";
-import type { ReviewFlag } from "../../../frontend/client/src/lib/policyDocTypes";
+import type { RateRule, ReviewFlag } from "../../../frontend/client/src/lib/policyDocTypes";
 
 const ramp = op("add", num(rat(1, 2)), op("div", op("mul", num(rat(2, 5)), op("sub", v("policy_year"), num(rat(7)))), op("sub", v("policy_term"), num(rat(8)))));
 const BANDS = [
@@ -283,9 +283,9 @@ describe("loans", () => {
 });
 
 describe("rates from rules (only with a current input someone supplies)", () => {
-  const ssvRule = { base: "annualized_yield_reference_gsec", roundUpBps: 25, roundBeforeSpread: false, spread: { bps: 150 }, reviewDayMonth: [] } as const;
-  const loanRule = { base: "average_annualized_10y_gsec_6_months", roundUpBps: 50, roundBeforeSpread: true, spread: { bps: 200 }, reviewDayMonth: [] } as const;
-  const generalRule = { ...ssvRule, spread: { bps: 100 } };
+  const ssvRule: RateRule = { base: "annualized_yield_reference_gsec", roundUpBps: 25, roundBeforeSpread: false, spread: { bps: 150 }, reviewDayMonth: [] };
+  const loanRule: RateRule = { base: "average_annualized_10y_gsec_6_months", roundUpBps: 50, roundBeforeSpread: true, spread: { bps: 200 }, reviewDayMonth: [] };
+  const generalRule: RateRule = { ...ssvRule, spread: { bps: 100 } };
   test("SSV: yield + 150 bps, rounded up to 25", () => {
     // 6.81% + 1.50% = 8.31% -> 8.50%
     assert.equal(ssvDiscountRateBps(ssvRule, 681), 850);

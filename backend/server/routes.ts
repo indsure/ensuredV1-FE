@@ -32,6 +32,8 @@ import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { pool } from "./lib/db";
+import { ingestPolicyDocument } from "./services/policyDocs/ingest";
+import { getDocumentRules, resolveFlag, reviewFact, StoreError, type DbTx } from "./services/policyDocStore";
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
 import { registerTeamRoutes } from "./teamRoutes";
@@ -83,6 +85,41 @@ const upload = multer({
 // Supabase Storage bucket where original uploaded policy PDFs are kept,
 // so they can be downloaded later (and re-analyzed without re-uploading).
 const PDF_BUCKET = "policy-pdfs";
+
+/* The document-rules store needs real transactions (a per-policy lock, then
+   inserts). One pooled client per transaction; always released. */
+const docDb: DbTx = {
+  query: (text, params) => pool.query(text, params as any[]),
+  transaction: async (fn) => {
+    const c = await pool.connect();
+    try {
+      await c.query("BEGIN");
+      const out = await fn({ query: (t, ps) => c.query(t, ps as any[]) });
+      await c.query("COMMIT");
+      return out;
+    } catch (e) {
+      await c.query("ROLLBACK").catch(() => {});
+      throw e;
+    } finally {
+      c.release();
+    }
+  },
+};
+
+/* Life and term PDFs also go through the deterministic policy-terms reader
+   (services/policyDocs). It starts on its own and never waits for, or is fed
+   by, the model extraction on the same upload. */
+function startPolicyDocumentRead(agentId: string, clientId: string, insuranceType: string, mimetype: string | undefined, filePath: string) {
+  if (insuranceType !== "life" && insuranceType !== "term") return;
+  if (!(mimetype || "").includes("pdf")) return;
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(fs.readFileSync(filePath));
+  } catch {
+    return;
+  }
+  void ingestPolicyDocument(docDb, agentId, clientId, bytes, `${PDF_BUCKET}/${agentId}/${clientId}.pdf`).catch(() => {});
+}
 
 /**
  * Remove `__internal` before a stored report leaves the server.
@@ -3907,6 +3944,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               [clientId]
             );
 
+            startPolicyDocumentRead(agentId, clientId, insuranceType, file.mimetype, file.path);
+
             const uploadedPolicyText = await extractPolicyText(file, {
               feature: "image_ocr",
               route: "/api/agent/analyze",
@@ -5597,6 +5636,84 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   });
 
+  /* ── Agent: policy terms read from the document, and their review ─────
+     All scoped to the JWT-verified agent inside services/policyDocStore. */
+
+  const storeFail = (res: any, err: any) => {
+    if (err instanceof StoreError) return res.status(err.status).json({ error: err.code, message: err.message });
+    console.error("Document rules error:", err?.code ?? err?.name ?? "error");
+    return res.status(500).json({ error: "Internal server error" });
+  };
+
+  app.get("/api/agent/clients/:id/document-rules", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const out = await getDocumentRules(docDb, agentId, req.params.id);
+      recordAccess(req, agentId, req.params.id, "read_document_rules");
+      res.json(out);
+    } catch (err: any) {
+      storeFail(res, err);
+    }
+  });
+
+  app.post("/api/agent/clients/:id/document-rules/review", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const b = req.body ?? {};
+      const out = await reviewFact(docDb, agentId, req.params.id, {
+        fieldKey: String(b.field_key ?? ""), action: b.action, expectedRevision: Number(b.expected_revision),
+        value: b.value, reason: typeof b.reason === "string" ? b.reason : undefined, idempotencyKey: String(b.idempotency_key ?? ""),
+      });
+      recordAccess(req, agentId, req.params.id, "review_document_rule");
+      res.json(out);
+    } catch (err: any) {
+      storeFail(res, err);
+    }
+  });
+
+  app.post("/api/agent/clients/:id/document-rules/flags", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const b = req.body ?? {};
+      const out = await resolveFlag(docDb, agentId, req.params.id, {
+        flagId: String(b.flag_id ?? ""), choice: String(b.choice ?? ""), reason: String(b.reason ?? ""), idempotencyKey: String(b.idempotency_key ?? ""),
+      });
+      recordAccess(req, agentId, req.params.id, "resolve_document_rule_flag");
+      res.json(out);
+    } catch (err: any) {
+      storeFail(res, err);
+    }
+  });
+
+  /* Re-read the stored PDF with the current reader (for example after a new
+     product adapter or reader version). Awaited, so the advisor sees the result. */
+  app.post("/api/agent/clients/:id/document-rules/parse", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const { id } = req.params;
+      const c = await pool.query("SELECT pdf_url, insurance_type FROM clients WHERE id = $1 AND agent_id = $2", [id, agentId]);
+      if (!c.rows.length) return res.status(404).json({ error: "not_found" });
+      const { pdf_url, insurance_type } = c.rows[0];
+      if (insurance_type !== "life" && insurance_type !== "term") return res.status(400).json({ error: "not_life_or_term" });
+      const m = typeof pdf_url === "string" ? pdf_url.match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/) : null;
+      if (!m) return res.status(409).json({ error: "NO_PDF", message: "No stored PDF for this policy." });
+      const [bucket, ...rest] = m[1].split("/");
+      const storagePath = rest.join("/");
+      if (!/\.pdf$/i.test(storagePath)) return res.status(409).json({ error: "NOT_PDF", message: "The stored file is not a PDF." });
+      const { data: blob, error: dlErr } = await supabaseAdmin.storage.from(bucket).download(storagePath);
+      if (dlErr || !blob) return res.status(409).json({ error: "NO_PDF", message: "Could not fetch the stored document." });
+      const out = await ingestPolicyDocument(docDb, agentId, id, new Uint8Array(await blob.arrayBuffer()), `${bucket}/${storagePath}`);
+      recordAccess(req, agentId, id, "parse_document_rules");
+      res.json(out);
+    } catch (err: any) {
+      storeFail(res, err);
+    }
+  });
+
   /* ── Agent: life and term policies for the surrender-value book ─────
      Scoped to the agent id verified from the JWT. Replaces a direct browser
      read of `clients`, whose row security lives in the live database and is
@@ -5727,6 +5844,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             mimetype,
             originalname: client.filename || `policy.${ext}`,
           } as Express.Multer.File;
+          startPolicyDocumentRead(agentId, id, insuranceType, mimetype, tempPath);
+
           const policyText = await extractPolicyText(fileLike, {
             feature: "image_ocr",
             route: "/api/agent/clients/:id/rerun",

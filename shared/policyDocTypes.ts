@@ -164,7 +164,7 @@ export interface ReviewFlag {
   blocksCalculation: boolean;
 }
 
-export type IdentifyStatus = "supported" | "unsupported" | "needs_review";
+export type IdentifyStatus = "supported" | "unsupported" | "needs_review" | "failed";
 
 export interface ParseOutcome {
   status: IdentifyStatus;
