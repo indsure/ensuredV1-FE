@@ -7,6 +7,7 @@ import CustomerTagCard from "@/components/agent/CustomerTagCard";
 import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
 import PolicyValueChart from "@/components/agent/PolicyValueChart";
 import DocumentTerms from "@/components/agent/policyValue/DocumentTerms";
+import PolicySummary from "@/components/agent/policyValue/PolicySummary";
 import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
@@ -590,6 +591,8 @@ export default function PolicyDetail() {
                 {/* Motor only, and it renders nothing unless the document was
                     actually read. The summary sits above the fields it was
                     read from. */}
+                {/* Life and term: the policy at a glance, straight from the document. */}
+                {(insuranceType === "life" || insuranceType === "term") && <PolicySummary clientId={policy.id} />}
                 <AddOnChecklist data={extractedData} />
                 <ExtractedDataForm
                   clientId={policy.id}

@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const norm = (s: string) => s.replace(/\r\n/g, "\n");
 
-for (const f of ["policyNumbers.ts", "exactMath.ts", "policyDocTypes.ts", "documentRules.ts", "policyEvidence.ts", "productRules.ts"]) {
+for (const f of ["policyNumbers.ts", "exactMath.ts", "policyDocTypes.ts", "documentRules.ts", "policyEvidence.ts", "productRules.ts", "policySnapshot.ts"]) {
   test(`shared/${f} matches frontend/client/src/lib/${f}`, () => {
     const a = norm(fs.readFileSync(path.resolve(here, "../../../shared", f), "utf8"));
     const b = norm(fs.readFileSync(path.resolve(here, "../../../frontend/client/src/lib", f), "utf8"));

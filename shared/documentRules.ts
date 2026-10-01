@@ -44,6 +44,8 @@ export interface DocRulesInput {
   flagDecisions: Partial<Record<ReviewFlag["id"], string>>;
   evidence: unknown;
   asOf: string;
+  /** Treat every premium due on or before asOf as paid on its due date (the summary card's stated assumption). */
+  assumePremiumsPaidOnDueDates?: boolean;
 }
 
 export type DocScope =
@@ -171,6 +173,7 @@ export function documentValues(input: DocRulesInput) {
   /* ── Premiums accounted for by evidence (the first is paid at issue) ── */
   function premiumsPaid(dues: string[]) {
     const covered = new Set<string>([dues[0]]);
+    if (input.assumePremiumsPaidOnDueDates) for (const x of dues) if (compareIso(x, asOf) <= 0) covered.add(x);
     for (const p of activePayments(evidence)) if (dues.includes(p.dueDate)) covered.add(p.dueDate);
     const pt = latestQuote(evidence, "premiums_paid_to");
     if (pt?.paidTo) for (const x of dues) if (compareIso(x, pt.paidTo) <= 0) covered.add(x);
