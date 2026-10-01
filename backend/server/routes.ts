@@ -33,7 +33,7 @@ import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { pool } from "./lib/db";
 import { ingestPolicyDocument } from "./services/policyDocs/ingest";
-import { getDocumentRules, resolveFlag, reviewFact, StoreError, type DbTx } from "./services/policyDocStore";
+import { confirmMany, getDocumentRules, resolveFlag, reviewFact, StoreError, type DbTx } from "./services/policyDocStore";
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
 import { registerTeamRoutes } from "./teamRoutes";
@@ -5666,6 +5666,20 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         fieldKey: String(b.field_key ?? ""), action: b.action, expectedRevision: Number(b.expected_revision),
         value: b.value, reason: typeof b.reason === "string" ? b.reason : undefined, idempotencyKey: String(b.idempotency_key ?? ""),
       });
+      recordAccess(req, agentId, req.params.id, "review_document_rule");
+      res.json(out);
+    } catch (err: any) {
+      storeFail(res, err);
+    }
+  });
+
+  app.post("/api/agent/clients/:id/document-rules/confirm-many", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const b = req.body ?? {};
+      const items = Array.isArray(b.items) ? b.items.map((i: any) => ({ fieldKey: String(i?.field_key ?? ""), expectedRevision: Number(i?.expected_revision) })) : [];
+      const out = await confirmMany(docDb, agentId, req.params.id, { items, idempotencyKey: String(b.idempotency_key ?? "") });
       recordAccess(req, agentId, req.params.id, "review_document_rule");
       res.json(out);
     } catch (err: any) {

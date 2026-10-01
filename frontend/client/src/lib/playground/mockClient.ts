@@ -369,7 +369,7 @@ function playgroundApiResponse(url: string, init?: any): Response {
   /* Policy terms read from a document. The demo has no reader; terms exist
      only if a development session loaded synthetic ones into the store. Review
      actions are applied in memory, the same way the server appends revisions. */
-  const docRules = url.match(/\/api\/agent\/clients\/([^/]+)\/document-rules(?:\/(review|flags|parse))?/);
+  const docRules = url.match(/\/api\/agent\/clients\/([^/]+)\/document-rules(?:\/(review|flags|parse|confirm-many))?/);
   if (docRules) {
     const id = decodeURIComponent(docRules[1]);
     const st: any = getStore();
@@ -391,6 +391,21 @@ function playgroundApiResponse(url: string, init?: any): Response {
       cur.history[f.field_key] = [...(cur.history[f.field_key] ?? [f]), next];
       st.documentRules[id] = cur;
       return json({ revision: next.revision, repeated: false });
+    }
+    if (docRules[2] === "confirm-many") {
+      const items: any[] = Array.isArray(body.items) ? body.items : [];
+      for (const it of items) {
+        const f = cur.fields.find((x: any) => x.field_key === it.field_key);
+        if (!f || f.revision !== it.expected_revision) return json({ error: "stale", message: "This field changed since you opened it." }, 409);
+      }
+      for (const it of items) {
+        const f = cur.fields.find((x: any) => x.field_key === it.field_key);
+        const next = { ...f, revision: f.revision + 1, state: "reviewed", corrected_value: null, reason: null, created_at: new Date().toISOString() };
+        cur.fields = cur.fields.map((x: any) => (x.field_key === f.field_key ? next : x));
+        cur.history[f.field_key] = [...(cur.history[f.field_key] ?? [f]), next];
+      }
+      st.documentRules[id] = cur;
+      return json({ confirmed: items.length, repeated: false });
     }
     if (docRules[2] === "flags") {
       cur.flagDecisions[body.flag_id] = { choice: body.choice, reason: body.reason ?? null };

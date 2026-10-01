@@ -11,6 +11,7 @@
 import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
 import type { PolicyValuation, Reason, ValueResult } from "@/lib/policyValue";
+import { formatRupees, type Paise } from "@/lib/exactMath";
 import { BASIS_TEXT, REASON_TEXT, VERIFICATION_TEXT, prettyIso, rupees } from "@/lib/policyValueText";
 
 const CASH = new Set(["insurer_quote", "document_calculation"]);
@@ -20,19 +21,26 @@ export function useReasonText() {
   return (r: Reason) => tOr(t, `pvr.${r}`, REASON_TEXT[r]);
 }
 
-function Tile({ label, v, cash, extra }: { label: string; v: ValueResult; cash: boolean; extra?: React.ReactNode }) {
+/** What the policy document panel adds: a GSV from confirmed terms, and whether the plan has no maturity benefit. */
+export interface DocSummary {
+  gsv: Paise | null;
+  termsPending: boolean;
+  noMaturity: boolean;
+}
+
+function Tile({ label, v, cash, extra, hide, headline }: { label: string; v: ValueResult; cash: boolean; extra?: React.ReactNode; hide?: Reason[]; headline?: string }) {
   const { t } = useLanguage();
   const reasonText = useReasonText();
   const show = v.amount !== null && (!cash || CASH.has(v.basis)) && v.asOf !== null;
   const tone = v.basis === "insurer_quote" ? "text-blue-800" : v.basis === "document_calculation" ? "text-[#0f766e]" : "text-slate-900";
-  const reasons = [...v.missing, ...v.conditions.filter((c) => c !== "confirm_with_insurer")];
+  const reasons = [...v.missing, ...v.conditions.filter((c) => c !== "confirm_with_insurer")].filter((r) => !hide?.includes(r));
   return (
     <div className="space-y-1 rounded-xl border border-slate-200 p-4">
       <div className="text-sm font-bold text-slate-600">{label}</div>
-      <div className={"text-2xl font-bold tabular-nums " + (show ? tone : "text-slate-500")}>
-        {show ? rupees(v.amount!) : v.basis === "not_applicable" ? t("pvc.not_applicable") : t("pvc.not_available")}
+      <div className={"text-2xl font-bold tabular-nums " + (show ? tone : headline ? "text-[#0f766e]" : "text-slate-500")}>
+        {show ? rupees(v.amount!) : headline ?? (v.basis === "not_applicable" ? t("pvc.not_applicable") : t("pvc.not_available"))}
       </div>
-      {v.basis !== "insufficient" && (
+      {v.basis !== "insufficient" && v.basis !== "not_applicable" && (
         <div className="text-sm font-semibold text-slate-700">
           {tOr(t, `pvb.${v.basis}`, BASIS_TEXT[v.basis])}
           {show && v.verification !== "none" ? ` · ${tOr(t, `pvv.${v.verification}`, VERIFICATION_TEXT[v.verification])}` : ""}
@@ -51,13 +59,30 @@ function Tile({ label, v, cash, extra }: { label: string; v: ValueResult; cash: 
   );
 }
 
-export function ValueSummary({ v }: { v: PolicyValuation }) {
+export function ValueSummary({ v, doc }: { v: PolicyValuation; doc?: DocSummary | null }) {
   const { t } = useLanguage();
   const reasonText = useReasonText();
   const sp = v.values.surrender_payable;
   const gross = v.values.surrender_gross;
   const p = v.payment;
   const c = v.nextAnniversary;
+
+  // The product's checked factor table is not the only source any more: terms
+  // read from this policy's own document, once the advisor confirms them, give
+  // the guaranteed surrender value. It is a floor, never the amount payable.
+  const spShown = sp.amount !== null && CASH.has(sp.basis);
+  const docGsv = doc && !spShown && doc.gsv && doc.gsv.paise > 0 ? doc.gsv : null;
+  const hideNoRules: Reason[] | undefined = doc ? ["no_verified_rules"] : undefined;
+  const docSurrender = doc && !spShown ? (
+    docGsv ? (
+      <div className="space-y-1 pt-1">
+        <div className="text-sm text-slate-700">{t("pvc.doc_gsv_note")}</div>
+        {v.loan.state !== "none" && <div className="text-sm text-slate-700">{t("pvc.doc_gsv_before_loan")}</div>}
+      </div>
+    ) : doc.termsPending ? (
+      <div className="pt-1 text-sm text-slate-700">{t("pvc.doc_terms_pending")}</div>
+    ) : null
+  ) : null;
 
   const surrenderExtra = (
     <>
@@ -75,6 +100,7 @@ export function ValueSummary({ v }: { v: PolicyValuation }) {
         <div className="text-sm font-semibold text-slate-700">{t("pvc.at_most", { amount: rupees(sp.upperBound) })}</div>
       )}
       {sp.shortfall !== null && <div className="text-sm font-semibold text-rose-800">{t("pvc.k_shortfall", { amount: rupees(sp.shortfall) })}</div>}
+      {docSurrender}
     </>
   );
 
@@ -102,9 +128,16 @@ export function ValueSummary({ v }: { v: PolicyValuation }) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Tile label={t("pvc.k_surrender")} v={sp} cash extra={surrenderExtra} />
-        <Tile label={t("pvc.k_borrow")} v={v.values.loan_remaining} cash />
-        <Tile label={t("pvc.k_maturity")} v={v.values.maturity_guaranteed} cash={false} />
+        <Tile label={t("pvc.k_surrender")} v={sp} cash extra={surrenderExtra} hide={hideNoRules}
+          headline={docGsv ? t("pvc.doc_gsv_at_least", { amount: formatRupees(docGsv) }) : undefined} />
+        <Tile label={t("pvc.k_borrow")} v={v.values.loan_remaining} cash hide={hideNoRules}
+          extra={doc && !spShown ? <div className="pt-1 text-sm text-slate-700">{t("pvc.doc_loan_needs_quote")}</div> : undefined} />
+        {doc?.noMaturity && v.values.maturity_guaranteed.amount === null ? (
+          <Tile label={t("pvc.k_maturity")} v={{ ...v.values.maturity_guaranteed, basis: "not_applicable", missing: [], conditions: [] }} cash={false}
+            extra={<div className="text-sm text-slate-700">{t("pvc.doc_no_maturity")}</div>} />
+        ) : (
+          <Tile label={t("pvc.k_maturity")} v={v.values.maturity_guaranteed} cash={false} />
+        )}
         {v.shape.value === "unit_linked" ? (
           <Tile label={t("pvc.k_fund")} v={v.values.fund_value} cash={false} />
         ) : v.values.vested_bonus.amount !== null || v.values.vested_bonus.missing.length ? (

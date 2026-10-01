@@ -15,30 +15,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
-import { supabase } from "@/lib/supabase";
-import { getApiBase } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import { describe as describeExpr, formatRupees, isExpr, type Paise } from "@/lib/exactMath";
-import { documentValues, DOC_REASON_TEXT, type ConfirmedFacts } from "@/lib/documentRules";
+import { DOC_REASON_TEXT } from "@/lib/documentRules";
 import type { FieldKey, ReviewFlag } from "@/lib/policyDocTypes";
 import { parseIsoDate, parseRupees, parseWholeNumber } from "@/lib/policyNumbers";
 import { prettyIso } from "@/lib/policyValueText";
-
-interface FactRow {
-  field_key: FieldKey;
-  revision: number;
-  state: "document_pending" | "reviewed" | "corrected" | "rejected" | "conflicting";
-  document_field: any;
-  corrected_value: any;
-  reason: string | null;
-  created_at: string;
-}
-interface RulesResponse {
-  parse: null | { id: string; status: string; reasons: string[]; flags: ReviewFlag[]; page_methods: { page: number; method: string; usable: boolean }[]; adapter_id: string | null; page_count: number };
-  fields: FactRow[];
-  history: Record<string, FactRow[]>;
-  flagDecisions: Record<string, { choice: string; reason: string | null }>;
-}
+import { DOC_RULES_CHANGED, docApi as api, docResults, type FactRow, type RulesResponse } from "./useDocumentRules";
 
 const GROUPS: { id: string; prefixes: string[] }[] = [
   { id: "surrender", prefixes: ["surrender.", "discount_rate."] },
@@ -130,15 +113,6 @@ function correctionReader(key: string): ((s: string) => unknown) | null {
   return null;
 }
 
-async function api(path: string, init?: RequestInit) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (session) headers.Authorization = `Bearer ${session.access_token}`;
-  const res = await fetch(`${getApiBase()}${path}`, { ...init, headers });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(body?.message || body?.error || `HTTP ${res.status}`), { status: res.status });
-  return body;
-}
 const key = () => (globalThis.crypto?.randomUUID?.() ?? `k${Date.now()}${Math.random().toString(36).slice(2)}`);
 
 export default function DocumentTerms({ clientId, data }: { clientId: string; data: Record<string, any> }) {
@@ -168,23 +142,11 @@ export default function DocumentTerms({ clientId, data }: { clientId: string; da
     } finally {
       setBusy(false);
       await load();
+      window.dispatchEvent(new CustomEvent(DOC_RULES_CHANGED, { detail: clientId }));
     }
   };
 
-  const confirmed: ConfirmedFacts = useMemo(() => {
-    const out: any = {};
-    for (const f of rules?.fields ?? []) {
-      if (f.state === "reviewed" && f.document_field?.state === "found") out[f.field_key] = { value: f.document_field.value, revision: f.revision, state: "reviewed" };
-      else if (f.state === "corrected") out[f.field_key] = { value: f.corrected_value, revision: f.revision, state: "corrected" };
-    }
-    return out;
-  }, [rules]);
-
-  const results = useMemo(() => rules?.parse ? documentValues({
-    facts: confirmed, flags: rules.parse.flags,
-    flagDecisions: Object.fromEntries(Object.entries(rules.flagDecisions).map(([k, v]) => [k, v.choice])) as any,
-    evidence: data?.value_evidence, asOf: new Date().toISOString().slice(0, 10),
-  }) : null, [rules, confirmed, data]);
+  const results = useMemo(() => docResults(rules, data?.value_evidence), [rules, data]);
 
   const reason = (code: string) => {
     const base = code.split(":")[0];
@@ -223,7 +185,10 @@ export default function DocumentTerms({ clientId, data }: { clientId: string; da
             <div className="font-bold">{t(`pdt.status_${p.status}`)}</div>
             {p.reasons.map((r, i) => <div key={i} className="mt-1">{r}</div>)}
             {p.page_methods.some((m) => m.method === "ocr") && (
-              <div className="mt-1">{t("pdt.ocr_pages", { pages: p.page_methods.filter((m) => m.method === "ocr").map((m) => m.page).join(", ") })}</div>
+              <div className="mt-1">{(() => {
+                const ocr = p.page_methods.filter((m) => m.method === "ocr").map((m) => m.page);
+                return t(ocr.length === 1 ? "pdt.ocr_page_one" : "pdt.ocr_pages", { pages: ocr.join(", ") });
+              })()}</div>
             )}
             {p.status === "supported" && <div className="mt-1">{t("pdt.pending_count", { count: pending })}</div>}
           </div>
@@ -265,6 +230,7 @@ export default function DocumentTerms({ clientId, data }: { clientId: string; da
         {p && p.flags.length > 0 && (
           <section className="space-y-3" aria-labelledby="pdt-flags">
             <h3 id="pdt-flags" className="text-base font-bold text-slate-900">{t("pdt.flags_title")}</h3>
+            <p className="text-sm text-slate-700">{t("pdt.flags_intro")}</p>
             {p.flags.map((f) => <FlagRow key={f.id} flag={f} decision={rules!.flagDecisions[f.id]} busy={busy}
               onSave={(choice, why) => act(() => api(`/api/agent/clients/${clientId}/document-rules/flags`, { method: "POST", body: JSON.stringify({ flag_id: f.id, choice, reason: why, idempotency_key: key() }) }))} />)}
           </section>
@@ -281,6 +247,27 @@ export default function DocumentTerms({ clientId, data }: { clientId: string; da
                 <span className="text-base font-bold text-slate-900">{t(`pdt.group_${g.id}`)}</span>
                 <span className="text-sm text-slate-600">{isOpen ? "▲" : "▼"}</span>
               </button>
+              {isOpen && (() => {
+                const ready = rows.filter((f) => f.state === "document_pending" && f.document_field?.state === "found");
+                const viaOcr = ready.filter((f) => f.document_field?.source?.method === "ocr");
+                const bulk = ready.filter((f) => f.document_field?.source?.method !== "ocr");
+                if (!bulk.length && !viaOcr.length) return null;
+                return (
+                  <div className="space-y-1 border-t border-slate-100 p-4">
+                    {bulk.length > 0 && (
+                      <Button type="button" className="min-h-11 bg-[#0D9488] hover:bg-[#0f766e]" disabled={busy}
+                        onClick={() => void act(() => api(`/api/agent/clients/${clientId}/document-rules/confirm-many`, {
+                          method: "POST",
+                          body: JSON.stringify({ items: bulk.map((f) => ({ field_key: f.field_key, expected_revision: f.revision })), idempotency_key: key() }),
+                        }))}>
+                        {t("pdt.confirm_all", { count: bulk.length })}
+                      </Button>
+                    )}
+                    {bulk.length > 0 && <p className="text-sm text-slate-600">{t("pdt.confirm_all_hint")}</p>}
+                    {viaOcr.length > 0 && <p className="text-sm text-amber-900">{t("pdt.confirm_all_ocr", { count: viaOcr.length })}</p>}
+                  </div>
+                );
+              })()}
               {isOpen && (
                 <ul className="divide-y divide-slate-100 border-t border-slate-100">
                   {rows.map((f) => (
@@ -315,13 +302,20 @@ function FlagRow({ flag, decision, busy, onSave }: { flag: ReviewFlag; decision?
   const { t } = useLanguage();
   const [choice, setChoice] = useState(decision?.choice ?? "");
   const [why, setWhy] = useState("");
+  // A point that only asks to be read needs no reason typed in.
+  const readOnly = flag.choices.length === 1 && flag.choices[0] === "noted";
   return (
     <div className={"rounded-xl border p-4 text-sm " + (flag.blocksCalculation && !decision ? "border-amber-200 bg-amber-50" : "border-slate-200")}>
       <div className="font-bold text-slate-900">{tOr(t, `pdt.flag_${flag.id}`, flag.id)}</div>
       <p className="mt-1 text-slate-700">{tOr(t, `pdt.flag_${flag.id}_note`, flag.note)}</p>
       {decision && <p className="mt-1 font-semibold text-slate-800">{t("pdt.flag_decided", { choice: tOr(t, `pdt.choice_${decision.choice}`, decision.choice) })}{decision.reason ? ` (${decision.reason})` : ""}</p>}
       {flag.choices.length === 0 && flag.blocksCalculation && <p className="mt-1 text-slate-700">{t("pdt.flag_ask_insurer")}</p>}
-      {flag.choices.length > 0 && (
+      {readOnly && !decision && (
+        <Button type="button" variant="outline" className="mt-2 min-h-11" disabled={busy} onClick={() => onSave("noted", "Read by the advisor")}>
+          {t("pdt.choice_noted")}
+        </Button>
+      )}
+      {flag.choices.length > 0 && !readOnly && (
         <div className="mt-2 space-y-2">
           <fieldset className="flex flex-wrap gap-4">
             <legend className="sr-only">{tOr(t, `pdt.flag_${flag.id}`, flag.id)}</legend>

@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
 
 import {
-  buildProductRuleCandidate, confirmedFactsFrom, getDocumentRules, recordParse, resolveFlag, reviewFact,
+  buildProductRuleCandidate, confirmedFactsFrom, confirmMany, getDocumentRules, recordParse, resolveFlag, reviewFact,
   type DbTx, type RecordParseInput,
 } from "../services/policyDocStore";
 import type { ParseOutcome } from "../../../shared/policyDocTypes";
@@ -236,5 +236,62 @@ describe("product rule candidates", () => {
     assert.ok(!s.includes("annualized_premium") && !s.includes("survival_recurring") && !s.includes("20000000") && !s.includes("338000"));
     assert.ok(!/sha256|excerpt|region|pdfPage/.test(s));
     assert.deepEqual(c.rules, { "loan.cap_pct_of_surrender_value": { bps: 8000 } });
+  });
+});
+
+describe("confirm many", () => {
+  const POLICY_C = "10000000-0000-4000-8000-00000000000c";
+  const ocrOutcome = (): ParseOutcome => {
+    const o = outcome();
+    o.fields["surrender.gsv_acquisition_min_premium_years"] = { state: "found", value: 2, raw: "2", source: { ...src(4), method: "ocr" } } as any;
+    return o;
+  };
+  const revs = async () => Object.fromEntries((await getDocumentRules(db, B, POLICY_C)).fields.map((f: any) => [f.field_key, f]));
+
+  before(async () => {
+    await pg.exec(`INSERT INTO clients VALUES ('${POLICY_C}', '${B}')`);
+    await recordParse(db, B, POLICY_C, input("c", ocrOutcome()));
+  });
+
+  test("another advisor cannot confirm", async () => {
+    await assert.rejects(confirmMany(db, A, POLICY_C, { items: [{ fieldKey: "schedule.annualized_premium", expectedRevision: 1 }], idempotencyKey: "a-many-0001" }), (e: any) => e.status === 404);
+  });
+
+  test("a value read by OCR is refused and nothing in the batch is saved", async () => {
+    const r = await revs();
+    await assert.rejects(confirmMany(db, B, POLICY_C, {
+      items: [
+        { fieldKey: "schedule.annualized_premium", expectedRevision: r["schedule.annualized_premium"].revision },
+        { fieldKey: "surrender.gsv_acquisition_min_premium_years", expectedRevision: r["surrender.gsv_acquisition_min_premium_years"].revision },
+      ], idempotencyKey: "b-many-0001",
+    }), (e: any) => e.code === "ocr_one_by_one");
+    assert.equal((await revs())["schedule.annualized_premium"].state, "document_pending");
+  });
+
+  test("a stale or NA field rolls the whole batch back", async () => {
+    const r = await revs();
+    await assert.rejects(confirmMany(db, B, POLICY_C, {
+      items: [
+        { fieldKey: "schedule.annualized_premium", expectedRevision: r["schedule.annualized_premium"].revision },
+        { fieldKey: "benefits.maturity", expectedRevision: r["benefits.maturity"].revision },
+      ], idempotencyKey: "b-many-0002",
+    }), (e: any) => e.code === "nothing_to_confirm");
+    await assert.rejects(confirmMany(db, B, POLICY_C, {
+      items: [{ fieldKey: "schedule.annualized_premium", expectedRevision: 99 }], idempotencyKey: "b-many-0003",
+    }), (e: any) => e.status === 409);
+    assert.equal((await revs())["schedule.annualized_premium"].state, "document_pending");
+  });
+
+  test("confirms each field with its own revision and review event; a retry changes nothing", async () => {
+    const r = await revs();
+    const items = [{ fieldKey: "schedule.annualized_premium", expectedRevision: r["schedule.annualized_premium"].revision }];
+    const ok = await confirmMany(db, B, POLICY_C, { items, idempotencyKey: "b-many-0004" });
+    assert.deepEqual(ok, { confirmed: 1, repeated: false });
+    const after = await revs();
+    assert.equal(after["schedule.annualized_premium"].state, "reviewed");
+    assert.equal(after["schedule.annualized_premium"].revision, r["schedule.annualized_premium"].revision + 1);
+    const ev = await pg.query(`SELECT count(*)::int n FROM rule_review_events WHERE client_id = $1 AND action = 'confirm'`, [POLICY_C]);
+    assert.equal((ev.rows[0] as any).n, 1);
+    assert.equal((await confirmMany(db, B, POLICY_C, { items, idempotencyKey: "b-many-0004" })).repeated, true);
   });
 });

@@ -18,6 +18,7 @@ import { ValueSummary } from "./policyValue/ValueSummary";
 import { EvidencePanel } from "./policyValue/EvidencePanel";
 import { RulesEditor } from "./policyValue/RulesEditor";
 import { useEvidenceSave } from "./policyValue/useEvidenceSave";
+import { docResults, useDocumentRules } from "./policyValue/useDocumentRules";
 
 interface Props {
   clientId: string;
@@ -40,6 +41,20 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
     onSaved?.();
   });
 
+  // Terms read from the policy document and confirmed by the advisor, if any.
+  const { rules } = useDocumentRules(clientId);
+  const doc = useMemo(() => {
+    if (!rules?.parse || rules.parse.status !== "supported") return null;
+    const r = docResults(rules, effective.value_evidence);
+    const maturity = rules.fields.find((f) => f.field_key === "benefits.maturity");
+    return {
+      gsv: r?.gsv.amount ?? null,
+      // Terms or answers still outstanding (as opposed to, say, payment records).
+      termsPending: !r || r.gsv.missing.some((m) => m.startsWith("fact_not_confirmed") || m.startsWith("flag_")),
+      noMaturity: maturity?.document_field?.state === "not_applicable" && maturity.state !== "rejected" && maturity.state !== "corrected",
+    };
+  }, [rules, effective]);
+
   const toggle = (k: "evidence" | "rules") => setOpen((o) => (o === k ? null : k));
 
   return (
@@ -49,7 +64,7 @@ export default function PolicyValueChart({ clientId, insuranceType, data, onSave
         <p className="mt-1 text-sm text-slate-600">{t("pvc.intro")}</p>
       </CardHeader>
       <CardContent className="space-y-6 p-6">
-        <ValueSummary v={v} />
+        <ValueSummary v={v} doc={doc} />
 
         <div className="rounded-xl border border-slate-200">
           <button type="button" onClick={() => toggle("evidence")} aria-expanded={open === "evidence"}

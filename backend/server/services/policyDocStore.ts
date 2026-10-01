@@ -202,32 +202,69 @@ export async function reviewFact(db: DbTx, agentId: string, clientId: string, in
   return db.transaction(async (q) => {
     await assertOwner(q, agentId, clientId);
     await lockPolicy(q, clientId);
-    const dup = await q.query(`SELECT to_revision FROM rule_review_events WHERE actor_id = $1 AND idempotency_key = $2`, [agentId, input.idempotencyKey]);
-    if (dup.rows.length) return { revision: dup.rows[0].to_revision, repeated: true };
-    const cur = await latestRevision(q, clientId, input.fieldKey);
-    if (!cur) throw new StoreError(404, "field_not_found");
-    if (cur.revision !== input.expectedRevision) throw new StoreError(409, "stale", "This field changed since you opened it. Reload and review it again.");
-    const docField = cur.document_field as FieldState<unknown>;
-    if (input.action === "confirm") {
-      // Only a value the document actually states can be confirmed as read.
-      if (docField.state !== "found") throw new StoreError(400, "nothing_to_confirm", "The document did not give a usable value. Correct it instead.");
-      if (cur.state === "conflicting") throw new StoreError(400, "conflict_needs_choice", "The document and your earlier correction disagree. Correct the field to the right value.");
-    }
-    const state = input.action === "confirm" ? "reviewed" : input.action === "correct" ? "corrected" : "rejected";
-    const next = cur.revision + 1;
-    await q.query(
-      `INSERT INTO policy_rule_facts (client_id, parse_id, field_key, revision, state, document_field, corrected_value, parser_version, actor_id, reason)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-      [clientId, cur.parse_id, input.fieldKey, next, state, JSON.stringify(docField),
-        input.action === "correct" ? JSON.stringify(input.value) : null, cur.parser_version, agentId, input.reason?.trim() ?? null]
-    );
-    await q.query(
-      `INSERT INTO rule_review_events (client_id, parse_id, actor_id, action, field_key, from_revision, to_revision, reason, idempotency_key)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [clientId, cur.parse_id, agentId, input.action, input.fieldKey, cur.revision, next, input.reason?.trim() ?? null, input.idempotencyKey]
-    );
-    return { revision: next, repeated: false };
+    return reviewInTx(q, agentId, clientId, input);
   });
+}
+
+/**
+ * Confirm several fields at once, exactly as if each were confirmed on its own:
+ * one revision and one review event per field, each against the revision the
+ * advisor saw. All or nothing: one stale or unconfirmable field rolls the whole
+ * batch back. Values read by OCR are refused here; they are checked one by one.
+ */
+export async function confirmMany(db: DbTx, agentId: string, clientId: string, input: { items: { fieldKey: string; expectedRevision: number }[]; idempotencyKey: string }) {
+  const items = Array.isArray(input.items) ? input.items : [];
+  if (items.length < 1 || items.length > 100) throw new StoreError(400, "bad_items");
+  if (new Set(items.map((i) => i.fieldKey)).size !== items.length) throw new StoreError(400, "bad_items");
+  if (typeof input.idempotencyKey !== "string" || input.idempotencyKey.length < 8 || input.idempotencyKey.length > 90) throw new StoreError(400, "bad_idempotency_key");
+  for (const it of items) {
+    if (typeof it.fieldKey !== "string" || !/^[a-z_]+\.[a-z0-9_]+$/.test(it.fieldKey)) throw new StoreError(400, "bad_field");
+    if (!Number.isInteger(it.expectedRevision)) throw new StoreError(400, "bad_items");
+  }
+  return db.transaction(async (q) => {
+    await assertOwner(q, agentId, clientId);
+    await lockPolicy(q, clientId);
+    const dup = await q.query(`SELECT 1 FROM rule_review_events WHERE actor_id = $1 AND idempotency_key = $2`, [agentId, `${input.idempotencyKey}#0`]);
+    if (dup.rows.length) return { confirmed: items.length, repeated: true };
+    for (let i = 0; i < items.length; i++) {
+      const cur = await latestRevision(q, clientId, items[i].fieldKey);
+      if (cur && (cur.document_field as any)?.source?.method === "ocr") {
+        throw new StoreError(400, "ocr_one_by_one", "Values read from scanned pages must be confirmed one by one.");
+      }
+      await reviewInTx(q, agentId, clientId, {
+        fieldKey: items[i].fieldKey, action: "confirm", expectedRevision: items[i].expectedRevision, idempotencyKey: `${input.idempotencyKey}#${i}`,
+      });
+    }
+    return { confirmed: items.length, repeated: false };
+  });
+}
+
+async function reviewInTx(q: Q, agentId: string, clientId: string, input: ReviewInput) {
+  const dup = await q.query(`SELECT to_revision FROM rule_review_events WHERE actor_id = $1 AND idempotency_key = $2`, [agentId, input.idempotencyKey]);
+  if (dup.rows.length) return { revision: dup.rows[0].to_revision, repeated: true };
+  const cur = await latestRevision(q, clientId, input.fieldKey);
+  if (!cur) throw new StoreError(404, "field_not_found");
+  if (cur.revision !== input.expectedRevision) throw new StoreError(409, "stale", "This field changed since you opened it. Reload and review it again.");
+  const docField = cur.document_field as FieldState<unknown>;
+  if (input.action === "confirm") {
+    // Only a value the document actually states can be confirmed as read.
+    if (docField.state !== "found") throw new StoreError(400, "nothing_to_confirm", "The document did not give a usable value. Correct it instead.");
+    if (cur.state === "conflicting") throw new StoreError(400, "conflict_needs_choice", "The document and your earlier correction disagree. Correct the field to the right value.");
+  }
+  const state = input.action === "confirm" ? "reviewed" : input.action === "correct" ? "corrected" : "rejected";
+  const next = cur.revision + 1;
+  await q.query(
+    `INSERT INTO policy_rule_facts (client_id, parse_id, field_key, revision, state, document_field, corrected_value, parser_version, actor_id, reason)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [clientId, cur.parse_id, input.fieldKey, next, state, JSON.stringify(docField),
+      input.action === "correct" ? JSON.stringify(input.value) : null, cur.parser_version, agentId, input.reason?.trim() ?? null]
+  );
+  await q.query(
+    `INSERT INTO rule_review_events (client_id, parse_id, actor_id, action, field_key, from_revision, to_revision, reason, idempotency_key)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [clientId, cur.parse_id, agentId, input.action, input.fieldKey, cur.revision, next, input.reason?.trim() ?? null, input.idempotencyKey]
+  );
+  return { revision: next, repeated: false };
 }
 
 export async function resolveFlag(db: DbTx, agentId: string, clientId: string, input: { flagId: string; choice: string; reason: string; idempotencyKey: string }) {
