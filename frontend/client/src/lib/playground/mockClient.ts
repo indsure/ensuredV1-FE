@@ -366,6 +366,40 @@ function playgroundApiResponse(url: string, init?: any): Response {
     return json({ ok: true, extracted_data: row?.extracted_data ?? patch, rev: row?.extracted_data?._rev ?? null });
   }
 
+  /* Policy terms read from a document. The demo has no reader; terms exist
+     only if a development session loaded synthetic ones into the store. Review
+     actions are applied in memory, the same way the server appends revisions. */
+  const docRules = url.match(/\/api\/agent\/clients\/([^/]+)\/document-rules(?:\/(review|flags|parse))?/);
+  if (docRules) {
+    const id = decodeURIComponent(docRules[1]);
+    const st: any = getStore();
+    st.documentRules = st.documentRules ?? {};
+    const cur = st.documentRules[id] ?? { parse: null, fields: [], history: {}, flagDecisions: {} };
+    let body: any = {};
+    try { body = JSON.parse(init?.body ?? "{}"); } catch { /* ignore */ }
+    if (docRules[2] === "parse") return json({ ok: false, code: "demo", message: "Demo mode: documents are not read." });
+    if (docRules[2] === "review") {
+      const f = cur.fields.find((x: any) => x.field_key === body.field_key);
+      if (!f) return json({ error: "field_not_found" }, 404);
+      if (f.revision !== body.expected_revision) return json({ error: "stale", message: "This field changed since you opened it." }, 409);
+      const next = {
+        ...f, revision: f.revision + 1,
+        state: body.action === "confirm" ? "reviewed" : body.action === "correct" ? "corrected" : "rejected",
+        corrected_value: body.action === "correct" ? body.value : null, reason: body.reason ?? null, created_at: new Date().toISOString(),
+      };
+      cur.fields = cur.fields.map((x: any) => (x.field_key === f.field_key ? next : x));
+      cur.history[f.field_key] = [...(cur.history[f.field_key] ?? [f]), next];
+      st.documentRules[id] = cur;
+      return json({ revision: next.revision, repeated: false });
+    }
+    if (docRules[2] === "flags") {
+      cur.flagDecisions[body.flag_id] = { choice: body.choice, reason: body.reason ?? null };
+      st.documentRules[id] = cur;
+      return json({ repeated: false });
+    }
+    return json(cur);
+  }
+
   /* The surrender-value book. The real route is scoped to the signed-in
      agent; the demo has one agent, so every life and term row is theirs. */
   if (url.includes("/api/agent/policy-values")) {

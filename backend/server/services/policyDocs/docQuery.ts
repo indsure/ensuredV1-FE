@@ -16,9 +16,9 @@ import type { DocumentText, Line, PageText, TextItem } from "./textLayer";
 export function norm(s: string): string {
   return s
     .replace(/`/g, "₹")
-    .replace(/[‒–—−]/g, "-")
-    .replace(/[‘’‚′]/g, "'")
-    .replace(/[“”]/g, '"')
+    .replace(/[\u2012\u2013\u2014\u2212]/g, "-")
+    .replace(/[\u2018\u2019\u201A\u2032]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -226,7 +226,7 @@ export function sourceOf(
     pdfPage: loc.page.index,
     printedPage: loc.page.printedLabel,
     clause,
-    excerpt: excerpt ? excerpt.slice(0, 200) : null,
+    excerpt: excerpt ? (excerpt.length > 200 ? excerpt.slice(0, 199).replace(/\s+\S*$/, "") + "…" : excerpt) : null,
     region: { x: round(loc.region.x), y: round(loc.region.y), w: round(loc.region.w), h: round(loc.region.h) },
     method: loc.page.method as ExtractionMethod,
     parser: ctx.parser,

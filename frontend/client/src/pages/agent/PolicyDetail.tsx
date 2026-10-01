@@ -6,6 +6,7 @@ import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import CustomerTagCard from "@/components/agent/CustomerTagCard";
 import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
 import PolicyValueChart from "@/components/agent/PolicyValueChart";
+import DocumentTerms from "@/components/agent/policyValue/DocumentTerms";
 import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
@@ -605,6 +606,10 @@ export default function PolicyDetail() {
                     data={extractedData}
                     onSaved={() => void loadDetail()}
                   />
+                )}
+                {/* Policy terms read from the document itself, for the advisor to review. */}
+                {(insuranceType === "life" || insuranceType === "term") && (
+                  <DocumentTerms clientId={policy.id} data={extractedData ?? {}} />
                 )}
               </div>
             ) : (
