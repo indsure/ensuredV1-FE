@@ -245,7 +245,7 @@ export function readEvidence(raw: unknown): { evidence: ValueEvidence; issues: E
       ev.shape = { value, enteredOn };
     } else issues.add("shape_invalid");
   }
-  return { evidence: ev, issues: [...issues] };
+  return { evidence: ev, issues: Array.from(issues) };
 }
 
 /** Records still in force: not superseded by a later record, and not voids themselves. */

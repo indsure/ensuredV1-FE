@@ -15,26 +15,13 @@ import {
   type FieldType,
 } from "./extractionFields";
 import { detectMotorAddOns, ADD_ON_FINDINGS_KEY } from "../../../shared/motorAddOns";
+import { valuationDateIso } from "../../../shared/policyNumbers";
+import { checkFieldSources, coerceLegacy, coerceStrict, fillNextPremiumDate } from "./extractionEvidence";
 
 export interface ExtractionResult {
   status: "completed" | "failed";
   data?: Record<string, any>;
   error?: string;
-}
-
-function coerce(value: any, type: FieldType): any {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "string" && value.trim() === "") return null;
-  // json fields carry a nested object (the charge table); pass it through as-is.
-  if (type === "json") return typeof value === "object" ? value : null;
-  if (type === "number") {
-    if (typeof value === "number") return value;
-    const cleaned = String(value).replace(/[^0-9.\-]/g, "");
-    const n = Number(cleaned);
-    return Number.isFinite(n) ? n : null;
-  }
-  // text / date kept as trimmed strings
-  return typeof value === "string" ? value.trim() : value;
 }
 
 export async function extractStructuredData(
@@ -74,10 +61,24 @@ export async function extractStructuredData(
   }
 
   // Keep only known keys, coerce to the declared type, default missing to null.
+  // A value outside the strict grammar is null, with what was read kept under
+  // `_unparsed` for a person to correct (see extractionEvidence.ts).
   const data: Record<string, any> = {};
+  const unparsed: Record<string, string> = {};
   for (const f of fields) {
-    data[f.key] = coerce(parsed[f.key], f.type);
+    const strict = type === "life" || type === "term";
+    const c = (strict ? coerceStrict : coerceLegacy)(parsed[f.key], f.type as FieldType);
+    data[f.key] = c.value;
+    if (c.unparsed !== null) unparsed[f.key] = c.unparsed;
   }
+  if (Object.keys(unparsed).length) data._unparsed = unparsed;
+
+  // Life and term: check each source excerpt against the text, and label the
+  // next premium date as stated or scheduled. Never a statement about payment.
+  if ("field_sources" in data) {
+    data.field_sources = checkFieldSources(data, policyText, new Set(fields.map((f) => f.key)));
+  }
+  fillNextPremiumDate(data, valuationDateIso());
 
   /* The add-on checklist is read from the same text, in code, with no second
      model call and no extra cost. It is deliberately NOT an extraction field:

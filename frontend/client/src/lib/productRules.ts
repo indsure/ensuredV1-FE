@@ -233,7 +233,7 @@ export function validateRuleSet(raw: unknown): { rules: RuleSet | null; issues: 
     on: typeof r.review?.on === "string" ? r.review.on : null,
   };
 
-  if (issues.size) return { rules: null, issues: [...issues] };
+  if (issues.size) return { rules: null, issues: Array.from(issues) };
   return {
     rules: {
       schema: 1,

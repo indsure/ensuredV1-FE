@@ -43,7 +43,7 @@ export type RowState =
 
 export type NextStep =
   | "wait_for_reading" | "reupload" | "fill_details" | "confirm_plan_type" | "ask_insurer"
-  | "check_details" | "record_payments" | "ask_insurer_quote" | "record_loan" | "none" | "review_duplicate";
+  | "check_details" | "record_payments" | "ask_insurer_quote" | "record_loan" | "none" | "review_duplicate" | "confirm_quote";
 
 export type Exclusion =
   | "no_cash_figure" | "duplicate_counted_once" | "duplicate_disputed" | "pending" | "failed" | "error";
@@ -161,7 +161,7 @@ function classify(row: SourceRow, asOf: string, ruleSets?: RuleSet[]): BookRow {
   out.reason = reasons[0] ?? null;
   if (out.state === "term_cover") out.nextStep = "none";
   else if (out.state === "calculated" || out.state === "quote_on_file") {
-    out.nextStep = v.values.surrender_payable.basis === "insurer_quote" ? "ask_insurer" : "none";
+    out.nextStep = v.values.surrender_payable.basis === "insurer_quote" ? "confirm_quote" : "none";
   } else {
     const hit = NEXT_STEP_BY_REASON.find(([r]) => reasons.includes(r));
     out.nextStep = hit ? hit[1] : out.state === "check_payments" ? "record_payments" : "ask_insurer_quote";
@@ -191,7 +191,7 @@ function markDuplicates(book: BookRow[], source: SourceRow[]): void {
     if (!k) continue;
     groups.set(k, [...(groups.get(k) ?? []), r]);
   }
-  for (const rows of groups.values()) {
+  for (const rows of Array.from(groups.values())) {
     if (rows.length < 2) continue;
     const insurers = new Set(rows.map((r) => norm(r.insurer)));
     if (insurers.size > 1 && !insurers.has("")) continue; // same number, different insurers: not the same policy

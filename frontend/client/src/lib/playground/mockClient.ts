@@ -26,6 +26,13 @@ function getStore(): Store {
   return store;
 }
 
+// Development builds only: lets a person (or a test session) load synthetic
+// rows into the demo store from the console. import.meta.env.DEV is false in
+// production builds, so this whole statement is removed there.
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  (window as any).__playgroundStore = getStore;
+}
+
 const ok = (data: any, count: number | null = null) => ({
   data,
   error: null,
@@ -348,10 +355,27 @@ function playgroundApiResponse(url: string, init?: any): Response {
     const row = getStore().clients.find((c) => c.id === clientId);
     if (row) {
       // Merge, so the keys the form does not render (the add-on scan, the
-      // charge table) survive a save of the ones it does.
-      row.extracted_data = { ...(row.extracted_data ?? {}), ...patch };
+      // charge table) survive a save of the ones it does. The save revision
+      // moves on as it does on the real server, so the value card's
+      // conflict check behaves the same in the demo.
+      const rest = { ...patch };
+      delete rest._rev;
+      const rev = Number.isInteger(row.extracted_data?._rev) ? row.extracted_data._rev : 0;
+      row.extracted_data = { ...(row.extracted_data ?? {}), ...rest, _rev: rev + 1 };
     }
-    return json({ success: true, extracted_data: row?.extracted_data ?? patch });
+    return json({ ok: true, extracted_data: row?.extracted_data ?? patch, rev: row?.extracted_data?._rev ?? null });
+  }
+
+  /* The surrender-value book. The real route is scoped to the signed-in
+     agent; the demo has one agent, so every life and term row is theirs. */
+  if (url.includes("/api/agent/policy-values")) {
+    const rows = getStore().clients
+      .filter((c: any) => c.insurance_type === "life" || c.insurance_type === "term")
+      .map((c: any) => ({
+        id: c.id, name: c.name, policyholder_name: c.policyholder_name, insurer: c.insurer,
+        policy_name: c.policy_name, insurance_type: c.insurance_type, status: c.status, extracted_data: c.extracted_data,
+      }));
+    return json({ rows });
   }
 
   if (url.includes("/api/compare/catalog")) return json({ policies: DEMO_CATALOG });

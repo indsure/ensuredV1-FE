@@ -59,13 +59,13 @@ function motorScore(extracted: any) {
   return s.score === null ? null : s
 }
 
-function renewalChip(dateStr: string | null, t: (key: string, vars?: Record<string, string | number>) => string, locale: Locale) {
+function renewalChip(dateStr: string | null, t: (key: string, vars?: Record<string, string | number>) => string, locale: Locale, type?: string | null) {
   if (!dateStr) return null
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return null
   const days = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
 
-  if (days < 0) return { text: t("common.overdue_cap"), cls: "bg-red-50 text-red-600" }
+  if (days < 0) return { text: type === "life" || type === "term" ? t("common.premium_date_passed_cap") : t("common.overdue_cap"), cls: "bg-red-50 text-red-600" }
   if (days <= 7) return { text: t("common.renews_in", { days }), cls: "bg-red-50 text-red-600" }
   if (days <= 30) return { text: t("common.renews_in", { days }), cls: "bg-amber-50 text-amber-700" }
   return { text: t("common.renews_on", { date: format(d, "d MMM yyyy", { locale: dateLocale(locale) }) }), cls: "bg-slate-100 text-slate-600" }
@@ -111,7 +111,7 @@ export function PoliciesMobileList({
         const type = (p.insurance_type || "health") as InsuranceType
         const isHealth = type === "health"
         const motor = type === "motor" ? motorScore(p.extracted_data) : null
-        const chip = renewalChip(getNextPremiumDate(p.expiry_date, p.extracted_data), t, locale)
+        const chip = renewalChip(getNextPremiumDate(p.expiry_date, p.extracted_data), t, locale, p.insurance_type)
 
         return (
           <button

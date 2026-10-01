@@ -562,7 +562,7 @@ function surrenderFromRules(rules: RuleSet, inp: Inputs, at: string, coveredInst
   if (s.selection === "gsv_only") gross = gsv;
   else if (s.selection === "ssv_only") gross = ssv;
   else gross = gsv !== null && ssv !== null ? Math.max(gsv, ssv) : null;
-  return { gross: gross === null ? null : Math.round(gross * 100) / 100, missing: [...new Set(missing)], notAcquired: false };
+  return { gross: gross === null ? null : Math.round(gross * 100) / 100, missing: Array.from(new Set(missing)), notAcquired: false };
 }
 
 /* ───────────────────────── Main ───────────────────────── */
@@ -762,9 +762,9 @@ export function valuePolicy(insuranceType: string, data: Record<string, any> | n
         comparison = compareNextAnniversary(rulesForCalc, inp, asOf, payment, loan, values.surrender_payable.amount);
       }
     } else {
-      values.surrender_gross = { ...values.surrender_gross, missing: [...new Set(why)] };
-      values.surrender_payable = { ...values.surrender_payable, missing: [...new Set(why)] };
-      values.loan_remaining = { ...values.loan_remaining, missing: [...new Set(why)] };
+      values.surrender_gross = { ...values.surrender_gross, missing: Array.from(new Set(why)) };
+      values.surrender_payable = { ...values.surrender_payable, missing: Array.from(new Set(why)) };
+      values.loan_remaining = { ...values.loan_remaining, missing: Array.from(new Set(why)) };
       comparison.reasons = ["comparison_needs_calculation"];
     }
 

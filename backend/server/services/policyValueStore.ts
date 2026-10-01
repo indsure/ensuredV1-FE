@@ -68,6 +68,13 @@ export function validatePatch(
     if (same(stored[key], value)) { clean[key] = stored[key]; continue; }
     const type = typeOf.get(key);
     if (value === null || value === "") { clean[key] = null; continue; }
+    // Strict values for life and term, whose numbers drive surrender values.
+    // Other lines keep their previous behaviour; tightening them is a separate change.
+    if (insuranceType !== "life" && insuranceType !== "term") {
+      if (bytes(value) > MAX_JSON_FIELD_BYTES) { errors.push({ field: key, reason: "too_large" }); continue; }
+      clean[key] = value;
+      continue;
+    }
     if (type === "number") {
       const p = parseRupees(value);
       if (!p.ok) { errors.push({ field: key, reason: p.reason }); continue; }
