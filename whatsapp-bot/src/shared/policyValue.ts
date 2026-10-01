@@ -1,1026 +1,912 @@
 /**
- * Deterministic value schedule for the life / term data-entry lanes.
+ * What a life policy is worth, and what each figure is based on.
  *
- * Given the flat fields OCR read off the policy document, work out what the
- * customer gets back in each policy year: money paid in, surrender value,
- * maturity benefit and death benefit.
+ * Every figure comes back as a ValueResult: an amount or null, the date it is
+ * true for, what kind of figure it is (an insurer quote, a calculation from
+ * checked policy terms, a figure printed on the document, an estimate), who
+ * supplied the inputs, how far they were checked, and what is missing. The
+ * screens decide what to show from that, never from a bare number.
  *
- * There is no model call here and no estimation. Every figure is arithmetic on
- * the extracted fields and on the parameters in ./policyParams — the charge
- * table, growth assumption, penalty factors and bonus rate that the payout
- * actually depends on. Those are read from the wording where it states them and
- * typed in by the agent where it does not, so the schedule can be reconciled
- * line by line against the benefit illustration in the customer's own document.
+ * A rupee amount is treated as money the customer can get ONLY when it is
+ * either a dated insurer quote, or a calculation from reviewed product rules
+ * for this exact product, on details the advisor has checked against the
+ * policy document, with every premium due so far accounted for and the loan
+ * position known. Anything less is shown as what it is, or not shown.
  *
- * No rate may be hardcoded here. If a number moves the payout it lives in
- * policyParams, or the two can silently disagree.
+ * There are no defaults here. No generic factor table, grace period, lapse
+ * rule, revival window, loan percentage or growth rate is assumed. Missing
+ * evidence makes a figure unavailable, never zero.
  *
- * Field keys must match EXTRACTION_FIELDS in ./insuranceTypes.
+ * Pure and synchronous. No model call, no network. Dates are YYYY-MM-DD
+ * calendar dates; "today" is the India calendar date unless the caller says.
+ *
+ * Imports only sibling pure modules, so it is copied byte for byte to the
+ * WhatsApp bot (whatsapp-bot/scripts/sync-shared.mjs) and tested for drift.
  */
 
 import {
-  bandPct, buildParams, type PolicyParams, type YearBandPct,
-} from "./policyParams";
+  addMonthsIso, anniversaryIso, compareIso, completedPolicyYears, parseIsoDate,
+  parseRupees, parseWholeNumber, valuationDateIso,
+} from "./policyNumbers";
+import { factorForYear, findVerifiedRuleSet, validateRuleSet, type RuleSet } from "./productRules";
+import {
+  activePayments, currentLoan, latestQuote, readEvidence,
+  type Confirmation, type QuotedStatus, type ValueEvidence,
+} from "./policyEvidence";
 
-export type PlanShape =
-  | "pure_term"
-  | "return_of_premium"
-  | "endowment"
-  | "money_back"
-  | "unit_linked";
+/* ───────────────────────── Result types ───────────────────────── */
 
-export const PLAN_SHAPE_LABELS: Record<PlanShape, string> = {
-  pure_term: "Term cover only",
-  return_of_premium: "Term with return of premium",
-  endowment: "Endowment / savings",
-  money_back: "Money back / guaranteed income",
-  unit_linked: "Unit linked",
-};
+/** What kind of figure this is. */
+export type Basis =
+  | "insurer_quote"          // a dated figure from the insurer, as entered by the advisor
+  | "document_calculation"   // reviewed product rules + checked details + payment evidence
+  | "stated_value"           // printed on the policy document or a statement, as read
+  | "estimate"               // arithmetic on inputs that are not all checked or reviewed
+  | "projection"             // a future scenario
+  | "not_applicable"         // e.g. term cover has no surrender value
+  | "unsupported"            // a product shape this does not handle
+  | "insufficient";          // something needed is missing
 
-export const PLAN_SHAPE_OPTIONS = Object.entries(PLAN_SHAPE_LABELS) as [PlanShape, string][];
+/** Who supplied the inputs behind the figure. */
+export type Origin = "agent_entered" | "read_from_document" | "calculated" | "none";
 
-export interface ValueRow {
-  year: number;
-  age: number | null;
-  paid: number;
-  /** Fund value / accrued value at the end of the year, before any penalty. */
-  value: number;
-  /** Penalty deducted if the policy is surrendered in that year. */
-  penalty: number;
-  /**
-   * Payouts already handed over by the end of this year. The customer keeps
-   * these whatever they do next, so `back` alone understates what they hold.
-   */
-  received: number;
-  /** What the customer actually receives, after penalty and after any deferral. */
-  back: number;
-  cover: number;
-  /** null = payable straight away; otherwise the date the money is released. */
-  deferredTo: string | null;
-  /** True where the figure rests on the customer's actual statement rather
-   *  than purely on our projection. */
-  actual: boolean;
-  /** Annual return on the real cashflows if the policy is exited that year. */
-  irr: number | null;
-  /** The same, discounted by actual dates. Preferred wherever it resolves. */
-  xirr: number | null;
-  /**
-   * Most that could be borrowed against this year's surrender value instead of
-   * giving the policy up. Zero where nothing is payable yet, and on unit linked
-   * plans, which are not lent against.
-   */
-  maxLoan: number;
-  note: string;
+/** How far those inputs were checked. Separate from origin on purpose. */
+export type Verification =
+  | "insurer_document"   // advisor marked it as copied from an insurer document
+  | "agent_checked"      // advisor confirmed it against the policy document
+  | "self_reported"      // advisor typed it, no document behind it
+  | "unchecked"          // read from the document by the reader, not checked
+  | "none";
+
+export type ValueKey =
+  | "surrender_gross" | "surrender_payable" | "surrender_estimate" | "loan_remaining"
+  | "maturity_guaranteed" | "vested_bonus" | "future_bonus" | "fund_value"
+  | "premiums_scheduled" | "premiums_recorded";
+
+export type Reason =
+  // inputs
+  | "premium_missing" | "premium_invalid" | "frequency_missing" | "frequency_unclear"
+  | "term_missing" | "term_invalid" | "ppt_invalid" | "start_date_missing" | "start_date_invalid"
+  | "dates_conflict" | "base_premium_missing" | "basic_sum_assured_missing" | "vested_bonus_missing"
+  | "payout_schedule_missing" | "uin_missing" | "insurer_missing"
+  // product
+  | "shape_unknown" | "shape_candidate" | "shape_unsupported" | "term_no_surrender" | "term_no_maturity"
+  | "ulip_ask_insurer" | "ulip_projection_only" | "no_verified_rules" | "rules_shape_mismatch"
+  | "rules_entered_by_agent" | "rules_invalid" | "factor_missing_for_year" | "not_acquired_yet"
+  | "ssv_method_unsupported"
+  // checks and evidence
+  | "inputs_not_checked" | "inputs_changed_since_check"
+  | "schedule_unknown" | "payment_status_unknown" | "payment_records_incomplete" | "date_passed"
+  | "status_not_in_force" | "status_older_than_due" | "first_premium_at_issue" | "single_premium_at_issue"
+  | "payments_self_reported" | "payment_amounts_differ"
+  | "loan_position_unknown" | "loan_interest_unknown" | "loan_rules_missing" | "loan_not_eligible_yet"
+  | "loan_outstanding_comparison_off" | "deductions_exceed_value"
+  // dates and meaning
+  | "quote_dated" | "confirm_with_insurer" | "statement_date_missing" | "fund_value_not_surrender_value"
+  | "schedule_not_payment" | "maturity_not_read" | "bonuses_not_included" | "future_bonus_not_guaranteed"
+  | "terminal_loyalty_not_included" | "reduced_after_lapse_ask_insurer" | "assumes_scheduled_premiums_paid"
+  | "future_bonus_unknown" | "comparison_needs_calculation";
+
+export interface SourceRef {
+  kind: "insurer_quote" | "payment_records" | "paid_to_record" | "loan_record" | "rule_set" | "policy_document" | "agent_check" | "legacy_parameter";
+  label: string;
+  date: string | null;
+  reference: string | null;
 }
 
-/**
- * Borrowing against the policy rather than surrendering it.
- *
- * This is the option an advisor almost never has to hand. A customer who needs
- * money is told what surrender pays; nobody works out that the same policy will
- * lend them most of that and stay alive. Both numbers come off the same
- * surrender value, so there is no reason to have one without the other.
- */
+export interface ValueResult {
+  key: ValueKey;
+  amount: number | null;
+  currency: "INR";
+  /** The date the figure is true for. Null only when there is no figure. */
+  asOf: string | null;
+  basis: Basis;
+  origin: Origin;
+  verification: Verification;
+  /** gross: before deductions; net: after them; limit_remaining: what is left to borrow. */
+  meaning: "gross" | "net" | "limit_remaining" | "stated" | "total";
+  sources: SourceRef[];
+  missing: Reason[];
+  conditions: Reason[];
+  /** "At most this much", when one deduction is known and another is not. Never a cash figure. */
+  upperBound: number | null;
+  /** How far deductions exceed the value, shown separately. Not a debt claim. */
+  shortfall: number | null;
+}
+
+export type Shape = "pure_term" | "return_of_premium" | "endowment" | "money_back" | "unit_linked";
+
+export interface ShapeResult {
+  value: Shape | null;
+  status: "accepted" | "candidate" | "unsupported" | "unknown";
+  source: "agent" | "document" | "plan_name" | "payout_field" | "upload_lane" | null;
+  candidate: Shape | null;
+}
+
+export type PaymentState =
+  | "schedule_unknown"     // cannot tell what was due
+  | "needs_checking"       // nothing recorded
+  | "date_passed"          // a premium date on file has passed with nothing recorded
+  | "recorded_gap"         // records exist but a due premium has none
+  | "recorded_up_to_date"  // every premium due so far is accounted for
+  | "insurer_status";      // the insurer's dated status is the newest evidence
+
+export interface PaymentStatusResult {
+  state: PaymentState;
+  insurerStatus: QuotedStatus | null;
+  statusDate: string | null;
+  /** Every scheduled premium due on or before today is covered by evidence. */
+  upToDate: boolean;
+  dueInstalments: number;
+  coveredInstalments: number;
+  totalInstalments: number | null;
+  firstUncoveredDue: string | null;
+  lastDuePassed: string | null;
+  confirmation: Confirmation | null;
+  reasons: Reason[];
+}
+
 export interface LoanPosition {
-  /** Share of the surrender value that may be borrowed, as a percentage. */
-  sharePct: number;
-  /** Most that could be drawn today. */
-  available: number;
-  /** Interest rate, once a reference yield has been set. */
-  ratePct: number | null;
-  /** Why there is no rate, when there is none. */
-  rateNote: string | null;
-  /** Loan already drawn, including interest accrued on it. */
-  outstanding: number;
-  /** True once the loan has eaten enough of the value to force foreclosure. */
-  forecloses: boolean;
-}
-
-/** What it costs to bring a lapsed policy back, and by when. */
-export interface RevivalQuote {
-  /** Instalments missed since the first unpaid premium. */
-  missedInstalments: number;
-  /** The premium arrears themselves, which need no rate to work out. */
-  arrears: number;
-  /** Interest on those arrears, once a reference yield has been set. */
+  state: "none" | "outstanding" | "unknown";
+  principal: number | null;
   interest: number | null;
-  /** Arrears plus interest, or the arrears alone while the rate is unset. */
-  payable: number;
-  /** Last date the policy can still be revived. */
-  deadline: string | null;
-  /** True once that date has passed and the policy can no longer come back. */
-  expired: boolean;
-  ratePct: number | null;
-  rateNote: string | null;
+  asOf: string | null;
+  confirmation: Confirmation | null;
+  source: "evidence" | "legacy_parameter" | "document_checked" | null;
 }
 
-export interface ValueSchedule {
-  shape: PlanShape;
-  rows: ValueRow[];
-  params: PolicyParams;
-  annualPremium: number;
-  totalPremiums: number;
-  maturity: number;
-  term: number;
-  ppt: number;
-  entryAge: number | null;
-  lockInYears: number | null;
-  lockInEnds: string | null;
-  guaranteed: boolean;
-  steps: string[];
-  /** Annual return if the policy is held to the end. */
-  irrAtMaturity: number | null;
-  xirrAtMaturity: number | null;
-  /** Value the document itself states at maturity, when it was extracted. */
-  illustratedMaturity: number | null;
-  /** How far our schedule sits from the document's own figure. */
-  reconciliation: { diff: number; pct: number } | null;
-  /** Premium payment state, derived from the next due date on the document. */
-  premiumStatus: PremiumStatus;
-  premiumStatusNote: string | null;
-  /** Policy year the actual fund value came from, when the statement gave one. */
-  anchorYear: number | null;
-  anchorValue: number | null;
-  /** Policy year as at the date this was worked out. */
-  currentYear: number | null;
-  /** Policy years actually paid for, where that is fewer than the schedule assumes. */
-  paidThrough: number | null;
-  /** Share of the premium paying term actually paid. 1 while premiums are current. */
-  paidUpFactor: number;
-  /** How the special surrender value was arrived at. */
-  ssvMethod: "present_value" | "factor_table";
-  /** Borrowing against the policy instead of surrendering it. */
+export interface AnniversaryComparison {
+  available: boolean;
+  reasons: Reason[];
+  nextAnniversary: string | null;
+  requiredInstalments: number;
+  requiredPremiums: number | null;
+  payoutsBetween: number | null;
+  currentNet: number | null;
+  nextNet: number | null;
+  /** next net + payouts in between - current net - premiums required. */
+  difference: number | null;
+}
+
+export interface InputIssue {
+  field: string;
+  reason: Reason | "invalid";
+}
+
+export interface ScheduleRow {
+  year: number;
+  premiumsIfPaid: number;
+  estimate: number | null;
+}
+
+export interface PolicyValuation {
+  asOf: string;
+  shape: ShapeResult;
+  policyYear: number | null;
+  completedYears: number | null;
+  term: number | null;
+  maturityDate: string | null;
+  inputIssues: InputIssue[];
+  inputsChecked: boolean;
+  evidenceIssues: string[];
+  rules: { verified: RuleSet | null; entered: RuleSet | null; issues: string[] };
+  payment: PaymentStatusResult;
   loan: LoanPosition;
-  /** What reviving costs, when the policy has lapsed. Null while it is in force. */
-  revival: RevivalQuote | null;
+  values: Record<ValueKey, ValueResult>;
+  /** Next-anniversary comparison; only ever from a document calculation. */
+  nextAnniversary: AnniversaryComparison;
+  /** Year-by-year estimate from an advisor-entered table. Never a quote. */
+  illustration: ScheduleRow[] | null;
+  /** Can this policy's surrender figure go in a cash total, and which one. */
+  cash: {
+    surrender: "calculated" | "quote" | null;
+    borrow: "calculated" | "quote" | null;
+  };
 }
 
-/**
- * Whether the premiums are actually up to date. Every figure below assumes
- * they are; if the policy has lapsed or gone paid-up the real values are
- * different, so this is surfaced rather than quietly ignored.
- */
-export type PremiumStatus = "in_force" | "grace" | "overdue" | "paid_up" | "unknown";
+/* ───────────────────────── Inputs ───────────────────────── */
 
-export interface ValueGap {
-  missing: string[];
-}
+/** The fields the advisor confirms against the document. A change to any of them voids the check. */
+export const DECISION_FIELDS = [
+  "insurer", "uin", "plan_type", "premium", "premium_frequency", "premium_excluding_taxes",
+  "policy_term_years", "premium_paying_term_years", "start_date", "issue_date",
+  "basic_sum_assured", "maturity_amount", "vested_bonus", "vested_bonus_as_on",
+  "payout_amount", "payout_frequency", "payout_start_date", "payout_end_date",
+] as const;
 
-/**
- * Parse a YYYY-MM-DD policy date as local midnight, not UTC.
- *
- * new Date("2023-07-10") is UTC midnight, which in IST is 05:30 on the 10th.
- * This whole feature turns on anniversary boundaries, so that half-day skew
- * would show the wrong policy year for the first 5.5 hours of every day.
- */
-export function policyDate(iso: string | null | undefined): Date | null {
-  if (!iso) return null;
-  const parts = String(iso).slice(0, 10).split("-");
-  if (parts.length === 3) {
-    const [y, m, dd] = parts.map(Number);
-    if (Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(dd) && y > 1900) {
-      return new Date(y, m - 1, dd);
-    }
-  }
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
+type PerYear = number | "single";
 
-const num = (v: unknown): number | null => {
-  if (v === null || v === undefined || v === "") return null;
-  const n = typeof v === "number" ? v : Number(String(v).replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(n) ? n : null;
-};
-
-export function frequencyMultiplier(raw: unknown): number {
-  const s = String(raw ?? "").toLowerCase();
+export function readFrequency(raw: unknown): PerYear | null {
+  const s = String(raw ?? "").toLowerCase().trim();
+  if (!s) return null;
+  if (/single|one.?time|lump/.test(s)) return "single";
   if (/month/.test(s)) return 12;
   if (/quarter/.test(s)) return 4;
   if (/half|semi|six/.test(s)) return 2;
-  if (/single/.test(s)) return 1;
-  return 1;
+  if (/annual|year/.test(s)) return 1;
+  return null;
 }
 
-/**
- * A rate quoted as a reference yield plus a fixed spread, rounded up to the
- * next 25 basis points.
- *
- * This is how the wordings define the policy loan rate, the interest charged on
- * revival and the discount rate behind the special surrender value. None of
- * them is a number the insurer picks: each is a formula on a published yield,
- * which is exactly why they can be computed here rather than read off a table.
- *
- * Returns null when no reference yield has been set, so every caller shows the
- * slot as pending instead of quoting a rate built on a guess.
- */
-export function derivedRate(gSecYieldPct: number | null, spreadBps: number): number | null {
-  if (gSecYieldPct === null || !Number.isFinite(gSecYieldPct)) return null;
-  return Math.ceil((gSecYieldPct + spreadBps / 100) / 0.25) * 0.25;
+interface Inputs {
+  instalment: number | null;
+  perYear: PerYear | null;
+  basePremium: number | null;
+  term: number | null;
+  ppt: number | null;
+  start: string | null;
+  issueDate: string | null;
+  uin: string | null;
+  insurer: string | null;
+  basicSumAssured: number | null;
+  maturityAmount: number | null;
+  vestedBonus: number | null;
+  vestedBonusAsOn: string | null;
+  payoutAmount: number | null;
+  payoutPerYear: number | null;
+  payoutStart: string | null;
+  payoutEnd: string | null;
+  fundValue: number | null;
+  fundValueAsOn: string | null;
+  maturityDate: string | null;
+  issues: InputIssue[];
 }
 
-export function resolveShape(
-  insuranceType: string,
-  data: Record<string, any> | null
-): { shape: PlanShape; inferred: boolean } {
-  const stored = String(data?.plan_type ?? "").toLowerCase().trim();
-  if (stored) {
-    if (/unit|ulip|linked|market|fund/.test(stored)) return { shape: "unit_linked", inferred: false };
-    if (/return of premium|\brop\b/.test(stored)) return { shape: "return_of_premium", inferred: false };
-    if (/money.?back|income/.test(stored)) return { shape: "money_back", inferred: false };
-    if (/endow|saving|guaranteed/.test(stored)) return { shape: "endowment", inferred: false };
-    if (/term|pure|protect/.test(stored)) return { shape: "pure_term", inferred: false };
+function readInputs(d: Record<string, any>): Inputs {
+  const issues: InputIssue[] = [];
+  const money = (key: string, onBad: Reason | "invalid" = "invalid"): number | null => {
+    const raw = d[key];
+    if (raw === null || raw === undefined || raw === "") return null;
+    const p = parseRupees(raw);
+    if (!p.ok) { issues.push({ field: key, reason: onBad }); return null; }
+    return p.value;
+  };
+  const date = (key: string, onBad: Reason | "invalid" = "invalid"): string | null => {
+    const raw = d[key];
+    if (raw === null || raw === undefined || raw === "") return null;
+    const p = parseIsoDate(raw);
+    if (!p.ok) { issues.push({ field: key, reason: onBad }); return null; }
+    return p.value;
+  };
+  const years = (key: string, onBad: Reason): number | null => {
+    const raw = d[key];
+    if (raw === null || raw === undefined || raw === "") return null;
+    const p = parseWholeNumber(raw, { min: 1, max: 100 });
+    if (!p.ok) { issues.push({ field: key, reason: onBad }); return null; }
+    return p.value;
+  };
+  const text = (key: string) => (typeof d[key] === "string" && d[key].trim() ? d[key].trim() : null);
+
+  const instalment = money("premium", "premium_invalid");
+  const perYear = readFrequency(d.premium_frequency);
+  if (d.premium_frequency && perYear === null) issues.push({ field: "premium_frequency", reason: "frequency_unclear" });
+  const term = years("policy_term_years", "term_invalid");
+  let ppt = years("premium_paying_term_years", "ppt_invalid");
+  if (term !== null && ppt !== null && ppt > term) {
+    issues.push({ field: "premium_paying_term_years", reason: "ppt_invalid" });
+    ppt = null;
   }
-  // A payout amount on the schedule settles it: only a money-back or income
-  // plan pays the customer while the policy is still running.
-  if (Number(data?.payout_amount) > 0) return { shape: "money_back", inferred: !stored };
-
-  const name = String(data?.plan_name ?? "").toLowerCase();
-  if (/money.?back|income|achiever|nivesh|sanchay/.test(name)) return { shape: "money_back", inferred: true };
-  if (/unit linked|ulip|wealth|invest|market/.test(name)) return { shape: "unit_linked", inferred: true };
-  if (/return of premium|\brop\b/.test(name)) return { shape: "return_of_premium", inferred: true };
-  if (insuranceType === "term") return { shape: "pure_term", inferred: true };
-  if (data?.maturity_date) return { shape: "endowment", inferred: true };
-  return { shape: "pure_term", inferred: true };
-}
-
-/**
- * The share of the base a surrender in policy year `year` pays.
- *
- * Up to year 7 the factor is read straight off the bands in the table. After
- * that the standard table interpolates, climbing from the year-7 level to the
- * top rate. The wording writes it as "50% + 40% x (year - 7) / (term - 8)",
- * which reaches the top rate in policy year term-1, not term-2.
- *
- * Ending the ramp at term-2 paid the top rate a year early and overstated every
- * value from year 8 on. Against the benefit illustration for HDFC Life Click 2
- * Achieve policy 27290434 (15-year term) it returned 90% in year 13 where the
- * insurer's own table pays 84%: on 14,00,000 of premiums that is 84,000 of
- * surrender value the customer would never have received.
- *
- * The interpolated factor is rounded to the nearest whole percent, which is how
- * these tables are filed and published and what reproduces that illustration
- * line for line. Without the rounding, year 9 lands about 6,000 out.
- */
-function surrenderShare(year: number, term: number, bands: YearBandPct[]): number {
-  if (year <= 7) return bandPct(bands, year) / 100;
-  const top = bandPct(bands, 99) / 100;
-  const mid = bandPct(bands, 7) / 100;
-  // A short term leaves no room to interpolate; the floor keeps the span positive.
-  const rampEnd = Math.max(term - 1, 8);
-  if (year >= rampEnd) return top;
-  return Math.round((mid + (top - mid) * ((year - 7) / (rampEnd - 7))) * 100) / 100;
-}
-
-/** Guaranteed surrender value share, as a fraction of the premiums paid. */
-export function gsvShare(year: number, term: number, params: PolicyParams): number {
-  return surrenderShare(year, term, params.gsvFactors.value);
-}
-
-/**
- * Special surrender value share, as a fraction of the paid-up sum assured plus
- * accrued bonus. Banded and interpolated exactly like the guaranteed table.
- *
- * There is no universal SSV table — each insurer files its own — so the default
- * bands are a placeholder and always report as an assumption. This used to be a
- * curve hardcoded in the engine, which meant the document could not correct it.
- */
-export function ssvShare(year: number, term: number, params: PolicyParams): number {
-  return surrenderShare(year, term, params.ssvFactors.value);
-}
-
-/**
- * Format a local Date back to YYYY-MM-DD.
- *
- * Not toISOString(): these Dates are local midnight, and converting them to UTC
- * in any positive-offset zone lands on the previous day. That turned a lock-in
- * ending 10 Jul into 09 Jul.
- */
-export function isoDate(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
-}
-/**
- * Policy years completed between two dates, counted by anniversary.
- *
- * Not elapsed days over 365.2425: three calendar years from 16 March 2024 is
- * 1,095 days, which that division calls 2.998 and a floor then calls 2. Every
- * boundary in this file is an anniversary, so count anniversaries.
- *
- * Mirrors policyYearOn in ./policyBook, which returns this plus one. The two
- * have to agree or the book and the detail card show different policy years for
- * the same policy on the same day.
- */
-function completedYears(start: Date, at: Date): number {
-  let years = at.getFullYear() - start.getFullYear();
-  const anniversary = new Date(start);
-  anniversary.setFullYear(start.getFullYear() + years);
-  if (anniversary > at) years -= 1;
-  return Math.max(years, 0);
-}
-
-function addYears(iso: string | null, years: number): string | null {
-  const dt = policyDate(iso);
-  if (!dt) return null;
-  dt.setFullYear(dt.getFullYear() + years);
-  return isoDate(dt);
-}
-
-/**
- * Internal rate of return on the policy's actual cashflows.
- *
- * A life policy pays premiums in over years and one lump sum out, so a simple
- * CAGR on the total premiums overstates the return badly — money paid in year
- * 15 has not been working for 15 years. IRR is the measure that handles a
- * stream of payments, and it is what a customer should compare against an FD.
- *
- * Solved by bisection: no derivative to blow up, and it either brackets a root
- * or returns null rather than a made-up number.
- */
-export function irr(flows: number[]): number | null {
-  const npv = (r: number) => flows.reduce((sum, cf, t) => sum + cf / Math.pow(1 + r, t), 0);
-  return solve(npv);
-}
-
-/**
- * Bisection on a bracketed root, to 1e-7 on the rate — a hundredth of a basis
- * point, far tighter than anything we display. Exits on tolerance rather than
- * grinding a fixed 240 iterations, which is what made a 1,000-policy book take
- * seconds of blocking main-thread work.
- */
-function solve(npv: (r: number) => number): number | null {
-  let lo = -0.9999, hi = 5;
-  let flo = npv(lo), fhi = npv(hi);
-  if (!Number.isFinite(flo) || !Number.isFinite(fhi) || flo * fhi > 0) return null;
-  for (let i = 0; i < 100 && hi - lo > 1e-7; i++) {
-    const mid = (lo + hi) / 2;
-    const fm = npv(mid);
-    if (fm === 0) return mid;
-    if (flo * fm < 0) { hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
+  const start = date("start_date", "start_date_invalid");
+  const maturityDate = date("maturity_date");
+  if (start && term !== null && maturityDate && maturityDate !== anniversaryIso(start, term)) {
+    // A maturity date that is not start + term means one of the three is wrong.
+    issues.push({ field: "maturity_date", reason: "dates_conflict" });
   }
-  return (lo + hi) / 2;
+  const payoutPerYearRaw = readFrequency(d.payout_frequency);
+  return {
+    instalment, perYear, term, ppt, start, maturityDate,
+    basePremium: money("premium_excluding_taxes"),
+    issueDate: date("issue_date"),
+    uin: text("uin"),
+    insurer: text("insurer"),
+    basicSumAssured: money("basic_sum_assured"),
+    maturityAmount: money("maturity_amount"),
+    vestedBonus: money("vested_bonus"),
+    vestedBonusAsOn: date("vested_bonus_as_on"),
+    payoutAmount: money("payout_amount"),
+    payoutPerYear: payoutPerYearRaw === "single" ? null : payoutPerYearRaw,
+    payoutStart: date("payout_start_date"),
+    payoutEnd: date("payout_end_date"),
+    fundValue: money("fund_value"),
+    fundValueAsOn: date("fund_value_as_on"),
+    issues,
+  };
 }
 
-/** Cashflows for exiting at the end of policy year `exitYear`: premiums out at
- *  the start of each paying year, the payout in at exit. */
-function exitFlows(annualPremium: number, ppt: number, exitYear: number, payout: number): number[] {
-  const flows: number[] = new Array(exitYear + 1).fill(0);
-  for (let t = 0; t < Math.min(ppt, exitYear); t++) flows[t] -= annualPremium;
-  flows[exitYear] += payout;
-  return flows;
+/* ───────────────────────── Shape ───────────────────────── */
+
+const UNSUPPORTED_RE = /pension|annuit|retire|whole\s*life|child|children|education|\bkid/;
+
+function classify(text: string): Shape | null {
+  if (/unit|ulip|linked|market|fund/.test(text)) return "unit_linked";
+  if (/return of premium|\brop\b/.test(text)) return "return_of_premium";
+  if (/money.?back|income/.test(text)) return "money_back";
+  if (/endow|saving/.test(text)) return "endowment";
+  if (/\bterm\b|pure|protect/.test(text)) return "pure_term";
+  return null;
 }
 
 /**
- * XIRR — the annual return on cashflows that fall on real dates.
+ * Which kind of plan this is, and how sure we are.
  *
- * Better than the period IRR above wherever the dates are not neat annual
- * steps, which is most of the time: a monthly-mode premium is twelve payments
- * a year, not one, and a unit linked surrender inside the lock-in is paid on
- * the lock-in date rather than on a policy anniversary. Discounting by actual
- * days is the only way those come out right, and it is what Excel's XIRR does.
+ * The advisor's own choice wins and is shown as theirs. A plan type the
+ * document states is accepted as read. A plan NAME is only a candidate: "Jeevan
+ * Plan" says nothing. With no evidence at all the answer is "unknown", never
+ * "term cover", because a savings plan read as term shows its owner nothing.
  */
-export function xirr(flows: { date: Date; amount: number }[]): number | null {
-  if (flows.length < 2) return null;
-  const t0 = flows[0].date.getTime();
-  const years = (d: Date) => (d.getTime() - t0) / (365 * 24 * 3600 * 1000);
-  const npv = (r: number) =>
-    flows.reduce((sum, f) => sum + f.amount / Math.pow(1 + r, years(f.date)), 0);
-  return solve(npv);
+export function resolveShape(insuranceType: string, d: Record<string, any>, ev: ValueEvidence): ShapeResult {
+  if (ev.shape) {
+    if (ev.shape.value === "other") return { value: null, status: "unsupported", source: "agent", candidate: null };
+    return { value: ev.shape.value, status: "accepted", source: "agent", candidate: null };
+  }
+  const stated = String(d.plan_type ?? "").toLowerCase().trim();
+  if (stated) {
+    if (UNSUPPORTED_RE.test(stated)) return { value: null, status: "unsupported", source: "document", candidate: null };
+    const s = classify(stated);
+    if (s) return { value: s, status: "accepted", source: "document", candidate: null };
+  }
+  const name = String(d.plan_name ?? "").toLowerCase();
+  if (UNSUPPORTED_RE.test(name)) return { value: null, status: "unsupported", source: "plan_name", candidate: null };
+  const byName = classify(name);
+  if (byName) return { value: null, status: "candidate", source: "plan_name", candidate: byName };
+  const payout = parseRupees(d.payout_amount);
+  if (payout.ok && payout.value > 0) return { value: null, status: "candidate", source: "payout_field", candidate: "money_back" };
+  if (insuranceType === "term") return { value: null, status: "candidate", source: "upload_lane", candidate: "pure_term" };
+  return { value: null, status: "unknown", source: null, candidate: null };
 }
 
-function addMonths(d: Date, months: number): Date {
-  const out = new Date(d);
-  out.setMonth(out.getMonth() + months);
+/* ───────────────────────── Schedule and payments ───────────────────────── */
+
+/** Scheduled premium due dates, from the start date at equal monthly steps. */
+export function scheduledDueDates(start: string, perYear: PerYear, ppt: number): string[] {
+  if (perYear === "single") return [start];
+  const step = 12 / perYear;
+  const out: string[] = [];
+  for (let k = 0; k < ppt * perYear; k++) out.push(addMonthsIso(start, k * step));
   return out;
 }
 
-/**
- * Dated cashflows for exiting at the end of policy year `exitYear`: one outflow
- * per premium instalment on its real due date, one inflow on the day the money
- * actually reaches the customer (which for a locked-in policy is not the
- * anniversary but the date the lock-in lifts).
- */
-/**
- * Survival payouts falling inside a window, as dated cashflows.
- *
- * `reduce` scales the payouts falling after a date. A policy that stops being
- * paid for goes reduced paid-up, and the payouts still to come shrink to the
- * share of the premium paying term that was actually paid. The ones already
- * banked were paid in full and stay that way.
- */
-function payoutFlows(
-  amount: number, perYear: number, from: Date | null, to: Date | null, until: Date,
-  reduce?: { after: Date; factor: number }
-): { date: Date; amount: number }[] {
-  if (!amount || !from) return [];
-  const out: { date: Date; amount: number }[] = [];
-  const stepMonths = Math.max(Math.round(12 / perYear), 1);
-  const last = to && to < until ? to : until;
-  for (let i = 0, d = new Date(from); d <= last && i < 1200; i++) {
-    out.push({ date: new Date(d), amount: reduce && d > reduce.after ? amount * reduce.factor : amount });
-    d = addMonths(from, stepMonths * (i + 1));
+function payoutDates(inp: Inputs, until: string): string[] {
+  if (!inp.payoutAmount || !inp.payoutPerYear || !inp.payoutStart) return [];
+  const out: string[] = [];
+  const step = 12 / inp.payoutPerYear;
+  for (let k = 0; k < 1200; k++) {
+    const d = addMonthsIso(inp.payoutStart, k * step);
+    if (compareIso(d, until) > 0) break;
+    if (inp.payoutEnd && compareIso(d, inp.payoutEnd) > 0) break;
+    out.push(d);
   }
   return out;
 }
 
-function datedFlows(
-  start: string | null, instalment: number, perYear: number, ppt: number,
-  exitYear: number, payout: number, payoutDate: string | null
-): { date: Date; amount: number }[] | null {
-  if (!start) return null;
-  const begin = policyDate(start);
-  if (!begin) return null;
-  const flows: { date: Date; amount: number }[] = [];
-  const monthsApart = 12 / perYear;
-  for (let y = 1; y <= Math.min(ppt, exitYear); y++) {
-    for (let j = 0; j < perYear; j++) {
-      flows.push({ date: addMonths(begin, (y - 1) * 12 + j * monthsApart), amount: -instalment });
-    }
-  }
-  const landed = (payoutDate ? policyDate(payoutDate) : addMonths(begin, exitYear * 12));
-  if (!landed) return null;
-  flows.push({ date: landed, amount: payout });
-  return flows;
-}
-
-function penaltyFor(year: number, ap: number, fv: number, params: PolicyParams): number {
-  const row = params.penalties.value.find((p) => p.year === year);
-  if (!row) return 0;
-  const raw = Math.min((row.pct / 100) * ap, (row.pct / 100) * fv);
-  return row.cap > 0 ? Math.min(raw, row.cap) : raw;
-}
-
-export interface ComputeOptions {
-  /**
-   * Solve the return for every policy year. The detail card scrubs through
-   * years so it needs them all; the book view shows only today and maturity,
-   * and solving all 20 for a thousand policies is seconds of blocked main
-   * thread. Defaults to false — callers opt in to the expensive path.
-   */
-  allYearReturns?: boolean;
-  /** Policy years the caller does need a return for, when not doing all. */
-  returnYears?: number[];
-  /** Treat this as "now" — injected so the behaviour is testable. */
-  asOf?: Date;
-}
-
-export function computePolicyValue(
-  insuranceType: string,
-  data: Record<string, any> | null,
-  options: ComputeOptions = {}
-): ValueSchedule | ValueGap {
-  const d = data ?? {};
-  const sumAssured = num(d.sum_assured) ?? 0;
-  const rawPremium = num(d.premium);
-  const term = num(d.policy_term_years);
-
-  const missing: string[] = [];
-  if (!rawPremium) missing.push("Premium");
-  if (!term) missing.push("Policy term (years)");
-  if (!sumAssured) missing.push("Sum assured");
-  if (missing.length) return { missing };
-
-  const params = buildParams(d.policy_parameters);
-  // Some parameters are also plain extracted fields on the form. Bridge those in,
-  // otherwise moving a value into the parameter block silently drops it.
-  const bridge = (key: "bonusPer1000" | "entryAge", flat: number | null) => {
-    if (flat !== null && params[key].source === "default") {
-      params[key] = { value: flat, source: "document" };
-    }
+function paymentStatus(inp: Inputs, ev: ValueEvidence, d: Record<string, any>, asOf: string): PaymentStatusResult {
+  const reasons: Reason[] = [];
+  const status = latestQuote(ev, "policy_status");
+  const base: PaymentStatusResult = {
+    state: "schedule_unknown", insurerStatus: null, statusDate: null, upToDate: false,
+    dueInstalments: 0, coveredInstalments: 0, totalInstalments: null,
+    firstUncoveredDue: null, lastDuePassed: null, confirmation: null, reasons,
   };
-  bridge("bonusPer1000", num(d.bonus_per_1000));
-  bridge("entryAge", num(d.age_at_entry));
-  const perYear = frequencyMultiplier(d.premium_frequency);
-  const annualPremium = rawPremium! * perYear;
-  const ppt = Math.min(num(d.premium_paying_term_years) ?? term!, term!);
-  const totalPremiums = annualPremium * ppt;
 
-  const coverTillAge = num(d.cover_till_age);
-  const entryAge =
-    num(d.age_at_entry) ?? (coverTillAge ? coverTillAge - term! : params.entryAge.value ?? null);
+  if (!inp.start || inp.perYear === null || (inp.perYear !== "single" && (inp.ppt ?? inp.term) === null)) {
+    if (!inp.start) reasons.push("start_date_missing");
+    if (inp.perYear === null) reasons.push("frequency_missing");
+    reasons.push("schedule_unknown");
+    // A stated next-due date can still say a date has passed. It never says a premium was paid.
+    const stated = parseIsoDate(d.next_premium_date);
+    if (stated.ok && compareIso(stated.value, asOf) < 0) {
+      base.state = "date_passed";
+      base.lastDuePassed = stated.value;
+      reasons.push("date_passed");
+    }
+    if (status && compareIso(status.quoteDate, asOf) <= 0) {
+      base.state = "insurer_status";
+      base.insurerStatus = status.status;
+      base.statusDate = status.quoteDate;
+      base.confirmation = status.confirmation;
+    }
+    return base;
+  }
 
-  const { shape } = resolveShape(insuranceType, d);
-  // "Sum assured" on these documents is the DEATH cover. The maturity amount is
-  // a different number and is stated separately — on the policy that exposed
-  // this, 20L against 14L. Never infer one from the other.
-  const statedMaturity = num(d.maturity_amount);
-  const payoutAmount = num(d.payout_amount) ?? 0;
-  const payoutsPerYear = frequencyMultiplier(d.payout_frequency);
-  const payoutStart = policyDate(d.payout_start_date);
-  const payoutEnd = policyDate(d.payout_end_date);
-  const payoutPerYear = payoutAmount * payoutsPerYear;
-  const start: string | null = d.start_date ?? null;
-  const floor = params.deathBenefitFloorPct.value / 100;
+  const ppt = inp.ppt ?? inp.term!;
+  const dues = scheduledDueDates(inp.start, inp.perYear, ppt);
+  const dueToDate = dues.filter((x) => compareIso(x, asOf) <= 0);
+  base.totalInstalments = dues.length;
+  base.dueInstalments = dueToDate.length;
+  base.lastDuePassed = dueToDate.length > 1 ? dueToDate[dueToDate.length - 1] : null;
 
-  const steps: string[] = [];
-  let guaranteed = true;
-  let lockInYears: number | null = null;
-  let lockInEnds: string | null = null;
+  // Coverage. The first premium is paid at issue: the policy would not exist otherwise.
+  const covered = new Set<string>();
+  if (dues.length) {
+    covered.add(dues[0]);
+    reasons.push(inp.perYear === "single" ? "single_premium_at_issue" : "first_premium_at_issue");
+  }
+  let weakest: Confirmation | null = null;
+  const note = (c: Confirmation) => { weakest = weakest === "self_reported" || c === "self_reported" ? "self_reported" : "insurer_document"; };
+  const payments = activePayments(ev);
+  for (const p of payments) {
+    if (dues.includes(p.dueDate)) { covered.add(p.dueDate); note(p.confirmation); }
+  }
+  const paidTo = latestQuote(ev, "premiums_paid_to");
+  if (paidTo?.paidTo) {
+    for (const x of dues) if (compareIso(x, paidTo.paidTo) <= 0) covered.add(x);
+    note(paidTo.confirmation);
+  }
+  if (inp.instalment !== null && payments.some((p) => Math.abs(p.amount - inp.instalment!) > 1)) {
+    reasons.push("payment_amounts_differ");
+  }
+  const uncovered = dueToDate.filter((x) => !covered.has(x));
+  base.coveredInstalments = dueToDate.length - uncovered.length;
+  base.firstUncoveredDue = uncovered[0] ?? null;
+  base.confirmation = weakest;
+  if (weakest === "self_reported") reasons.push("payments_self_reported");
 
-  steps.push(
-    `Money paid by year n = premium × instalments per year × the smaller of n and the premium paying term` +
-      (perYear > 1 ? ` — ${rawPremium} × ${perYear} × up to ${ppt}.` : ` — ${rawPremium} × up to ${ppt}.`)
-  );
-
-  const asOf = options.asOf ?? new Date();
-
-  // Are the premiums actually up to date? Everything below assumes they are.
-  const nextDue = policyDate(d.next_premium_date);
-  const graceDays = perYear >= 12 ? 15 : 30;
-  let premiumStatus: PremiumStatus = "unknown";
-  let premiumStatusNote: string | null = null;
-  if (!nextDue) {
-    premiumStatusNote = "No next premium date was read, so we cannot tell whether the premiums are up to date.";
+  const hasRecords = payments.length > 0 || !!paidTo;
+  if (uncovered.length === 0) {
+    base.state = "recorded_up_to_date";
+    base.upToDate = true;
+  } else if (!hasRecords) {
+    base.state = base.lastDuePassed ? "date_passed" : "needs_checking";
+    reasons.push(base.lastDuePassed ? "date_passed" : "payment_status_unknown");
   } else {
-    const overdueDays = Math.floor((asOf.getTime() - nextDue.getTime()) / 86400000);
-    const pptEnd = addYears(start, ppt);
-    const pptDone = pptEnd ? asOf >= new Date(pptEnd) : false;
-    if (pptDone) {
-      premiumStatus = "in_force";
-    } else if (overdueDays <= 0) {
-      premiumStatus = "in_force";
-    } else if (overdueDays <= graceDays) {
-      premiumStatus = "grace";
-      premiumStatusNote = `Premium was due on ${d.next_premium_date} — inside the ${graceDays}-day grace period.`;
+    base.state = "recorded_gap";
+    reasons.push("payment_records_incomplete");
+  }
+
+  // The newest dated evidence wins. An insurer status counts only if no
+  // scheduled premium has fallen due since it, without a record.
+  if (status && compareIso(status.quoteDate, asOf) <= 0) {
+    const dueSince = uncovered.filter((x) => compareIso(x, status.quoteDate) > 0);
+    if (dueSince.length === 0) {
+      base.state = "insurer_status";
+      base.insurerStatus = status.status;
+      base.statusDate = status.quoteDate;
+      base.confirmation = status.confirmation;
+      base.upToDate = status.status === "in_force";
     } else {
-      premiumStatus = overdueDays > 365 ? "paid_up" : "overdue";
-      premiumStatusNote =
-        `Premium due on ${d.next_premium_date} is ${overdueDays} days overdue. ` +
-        "The benefits below are reduced to what has actually been paid for, and go back up on revival.";
+      reasons.push("status_older_than_due");
     }
   }
+  return base;
+}
 
-  const startDt = policyDate(start);
+/* ───────────────────────── Loans ───────────────────────── */
 
-  /**
-   * Policy years actually paid for.
-   *
-   * Premiums stop where the customer stopped, not where the schedule says they
-   * should have: a policy in arrears has been paid up to the anniversary before
-   * its first unpaid due date. Null while the policy is current, which means
-   * "assume the schedule". Everything downstream reads this instead of assuming
-   * the book stayed up to date, which is how a lapsed policy used to be shown
-   * at its full in-force value with a line of text underneath apologising.
-   */
-  let paidThrough: number | null = null;
-  // Only once the policy has actually gone paid-up. A premium a few weeks late
-  // is still on risk and still revivable at full benefit, so reducing it there
-  // would understate the cover at the exact moment the customer might claim.
-  if (nextDue && startDt && premiumStatus === "paid_up") {
-    paidThrough = Math.min(completedYears(startDt, nextDue), ppt);
-  }
-
-  /**
-   * Reduced paid-up proportion: the share of the premium paying term bought and
-   * paid for. Once premiums stop the benefits do not stay where they were, they
-   * reduce to this share. Showing a lapsed policy's full sum assured is the most
-   * misleading thing this screen could do, because it is the number the customer
-   * would be told they had lost.
-   */
-  const paidUpFactor = paidThrough === null ? 1 : Math.min(paidThrough / ppt, 1);
-  /** Payouts still to come shrink to the paid-up share; banked ones do not. */
-  const lapseReduce =
-    paidUpFactor < 1 && nextDue ? { after: nextDue, factor: paidUpFactor } : undefined;
-
-  /** Policy year as at the date this is being worked out. */
-  const currentYear = startDt
-    ? Math.min(Math.max(completedYears(startDt, asOf) + 1, 1), term!)
-    : null;
-
-  // Solving the return is the expensive part; only do the years asked for.
-  const wantReturn = (y: number) =>
-    options.allYearReturns === true ||
-    (options.returnYears ? options.returnYears.includes(y) : false) ||
-    y === term;
-
-  // One instalment is what actually leaves the customer's account each time.
-  const instalment = rawPremium!;
-  const datedIrr = (exitYear: number, payout: number, payoutDate: string | null) => {
-    const flows = datedFlows(start, instalment, perYear, ppt, exitYear, payout, payoutDate);
-    if (!flows) return null;
-    // Money already received during the term is part of the return. Leaving the
-    // survival payouts out understates it and makes the plan look worse than it is.
-    const begin = policyDate(start);
-    if (begin && payoutAmount > 0) {
-      const exitOn = policyDate(payoutDate) ?? addMonths(begin, exitYear * 12);
-      flows.push(...payoutFlows(payoutAmount, payoutsPerYear, payoutStart, payoutEnd, exitOn, lapseReduce));
-    }
-    flows.sort((a, b) => a.date.getTime() - b.date.getTime());
-    return xirr(flows);
-  };
-
-  // The statement gives the fund value as at a real date. Where we have it, the
-  // projection is rebased onto it: the charge model decides the SHAPE of the
-  // curve, but the customer's own statement decides where it actually is. Without
-  // this the screen shows a modelled fund and calls it theirs.
-  const actualFund = num(d.fund_value);
-  const fundAsOn = policyDate(d.fund_value_as_on) ?? asOf;
-  const startDate = policyDate(start);
-  let anchorYear: number | null = null;
-  let anchorValue: number | null = null;
-  if (actualFund !== null && actualFund > 0 && startDate) {
-    const elapsed = (fundAsOn.getTime() - startDate.getTime()) / (365.2425 * 86400000);
-    anchorYear = Math.min(Math.max(Math.ceil(elapsed), 1), term!);
-    anchorValue = actualFund;
-  }
-
-  /**
-   * Years that must complete before any surrender value exists: two under the
-   * old convention, one under the IRDAI (Insurance Products) Regulations 2024,
-   * which bind products offered from 1 October 2024.
-   *
-   * Resolved from the policy's own start date rather than one setting applied to
-   * the whole book, because a real book spans the change and both sides of it
-   * have to be right. A value read off the document or typed in by the agent
-   * always wins over this.
-   */
-  const acquiresAfter =
-    params.surrenderAcquiresAfterYears.source === "default" && startDt
-      ? (startDt >= new Date(2024, 9, 1) ? 1 : 2)
-      : params.surrenderAcquiresAfterYears.value;
-  const acquired = (y: number) => y >= acquiresAfter;
-
-  const loanShare = params.loanValuePct.value / 100;
-  const ssvRate = derivedRate(params.gSecYieldPct.value, params.ssvSpreadBps.value);
-  const ssvMethod: "present_value" | "factor_table" =
-    ssvRate === null ? "factor_table" : "present_value";
-
-  /**
-   * Special surrender value: the present value of what the policy would still
-   * pay if it were made paid-up today, discounted at the reference yield plus
-   * the filed spread.
-   *
-   * This is what the regulations actually define, and what the insurer does. The
-   * banded factor table is only a shape fitted to it, and says so. Returns null
-   * until a reference yield is set, so the caller falls back to the table rather
-   * than discounting at a rate nobody chose.
-   */
-  const ssvPresentValue = (
-    fromYear: number, maturityAtEnd: number, payoutScale: number
-  ): number | null => {
-    if (ssvRate === null) return null;
-    const per = 1 + ssvRate / 100;
-    let pv = maturityAtEnd > 0 ? maturityAtEnd / Math.pow(per, Math.max(term! - fromYear, 0)) : 0;
-    if (startDt && payoutAmount > 0 && payoutScale > 0) {
-      const from = addMonths(startDt, fromYear * 12);
-      const until = addMonths(startDt, term! * 12);
-      for (const f of payoutFlows(payoutAmount, payoutsPerYear, payoutStart, payoutEnd, until, lapseReduce)) {
-        if (f.date <= from) continue;
-        const t = (f.date.getTime() - from.getTime()) / (365.2425 * 86400000);
-        pv += (f.amount * payoutScale) / Math.pow(per, t);
-      }
-    }
-    return pv;
-  };
-
-  const rows: ValueRow[] = [];
-
-  if (shape === "unit_linked") {
-    lockInYears = params.lockInYears.value;
-    lockInEnds = addYears(start, lockInYears);
-    guaranteed = false;
-
-    // Month-by-month, exactly as the charge table in the wording describes it:
-    // allocation charge off the premium going in, then administration and
-    // mortality out of the fund, then growth net of the fund management charge.
-    const gross = params.grossReturnPct.value / 100;
-    const fmc = params.fundChargePct.value / 100;
-    const monthly = Math.pow(1 + gross - fmc, 1 / 12) - 1;
-    const admin = (y: number) =>
-      Math.min(
-        params.adminMonthly.value * Math.pow(1 + params.adminEscalationPct.value / 100, y - 1),
-        params.adminCapMonthly.value
-      );
-    const mort = params.mortalityPer1000.value;
-
-    let fv = 0;
-    let tpp = 0;
-    for (let y = 1; y <= term!; y++) {
-      if (y <= ppt) {
-        tpp += annualPremium;
-        fv += annualPremium * (1 - bandPct(params.allocationCharges.value, y) / 100);
-      }
-      const age = (entryAge ?? params.entryAge.value) + y - 1;
-      const rate = mort[age] ?? mort[Math.max(...Object.keys(mort).map(Number))] ?? 0;
-      let sum12 = 0;
-      for (let mo = 0; mo < 12; mo++) {
-        const atRisk = Math.max(Math.max(sumAssured, floor * tpp) - fv, 0);
-        fv -= (atRisk * rate) / 1000 / 12;
-        fv -= admin(y);
-        fv *= 1 + monthly;
-        sum12 += fv;
-      }
-      if (y >= params.loyaltyFromYear.value) {
-        fv += (params.loyaltyPct.value / 100) * (sum12 / 12);
-      }
-      // Rebase onto the statement. From here the projection carries the real
-      // number forward through the same charges instead of a modelled one.
-      if (anchorYear !== null && y === anchorYear) fv = anchorValue!;
-
-      const penalty = penaltyFor(y, annualPremium, fv, params);
-      const inLock = y <= lockInYears;
-      const net = fv - penalty;
-      const back = inLock
-        ? net * Math.pow(1 + params.discontinuedFundRatePct.value / 100, lockInYears - y)
-        : net;
-      rows.push({
-        year: y,
-        age: entryAge === null ? null : entryAge + y,
-        paid: annualPremium * Math.min(y, ppt),
-        value: fv,
-        penalty,
-        received: 0,
-        back,
-        cover: Math.max(sumAssured, fv, floor * (annualPremium * Math.min(y, ppt))),
-        deferredTo: inLock ? lockInEnds : null,
-        // Unit linked plans are not lent against, so there is no loan line here.
-        maxLoan: 0,
-        actual: anchorYear !== null && y >= anchorYear,
-        irr: wantReturn(y) ? irr(exitFlows(annualPremium, ppt, y, back)) : null,
-        xirr: wantReturn(y) ? datedIrr(y, back, inLock ? lockInEnds : null) : null,
-        note: inLock
-          ? `Held in the discontinued fund until ${lockInEnds ?? "the end of the lock-in"}, earning ${params.discontinuedFundRatePct.value}% a year.`
-          : "Fund value on the day you surrender.",
-      });
-    }
-
-    if (anchorYear !== null) {
-      steps.push(
-        `Fund value of ${Math.round(anchorValue!).toLocaleString("en-IN")} from the statement is taken as ` +
-          `fact at policy year ${anchorYear}; later years are projected forward from it, earlier years are ` +
-          "our reconstruction of how it got there."
-      );
-    } else {
-      steps.push(
-        "No fund value was read from a statement, so the whole curve is modelled from the charge table. " +
-          "Add the current fund value and everything from that year on becomes the customer's real position."
-      );
-    }
-    steps.push(
-      `Fund is rolled forward month by month: premium less the allocation charge goes in, then the ` +
-        `₹${params.adminMonthly.value}/month administration charge and the mortality charge on the sum at ` +
-        `risk come out, then growth of ${params.grossReturnPct.value}% less the ${params.fundChargePct.value}% fund management charge.`
-    );
-    steps.push(
-      `Surrender inside the ${lockInYears}-year lock-in loses the discontinuance charge and is released only ` +
-        `${lockInEnds ? `on ${lockInEnds}` : "at the end of the lock-in"}, earning ${params.discontinuedFundRatePct.value}% a year until then.`
-    );
-    if (params.loyaltyPct.value > 0) {
-      steps.push(
-        `A loyalty addition of ${params.loyaltyPct.value}% of the year's average fund is credited from year ${params.loyaltyFromYear.value}.`
-      );
-    }
-  } else {
-    for (let y = 1; y <= term!; y++) {
-      // Premiums stop where the customer stopped, not where the schedule says.
-      const paidYears = Math.min(y, ppt, paidThrough ?? ppt);
-      const paid = annualPremium * paidYears;
-      // Share of the premium paying term paid for by now. Every benefit on a
-      // policy that stopped early reduces to this, and so does the base the
-      // special surrender value is a present value of.
-      const puShare = Math.min(paidYears / ppt, 1);
-      let receivedSoFar = 0;
-      let value = 0;
-      let back = 0;
-      let cover = sumAssured;
-      let note = "";
-
-      if (shape === "pure_term") {
-        if (paidUpFactor < 1) {
-          // Term cover acquires no paid-up value, so stopping the premiums does
-          // not reduce the cover, it ends it. Saying so is the whole point.
-          cover = 0;
-          note = "Cover has stopped. Term insurance builds no paid-up value, so nothing is payable until it is revived.";
-        } else {
-          note = "Term cover pays nothing on surrender or on survival.";
-        }
-      }
-
-      if (shape === "return_of_premium") {
-        value = paid;
-        const gsv = acquired(y) ? gsvShare(y, term!, params) * paid : 0;
-        // The benefit still to come is the refund of the premiums actually paid,
-        // so its present value is the special surrender value on this shape.
-        const ssv = acquired(y) ? ssvPresentValue(y, paid, 0) ?? 0 : 0;
-        back = y === term ? paid : Math.max(gsv, ssv);
-        cover = Math.max(sumAssured * paidUpFactor, floor * paid);
-        note =
-          !acquired(y)
-            ? `No surrender value until ${acquiresAfter} policy ${acquiresAfter === 1 ? "year is" : "years are"} complete.`
-            : y === term
-            ? "Every premium paid is returned at maturity."
-            : ssv > gsv
-            ? "Present value of the premium refund still to come, which beats the guaranteed table here."
-            : `${Math.round(gsvShare(y, term!, params) * 100)}% of the premiums paid so far.`;
-      }
-
-      if (shape === "money_back") {
-        // Survival payouts already received by the end of this policy year.
-        const begin = policyDate(start);
-        const received = begin
-          ? payoutFlows(payoutAmount, payoutsPerYear, payoutStart, payoutEnd, addMonths(begin, y * 12), lapseReduce)
-              .reduce((sum, p) => sum + p.amount, 0)
-          : payoutPerYear * y;
-        // The maturity amount is whatever the schedule states. We do not derive
-        // it from the sum assured, because they are different numbers.
-        const matAmount = (statedMaturity ?? sumAssured) * paidUpFactor;
-        // Surrender pays the guaranteed value on premiums, less what has already
-        // been handed over as survival benefit — the standard treatment, and what
-        // the insurer's own formula does. Paying the gross figure counted every
-        // payout twice: once when it reached the customer, again on surrender.
-        const gsv = acquired(y) ? gsvShare(y, term!, params) * paid : 0;
-        // The special surrender value discounts what is still to come: the
-        // payouts left plus the maturity amount, both at the paid-up share.
-        const ssv = acquired(y) ? ssvPresentValue(y, matAmount, puShare) ?? 0 : 0;
-        value = received + (y === term ? matAmount : gsv);
-        back = y === term ? matAmount : Math.max(gsv - received, ssv);
-        receivedSoFar = received;
-        cover = Math.max(sumAssured * paidUpFactor, floor * paid);
-        note =
-          y === term
-            ? `Maturity amount of ${Math.round(matAmount).toLocaleString("en-IN")} as stated on the schedule.`
-            : !acquired(y)
-            ? `No surrender value until ${acquiresAfter} policy ${acquiresAfter === 1 ? "year is" : "years are"} complete.`
-            : ssv > gsv - received
-            ? "Present value of the payouts and maturity still to come, which beats the guaranteed table here."
-            : `Plus ${Math.round(received).toLocaleString("en-IN")} of payouts already received by then.`;
-      }
-
-      if (shape === "endowment") {
-        // Bonus accrues on the cover actually in force, so it stops where the
-        // premiums did rather than running on to the full term.
-        const bonus = params.bonusPer1000.value * (sumAssured / 1000) * Math.min(y, paidThrough ?? y);
-        const paidUp = sumAssured * puShare;
-        // Present value of the paid-up benefit where a rate is set, the banded
-        // factor table where it is not.
-        const ssv = ssvPresentValue(y, paidUp + bonus, 0) ?? (paidUp + bonus) * ssvShare(y, term!, params);
-        // Gated like every other shape. This was the one branch that paid a
-        // guaranteed surrender value before one had been acquired at all, which
-        // a filed table with a year-one factor would have exposed.
-        const gsv = acquired(y) ? gsvShare(y, term!, params) * paid : 0;
-        value = paidUp + bonus;
-        back = y === term
-          ? ((statedMaturity ?? sumAssured + bonus) * paidUpFactor)
-          : Math.max(gsv, acquired(y) ? ssv : 0);
-        cover = Math.max(sumAssured * paidUpFactor, floor * paid) + bonus;
-        if (params.bonusPer1000.value > 0) guaranteed = false;
-        note =
-          !acquired(y)
-            ? `No surrender value until ${acquiresAfter} policy ${acquiresAfter === 1 ? "year is" : "years are"} complete.`
-            : y === term
-            ? "Sum assured plus the bonus accrued."
-            : ssv > gsv
-            ? "Paid-up value with bonus, which beats the guaranteed table here."
-            : "Higher of the guaranteed value and the paid-up value with bonus.";
-      }
-
-      rows.push({
-        year: y,
-        age: entryAge === null ? null : entryAge + y,
-        paid, value, penalty: 0, back, cover, received: receivedSoFar, deferredTo: null, note,
-        maxLoan: shape === "pure_term" ? 0 : Math.max(back, 0) * loanShare,
-        actual: false,
-        irr: wantReturn(y) ? irr(exitFlows(annualPremium, ppt, y, back)) : null,
-        xirr: wantReturn(y) ? datedIrr(y, back, null) : null,
-      });
-    }
-
-    if (shape === "pure_term") {
-      steps.push("Surrender value = 0 — term cover acquires no surrender value, so there is nothing to schedule.");
-      steps.push("Maturity benefit = 0 — nothing is payable if the life assured survives the term.");
-      steps.push(`Cover on death = the sum assured, flat for all ${term} years.`);
-    }
-    if (shape === "return_of_premium") {
-      steps.push("Surrender value = the guaranteed factor for that year × premiums paid, from the factor table.");
-      steps.push("Maturity benefit = every premium paid, returned at the end of the term.");
-    }
-    if (shape === "money_back") {
-      steps.push(
-        `The plan pays ${Math.round(payoutAmount).toLocaleString("en-IN")} ${String(d.payout_frequency ?? "").toLowerCase() || "each period"}` +
-          `${payoutStart ? ` from ${d.payout_start_date}` : ""}${payoutEnd ? ` to ${d.payout_end_date}` : ""}. ` +
-          "Those payouts are counted as money received, both in the total and in the return."
-      );
-      steps.push(
-        `Maturity amount is ${Math.round(statedMaturity ?? sumAssured).toLocaleString("en-IN")}, taken from the schedule. ` +
-          "It is a different figure from the death cover and is never derived from it."
-      );
-      steps.push(
-        "Surrender before the end pays the guaranteed surrender value on the premiums paid, less the " +
-          "payouts already handed over. Those stay with the customer either way."
-      );
-    }
-    if (shape === "endowment") {
-      steps.push(`Accrued bonus = ₹${params.bonusPer1000.value} per ₹1,000 of sum assured, per completed year.`);
-      steps.push("Paid-up value = sum assured × premiums paid ÷ premiums payable, plus the bonus accrued.");
-      steps.push("Surrender value = the higher of the guaranteed value and the paid-up value reduced for the years still to run.");
-    }
-  }
-
-  if (shape !== "pure_term") {
-    steps.push(
-      `Cover on death = the highest of the sum assured, the value built up, and ${params.deathBenefitFloorPct.value}% of the premiums paid.`
-    );
-  }
-
-  if (paidUpFactor < 1) {
-    steps.push(
-      `Premiums stopped after ${paidThrough} of the ${ppt} years payable, so the policy is reduced paid-up: ` +
-        `every benefit above is ${Math.round(paidUpFactor * 100)}% of what it would have been. Reviving it puts them back.`
-    );
-  }
-  if (shape !== "pure_term" && shape !== "unit_linked") {
-    steps.push(
-      `Surrender is not the only way to get at the money: up to ${params.loanValuePct.value}% of the ` +
-        "surrender value can be borrowed against the policy, which keeps the cover alive."
-    );
-  }
-
-  /* Borrowing against the policy rather than giving it up. Both numbers come off
-     the same surrender value, so there is no reason to show one without the other. */
-  const currentRow = currentYear ? rows[Math.min(currentYear, term!) - 1] ?? null : null;
-  const loanRate = derivedRate(params.gSecYieldPct.value, params.loanSpreadBps.value);
-  const outstanding = params.outstandingLoan.value;
-  const loan: LoanPosition = {
-    sharePct: params.loanValuePct.value,
-    available: Math.max((currentRow?.maxLoan ?? 0) - outstanding, 0),
-    ratePct: shape === "pure_term" || shape === "unit_linked" ? null : loanRate,
-    rateNote:
-      shape === "pure_term"
-        ? "Term cover has no surrender value, so there is nothing to lend against."
-        : shape === "unit_linked"
-        ? "Unit linked plans are not lent against."
-        : loanRate === null
-        ? "Set the reference G-Sec yield on this policy to work out the loan rate."
-        : null,
-    outstanding,
-    forecloses:
-      outstanding > 0 && currentRow
-        ? outstanding > (params.foreclosureAtPct.value / 100) * currentRow.back
-        : false,
-  };
-
-  /* What it costs to bring a lapsed policy back. The arrears need no rate at all,
-     so they are quoted even while the interest is pending, and the deadline is
-     the number that actually decides whether the advisor picks up the phone. */
-  let revival: RevivalQuote | null = null;
-  if ((premiumStatus === "overdue" || premiumStatus === "paid_up") && nextDue) {
-    const monthsApart = 12 / perYear;
-    const pptEndIso = addYears(start, ppt);
-    const pptEnd = pptEndIso ? policyDate(pptEndIso) : null;
-    const missed: Date[] = [];
-    for (let i = 0; i < 600; i++) {
-      const due = addMonths(nextDue, monthsApart * i);
-      if (due > asOf) break;
-      // Nothing is owed for a premium that was never payable in the first place.
-      if (pptEnd && due >= pptEnd) break;
-      missed.push(due);
-    }
-    const arrears = missed.length * instalment;
-    const revivalRate = derivedRate(params.gSecYieldPct.value, params.revivalSpreadBps.value);
-    const interest =
-      revivalRate === null
-        ? null
-        : missed.reduce((sum, due) => {
-            const yrs = (asOf.getTime() - due.getTime()) / (365.2425 * 86400000);
-            return sum + instalment * (Math.pow(1 + revivalRate / 100, yrs) - 1);
-          }, 0);
-    const windowEnd = addYears(isoDate(nextDue), params.revivalWindowYears.value);
-    const policyEnd = addYears(start, term!);
-    const deadline =
-      windowEnd && policyEnd ? (windowEnd < policyEnd ? windowEnd : policyEnd) : windowEnd ?? policyEnd;
-    const deadlineDate = deadline ? policyDate(deadline) : null;
-    revival = {
-      missedInstalments: missed.length,
-      arrears,
-      interest,
-      payable: arrears + (interest ?? 0),
-      deadline,
-      expired: deadlineDate ? asOf > deadlineDate : false,
-      ratePct: revivalRate,
-      rateNote:
-        revivalRate === null
-          ? "Set the reference G-Sec yield on this policy to work out the interest on the arrears."
-          : null,
+function loanPosition(d: Record<string, any>, ev: ValueEvidence, checked: (k: string) => boolean): LoanPosition {
+  const rec = currentLoan(ev);
+  if (rec) {
+    return {
+      state: rec.status, principal: rec.principal, interest: rec.interest, asOf: rec.asOf,
+      confirmation: rec.confirmation, source: "evidence",
     };
   }
+  // A loan balance read off a statement counts once the advisor has checked it.
+  const p = parseRupees(d.loan_outstanding);
+  const asOf = parseIsoDate(d.loan_statement_date);
+  if (p.ok && asOf.ok && checked("loan_outstanding") && checked("loan_statement_date")) {
+    const i = parseRupees(d.loan_interest_accrued);
+    return {
+      state: p.value > 0 ? "outstanding" : "none", principal: p.value,
+      interest: i.ok && checked("loan_interest_accrued") ? i.value : p.value > 0 ? null : 0,
+      asOf: asOf.value, confirmation: "insurer_document", source: "document_checked",
+    };
+  }
+  // The old card's "loan already taken" box: a principal with no date and no interest.
+  const legacy = d.policy_parameters?.outstandingLoan;
+  const lv = legacy && typeof legacy === "object" ? legacy.value : legacy;
+  const lp = parseRupees(lv);
+  if (lp.ok && lp.value > 0) {
+    return { state: "outstanding", principal: lp.value, interest: null, asOf: null, confirmation: "self_reported", source: "legacy_parameter" };
+  }
+  return { state: "unknown", principal: null, interest: null, asOf: null, confirmation: null, source: null };
+}
 
-  const maturity = rows[rows.length - 1]?.back ?? 0;
-  const illustratedMaturity = num(d.illustrated_maturity_value);
-  const reconciliation =
-    illustratedMaturity !== null
-      ? { diff: maturity - illustratedMaturity, pct: ((maturity - illustratedMaturity) / illustratedMaturity) * 100 }
-      : null;
+/* ───────────────────────── Calculation from rules ───────────────────────── */
+
+interface CalcOut {
+  gross: number | null;
+  missing: Reason[];
+  notAcquired: boolean;
+}
+
+/**
+ * Surrender value on a date, from a rule set, with `coveredInstalments`
+ * premiums paid. Only what the rules state is used. A year the table does not
+ * cover gives null, not an interpolated guess.
+ */
+function surrenderFromRules(rules: RuleSet, inp: Inputs, at: string, coveredInstalments: number): CalcOut {
+  const missing: Reason[] = [];
+  const s = rules.surrender;
+  if (!s) return { gross: null, missing: ["no_verified_rules"], notAcquired: false };
+  if (!inp.start || inp.term === null || inp.perYear === null) {
+    return { gross: null, missing: ["schedule_unknown"], notAcquired: false };
+  }
+  const total = inp.perYear === "single" ? 1 : (inp.ppt ?? inp.term) * inp.perYear;
+  const perYear = inp.perYear === "single" ? null : inp.perYear;
+  const completed = completedPolicyYears(inp.start, at);
+  const year = Math.min(completed + 1, inp.term);
+  const yearsPaid = perYear === null ? Number.POSITIVE_INFINITY : coveredInstalments / perYear;
+  if (completed < s.acquiredAfterYears || yearsPaid < s.acquiredAfterYears) {
+    return { gross: 0, missing: [], notAcquired: true };
+  }
+
+  let gsv: number | null = null;
+  if (s.gsv) {
+    const f = factorForYear(s.gsv.factors, s.gsv.interpolation, year, inp.term);
+    if (inp.basePremium === null) missing.push("base_premium_missing");
+    if (f === null) missing.push("factor_missing_for_year");
+    let paidOut = 0;
+    if (s.gsv.deductSurvivalBenefitsPaid) {
+      if (rules.shape === "money_back" && (!inp.payoutAmount || !inp.payoutPerYear || !inp.payoutStart)) {
+        missing.push("payout_schedule_missing");
+      }
+      paidOut = payoutDates(inp, at).length * (inp.payoutAmount ?? 0);
+    }
+    if (f !== null && inp.basePremium !== null) {
+      gsv = Math.max(f * inp.basePremium * coveredInstalments - paidOut, 0);
+    }
+  }
+
+  let ssv: number | null = null;
+  if (s.ssv) {
+    const f = factorForYear(s.ssv.factors, s.ssv.interpolation, year, inp.term);
+    if (inp.basicSumAssured === null) missing.push("basic_sum_assured_missing");
+    if (inp.vestedBonus === null) missing.push("vested_bonus_missing");
+    if (f === null) missing.push("factor_missing_for_year");
+    if (f !== null && inp.basicSumAssured !== null && inp.vestedBonus !== null) {
+      const paidUp = inp.basicSumAssured * Math.min(coveredInstalments / total, 1);
+      ssv = f * (paidUp + inp.vestedBonus);
+    }
+  }
+
+  let gross: number | null = null;
+  if (s.selection === "gsv_only") gross = gsv;
+  else if (s.selection === "ssv_only") gross = ssv;
+  else gross = gsv !== null && ssv !== null ? Math.max(gsv, ssv) : null;
+  return { gross: gross === null ? null : Math.round(gross * 100) / 100, missing: [...new Set(missing)], notAcquired: false };
+}
+
+/* ───────────────────────── Main ───────────────────────── */
+
+const empty = (key: ValueKey, meaning: ValueResult["meaning"]): ValueResult => ({
+  key, amount: null, currency: "INR", asOf: null, basis: "insufficient", origin: "none",
+  verification: "none", meaning, sources: [], missing: [], conditions: [], upperBound: null, shortfall: null,
+});
+
+export interface ValueOptions {
+  /** Valuation date, YYYY-MM-DD. Defaults to today's date in India. */
+  asOf?: string;
+  /** Reviewed rule sets to match against. Defaults to the shipped registry (empty). */
+  ruleSets?: RuleSet[];
+}
+
+/** Value one life or term policy from its stored data. Never throws on bad data. */
+export function valuePolicy(insuranceType: string, data: Record<string, any> | null, options: ValueOptions = {}): PolicyValuation {
+  const d = data ?? {};
+  const asOf = options.asOf ?? valuationDateIso();
+  const { evidence: ev, issues: evIssues } = readEvidence(d.value_evidence);
+  const inp = readInputs(d);
+  const shape = resolveShape(insuranceType, d, ev);
+
+  // Inputs checked against the document: the snapshot must still match.
+  const snap = ev.inputCheck?.fields ?? null;
+  const same = (k: string) => {
+    if (!snap || !(k in snap)) return false;
+    const a = snap[k], b = d[k];
+    return (a === null || a === undefined || a === "" ? null : String(a)) === (b === null || b === undefined || b === "" ? null : String(b));
+  };
+  const checked = (k: string) => same(k);
+  const presentDecision = DECISION_FIELDS.filter((k) => d[k] !== null && d[k] !== undefined && d[k] !== "");
+  const inputsChecked = !!snap && presentDecision.length > 0 && presentDecision.every((k) => same(k));
+  const changedSinceCheck = !!snap && !inputsChecked;
+
+  const completed = inp.start ? completedPolicyYears(inp.start, asOf) : null;
+  const policyYear = completed !== null && inp.term !== null ? Math.min(completed + 1, inp.term) : completed !== null ? completed + 1 : null;
+  const maturityDate = inp.maturityDate ?? (inp.start && inp.term !== null ? anniversaryIso(inp.start, inp.term) : null);
+
+  const payment = paymentStatus(inp, ev, d, asOf);
+  const loan = loanPosition(d, ev, checked);
+
+  // Rules: reviewed for this exact product, or typed in by the advisor (never reviewed).
+  const ruleIssues: string[] = [];
+  const verified = findVerifiedRuleSet(inp.insurer, inp.uin, inp.issueDate ?? inp.start, options.ruleSets);
+  const entered = ev.rules;
+  if (evIssues.includes("rules_invalid")) ruleIssues.push("rules_invalid");
+
+  const values = {} as Record<ValueKey, ValueResult>;
+  const keys: [ValueKey, ValueResult["meaning"]][] = [
+    ["surrender_gross", "gross"], ["surrender_payable", "net"], ["surrender_estimate", "gross"],
+    ["loan_remaining", "limit_remaining"], ["maturity_guaranteed", "stated"], ["vested_bonus", "stated"],
+    ["future_bonus", "stated"], ["fund_value", "stated"], ["premiums_scheduled", "total"], ["premiums_recorded", "total"],
+  ];
+  for (const [k, m] of keys) values[k] = empty(k, m);
+
+  /* Premiums: what the schedule says was due, and what evidence says was paid. */
+  if (inp.instalment !== null && payment.totalInstalments !== null) {
+    values.premiums_scheduled = {
+      ...values.premiums_scheduled,
+      amount: payment.dueInstalments * inp.instalment, asOf,
+      basis: inputsChecked ? "document_calculation" : "estimate",
+      origin: "calculated", verification: inputsChecked ? "agent_checked" : "unchecked",
+      conditions: ["schedule_not_payment"],
+    };
+    values.premiums_recorded = {
+      ...values.premiums_recorded,
+      amount: payment.coveredInstalments * inp.instalment, asOf,
+      basis: "estimate", origin: "agent_entered",
+      verification: payment.confirmation ?? "none",
+      sources: [{ kind: "payment_records", label: "Premium records", date: null, reference: null }],
+      conditions: payment.reasons.filter((r) => r === "first_premium_at_issue" || r === "single_premium_at_issue" || r === "payments_self_reported" || r === "payment_amounts_differ"),
+    };
+  } else {
+    values.premiums_scheduled.missing = [inp.instalment === null ? "premium_missing" : "schedule_unknown"];
+    values.premiums_recorded.missing = values.premiums_scheduled.missing;
+  }
+
+  /* Insurer quotes: dated figures, labelled as entered by the advisor. */
+  const quote = (type: "surrender_payable" | "loan_available", key: ValueKey) => {
+    const q = latestQuote(ev, type);
+    if (!q || q.amount === null) return null;
+    return {
+      ...values[key], amount: q.amount, asOf: q.quoteDate, basis: "insurer_quote" as Basis,
+      origin: "agent_entered" as Origin, verification: q.confirmation as Verification,
+      sources: [{ kind: "insurer_quote" as const, label: type === "surrender_payable" ? "Insurer surrender quote" : "Insurer loan quote", date: q.quoteDate, reference: q.reference }],
+      conditions: ["quote_dated", "confirm_with_insurer"] as Reason[],
+    };
+  };
+  const surrenderQuote = quote("surrender_payable", "surrender_payable");
+  const loanQuote = quote("loan_available", "loan_remaining");
+
+  /* Shape gates. */
+  const shapeMissing: Reason[] =
+    shape.status === "unknown" ? ["shape_unknown"] :
+    shape.status === "candidate" ? ["shape_candidate"] :
+    shape.status === "unsupported" ? ["shape_unsupported"] : [];
+
+  let comparison: AnniversaryComparison = {
+    available: false, reasons: [], nextAnniversary: null, requiredInstalments: 0, requiredPremiums: null,
+    payoutsBetween: null, currentNet: null, nextNet: null, difference: null,
+  };
+  let illustration: ScheduleRow[] | null = null;
+
+  const inForce = payment.upToDate && (payment.insurerStatus === null || payment.insurerStatus === "in_force");
+
+  if (shape.value === "pure_term") {
+    for (const k of ["surrender_gross", "surrender_payable", "loan_remaining"] as ValueKey[]) {
+      values[k] = { ...values[k], basis: "not_applicable", conditions: ["term_no_surrender", "confirm_with_insurer"] };
+    }
+    values.maturity_guaranteed = { ...values.maturity_guaranteed, basis: "not_applicable", conditions: ["term_no_maturity"] };
+  } else if (shape.value === "unit_linked") {
+    for (const k of ["surrender_gross", "surrender_payable"] as ValueKey[]) {
+      values[k] = { ...values[k], basis: "unsupported", missing: ["ulip_ask_insurer"] };
+    }
+    values.loan_remaining = { ...values.loan_remaining, basis: "unsupported", missing: ["ulip_ask_insurer"] };
+    values.maturity_guaranteed = { ...values.maturity_guaranteed, basis: "projection", conditions: ["ulip_projection_only"] };
+    if (inp.fundValue !== null) {
+      values.fund_value = inp.fundValueAsOn
+        ? {
+            ...values.fund_value, amount: inp.fundValue, asOf: inp.fundValueAsOn, basis: "stated_value",
+            origin: "read_from_document", verification: checked("fund_value") ? "agent_checked" : "unchecked",
+            sources: [{ kind: "policy_document", label: "Fund statement", date: inp.fundValueAsOn, reference: null }],
+            conditions: ["fund_value_not_surrender_value", "ulip_ask_insurer"],
+          }
+        : { ...values.fund_value, missing: ["statement_date_missing"] };
+    }
+  } else if (shape.value) {
+    /* Traditional plans: endowment, money back, return of premium. */
+    const rulesForCalc = verified && verified.shape === shape.value ? verified : null;
+    const why: Reason[] = [...shapeMissing];
+    if (!verified) why.push("no_verified_rules");
+    else if (verified.shape !== shape.value) why.push("rules_shape_mismatch");
+    if (!inputsChecked) why.push(changedSinceCheck ? "inputs_changed_since_check" : "inputs_not_checked");
+    if (!payment.upToDate) why.push(payment.state === "schedule_unknown" ? "schedule_unknown" : payment.insurerStatus && payment.insurerStatus !== "in_force" ? "status_not_in_force" : "payment_records_incomplete");
+    for (const iss of inp.issues) if (iss.reason !== "invalid") why.push(iss.reason as Reason);
+
+    if (rulesForCalc && inputsChecked && inForce && inp.issues.length === 0) {
+      const calc = surrenderFromRules(rulesForCalc, inp, asOf, payment.coveredInstalments);
+      const src: SourceRef[] = [
+        { kind: "rule_set", label: `${rulesForCalc.insurer} ${rulesForCalc.uin}`, date: rulesForCalc.review.on ?? null, reference: rulesForCalc.id },
+        { kind: "agent_check", label: "Details checked against the policy document", date: ev.inputCheck?.checkedOn ?? null, reference: null },
+        { kind: "payment_records", label: "Premium records", date: null, reference: null },
+      ];
+      const ver: Verification = payment.confirmation === "insurer_document" ? "insurer_document" : "agent_checked";
+      const conds: Reason[] = ["confirm_with_insurer"];
+      if (payment.confirmation === "self_reported") conds.push("payments_self_reported");
+      if (calc.notAcquired) conds.push("not_acquired_yet");
+      if (calc.gross === null) {
+        values.surrender_gross = { ...values.surrender_gross, missing: calc.missing };
+        values.surrender_payable = { ...values.surrender_payable, missing: calc.missing };
+      } else {
+        values.surrender_gross = {
+          ...values.surrender_gross, amount: calc.gross, asOf, basis: "document_calculation",
+          origin: "calculated", verification: ver, sources: src, conditions: conds,
+        };
+        // Net: only when the loan position is known in full.
+        const net = { ...values.surrender_payable, asOf, basis: "document_calculation" as Basis, origin: "calculated" as Origin, verification: ver, sources: [...src], conditions: [...conds] };
+        if (loan.state === "unknown") {
+          values.surrender_payable = { ...net, asOf: null, basis: "insufficient", missing: ["loan_position_unknown"] };
+        } else if (loan.state === "none") {
+          values.surrender_payable = { ...net, amount: calc.gross };
+          net.sources.push({ kind: "loan_record", label: "No loan", date: loan.asOf, reference: null });
+        } else if (loan.interest === null) {
+          values.surrender_payable = {
+            ...net, amount: null, asOf: null, basis: "insufficient", missing: ["loan_interest_unknown"],
+            upperBound: Math.max(calc.gross - (loan.principal ?? 0), 0),
+          };
+        } else {
+          const n = calc.gross - (loan.principal ?? 0) - loan.interest;
+          values.surrender_payable = {
+            ...net, amount: Math.max(n, 0), shortfall: n < 0 ? -n : null,
+            sources: [...net.sources, { kind: "loan_record", label: "Loan balance", date: loan.asOf, reference: null }],
+            conditions: n < 0 ? [...net.conditions, "deductions_exceed_value"] : net.conditions,
+          };
+        }
+
+        // Borrowing: only under the product's own loan terms, on a policy shown to be in force.
+        if (!rulesForCalc.loan) {
+          values.loan_remaining = { ...values.loan_remaining, missing: ["loan_rules_missing"] };
+        } else if ((completed ?? 0) < rulesForCalc.loan.eligibleAfterYears) {
+          values.loan_remaining = { ...values.loan_remaining, amount: 0, asOf, basis: "document_calculation", origin: "calculated", verification: ver, sources: src, conditions: ["loan_not_eligible_yet"] };
+        } else if (loan.state === "unknown") {
+          values.loan_remaining = { ...values.loan_remaining, missing: ["loan_position_unknown"] };
+        } else if (loan.state === "outstanding" && loan.interest === null) {
+          values.loan_remaining = { ...values.loan_remaining, missing: ["loan_interest_unknown"] };
+        } else {
+          const limit = (calc.gross * rulesForCalc.loan.maxPctOfSurrenderValue) / 100;
+          values.loan_remaining = {
+            ...values.loan_remaining, amount: Math.max(limit - (loan.principal ?? 0) - (loan.interest ?? 0), 0), asOf,
+            basis: "document_calculation", origin: "calculated", verification: ver, sources: src, conditions: ["confirm_with_insurer"],
+          };
+        }
+
+        /* Next anniversary, on the same assumptions as today. */
+        comparison = compareNextAnniversary(rulesForCalc, inp, asOf, payment, loan, values.surrender_payable.amount);
+      }
+    } else {
+      values.surrender_gross = { ...values.surrender_gross, missing: [...new Set(why)] };
+      values.surrender_payable = { ...values.surrender_payable, missing: [...new Set(why)] };
+      values.loan_remaining = { ...values.loan_remaining, missing: [...new Set(why)] };
+      comparison.reasons = ["comparison_needs_calculation"];
+    }
+
+    /* An estimate from a table the advisor typed in. Shown apart from everything else. */
+    if (entered && (shape.value === entered.shape)) {
+      const covered = payment.upToDate ? payment.coveredInstalments : payment.dueInstalments;
+      const est = surrenderFromRules(entered, inp, asOf, covered);
+      const conds: Reason[] = ["rules_entered_by_agent", "confirm_with_insurer"];
+      if (!payment.upToDate) conds.push("assumes_scheduled_premiums_paid");
+      if (!inputsChecked) conds.push("inputs_not_checked");
+      values.surrender_estimate = est.gross === null
+        ? { ...values.surrender_estimate, basis: "estimate", missing: est.missing }
+        : { ...values.surrender_estimate, amount: est.gross, asOf, basis: "estimate", origin: "agent_entered", verification: "self_reported", conditions: conds,
+            sources: [{ kind: "rule_set", label: "Factor table you entered", date: null, reference: null }] };
+      illustration = buildIllustration(entered, inp);
+    } else if (entered) {
+      values.surrender_estimate = { ...values.surrender_estimate, basis: "estimate", missing: ["rules_shape_mismatch"] };
+    }
+
+    /* Maturity: the stated figure only. Never the death cover in its place. */
+    const participating =
+      (inp.vestedBonus ?? 0) > 0 || (parseRupees(d.bonus_per_1000).ok && (parseRupees(d.bonus_per_1000) as any).value > 0) ||
+      /with.?profit|participat|bonus/.test(String(d.plan_type ?? "") + " " + String(d.plan_name ?? "")).valueOf();
+    if (payment.insurerStatus === "paid_up" || payment.insurerStatus === "lapsed") {
+      values.maturity_guaranteed = { ...values.maturity_guaranteed, missing: ["reduced_after_lapse_ask_insurer"] };
+    } else if (inp.maturityAmount === null) {
+      values.maturity_guaranteed = { ...values.maturity_guaranteed, missing: ["maturity_not_read"] };
+    } else {
+      values.maturity_guaranteed = {
+        ...values.maturity_guaranteed, amount: inp.maturityAmount, asOf: maturityDate, basis: "stated_value",
+        origin: "read_from_document", verification: checked("maturity_amount") ? "agent_checked" : "unchecked",
+        sources: [{ kind: "policy_document", label: "Policy schedule", date: null, reference: null }],
+        conditions: participating
+          ? ["bonuses_not_included", "terminal_loyalty_not_included", "confirm_with_insurer"]
+          : ["terminal_loyalty_not_included", "confirm_with_insurer"],
+      };
+    }
+    if (inp.vestedBonus !== null) {
+      values.vested_bonus = inp.vestedBonusAsOn
+        ? { ...values.vested_bonus, amount: inp.vestedBonus, asOf: inp.vestedBonusAsOn, basis: "stated_value", origin: "read_from_document",
+            verification: checked("vested_bonus") ? "agent_checked" : "unchecked", conditions: ["confirm_with_insurer"],
+            sources: [{ kind: "policy_document", label: "Bonus statement", date: inp.vestedBonusAsOn, reference: null }] }
+        : { ...values.vested_bonus, missing: ["statement_date_missing"] };
+    }
+    if (participating) {
+      values.future_bonus = { ...values.future_bonus, basis: "not_applicable", conditions: ["future_bonus_not_guaranteed"] };
+    }
+  } else {
+    for (const k of ["surrender_gross", "surrender_payable", "loan_remaining", "maturity_guaranteed"] as ValueKey[]) {
+      values[k] = { ...values[k], basis: shape.status === "unsupported" ? "unsupported" : "insufficient", missing: shapeMissing };
+    }
+  }
+
+  // A dated insurer quote stands on its own, whatever else is missing.
+  if (surrenderQuote && values.surrender_payable.basis !== "document_calculation") values.surrender_payable = surrenderQuote;
+  if (loanQuote && values.loan_remaining.basis !== "document_calculation") values.loan_remaining = loanQuote;
+
+  const cashOf = (v: ValueResult): "calculated" | "quote" | null =>
+    v.amount === null || v.asOf === null ? null : v.basis === "document_calculation" ? "calculated" : v.basis === "insurer_quote" ? "quote" : null;
 
   return {
-    shape, rows, params, annualPremium, totalPremiums, maturity,
-    irrAtMaturity: rows[rows.length - 1]?.irr ?? null,
-    xirrAtMaturity: rows[rows.length - 1]?.xirr ?? null,
-    term: term!, ppt, entryAge, lockInYears, lockInEnds, guaranteed, steps,
-    illustratedMaturity, reconciliation,
-    premiumStatus, premiumStatusNote, anchorYear, anchorValue,
-    currentYear, paidThrough, paidUpFactor, ssvMethod, loan, revival,
+    asOf, shape, policyYear, completedYears: completed, term: inp.term, maturityDate,
+    inputIssues: inp.issues, inputsChecked, evidenceIssues: evIssues,
+    rules: { verified, entered, issues: ruleIssues },
+    payment, loan, values, nextAnniversary: comparison, illustration,
+    cash: { surrender: cashOf(values.surrender_payable), borrow: cashOf(values.loan_remaining) },
   };
 }
 
-export function isValueGap(v: ValueSchedule | ValueGap): v is ValueGap {
-  return (v as ValueGap).missing !== undefined;
+/**
+ * Next anniversary versus today, both net, both from the same rules.
+ *
+ * Required premiums are the scheduled instalments due after today, up to and
+ * including the anniversary itself (an annual premium falls due ON it). The
+ * next-year value counts them as paid, once, and the difference subtracts
+ * them, once. Survival payouts in between are added because the customer
+ * receives them by staying. Only offered with no loan: interest accruing at a
+ * rate nobody has confirmed would make the comparison a guess.
+ */
+function compareNextAnniversary(
+  rules: RuleSet, inp: Inputs, asOf: string, payment: PaymentStatusResult, loan: LoanPosition, currentNet: number | null
+): AnniversaryComparison {
+  const out: AnniversaryComparison = {
+    available: false, reasons: [], nextAnniversary: null, requiredInstalments: 0, requiredPremiums: null,
+    payoutsBetween: null, currentNet, nextNet: null, difference: null,
+  };
+  if (!inp.start || inp.term === null || inp.perYear === null || inp.instalment === null) {
+    out.reasons.push("schedule_unknown");
+    return out;
+  }
+  const completed = completedPolicyYears(inp.start, asOf);
+  if (completed + 1 >= inp.term) return out; // already in the final year
+  const next = anniversaryIso(inp.start, completed + 1);
+  out.nextAnniversary = next;
+  if (currentNet === null) { out.reasons.push("comparison_needs_calculation"); return out; }
+  if (loan.state !== "none") { out.reasons.push(loan.state === "unknown" ? "loan_position_unknown" : "loan_outstanding_comparison_off"); return out; }
+  if (rules.surrender?.ssv && (inp.vestedBonus ?? 0) > 0 && rules.surrender.selection !== "gsv_only") {
+    // Next year's bonus is declared later and is not guaranteed.
+    out.reasons.push("future_bonus_unknown");
+    return out;
+  }
+  const dues = scheduledDueDates(inp.start, inp.perYear, inp.ppt ?? inp.term);
+  const required = dues.filter((x) => compareIso(x, asOf) > 0 && compareIso(x, next) <= 0);
+  out.requiredInstalments = required.length;
+  out.requiredPremiums = required.length * inp.instalment;
+  const calc = surrenderFromRules(rules, inp, next, payment.coveredInstalments + required.length);
+  if (calc.gross === null) { out.reasons.push(...calc.missing); return out; }
+  const payoutsNow = payoutDates(inp, asOf).length;
+  const payoutsNext = payoutDates(inp, next).length;
+  out.payoutsBetween = (payoutsNext - payoutsNow) * (inp.payoutAmount ?? 0);
+  out.nextNet = calc.gross;
+  out.difference = Math.round((calc.gross + out.payoutsBetween - currentNet - out.requiredPremiums) * 100) / 100;
+  out.available = true;
+  return out;
 }
+
+/** Year by year from an advisor-entered table, assuming every scheduled premium is paid. An estimate, labelled as one. */
+function buildIllustration(rules: RuleSet, inp: Inputs): ScheduleRow[] | null {
+  if (!inp.start || inp.term === null || inp.perYear === null || inp.instalment === null) return null;
+  const rows: ScheduleRow[] = [];
+  const dues = scheduledDueDates(inp.start, inp.perYear, inp.ppt ?? inp.term);
+  for (let y = 1; y <= inp.term; y++) {
+    // Surrender during policy year y: on the day after the (y-1)th anniversary.
+    const at = anniversaryIso(inp.start, y - 1);
+    const paidCount = dues.filter((x) => compareIso(x, at) <= 0).length;
+    const calc = surrenderFromRules(rules, inp, at, paidCount);
+    rows.push({ year: y, premiumsIfPaid: paidCount * inp.instalment, estimate: calc.gross });
+  }
+  return rows;
+}
+
+/** Legacy policy_parameters factor tables, read through an explicit adapter. Conflicts are reported, not resolved. */
+export function legacyFactorTables(params: unknown): { gsv: unknown; ssv: unknown; conflicts: string[] } {
+  const conflicts: string[] = [];
+  const p = (params && typeof params === "object" ? params : {}) as Record<string, any>;
+  const pick = (camel: string, snake: string) => {
+    const a = p[camel] && typeof p[camel] === "object" && "value" in p[camel] ? p[camel].value : p[camel];
+    const b = p[snake] && typeof p[snake] === "object" && "value" in p[snake] ? p[snake].value : p[snake];
+    if (a !== undefined && b !== undefined && JSON.stringify(a) !== JSON.stringify(b)) conflicts.push(camel);
+    return a !== undefined ? a : b;
+  };
+  return { gsv: pick("gsvFactors", "gsv_factors"), ssv: pick("ssvFactors", "ssv_factors"), conflicts };
+}
+
+export { validateRuleSet };

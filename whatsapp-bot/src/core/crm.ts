@@ -6,7 +6,9 @@
  */
 
 import type { ClientSummary } from "../engine.js";
-import { computePolicyValue, isValueGap, type ValueSchedule } from "../shared/policyValue.js";
+import { valuePolicy, type ValueResult } from "../shared/policyValue.js";
+import { REASON_TEXT, prettyIso } from "../shared/policyValueText.js";
+import { valuationDateIso } from "../shared/policyNumbers.js";
 import type { DraftKind } from "../shared/draftMessage.js";
 import { inr, portalPolicyUrl, type Links } from "./templates.js";
 import { b, dayMonth, firstName, planLabel } from "./format.js";
@@ -343,27 +345,79 @@ export function claimsReply(l: Links, rows: ClaimRow[], q: string | null): strin
 
 export const VALUE_TYPES = ["life", "term"];
 
-/** Runs the portal's policy-value engine on the stored fields, as PolicyValueChart does. */
+/**
+ * Runs the portal's policy-value engine on the stored fields, as the policy
+ * page does, and says only what the evidence supports. A rupee figure is
+ * given as money the customer can get only when it is a dated insurer quote
+ * the advisor entered, or a calculation from checked policy terms. Every
+ * reply ends by sending the advisor to the insurer before acting.
+ */
 export function valueReply(l: Links, c: ClientSummary, nowMs: number): string {
   const url = portalPolicyUrl(l, c.clientId);
-  const v = computePolicyValue(c.insuranceType || "life", c.extracted as any, { asOf: new Date(nowMs) });
-  if (isValueGap(v)) {
-    return `I can't work out ${c.policyholderName || "this"}'s policy value yet. Missing: ${v.missing.join(", ")}. Fill these in on the policy in the portal: ${url}`;
-  }
-  const s = v as ValueSchedule;
+  const d = (c.extracted as any) ?? {};
+  const v = valuePolicy(c.insuranceType || "life", d, { asOf: valuationDateIso(new Date(nowMs)) });
   const head = `${b(c.policyholderName || "Policy")} · ${planLabel(c.insurer, c.policyName) || c.insuranceType}`;
-  if (s.shape === "pure_term") {
-    return `${head}\nThis is term cover only, so it has no surrender or maturity value. It pays only on a claim.\n${url}`;
-  }
-  const row = s.rows.find((r) => r.year === s.currentYear) ?? null;
   const out = [head];
-  if (row) {
-    out.push(`If surrendered now (policy year ${row.year}): ${inr(row.back)} back, against ${inr(row.paid)} paid so far.`);
-    if (row.maxLoan > 0) out.push(`Or borrow up to ${inr(row.maxLoan)} against it and keep the cover.`);
+
+  // Term cover needs no dates to say it has no surrender value.
+  if (v.shape.value === "pure_term") {
+    return `${head}\nThis is term cover only, so it has no surrender or maturity value. It pays only on a claim. Check the policy wording if unsure.\n${url}`;
   }
-  if (s.maturity) out.push(`At maturity (year ${s.term}): ${inr(s.maturity)}${s.guaranteed ? ", guaranteed" : ", projected"}.`);
-  if (s.premiumStatusNote) out.push(s.premiumStatusNote);
-  out.push(`Full year-by-year values: ${url}`);
+
+  const core: string[] = [];
+  if (d.premium === null || d.premium === undefined || d.premium === "") core.push("Premium");
+  if (!d.policy_term_years) core.push("Policy term (years)");
+  if (!d.start_date) core.push("Commencement date");
+  if (core.length) {
+    return `I can't work out ${c.policyholderName || "this"}'s policy value yet. Missing: ${core.join(", ")}. Fill these in on the policy in the portal: ${url}`;
+  }
+  if (v.shape.status !== "accepted") {
+    const why = v.shape.status === "unsupported" ? REASON_TEXT.shape_unsupported
+      : v.shape.status === "candidate" ? REASON_TEXT.shape_candidate : REASON_TEXT.shape_unknown;
+    out.push(why + " Set the plan type on the policy page before any value is shown.");
+  }
+
+  const why = (r: ValueResult) => (r.missing[0] ? REASON_TEXT[r.missing[0]] : "");
+  const sp = v.values.surrender_payable;
+  if (sp.basis === "insurer_quote" && sp.amount !== null) {
+    out.push(`Insurer surrender quote you entered: ${inr(sp.amount)}, dated ${prettyIso(sp.asOf)}. It changes over time.`);
+  } else if (sp.basis === "document_calculation" && sp.amount !== null) {
+    out.push(`Surrender value today, calculated from checked policy terms (not an insurer quote): ${inr(sp.amount)} after any loan.`);
+    if (sp.shortfall) out.push(`The loan is ${inr(sp.shortfall)} more than the surrender value. Ask the insurer what happens next.`);
+  } else if (v.shape.status === "accepted") {
+    if (sp.upperBound !== null) out.push(`Surrender value: at most ${inr(sp.upperBound)} after the loan principal. ${REASON_TEXT.loan_interest_unknown}`);
+    else out.push(`Surrender value: not available. ${why(sp) || REASON_TEXT.no_verified_rules}`);
+  }
+
+  const lr = v.values.loan_remaining;
+  if ((lr.basis === "insurer_quote" || lr.basis === "document_calculation") && lr.amount !== null) {
+    out.push(lr.basis === "insurer_quote"
+      ? `Loan still available, per the insurer quote you entered on ${prettyIso(lr.asOf)}: ${inr(lr.amount)}.`
+      : `Can still borrow about ${inr(lr.amount)} against it and keep the cover (calculated, after any existing loan).`);
+  } else if (v.shape.status === "accepted" && v.shape.value !== "unit_linked") {
+    out.push("Loan against the policy: not confirmed. Check the insurer's loan terms.");
+  }
+
+  const fv = v.values.fund_value;
+  if (fv.amount !== null) out.push(`Fund value on ${prettyIso(fv.asOf)}: ${inr(fv.amount)}. ${REASON_TEXT.fund_value_not_surrender_value}`);
+
+  const m = v.values.maturity_guaranteed;
+  if (m.amount !== null) {
+    const how = m.verification === "agent_checked" ? "checked against the policy" : "read from the policy, not checked";
+    const bonus = m.conditions.includes("bonuses_not_included") ? " Bonuses are not included." : "";
+    out.push(`Maturity amount on the schedule: ${inr(m.amount)}, due ${prettyIso(m.asOf)} (${how}).${bonus}`);
+  } else if (m.missing[0]) {
+    out.push(`Maturity: ${REASON_TEXT[m.missing[0]]}`);
+  }
+
+  const p = v.payment;
+  if (p.state === "date_passed") out.push(`The premium date on file (${prettyIso(p.lastDuePassed)}) has passed. Payment status needs checking.`);
+  else if (p.state === "recorded_gap") out.push(`No payment recorded for the premium due ${prettyIso(p.firstUncoveredDue)}.`);
+  else if (p.state === "needs_checking" || p.state === "schedule_unknown") out.push(REASON_TEXT.payment_status_unknown);
+  else if (p.state === "insurer_status" && p.insurerStatus) out.push(`Insurer status on ${prettyIso(p.statusDate)}: ${p.insurerStatus.replace("_", " ")}.`);
+
+  out.push("Confirm with the insurer before acting.");
+  out.push(`Details: ${url}`);
   return out.join("\n");
 }
 

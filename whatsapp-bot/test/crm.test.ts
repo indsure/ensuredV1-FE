@@ -171,23 +171,42 @@ test("motor policy question shows its stored details with the portal's labels", 
   assert.match(transport.last(), /\*Anil Mehta\* · Care Supreme · motor policy \(scores are for health only\)\n• IDV \(sum insured\): 640000\n• No-claim bonus \(%\): 20/);
 });
 
-test("surrender value runs the portal's value engine on the stored life fields", async () => {
+test("surrender value: no checked terms, so no cash figure, and the reason is given", async () => {
   const { bot, transport, engine } = makeBot();
-  const { computePolicyValue } = await import("../src/shared/policyValue.js");
   const id = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
-  // Real life-policy field names (EXTRACTION_FIELDS.life). Started 1965, so policy year 6 at the fake clock.
-  const fields = { sum_assured: 1000000, premium: 50000, premium_frequency: "annual", policy_term_years: 20, premium_paying_term_years: 20, start_date: "1964-06-01", plan_type: "Endowment", age_at_entry: 30 };
+  // Synthetic life fields. Nothing has been checked and no product rules exist, so no surrender amount may appear.
+  const fields = { sum_assured: 1000000, premium: 50000, premium_frequency: "annual", policy_term_years: 20, premium_paying_term_years: 20, start_date: "1964-06-01", plan_type: "Endowment", maturity_amount: 900000 };
   engine.clients.set(id, { ...healthClient(id, { policyholderName: "Ramesh Kumar", insuranceType: "life", report: null, insurer: "LIC", policyName: "Jeevan Anand" }), extracted: fields, details: [] });
   await bot.handle(text("surrender value Ramesh"));
   const r = transport.last();
-  const v: any = computePolicyValue("life", fields, { asOf: new Date(NOW) });
-  assert.ok(!("missing" in v), JSON.stringify(v));
   assert.match(r, /^\*Ramesh Kumar\* · LIC Jeevan Anand/);
-  assert.match(r, /At maturity \(year 20\)/);
-  const row = v.rows.find((x: any) => x.year === v.currentYear);
-  assert.ok(row, "engine placed the policy year");
-  assert.ok(r.includes(`If surrendered now (policy year ${row.year})`), r);
-  assert.match(r, /Full year-by-year values: https:\/\/indsure\.in\/agent\/policies\//);
+  assert.match(r, /Surrender value: not available\./);
+  assert.doesNotMatch(r, /If surrendered now/);
+  assert.match(r, /Loan against the policy: not confirmed/);
+  // The stated maturity amount is shown as read, never as guaranteed.
+  assert.match(r, /Maturity amount on the schedule: .*read from the policy, not checked/);
+  assert.doesNotMatch(r, /guaranteed/);
+  assert.match(r, /Confirm with the insurer before acting\./);
+  assert.match(r, /Details: https:\/\/indsure\.in\/agent\/policies\//);
+});
+
+test("surrender value: an insurer quote is dated, and borrowing shows only what is left", async () => {
+  const { bot, transport, engine } = makeBot();
+  const id = "dddddddd-dddd-4ddd-8ddd-ddddddddddde";
+  const q = (quoteType: string, amount: number) => ({
+    id: "q-" + quoteType, enteredOn: "2026-09-30", origin: "agent_entered", confirmation: "self_reported", reference: null,
+    note: null, supersedes: null, voided: false, kind: "quote", quoteType, amount, status: null, paidTo: null, quoteDate: "2026-09-20",
+  });
+  const fields = { premium: 50000, premium_frequency: "annual", policy_term_years: 20, start_date: "2018-03-15", plan_type: "Money back",
+    sum_assured: 2000000, value_evidence: { schema: 1, quotes: [q("surrender_payable", 240000), q("loan_available", 5200)] } };
+  engine.clients.set(id, { ...healthClient(id, { policyholderName: "Sita Iyer", insuranceType: "life", report: null }), extracted: fields, details: [] });
+  await bot.handle(text("surrender value Sita"));
+  const r = transport.last();
+  assert.match(r, /Insurer surrender quote you entered: .*2,40,000, dated 20 Sep 2026/);
+  assert.match(r, /Loan still available, per the insurer quote you entered on 20 Sep 2026: .*5,200/);
+  // Money back with no maturity amount: never the death cover in its place.
+  assert.match(r, /Maturity: The maturity amount was not read from the policy\./);
+  assert.doesNotMatch(r, /20,00,000/);
 });
 
 test("surrender value with missing fields says exactly what to fill in", async () => {
@@ -195,7 +214,7 @@ test("surrender value with missing fields says exactly what to fill in", async (
   const id = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
   engine.clients.set(id, { ...healthClient(id, { policyholderName: "Anil Mehta", insuranceType: "life", report: null }), extracted: { sum_assured: 500000 }, details: [] });
   await bot.handle(text("surrender value Anil"));
-  assert.match(transport.last(), /Missing: Premium, Policy term \(years\)\./);
+  assert.match(transport.last(), /Missing: Premium, Policy term \(years\), Commencement date\./);
 });
 
 test("a pure term plan: no surrender value, said plainly (never 'Rs 0 back')", async () => {

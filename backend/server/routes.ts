@@ -17,10 +17,10 @@ import { extractStructuredData } from "./services/dataExtraction";
 import {
   isDataEntryType,
   deriveSharedColumns,
-  mergeExtractedData,
   isSupportedInsuranceType,
   SUPPORTED_INSURANCE_TYPES,
 } from "./services/extractionFields";
+import { loadPolicyValueRows, saveExtractedData } from "./services/policyValueStore";
 import { extractWordingProfile, hashText } from "./services/wordingCompare";
 import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage";
 import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
@@ -5597,76 +5597,40 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   });
 
+  /* ── Agent: life and term policies for the surrender-value book ─────
+     Scoped to the agent id verified from the JWT. Replaces a direct browser
+     read of `clients`, whose row security lives in the live database and is
+     not in this repo. Every status is returned so the book can show pending
+     and failed rows too. */
+
+  app.get("/api/agent/policy-values", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const rows = await loadPolicyValueRows(pool, agentId);
+      res.json({ rows });
+    } catch (err: any) {
+      console.error("Policy values read error:", err?.message);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   /* ── Agent: Save edited data-entry fields ───────────────────────────── */
 
   app.patch("/api/agent/clients/:id/extracted-data", async (req, res) => {
     try {
       const agentId = await verifyJwt(req, res);
       if (!agentId) return;
-
       const { id } = req.params;
-      const extractedData = req.body?.extracted_data;
-
-      if (!extractedData || typeof extractedData !== "object") {
-        return res.status(400).json({ error: "extracted_data object required" });
-      }
-
-      // Verify ownership and fetch the insurance type for shared-column mapping,
-      // plus the stored blob so this save merges into it instead of replacing it.
-      const ownerCheck = await pool.query(
-        "SELECT insurance_type, extracted_data FROM clients WHERE id = $1 AND agent_id = $2",
-        [id, agentId]
-      );
-      if (ownerCheck.rows.length === 0) {
-        return res.status(404).json({ error: "Client not found" });
-      }
-
-      recordAccess(req, agentId, id, "update_client");
-      const insuranceType = ownerCheck.rows[0].insurance_type;
-      // Callers send a partial: the review form omits every `json` field, the
-      // value card sends only the value keys. Merging keeps what the caller did
-      // not send. See mergeExtractedData for what this used to destroy.
-      const merged = mergeExtractedData(ownerCheck.rows[0].extracted_data, extractedData);
-      // Derived from the merged blob, not the patch — otherwise a partial save
-      // that omits `insurer` would null the column it maps to.
-      const shared = deriveSharedColumns(insuranceType, merged);
-
-      /* A hand-corrected field can move the score. `coverage_type` is the one
-         that does: it is how own damage is read when the document prints no
-         own-damage premium, and own damage is worth two add-ons. So the number
-         is recomputed from the MERGED blob, the same helper every other write
-         path uses.
-
-         The CASE is not decoration. This endpoint serves every line of
-         business, and scoreFromExtractedData returns null for anything that is
-         not motor, so an unguarded assignment would wipe the audit score off
-         every health policy an advisor edits. Motor only, always. */
-      const motorScore = scoreFromExtractedData(insuranceType, merged);
-      await pool.query(
-        `UPDATE clients SET
-          extracted_data = $1,
-          insurer = $2,
-          policy_name = $3,
-          expiry_date = $4,
-          sum_insured = $5,
-          policyholder_name = COALESCE($6, policyholder_name),
-          score = CASE WHEN $9 = 'motor' THEN $10::int ELSE score END
-        WHERE id = $7 AND agent_id = $8`,
-        [
-          JSON.stringify(merged),
-          shared.insurer ?? null,
-          shared.policy_name ?? null,
-          shared.expiry_date ?? null,
-          shared.sum_insured ?? null,
-          shared.policyholder_name ?? null,
-          id,
-          agentId,
-          insuranceType,
-          motorScore,
-        ]
-      );
-
-      res.json({ ok: true, extracted_data: merged });
+      /* Validation, record-by-record evidence merge and the save revision all
+         live in services/policyValueStore.ts, where they are tested against a
+         two-agent fake database. Every query is scoped to the verified agent. */
+      const result = await saveExtractedData(pool, agentId, id, req.body, {
+        deriveSharedColumns,
+        scoreFromExtractedData,
+      });
+      if (result.status === 200) recordAccess(req, agentId, id, "update_client");
+      res.status(result.status).json(result.body);
     } catch (err: any) {
       console.error("Save extracted-data error:", err);
       res.status(500).json({ error: "Internal server error" });
@@ -5793,9 +5757,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                  null. Same helper as both upload paths. */
               const motorScore = scoreFromExtractedData(insuranceType, extraction.data);
               await pool.query(
+                /* A re-read replaces what the document says, never what the
+                   advisor recorded. Evidence (payments, loans, quotes) and the
+                   old parameter blob are taken from the row as it is NOW, in
+                   SQL, so anything saved while the re-read ran survives, and
+                   the save revision moves on so a stale editor cannot
+                   overwrite the new reading. */
                 `UPDATE clients SET
                   status = 'done',
-                  extracted_data = $1,
+                  extracted_data = $1::jsonb
+                    || jsonb_strip_nulls(jsonb_build_object(
+                         'value_evidence', extracted_data->'value_evidence',
+                         'policy_parameters', extracted_data->'policy_parameters'))
+                    || jsonb_build_object('_rev', COALESCE((extracted_data->>'_rev')::int, 0) + 1),
                   insurer = $2,
                   policy_name = $3,
                   expiry_date = $4,
