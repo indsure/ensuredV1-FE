@@ -56,6 +56,8 @@ export const MAX_BYTES = 25 * 1024 * 1024;
 /** How long free-text questions keep going to the last report without naming a topic. */
 const REPORT_FRESH_MS = 30 * 60_000;
 const LANGS: Lang[] = ["english", "hinglish", "hindi"];
+/** The name the advisor sees once they save our contact card. */
+const CONTACT_NAME = "IndSure AI Assistant";
 
 export type Timings = {
   pollMs: number;
@@ -235,6 +237,19 @@ export class Bot {
     }
   }
 
+  /** After LINK: our own number as a contact card, so the advisor saves it in one tap and
+   *  the chat shows a name. Best effort: a failure here never undoes the link. */
+  private async sendContactCard(to: string, agentId: string | null) {
+    const tr = this.d.transport;
+    if (!tr.sendContact) return;
+    await this.say(to, agentId, T.saveContact(), "save_contact");
+    try {
+      await tr.sendContact(to, CONTACT_NAME);
+    } catch (e: any) {
+      log.error("contact card failed", { error: e?.message });
+    }
+  }
+
   /** Unknown numbers get ONE pointer reply, then silence (protects the number). */
   private async unknownOnce(msg: InboundMessage) {
     const hash = sha256(msg.from || msg.replyTo);
@@ -246,7 +261,8 @@ export class Bot {
     if (!msg.from) return this.unknownOnce(msg);
     const r = await this.d.engine.link(msg.from, code);
     if (r.ok) {
-      return this.say(msg.replyTo, r.agentId ?? null, r.servable ? T.welcome() : T.linkNotBeta(), "link");
+      await this.say(msg.replyTo, r.agentId ?? null, r.servable ? T.welcome() : T.linkNotBeta(), "link");
+      return this.sendContactCard(msg.replyTo, r.agentId ?? null);
     }
     const text =
       r.reason === "expired" ? T.linkExpired() : r.reason === "no_pending" ? T.linkWrongNumber() : T.linkBad();

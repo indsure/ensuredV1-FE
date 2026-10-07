@@ -30,6 +30,8 @@ export class FakeTransport implements Transport {
   async sendTyping() {}
   async downloadMedia(m: InboundMessage) { return this.files.get(m.id) ?? Buffer.from("%PDF-1.4 x"); }
   async markRead() {}
+  contacts: { to: string; name: string }[] = [];
+  async sendContact(to: string, name: string) { this.contacts.push({ to, name }); }
   /** The words of each message, without the house style (a leading emoji, bold commands,
    *  "1." lists), so tests read content. style.test.ts checks the styling on lastRaw(). */
   texts() { return this.sent.map((s) => plainText(s.text)); }

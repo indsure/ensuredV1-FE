@@ -87,6 +87,7 @@ export const T = {
   linkBad: () => "That code didn't work. Open Connect WhatsApp in the IndSure portal, get a new code, and send LINK followed by the code.",
   linkExpired: () => "That code has expired. Get a new one from Connect WhatsApp in the IndSure portal.",
   linkWrongNumber: () => "That code was made for a different number. Enter this WhatsApp number in the portal and try again.",
+  saveContact: () => "Save the contact below so this chat shows as IndSure AI Assistant, not a number.",
   linkNotBeta: () => "Your number is connected, but WhatsApp is only open to a few advisors right now. We'll let you know when it opens up.",
   unlinked: () => "Done. This WhatsApp number is no longer connected to your IndSure account.",
   cancelled: () => "Okay, cancelled. Send a PDF or type HELP any time.",

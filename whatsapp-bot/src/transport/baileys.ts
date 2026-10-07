@@ -180,6 +180,23 @@ export class BaileysTransport implements Transport {
     await this.need().sendMessage(to, { text });
   }
 
+  async sendContact(to: string, name: string): Promise<void> {
+    const sock = this.need();
+    // sock.user.id is "<digits>:<device>@s.whatsapp.net"; the digits are this SIM's number.
+    const digits = String(sock.user?.id || "").split(/[:@]/)[0].replace(/\D/g, "");
+    if (!digits) throw new Error("own number unknown");
+    const shown = digits.length === 12 && digits.startsWith("91") ? `+91 ${digits.slice(2, 7)} ${digits.slice(7)}` : `+${digits}`;
+    const vcard = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      `FN:${name}`,
+      "ORG:IndSure;",
+      `TEL;type=CELL;type=VOICE;waid=${digits}:${shown}`,
+      "END:VCARD",
+    ].join("\n");
+    await sock.sendMessage(to, { contacts: { displayName: name, contacts: [{ vcard }] } });
+  }
+
   async sendTyping(to: string, on: boolean): Promise<void> {
     await this.need().sendPresenceUpdate(on ? "composing" : "paused", to).catch(() => {});
   }

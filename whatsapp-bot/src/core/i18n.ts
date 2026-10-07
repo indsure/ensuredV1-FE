@@ -157,6 +157,9 @@ const LINES: Line[] = [
   L("You're connected to IndSure. Send me a customer's health policy PDF and I'll send back the report. You can also type RENEWALS or HELP.",
     "Aap IndSure se jud gaye hain. Customer ki health policy ki PDF bhejiye, report yahin aa jayegi. RENEWALS ya HELP bhi likh sakte hain.",
     "आप IndSure से जुड़ गए हैं। कस्टमर की हेल्थ पॉलिसी की PDF भेजिए, रिपोर्ट यहीं आ जाएगी। RENEWALS या HELP भी लिख सकते हैं।"),
+  L("Save the contact below so this chat shows as IndSure AI Assistant, not a number.",
+    "Neeche wala contact save kar lijiye, taaki yeh chat number ki jagah IndSure AI Assistant naam se dikhe.",
+    "नीचे वाला कॉन्टैक्ट सेव कर लीजिए, ताकि यह चैट नंबर की जगह IndSure AI Assistant नाम से दिखे।"),
   L("Done. This WhatsApp number is no longer connected to your IndSure account.", "Ho gaya. Yeh WhatsApp number ab aapke IndSure account se juda nahi hai.", "हो गया। यह WhatsApp नंबर अब आपके IndSure खाते से जुड़ा नहीं है।"),
 
   /* Policy PDFs */

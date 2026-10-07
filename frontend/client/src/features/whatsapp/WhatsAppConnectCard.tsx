@@ -22,6 +22,17 @@ type Status = {
   codeExpiresAt?: string | null
 }
 
+/** The name the advisor sees for us. The bot sends the same name as a contact card after LINK. */
+const BOT_NAME = "IndSure AI Assistant"
+
+/** A contact file for our number. Opening it on a phone shows "Add contact" with the name
+ *  filled in, so the chat shows a name instead of a number once saved. */
+const contactHref = (digits: string) =>
+  "data:text/vcard;charset=utf-8," +
+  encodeURIComponent(
+    ["BEGIN:VCARD", "VERSION:3.0", `FN:${BOT_NAME}`, "ORG:IndSure;", `TEL;type=CELL;waid=${digits}:+${digits}`, "END:VCARD", ""].join("\r\n")
+  )
+
 const pretty = (n?: string | null) => {
   const d = String(n || "").replace(/\D/g, "")
   return d.length === 12 && d.startsWith("91") ? `+91 ${d.slice(2, 7)} ${d.slice(7)}` : n || ""
@@ -100,6 +111,20 @@ export default function WhatsAppConnectCard() {
       <CardContent className="p-6 space-y-4">
         <p className="text-base text-slate-700 max-w-prose">{t("whatsapp_connect.intro")}</p>
 
+        {botDigits && (
+          <div className="space-y-2">
+            <p className="text-sm font-bold text-slate-900">{t("whatsapp_connect.save_title")}</p>
+            <p className="text-base text-slate-700 max-w-prose">{t("whatsapp_connect.save_body")}</p>
+            <a
+              href={contactHref(botDigits)}
+              download="IndSure-AI-Assistant.vcf"
+              className="inline-flex min-h-[44px] items-center rounded-md border border-emerald-600 px-4 text-base font-bold text-emerald-700 hover:bg-emerald-50"
+            >
+              {t("whatsapp_connect.save_contact")}
+            </a>
+          </div>
+        )}
+
         {status.status === "active" ? (
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-base text-slate-900">
@@ -111,6 +136,7 @@ export default function WhatsAppConnectCard() {
           </div>
         ) : (
           <div className="space-y-4">
+            {botDigits && <p className="text-sm font-bold text-slate-900">{t("whatsapp_connect.connect_title")}</p>}
             <div className="space-y-2 max-w-sm">
               <label htmlFor="wa-number" className="text-sm font-bold text-slate-900">
                 {t("whatsapp_connect.number_label")}
@@ -135,7 +161,7 @@ export default function WhatsAppConnectCard() {
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
                 <p className="text-base text-slate-700">
                   {t("whatsapp_connect.send_this")}{" "}
-                  <span className="font-bold text-slate-900">{botDigits ? pretty(botDigits) : t("whatsapp_connect.the_bot")}</span>
+                  <span className="font-bold text-slate-900">{BOT_NAME}</span>
                 </p>
                 <p className="text-2xl font-black tracking-widest text-slate-900 select-all">{linkMessage}</p>
                 <p className="text-sm text-slate-600">{t("whatsapp_connect.code_expires")}</p>

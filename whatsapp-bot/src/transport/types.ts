@@ -30,4 +30,8 @@ export interface Transport {
   sendTyping(to: string, on: boolean): Promise<void>;
   downloadMedia(msg: InboundMessage): Promise<Buffer>;
   markRead(msg: InboundMessage): Promise<void>;
+  /** Sends the bot's OWN number as a contact card under `name`, so the advisor can save it
+   *  in one tap and the chat shows the name instead of a number. Optional: a transport
+   *  that cannot do it simply leaves it out. */
+  sendContact?(to: string, name: string): Promise<void>;
 }
