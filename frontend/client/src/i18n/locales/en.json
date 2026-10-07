@@ -4440,6 +4440,19 @@
     "cover": "Life cover",
     "foot_sv": "Surrender values are the guaranteed amounts. The insurer may pay more.",
     "foot_method": "Worked out the same way as the insurer's own benefit illustration.",
-    "foot_confirm": "Confirm with the insurer before acting."
+    "foot_confirm": "Confirm with the insurer before acting.",
+    "step_today": "Today",
+    "step_today_sub": "If surrendered now",
+    "step_next": "Next premium date",
+    "step_end": "At maturity",
+    "grow_title": "How the money grows",
+    "prem_progress": "{{paid}} of {{total}} premiums paid",
+    "prem_each": "{{each}} {{freq}}",
+    "vs_premiums": "more than the {{premiums}} paid in premiums",
+    "no_maturity_final_short": "No maturity amount in this plan. This is the final payout.",
+    "part_payouts": "{{count}} payouts of {{each}}",
+    "part_maturity": "Maturity amount",
+    "part_final": "Final payout",
+    "range": "{{from}} to {{to}}"
   }
 }
