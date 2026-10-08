@@ -362,6 +362,68 @@ export const DOC_SECTIONS: DocSection[] = [
           { t: "note", tone: "tip", text: "WhatsApp did not open? Press **Copy** instead and paste the message into WhatsApp yourself." },
         ],
       },
+      {
+        slug: "whatsapp-assistant",
+        nav: "WhatsApp assistant",
+        title: "Use IndSure on WhatsApp",
+        badge: "Beta",
+        description: "Connect your WhatsApp to IndSure in three steps, then send a policy PDF, get the report, share it and see renewals, all in one chat.",
+        lead: "Send a policy PDF in WhatsApp and get the report back in the same chat.",
+        blocks: [
+          {
+            t: "p",
+            text: "Send a customer's health policy PDF to the IndSure WhatsApp number and the report comes back in the same chat. You can also ask about a report, get a message to share with your customer, and see your renewals, without opening the portal.",
+          },
+          { t: "note", tone: "note", text: "WhatsApp is in beta and open to a few advisors right now. If you do not see the **WhatsApp** box in [Settings](/agent/settings), it is not on for your account yet. [Message us](/docs/get-help) if you would like to try it." },
+          { t: "p", text: "Open [Settings](/agent/settings) and find the **WhatsApp** box. It has three steps, and each one opens after the one before it." },
+          { t: "h2", text: "Step 1: Save our contact", id: "step-1" },
+          {
+            t: "steps",
+            items: [
+              "Press **Save contact**. Your phone opens a new contact with our name and number filled in.",
+              "Press **Save** on your phone. Our chat now shows our name instead of a number, so you can find it easily.",
+            ],
+          },
+          { t: "note", tone: "tip", text: "Already saved our number? Press **I've already saved it** to go to step 2." },
+          { t: "h2", text: "Step 2: Connect your number", id: "step-2" },
+          {
+            t: "steps",
+            items: [
+              "Type the WhatsApp number you use for work and press **Get my code**.",
+              "Press **Open WhatsApp with this message**. WhatsApp opens with a message that starts with LINK, followed by your code.",
+              "Send that message from the same number you typed in.",
+              "Back in Settings, press **I've sent it, check again**. Your number now shows as **Connected**.",
+            ],
+          },
+          { t: "note", tone: "warn", text: "The code works for 10 minutes. If it stops working, press **Get my code** again for a new one." },
+          { t: "h2", text: "Step 3: Send your first policy", id: "step-3" },
+          {
+            t: "steps",
+            items: [
+              "Press **Open the chat**, or open our chat in WhatsApp yourself.",
+              "Send or forward the customer's health policy PDF.",
+              "The report comes back in about a minute. Longer policies take a little more time.",
+            ],
+          },
+          { t: "p", text: "Each new policy you send uses one policy check, the same as uploading it in the portal. See [Plans and policy checks](/docs/plans)." },
+          { t: "h2", text: "What you can type", id: "commands" },
+          {
+            t: "list",
+            items: [
+              "**HELP**: what it does most. Type **MORE** for the full list.",
+              "**SHARE**: a message for your customer that you can forward.",
+              "**RENEWALS** or **FOLLOW UPS**: who to call next.",
+              "A question about the last report, like **room rent?** or **co-pay?**",
+              "**HINDI**, **HINGLISH** or **ENGLISH**: the language it replies in.",
+            ],
+          },
+          { t: "note", tone: "note", text: "IndSure never messages your customers. It only replies to you. When it gives you a message for a customer, you forward it and press send yourself." },
+          { t: "h2", text: "Disconnect", id: "disconnect" },
+          { t: "p", text: "In the **WhatsApp** box in Settings, press **Disconnect**. That WhatsApp number is no longer connected to your account. You can connect again at any time." },
+          { t: "note", tone: "note", text: "This is a beta number and it may change. We will tell you if it does." },
+          { t: "cards", slugs: ["whatsapp-messages", "check-a-policy"] },
+        ],
+      },
     ],
   },
   {
