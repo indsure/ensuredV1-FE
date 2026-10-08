@@ -20,7 +20,7 @@
 import { documentValues, type ConfirmedFacts } from "./documentRules";
 import { addMonthsIso, compareIso, completedPolicyYears } from "./policyNumbers";
 import { mul, rat, rationalToPaiseFloor, type Bps, type Paise } from "./exactMath";
-import type { FieldKey, ReviewFlag } from "./policyDocTypes";
+import type { FieldKey, IllustrationRow, ReviewFlag } from "./policyDocTypes";
 
 export interface SnapshotFieldRow {
   field_key: string;
@@ -51,6 +51,63 @@ export interface PolicySnapshot {
   lifeCover: Paise | null;
   usedIllustrationMethod: boolean;
   missing: string[];
+  /** "terms": worked out from the contract's rules. "illustration": read off the insurer's benefit illustration. */
+  source: "terms" | "illustration";
+  /** Illustration-read plans: the policy year today falls in, and the payouts the illustration lists. */
+  illustration: null | {
+    yearNow: number | null;
+    yearNowFrom: string | null;
+    payouts: null | { perYear: Paise | null; years: number[]; consecutive: boolean; total: Paise };
+  };
+}
+
+/**
+ * A plan read by the general reader: every figure comes straight off the insurer's
+ * year-by-year illustration (which already assumes every premium is paid). The
+ * surrender figure shown is the illustration's figure for the policy year today falls
+ * in; insurers differ on whether that is the start or the end of the year, so the
+ * card names the year instead of calling it today's exact value.
+ */
+function fromIllustration(rows: IllustrationRow[], start: string | null, asOf: string): PolicySnapshot {
+  const sorted = [...rows].sort((a, b) => a.year - b.year);
+  const term = sorted.length;
+  const row = (y: number) => sorted.find((r) => r.year === y);
+  const total = (rs: IllustrationRow[], k: "premium" | "survival" | "maturity") => paise(rs.reduce((n, r) => n + (r[k]?.paise ?? 0), 0));
+  const year = start ? completedPolicyYears(start, asOf) + 1 : null;
+  const inTerm = year !== null && year >= 1 && year <= term;
+  const yearStart = (y: number) => (start ? addMonthsIso(start, 12 * (y - 1)) : null);
+  const paying = sorted.filter((r) => (r.premium?.paise ?? 0) > 0);
+  const paid = inTerm ? paying.filter((r) => r.year <= year!) : year !== null && year > term ? paying : [];
+  const pays = sorted.filter((r) => (r.survival?.paise ?? 0) > 0);
+  const same = pays.length > 0 && pays.every((r) => r.survival!.paise === pays[0].survival!.paise);
+  const consecutive = pays.every((r, i) => i === 0 || r.year === pays[i - 1].year + 1);
+  const last = sorted[term - 1];
+  const received = total(sorted, "survival").paise + total(sorted, "maturity").paise;
+  const premiums = total(paying, "premium");
+  const anyPayout = received > 0;
+  return {
+    asOf,
+    premium: {
+      perInstalment: paying[0]?.premium ?? null, frequency: null, excludesTaxes: false,
+      paidCount: paid.length, paidSoFar: year !== null ? total(paid, "premium") : null,
+      totalCount: paying.length, totalPayable: paying.length ? premiums : null, lastDue: paying.length ? yearStart(paying.length) : null,
+    },
+    gsvToday: inTerm ? row(year!)?.gsv ?? null : null,
+    nextDue: inTerm && year! < term ? { date: yearStart(year! + 1)!, gsv: row(year! + 1)?.gsv ?? null } : null,
+    atEnd: { date: start ? addMonthsIso(start, 12 * term) : null, maturity: (last?.maturity?.paise ?? 0) > 0 ? last.maturity : null, maturityNotApplicable: false, finalPayout: null },
+    regularPayout: null,
+    totalReceived: anyPayout ? paise(received) : null,
+    gainOverPremiums: anyPayout && paying.length ? paise(received - premiums.paise) : null,
+    lifeCover: (inTerm ? row(year!)?.death : sorted[0]?.death) ?? null,
+    usedIllustrationMethod: false,
+    missing: start ? [] : ["start_date_missing"],
+    source: "illustration",
+    illustration: {
+      yearNow: inTerm ? year : null,
+      yearNowFrom: inTerm ? yearStart(year!) : null,
+      payouts: pays.length ? { perYear: same ? pays[0].survival : null, years: pays.map((r) => r.year), consecutive, total: total(pays, "survival") } : null,
+    },
+  };
 }
 
 export function policySnapshot(fields: SnapshotFieldRow[], flags: ReviewFlag[], decisions: Record<string, string>, asOf: string): PolicySnapshot {
@@ -64,6 +121,10 @@ export function policySnapshot(fields: SnapshotFieldRow[], flags: ReviewFlag[], 
     if (f.field_key === "benefits.maturity" && f.document_field?.state === "not_applicable" && f.state !== "corrected") naMaturity = true;
   }
   const val = <T,>(k: FieldKey) => facts[k]?.value as T | undefined;
+  const illRows = val<IllustrationRow[]>("illustration.rows");
+  if (illRows && !val("surrender.gsv_factor_table") && !val("surrender.gsv_factor_bands")) {
+    return fromIllustration(illRows, val<string>("schedule.commencement_date") ?? val<string>("schedule.risk_commencement_date") ?? null, asOf);
+  }
   const flagDecisions: Record<string, string> = {};
   let usedIllustrationMethod = false;
   for (const fl of flags) {
@@ -167,5 +228,7 @@ export function policySnapshot(fields: SnapshotFieldRow[], flags: ReviewFlag[], 
     })(),
     usedIllustrationMethod,
     missing: Array.from(new Set(missing)),
+    source: "terms",
+    illustration: null,
   };
 }

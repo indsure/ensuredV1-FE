@@ -53,6 +53,7 @@ const FIELD_LABEL: Partial<Record<FieldKey, string>> = {
   "loan.rate_rule": "Loan interest rule", "loan.printed_rate": "Loan interest printed in the document", "loan.msme_concessions": "MSME interest reductions",
   "surrender.gsv_factor_table": "GSV factor for each policy year", "surrender.payout_deduction": "Payouts GSV takes off",
   "death.min_pct_of_premiums_paid": "Death cover is at least this share of premiums paid",
+  "illustration.rows": "Benefit illustration, year by year",
   "options.deferral_available": "Deferral option exists in the product", "options.premium_offset_available": "Premium offset option exists in the product",
 };
 
@@ -84,6 +85,11 @@ export function formatValue(key: string, v: any): string {
   if (Array.isArray(v)) {
     if (key === "surrender.gsv_factor_bands") {
       return v.map((b: any) => `${b.from === "term_minus_1" ? "term less 1" : b.from} to ${b.to === "term_minus_2" ? "term less 2" : b.to === "term" ? "term" : b.to}: ${isExpr(b.factor) ? describeExpr(b.factor) : b.raw}`).join("; ");
+    }
+    if (key === "illustration.rows") {
+      const r = (p: any) => (p ? formatRupees(p) : "-");
+      const pick = v.filter((x: any, i: number) => i < 3 || i === v.length - 1);
+      return `${v.length} policy years. ` + pick.map((x: any) => `Year ${x.year}: premium ${r(x.premium)}, payout ${r(x.survival)}, surrender ${r(x.gsv)}, death ${r(x.death)}`).join("; ") + (v.length > 4 ? "; …" : "");
     }
     if (key === "surrender.gsv_factor_table") {
       // Runs of years with the same factor collapse: "1: 0%; 2: 30%; 4 to 7: 50%; ...".
@@ -214,7 +220,7 @@ export default function DocumentTerms({ clientId, data }: { clientId: string; da
           {t("pdt.read_again")}
         </Button>
 
-        {p && p.status === "supported" && results && !rules?.fields.some((f) => f.field_key === "surrender.gsv_factor_table") && (
+        {p && p.status === "supported" && results && !rules?.fields.some((f) => f.field_key === "surrender.gsv_factor_table" || f.field_key === "illustration.rows") && (
           <section className="space-y-3 rounded-xl border border-slate-200 p-4" aria-labelledby="pdt-results">
             <h3 id="pdt-results" className="text-base font-bold text-slate-900">{t("pdt.results_title")}</h3>
             <ResultLine label={t("pdt.res_gsv")} amount={results.gsv.amount} lines={summarise([...results.gsv.missing, ...results.gsv.conditions])} />

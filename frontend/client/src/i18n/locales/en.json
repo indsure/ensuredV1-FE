@@ -4410,11 +4410,14 @@
     "confirm_all_ocr": "{{count}} read from scanned pages: confirm those one by one.",
     "f_surrender_gsv_factor_table": "GSV factor for each policy year",
     "f_surrender_payout_deduction": "Payouts GSV takes off",
-    "f_death_min_pct_of_premiums_paid": "Death cover is at least this share of premiums paid"
+    "f_death_min_pct_of_premiums_paid": "Death cover is at least this share of premiums paid",
+    "f_illustration_rows": "Benefit illustration, year by year",
+    "flag_read_from_illustration": "Read from the insurer's illustration",
+    "flag_read_from_illustration_note": "We have no exact reader for this plan yet, so the figures were read off the insurer's year-by-year benefit illustration. Check them against the illustration in the PDF."
   },
   "psum": {
     "title": "Policy summary",
-    "intro": "Worked out from the policy document, assuming every premium was paid on its due date.",
+    "intro": "Worked out from the policy document, assuming every premium is paid on its due date",
     "na": "Not in the document",
     "paid": "Premium paid so far",
     "paid_note": "{{count}} of {{total}} premiums of {{each}} {{freq}}.",
@@ -4453,6 +4456,28 @@
     "part_payouts": "{{count}} payouts of {{each}}",
     "part_maturity": "Maturity amount",
     "part_final": "Final payout",
-    "range": "{{from}} to {{to}}"
+    "range": "{{from}} to {{to}}",
+    "g_premiums": "Premiums",
+    "g_surrender": "Surrender value",
+    "g_gets": "What the customer gets",
+    "g_protection": "Protection",
+    "sv_today_row": "If surrendered today",
+    "next_row": "On the next premium date",
+    "next_row_sub": "{{date}}, after that premium is paid",
+    "paid_sub_ill": "Premiums for policy years 1 to {{n}} · {{each}} a year",
+    "sv_year_row": "If surrendered this policy year",
+    "sv_year_sub": "Policy year {{n}}, from {{date}}. The insurer's illustration figure.",
+    "sv_nextyear_row": "Next policy year",
+    "sv_nextyear_sub": "From {{date}}. The insurer's illustration figure.",
+    "payouts": "Payouts",
+    "pay_range": "A year, policy years {{a}} to {{b}}",
+    "pay_years": "Each payout, in policy years {{years}}",
+    "pay_total": "In total, in policy years {{years}}",
+    "total_sub": "All payouts plus the maturity amount",
+    "gain_more": "+{{gain}} more than the {{premiums}} paid in premiums",
+    "gain_less": "{{gain}} less than the {{premiums}} paid in premiums",
+    "cover_ill": "From the illustration, policy year {{n}}",
+    "cover_rule": "Rises to 105% of premiums paid once that is higher",
+    "foot_ill": "Read from the insurer's benefit illustration by our general reader. Check the figures against it."
   }
 }

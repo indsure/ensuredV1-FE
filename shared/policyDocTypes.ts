@@ -55,6 +55,15 @@ export interface GsvBand {
   raw: string;
 }
 
+export interface IllustrationRow {
+  year: number;
+  premium: Paise | null;
+  survival: Paise | null;
+  maturity: Paise | null;
+  death: Paise | null;
+  gsv: Paise | null;
+}
+
 export interface RateRule {
   /** What the rate is built on, as the document names it. */
   base: "annualized_yield_reference_gsec" | "average_annualized_10y_gsec_6_months";
@@ -115,6 +124,12 @@ export interface PolicyFields {
   "surrender.gsv_factor_table": { year: number; pct: Bps }[];
   /** Which payouts GSV takes off: those paid before the surrender date. */
   "surrender.payout_deduction": "paid_before_surrender_date";
+  /**
+   * The insurer's benefit illustration, year by year, read by the general reader for
+   * plans with no product-specific reader. Values are as printed (end of each policy year
+   * unless the illustration says otherwise); a column the table does not have is null.
+   */
+  "illustration.rows": IllustrationRow[];
   /** Sum assured on death is the higher of the sum assured and this % of total premiums paid. */
   "death.min_pct_of_premiums_paid": Bps;
   "surrender.ssv_basis": "discounted_outstanding_survival_and_maturity_benefits";
@@ -161,7 +176,8 @@ export interface ReviewFlag {
     | "ssv_needs_current_rate"
     | "msme_concession_needs_eligibility"
     | "foreclosure_exemption_wording"
-    | "read_by_ocr";
+    | "read_by_ocr"
+    | "read_from_illustration";
   fieldKeys: FieldKey[];
   /** Plain explanation, contract-level, no customer data. */
   note: string;

@@ -33,6 +33,11 @@ export interface PolicyAdapter {
   /** Plain description of exactly what this adapter supports, for advisors. */
   supports: string;
   identify(doc: DocumentText): Identification;
+  /**
+   * A general reader (for example the benefit-illustration reader). It is tried only when
+   * no product-specific reader matched, so an exact reader always wins.
+   */
+  fallback?: boolean;
   parse(doc: DocumentText): { fields: ParsedFields; flags: ReviewFlag[] };
 }
 
@@ -49,6 +54,14 @@ export function registeredAdapters(): readonly PolicyAdapter[] {
 
 /** Match and parse. Never throws on document content: failures come back as reasons. */
 export function identifyAndParse(doc: DocumentText, list: readonly PolicyAdapter[] = adapters): ParseOutcome {
+  const specific = identifyWith(doc, list.filter((a) => !a.fallback));
+  if (specific.status !== "unsupported") return specific;
+  const general = identifyWith(doc, list.filter((a) => a.fallback));
+  if (general.status === "unsupported") return { ...specific, reasons: [...specific.reasons, ...general.reasons.filter((r) => r !== "No product reader is registered.")] };
+  return general;
+}
+
+function identifyWith(doc: DocumentText, list: readonly PolicyAdapter[]): ParseOutcome {
   const results = list.map((a) => ({ a, r: a.identify(doc) }));
   const conflicts = results.filter((x) => x.r.result === "conflict");
   const matches = results.filter((x) => x.r.result === "match");
