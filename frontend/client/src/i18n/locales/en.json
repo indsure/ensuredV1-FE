@@ -495,6 +495,7 @@
     "renews_today": "Renews today"
   },
   "common": {
+    "back": "Back",
     "load_failed": "Could not load this.",
     "try_again": "Try again",
     "status_pending": "Pending",
@@ -1115,7 +1116,7 @@
   },
   "claim_detail": {
     "load_failed": "Could not load the claim",
-    "back": "Claims",
+    "back": "Back to claims",
     "health_claim": "Health claim",
     "link_copied": "Link copied",
     "link_copied_desc": "Only people who can log in to this account can open it.",

@@ -3,6 +3,7 @@ import { useLocation, useParams } from "wouter";
 import { Copy, ExternalLink, FileText, RefreshCw, Trash2 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { BackLink } from "@/components/agent/BackLink";
 import CustomerTagCard from "@/components/agent/CustomerTagCard";
 import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
 import PolicyValueChart from "@/components/agent/PolicyValueChart";
@@ -440,14 +441,24 @@ export default function PolicyDetail() {
     }
   }
 
-  if (error) return <InlineErrorState onRetry={loadDetail} />;
+  // A stale or shared link to a deleted record lands here: name it, and always
+  // leave a way out, since Try again can never fix "not found".
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <BackLink to="/agent/policies" label={t("policy_detail.back")} />
+        <InlineErrorState
+          message={error === t("policy_detail.not_found") ? error : undefined}
+          onRetry={loadDetail}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-8">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" className="text-slate-600" onClick={() => setLocation("/agent/policies")}>
-          {t("policy_detail.back")}
-        </Button>
+        <BackLink to="/agent/policies" label={t("policy_detail.back")} />
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="border-slate-200 bg-white" onClick={loadDetail} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />

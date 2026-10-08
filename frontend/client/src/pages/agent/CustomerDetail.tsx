@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { supabase } from "@/lib/supabase";
 import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { BackLink } from "@/components/agent/BackLink";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -188,14 +189,24 @@ export default function CustomerDetail() {
     }
   }
 
-  if (error) return <InlineErrorState onRetry={load} />;
+  // A stale or shared link to a deleted record lands here: name it, and always
+  // leave a way out, since Try again can never fix "not found".
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <BackLink to="/agent/customers" label={t("customer_detail.back")} />
+        <InlineErrorState
+          message={error === t("customer_detail.not_found") ? error : undefined}
+          onRetry={load}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" className="text-slate-600" onClick={() => setLocation("/agent/customers")}>
-          {t("customer_detail.back")}
-        </Button>
+        <BackLink to="/agent/customers" label={t("customer_detail.back")} />
         <Button variant="outline" size="sm" className="border-slate-200 bg-white" onClick={load} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           {t("common.refresh")}

@@ -113,7 +113,8 @@ export default function TeamMember() {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
         <InlineErrorState message={error ?? t("team_member.not_found")} onRetry={() => window.location.reload()} />
-        <Link href="/agent/team" className="mt-4 inline-flex items-center min-h-[44px] text-sm font-semibold text-teal-700">
+        <Link href="/agent/team" className="mt-4 inline-flex items-center gap-2 min-h-[44px] text-sm font-semibold text-teal-700">
+          <ArrowLeft className="h-4 w-4" />
           {t("team_member.back")}
         </Link>
       </div>
