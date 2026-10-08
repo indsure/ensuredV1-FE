@@ -858,7 +858,12 @@ async function main() {
 // build instead. Routes whose valid URLs are all prerendered (blog posts,
 // clause pages, authors) are exempt: an unknown slug SHOULD 404.
 async function checkRoutesServed(POST_SLUGS) {
-  const app = await readFile(join(ROOT, "client", "src", "App.tsx"), "utf8");
+  // A route wrapped in `{import.meta.env.DEV && (...)}` (the /corporate
+  // prototype) is compiled out of every build, so there is nothing to serve.
+  const app = (await readFile(join(ROOT, "client", "src", "App.tsx"), "utf8")).replace(
+    /\{import\.meta\.env\.DEV\b[^(]*\(([\s\S]*?)\)\s*\}/g,
+    "",
+  );
   const vercel = JSON.parse(await readFile(join(ROOT, "vercel.json"), "utf8"));
   const rewrites = vercel.rewrites
     .filter((r) => !r.source.includes(":"))
