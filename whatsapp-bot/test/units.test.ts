@@ -61,6 +61,23 @@ test("intent rules", () => {
   assert.equal(namedPerson("remind sunita in hindi"), "sunita");
 });
 
+test("short ways of naming whose policy: details X, X details, X policy", () => {
+  assert.equal(namedPerson("details Ramesh"), "ramesh");
+  assert.equal(namedPerson("Ramesh details"), "ramesh");
+  assert.equal(namedPerson("Ramesh Kumar policy details?"), "ramesh kumar");
+  assert.equal(namedPerson("Ramesh policy"), "ramesh");
+  assert.equal(namedPerson("Ramesh car policy kab khatam"), "ramesh");
+  assert.equal(namedPerson("Sunita term plan"), "sunita");
+  assert.equal(namedPerson("what is Ramesh's NCB?"), "ramesh");
+  assert.equal(namedPerson("Ramesh Kumar's IDV"), "ramesh kumar");
+  assert.equal(namedPerson("what's the NCB"), null);
+  assert.equal(namedPerson("it's premium kitna hai"), null);
+  // Plan kinds and question words are never a name.
+  for (const t of ["term policy", "health policy", "which plan", "my policy", "policy details", "details", "new policy", "upload policy", "policy details batao", "details dikhao"]) {
+    assert.equal(namedPerson(t), null, t);
+  }
+});
+
 test("logs mask phone numbers", () => {
   assert.equal(redact("from 919812345678 and 9812345678"), "from …5678 and …5678");
 });

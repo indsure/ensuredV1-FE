@@ -81,6 +81,12 @@ export function namedPerson(textRaw: string): string | null {
   const t = norm(textRaw);
   const poss = t.match(/\b([a-z]+(?: [a-z]+)?)'s (policy|report|plan)\b/);
   if (poss) return cleanName(poss[1]);
+  // "what is Ramesh's NCB?": a possessive on a policy topic names whose policy.
+  const possTopic = REPORT_TOPIC.test(t) && t.match(/\b([a-z]+(?: [a-z]+)?)'s\b/);
+  if (possTopic) {
+    const n = cleanName(possTopic[1]);
+    if (n) return n;
+  }
   // "Palash ki policy", "Palash ka plan", "पलाश की पॉलिसी" (Hindi names are matched as spoken)
   const hi = t.match(/^([a-z]+(?: [a-z]+)?) (?:ki|ka|ke) (policy|report|plan)\b/) || t.match(/^([ऀ-ॿ]+(?: [ऀ-ॿ]+)?) (?:की|का|के) (?:पॉलिसी|रिपोर्ट|प्लान)/);
   if (hi) return cleanName(/[ऀ-ॿ]/.test(hi[1]) ? devanagariToLatin(hi[1]) : hi[1]);
@@ -88,12 +94,22 @@ export function namedPerson(textRaw: string): string | null {
   if (share) return cleanName(share[1]);
   const remind = t.match(/^remind\s+([a-z]+(?: [a-z]+)?)(?:\s+(?:in\s+)?(english|hinglish|hindi))?$/);
   if (remind) return cleanName(remind[1]);
+  // "details Ramesh", "Ramesh details", "Ramesh policy", "Ramesh car policy kab khatam"
+  const det = t.match(/^(?:policy )?details? ([a-z]+(?: [a-z]+)?)[?.!]*$/) || t.match(/^([a-z]+(?: [a-z]+)?) (?:policy )?details?[?.!]*$/);
+  if (det) return cleanName(det[1]);
+  const pol = t.match(/^([a-z]+(?: [a-z]+)?) (?:(?:car|bike|motor|vehicle|life|term|health) )?(?:policy|plan)\b/);
+  if (pol) return cleanName(pol[1]);
   return null;
 }
 
 const STOP = new Set([
   "the", "my", "this", "that", "it", "report", "policy", "customer", "client", "english", "hinglish", "hindi", "in",
   "share", "send", "remind", "what", "whats", "is", "about", "check", "show", "open", "for", "of", "with", "and",
+  // Plan kinds and question words, so "term policy" or "which plan" is never read as a name.
+  "car", "bike", "motor", "vehicle", "life", "term", "health", "travel", "mediclaim", "new", "old", "next", "last",
+  "which", "whose", "who", "any", "a", "an", "plan", "details", "detail", "kya", "kaunsi", "konsi", "upload", "renew",
+  "batao", "bata", "dikhao", "dikha", "bhejo", "please", "pls", "do", "hai", "kab", "khatam",
+  "let", "he", "she", "there", "here", "today", "today's",
 ]);
 function cleanName(s: string): string | null {
   const words = s.split(" ").filter((w) => !STOP.has(w));
@@ -101,7 +117,7 @@ function cleanName(s: string): string | null {
 }
 
 /** Words that make free text a question ABOUT a policy report. */
-const REPORT_TOPIC = /\b(room|rent|co-?pay|sub-?limits?|waiting|ped|pre-?existing|claim|cover(ed|age)?|sum insured|premium|restor|bonus|ncb|cashless|network|maternity|exclu|deductible|score|verdict|gap|risk|works|cataract|icu|ayush|opd|day ?care|hospital|renewal date|expiry)/;
+const REPORT_TOPIC = /\b(room|rent|co-?pay|sub-?limits?|waiting|ped|pre-?existing|claim|cover(ed|age)?|sum insured|premium|restor|bonus|ncb|cashless|network|maternity|exclu|deductible|score|verdict|gap|risk|works|cataract|icu|ayush|opd|day ?care|hospital|renewal date|expiry|details?|idv|sum assured|maturity|khatam|kab tak|jaa?nkari)/;
 const QUESTION = /\?|^(what|how|does|do|is|are|can|will|why|which|when|kya|kitna|kitni|kaun|any)\b/;
 
 /** Should free text be answered from the current report? Only if it is about a policy

@@ -172,6 +172,27 @@ test("motor policy question shows its stored details with the portal's labels", 
   assert.match(transport.last(), /\*Anil Mehta\* · Care Supreme · motor policy \(scores are for health only\)\n• IDV \(sum insured\): 640000\n• No-claim bonus \(%\): 20/);
 });
 
+test("short ways of asking for a data-entry policy's details are understood", async () => {
+  const id = "cccccccc-cccc-4ccc-8ccc-cccccccccccd";
+  const setup = (current: boolean) => {
+    const { bot, transport, engine } = makeBot();
+    engine.clients.set(id, { ...healthClient(id, { policyholderName: "Anil Mehta", insuranceType: "motor", report: null, score: null }), details: [{ label: "IDV (sum insured)", value: "640000" }] });
+    if (current) engine.conv.currentClientId = id;
+    return { bot, transport };
+  };
+  for (const q of ["details Anil", "Anil details", "Anil policy", "Anil car policy kab khatam"]) {
+    const { bot, transport } = setup(false);
+    await bot.handle(text(q));
+    assert.match(transport.last(), /^\*Anil Mehta\* · Care Supreme · motor policy/, q);
+  }
+  // Right after a policy is saved, a bare follow-up is about that policy.
+  for (const q of ["details", "IDV?", "policy details batao", "kab khatam hogi"]) {
+    const { bot, transport } = setup(true);
+    await bot.handle(text(q));
+    assert.match(transport.last(), /^\*Anil Mehta\* · Care Supreme · motor policy/, q);
+  }
+});
+
 test("surrender value: no checked terms, so no cash figure, and the reason is given", async () => {
   const { bot, transport, engine } = makeBot();
   const id = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
