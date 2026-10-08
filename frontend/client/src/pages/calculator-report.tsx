@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { EngineResult, UserInputs } from "@/lib/health-engine-logic";
+import { SeparatePolicyCard } from "@/components/calculator/SeparatePolicyCard";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { pdf } from "@react-pdf/renderer";
@@ -443,6 +444,9 @@ export default function CalculatorReportPage() {
                             })}
                         </p>
                     </div>
+
+                    {/* ── Children past the floater age, planned on their own ───────── */}
+                    <SeparatePolicyCard plans={result.separatePolicies} />
 
                     {/* ── Coverage options ──────────────────────────────────────────── */}
                     <CoverageOptions result={result} cityTier={inputs.cityTier} />

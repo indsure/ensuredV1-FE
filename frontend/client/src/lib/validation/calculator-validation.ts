@@ -18,7 +18,9 @@ export const childAgeSchema = z
   .number()
   .int("Child age must be a whole number")
   .min(0, "Child age cannot be negative")
-  .max(25, "Maximum child age is 25");
+  // Not capped at the floater age: a child past it is planned on a policy of
+  // their own (separatePolicies), so the wizard must be able to take their age.
+  .max(60, "Please check the child's age");
 
 export const loanAmountSchema = z
   .number()
@@ -65,6 +67,15 @@ export const healthCalculatorInputSchema = z.object({
   motherAge: ageSchema.optional(),
   childAges: z.array(childAgeSchema).optional(),
   preExistingConditions: z.array(
+    z.enum(["diabetes", "hypertension", "cardiac", "cancer", "obesity", "kidney", "none"])
+  ).optional(),
+  spousePreExistingConditions: z.array(
+    z.enum(["diabetes", "hypertension", "cardiac", "cancer", "obesity", "kidney", "none"])
+  ).optional(),
+  fatherPreExistingConditions: z.array(
+    z.enum(["diabetes", "hypertension", "cardiac", "cancer", "obesity", "kidney", "none"])
+  ).optional(),
+  motherPreExistingConditions: z.array(
     z.enum(["diabetes", "hypertension", "cardiac", "cancer", "obesity", "kidney", "none"])
   ).optional(),
 });

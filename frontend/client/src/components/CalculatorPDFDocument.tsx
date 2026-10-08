@@ -17,7 +17,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Svg, Path, Image } from '@react-pdf/renderer';
 import { C, Display, getPdfLogoSrc } from './PolicyPDFDocument';
-import type { EngineResult, UserInputs } from '@/lib/health-engine-logic';
+import { CALCULATOR_CONFIG, type EngineResult, type UserInputs } from '@/lib/health-engine-logic';
 
 /* ------------------------------------------------------------------ format */
 
@@ -235,6 +235,16 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
         ['Age', age ? `${age}` : inputs.ageBand],
         ['City', inputs.city ? `${inputs.city} · ${inputs.cityTier}` : inputs.cityTier],
         ['Household', inputs.familyStructure],
+        [
+            'Children',
+            inputs.familyStructure === 'Couple + kids' && inputs.childCount
+                ? `${inputs.childCount}${
+                      inputs.childAges?.length
+                          ? ` (ages ${inputs.childAges.slice(0, inputs.childCount).filter((a) => typeof a === 'number').join(', ')})`
+                          : ''
+                  }`
+                : null,
+        ],
         ['Employer cover', inputs.employerCover],
         ['Risk posture', inputs.riskPosture],
         ['Travels abroad', inputs.globalTravel],
@@ -394,6 +404,61 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
                         </View>
                     </>
                 )}
+
+                {/* ---------------------------------------------- children on their own policy */}
+                {result.separatePolicies?.length ? (
+                    <>
+                        <SectionHead
+                            title={
+                                result.separatePolicies.length === 1
+                                    ? `Your child aged ${result.separatePolicies[0].age} needs their own policy`
+                                    : `${result.separatePolicies.length} children need their own policies`
+                            }
+                            note="not on the family policy"
+                        />
+                        <Text style={[s.deck, { marginTop: 0, marginBottom: 10 }]}>
+                            Family policies usually cover children only up to age{' '}
+                            {CALCULATOR_CONFIG.dependentChildMaxAge} or {CALCULATOR_CONFIG.dependentChildMaxAge + 1}.
+                            After that the insurer removes them at renewal, and most new family policies will not
+                            take them. The family cover above is worked out without them.
+                        </Text>
+                        {result.separatePolicies.map((p, i) => (
+                            <View key={i} wrap={false} style={{ marginBottom: 8 }}>
+                                <View style={s.optLine}>
+                                    <Text style={s.optKey}>Suggested cover, child aged {p.age}</Text>
+                                    <Text style={s.optVal}>{lakhs(p.totalSI)}</Text>
+                                </View>
+                                {p.topUpSI > 0 ? (
+                                    <View style={s.optLine}>
+                                        <Text style={s.optKey}>As base policy + super top-up</Text>
+                                        <Text style={s.optVal}>
+                                            {lakhs(p.baseSI)} + {lakhs(p.topUpSI)}
+                                        </Text>
+                                    </View>
+                                ) : null}
+                                <View style={s.optLine}>
+                                    <Text style={s.optKey}>Estimated annual premium</Text>
+                                    <Text style={s.optVal}>
+                                        {range(p.premiumEstimate.annual.min, p.premiumEstimate.annual.max)}
+                                    </Text>
+                                </View>
+                            </View>
+                        ))}
+                        <Bullet>Buy a policy in their name. It costs far less at this age than it will later.</Bullet>
+                        <Bullet>
+                            Already on your family policy? Ask your insurer to move them to their own policy with
+                            their years of cover carried over, so waiting periods already served stay served.
+                        </Bullet>
+                        <Bullet>
+                            Do it before your renewal. If they drop off first, they start again with fresh waiting
+                            periods.
+                        </Bullet>
+                        <Text style={s.capNote}>
+                            Worked out for a healthy person of that age with no employer cover. Their own health was
+                            not asked, so the premium can be higher if they have a health problem.
+                        </Text>
+                    </>
+                ) : null}
 
                 {/* ---------------------------------------------- build-up */}
                 {bd && (

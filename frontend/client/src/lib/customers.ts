@@ -10,6 +10,8 @@
 
 import { supabase } from "@/lib/supabase";
 import { getNextPremiumDate, isDataEntryType } from "@/lib/insuranceTypes";
+import { deriveCoverView } from "@shared/policy";
+import type { ForensicAuditReport } from "@shared/policy";
 
 export type Customer = {
   id: string;
@@ -46,11 +48,15 @@ export type PortfolioPolicy = {
   expiry_date: string | null;
   score: number | null;
   extracted_data: any | null;
+  /** report_data.coverage_structure only: the slice that holds the bonus and
+   *  top-ups. Selecting the whole report for every policy an agent owns would
+   *  make the customer list pull megabytes to show one number per row. */
+  coverage: any | null;
   created_at: string;
 };
 
 export const PORTFOLIO_POLICY_COLUMNS =
-  "id, customer_id, insurance_type, policyholder_name, name, insurer, policy_name, policy_identifier, sum_insured, expiry_date, score, extracted_data, created_at";
+  "id, customer_id, insurance_type, policyholder_name, name, insurer, policy_name, policy_identifier, sum_insured, expiry_date, score, extracted_data, coverage:report_data->coverage_structure, created_at";
 
 /* ── CRUD ──────────────────────────────────────────────────────────────── */
 
@@ -204,6 +210,26 @@ export function parseAmount(value: string | number | null | undefined): number |
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * What a policy can pay for one hospitalisation: base + accrued bonus + any
+ * top-up or super top-up whose deductible the base reaches. The same number
+ * the audit report shows as "Effective Cover", from the same function, so the
+ * customer page and the report can never disagree.
+ *
+ * Health only. A motor IDV or a life sum assured is already the whole cover.
+ * Falls back to the plain sum insured when the policy has no audit report
+ * (data-entry policies) or the report has no base to build on.
+ */
+export function policyCover(p: Pick<PortfolioPolicy, "insurance_type" | "sum_insured" | "coverage"> & { report_data?: any }): number | null {
+  const si = parseAmount(p.sum_insured);
+  if ((p.insurance_type || "health") !== "health") return si;
+  // The playground mock ignores select aliases and hands back the whole row.
+  const cs = p.coverage ?? p.report_data?.coverage_structure;
+  if (!cs || typeof cs !== "object") return si;
+  const effective = deriveCoverView({ coverage_structure: cs } as ForensicAuditReport).effectiveCover;
+  return effective > 0 ? effective : si;
+}
+
 /** Compact Indian formatting: 1.2 Cr / 5 L / 50,000. */
 export function formatAmount(n: number | null): string {
   if (n == null) return "—";
@@ -219,7 +245,10 @@ function trimZero(s: string): string {
 export type PortfolioStats = {
   policyCount: number;
   byType: Record<string, number>;
+  /** Effective cover summed across policies: bonus and top-ups included. */
   totalSumInsured: number | null;
+  /** The printed sums insured alone, so the page can say where the rest came from. */
+  totalBaseCover: number | null;
   totalPremium: number | null;
   nextPremium: { date: string; policyId: string } | null;
   worstHealthScore: number | null;
@@ -228,6 +257,7 @@ export type PortfolioStats = {
 export function buildPortfolioStats(policies: PortfolioPolicy[]): PortfolioStats {
   const byType: Record<string, number> = {};
   let totalSumInsured: number | null = null;
+  let totalBaseCover: number | null = null;
   let totalPremium: number | null = null;
   let nextPremium: { date: string; policyId: string } | null = null;
   let worstHealthScore: number | null = null;
@@ -239,8 +269,11 @@ export function buildPortfolioStats(policies: PortfolioPolicy[]): PortfolioStats
     const type = p.insurance_type || "health";
     byType[type] = (byType[type] ?? 0) + 1;
 
+    const cover = policyCover(p);
+    if (cover != null) totalSumInsured = (totalSumInsured ?? 0) + cover;
+    // Base is counted only beside a known cover, so base <= total holds.
     const si = parseAmount(p.sum_insured);
-    if (si != null) totalSumInsured = (totalSumInsured ?? 0) + si;
+    if (cover != null) totalBaseCover = (totalBaseCover ?? 0) + (si ?? cover);
 
     if (isDataEntryType(type)) {
       const prem = parseAmount(p.extracted_data?.premium);
@@ -262,5 +295,5 @@ export function buildPortfolioStats(policies: PortfolioPolicy[]): PortfolioStats
     }
   }
 
-  return { policyCount: policies.length, byType, totalSumInsured, totalPremium, nextPremium, worstHealthScore };
+  return { policyCount: policies.length, byType, totalSumInsured, totalBaseCover, totalPremium, nextPremium, worstHealthScore };
 }

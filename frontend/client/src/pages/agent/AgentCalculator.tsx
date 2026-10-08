@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 
 import CoverCalculator, { type CoverCalculatorCompletion } from "@/components/calculator/CoverCalculator";
+import { SeparatePolicyCard } from "@/components/calculator/SeparatePolicyCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAgent } from "@/context/AgentContext";
@@ -386,6 +387,8 @@ export default function AgentCalculator() {
                   </div>
                 </div>
               )}
+
+              <SeparatePolicyCard plans={r.separatePolicies} />
 
               {r.coverCap?.applied && (
                 <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">

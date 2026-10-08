@@ -13,7 +13,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
 import {
   calculateHealthCover, UserInputs, EngineResult,
-  AgeBand, CityTier,
+  AgeBand, CityTier, EmployerCover, PreExistingCondition, CALCULATOR_CONFIG,
 } from "@/lib/health-engine-logic";
 import { getCityTier, getTierDescription } from "@/lib/city-tier-util";
 import { getAllStates, getCitiesForState } from "@/lib/data/indian-cities-data";
@@ -147,9 +147,12 @@ const ALL_STEPS = [
     question: "Member Details",
   },
   {
+    // The id is from when this step asked only for the employer cover. It is
+    // kept because saved progress and advisor drafts name steps by id. The step
+    // now asks each adult for employer cover AND health history.
     id: "employerCover",
-    question: "Do you have employer coverage?",
-    options: ["None", "< 5L", "5-10L", "> 10L"],
+    question: "Health history",
+    subtext: "Answer for each person. This changes how much cover you need.",
   },
   {
     id: "riskPosture",
@@ -189,6 +192,98 @@ type StepId = (typeof ALL_STEPS)[number]["id"];
 type T = (key: string, vars?: Record<string, string | number>) => string;
 const calcSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 const optText = (t: T, value: string) => tOr(t, `calc.opt_${calcSlug(value)}`, value);
+
+const EMPLOYER_OPTIONS: Array<{ value: EmployerCover; key: string }> = [
+  { value: "None", key: "calc.opt_none" },
+  { value: "< 5L", key: "calc.opt_5l" },
+  { value: "5-10L", key: "calc.opt_5_10l" },
+  { value: "> 10L", key: "calc.opt_10l" },
+];
+
+/** The conditions the engine prices, in the order they are offered. */
+const CONDITION_OPTIONS: PreExistingCondition[] = [
+  "none", "diabetes", "hypertension", "cardiac", "kidney", "cancer", "obesity",
+];
+
+const conditionsText = (t: T, list: PreExistingCondition[] | undefined): string | undefined =>
+  list?.length ? list.map((c) => t(`calc.cond_${c}`)).join(", ") : undefined;
+
+/** "None" is exclusive: picking it clears the rest, picking anything else clears it. */
+function toggleCondition(
+  list: PreExistingCondition[] | undefined,
+  value: PreExistingCondition
+): PreExistingCondition[] {
+  if (value === "none") return ["none"];
+  const rest = (list ?? []).filter((c) => c !== "none");
+  return rest.includes(value) ? rest.filter((c) => c !== value) : [...rest, value];
+}
+
+const isCouplePlan = (inputs: Partial<UserInputs>) =>
+  inputs.familyStructure === "Couple" || inputs.familyStructure === "Couple + kids";
+
+/** A child's age is needed to know whether they can stay on the floater. */
+function childAgesComplete(inputs: Partial<UserInputs>): boolean {
+  if (inputs.familyStructure !== "Couple + kids") return true;
+  const count = inputs.childCount ?? 0;
+  if (count < 1) return false;
+  for (let i = 0; i < count; i++) {
+    const a = inputs.childAges?.[i];
+    if (typeof a !== "number" || !Number.isInteger(a) || a < 0 || a > 60) return false;
+  }
+  return true;
+}
+
+type HistoryMember = {
+  key: "you" | "spouse" | "father" | "mother";
+  titleKey: string;
+  age?: number;
+  /** Absent for parents: the engine has no use for a retired parent's
+   *  employer cover, so the question is not asked. */
+  employerKey?: "employerCover" | "spouseEmployerCover";
+  conditionsKey:
+    | "preExistingConditions"
+    | "spousePreExistingConditions"
+    | "fatherPreExistingConditions"
+    | "motherPreExistingConditions";
+};
+
+/** Adults only: children's health is not asked (founder call, 2026-10-08).
+ *  A parent gets a card once their age is entered on Member details. */
+function historyMembers(inputs: Partial<UserInputs>): HistoryMember[] {
+  const members: HistoryMember[] = [
+    { key: "you", titleKey: "calc.hh_you", age: inputs.exactAge, employerKey: "employerCover", conditionsKey: "preExistingConditions" },
+  ];
+  if (isCouplePlan(inputs)) {
+    members.push({ key: "spouse", titleKey: "calc.hh_spouse", age: inputs.spouseAge, employerKey: "spouseEmployerCover", conditionsKey: "spousePreExistingConditions" });
+  }
+  if (inputs.familyStructure === "Parents included") {
+    if (inputs.fatherAge) members.push({ key: "father", titleKey: "calc.hh_father", age: inputs.fatherAge, conditionsKey: "fatherPreExistingConditions" });
+    if (inputs.motherAge) members.push({ key: "mother", titleKey: "calc.hh_mother", age: inputs.motherAge, conditionsKey: "motherPreExistingConditions" });
+  }
+  return members;
+}
+
+const historyComplete = (inputs: Partial<UserInputs>) =>
+  historyMembers(inputs).every(
+    (m) => (!m.employerKey || !!inputs[m.employerKey]) && (inputs[m.conditionsKey]?.length ?? 0) > 0
+  );
+
+/** A large, tappable choice. aria-pressed carries the selected state. */
+const ChoiceChip = ({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) => (
+  <button
+    type="button"
+    aria-pressed={selected}
+    onClick={onClick}
+    className={cn(
+      "min-h-11 rounded-full border px-4 text-base font-semibold transition-colors",
+      selected
+        ? "border-[var(--color-teal-700)] bg-[var(--color-teal-700)] text-white"
+        : "border-[var(--color-border-medium)] bg-white text-[var(--color-navy-900)] hover:border-[var(--color-teal-600)]"
+    )}
+  >
+    {children}
+  </button>
+);
 
 type StepDef = (typeof ALL_STEPS)[number];
 function getStepCopy(step: StepDef): { question?: string; subtext?: string } {
@@ -235,8 +330,8 @@ function firstUnfilledStep(inputs: Partial<UserInputs>): StepId | null {
   const required: Array<[StepId, boolean]> = [
     ["location", !inputs.cityTier],
     ["familyStructure", !inputs.familyStructure],
-    ["detailedProfile", !inputs.exactAge || !inputs.annualIncome],
-    ["employerCover", !inputs.employerCover],
+    ["detailedProfile", !inputs.exactAge || !inputs.annualIncome || !childAgesComplete(inputs)],
+    ["employerCover", !historyComplete(inputs)],
     ["riskPosture", !inputs.riskPosture],
     ["globalTravel", !inputs.globalTravel],
     ["hospitalPreference", shouldShowStep("hospitalPreference", inputs) && !inputs.hospitalPreference],
@@ -248,7 +343,7 @@ function firstUnfilledStep(inputs: Partial<UserInputs>): StepId | null {
 
 /** Editable summary rows for the review step. Conditional rows appear only
  *  when they hold a value. */
-function buildReviewRows(inputs: Partial<UserInputs>): Array<{ label: string; value: string; stepId: StepId }> {
+function buildReviewRows(inputs: Partial<UserInputs>, t: T): Array<{ label: string; value: string; stepId: StepId }> {
   const rows: Array<{ label: string; value: string; stepId: StepId }> = [];
   const push = (label: string, value: string | number | undefined, stepId: StepId) => {
     if (value !== undefined && value !== null && value !== "") rows.push({ label, value: String(value), stepId });
@@ -260,11 +355,27 @@ function buildReviewRows(inputs: Partial<UserInputs>): Array<{ label: string; va
   push("Gender", inputs.gender, "detailedProfile");
   push("Annual income", inputs.annualIncome, "detailedProfile");
   push("Spouse age", inputs.spouseAge, "detailedProfile");
-  push("Children", inputs.childCount, "detailedProfile");
+  if (inputs.familyStructure === "Couple + kids" && inputs.childCount) {
+    const ages = (inputs.childAges ?? []).slice(0, inputs.childCount).filter((a) => typeof a === "number");
+    push(
+      "Children",
+      ages.length ? t("calc.rev_child_ages", { count: inputs.childCount, ages: ages.join(", ") }) : inputs.childCount,
+      "detailedProfile"
+    );
+  }
   if (inputs.fatherAge || inputs.motherAge) {
     push("Parents' ages", [inputs.fatherAge, inputs.motherAge].filter(Boolean).join(" / "), "detailedProfile");
   }
   push("Employer cover", inputs.employerCover, "employerCover");
+  push("Health problems", conditionsText(t, inputs.preExistingConditions), "employerCover");
+  if (isCouplePlan(inputs)) {
+    push("Spouse employer cover", inputs.spouseEmployerCover, "employerCover");
+    push("Spouse health problems", conditionsText(t, inputs.spousePreExistingConditions), "employerCover");
+  }
+  if (inputs.familyStructure === "Parents included") {
+    push("Father's health problems", conditionsText(t, inputs.fatherPreExistingConditions), "employerCover");
+    push("Mother's health problems", conditionsText(t, inputs.motherPreExistingConditions), "employerCover");
+  }
   push("Risk attitude", inputs.riskPosture, "riskPosture");
   push("Travels abroad", inputs.globalTravel, "globalTravel");
   push("Hospital preference", inputs.hospitalPreference, "hospitalPreference");
@@ -532,6 +643,11 @@ export default function CoverCalculator({
 
     if (!inputs.annualIncome) {
       setValidationErrors({ annualIncome: t("calc.income_required") });
+      return;
+    }
+
+    if (!childAgesComplete(inputs)) {
+      setValidationErrors({ childAges: t("calc.child_ages_required") });
       return;
     }
 
@@ -890,25 +1006,6 @@ export default function CoverCalculator({
                       </Select>
                     </div>
 
-                    <div className="space-y-2 md:col-span-2">
-                      <Label>{t("calc.spouse_employer")}</Label>
-                      <Select
-                        onValueChange={(v: any) =>
-                          setInputs({ ...inputs, spouseEmployerCover: v })
-                        }
-                        defaultValue={inputs.spouseEmployerCover}
-                      >
-                        <SelectTrigger className="bg-white h-12">
-                          <SelectValue placeholder={t("calc.employer_cover")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="None">{t("calc.opt_none")}</SelectItem>
-                          <SelectItem value="< 5L">{t("calc.opt_5l")}</SelectItem>
-                          <SelectItem value="5-10L">{t("calc.opt_5_10l")}</SelectItem>
-                          <SelectItem value="> 10L">{t("calc.opt_10l")}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </>
                 )}
 
@@ -933,6 +1030,53 @@ export default function CoverCalculator({
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {Array.from({ length: inputs.childCount ?? 0 }, (_, i) => {
+                      const age = inputs.childAges?.[i];
+                      const over = typeof age === "number" && age > CALCULATOR_CONFIG.dependentChildMaxAge;
+                      return (
+                        <div key={i} className="space-y-2 md:col-span-2">
+                          <Label htmlFor={`child-age-${i}`}>{t("calc.child_age", { n: i + 1 })}</Label>
+                          <Input
+                            id={`child-age-${i}`}
+                            type="number"
+                            inputMode="numeric"
+                            placeholder="e.g. 12"
+                            min={0}
+                            max={60}
+                            className={cn("bg-white h-12 md:w-1/2", over && "border-amber-500")}
+                            value={age ?? ""}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              // Ages beyond childCount are left in place: lowering the
+                              // count and raising it again should not lose them. The
+                              // engine reads only the first childCount.
+                              const next = [...(inputs.childAges ?? [])];
+                              next[i] = sanitizeIntegerInput(e.target.value) as number;
+                              setInputs({ ...inputs, childAges: next });
+                            }}
+                          />
+                          {over && (
+                            <div role="note" className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4">
+                              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-800" aria-hidden="true" />
+                              <div>
+                                <div className="font-semibold text-amber-900">
+                                  {t("calc.child_over_title", { age: CALCULATOR_CONFIG.dependentChildMaxAge })}
+                                </div>
+                                <div className="mt-1 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                                  {t("calc.child_over_body")}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {validationErrors.childAges && (
+                      <div className="md:col-span-2 flex items-center gap-1 text-red-600 text-xs">
+                        <AlertCircle className="w-3 h-3" />
+                        {validationErrors.childAges}
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -985,8 +1129,83 @@ export default function CoverCalculator({
                 </Button>
                 <Button
                   className="bg-[var(--color-cta)] text-white px-8"
-                  disabled={!inputs.exactAge || !inputs.annualIncome}
+                  disabled={!inputs.exactAge || !inputs.annualIncome || !childAgesComplete(inputs)}
                   onClick={confirmDetailedProfile}
+                >
+                  {t("calc.next")}
+                </Button>
+              </div>
+            </div>
+
+          ) : currentStepId === "employerCover" ? (
+            <div className="bg-white/50 backdrop-blur-sm border border-[var(--color-border-light)] p-8 md:p-12 rounded-3xl shadow-sm">
+              <h2 className="text-3xl md:text-4xl font-serif text-[var(--color-navy-900)] mb-3 text-center">
+                {question}
+              </h2>
+              {subtext && (
+                <p className="text-center text-[var(--color-text-secondary)] mb-8">{subtext}</p>
+              )}
+
+              <div className={cn("grid grid-cols-1 gap-5", historyMembers(inputs).length > 1 && "md:grid-cols-2")}>
+                {historyMembers(inputs).map((m) => (
+                  <div key={m.key} className="space-y-6 rounded-2xl border border-[var(--color-border-light)] bg-white p-5 md:p-6">
+                    <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">
+                      {t(m.titleKey)}
+                      {m.age ? (
+                        <span className="ml-2 font-sans text-base text-[var(--color-text-muted)]">{t("calc.age_n", { n: m.age })}</span>
+                      ) : null}
+                    </h3>
+
+                    {m.employerKey && (
+                      <fieldset>
+                        <legend className="mb-3 text-base font-semibold text-[var(--color-navy-900)]">{t("calc.hh_employer")}</legend>
+                        <div className="flex flex-wrap gap-2">
+                          {EMPLOYER_OPTIONS.map((o) => (
+                            <ChoiceChip
+                              key={o.value}
+                              selected={inputs[m.employerKey!] === o.value}
+                              onClick={() => setInputs({ ...inputs, [m.employerKey!]: o.value })}
+                            >
+                              {t(o.key)}
+                            </ChoiceChip>
+                          ))}
+                        </div>
+                      </fieldset>
+                    )}
+
+                    <fieldset>
+                      <legend className="text-base font-semibold text-[var(--color-navy-900)]">{t("calc.hh_conditions")}</legend>
+                      <p className="mb-3 text-sm text-[var(--color-text-muted)]">{t("calc.hh_pick_all")}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {CONDITION_OPTIONS.map((c) => (
+                          <ChoiceChip
+                            key={c}
+                            selected={(inputs[m.conditionsKey] ?? []).includes(c)}
+                            onClick={() =>
+                              setInputs({ ...inputs, [m.conditionsKey]: toggleCondition(inputs[m.conditionsKey], c) })
+                            }
+                          >
+                            {t(`calc.cond_${c}`)}
+                          </ChoiceChip>
+                        ))}
+                      </div>
+                    </fieldset>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-center gap-4 mt-8">
+                <Button
+                  variant="ghost"
+                  onClick={goBack}
+                  className="text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)]"
+                >
+                  {t("calc.back")}
+                </Button>
+                <Button
+                  className="bg-[var(--color-cta)] text-white px-8"
+                  disabled={!historyComplete(inputs)}
+                  onClick={() => advanceToNextStep(inputs)}
                 >
                   {t("calc.next")}
                 </Button>
@@ -1001,7 +1220,7 @@ export default function CoverCalculator({
               </div>
 
               <div className="divide-y divide-[var(--color-border-light)] rounded-2xl border border-[var(--color-border-light)] bg-white overflow-hidden">
-                {buildReviewRows(inputs).map((row) => (
+                {buildReviewRows(inputs, t).map((row) => (
                   <div key={row.label} className="flex items-center justify-between gap-4 px-5 py-3.5">
                     <div className="min-w-0">
                       <div className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{tOr(t, `calc.rev_${calcSlug(row.label)}`, row.label)}</div>

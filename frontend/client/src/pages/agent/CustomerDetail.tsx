@@ -21,6 +21,7 @@ import {
   fetchCustomer,
   formatAmount,
   parseAmount,
+  policyCover,
   PORTFOLIO_POLICY_COLUMNS,
   suggestCustomers,
   tagPolicyToCustomer,
@@ -101,7 +102,7 @@ export default function CustomerDetail() {
     () =>
       policies
         .filter(p => (p.insurance_type || "health") === "health")
-        .reduce((sum, p) => sum + (parseAmount(p.sum_insured) ?? 0), 0),
+        .reduce((sum, p) => sum + (policyCover(p) ?? 0), 0),
     [policies]
   );
 
@@ -279,6 +280,14 @@ export default function CustomerDetail() {
             <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{t("customer_detail.stat_total_cover")}</p>
               <p className="text-3xl font-extrabold text-slate-800">{formatAmount(stats.totalSumInsured)}</p>
+              {stats.totalSumInsured != null && stats.totalBaseCover != null && stats.totalSumInsured - stats.totalBaseCover >= 1 && (
+                <p className="mt-2 text-[11px] text-slate-400 font-medium">
+                  {t("customer_detail.cover_breakdown", {
+                    base: formatAmount(stats.totalBaseCover),
+                    extra: formatAmount(stats.totalSumInsured - stats.totalBaseCover),
+                  })}
+                </p>
+              )}
               {stats.totalPremium != null && (
                 <p className="mt-2 text-[11px] text-slate-400 font-medium">{t("customer_detail.premium_extracted", { amount: formatAmount(stats.totalPremium) })}</p>
               )}
@@ -417,7 +426,20 @@ export default function CustomerDetail() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-slate-500" data-label={t("customer_detail.col_insurer")}>{p.insurer || "—"}</td>
-                          <td className="px-6 py-4 font-semibold text-slate-700" data-label={t("customer_detail.col_cover")}>{formatAmount(parseAmount(p.sum_insured))}</td>
+                          <td className="px-6 py-4 font-semibold text-slate-700" data-label={t("customer_detail.col_cover")}>
+                            {(() => {
+                              const cover = policyCover(p);
+                              const base = parseAmount(p.sum_insured);
+                              return (
+                                <>
+                                  {formatAmount(cover)}
+                                  {cover != null && base != null && cover - base >= 1 && (
+                                    <div className="text-[11px] text-slate-400 font-medium mt-0.5">{t("customer_detail.cover_base", { amount: formatAmount(base) })}</div>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </td>
                           <td className="px-6 py-4 text-slate-500" data-label={t("customer_detail.col_next_premium")}>{np ? format(new Date(np), "d MMM yyyy", dl) : "—"}</td>
                           <td className="px-6 py-4" data-label={t("customer_detail.col_score")}>
                             {type === "health" && p.score != null

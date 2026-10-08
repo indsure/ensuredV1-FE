@@ -11,6 +11,7 @@ import {
   mergePolicyTexts
 } from "../utils/policyWordingsFetcher";
 import { applyScoreBucketing, getBucketingExplanation } from "../utils/scoreBucketing";
+import { reconcileInceptionDate } from "../utils/renewalInception";
 import { AI_CONFIG } from "../config/ai_config";
 import {
   applyPolicyInputBudget,
@@ -836,6 +837,9 @@ export async function runAnalysisPipeline(
     // legitimately belong in the total. Running the health definition over either
     // would rewrite a correct number into a wrong one.
     if (insuranceType === "health") reconcileEffectiveCover(parsed);
+    // Continuous-cover start from the schedule's previous-policy list. Base text
+    // only: a companion's own renewal history is not this policy's.
+    if (insuranceType === "health") reconcileInceptionDate(parsed, policyText, todayISO(), pushConfidenceNote);
     // RCT next: NCAR, the net-cover penalty, the score and the verdict all
     // derive from it, so it has to be right before anything downstream runs.
     enforceRequiredCover(parsed);

@@ -37,6 +37,11 @@ export const CALCULATOR_CONFIG = {
     // cover, not ₹50L compounded into something else.
     globalTravelAddition: 5000000, // ₹50L
 
+    // Oldest child a family floater is planned to carry. Most Indian floaters
+    // drop a dependent child at 24 or 25, so a child past 24 is planned on a
+    // policy of their own instead (see separatePolicies on the result).
+    dependentChildMaxAge: 24,
+
     // Calibration 8
     baseSICap: 2000000,               // ₹20L preferred base-policy cap (raised in ₹5L slabs only when the 3× top-up rule demands it)
     topUpMinimumThreshold: 1000000,   // ₹10L — don't recommend top-up for smaller gaps
@@ -165,9 +170,25 @@ export interface UserInputs {
     childAges?: number[];
 
     // Calibration 7: new condition strings
-    preExistingConditions?: Array<
-        "diabetes" | "hypertension" | "cardiac" | "cancer" | "obesity" | "kidney" | "none"
-    >;
+    preExistingConditions?: Array<PreExistingCondition>;
+    /** The spouse's own answer. A floater carries both adults, so the cover is
+     *  sized on the conditions of either (see householdConditions). */
+    spousePreExistingConditions?: Array<PreExistingCondition>;
+    /** Each parent's own answer, for a "Parents included" plan. */
+    fatherPreExistingConditions?: Array<PreExistingCondition>;
+    motherPreExistingConditions?: Array<PreExistingCondition>;
+}
+
+export type PreExistingCondition =
+    "diabetes" | "hypertension" | "cardiac" | "cancer" | "obesity" | "kidney" | "none";
+
+/** A child too old for the family floater, planned on a policy of their own. */
+export interface SeparatePolicyPlan {
+    age: number;
+    totalSI: number;
+    baseSI: number;
+    topUpSI: number;
+    premiumEstimate: PremiumEstimate;
 }
 
 export interface RiderRecommendation {
@@ -257,6 +278,9 @@ export interface EngineResult {
         personalNeeded: number;
     };
     fiveYearProjection: Array<{ year: number; premium: number; cumulative: number }>;
+    /** Children past dependentChildMaxAge, each run through this same engine as
+     *  an individual. Absent when there are none, and on every older report. */
+    separatePolicies?: SeparatePolicyPlan[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -270,6 +294,39 @@ function formatLakhs(amount: number): string {
     const inLakhs = amount / 100000;
     const rounded = Math.round(inLakhs * 2) / 2;
     return `₹${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)} Lakhs`;
+}
+
+/** Every condition declared by an adult on the policy. A floater pays for
+ *  whichever member is admitted, so one diabetic adult sizes the whole cover. */
+function householdConditions(inputs: UserInputs): PreExistingCondition[] {
+    const isCouple =
+        inputs.familyStructure === "Couple" ||
+        inputs.familyStructure === "Couple + kids";
+    const withParents = inputs.familyStructure === "Parents included";
+    const all = [
+        ...(inputs.preExistingConditions ?? []),
+        ...(isCouple ? inputs.spousePreExistingConditions ?? [] : []),
+        ...(withParents ? inputs.fatherPreExistingConditions ?? [] : []),
+        ...(withParents ? inputs.motherPreExistingConditions ?? [] : []),
+    ].filter((c) => c !== "none");
+    return Array.from(new Set(all));
+}
+
+/** Ages of the children declared for a "Couple + kids" plan, only as many as
+ *  childCount says (a lowered count leaves stale ages behind in the array). */
+function declaredChildAges(inputs: UserInputs): number[] {
+    if (inputs.familyStructure !== "Couple + kids") return [];
+    const count = inputs.childCount ?? 0;
+    return (inputs.childAges ?? [])
+        .slice(0, count)
+        .filter((a) => typeof a === "number" && Number.isFinite(a) && a >= 0);
+}
+
+/** Children too old for the floater. Exported so the wizard and report agree. */
+export function childrenNeedingOwnPolicy(inputs: UserInputs): number[] {
+    return declaredChildAges(inputs).filter(
+        (a) => a > CALCULATOR_CONFIG.dependentChildMaxAge
+    );
 }
 
 function resolveAge(inputs: UserInputs): number {
@@ -313,15 +370,14 @@ function getConditionMultiplier(inputs: UserInputs): number {
     let riskScore = 0;
     const cfg = CALCULATOR_CONFIG.conditionMultipliers;
 
-    // Explicit conditions array
-    if (inputs.preExistingConditions && !inputs.preExistingConditions.includes("none")) {
-        if (inputs.preExistingConditions.includes("diabetes")) riskScore += cfg.diabetes;
-        if (inputs.preExistingConditions.includes("hypertension")) riskScore += cfg.hypertension;
-        if (inputs.preExistingConditions.includes("cardiac")) riskScore += cfg.cardiac;
-        if (inputs.preExistingConditions.includes("cancer")) riskScore += cfg.cancer;
-        if (inputs.preExistingConditions.includes("obesity")) riskScore += cfg.obesity;
-        if (inputs.preExistingConditions.includes("kidney")) riskScore += cfg.kidney;
-    }
+    // Explicit conditions, from either adult on the policy
+    const conditions = householdConditions(inputs);
+    if (conditions.includes("diabetes")) riskScore += cfg.diabetes;
+    if (conditions.includes("hypertension")) riskScore += cfg.hypertension;
+    if (conditions.includes("cardiac")) riskScore += cfg.cardiac;
+    if (conditions.includes("cancer")) riskScore += cfg.cancer;
+    if (conditions.includes("obesity")) riskScore += cfg.obesity;
+    if (conditions.includes("kidney")) riskScore += cfg.kidney;
 
     // recurringExpenses: "Chronic but stable" adds a baseline risk signal
     if (inputs.recurringExpenses === "Chronic but stable" && riskScore === 0) {
@@ -451,9 +507,7 @@ function estimatePremium(
         annualMax *= eff;
     }
 
-    const hasPED =
-        (inputs.preExistingConditions?.length ?? 0) > 0 &&
-        !inputs.preExistingConditions?.includes("none");
+    const hasPED = householdConditions(inputs).length > 0;
     const hasChronicExpenses = inputs.recurringExpenses === "Chronic but stable";
 
     if (hasPED || hasChronicExpenses) {
@@ -610,9 +664,8 @@ function buildRiders(inputs: UserInputs, age: number, partnerCompanies?: string[
     }
 
     // Obesity / kidney — condition-specific rider
-    const hasMetabolicRisk =
-        inputs.preExistingConditions?.includes("obesity") ||
-        inputs.preExistingConditions?.includes("kidney");
+    const metabolic = householdConditions(inputs);
+    const hasMetabolicRisk = metabolic.includes("obesity") || metabolic.includes("kidney");
 
     if (hasMetabolicRisk) {
         drafts.push({
@@ -704,9 +757,16 @@ function buildReasoning(
             `With parents on the floater, senior citizen risk significantly increases this number. Post-60 claim frequency is 3–4× higher than working-age adults, and claim severity is greater.`
         );
     } else if (inputs.familyStructure === "Couple + kids" && inputs.childCount) {
+        const onOwn = childrenNeedingOwnPolicy(inputs).length;
+        const onFloater = 2 + Math.max(0, inputs.childCount - onOwn);
         lines.push(
-            `Coverage is structured as a family floater across ${2 + inputs.childCount} members. The super top-up activates when any single claim crosses the base threshold.`
+            `Coverage is structured as a family floater across ${onFloater} members. The super top-up activates when any single claim crosses the base threshold.`
         );
+        if (onOwn > 0) {
+            lines.push(
+                `${onOwn === 1 ? "One child is" : `${onOwn} children are`} over ${CALCULATOR_CONFIG.dependentChildMaxAge}, past the age most family policies cover, so ${onOwn === 1 ? "is" : "are"} planned on a separate policy in this report.`
+            );
+        }
     }
 
     if (structure.topUpSI > 0) {
@@ -980,5 +1040,47 @@ export function calculateHealthCover(inputs: UserInputs, opts?: CoverCalcOptions
         coverageBreakdown,
         corporateGap,
         fiveYearProjection: projection,
+        separatePolicies: planSeparatePolicies(inputs, opts),
     };
+}
+
+/**
+ * Each child past dependentChildMaxAge, run through this same engine as an
+ * individual. What carries over from the household: city, travel, posture and
+ * hospital preference, which describe how the family lives and is treated.
+ * What does not: income (the child's own is unknown, so no adjustment rather
+ * than the parents'), employer cover, health history (asked of adults only),
+ * and recurring household expenses. Undefined when there is nobody to plan.
+ */
+function planSeparatePolicies(
+    inputs: UserInputs,
+    opts?: CoverCalcOptions
+): SeparatePolicyPlan[] | undefined {
+    const ages = childrenNeedingOwnPolicy(inputs);
+    if (ages.length === 0) return undefined;
+    return ages.map((age) => {
+        // familyStructure "Individual" means this run plans no children of its
+        // own, so it can never recurse back in here.
+        const child: UserInputs = {
+            cityTier: inputs.cityTier,
+            familyStructure: "Individual",
+            employerCover: "None",
+            ageBand: age <= 30 ? "18-30" : age <= 45 ? "31-45" : age <= 60 ? "46-60" : "60+",
+            exactAge: age,
+            riskPosture: inputs.riskPosture,
+            globalTravel: inputs.globalTravel,
+            hospitalPreference: inputs.hospitalPreference,
+            state: inputs.state,
+            city: inputs.city,
+            preExistingConditions: ["none"],
+        };
+        const r = calculateHealthCover(child, opts);
+        return {
+            age,
+            totalSI: r.plans.efficient.totalSI,
+            baseSI: r.plans.efficient.baseSI,
+            topUpSI: r.plans.efficient.topUpSI,
+            premiumEstimate: r.plans.efficient.premiumEstimate,
+        };
+    });
 }
