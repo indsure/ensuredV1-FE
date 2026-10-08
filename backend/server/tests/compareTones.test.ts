@@ -147,4 +147,7 @@ test("percent-of-cover limits in rupees, in plain words", () => {
   assert.equal(coverRupees("2% of Sum Insured per day", 500000), "₹10,000");
   assert.equal(coverRupees("Single AC room", 1000000), null);
   assert.equal(plainDisplay("1% of SI/day"), "1% of cover a day");
+  // The catalogue often says "Base SI".
+  assert.equal(coverRupees("1% of Base SI/day", 500000), "₹5,000");
+  assert.equal(plainDisplay("1% of Base SI/day"), "1% of Base cover a day");
 });

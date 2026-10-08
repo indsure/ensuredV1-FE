@@ -135,7 +135,7 @@ export function plainDisplay(display: string): string {
     .replace(/\s*\/\s*(yr|year)\b/gi, " a year");
 }
 
-const PCT_RE = /(\d+(?:\.\d+)?)\s*%\s*(?:of\s*)?(?:the\s*)?(?:SI|sum\s*insured|cover)\b/i;
+const PCT_RE = /(\d+(?:\.\d+)?)\s*%\s*(?:of\s*)?(?:the\s*)?(?:base\s*)?(?:SI|sum\s*insured|cover)\b/i;
 
 /** The rupee amount a "% of cover" limit works out to at the chosen cover, or null. */
 export function coverRupees(display: string, sumInsured: number): string | null {
