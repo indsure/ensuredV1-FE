@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react"
-import { BookOpen, Check, Lock, MessageCircle, ShieldCheck } from "lucide-react"
+import { BookOpen, Check, Lock, MessageCircle, ShieldCheck, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
 import { apiFetch, apiJson, apiOk } from "@/lib/api"
+import { teamWaLink } from "@/components/app/portfolio-utils"
 import { useLanguage } from "@/i18n/LanguageContext"
 import { STRINGS, type WaStringKey } from "./strings"
 
@@ -16,10 +17,15 @@ import { STRINGS, type WaStringKey } from "./strings"
    for a card that is not meant for them.
    Three steps, each opening only after the one before: save our contact, connect the number,
    send a first policy. A guide on the right says what to type once connected; the full
-   version is /docs/whatsapp-assistant. */
+   version is /docs/whatsapp-assistant.
+   Free-plan advisors who were not invited get `needsUpgrade` from the server and see a
+   reminder to upgrade in place of the steps. There is no checkout in the product, so the
+   reminder opens a WhatsApp chat with the team, plus a link to the plans page. */
 
 type Status = {
   eligible: boolean
+  /** Free plan and not invited: show the upgrade reminder, not the steps. */
+  needsUpgrade?: boolean
   botNumber?: string | null
   status?: "none" | "pending" | "active"
   number?: string | null
@@ -196,6 +202,28 @@ export default function WhatsAppConnectCard() {
         <div className="space-y-6">
           <p className="text-base text-slate-700 max-w-prose">{t("whatsapp_connect.intro")}</p>
 
+          {status.needsUpgrade ? (
+            <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 space-y-4">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                  <Sparkles className="h-5 w-5" aria-hidden />
+                </span>
+                <div className="space-y-1">
+                  <h3 className="font-sans text-lg font-bold text-slate-900">{t("whatsapp_connect.upgrade_title")}</h3>
+                  <p className="text-base text-slate-700 max-w-prose">{t("whatsapp_connect.upgrade_body")}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:pl-[52px]">
+                <a href={teamWaLink(t("whatsapp_connect.upgrade_wa_text"))} target="_blank" rel="noopener noreferrer" className={WA_BTN}>
+                  <MessageCircle className="h-5 w-5" aria-hidden />
+                  {t("whatsapp_connect.upgrade_cta")}
+                </a>
+                <a href="/advisors/pricing" target="_blank" rel="noopener noreferrer" className="min-h-[44px] inline-flex items-center text-base font-semibold text-slate-700 underline underline-offset-4 hover:text-slate-900">
+                  {t("whatsapp_connect.upgrade_plans")}
+                </a>
+              </div>
+            </div>
+          ) : (
           <ol className="list-none">
             {hasSaveStep && (
               <Step n={++n} state={saveDone ? "done" : "active"} title={t("whatsapp_connect.save_title")} {...stepProps}>
@@ -296,6 +324,7 @@ export default function WhatsAppConnectCard() {
               )}
             </Step>
           </ol>
+          )}
 
           <div className="space-y-2 border-t border-slate-100 pt-4">
             <p className="flex gap-2 text-sm text-slate-600 max-w-prose">

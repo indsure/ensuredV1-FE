@@ -50,6 +50,11 @@ export const STRINGS = {
     never_sends: "IndSure never messages your customers. It only replies to you, and you press send yourself.",
     beta_note: "This is a beta number and it may change. We'll tell you if it does.",
     load_failed: "Couldn't load your WhatsApp connection.",
+    upgrade_title: "WhatsApp comes with paid plans",
+    upgrade_body: "Upgrade to send policies, get reports and see renewals right inside WhatsApp. Message us and we will switch it on for you.",
+    upgrade_cta: "Message us to upgrade",
+    upgrade_plans: "See plans",
+    upgrade_wa_text: "Hi, I am an IndSure advisor. I would like to upgrade to a paid plan to use IndSure on WhatsApp.",
   },
   hi: {
     title: "WhatsApp",
@@ -97,6 +102,11 @@ export const STRINGS = {
     never_sends: "IndSure आपके ग्राहकों को कभी मैसेज नहीं भेजता। वह सिर्फ़ आपको जवाब देता है, और भेजने का बटन आप खुद दबाते हैं।",
     beta_note: "यह बीटा नंबर है और बदल सकता है। बदलने पर हम आपको बताएंगे।",
     load_failed: "आपका WhatsApp कनेक्शन लोड नहीं हो सका।",
+    upgrade_title: "WhatsApp पेड प्लान के साथ मिलता है",
+    upgrade_body: "अपग्रेड करें और WhatsApp में ही पॉलिसी भेजें, रिपोर्ट पाएं और रिन्यूअल देखें। हमें मैसेज करें, हम इसे आपके लिए चालू कर देंगे।",
+    upgrade_cta: "अपग्रेड के लिए मैसेज करें",
+    upgrade_plans: "प्लान देखें",
+    upgrade_wa_text: "नमस्ते, मैं IndSure एडवाइज़र हूं। IndSure को WhatsApp पर इस्तेमाल करने के लिए मैं पेड प्लान में अपग्रेड करना चाहता/चाहती हूं।",
   },
 } as const
 

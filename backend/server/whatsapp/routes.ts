@@ -247,16 +247,33 @@ export function openOrigin(req: any): boolean {
   return !!origin && open.includes(origin);
 }
 
+/**
+ * Who may connect: invited (wa_allowlist), on a paid plan (agents.plan is anything but
+ * 'free', the same rule as Sach replies and the morning brief), or on an open-beta site.
+ * Everyone else sees the card with an upgrade reminder instead of the steps. Connecting
+ * adds the advisor to wa_allowlist, so moving back to free later does not cut them off.
+ */
+async function connectAccess(agentId: string, req: any): Promise<{ allowed: boolean; paid: boolean; canConnect: boolean }> {
+  const r = await pool.query(
+    `SELECT EXISTS (SELECT 1 FROM wa_allowlist WHERE agent_id = $1) AS allowed,
+            COALESCE((SELECT plan FROM agents WHERE id = $1), 'free') <> 'free' AS paid`,
+    [agentId]
+  );
+  const allowed = !!r.rows[0]?.allowed;
+  const paid = !!r.rows[0]?.paid;
+  return { allowed, paid, canConnect: allowed || paid || openOrigin(req) };
+}
+
 export function registerWhatsappRoutes(app: Express, verifyJwt: VerifyJwt): void {
 
-  /* ── Portal: link status. `eligible` hides the whole card for accounts not invited
-     (and not on an open-beta site). ── */
+  /* ── Portal: link status. Every advisor sees the card; `needsUpgrade` swaps the steps
+     for a reminder to move to a paid plan. ── */
   app.get("/api/agent/whatsapp", async (req, res) => {
     try {
       const agentId = await verifyJwt(req, res);
       if (!agentId) return;
-      const allow = await pool.query("SELECT 1 FROM wa_allowlist WHERE agent_id = $1", [agentId]);
-      if (allow.rows.length === 0 && !openOrigin(req)) return res.json({ eligible: false });
+      const access = await connectAccess(agentId, req);
+      if (!access.canConnect) return res.json({ eligible: true, needsUpgrade: true });
       const link = await pool.query(
         `SELECT wa_number, status, linked_at, code_expires_at FROM whatsapp_link
           WHERE agent_id = $1 AND status IN ('active', 'pending')
@@ -283,8 +300,10 @@ export function registerWhatsappRoutes(app: Express, verifyJwt: VerifyJwt): void
     try {
       const agentId = await verifyJwt(req, res);
       if (!agentId) return;
-      const allow = await pool.query("SELECT 1 FROM wa_allowlist WHERE agent_id = $1", [agentId]);
-      if (allow.rows.length === 0 && !openOrigin(req)) return res.status(403).json({ error: "NOT_IN_BETA" });
+      const access = await connectAccess(agentId, req);
+      if (!access.canConnect) {
+        return res.status(403).json({ error: "NEEDS_UPGRADE", message: "WhatsApp comes with paid plans. Message us to upgrade." });
+      }
       const number = normaliseWaNumber(req.body?.number);
       if (!number) return res.status(400).json({ error: "BAD_NUMBER", message: "Enter a 10-digit Indian mobile number." });
 
@@ -296,10 +315,10 @@ export function registerWhatsappRoutes(app: Express, verifyJwt: VerifyJwt): void
         return res.status(409).json({ error: "NUMBER_IN_USE", message: "This number is already connected to another IndSure account." });
       }
 
-      if (allow.rows.length === 0) {
+      if (!access.allowed) {
         await pool.query(
           "INSERT INTO wa_allowlist (agent_id, note) VALUES ($1, $2) ON CONFLICT (agent_id) DO NOTHING",
-          [agentId, `open beta: ${String(req.headers.origin || "").slice(0, 80)}`]
+          [agentId, access.paid ? "paid plan" : `open beta: ${String(req.headers.origin || "").slice(0, 80)}`]
         );
       }
       const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
