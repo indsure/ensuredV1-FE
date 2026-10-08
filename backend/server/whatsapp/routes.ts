@@ -156,6 +156,12 @@ function reportSummary(row: any) {
     weakPoint: row.report_data?.final_verdict?.key_failure_points?.[0] ?? null,
     details: dataEntryDetails(row.insurance_type, row.extracted_data),
     extracted: row.insurance_type === "life" || row.insurance_type === "term" ? row.extracted_data ?? null : null,
+    // Other covers read in the same check (a super top-up sent with the base policy) and
+    // whether each was actually read: the engine never fails an audit on a bad companion,
+    // so the bot must not claim "checked together" without this.
+    companions: Array.isArray(row.report_data?.__companions)
+      ? row.report_data.__companions.map((c: any) => ({ kind: String(c?.kind || ""), read: c?.read === true }))
+      : [],
     report: row.report_data
       ? {
           verdictLabel: fv.label ?? null,

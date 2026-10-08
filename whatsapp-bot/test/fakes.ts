@@ -123,6 +123,7 @@ export class FakeEngine implements Engine {
     this.plan.set(jobId, { polls: o.polls ?? 2, end: o.end ?? "completed", error: o.error });
     const base = healthClient(clientId, { insuranceType: f.type, policyholderName: f.policyholderName ?? null });
     if (f.type !== "health") base.report = null;
+    if (f.companion) base.companions = [{ kind: "super_topup", read: !f.companion.buffer.toString("latin1").includes("UNREADABLE") }];
     if (o.end === "error") { base.status = "failed"; base.errorMessage = o.error ?? "error"; }
     this.clients.set(clientId, base);
     (this as any)._jobClient = { ...(this as any)._jobClient, [jobId]: { clientId, type: f.type, sha: f.sha } };
@@ -258,7 +259,10 @@ export function makeBot(over: { inspect?: (b: Buffer) => Promise<Inspection> } =
       if (s.includes("LOCKED")) return { kind: "locked" };
       if (s.includes("HINDI")) return { kind: "ok", text: "", hindi: true, guess: null, scores: {} };
       const guess = s.includes("MOTOR") ? "motor" : s.includes("UNKNOWN") ? null : "health";
-      return { kind: "ok", text: s, hindi: false, guess, scores: {} };
+      // TOPUP: a super top-up. NAME=Ramesh_Kumar: a name read off the policy. SCAN: no text.
+      const names = [...s.matchAll(/NAME=([A-Za-z_]+)/g)].map((m) => m[1].replace(/_/g, " "));
+      const text = s.includes("SCAN") ? "" : s.padEnd(400, ".");
+      return { kind: "ok", text, hindi: false, guess, scores: {}, topUp: s.includes("TOPUP"), names };
     }),
   });
   return { bot, transport, engine, advance: (ms: number) => { t += ms; } };

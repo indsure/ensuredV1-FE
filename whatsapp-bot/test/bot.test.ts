@@ -54,9 +54,12 @@ test("photos, non-PDF files and oversized files get the right reply and no check
 test("health PDF: acknowledge, report card from stored fields, report becomes current", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(pdf(transport, "HEALTH", { caption: "Ramesh Kumar" }));
+  await bot.handle(text("no"));
   await settle(bot);
   const all = transport.texts().join("\n---\n");
-  assert.match(transport.texts()[0], /Got it\. Checking this policy now/);
+  assert.match(transport.texts()[0], /Got it\. Reading this PDF\./);
+  assert.match(transport.texts()[1], /Does \*?Ramesh Kumar\*? also have a super top-up policy\?/);
+  assert.match(transport.texts()[2], /Checking it now, usually about a minute\./);
   // Answer first (who, short plan name, score), then why, then the one next action.
   assert.match(all, /📄 \*Ramesh Kumar\* · Care Supreme · 65\/100\nGood Core Coverage with Areas to Improve\. Decent base cover with a costly room rent cap\./);
   assert.match(all, /Watch out for: Room rent capped at 1% of sum insured \(₹40,000 on a ₹3L bill\); Cataract sub-limit\./);
@@ -71,6 +74,7 @@ test("no caption: asks whose policy, and files it under the one matching custome
   const { bot, transport, engine } = makeBot();
   engine.customers = [{ id: "c1", name: "Sunita Sharma", phone: "9811111111" }];
   await bot.handle(pdf(transport, "HEALTH"));
+  await bot.handle(text("no"));
   await settle(bot);
   assert.match(transport.last(), /Whose policy is this\?/);
   await bot.handle(text("sunita"));
@@ -114,6 +118,8 @@ test("same file again: offers the existing report, re-runs only on YES", async (
   assert.equal(engine.analyzeCalls.length, 0);
   await bot.handle(pdf(transport, "HEALTH dup"));
   await bot.handle(text("yes"));
+  assert.match(transport.last(), /super top-up/);
+  await bot.handle(text("no"));
   await settle(bot);
   assert.equal(engine.analyzeCalls.length, 1);
 });
@@ -123,21 +129,29 @@ test("out of checks: tells the advisor, never uploads", async () => {
   engine.checks = 0;
   await bot.handle(pdf(transport, "HEALTH"));
   await settle(bot);
+  // Told before the super top-up question: no point asking for a second file.
+  assert.doesNotMatch(transport.texts().join("\n"), /super top-up/);
   assert.match(transport.last(), /used all your policy checks/);
   assert.equal(engine.analyzeCalls.length, 0);
 });
 
-test("three PDFs at once: each acknowledged, run one at a time, each reported", async () => {
+test("three PDFs at once: one question for all three, NO runs each, one at a time", async () => {
   const { bot, transport, engine } = makeBot();
   await Promise.all([
     bot.handle(pdf(transport, "HEALTH a", { caption: "A One" })),
     bot.handle(pdf(transport, "HEALTH b", { caption: "B Two" })),
     bot.handle(pdf(transport, "HEALTH c", { caption: "C Three" })),
   ]);
+  assert.match(transport.last(), /You've sent 3 health policies:\n1\) A One\n2\) B Two\n3\) C Three/);
+  assert.equal(engine.conv.pending.held.length, 3);
+  assert.equal(engine.analyzeCalls.length, 0);
+  await bot.handle(text("no"));
   await settle(bot);
   const all = transport.texts();
-  assert.equal(all.filter((x) => /Got it\. Checking/.test(x)).length, 3);
+  assert.equal(all.filter((x) => /Got it\. Reading this PDF/.test(x)).length, 3);
   assert.equal(all.filter((x) => /\/100/.test(x)).length, 3);
+  assert.equal(engine.analyzeCalls.length, 3);
+  assert.ok(engine.analyzeCalls.every((c: any) => !c.companion));
   assert.equal(engine.maxInFlight, 1);
 });
 
@@ -147,6 +161,7 @@ test("runs out of checks mid-queue: stops and says how many were not checked", a
   // The up-front check counts files already in line, so only the first is accepted.
   await bot.handle(pdf(transport, "HEALTH a"));
   await bot.handle(pdf(transport, "HEALTH b"));
+  await bot.handle(text("no"));
   await settle(bot);
   assert.equal(engine.analyzeCalls.length, 1);
   assert.ok(transport.texts().some((x) => /used all your policy checks/.test(x)));
@@ -156,6 +171,7 @@ test("a failed read goes to Needs Attention with a plain reason and fix", async 
   const { bot, transport, engine } = makeBot();
   engine.nextOutcome = { end: "error", error: "PDF does not appear to be a readable policy (scan)" };
   await bot.handle(pdf(transport, "HEALTH blurry"));
+  await bot.handle(text("no"));
   await settle(bot);
   assert.match(transport.last(), /couldn't read this policy: the scan is too unclear to read\. Ask the customer for the insurer's original PDF\. It's waiting in Needs Attention/);
 });
@@ -164,6 +180,7 @@ test("slow check: still-working at 90s, portal hand-off at 5 min, then the resul
   const { bot, transport, engine } = makeBot();
   engine.nextOutcome = { polls: 70 }; // 70 polls x 5s = 350s
   await bot.handle(pdf(transport, "HEALTH slow"));
+  await bot.handle(text("no"));
   await settle(bot);
   const all = transport.texts();
   const i3 = all.findIndex((x) => /Still reading/.test(x));
@@ -175,6 +192,7 @@ test("slow check: still-working at 90s, portal hand-off at 5 min, then the resul
 test("questions: rules answer from stored fields with no model call", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(pdf(transport, "HEALTH"));
+  await bot.handle(text("no"));
   await settle(bot);
   await bot.handle(text("skip"));
   await bot.handle(text("what's the room rent limit?"));
@@ -188,6 +206,7 @@ test("questions: rules answer from stored fields with no model call", async () =
 test("a question no rule covers: model phrasing, else the not-in-report reply", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(pdf(transport, "HEALTH"));
+  await bot.handle(text("no"));
   await settle(bot);
   await bot.handle(text("skip"));
   await bot.handle(text("does it cover dental implants abroad?"));
@@ -201,6 +220,7 @@ test("a question no rule covers: model phrasing, else the not-in-report reply", 
 test("SHARE: language pick, tracked share link on indsure.in, wa.me to the customer, nothing sent to the customer", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(pdf(transport, "HEALTH", { caption: "Ramesh Kumar" }));
+  await bot.handle(text("no"));
   await settle(bot);
   await bot.handle(text("share"));
   assert.match(transport.last(), /Which language/);
@@ -268,6 +288,7 @@ test("house copy rules: no em dash, never 'AI' or 'credits' in anything sent", a
   engine.renewalData.leads = [{ id: "x", name: "Lead", phone: null, insurance_type: "health", insurer: null, policy_name: null, premium: null, due_date: "2026-10-01", days_left: 1 }];
   for (const m of [text("hi"), text("renewals"), text("remind lead")]) await bot.handle(m);
   await bot.handle(pdf(transport, "HEALTH", { caption: "Ramesh" }));
+  await bot.handle(text("no"));
   await settle(bot);
   await bot.handle(text("skip"));
   await bot.handle(text("share in english"));
@@ -297,6 +318,7 @@ test("SHARE with a number: the link goes to that number, even with none on file"
 test("a forwarded PDF whose caption is its file name is not filed under that name", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(pdf(transport, "HEALTH", { caption: "Policy Kit_PROHLV050040281.pdf", name: "Policy Kit_PROHLV050040281.pdf" }));
+  await bot.handle(text("no"));
   await settle(bot);
   assert.equal(engine.analyzeCalls[0].policyholderName, null);
   assert.match(transport.last(), /Whose policy is this\?/);

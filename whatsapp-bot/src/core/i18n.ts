@@ -129,6 +129,16 @@ function L(english: string, hinglish: string, hindi: string): Line {
   return { re: new RegExp(`^${src}$`), hinglish: to(hinglish), hindi: to(hindi) };
 }
 
+/** One line per policy-check count ({c}): "no new policy check", "1 policy check", "N policy checks". */
+function CHECKS(english: string, hinglish: string, hindi: string): Line[] {
+  const forms: [string, string, string][] = [
+    ["no new policy check", "koi naya policy check nahi", "कोई नया पॉलिसी चेक नहीं"],
+    ["1 policy check", "1 policy check", "1 पॉलिसी चेक"],
+    ["{n} policy checks", "{n} policy checks", "{n} पॉलिसी चेक"],
+  ];
+  return forms.map(([e, h, d]) => L(english.replace("{c}", e), hinglish.replace("{c}", h), hindi.replace("{c}", d)));
+}
+
 // Order matters: a specific line comes before a general one that would also match it.
 const LINES: Line[] = [
   /* Help and menus */
@@ -163,7 +173,80 @@ const LINES: Line[] = [
   L("Done. This WhatsApp number is no longer connected to your IndSure account.", "Ho gaya. Yeh WhatsApp number ab aapke IndSure account se juda nahi hai.", "हो गया। यह WhatsApp नंबर अब आपके IndSure खाते से जुड़ा नहीं है।"),
 
   /* Policy PDFs */
-  L("Got it. Checking this policy now, usually about a minute.", "Mil gaya. Policy check ho rahi hai, aam taur par ek minute lagta hai.", "मिल गया। पॉलिसी चेक हो रही है, आमतौर पर एक मिनट लगता है।"),
+  L("Got it. Reading this PDF.", "Mil gaya. PDF padh raha hoon.", "मिल गया। PDF पढ़ रहा हूँ।"),
+  L("Checking it now, usually about a minute.", "Check ho rahi hai, aam taur par ek minute lagta hai.", "चेक हो रही है, आमतौर पर एक मिनट लगता है।"),
+
+  /* Base policy + super top-up (templates.ts topUpAsk ... heldDropped) */
+  L("Does this customer also have a super top-up policy? Send that PDF now and I'll check both together for 1 policy check.",
+    "Kya is customer ki super top-up policy bhi hai? Woh PDF abhi bhejiye, dono ek saath check karunga, sirf 1 policy check lagega.",
+    "क्या इस ग्राहक की सुपर टॉप-अप पॉलिसी भी है? वह PDF अभी भेजिए, दोनों एक साथ चेक करूँगा, सिर्फ़ 1 पॉलिसी चेक लगेगा।"),
+  L("Does {p} also have a super top-up policy? Send that PDF now and I'll check both together for 1 policy check.",
+    "Kya {p} ki super top-up policy bhi hai? Woh PDF abhi bhejiye, dono ek saath check karunga, sirf 1 policy check lagega.",
+    "क्या {p} की सुपर टॉप-अप पॉलिसी भी है? वह PDF अभी भेजिए, दोनों एक साथ चेक करूँगा, सिर्फ़ 1 पॉलिसी चेक लगेगा।"),
+  L("Or reply NO to check this one alone.", "Ya sirf isko check karne ke liye NO likhiye.", "या सिर्फ़ इसे चेक करने के लिए NO लिखिए।"),
+  L("This looks like a super top-up.", "Yeh super top-up policy lag rahi hai.", "यह सुपर टॉप-अप पॉलिसी लग रही है।"),
+  L("This looks like a super top-up for {p}.", "Yeh {p} ki super top-up policy lag rahi hai.", "यह {p} की सुपर टॉप-अप पॉलिसी लग रही है।"),
+  L("Send the base health policy too and I'll check both together for 1 policy check.",
+    "Base health policy bhi bhejiye, dono ek saath check karunga, sirf 1 policy check lagega.",
+    "बेस हेल्थ पॉलिसी भी भेजिए, दोनों एक साथ चेक करूँगा, सिर्फ़ 1 पॉलिसी चेक लगेगा।"),
+  L("Or reply ALONE to check the top-up by itself.", "Ya sirf top-up check karne ke liye ALONE likhiye.", "या सिर्फ़ टॉप-अप चेक करने के लिए ALONE लिखिए।"),
+  L("Okay, send the super top-up PDF now. Or reply NO to check this one alone.",
+    "Theek hai, super top-up ki PDF abhi bhejiye. Ya sirf isko check karne ke liye NO likhiye.",
+    "ठीक है, सुपर टॉप-अप की PDF अभी भेजिए। या सिर्फ़ इसे चेक करने के लिए NO लिखिए।"),
+  L("Okay, send the base health policy PDF now. Or reply ALONE to check the top-up by itself.",
+    "Theek hai, base health policy ki PDF abhi bhejiye. Ya sirf top-up check karne ke liye ALONE likhiye.",
+    "ठीक है, बेस हेल्थ पॉलिसी की PDF अभी भेजिए। या सिर्फ़ टॉप-अप चेक करने के लिए ALONE लिखिए।"),
+  L("Is this the super top-up for the first policy?", "Kya yeh pehli policy ka super top-up hai?", "क्या यह पहली पॉलिसी का सुपर टॉप-अप है?"),
+  L("Is this the super top-up for {p}?", "Kya yeh {p} ka super top-up hai?", "क्या यह {p} का सुपर टॉप-अप है?"),
+  L("These may be different people: the base policy names {a}, the super top-up names {b}.",
+    "Yeh alag log ho sakte hain: base policy mein naam {a} hai, super top-up mein {b}.",
+    "ये अलग लोग हो सकते हैं: बेस पॉलिसी में नाम {a} है, सुपर टॉप-अप में {b}।"),
+  L("The base policy names {a}, the super top-up names {b}.",
+    "Base policy mein naam {a} hai, super top-up mein {b}.",
+    "बेस पॉलिसी में नाम {a} है, सुपर टॉप-अप में {b}।"),
+  L("I couldn't read the names on both, so I can't confirm it's the same person.",
+    "Dono par naam padh nahi paya, isliye pakka nahi keh sakta ki ek hi vyakti hai.",
+    "दोनों पर नाम पढ़ नहीं पाया, इसलिए पक्का नहीं कह सकता कि एक ही व्यक्ति है।"),
+  ...CHECKS("Reply YES to check them together as one cover (1 policy check), or NO to check them separately ({c}).",
+    "Dono ek saath check karne ke liye YES likhiye (1 policy check), ya alag alag check karne ke liye NO ({c}).",
+    "दोनों एक साथ चेक करने के लिए YES लिखिए (1 पॉलिसी चेक), या अलग-अलग चेक करने के लिए NO ({c})।"),
+  L("You've sent {n} health policies:", "Aapne {n} health policies bheji hain:", "आपने {n} हेल्थ पॉलिसी भेजी हैं:"),
+  L("To check a base policy with its super top-up, reply with both numbers, base first, like 1+2.",
+    "Base policy ko uske super top-up ke saath check karne ke liye dono number likhiye, pehle base, jaise 1+2.",
+    "बेस पॉलिसी को उसके सुपर टॉप-अप के साथ चेक करने के लिए दोनों नंबर लिखिए, पहले बेस, जैसे 1+2।"),
+  ...CHECKS("Or reply NO to check each one separately ({c}).",
+    "Ya har ek alag check karne ke liye NO likhiye ({c}).",
+    "या हर एक अलग चेक करने के लिए NO लिखिए ({c})।"),
+  L("The super top-up is a scanned copy, and a scanned top-up can't be read together with a base policy.",
+    "Super top-up scan ki hui copy hai, aur scan copy base policy ke saath padhi nahi ja sakti.",
+    "सुपर टॉप-अप स्कैन की हुई कॉपी है, और स्कैन कॉपी बेस पॉलिसी के साथ पढ़ी नहीं जा सकती।"),
+  ...CHECKS("Reply NO to check them separately ({c}), or send the insurer's original PDF of the top-up.",
+    "Alag alag check karne ke liye NO likhiye ({c}), ya top-up ki insurer wali original PDF bhejiye.",
+    "अलग-अलग चेक करने के लिए NO लिखिए ({c}), या टॉप-अप की इंश्योरर वाली ओरिजिनल PDF भेजिए।"),
+  L("Okay, checking them together as one cover. It uses 1 policy check.",
+    "Theek hai, dono ek saath ek cover ki tarah check ho rahe hain. Isme 1 policy check lagega.",
+    "ठीक है, दोनों एक साथ एक कवर की तरह चेक हो रहे हैं। इसमें 1 पॉलिसी चेक लगेगा।"),
+  L("The other policy will be checked separately.", "Doosri policy alag se check hogi.", "दूसरी पॉलिसी अलग से चेक होगी।"),
+  L("The other {n} policies will be checked separately.", "Baaki {n} policies alag se check hongi.", "बाकी {n} पॉलिसी अलग से चेक होंगी।"),
+  L("{x} was already checked, so I didn't check it again: {url}", "{x} pehle check ho chuki hai, isliye dobara check nahi ki: {url}", "{x} पहले चेक हो चुकी है, इसलिए दोबारा चेक नहीं की: {url}"),
+  L("I can't tell what kind of policy this PDF is. Please answer about {x} first, then send this one again. No policy check was used.",
+    "Samajh nahi aaya yeh kaunsi policy hai. Pehle {x} wale sawaal ka jawab dijiye, phir yeh PDF dobara bhejiye. Koi policy check use nahi hua.",
+    "समझ नहीं आया यह कौन सी पॉलिसी है। पहले {x} वाले सवाल का जवाब दीजिए, फिर यह PDF दोबारा भेजिए। कोई पॉलिसी चेक इस्तेमाल नहीं हुआ।"),
+  L("I didn't hear back about {x}, so I didn't check it and no policy check was used. Send it again when you're ready.",
+    "{x} ke baare mein jawab nahi aaya, isliye check nahi ki aur koi policy check use nahi hua. Jab chahein dobara bhejiye.",
+    "{x} के बारे में जवाब नहीं आया, इसलिए चेक नहीं की और कोई पॉलिसी चेक इस्तेमाल नहीं हुआ। जब चाहें दोबारा भेजिए।"),
+  L("I've set aside {x} without checking it. No policy check was used. Send it again when you're ready.",
+    "{x} ko bina check kiye rakh diya hai. Koi policy check use nahi hua. Jab chahein dobara bhejiye.",
+    "{x} को बिना चेक किए रख दिया है। कोई पॉलिसी चेक इस्तेमाल नहीं हुआ। जब चाहें दोबारा भेजिए।"),
+  L("Checked together with the super top-up. Total cover is in the full report.",
+    "Super top-up ke saath ek saath check hui. Kul cover poori report mein hai.",
+    "सुपर टॉप-अप के साथ एक साथ चेक हुई। कुल कवर पूरी रिपोर्ट में है।"),
+  L("I couldn't read the super top-up, so this report is for the base policy only.",
+    "Super top-up padh nahi paya, isliye yeh report sirf base policy ki hai.",
+    "सुपर टॉप-अप पढ़ नहीं पाया, इसलिए यह रिपोर्ट सिर्फ़ बेस पॉलिसी की है।"),
+  L("I no longer have those files. Please send the base policy and the super top-up again.",
+    "Woh files ab nahi hain. Base policy aur super top-up dobara bhejiye.",
+    "वे फ़ाइलें अब नहीं हैं। बेस पॉलिसी और सुपर टॉप-अप दोबारा भेजिए।"),
   L("Got it. This one is in line behind {n} other {x}. I'll send each report as it's ready.", "Mil gaya. Isse pehle {n} aur policy line mein hain. Har report taiyaar hote hi aa jayegi.", "मिल गया। इससे पहले {n} और पॉलिसी लाइन में हैं। हर रिपोर्ट तैयार होते ही आ जाएगी।"),
   L("Still reading this one. Longer policies take a bit more time.", "Abhi padh rahe hain. Lambi policy mein thoda zyada time lagta hai.", "अभी पढ़ रहे हैं। लंबी पॉलिसी में थोड़ा ज़्यादा समय लगता है।"),
   L("This is taking longer than usual. I'll message you when it's ready. You can also check it in the portal: {url}",

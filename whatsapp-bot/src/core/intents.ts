@@ -133,7 +133,20 @@ export function pickNumber(textRaw: string, max: number): number | null {
 
 export const isYes = (t: string) => /^(yes|y|haan|ha|han|ok|okay|sure|yes please|haan ji|ji haan|ha ji|theek hai|thik hai|kar do|हाँ|हां|हाँ जी|जी हाँ|ठीक है|कर दो)[.!।]*$/.test(norm(t));
 export const isNo = (t: string) => /^(no|n|nahi|nahin|na|nope|nahi ji|mat karo|नहीं|ना|मत करो|नहीं चाहिए)[.!।]*$/.test(norm(t));
-export const isSkip = (t: string) => /^(skip|later|none|leave it|no|na|n\/a|nahi|don'?t have|dont know|not now|pass)[.!]*$/.test(norm(t));
+/** "Check this one by itself / separately", for the super top-up question. */
+export const isAlone = (t: string) =>
+  /^(alone|only this( one)?|just this( one)?|this one only|by itself|separate(ly)?|sirf (ye|yeh|yahi|isko|ise)|akele|akela|alag( alag)?|alag se|सिर्फ (यह|ये|यही|इसे)|अकेले|अलग( अलग)?|अलग से)[.!।]*$/.test(norm(t));
+
+/** "1+2", "1 and 2", "1, 2", "1 2": two different numbers from 1..max, in the order given. */
+export function parsePair(t: string, max: number): [number, number] | null {
+  const m = norm(t).match(/^(\d{1,2})\s*(?:\+|,|&|and|aur|or|\s)\s*(\d{1,2})[.!]*$/);
+  if (!m) return null;
+  const a = Number(m[1]), b = Number(m[2]);
+  if (a === b || a < 1 || b < 1 || a > max || b > max) return null;
+  return [a, b];
+}
+
+export const isSkip =(t: string) => /^(skip|later|none|leave it|no|na|n\/a|nahi|don'?t have|dont know|not now|pass)[.!]*$/.test(norm(t));
 
 /** Caption on a PDF: "Ramesh Kumar 9812345678" -> name + phone. */
 export function parseCaption(textRaw: string): { name: string | null; phone: string | null } {

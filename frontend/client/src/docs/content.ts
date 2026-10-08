@@ -406,6 +406,7 @@ export const DOC_SECTIONS: DocSection[] = [
             ],
           },
           { t: "p", text: "Each new policy you send uses one policy check, the same as uploading it in the portal. See [Plans and policy checks](/docs/plans)." },
+          { t: "p", text: "After a health policy, it asks if the customer also has a super top-up. Send that PDF too and both are checked together as one cover, for one policy check. Reply **NO** to check the first policy alone. Nothing is checked until you answer." },
           { t: "h2", text: "What you can type", id: "commands" },
           {
             t: "list",

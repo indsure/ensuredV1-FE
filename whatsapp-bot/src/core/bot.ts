@@ -16,9 +16,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Engine, ClientSummary, RenewalRow } from "../engine.js";
 import type { InboundMessage, Transport } from "../transport/types.js";
-import { inspectPdf, looksLikePdf, POLICY_TYPES, type Inspection, type PolicyType } from "./pdfInspect.js";
+import { MIN_TEXT, inspectPdf, looksLikePdf, POLICY_TYPES, sameInsured, type Inspection, type PolicyType } from "./pdfInspect.js";
 import {
-  isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, pickNumber, ruleIntent,
+  isAlone, isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, parsePair, pickNumber, ruleIntent,
 } from "./intents.js";
 import { basics, ruleAnswer } from "./answers.js";
 import {
@@ -93,8 +93,12 @@ export type BotDeps = {
 
 type FileRef = { path: string; sha: string; name: string; waMessageId: string; caption: string };
 
+/** A health PDF waiting on the super top-up question. `existing`: this exact file was
+ *  checked before (that report's id). `person`: a caption name or a name read off the PDF. */
+type Held = { file: FileRef; topUp: boolean; names: string[]; scanned: boolean; existing: string | null; person: string | null; label: string };
+
 type State =
-  | "IDLE" | "REPORT_READY" | "AWAITING_TYPE" | "AWAITING_DUP_CONFIRM" | "AWAITING_CUSTOMER"
+  | "IDLE" | "REPORT_READY" | "AWAITING_TYPE" | "AWAITING_DUP_CONFIRM" | "AWAITING_CUSTOMER" | "AWAITING_TOPUP"
   | "AWAITING_SHARE_LANG" | "AWAITING_CLIENT_PICK" | "AWAITING_REMIND_PICK"
   | "AWAITING_LEAD" | "AWAITING_CALC" | "AWAITING_COMPARE_PICK" | "AWAITING_LEAD_PICK" | "AWAITING_CONFIRM";
 
@@ -116,7 +120,8 @@ const FAST_RULE = new Set(["help", "more", "website", "renewals", "followups", "
 
 type Conv = { state: State; currentClientId: string | null; pending: any; updatedAt: string | null };
 
-type QueueItem = { agentId: string; to: string; file: FileRef; type: PolicyType; jobRowId: string };
+/** `companion`: the same insured's super top-up, read in the same check (1 policy check). */
+type QueueItem = { agentId: string; to: string; file: FileRef; type: PolicyType; jobRowId: string; companion?: FileRef | null };
 
 type Remindable = RenewalRow & { source: "lead" | "client" };
 
@@ -150,6 +155,12 @@ const sha256 = (b: Buffer | string) => crypto.createHash("sha256").update(b).dig
 export class Bot {
   private readonly t: Timings;
   private readonly queues = new Map<string, { running: boolean; items: QueueItem[] }>();
+  /** One advisor's messages are handled one at a time. WhatsApp hands over PDFs sent
+   *  together at the same moment, and the conversation row is last-write-wins, so without
+   *  this a base policy and its super top-up would race each other's state. */
+  private readonly locks = new Map<string, Promise<void>>();
+  /** A super top-up question that lapsed unanswered, told once on the next message. */
+  private readonly lapsed = new Map<string, string>();
   private readonly sleep: (ms: number) => Promise<void>;
   private readonly now: () => number;
   private readonly replyDelay: () => number;
@@ -176,6 +187,21 @@ export class Bot {
   busy(): boolean {
     for (const q of this.queues.values()) if (q.running || q.items.length) return true;
     return false;
+  }
+
+  private async withLock<R>(agentId: string, fn: () => Promise<R>): Promise<R> {
+    const prev = this.locks.get(agentId) ?? Promise.resolve();
+    let release!: () => void;
+    const mine = new Promise<void>((r) => (release = r));
+    const tail = prev.then(() => mine);
+    this.locks.set(agentId, tail);
+    await prev;
+    try {
+      return await fn();
+    } finally {
+      release();
+      if (this.locks.get(agentId) === tail) this.locks.delete(agentId);
+    }
   }
 
   /* ══ Sending ══════════════════════════════════════════════════════════ */
@@ -225,16 +251,26 @@ export class Bot {
     if (!who.agentId || !who.servable) return this.unknownOnce(msg);
 
     const agentId = who.agentId;
-    try {
-      const conv = await this.loadConv(agentId, msg.replyTo);
-      if (msg.kind === "document") return await this.pdfIn(agentId, conv, msg);
-      if (msg.kind === "image") return await this.say(msg.replyTo, agentId, T.notPdf(), "not_pdf");
-      if (msg.kind === "text") return await this.onText(agentId, conv, msg);
-      return await this.say(msg.replyTo, agentId, T.help(), "help");
-    } catch (err: any) {
-      log.error("handle failed", { error: err?.message });
-      await this.say(msg.replyTo, agentId, T.genericError(), "error");
-    }
+    return this.withLock(agentId, async () => {
+      try {
+        const conv = await this.loadConv(agentId, msg.replyTo);
+        const lapsed = this.lapsed.get(agentId) ?? conv.pending?.lapsed;
+        if (lapsed) {
+          this.lapsed.delete(agentId);
+          const { lapsed: _gone, ...rest } = conv.pending || {};
+          conv.pending = rest;
+          await this.saveConv(agentId, conv);
+          await this.say(msg.replyTo, agentId, T.lapsed(lapsed), "topup_lapsed");
+        }
+        if (msg.kind === "document") return await this.pdfIn(agentId, conv, msg);
+        if (msg.kind === "image") return await this.say(msg.replyTo, agentId, T.notPdf(), "not_pdf");
+        if (msg.kind === "text") return await this.onText(agentId, conv, msg);
+        return await this.say(msg.replyTo, agentId, T.help(), "help");
+      } catch (err: any) {
+        log.error("handle failed", { error: err?.message });
+        await this.say(msg.replyTo, agentId, T.genericError(), "error");
+      }
+    });
   }
 
   /** After LINK: our own number as a contact card, so the advisor saves it in one tap and
@@ -283,7 +319,12 @@ export class Bot {
     // stays unassigned, a held file is dropped.
     if (conv.state.startsWith("AWAITING") && conv.updatedAt && this.now() - new Date(conv.updatedAt).getTime() > this.t.stateTimeoutMs) {
       await this.dropHeldFile(conv);
-      conv = { state: conv.currentClientId ? "REPORT_READY" : "IDLE", currentClientId: conv.currentClientId, pending: {}, updatedAt: null };
+      // Unanswered super top-up question: nothing was checked and nothing charged. Say so
+      // on the next message (handle), not silently.
+      const held: Held[] | undefined = conv.state === "AWAITING_TOPUP" ? conv.pending?.held : undefined;
+      const lapsed = held?.length ? held.map((h) => h.label).join(", ") : null;
+      if (lapsed) this.lapsed.set(agentId, lapsed);
+      conv = { state: conv.currentClientId ? "REPORT_READY" : "IDLE", currentClientId: conv.currentClientId, pending: lapsed ? { lapsed } : {}, updatedAt: null };
     }
     if (conv.pending.to !== to) {
       conv.pending = { ...conv.pending, to };
@@ -313,7 +354,8 @@ export class Bot {
     const person = this.lastPerson.get(agentId);
     const change = this.lastChange.get(agentId);
     const lang = this.replyLang.get(agentId);
-    const pending = { ...(c.pending || {}), ...(last ? { last } : {}), ...(person ? { lastPerson: person } : {}), ...(change ? { lastChange: change } : {}), ...(lang ? { replyLang: lang } : {}) };
+    const lapsed = this.lapsed.get(agentId);
+    const pending = { ...(c.pending || {}), ...(last ? { last } : {}), ...(person ? { lastPerson: person } : {}), ...(change ? { lastChange: change } : {}), ...(lang ? { replyLang: lang } : {}), ...(lapsed ? { lapsed } : {}) };
     await this.d.engine.putConversation(agentId, { state: c.state, currentClientId: c.currentClientId, pending });
   }
 
@@ -335,11 +377,34 @@ export class Bot {
   }
 
   private async dropHeldFile(conv: Conv) {
-    const p = conv.pending?.file?.path;
-    if (p) await fs.rm(p, { force: true }).catch(() => {});
+    const paths = [conv.pending?.file?.path, ...((conv.pending?.held as Held[] | undefined) ?? []).map((h) => h.file?.path)];
+    for (const p of paths) if (p) await fs.rm(p, { force: true }).catch(() => {});
   }
 
   /* ══ PDF in (brief §7) ════════════════════════════════════════════════ */
+
+  /** The health PDFs waiting on the super top-up question, if any. A file waiting on "run a
+   *  fresh check?" counts too: a top-up sent then pairs with it. */
+  private heldOf(conv: Conv): Held[] | null {
+    if (conv.state === "AWAITING_TOPUP") return (conv.pending?.held as Held[]) || [];
+    if (conv.state === "AWAITING_DUP_CONFIRM" && conv.pending?.item) return [conv.pending.item as Held];
+    return null;
+  }
+
+  private heldItem(file: FileRef, insp: Extract<Inspection, { kind: "ok" }>, existing: string | null): Held {
+    const names = insp.names ?? [];
+    const scanned = insp.text.replace(/\s/g, "").length < MIN_TEXT;
+    const person = parseCaption(file.caption).name || names[0] || null;
+    const stem = file.name.replace(/\.pdf$/i, "").slice(0, 40);
+    return { file, topUp: !!insp.topUp, names, scanned, existing, person, label: person || stem || "this policy" };
+  }
+
+  /** Health checks this advisor can still start, after the ones already in line. */
+  private async checksFree(agentId: string): Promise<number> {
+    const left = await this.d.engine.checksLeft(agentId);
+    const q = this.queues.get(agentId);
+    return left - ((q?.items.filter((i) => i.type === "health").length ?? 0) + (q?.running ? 1 : 0));
+  }
 
   private async pdfIn(agentId: string, conv: Conv, msg: InboundMessage) {
     const to = msg.replyTo;
@@ -347,8 +412,10 @@ export class Bot {
     const named = /\.pdf$/i.test(msg.fileName || "") || /pdf/i.test(msg.mimeType || "");
     if (!named) return this.say(to, agentId, T.notPdf(), "not_pdf");
 
-    // A new PDF always starts a new flow, even mid-question.
-    if (conv.state.startsWith("AWAITING")) {
+    // A new PDF starts a new flow, even mid-question. The exception: health PDFs waiting on
+    // the super top-up question, which this PDF may belong with.
+    const holding = this.heldOf(conv);
+    if (!holding && conv.state.startsWith("AWAITING")) {
       await this.dropHeldFile(conv);
       await this.rest(agentId, to, conv.currentClientId);
     }
@@ -379,34 +446,151 @@ export class Bot {
     };
     await fs.writeFile(file.path, buf);
 
+    const isHealth = insp.guess === "health" || !!insp.topUp;
     const existing = await this.d.engine.jobByHash(agentId, sha);
+
+    if (holding) {
+      // Another health PDF: maybe the super top-up, maybe another customer. Ask, never guess.
+      if (isHealth) return this.addHeld(agentId, to, conv, holding, this.heldItem(file, insp, existing));
+      // A motor or life policy has nothing to pair with: it runs, and the question stays.
+      if (insp.guess) {
+        if (existing) {
+          await fs.rm(file.path, { force: true }).catch(() => {});
+          return this.say(to, agentId, T.alreadyChecked(file.name.replace(/\.pdf$/i, ""), portalPolicyUrl(this.d.links, existing)), "duplicate");
+        }
+        return this.enqueue(agentId, to, file, insp.guess);
+      }
+      await fs.rm(file.path, { force: true }).catch(() => {});
+      return this.say(to, agentId, T.answerFirst(holding[0].label), "answer_first");
+    }
+
+    if (isHealth) {
+      if ((await this.checksFree(agentId)) <= 0) {
+        await fs.rm(file.path, { force: true }).catch(() => {});
+        return this.say(to, agentId, T.outOfChecks(this.d.teamLink), "no_checks");
+      }
+      const item = this.heldItem(file, insp, existing);
+      if (existing) {
+        await this.setState(agentId, to, "AWAITING_DUP_CONFIRM", conv.currentClientId, { file, type: "health", existing, item });
+        return this.say(to, agentId, T.duplicate(portalPolicyUrl(this.d.links, existing)), "duplicate");
+      }
+      return this.addHeld(agentId, to, conv, [], item);
+    }
     if (existing) {
       await this.setState(agentId, to, "AWAITING_DUP_CONFIRM", conv.currentClientId, { file, type: insp.guess, existing });
       return this.say(to, agentId, T.duplicate(portalPolicyUrl(this.d.links, existing)), "duplicate");
     }
     if (!insp.guess) {
-      await this.setState(agentId, to, "AWAITING_TYPE", conv.currentClientId, { file });
+      await this.setState(agentId, to, "AWAITING_TYPE", conv.currentClientId, { file, item: this.heldItem(file, insp, null) });
       return this.say(to, agentId, T.pickType(), "pick_type");
     }
     await this.enqueue(agentId, to, file, insp.guess);
   }
 
-  private async enqueue(agentId: string, to: string, file: FileRef, type: PolicyType) {
-    if (type === "health") {
-      const left = await this.d.engine.checksLeft(agentId);
-      const q = this.queues.get(agentId);
-      const ahead = (q?.items.filter((i) => i.type === "health").length ?? 0) + (q?.running ? 1 : 0);
-      if (left - ahead <= 0) {
-        await fs.rm(file.path, { force: true }).catch(() => {});
-        return this.say(to, agentId, T.outOfChecks(this.d.teamLink), "no_checks");
+  /* ══ Base policy + super top-up (one check for both) ══════════════════ */
+
+  private async addHeld(agentId: string, to: string, conv: Conv, held: Held[], item: Held) {
+    const all = [...held, item];
+    await this.setState(agentId, to, "AWAITING_TOPUP", conv.currentClientId, { held: all });
+    return this.askHeld(agentId, to, all);
+  }
+
+  /** Which of two held PDFs is the top-up: the one that looks like it, else the later one
+   *  (it was sent in answer to "does X have a super top-up?"). The advisor confirms. */
+  private roles(a: Held, b: Held): { base: Held; top: Held } {
+    return a.topUp && !b.topUp ? { base: b, top: a } : { base: a, top: b };
+  }
+
+  private async askHeld(agentId: string, to: string, held: Held[]) {
+    const fresh = held.filter((h) => !h.existing).length;
+    if (held.length === 1) {
+      const h = held[0];
+      return this.say(to, agentId, h.topUp ? T.baseAsk(h.person) : T.topUpAsk(h.person), "topup_ask");
+    }
+    if (held.length === 2) {
+      const { base, top } = this.roles(held[0], held[1]);
+      if (top.scanned) return this.say(to, agentId, T.scanTopUp(fresh), "topup_scan");
+      const verdict = sameInsured(base.names, top.names);
+      const a = base.names[0] ?? null, b = top.names[0] ?? null;
+      return this.say(to, agentId, T.pairAsk(base.person, a, b, verdict === "mismatch", fresh), "topup_pair");
+    }
+    return this.say(to, agentId, T.manyAsk(held.map((h) => h.label + (h.topUp ? " (looks like a super top-up)" : "")), fresh), "topup_many");
+  }
+
+  private async runPair(agentId: string, to: string, base: Held, top: Held, others: Held[]) {
+    // A combined check is a new check even if the base alone was checked before.
+    await this.enqueue(agentId, to, base.file, "health", top.file, T.pairing());
+    if (others.length) {
+      await this.say(to, agentId, T.restSeparate(others.length), "topup_rest");
+      await this.runSeparately(agentId, to, others);
+    }
+  }
+
+  private async runSeparately(agentId: string, to: string, items: Held[]) {
+    for (const h of items) {
+      if (h.existing) {
+        // Already checked and the advisor did not ask for a fresh one: no second charge.
+        await fs.rm(h.file.path, { force: true }).catch(() => {});
+        await this.say(to, agentId, T.alreadyChecked(h.label, portalPolicyUrl(this.d.links, h.existing)), "duplicate");
+        continue;
       }
+      await this.enqueue(agentId, to, h.file, "health");
+    }
+  }
+
+  /** The reply to the super top-up question. */
+  private async onTopUpReply(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    const held: Held[] = conv.pending?.held || [];
+    if (!held.length) return false;
+    const separately = isNo(text) || isAlone(text);
+    if (held.length === 1) {
+      if (separately) {
+        await this.rest(agentId, to, conv.currentClientId);
+        await this.runSeparately(agentId, to, held);
+        return true;
+      }
+      if (isYes(text)) {
+        await this.say(to, agentId, held[0].topUp ? T.sendBaseNow() : T.sendTopUpNow(), "topup_send");
+        return true;
+      }
+      await this.askHeld(agentId, to, held);
+      return true;
+    }
+    if (separately) {
+      await this.rest(agentId, to, conv.currentClientId);
+      await this.runSeparately(agentId, to, held);
+      return true;
+    }
+    let pair: { base: Held; top: Held } | null = null;
+    if (held.length === 2 && isYes(text)) pair = this.roles(held[0], held[1]);
+    const nums = held.length > 2 ? parsePair(text, held.length) : null;
+    if (nums) pair = this.roles(held[nums[0] - 1], held[nums[1] - 1]);
+    if (!pair) {
+      await this.askHeld(agentId, to, held);
+      return true;
+    }
+    if (pair.top.scanned) {
+      await this.say(to, agentId, T.scanTopUp(held.filter((h) => !h.existing).length), "topup_scan");
+      return true;
+    }
+    await this.rest(agentId, to, conv.currentClientId);
+    await this.runPair(agentId, to, pair.base, pair.top, held.filter((h) => h !== pair!.base && h !== pair!.top));
+    return true;
+  }
+
+  private async enqueue(agentId: string, to: string, file: FileRef, type: PolicyType, companion: FileRef | null = null, lead: string | null = null) {
+    if (type === "health" && (await this.checksFree(agentId)) <= 0) {
+      await fs.rm(file.path, { force: true }).catch(() => {});
+      if (companion) await fs.rm(companion.path, { force: true }).catch(() => {});
+      return this.say(to, agentId, T.outOfChecks(this.d.teamLink), "no_checks");
     }
     const jobRowId = await this.d.engine.createJob(agentId, { waMessageId: file.waMessageId, fileSha256: file.sha, insuranceType: type });
     const q = this.queues.get(agentId) ?? { running: false, items: [] };
     this.queues.set(agentId, q);
     const waiting = q.items.length + (q.running ? 1 : 0);
-    q.items.push({ agentId, to, file, type, jobRowId });
-    if (waiting > 0) await this.say(to, agentId, T.queued(waiting), "queued");
+    q.items.push({ agentId, to, file, type, jobRowId, companion });
+    const line = waiting > 0 ? T.queued(waiting) : T.checkingNow();
+    await this.say(to, agentId, lead ? `${lead}\n${line}` : line, waiting > 0 ? "queued" : "checking");
     void this.drain(agentId);
   }
 
@@ -429,6 +613,7 @@ export class Bot {
           const left = q.items.splice(0);
           for (const i of left) {
             await fs.rm(i.file.path, { force: true }).catch(() => {});
+            if (i.companion) await fs.rm(i.companion.path, { force: true }).catch(() => {});
             await this.d.engine.updateJob(agentId, i.jobRowId, { status: "skipped", failureReason: "no policy checks left" }).catch(() => {});
           }
           if (left.length) await this.say(item.to, agentId, T.queueStoppedNoChecks(left.length, this.d.teamLink), "no_checks");
@@ -441,10 +626,14 @@ export class Bot {
 
   /** Returns true when the queue must stop (no checks left). */
   private async runItem(item: QueueItem): Promise<boolean> {
-    const { agentId, to, file, type } = item;
+    const { agentId, to, file, type, companion } = item;
     const e = this.d.engine;
-    if (type === "health" && (await e.checksLeft(agentId)) <= 0) {
+    const dropFiles = async () => {
       await fs.rm(file.path, { force: true }).catch(() => {});
+      if (companion) await fs.rm(companion.path, { force: true }).catch(() => {});
+    };
+    if (type === "health" && (await e.checksLeft(agentId)) <= 0) {
+      await dropFiles();
       await e.updateJob(agentId, item.jobRowId, { status: "skipped", failureReason: "no policy checks left" });
       await this.say(to, agentId, T.outOfChecks(this.d.teamLink), "no_checks");
       return true;
@@ -452,15 +641,22 @@ export class Bot {
     await e.updateJob(agentId, item.jobRowId, { status: "processing" });
     const caption = parseCaption(file.caption);
     let buf: Buffer;
+    let companionBuf: Buffer | null = null;
     try {
       buf = await fs.readFile(file.path);
+      // Both or neither: the advisor was promised one check covering both documents.
+      if (companion) companionBuf = await fs.readFile(companion.path);
     } catch {
+      await dropFiles();
       await e.updateJob(agentId, item.jobRowId, { status: "failed", failureReason: "temp file missing" });
-      await this.say(to, agentId, T.resendFile(), "resend");
+      await this.say(to, agentId, companion ? T.resendBoth() : T.resendFile(), "resend");
       return false;
     }
-    const res = await e.analyze(agentId, { buffer: buf, fileName: file.name, type, policyholderName: caption.name, clientPhone: caption.phone });
-    await fs.rm(file.path, { force: true }).catch(() => {});
+    const res = await e.analyze(agentId, {
+      buffer: buf, fileName: file.name, type, policyholderName: caption.name, clientPhone: caption.phone,
+      companion: companion && companionBuf ? { buffer: companionBuf, fileName: companion.name } : null,
+    });
+    await dropFiles();
 
     if (!res.ok) {
       await e.updateJob(agentId, item.jobRowId, { status: "failed", failureReason: res.code });
@@ -520,6 +716,12 @@ export class Bot {
 
     const c = await e.getClient(agentId, clientId);
     await e.updateJob(agentId, jobRowId, { status: "done" });
+    // The conversation is updated under the advisor's lock, so a report finishing in the
+    // background never overwrites a question asked a moment ago.
+    return this.withLock(agentId, () => this.reportDone(agentId, to, c, clientId, caption));
+  }
+
+  private async reportDone(agentId: string, to: string, c: ClientSummary | null, clientId: string, caption: { name: string | null; phone: string | null }) {
     if (!c) return this.say(to, agentId, T.gaveUp(portalPolicyUrl(this.d.links, clientId)), "gave_up");
 
     if (c.insuranceType === "health") await this.say(to, agentId, reportCard(c, this.d.links), "report");
@@ -674,6 +876,9 @@ export class Bot {
       if (handled) return;
     }
     if (intent && conv.state.startsWith("AWAITING")) {
+      if (conv.state === "AWAITING_TOPUP" && conv.pending?.held?.length) {
+        await this.say(to, agentId, T.heldDropped((conv.pending.held as Held[]).map((h) => h.label).join(", ")), "topup_dropped");
+      }
       await this.dropHeldFile(conv);
       await this.rest(agentId, to, conv.currentClientId);
       conv = { ...conv, state: conv.currentClientId ? "REPORT_READY" : "IDLE", pending: { to } };
@@ -830,15 +1035,33 @@ export class Bot {
   private async onAwaiting(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
     const p = conv.pending || {};
     switch (conv.state) {
+      case "AWAITING_TOPUP":
+        return this.onTopUpReply(agentId, conv, to, text);
       case "AWAITING_TYPE": {
         const n = pickNumber(text, POLICY_TYPES.length);
         if (!n) { await this.say(to, agentId, T.pickType(), "pick_type"); return true; }
+        // Health goes through the super top-up question like any other health PDF.
+        if (POLICY_TYPES[n - 1] === "health" && p.item) {
+          if ((await this.checksFree(agentId)) <= 0) {
+            await this.dropHeldFile(conv);
+            await this.rest(agentId, to, conv.currentClientId);
+            await this.say(to, agentId, T.outOfChecks(this.d.teamLink), "no_checks");
+            return true;
+          }
+          await this.addHeld(agentId, to, conv, [], p.item);
+          return true;
+        }
         await this.rest(agentId, to, conv.currentClientId);
         await this.enqueue(agentId, to, p.file, POLICY_TYPES[n - 1]);
         return true;
       }
       case "AWAITING_DUP_CONFIRM": {
         if (isYes(text)) {
+          if (p.type === "health" && p.item) {
+            // A fresh check was asked for: no longer a duplicate. Still ask about a top-up.
+            await this.addHeld(agentId, to, conv, [], { ...p.item, existing: null });
+            return true;
+          }
           await this.rest(agentId, to, conv.currentClientId);
           if (p.type) await this.enqueue(agentId, to, p.file, p.type);
           else {

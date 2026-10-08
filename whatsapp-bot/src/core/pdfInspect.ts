@@ -32,7 +32,13 @@ export const TYPE_LABEL: Record<PolicyType, string> = {
 export type Inspection =
   | { kind: "locked" }
   | { kind: "unreadable" }
-  | { kind: "ok"; text: string; hindi: boolean; guess: PolicyType | null; scores: Record<string, number> };
+  | {
+      kind: "ok"; text: string; hindi: boolean; guess: PolicyType | null; scores: Record<string, number>;
+      /** Looks like a super top-up / top-up product (see looksLikeTopUp). */
+      topUp?: boolean;
+      /** Insured / proposer names read from labelled fields, Title Case, validated. */
+      names?: string[];
+    };
 
 /** Keyword families. Each hit counts once per distinct phrase, so a word repeated on every
  *  page does not outvote the rest. */
@@ -63,7 +69,92 @@ const FAMILIES: Record<PolicyType, RegExp[]> = {
   contractor_all_risk: [/contractor'?s? all risk|\bcar policy\b/, /erection all risk|\bear\b/, /contract (works|value)/],
 };
 
-const MIN_TEXT = 200;
+/** Under this many letters a PDF is a scan: no type guess, no names, and a super top-up
+ *  sent with a base policy cannot be read (the engine reads companions as text only). */
+export const MIN_TEXT = 200;
+
+/* ── Super top-up ──────────────────────────────────────────────────────
+ * Measured on the 516 health wordings in corpus/ (2026-10-08): the product name near the top
+ * of the document, or "top-up" said 6+ times, finds 25 of 29 top-ups with 2 false alarms
+ * among 487 base policies. "Deductible" is useless as a signal: every IRDAI wording defines
+ * it. A wrong guess costs one question, never a policy check. */
+const TOP_UP_TITLE = /super[- ]?top[- ]?up|\btop[- ]?up\b|health recharge|super surplus|health booster|extra care|high deductible/;
+const TOP_UP_WORD = /super[- ]?top[- ]?up|\btop[- ]?up\b/g;
+
+export function looksLikeTopUp(textRaw: string): boolean {
+  const t = textRaw.toLowerCase().replace(/\s+/g, " ");
+  if (TOP_UP_TITLE.test(t.slice(0, 1500))) return true;
+  return (t.match(TOP_UP_WORD) || []).length >= 6;
+}
+
+/* ── Who is insured ────────────────────────────────────────────────────
+ * Labelled fields on the policy schedule. pdfjs joins table cells with spaces, so a label is
+ * often followed by the NEXT label ("Name of Insured Date of Birth ..."), not a name: every
+ * capture is validated and anything that looks like a label word is thrown away. A policy
+ * WORDING has no names at all; expect none more often than not. */
+const NAME_LABEL = /(?:name of (?:the )?(?:proposer|policy ?holder|insured(?: person)?)|(?:proposer|policy ?holder|insured(?: person)?)(?:'s)? name)\s*[:\-]?\s*/gi;
+const TITLES = new Set(["mr", "mrs", "ms", "miss", "shri", "smt", "sri", "kumari", "dr", "master", "baby"]);
+const NOT_NAME = new Set([
+  "date", "birth", "dob", "age", "gender", "sex", "male", "female", "address", "policy", "relationship", "relation",
+  "sum", "insured", "period", "mobile", "phone", "email", "plan", "no", "number", "customer", "id", "code", "of",
+  "from", "to", "the", "and", "self", "spouse", "son", "daughter", "father", "mother", "proposer", "name", "nominee",
+  "pan", "member", "members", "occupation", "premium", "details", "type", "city", "state", "pin", "pincode", "branch",
+  "agent", "intermediary", "issued", "start", "end", "years", "year", "as", "per", "schedule", "cover", "person", "persons",
+  // Policy WORDINGS say "the name of the insured person for whom ..." in running prose.
+  "for", "whom", "whose", "who", "in", "respect", "will", "be", "is", "are", "shall", "which", "with", "by", "under",
+  "any", "all", "such", "this", "that", "has", "have", "been", "on", "at", "or", "if", "considered", "mentioned", "stated",
+]);
+
+function titleCase(w: string): string {
+  return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+}
+
+/** A real-looking name from the words right after a label, or null. */
+function nameAfter(rest: string): string | null {
+  const words = rest.split(/\s+/).slice(0, 7);
+  const out: string[] = [];
+  for (const raw of words) {
+    const w = raw.replace(/[.,;:]+$/, "");
+    const low = w.toLowerCase().replace(/\./g, "");
+    if (!out.length && TITLES.has(low)) continue;
+    // Schedules print names capitalised ("RAMESH KUMAR", "Ramesh Kumar"); prose is lowercase.
+    if (!/^[A-Z][A-Za-z.']*$/.test(w) || NOT_NAME.has(low)) break;
+    out.push(w);
+    if (out.length === 4) break;
+  }
+  if (out.length < 2) return null;
+  // At least one real word (not an initial): "R. K." alone is not a name.
+  if (!out.some((w) => w.replace(/\./g, "").length >= 3)) return null;
+  return out.map(titleCase).join(" ");
+}
+
+export function extractNames(textRaw: string): string[] {
+  const t = textRaw.replace(/\s+/g, " ");
+  const found: string[] = [];
+  for (const m of t.matchAll(NAME_LABEL)) {
+    const n = nameAfter(t.slice(m.index! + m[0].length, m.index! + m[0].length + 80));
+    if (n && !found.includes(n)) found.push(n);
+    if (found.length >= 6) break;
+  }
+  return found;
+}
+
+const nameWords = (n: string) =>
+  n.toLowerCase().replace(/\./g, " ").split(/\s+/).filter((w) => w.length >= 3 && !TITLES.has(w));
+
+/** Do two documents name the same person? "match": a name on each shares its first AND last
+ *  word. "mismatch": both have names and no name word is shared at all. Anything else
+ *  (initials, reordered names, surname only, no names) is "unknown", and the bot asks. */
+export function sameInsured(a: string[], b: string[]): "match" | "mismatch" | "unknown" {
+  if (!a.length || !b.length) return "unknown";
+  let overlap = false;
+  for (const x of a) for (const y of b) {
+    const wx = nameWords(x), wy = nameWords(y);
+    if (wx.length >= 2 && wy.length >= 2 && wx[0] === wy[0] && wx.at(-1) === wy.at(-1)) return "match";
+    if (wx.some((w) => wy.includes(w))) overlap = true;
+  }
+  return overlap ? "unknown" : "mismatch";
+}
 
 /** Score text against the families; a winner needs at least 3 hits and a clear lead. */
 export function guessType(textRaw: string): { guess: PolicyType | null; scores: Record<string, number> } {
@@ -115,12 +206,12 @@ export async function inspectPdf(buf: Buffer): Promise<Inspection> {
   }
   await doc.destroy().catch(() => {});
   if (text.replace(/\s/g, "").length < MIN_TEXT) {
-    // A scan. The engine may still read it (it has its own OCR path), but we cannot guess
-    // the type from nothing, so the bot will ask.
-    return { kind: "ok", text, hindi: false, guess: null, scores: {} };
+    // A scan. We cannot guess the type from nothing, so the bot will ask. (The engine can
+    // read a scanned MAIN policy, but never a scanned super top-up sent alongside it.)
+    return { kind: "ok", text, hindi: false, guess: null, scores: {}, topUp: false, names: [] };
   }
   const { guess, scores } = guessType(text);
-  return { kind: "ok", text, hindi: devanagariShare(text) > 0.4, guess, scores };
+  return { kind: "ok", text, hindi: devanagariShare(text) > 0.4, guess, scores, topUp: looksLikeTopUp(text), names: extractNames(text) };
 }
 
 /** Is this file a PDF? Checks the magic bytes, not just the name. */

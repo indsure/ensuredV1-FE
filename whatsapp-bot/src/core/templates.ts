@@ -41,7 +41,8 @@ const clean = (s: string) => s.replace(/[—–]/g, ", ").replace(/[ \t]+\n/g, "
 export const T = {
   welcome: () =>
     "You're connected to IndSure. Send me a customer's health policy PDF and I'll send back the report. You can also type RENEWALS or HELP.",
-  received: () => "Got it. Checking this policy now, usually about a minute.",
+  received: () => "Got it. Reading this PDF.",
+  checkingNow: () => "Checking it now, usually about a minute.",
   stillWorking: () => "Still reading this one. Longer policies take a bit more time.",
   takingLong: (url: string) =>
     `This is taking longer than usual. I'll message you when it's ready. You can also check it in the portal: ${url}`,
@@ -116,9 +117,60 @@ export const T = {
     `I couldn't get a result for this policy. Please check it in the portal: ${url}`,
   didNotCatch: () => `I didn't catch that.\n\n${T.help()}`,
   resendFile: () => "I no longer have that file. Please send the PDF again.",
+  resendBoth: () => "I no longer have those files. Please send the base policy and the super top-up again.",
+
+  /* Base policy + super top-up: one check for both. Every line here is in i18n.ts. */
+  topUpAsk: (person: string | null) =>
+    [
+      `Does ${person ? b(person) : "this customer"} also have a super top-up policy? Send that PDF now and I'll check both together for 1 policy check.`,
+      "Or reply NO to check this one alone.",
+    ].join("\n"),
+  baseAsk: (person: string | null) =>
+    [
+      person ? `This looks like a super top-up for ${b(person)}.` : "This looks like a super top-up.",
+      "Send the base health policy too and I'll check both together for 1 policy check.",
+      "Or reply ALONE to check the top-up by itself.",
+    ].join("\n"),
+  sendTopUpNow: () => "Okay, send the super top-up PDF now. Or reply NO to check this one alone.",
+  sendBaseNow: () => "Okay, send the base health policy PDF now. Or reply ALONE to check the top-up by itself.",
+  /** Two held PDFs. Names are what was read off each PDF, shown as read; the advisor decides. */
+  pairAsk: (person: string | null, baseName: string | null, topName: string | null, differ: boolean, separate: number) =>
+    [
+      person ? `Is this the super top-up for ${b(person)}?` : "Is this the super top-up for the first policy?",
+      !baseName || !topName
+        ? "I couldn't read the names on both, so I can't confirm it's the same person."
+        : differ
+          ? `These may be different people: the base policy names ${b(baseName)}, the super top-up names ${b(topName)}.`
+          : `The base policy names ${b(baseName)}, the super top-up names ${b(topName)}.`,
+      `Reply YES to check them together as one cover (1 policy check), or NO to check them separately (${checks(separate)}).`,
+    ].join("\n"),
+  manyAsk: (labels: string[], separate: number) =>
+    [
+      `You've sent ${labels.length} health policies:`,
+      ...labels.map((l, i) => `${i + 1}) ${l}`),
+      "To check a base policy with its super top-up, reply with both numbers, base first, like 1+2.",
+      `Or reply NO to check each one separately (${checks(separate)}).`,
+    ].join("\n"),
+  scanTopUp: (separate: number) =>
+    [
+      "The super top-up is a scanned copy, and a scanned top-up can't be read together with a base policy.",
+      `Reply NO to check them separately (${checks(separate)}), or send the insurer's original PDF of the top-up.`,
+    ].join("\n"),
+  pairing: () => "Okay, checking them together as one cover. It uses 1 policy check.",
+  restSeparate: (n: number) => `The other ${n === 1 ? "policy" : `${n} policies`} will be checked separately.`,
+  alreadyChecked: (label: string, url: string) => `${label} was already checked, so I didn't check it again: ${url}`,
+  answerFirst: (label: string) =>
+    `I can't tell what kind of policy this PDF is. Please answer about ${label} first, then send this one again. No policy check was used.`,
+  lapsed: (label: string) =>
+    `I didn't hear back about ${label}, so I didn't check it and no policy check was used. Send it again when you're ready.`,
+  heldDropped: (label: string) => `I've set aside ${label} without checking it. No policy check was used. Send it again when you're ready.`,
   genericError: () => "Something went wrong on my side. Please try again in a minute.",
   stillChecking: () => "I'm still checking a policy. I'll send the report as soon as it's ready.",
 };
+
+function checks(n: number): string {
+  return n === 0 ? "no new policy check" : `${n} policy ${n === 1 ? "check" : "checks"}`;
+}
 
 /* ── Failure reasons (T8) from the engine's stored error text ── */
 
@@ -152,6 +204,12 @@ export function reportCard(c: ClientSummary, l: Links): string {
   const label = verdictLabel(c.report?.verdictLabel);
   const summary = c.report?.verdictSummary?.trim().replace(/\.?$/, ".");
   if (label || summary) lines.push([label ? `${label}.` : "", summary ?? ""].filter(Boolean).join(" "));
+  const topUp = (c.companions || []).find((x) => x.kind === "super_topup");
+  if (topUp) {
+    lines.push(topUp.read
+      ? "Checked together with the super top-up. Total cover is in the full report."
+      : "I couldn't read the super top-up, so this report is for the base policy only.");
+  }
   const watch = (c.report?.whereItMayCost || []).filter((w) => w.issue).slice(0, 2);
   if (watch.length) {
     lines.push("Watch out for: " + watch.map((w) => (w.outOfPocket ? `${w.issue} (${w.outOfPocket})` : `${w.issue}`)).join("; ") + ".");

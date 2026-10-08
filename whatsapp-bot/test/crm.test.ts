@@ -140,6 +140,7 @@ test("a phone number answering 'whose policy?' is not treated as a lookup", asyn
   engine.customers = [{ id: "c9", name: "Meera Iyer", phone: "9822222222" }];
   const { pdf, settle } = await import("./fakes.js");
   await bot.handle(pdf(transport, "HEALTH"));
+  await bot.handle(text("no"));
   await settle(bot);
   assert.match(transport.last(), /Whose policy is this\?/);
   await bot.handle(text("9822222222"));

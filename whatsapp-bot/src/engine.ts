@@ -6,6 +6,12 @@
  * `Engine` is an interface so tests run bot-core against a fake with no network.
  */
 
+/** One policy check. `companion` is the same insured's super top-up, read in the same audit. */
+export type AnalyzeFile = {
+  buffer: Buffer; fileName: string; type: string; policyholderName?: string | null; clientPhone?: string | null;
+  companion?: { buffer: Buffer; fileName: string } | null;
+};
+
 export type ClientSummary = {
   clientId: string;
   status: string;
@@ -26,6 +32,9 @@ export type ClientSummary = {
   details?: { label: string; value: string }[];
   /** Raw stored fields for life/term, for the policy-value engine. */
   extracted?: Record<string, unknown> | null;
+  /** Other covers read in the same check (a super top-up sent with the base policy), and
+   *  whether the engine could actually read each one. Absent on an older backend. */
+  companions?: { kind: string; read: boolean }[];
   report: null | {
     verdictLabel: string | null;
     verdictSummary: string | null;
@@ -104,7 +113,7 @@ export interface Engine {
   createJob(agentId: string, j: { waMessageId: string; fileSha256: string; insuranceType: string | null }): Promise<string>;
   updateJob(agentId: string, id: string, patch: Record<string, unknown>): Promise<void>;
   openJobs(): Promise<{ id: string; agent_id: string; client_id: string | null; analysis_job_id: string | null; status: string; queued_at: string }[]>;
-  analyze(agentId: string, f: { buffer: Buffer; fileName: string; type: string; policyholderName?: string | null; clientPhone?: string | null }): Promise<AnalyzeResult>;
+  analyze(agentId: string, f: AnalyzeFile): Promise<AnalyzeResult>;
   jobStatus(agentId: string, jobId: string): Promise<JobStatus>;
   getClient(agentId: string, clientId: string): Promise<ClientSummary | null>;
   findClients(agentId: string, name: string): Promise<ClientSummary[]>;
@@ -174,9 +183,13 @@ export class HttpEngine implements Engine {
   async updateJob(agentId: string, id: string, patch: any) { await this.call(`/api/internal/wa/jobs/${id}`, { method: "PATCH", agentId, body: patch }); }
   async openJobs() { return (await this.call("/api/internal/wa/jobs/open")).jobs; }
 
-  async analyze(agentId: string, f: { buffer: Buffer; fileName: string; type: string; policyholderName?: string | null; clientPhone?: string | null }): Promise<AnalyzeResult> {
+  async analyze(agentId: string, f: AnalyzeFile): Promise<AnalyzeResult> {
     const form = new FormData();
     form.append("file", new Blob([new Uint8Array(f.buffer)], { type: "application/pdf" }), f.fileName || "policy.pdf");
+    // Same field the portal uses: read in the same audit, one policy check for both.
+    if (f.companion) {
+      form.append("companion_super_topup", new Blob([new Uint8Array(f.companion.buffer)], { type: "application/pdf" }), f.companion.fileName || "super-top-up.pdf");
+    }
     form.append("type", f.type);
     if (f.policyholderName) form.append("policyholder_name", f.policyholderName);
     if (f.clientPhone) form.append("client_phone", f.clientPhone);
