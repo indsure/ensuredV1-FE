@@ -67,7 +67,7 @@ export default function ComparisonShareBar({ data, profiles }: Props) {
   }
 
   const waText = encodeURIComponent(
-    `Namaste 🙏 Maine aapke liye 2 health insurance policies ka poora comparison taiyaar kiya hai. Yahan side-by-side dekhiye:\n${shareUrl ?? ""}`
+    `Namaste 🙏 Maine aapke liye ${data.sides.length} health insurance policies ka poora comparison taiyaar kiya hai. Yahan side-by-side dekhiye:\n${shareUrl ?? ""}`
   );
 
   if (!uuid) {

@@ -342,7 +342,7 @@ export default function CatalogCompare() {
 
           {!comparing && result && (
             <div className="mt-6 space-y-6">
-              <ComparisonView data={result} />
+              <ComparisonView data={result} audience="advisor" />
               {/* The catalogue compare had no way to share at all, so this table
                   left the product as a screenshot. Same component the uploaded
                   comparison uses, and the same public link: no profiles are

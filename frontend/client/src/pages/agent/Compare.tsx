@@ -178,7 +178,7 @@ export default function Compare() {
           </p>
         )}
         <ComparisonShareBar data={response.result} profiles={response.profiles} />
-        <ComparisonView data={response.result} />
+        <ComparisonView data={response.result} audience="advisor" />
       </div>
     );
   }

@@ -11,11 +11,19 @@ export type AxisGroup =
   | "coverages"
   | "fine_print";
 
+/** good = good for the buyer, limit = has a limit, bad = costs the buyer at claim time,
+ *  unknown = the wording leaves it to the policy schedule. */
+export type Tone = "good" | "limit" | "bad" | "unknown";
+
 export interface Cell {
   display: string;
   note?: string | null;
   optional?: boolean;
   winner: boolean;
+  /** Set by the engine. Missing on info rows and on results saved before tones existed. */
+  tone?: Tone;
+  /** Normalised ranking value (higher = better), null when not comparable. */
+  value?: number | null;
 }
 
 export interface ComparisonRow {

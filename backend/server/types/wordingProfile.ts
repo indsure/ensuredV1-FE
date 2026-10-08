@@ -219,11 +219,21 @@ export const AXIS_GROUP_LABELS: Record<AxisGroup, string> = {
 };
 
 // ─── Comparison result (N-way: 2..4 plans; API returns / frontend renders) ───────
+/** What a cell means for the buyer, so the UI can colour it without re-deriving the rules:
+ *  good = good for the buyer, limit = has a limit, bad = costs the buyer at claim time,
+ *  unknown = the wording does not say (e.g. "As per Schedule"). */
+export type Tone = "good" | "limit" | "bad" | "unknown";
+
 export interface Cell {
   display: string;
   note?: string | null;
   optional?: boolean;
   winner: boolean;        // true if this side is a (decisive) best on this row
+  /** Absent on info rows, and on results saved before tones existed. */
+  tone?: Tone;
+  /** The normalised ranking value (higher = better), null when not comparable. Lets the UI
+   *  tell "same value, different wording" apart from a real difference. */
+  value?: number | null;
 }
 
 export interface ComparisonRow {
@@ -268,9 +278,99 @@ const numV = (d: AxisDatum): number | null =>
 const ordV = (d: AxisDatum): number | null =>
   typeof d.ordinal === "number" && !Number.isNaN(d.ordinal) ? d.ordinal : null;
 
+// "As per Schedule" and friends: the real value is printed in a document we have not read.
+const UNKNOWN_RE = /not specified|not stated|not mentioned|unclear|as per (the )?(policy )?schedule|per (the )?schedule|certificate of insurance/i;
+// A deductible "per Certificate of Insurance" still EXISTS, only its amount is elsewhere, so
+// for that axis only a display that starts out unknown counts as unknown.
+const UNKNOWN_START_RE = /^(not specified|not stated|not mentioned|unclear|as per)/i;
+const NONE_RE = /^(none|nil|no\b|not covered|not available|not applicable|not allowed|excluded)/i;
+// Covered, but with a cap or a carve-out the buyer should see.
+const LIMITED_RE = /sub-?limit|capped|listed|only|excluded|max(imum)?\s*\d|₹\s?\d/i;
+// A co-pay that applies only to some people (age, zone, hospital tier, chosen for a discount).
+// Matched on the short display only: notes say things like "waivable for an optional premium"
+// about a co-pay that still hits every claim.
+const CONDITIONAL_RE = /\bage[ds]?\b|\d+\s*\+|above \d|\bzone|tier|city|metro|\bif\b|voluntary|opted/i;
+
+/** True when the wording leaves this value to another document. Such a cell is never ranked:
+ *  scoring "As per Schedule" as a real value made the other plans "win" against nothing. */
+export function isUnknownDatum(def: AxisDef, d: AxisDatum): boolean {
+  if (def.direction === "info") return false;
+  const disp = (d.display ?? "").trim();
+  if (!disp || disp === "—" || disp === "-") return true;
+  // "Optional; rate as per Schedule": the add-on's existence is known, only its terms are not.
+  if (d.optional === true) return false;
+  return def.key === "deductible" ? UNKNOWN_START_RE.test(disp) : UNKNOWN_RE.test(disp);
+}
+
+/** Buyer-facing meaning of one cell. Pure; thresholds are the Indian retail norm (24-month
+ *  PED is good, 36 is the usual ceiling, 1%-of-SI room rent triggers proportionate cuts). */
+export function toneFor(def: AxisDef, d: AxisDatum): Tone | undefined {
+  if (def.direction === "info") return undefined;
+  if (isUnknownDatum(def, d)) return "unknown";
+  const n = numV(d), o = ordV(d), opt = d.optional === true;
+  const disp = d.display ?? "";
+  const none = NONE_RE.test(disp.trim());
+  const band = (v: number | null, good: (x: number) => boolean, limit: (x: number) => boolean): Tone =>
+    v == null ? "unknown" : good(v) ? "good" : limit(v) ? "limit" : "bad";
+
+  switch (def.key) {
+    case "room_rent":
+      return o == null || o === 0 ? "unknown" : o >= 4 ? "good" : "bad";
+    case "icu":
+      return o == null || o === 0 ? "unknown" : o >= 5 ? "good" : "limit";
+    case "sub_limits":
+      return o == null || o === 0 ? "unknown" : o >= 5 ? "good" : o >= 3 ? "limit" : "bad";
+    case "copayment":
+      if (n == null) return none ? "good" : "unknown";
+      if (n <= 0) return "good";
+      return CONDITIONAL_RE.test(disp) ? "limit" : "bad";
+    case "deductible":
+      if (n == null) return none ? "good" : "bad";
+      return n <= 0 ? "good" : "bad";
+    case "initial_waiting":
+      return band(n, (x) => x <= 30, () => true);
+    case "ped_waiting":
+    case "specific_disease_waiting":
+      return band(n, (x) => x <= 24, (x) => x <= 36);
+    case "pre_hosp":
+      return band(n, (x) => x >= 60, (x) => x >= 30);
+    case "post_hosp":
+      return band(n, (x) => x >= 90, (x) => x >= 60);
+    case "moratorium":
+      return band(n, (x) => x <= 60, () => true);
+    case "grace_period":
+      return band(n, (x) => x >= 30, (x) => x > 0);
+    case "free_look":
+      return band(n, (x) => x >= 15, (x) => x > 0);
+    case "cumulative_bonus":
+      if (opt) return "limit";
+      if (n == null) return none ? "bad" : "unknown";
+      return n >= 50 ? "good" : n > 0 ? "limit" : "bad";
+    case "restoration":
+      if (opt) return "limit";
+      if (o == null || o === 0) return none ? "bad" : "unknown";
+      return o >= 3 ? "good" : "limit";
+    case "ambulance":
+      if (n == null) return /actual|reasonable|no limit|up to (si|sum)/i.test(disp) ? "good" : none ? "bad" : "unknown";
+      return n >= 999999 ? "good" : n > 0 ? "limit" : "bad";
+  }
+  // exists axes
+  if (d.exists == null) return none ? "bad" : "unknown";
+  if (!d.exists) return "bad";
+  if (opt) return "limit";
+  // Maternity always carries a limit and a wait; being covered at all is the news.
+  if (def.key !== "maternity" && LIMITED_RE.test(disp)) return "limit";
+  return "good";
+}
+
 // Normalize an axis datum to a single comparable number where HIGHER = better,
 // plus whether that value is only via a paid add-on. null = not comparable.
 function comparable(def: AxisDef, d: AxisDatum): { val: number | null; optional: boolean } {
+  if (isUnknownDatum(def, d)) return { val: null, optional: false };
+  // Ordinal 0 means "unclear" on these scales, not "worst".
+  if (def.direction === "higher_ordinal" && ordV(d) === 0 && !NONE_RE.test((d.display ?? "").trim())) {
+    return { val: null, optional: false };
+  }
   switch (def.direction) {
     case "info":
       return { val: null, optional: false };
@@ -359,6 +459,8 @@ export function compareMany(profiles: WordingProfile[]): ComparisonResult {
         note: d.note ?? null,
         optional: d.optional === true,
         winner: w[i],
+        tone: toneFor(def, d),
+        value: comparable(def, d).val,
       })),
     });
 
