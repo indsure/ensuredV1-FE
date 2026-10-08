@@ -8,7 +8,7 @@
  * they depend on is confirmed, and say plainly why when they are not.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +21,7 @@ import { DOC_REASON_TEXT } from "@/lib/documentRules";
 import type { FieldKey, ReviewFlag } from "@/lib/policyDocTypes";
 import { parseIsoDate, parseRupees, parseWholeNumber } from "@/lib/policyNumbers";
 import { prettyIso } from "@/lib/policyValueText";
-import { DOC_RULES_CHANGED, docApi as api, docResults, type FactRow, type RulesResponse } from "./useDocumentRules";
+import { DOC_RULES_CHANGED, docApi as api, docResults, useDocumentRules, type FactRow } from "./useDocumentRules";
 
 const GROUPS: { id: string; prefixes: string[] }[] = [
   { id: "surrender", prefixes: ["surrender.", "discount_rate."] },
@@ -139,20 +139,11 @@ const key = () => (globalThis.crypto?.randomUUID?.() ?? `k${Date.now()}${Math.ra
 
 export default function DocumentTerms({ clientId, data }: { clientId: string; data: Record<string, any> }) {
   const { t } = useLanguage();
-  const [rules, setRules] = useState<RulesResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Shared with the summary table and the value card: one request per policy.
+  const { rules, failed, load } = useDocumentRules(clientId);
+  const error = failed ? t("pdt.load_failed") : null;
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<string | null>("surrender");
-
-  const load = useCallback(async () => {
-    try {
-      setError(null);
-      setRules(await api(`/api/agent/clients/${clientId}/document-rules`));
-    } catch {
-      setError(t("pdt.load_failed"));
-    }
-  }, [clientId, t]);
-  useEffect(() => { void load(); }, [load]);
 
   const act = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -163,7 +154,7 @@ export default function DocumentTerms({ clientId, data }: { clientId: string; da
       toast({ variant: "destructive", title: e?.status === 409 ? t("pdt.stale") : t("pdt.save_failed"), description: e?.message ?? "" });
     } finally {
       setBusy(false);
-      await load();
+      await load(true);
       window.dispatchEvent(new CustomEvent(DOC_RULES_CHANGED, { detail: clientId }));
     }
   };

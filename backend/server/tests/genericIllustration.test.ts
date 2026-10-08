@@ -54,7 +54,7 @@ describe("general reader: the table", () => {
   });
   test("columns in another order, other wording and right-aligned figures read the same", async () => {
     const o = await read("generic-variants/reordered.pdf");
-    assert.deepEqual(o.fields["illustration.rows"].value, main.fields["illustration.rows"].value);
+    assert.deepEqual((o.fields["illustration.rows"] as any).value, main.fields["illustration.rows"].value);
   });
   for (const [f, re] of [
     ["two-gsv", /more than one surrender value column/],

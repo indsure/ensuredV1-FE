@@ -58,13 +58,32 @@ export function docResults(rules: RulesResponse | null, evidence: unknown) {
   });
 }
 
+/*
+ * One request per policy, shared by every part of the page that shows document
+ * terms (the summary table, the value card, the review panel). A request already
+ * in flight is reused, and a reply stays fresh for a few seconds; a save asks for
+ * a fresh copy (force) and then tells the others, who pick that copy up.
+ */
+const FRESH_MS = 10_000;
+const shared = new Map<string, { at: number; p: Promise<RulesResponse> }>();
+
+function fetchRules(clientId: string, force: boolean): Promise<RulesResponse> {
+  const hit = shared.get(clientId);
+  if (!force && hit && Date.now() - hit.at < FRESH_MS) return hit.p;
+  const p = docApi(`/api/agent/clients/${clientId}/document-rules`) as Promise<RulesResponse>;
+  shared.set(clientId, { at: Date.now(), p });
+  p.catch(() => { if (shared.get(clientId)?.p === p) shared.delete(clientId); });
+  return p;
+}
+
 export function useDocumentRules(clientId: string) {
   const [rules, setRules] = useState<RulesResponse | null>(null);
   const [failed, setFailed] = useState(false);
-  const load = useCallback(async () => {
+  /** `force` skips the shared copy: used after a save, before telling the others. */
+  const load = useCallback(async (force = false) => {
     try {
       setFailed(false);
-      setRules(await docApi(`/api/agent/clients/${clientId}/document-rules`));
+      setRules(await fetchRules(clientId, force));
     } catch {
       setFailed(true);
     }
@@ -75,5 +94,5 @@ export function useDocumentRules(clientId: string) {
     window.addEventListener(DOC_RULES_CHANGED, on);
     return () => window.removeEventListener(DOC_RULES_CHANGED, on);
   }, [load, clientId]);
-  return { rules, failed, load };
+  return { rules, failed, loading: rules === null && !failed, load };
 }

@@ -4478,6 +4478,7 @@
     "gain_less": "{{gain}} less than the {{premiums}} paid in premiums",
     "cover_ill": "From the illustration, policy year {{n}}",
     "cover_rule": "Rises to 105% of premiums paid once that is higher",
-    "foot_ill": "Read from the insurer's benefit illustration by our general reader. Check the figures against it."
+    "foot_ill": "Read from the insurer's benefit illustration by our general reader. Check the figures against it.",
+    "loading": "Loading the policy summary"
   }
 }

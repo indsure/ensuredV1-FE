@@ -126,29 +126,40 @@ async function latestRevision(q: Q, clientId: string, key: string) {
 }
 
 export async function getDocumentRules(db: Q, agentId: string, clientId: string) {
-  await assertOwner(db, agentId, clientId);
-  const parse = (await db.query(
-    `SELECT p.id, p.status, p.reasons, p.flags, p.page_methods, p.adapter_id, p.adapter_version, p.created_at, d.page_count, d.sha256
-       FROM policy_document_parses p
-       JOIN policy_source_documents d ON d.id = p.document_id AND d.client_id = p.client_id
-       JOIN clients c ON c.id = p.client_id
-      WHERE p.client_id = $1 AND c.agent_id = $2
-      ORDER BY p.created_at DESC, p.id DESC LIMIT 1`,
-    [clientId, agentId]
-  )).rows[0] ?? null;
-  const facts = (await db.query(
-    `SELECT f.field_key, f.revision, f.state, f.document_field, f.corrected_value, f.parser_version, f.actor_id, f.reason, f.created_at
-       FROM policy_rule_facts f JOIN clients c ON c.id = f.client_id
-      WHERE f.client_id = $1 AND c.agent_id = $2
-      ORDER BY f.field_key, f.revision`,
-    [clientId, agentId]
-  )).rows;
-  const decisions = parse ? (await db.query(
-    `SELECT e.flag_id, e.choice, e.reason, e.created_at FROM rule_review_events e JOIN clients c ON c.id = e.client_id
-      WHERE e.client_id = $1 AND c.agent_id = $2 AND e.action = 'resolve_flag' AND e.parse_id = $3
-      ORDER BY e.created_at`,
-    [clientId, agentId, parse.id]
-  )).rows : [];
+  // The four reads run at once (each is a round trip to the database). Every one is
+  // scoped to the agent through clients.agent_id, so nothing is returned before the
+  // ownership check below has its answer too.
+  const [owner, parseRes, factRes, decisionRes] = await Promise.all([
+    db.query(OWN, [clientId, agentId]),
+    db.query(
+      `SELECT p.id, p.status, p.reasons, p.flags, p.page_methods, p.adapter_id, p.adapter_version, p.created_at, d.page_count, d.sha256
+         FROM policy_document_parses p
+         JOIN policy_source_documents d ON d.id = p.document_id AND d.client_id = p.client_id
+         JOIN clients c ON c.id = p.client_id
+        WHERE p.client_id = $1 AND c.agent_id = $2
+        ORDER BY p.created_at DESC, p.id DESC LIMIT 1`,
+      [clientId, agentId]
+    ),
+    db.query(
+      `SELECT f.field_key, f.revision, f.state, f.document_field, f.corrected_value, f.parser_version, f.actor_id, f.reason, f.created_at
+         FROM policy_rule_facts f JOIN clients c ON c.id = f.client_id
+        WHERE f.client_id = $1 AND c.agent_id = $2
+        ORDER BY f.field_key, f.revision`,
+      [clientId, agentId]
+    ),
+    // Flag decisions belong to the latest parse; picked in the same statement.
+    db.query(
+      `SELECT e.flag_id, e.choice, e.reason, e.created_at FROM rule_review_events e JOIN clients c ON c.id = e.client_id
+        WHERE e.client_id = $1 AND c.agent_id = $2 AND e.action = 'resolve_flag'
+          AND e.parse_id = (SELECT p.id FROM policy_document_parses p WHERE p.client_id = $1 ORDER BY p.created_at DESC, p.id DESC LIMIT 1)
+        ORDER BY e.created_at`,
+      [clientId, agentId]
+    ),
+  ]);
+  if (!owner.rows.length) throw new StoreError(404, "not_found", "Policy not found");
+  const parse = parseRes.rows[0] ?? null;
+  const facts = factRes.rows;
+  const decisions = parse ? decisionRes.rows : [];
   const latest = new Map<string, any>();
   const history = new Map<string, any[]>();
   for (const f of facts) {

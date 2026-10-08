@@ -52,16 +52,37 @@ function Row({ label, sub, amount, exact, first, hero, children }: {
   );
 }
 
+/** Holds the table's place while the terms load, so the page does not jump when it arrives. */
+function SummarySkeleton({ title, label }: { title: string; label: string }) {
+  const bar = (w: string) => <div className={"h-4 animate-pulse rounded bg-slate-100 motion-reduce:animate-none " + w} />;
+  return (
+    <Card className="overflow-hidden border border-slate-200 p-0 shadow-sm md:p-0" aria-busy="true" aria-label={label}>
+      <div className="grid gap-2.5 border-b border-slate-100 px-4 pb-4 pt-5 sm:px-7">
+        <h2 className="font-serif text-2xl font-bold">{title}</h2>
+        {bar("w-72 max-w-full")}
+      </div>
+      <div className="grid gap-5 px-4 py-6 sm:px-7">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex items-center justify-between gap-4">
+            <div className="grid flex-1 gap-2">{bar("w-40")}{bar("w-56 max-w-full opacity-70")}</div>
+            {bar("w-24")}
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 export default function PolicySummary({ clientId }: { clientId: string }) {
   const { t } = useLanguage();
-  const { rules } = useDocumentRules(clientId);
+  const { rules, loading } = useDocumentRules(clientId);
   const s = useMemo(() => {
     if (!rules?.parse || rules.parse.status !== "supported") return null;
     const decisions = Object.fromEntries(Object.entries(rules.flagDecisions).map(([k, v]) => [k, v.choice]));
     return policySnapshot(rules.fields, rules.parse.flags, decisions, new Date().toISOString().slice(0, 10));
   }, [rules]);
   const fieldValue = (k: string) => rules?.fields.find((f) => f.field_key === k)?.document_field?.value as string | undefined;
-  if (!s) return null;
+  if (!s) return loading ? <SummarySkeleton title={t("psum.title")} label={t("psum.loading")} /> : null;
 
   const ill = s.source === "illustration" ? s.illustration : null;
   const plan = fieldValue("identity.plan") ?? (fieldValue("identity.uin") ? `UIN ${fieldValue("identity.uin")}` : null);
