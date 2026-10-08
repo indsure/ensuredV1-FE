@@ -617,7 +617,7 @@ export default function DashboardNew() {
                                  {format(npDateObj!, 'd MMM yyyy')}
                                </span>
                                {npDays !== null && npDays < 0 ? (
-                                 <span className="text-[11px] text-red-400">{t("dashboard.overdue")}</span>
+                                 <span className="text-[11px] text-red-400">{p.insurance_type === "life" || p.insurance_type === "term" ? t("common.premium_date_passed") : t("dashboard.overdue")}</span>
                                ) : npDays !== null && npDays <= 60 ? (
                                  <span className="text-[11px] text-slate-400">{t("dashboard.in_days", { days: npDays })}</span>
                                ) : null}

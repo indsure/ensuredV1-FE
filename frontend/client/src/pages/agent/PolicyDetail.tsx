@@ -3,9 +3,12 @@ import { useLocation, useParams } from "wouter";
 import { Copy, ExternalLink, FileText, RefreshCw, Trash2 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { BackLink } from "@/components/agent/BackLink";
 import CustomerTagCard from "@/components/agent/CustomerTagCard";
 import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
 import PolicyValueChart from "@/components/agent/PolicyValueChart";
+import DocumentTerms from "@/components/agent/policyValue/DocumentTerms";
+import PolicySummary from "@/components/agent/policyValue/PolicySummary";
 import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
@@ -438,14 +441,24 @@ export default function PolicyDetail() {
     }
   }
 
-  if (error) return <InlineErrorState onRetry={loadDetail} />;
+  // A stale or shared link to a deleted record lands here: name it, and always
+  // leave a way out, since Try again can never fix "not found".
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <BackLink to="/agent/policies" label={t("policy_detail.back")} />
+        <InlineErrorState
+          message={error === t("policy_detail.not_found") ? error : undefined}
+          onRetry={loadDetail}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-8">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" className="text-slate-600" onClick={() => setLocation("/agent/policies")}>
-          {t("policy_detail.back")}
-        </Button>
+        <BackLink to="/agent/policies" label={t("policy_detail.back")} />
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="border-slate-200 bg-white" onClick={loadDetail} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -589,6 +602,8 @@ export default function PolicyDetail() {
                 {/* Motor only, and it renders nothing unless the document was
                     actually read. The summary sits above the fields it was
                     read from. */}
+                {/* Life and term: the policy at a glance, straight from the document. */}
+                {(insuranceType === "life" || insuranceType === "term") && <PolicySummary clientId={policy.id} />}
                 <AddOnChecklist data={extractedData} />
                 <ExtractedDataForm
                   clientId={policy.id}
@@ -605,6 +620,10 @@ export default function PolicyDetail() {
                     data={extractedData}
                     onSaved={() => void loadDetail()}
                   />
+                )}
+                {/* Policy terms read from the document itself, for the advisor to review. */}
+                {(insuranceType === "life" || insuranceType === "term") && (
+                  <DocumentTerms clientId={policy.id} data={extractedData ?? {}} />
                 )}
               </div>
             ) : (

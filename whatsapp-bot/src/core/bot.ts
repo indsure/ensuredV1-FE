@@ -1,0 +1,1624 @@
+/**
+ * bot-core: dedupe, linking, the conversation state machine, the per-advisor check queue,
+ * and the four phase 1 intents (brief §6, §7, §9).
+ *
+ * Rules this file keeps, and where:
+ *   - The bot only ever messages the ADVISOR who wrote to it. There is no code path that
+ *     sends to any other number; `say()` takes the advisor's own reply address.
+ *   - Numbers come from the engine. Report cards and answers are built from stored fields
+ *     (templates.ts, answers.ts); model phrasing is number-guarded server side.
+ *   - One check at a time per advisor. The engine checks the balance up front and charges on
+ *     success, so running two at once could let both pass on one remaining check.
+ */
+
+import crypto from "node:crypto";
+import fs from "node:fs/promises";
+import path from "node:path";
+import type { Engine, ClientSummary, RenewalRow } from "../engine.js";
+import type { InboundMessage, Transport } from "../transport/types.js";
+import { inspectPdf, looksLikePdf, POLICY_TYPES, type Inspection, type PolicyType } from "./pdfInspect.js";
+import {
+  isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, pickNumber, ruleIntent,
+} from "./intents.js";
+import { basics, ruleAnswer } from "./answers.js";
+import {
+  T, failureReasonFix, portalPolicyUrl, renewalsReply, reportCard, shareDraft, shareReply,
+  sharedReportUrl, waMeLink, type Lang, type Links,
+} from "./templates.js";
+import { buildMessage } from "../shared/draftMessage.js";
+import type { UserInputs } from "../shared/health-engine-logic.js";
+import {
+  CALC_AGE_ASK, CALC_QUESTIONS, COMPARE_ASK, INTERESTS, LEAD_ASK, ageBandFor, calcQuestionText, calcReply,
+  compareReply, interestIn, leadSavedReply, matchPlans, parseAge, parseCompareNames, parseLeadLine, planLabel, suggestPlans,
+  companyOptions, planOptions, matchCompany,
+  runCalculator, websiteReply, clientsReply, typeIn, pickCalcOption, cityAnswer, CALC_CITY_ASK, CALC_CITY_AGAIN,
+  TIER_LABEL, toolShareDraft, type Shareable,
+} from "./tools.js";
+import { log, redact } from "../log.js";
+import { b, dayMonth, planLabel as nicePlan, prettyEngine } from "./format.js";
+import {
+  CLIENT_ONLY, VALUE_TYPES, claimsReply, detailsReply, followupsReply, leadUpdatedReply, lookupReply,
+  nameMatches, parseDraft, parseLeadUpdate, parseBulkFollowUp, parseBulkUpdate, valueReply, viewsReply, leadsListReply, prettyDate, type LeadRow, type LeadUpdate,
+} from "./crm.js";
+import type { DraftKind } from "../shared/draftMessage.js";
+import {
+  answer as calcAnswer, applyChange as calcChange, calcShareText, nextStep as calcNext, prefillFromCustomer,
+  prefillFromText, question as calcQuestion, resultReply as calcResultReply, run as calcRun, structureLine,
+  type CalcState,
+} from "./calcflow.js";
+import type { Action, Context as ModelContext, Understanding } from "./understand.js";
+import { MORNING, inMorningWindow, istClock, morningBrief, sincePreviousWorkday } from "./morning.js";
+import type { CatalogPlan, SachStatus } from "../engine.js";
+import { LANG_SET, detectLang, devanagariToLatin, hasDevanagari, langCommand, localise, type ReplyLang } from "./i18n.js";
+import { outsideCustomer, polish, stripMarkers } from "./style.js";
+
+export const MAX_BYTES = 25 * 1024 * 1024;
+/** How long free-text questions keep going to the last report without naming a topic. */
+const REPORT_FRESH_MS = 30 * 60_000;
+const LANGS: Lang[] = ["english", "hinglish", "hindi"];
+/** The name the advisor sees once they save our contact card. */
+const CONTACT_NAME = "IndSure AI Assistant";
+
+export type Timings = {
+  pollMs: number;
+  stillWorkingMs: number; // T3
+  takingLongMs: number;   // T4
+  giveUpMs: number;
+  stateTimeoutMs: number; // AWAITING_* expiry
+};
+
+export const DEFAULT_TIMINGS: Timings = {
+  pollMs: 5_000,
+  stillWorkingMs: 90_000,
+  takingLongMs: 5 * 60_000,
+  giveUpMs: 15 * 60_000,
+  stateTimeoutMs: 15 * 60_000,
+};
+
+export type BotDeps = {
+  transport: Transport;
+  engine: Engine;
+  links: Links;
+  tmpDir: string;
+  timings?: Partial<Timings>;
+  /** Human-paced pause before each reply, ms. Default 1000-3000 random (ban mitigation). */
+  replyDelay?: () => number;
+  sleep?: (ms: number) => Promise<void>;
+  now?: () => number;
+  /** Link to reach the IndSure team (T9). */
+  teamLink: string;
+  /** PDF inspector. Injectable for tests; defaults to the pdfjs one. */
+  inspect?: (buf: Buffer) => Promise<Inspection>;
+};
+
+type FileRef = { path: string; sha: string; name: string; waMessageId: string; caption: string };
+
+type State =
+  | "IDLE" | "REPORT_READY" | "AWAITING_TYPE" | "AWAITING_DUP_CONFIRM" | "AWAITING_CUSTOMER"
+  | "AWAITING_SHARE_LANG" | "AWAITING_CLIENT_PICK" | "AWAITING_REMIND_PICK"
+  | "AWAITING_LEAD" | "AWAITING_CALC" | "AWAITING_COMPARE_PICK" | "AWAITING_LEAD_PICK" | "AWAITING_CONFIRM";
+
+/** A change waiting for the advisor's YES. Nothing is written until then. */
+type Op =
+  | { kind: "create"; name: string; phone: string | null; interest: string | null; status: string | null; nextFollowUp: string | null; note: string | null; notFound?: boolean }
+  | { kind: "update"; leadId: string; name: string; phone: string | null; status: string | null; nextFollowUp: string | null; note: string | null }
+  | { kind: "undo"; change: LastChange };
+
+/** What the last saved change was, so UNDO can put things back (15 minutes). */
+type LastChange =
+  | { kind: "create"; leadId: string; name: string; at: number }
+  | { kind: "update"; leadId: string; name: string; before: { status: string | null; next_follow_up: string | null; notes: string | null }; at: number }
+  | { kind: "bulk"; items: LastChange[]; name: string; at: number };
+
+const UNDO_WINDOW_MS = 15 * 60_000;
+/** Short, unambiguous read-only commands go straight to the rules (no model call). */
+const FAST_RULE = new Set(["help", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
+
+type Conv = { state: State; currentClientId: string | null; pending: any; updatedAt: string | null };
+
+type QueueItem = { agentId: string; to: string; file: FileRef; type: PolicyType; jobRowId: string };
+
+type Remindable = RenewalRow & { source: "lead" | "client" };
+
+/** A compare question: pick one of several matches, a name not in the catalogue (with the
+ *  closest plans), a name matching too many, or "which other plan?". */
+type CompareQ = { q: string; kind: "pick" | "missing" | "many" | "ask" | "company" | "plan"; options: { key: string; label: string }[] };
+
+/** "Policy Kit_PROHLV050040281.pdf" as the caption of a file with that name, or any caption
+ *  that is itself a file name. */
+export function captionIsFileName(caption: string | null | undefined, fileName: string | null | undefined): boolean {
+  const c = String(caption || "").trim().toLowerCase();
+  if (!c) return false;
+  if (/\.(pdf|docx?|jpe?g|png)$/.test(c)) return true;
+  const f = String(fileName || "").trim().toLowerCase();
+  return !!f && (c === f || c === f.replace(/\.[a-z0-9]+$/, ""));
+}
+
+/** Words that point at the person the chat was last about. */
+const PRONOUN = /\b(he|she|him|her|his|hers|them|they|their|uska|uski|uske|unka|unki|unke|usko|unko|use|unhe|isko|iska|iski|inka)\b|उसका|उसकी|उसके|उनका|उनकी|उनके|उसको|उनको|उसे|उन्हें/i;
+
+/** Is any word of `name` (3+ letters) actually in the message, in English or Hindi letters? */
+function nameInMessage(name: string, text: string): boolean {
+  const msg = (hasDevanagari(text) ? `${text} ${devanagariToLatin(text)}` : text).toLowerCase();
+  return name.toLowerCase().split(/\s+/).filter((w) => w.length >= 3).some((w) => new RegExp(`(^|[^a-z])${w.replace(/[^a-z]/g, "")}`).test(msg) || msg.includes(w));
+}
+
+const normName = (s: string | null | undefined) => String(s ?? "").toLowerCase().replace(/[^a-z\u0900-\u097F ]/g, " ").replace(/\s+/g, " ").trim();
+
+const sha256 = (b: Buffer | string) => crypto.createHash("sha256").update(b).digest("hex");
+
+export class Bot {
+  private readonly t: Timings;
+  private readonly queues = new Map<string, { running: boolean; items: QueueItem[] }>();
+  private readonly sleep: (ms: number) => Promise<void>;
+  private readonly now: () => number;
+  private readonly replyDelay: () => number;
+
+  private readonly d: BotDeps;
+  /** Sach Assistant notices, each said once: free-plan pointer (per day), limit reached (per month). */
+  private readonly sachNudged = new Map<string, string>();
+  private readonly limitTold = new Map<string, string>();
+  private morningDoneDay: string | null = null;
+  private morningRunning = false;
+
+  constructor(deps: BotDeps) {
+    // Every name the bot shows passes through prettyEngine: short insurer names, no
+    // ALL-CAPS customers. Display only; nothing stored changes.
+    const d = { ...deps, engine: prettyEngine(deps.engine) };
+    this.d = d;
+    this.t = { ...DEFAULT_TIMINGS, ...(d.timings || {}) };
+    this.sleep = d.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
+    this.now = d.now ?? (() => Date.now());
+    this.replyDelay = d.replyDelay ?? (() => 1000 + Math.floor(Math.random() * 2000));
+  }
+
+  /** True while any advisor's check queue has work. Used by tests and graceful shutdown. */
+  busy(): boolean {
+    for (const q of this.queues.values()) if (q.running || q.items.length) return true;
+    return false;
+  }
+
+  /* ══ Sending ══════════════════════════════════════════════════════════ */
+
+  /** The ONLY way the bot sends anything. `to` is always the advisor's own chat. */
+  private async say(to: string, agentId: string | null, textEn: string, intent: string | null = null) {
+    const tr = this.d.transport;
+    // Written in English; shown in the advisor's language (fixed wording only, see i18n.ts),
+    // then in the house style (style.ts). A customer's message inside is left exactly as is.
+    const lang = agentId ? this.replyLang.get(agentId) : null;
+    const text = stripMarkers(polish(outsideCustomer(textEn, (t) => localise(t, lang)), intent));
+    try {
+      await tr.sendTyping(to, true);
+      await this.sleep(this.replyDelay());
+      await tr.sendText(to, text);
+      await tr.sendTyping(to, false);
+    } catch (e: any) {
+      log.error("send failed", { error: e?.message });
+      return;
+    }
+    await this.d.engine
+      .logMessage({ agentId, direction: "out", type: "text", bodyRedacted: redact(text).slice(0, 2000), intent })
+      .catch(() => {});
+  }
+
+  /* ══ Entry point ══════════════════════════════════════════════════════ */
+
+  async handle(msg: InboundMessage): Promise<void> {
+    if (!msg.id) return;
+    const e = this.d.engine;
+    const who = msg.from ? await e.resolve(msg.from) : { agentId: null, servable: false };
+
+    const type = msg.kind === "document" ? "document" : msg.kind === "text" ? "text" : "media";
+    const { duplicate } = await e.logMessage({
+      waMessageId: msg.id,
+      agentId: who.agentId,
+      direction: "in",
+      type,
+      bodyRedacted: redact(msg.text || "").slice(0, 500) || (msg.fileName ? `[file] ${redact(msg.fileName)}` : null),
+    });
+    if (duplicate) return; // re-delivery: already handled, no second reply
+    await this.d.transport.markRead(msg);
+
+    const code = msg.kind === "text" ? linkCode(msg.text) : null;
+    if (code) return this.doLink(msg, code);
+
+    if (!who.agentId || !who.servable) return this.unknownOnce(msg);
+
+    const agentId = who.agentId;
+    try {
+      const conv = await this.loadConv(agentId, msg.replyTo);
+      if (msg.kind === "document") return await this.pdfIn(agentId, conv, msg);
+      if (msg.kind === "image") return await this.say(msg.replyTo, agentId, T.notPdf(), "not_pdf");
+      if (msg.kind === "text") return await this.onText(agentId, conv, msg);
+      return await this.say(msg.replyTo, agentId, T.help(), "help");
+    } catch (err: any) {
+      log.error("handle failed", { error: err?.message });
+      await this.say(msg.replyTo, agentId, T.genericError(), "error");
+    }
+  }
+
+  /** After LINK: our own number as a contact card, so the advisor saves it in one tap and
+   *  the chat shows a name. Best effort: a failure here never undoes the link. */
+  private async sendContactCard(to: string, agentId: string | null) {
+    const tr = this.d.transport;
+    if (!tr.sendContact) return;
+    await this.say(to, agentId, T.saveContact(), "save_contact");
+    try {
+      await tr.sendContact(to, CONTACT_NAME);
+    } catch (e: any) {
+      log.error("contact card failed", { error: e?.message });
+    }
+  }
+
+  /** Unknown numbers get ONE pointer reply, then silence (protects the number). */
+  private async unknownOnce(msg: InboundMessage) {
+    const hash = sha256(msg.from || msg.replyTo);
+    if (await this.d.engine.unknownSeen(hash)) return;
+    await this.say(msg.replyTo, null, T.unknownNumber(), `unknown:${hash}`);
+  }
+
+  private async doLink(msg: InboundMessage, code: string) {
+    if (!msg.from) return this.unknownOnce(msg);
+    const r = await this.d.engine.link(msg.from, code);
+    if (r.ok) {
+      await this.say(msg.replyTo, r.agentId ?? null, r.servable ? T.welcome() : T.linkNotBeta(), "link");
+      return this.sendContactCard(msg.replyTo, r.agentId ?? null);
+    }
+    const text =
+      r.reason === "expired" ? T.linkExpired() : r.reason === "no_pending" ? T.linkWrongNumber() : T.linkBad();
+    await this.say(msg.replyTo, null, text, "link_failed");
+  }
+
+  /* ══ Conversation state ═══════════════════════════════════════════════ */
+
+  private async loadConv(agentId: string, to: string): Promise<Conv> {
+    const c = (await this.d.engine.getConversation(agentId)) as Conv;
+    const pending = c.pending && typeof c.pending === "object" ? c.pending : {};
+    if (pending.last && !this.lastShare.has(agentId)) this.lastShare.set(agentId, pending.last);
+    if (pending.lastPerson && !this.lastPerson.has(agentId)) this.lastPerson.set(agentId, pending.lastPerson);
+    if (pending.lastChange && !this.lastChange.has(agentId)) this.lastChange.set(agentId, pending.lastChange);
+    if (pending.replyLang && !this.replyLang.has(agentId)) this.replyLang.set(agentId, pending.replyLang);
+    let conv: Conv = { state: (c.state as State) || "IDLE", currentClientId: c.currentClientId, pending, updatedAt: c.updatedAt };
+    // Any AWAITING_* state lapses after 15 minutes. Defaults: nothing is sent, the customer
+    // stays unassigned, a held file is dropped.
+    if (conv.state.startsWith("AWAITING") && conv.updatedAt && this.now() - new Date(conv.updatedAt).getTime() > this.t.stateTimeoutMs) {
+      await this.dropHeldFile(conv);
+      conv = { state: conv.currentClientId ? "REPORT_READY" : "IDLE", currentClientId: conv.currentClientId, pending: {}, updatedAt: null };
+    }
+    if (conv.pending.to !== to) {
+      conv.pending = { ...conv.pending, to };
+      await this.saveConv(agentId, conv);
+    }
+    return conv;
+  }
+
+  private readonly lastPerson = new Map<string, string>();
+  private readonly lastChange = new Map<string, LastChange>();
+  /** The language the advisor last wrote in (or chose with HINDI / HINGLISH / ENGLISH). */
+  private readonly replyLang = new Map<string, ReplyLang>();
+
+  /** Loads the advisor's reply language when nothing has been said yet this run (the 9 AM
+   *  brief goes out before they write). */
+  private async langOf(agentId: string): Promise<ReplyLang> {
+    if (!this.replyLang.has(agentId)) {
+      const c = await this.d.engine.getConversation(agentId).catch(() => null);
+      const l = c?.pending?.replyLang;
+      if (l === "hindi" || l === "hinglish" || l === "english") this.replyLang.set(agentId, l);
+    }
+    return this.replyLang.get(agentId) ?? "english";
+  }
+
+  private async saveConv(agentId: string, c: Conv) {
+    const last = this.lastShare.get(agentId);
+    const person = this.lastPerson.get(agentId);
+    const change = this.lastChange.get(agentId);
+    const lang = this.replyLang.get(agentId);
+    const pending = { ...(c.pending || {}), ...(last ? { last } : {}), ...(person ? { lastPerson: person } : {}), ...(change ? { lastChange: change } : {}), ...(lang ? { replyLang: lang } : {}) };
+    await this.d.engine.putConversation(agentId, { state: c.state, currentClientId: c.currentClientId, pending });
+  }
+
+  /** The last thing SHARE refers to: a policy report, a calculator result or a comparison.
+   *  Kept here and written into every conversation save, so it survives state changes and
+   *  restarts. */
+  private readonly lastShare = new Map<string, Shareable>();
+
+  private setLast(agentId: string, s: Shareable) {
+    this.lastShare.set(agentId, s);
+  }
+
+  private async setState(agentId: string, to: string, state: State, currentClientId: string | null, extra: Record<string, unknown> = {}) {
+    await this.saveConv(agentId, { state, currentClientId, pending: { to, ...extra }, updatedAt: null });
+  }
+
+  private async rest(agentId: string, to: string, currentClientId: string | null) {
+    await this.setState(agentId, to, currentClientId ? "REPORT_READY" : "IDLE", currentClientId);
+  }
+
+  private async dropHeldFile(conv: Conv) {
+    const p = conv.pending?.file?.path;
+    if (p) await fs.rm(p, { force: true }).catch(() => {});
+  }
+
+  /* ══ PDF in (brief §7) ════════════════════════════════════════════════ */
+
+  private async pdfIn(agentId: string, conv: Conv, msg: InboundMessage) {
+    const to = msg.replyTo;
+    if (msg.fileSize != null && msg.fileSize > MAX_BYTES) return this.say(to, agentId, T.tooLarge(), "too_large");
+    const named = /\.pdf$/i.test(msg.fileName || "") || /pdf/i.test(msg.mimeType || "");
+    if (!named) return this.say(to, agentId, T.notPdf(), "not_pdf");
+
+    // A new PDF always starts a new flow, even mid-question.
+    if (conv.state.startsWith("AWAITING")) {
+      await this.dropHeldFile(conv);
+      await this.rest(agentId, to, conv.currentClientId);
+    }
+
+    await this.say(to, agentId, T.received(), "analyze");
+
+    const buf = await this.d.transport.downloadMedia(msg);
+    if (!looksLikePdf(buf)) return this.say(to, agentId, T.notPdf(), "not_pdf");
+    if (buf.length > MAX_BYTES) return this.say(to, agentId, T.tooLarge(), "too_large");
+
+    const sha = sha256(buf);
+    const insp = await (this.d.inspect ?? inspectPdf)(buf);
+    if (insp.kind === "locked") return this.say(to, agentId, T.locked(), "locked");
+    if (insp.kind === "unreadable") {
+      return this.say(to, agentId, "I couldn't open this PDF. Please send the insurer's original PDF. No policy check was used.", "unreadable");
+    }
+    if (insp.hindi) return this.say(to, agentId, T.hindiPolicy(), "hindi");
+
+    await fs.mkdir(this.d.tmpDir, { recursive: true });
+    const file: FileRef = {
+      path: path.join(this.d.tmpDir, `${agentId}-${sha.slice(0, 16)}-${msg.id.replace(/\W/g, "").slice(0, 20)}.pdf`),
+      sha,
+      name: (msg.fileName || "policy.pdf").slice(0, 120),
+      waMessageId: msg.id,
+      // A forwarded document often carries its own file name as the caption. That is not a
+      // customer, so it is ignored rather than filed as the policyholder's name.
+      caption: captionIsFileName(msg.text, msg.fileName) ? "" : msg.text || "",
+    };
+    await fs.writeFile(file.path, buf);
+
+    const existing = await this.d.engine.jobByHash(agentId, sha);
+    if (existing) {
+      await this.setState(agentId, to, "AWAITING_DUP_CONFIRM", conv.currentClientId, { file, type: insp.guess, existing });
+      return this.say(to, agentId, T.duplicate(portalPolicyUrl(this.d.links, existing)), "duplicate");
+    }
+    if (!insp.guess) {
+      await this.setState(agentId, to, "AWAITING_TYPE", conv.currentClientId, { file });
+      return this.say(to, agentId, T.pickType(), "pick_type");
+    }
+    await this.enqueue(agentId, to, file, insp.guess);
+  }
+
+  private async enqueue(agentId: string, to: string, file: FileRef, type: PolicyType) {
+    if (type === "health") {
+      const left = await this.d.engine.checksLeft(agentId);
+      const q = this.queues.get(agentId);
+      const ahead = (q?.items.filter((i) => i.type === "health").length ?? 0) + (q?.running ? 1 : 0);
+      if (left - ahead <= 0) {
+        await fs.rm(file.path, { force: true }).catch(() => {});
+        return this.say(to, agentId, T.outOfChecks(this.d.teamLink), "no_checks");
+      }
+    }
+    const jobRowId = await this.d.engine.createJob(agentId, { waMessageId: file.waMessageId, fileSha256: file.sha, insuranceType: type });
+    const q = this.queues.get(agentId) ?? { running: false, items: [] };
+    this.queues.set(agentId, q);
+    const waiting = q.items.length + (q.running ? 1 : 0);
+    q.items.push({ agentId, to, file, type, jobRowId });
+    if (waiting > 0) await this.say(to, agentId, T.queued(waiting), "queued");
+    void this.drain(agentId);
+  }
+
+  /** Runs one advisor's queue, one check at a time. */
+  private async drain(agentId: string) {
+    const q = this.queues.get(agentId);
+    if (!q || q.running) return;
+    q.running = true;
+    try {
+      while (q.items.length) {
+        const item = q.items.shift()!;
+        const stop = await this.runItem(item).catch(async (e: any) => {
+          log.error("check failed", { error: e?.message });
+          await this.d.engine.updateJob(agentId, item.jobRowId, { status: "failed", failureReason: String(e?.message || "error") }).catch(() => {});
+          await this.say(item.to, agentId, T.genericError(), "error");
+          return false;
+        });
+        if (stop) {
+          // Out of checks: everything still waiting is NOT run, and the advisor is told.
+          const left = q.items.splice(0);
+          for (const i of left) {
+            await fs.rm(i.file.path, { force: true }).catch(() => {});
+            await this.d.engine.updateJob(agentId, i.jobRowId, { status: "skipped", failureReason: "no policy checks left" }).catch(() => {});
+          }
+          if (left.length) await this.say(item.to, agentId, T.queueStoppedNoChecks(left.length, this.d.teamLink), "no_checks");
+        }
+      }
+    } finally {
+      q.running = false;
+    }
+  }
+
+  /** Returns true when the queue must stop (no checks left). */
+  private async runItem(item: QueueItem): Promise<boolean> {
+    const { agentId, to, file, type } = item;
+    const e = this.d.engine;
+    if (type === "health" && (await e.checksLeft(agentId)) <= 0) {
+      await fs.rm(file.path, { force: true }).catch(() => {});
+      await e.updateJob(agentId, item.jobRowId, { status: "skipped", failureReason: "no policy checks left" });
+      await this.say(to, agentId, T.outOfChecks(this.d.teamLink), "no_checks");
+      return true;
+    }
+    await e.updateJob(agentId, item.jobRowId, { status: "processing" });
+    const caption = parseCaption(file.caption);
+    let buf: Buffer;
+    try {
+      buf = await fs.readFile(file.path);
+    } catch {
+      await e.updateJob(agentId, item.jobRowId, { status: "failed", failureReason: "temp file missing" });
+      await this.say(to, agentId, T.resendFile(), "resend");
+      return false;
+    }
+    const res = await e.analyze(agentId, { buffer: buf, fileName: file.name, type, policyholderName: caption.name, clientPhone: caption.phone });
+    await fs.rm(file.path, { force: true }).catch(() => {});
+
+    if (!res.ok) {
+      await e.updateJob(agentId, item.jobRowId, { status: "failed", failureReason: res.code });
+      if (res.code === "NO_CREDITS") {
+        await this.say(to, agentId, T.outOfChecks(this.d.teamLink), "no_checks");
+        return true;
+      }
+      if (res.code === "NO_OCR_CREDITS") {
+        await this.say(to, agentId, T.outOfDataEntry(this.d.teamLink), "no_data_entry");
+        return false;
+      }
+      await this.say(to, agentId, T.genericError(), "error");
+      return false;
+    }
+    await e.updateJob(agentId, item.jobRowId, { clientId: res.clientId, analysisJobId: res.jobId });
+    await this.follow(agentId, to, item.jobRowId, res.jobId, res.clientId, this.now(), caption);
+    return false;
+  }
+
+  /** Poll one engine job to the end and report back (brief §7 steps 11 to 14). */
+  private async follow(
+    agentId: string, to: string, jobRowId: string, jobId: string, clientId: string, startedAt: number,
+    caption: { name: string | null; phone: string | null } = { name: null, phone: null },
+  ) {
+    const e = this.d.engine;
+    let saidStill = this.now() - startedAt >= this.t.stillWorkingMs;
+    let saidLong = this.now() - startedAt >= this.t.takingLongMs;
+    for (;;) {
+      await this.sleep(this.t.pollMs);
+      const elapsed = this.now() - startedAt;
+      let st;
+      try {
+        st = await e.jobStatus(agentId, jobId);
+      } catch {
+        st = null; // backend blip: keep waiting, the clock below still runs
+      }
+      if (st?.status === "completed") break;
+      if (st?.status === "error" || st?.status === "not_found") {
+        const c = await e.getClient(agentId, clientId).catch(() => null);
+        const { reason, fix } = failureReasonFix(c?.errorMessage || (st.status === "error" ? st.error : ""));
+        await e.updateJob(agentId, jobRowId, { status: "needs_attention", failureReason: c?.errorMessage || "error" });
+        return this.say(to, agentId, T.couldNotRead(reason, fix), "failed");
+      }
+      if (!saidStill && elapsed >= this.t.stillWorkingMs) {
+        saidStill = true;
+        await this.say(to, agentId, T.stillWorking(), "still_working");
+      }
+      if (!saidLong && elapsed >= this.t.takingLongMs) {
+        saidLong = true;
+        await this.say(to, agentId, T.takingLong(portalPolicyUrl(this.d.links, clientId)), "taking_long");
+      }
+      if (elapsed >= this.t.giveUpMs) {
+        await e.updateJob(agentId, jobRowId, { status: "failed", failureReason: "no result in time" });
+        return this.say(to, agentId, T.gaveUp(portalPolicyUrl(this.d.links, clientId)), "gave_up");
+      }
+    }
+
+    const c = await e.getClient(agentId, clientId);
+    await e.updateJob(agentId, jobRowId, { status: "done" });
+    if (!c) return this.say(to, agentId, T.gaveUp(portalPolicyUrl(this.d.links, clientId)), "gave_up");
+
+    if (c.insuranceType === "health") await this.say(to, agentId, reportCard(c, this.d.links), "report");
+    else await this.say(to, agentId, T.nonHealth((c.insuranceType as PolicyType) || "motor", c.policyholderName), "data_entry");
+
+    // This report becomes the one follow-up questions and SHARE refer to. An AWAITING_*
+    // state from another flow is left as it is; only the current report moves.
+    this.setLast(agentId, { kind: "policy", clientId });
+    const conv = await this.loadConv(agentId, to);
+    const busy = conv.state.startsWith("AWAITING");
+    conv.currentClientId = clientId;
+    if (!busy) conv.state = "REPORT_READY";
+    await this.saveConv(agentId, conv);
+
+    await this.fileUnderCustomer(agentId, to, c, caption, busy);
+  }
+
+  /** Brief §7 step 8: file the policy under a customer from the caption, or ask. */
+  private async fileUnderCustomer(agentId: string, to: string, c: ClientSummary, caption: { name: string | null; phone: string | null }, busy: boolean) {
+    if (c.customerId) return;
+    const moreQueued = (this.queues.get(agentId)?.items.length ?? 0) > 0;
+    const q = caption.phone || caption.name;
+    if (!q) {
+      if (busy || moreQueued) return; // don't stack questions while other files are in line
+      await this.setState(agentId, to, "AWAITING_CUSTOMER", c.clientId, { clientId: c.clientId });
+      return this.say(to, agentId, T.whoseIsIt(), "whose");
+    }
+    const matches = await this.d.engine.searchCustomers(agentId, q);
+    if (matches.length === 1) {
+      if (await this.d.engine.attachCustomer(agentId, c.clientId, matches[0].id)) {
+        return this.say(to, agentId, T.filedUnder(matches[0].name), "filed");
+      }
+      return;
+    }
+    if (matches.length > 1 && !busy && !moreQueued) {
+      await this.setState(agentId, to, "AWAITING_CUSTOMER", c.clientId, { clientId: c.clientId, options: matches.map((m) => ({ id: m.id, name: m.name })) });
+      return this.say(to, agentId, T.pickCustomer(matches.map((m) => m.name)), "pick_customer");
+    }
+    if (matches.length === 0 && caption.name) await this.say(to, agentId, T.noCustomerMatch(caption.name), "no_customer");
+  }
+
+  /** After a restart: pick up checks that were running. Files for checks that never
+   *  started are gone (temp), so those advisors are asked to resend. */
+  async resumeOpenJobs() {
+    const jobs = await this.d.engine.openJobs().catch(() => []);
+    for (const j of jobs) {
+      const conv = await this.d.engine.getConversation(j.agent_id).catch(() => null);
+      const to = conv?.pending?.to;
+      if (!to) continue;
+      if (j.analysis_job_id && j.client_id) {
+        void this.follow(j.agent_id, to, j.id, j.analysis_job_id, j.client_id, new Date(j.queued_at).getTime())
+          .catch((e) => log.error("resume failed", { error: e?.message }));
+      } else {
+        await this.d.engine.updateJob(j.agent_id, j.id, { status: "failed", failureReason: "bot restarted before the check started" });
+        await this.say(to, j.agent_id, T.resendFile(), "resend");
+      }
+    }
+  }
+
+  /* ══ Text ═════════════════════════════════════════════════════════════ */
+
+  private async onText(agentId: string, conv: Conv, msg: InboundMessage) {
+    const to = msg.replyTo;
+    const text = msg.text.trim();
+
+    // Reply language: HINDI / HINGLISH / ENGLISH set it; otherwise it follows whatever the
+    // advisor clearly writes in (a bare command or a name keeps the current one).
+    const chosen = conv.state.startsWith("AWAITING") ? null : langCommand(text);
+    if (chosen) {
+      this.replyLang.set(agentId, chosen);
+      await this.saveConv(agentId, conv);
+      return this.say(to, agentId, LANG_SET[chosen], "lang");
+    }
+    const seen = detectLang(text);
+    if (seen && seen !== (this.replyLang.get(agentId) ?? "english")) {
+      this.replyLang.set(agentId, seen);
+      await this.saveConv(agentId, conv);
+    }
+
+    let intent = ruleIntent(text);
+    // While a question is pending, a bare number is an answer to it (a phone number for
+    // "whose policy?" or a new lead), never a lookup.
+    if (intent === "lookup" && conv.state.startsWith("AWAITING") && /^\+?[\d\s-]+$/.test(text)) intent = null;
+
+    if (intent === "cancel") {
+      await this.dropHeldFile(conv);
+      await this.rest(agentId, to, conv.currentClientId);
+      return this.say(to, agentId, T.cancelled(), "cancel");
+    }
+    if (/^(undo|undo that|undo karo|wapas karo|pehle jaisa karo|revert|वापस करो|अनडू|पहले जैसा करो)[.!।]*$/i.test(text)) return this.proposeUndo(agentId, conv, to);
+    if (intent === "unlink") {
+      await this.d.engine.unlink(agentId);
+      return this.say(to, agentId, T.unlinked(), "unlink");
+    }
+    if (/^(ok|okay|thanks|thank you|thx|ty|great|done|👍|🙏)[.! ]*$/i.test(text)) {
+      if (!conv.state.startsWith("AWAITING")) return this.say(to, agentId, "Happy to help.", "thanks");
+    }
+
+    // A change waiting for YES gets the first word. Anything else drops it, unsaved.
+    if (conv.state === "AWAITING_CONFIRM") {
+      if (isYes(text) || /^(yes|haan|confirm|save|kar do|theek hai|ha+n)\b/i.test(text)) return this.confirmYes(agentId, conv, to);
+      await this.rest(agentId, to, conv.currentClientId);
+      if (isNo(text) || /^(no|nahi|mat|don'?t|wait|stop|never ?mind|leave it|chhodo)\b/i.test(text)) {
+        return this.say(to, agentId, "Okay, nothing changed.", "confirm_no");
+      }
+      await this.say(to, agentId, "(That change was not saved.)", "confirm_dropped");
+      conv = { ...conv, state: conv.currentClientId ? "REPORT_READY" : "IDLE", pending: { to } };
+      intent = ruleIntent(text);
+    }
+
+    // Free-form messages go to the model (when it is switched on): it fills a fixed form and
+    // the code below does everything else. Short, clear commands skip it and cost nothing.
+    const words = text.split(/\s+/).length;
+    const fastRule = !!intent && FAST_RULE.has(intent) && (words <= 4 || /^(compare|find|search|lookup|share|remind|help)\b/i.test(text));
+    const answering = conv.state.startsWith("AWAITING") && !intent;
+    // A lead change the rules read with certainty ("Aniket ka followup 3rd November",
+    // "Ramesh won", "sabke reminders 1st November kardo") goes straight to its confirmation:
+    // no model needed, and every change still waits for YES.
+    if (!intent && !conv.state.startsWith("AWAITING")) {
+      const one = parseBulkFollowUp(text, this.now());
+      const all = one ? { nextFollowUp: one } : parseBulkUpdate(text, this.now());
+      if (all) return this.bulkFollowUp(agentId, conv, to, all);
+      const u = parseLeadUpdate(text, this.now());
+      if (u && (await this.leadUpdateStart(agentId, conv, to, u))) return;
+    }
+
+    let sachReason: string | undefined;
+    if (!fastRule && !answering) {
+      const r = await this.d.engine.understand(agentId, text, this.modelContext(agentId, conv)).catch(() => null);
+      sachReason = r?.reason;
+      if (r?.reason === "limit" && r.usage) await this.sachLimitNotice(agentId, to, r.usage);
+      if (r?.enabled && r.understanding) {
+        if (conv.state.startsWith("AWAITING")) {
+          await this.dropHeldFile(conv);
+          await this.rest(agentId, to, conv.currentClientId);
+          conv = { ...conv, state: conv.currentClientId ? "REPORT_READY" : "IDLE", pending: { to } };
+        }
+        await this.dispatch(agentId, conv, to, text, r.understanding);
+        const u = r.usage;
+        if (u && u.limit > 0 && u.used === Math.ceil(u.limit * 0.8)) {
+          await this.say(to, agentId, `Heads up: you've used ${u.used} of ${u.limit} Sach Assistant replies this month. They reset on ${dayMonth(u.resetsOn)}.`, "sach_warn");
+        }
+        return;
+      }
+    }
+
+    // "Ramesh won" / "follow up Ramesh Friday" / "note Ramesh: ...": only when no other
+    // command matched and no question is pending.
+    // A pending question gets first go at the reply, unless it is a clear command.
+    if (conv.state.startsWith("AWAITING") && !intent) {
+      const handled = await this.onAwaiting(agentId, conv, to, text);
+      if (handled) return;
+    }
+    if (intent && conv.state.startsWith("AWAITING")) {
+      await this.dropHeldFile(conv);
+      await this.rest(agentId, to, conv.currentClientId);
+      conv = { ...conv, state: conv.currentClientId ? "REPORT_READY" : "IDLE", pending: { to } };
+    }
+
+    switch (intent) {
+      case "help":
+        return this.say(to, agentId, T.help(), "help");
+      case "balance":
+        return this.balance(agentId, to);
+      case "today":
+        return this.today(agentId, to);
+      case "morning_off":
+      case "morning_on": {
+        const s = await this.d.engine.sach(agentId);
+        if (!s.paid) return this.say(to, agentId, MORNING.paidOnly(this.d.teamLink), "sach_paid_only");
+        return this.say(to, agentId, intent === "morning_off" ? MORNING.off() : MORNING.on(), intent);
+      }
+      case "more":
+        return this.say(to, agentId, T.more(), "more");
+      case "renewals":
+        return this.say(to, agentId, renewalsReply(await this.d.engine.renewals(agentId), this.d.links), "renewals");
+      case "remind":
+        return this.remind(agentId, to, namedPerson(text), langIn(text) ?? "english");
+      case "share":
+        return this.shareStart(agentId, conv, to, text);
+      case "website":
+        return this.say(to, agentId, websiteReply(await this.d.engine.profile(agentId), this.d.links), "website");
+      case "lead":
+        return this.leadStart(agentId, conv, to, text);
+      case "calc":
+        return this.calcStart(agentId, conv, to, text, null);
+      case "compare":
+        return this.compareStart(agentId, conv, to, text);
+      case "followups":
+        return this.showFollowups(agentId, to);
+      case "checks": {
+        const n = await this.d.engine.checksLeft(agentId);
+        return this.say(to, agentId, `You have ${b(String(n))} policy ${n === 1 ? "check" : "checks"} left.\n${n <= 0 ? `To get more: ${this.d.teamLink}` : "Next: send a health policy PDF to use one."}`, "checks");
+      }
+      case "views":
+        return this.say(to, agentId, viewsReply(await this.d.engine.views(agentId)), "views");
+      case "claims": {
+        const q = text.replace(/^(show\s+)?(open\s+)?claims?\s*(status)?\s*(of|for)?\s*/i, "").trim() || null;
+        return this.say(to, agentId, claimsReply(this.d.links, await this.d.engine.claims(agentId, q), q), "claims");
+      }
+      case "lookup": {
+        const q = text.replace(/^(find|search|lookup|look up|who is|details (of|for))\s+/i, "").trim();
+        const r = await this.d.engine.lookup(agentId, q);
+        if (r.policies.length === 1) this.setLast(agentId, { kind: "policy", clientId: r.policies[0].clientId });
+        const person = r.policies[0]?.policyholderName || r.leads[0]?.name;
+        if (person) this.lastPerson.set(agentId, person);
+        return this.say(to, agentId, lookupReply(this.d.links, q, r.policies, r.leads), "lookup");
+      }
+      case "surrender":
+        return this.surrender(agentId, conv, to, text);
+      case "draft":
+        return this.draft(agentId, conv, to, text);
+      case "clients": {
+        const type = typeIn(text);
+        return this.say(to, agentId, clientsReply(this.d.links, type, await this.d.engine.policies(agentId, type)), "clients");
+      }
+    }
+
+    // No rule matched. A named policy ("Ramesh's policy") is always a question. The current
+    // report only gets free text that is about a policy topic, or a question while the report
+    // is fresh; it must not swallow everything else the advisor says.
+    const fresh = !!conv.updatedAt && this.now() - new Date(conv.updatedAt).getTime() < REPORT_FRESH_MS;
+    if (namedPerson(text) || (conv.currentClientId && isReportQuestion(text, fresh))) return this.ask(agentId, conv, to, text);
+
+    const guess = await this.d.engine.llmIntent(agentId, text, false).catch(() => "unknown");
+    if (guess === "renewals") return this.say(to, agentId, renewalsReply(await this.d.engine.renewals(agentId), this.d.links), "renewals");
+    if (guess === "share" || guess === "ask") return this.say(to, agentId, T.noReport(), guess);
+    // Free plan: one line a day on what Sach Assistant would add, never more.
+    const day = istClock(this.now()).iso;
+    if (sachReason === "free_plan" && this.sachNudged.get(agentId) !== day && words > 2) {
+      this.sachNudged.set(agentId, day);
+      return this.say(to, agentId, `${T.didNotCatch()}\n\nWith Sach Assistant (paid plan) you can just type it your way, in English, Hinglish or Hindi: ${this.d.teamLink}`, "unknown");
+    }
+    return this.say(to, agentId, T.didNotCatch(), "unknown");
+  }
+
+  /* ══ Sach Assistant: BALANCE, TODAY and the 9 AM brief ════════════════ */
+
+  private async balance(agentId: string, to: string) {
+    const [s, checks] = await Promise.all([this.d.engine.sach(agentId), this.d.engine.checksLeft(agentId)]);
+    const lines = [`${b("Policy checks left:")} ${checks}`];
+    if (s.paid) {
+      lines.unshift(`${b("Sach Assistant:")} ${s.used} of ${s.limit} replies used this month. Resets on ${dayMonth(s.resetsOn)}.`);
+      lines.push("", "Short commands like RENEWALS, HELP and YES never count.");
+    } else {
+      lines.push("", `Sach Assistant (type it your way, plus a 9 AM to-do Monday to Friday) comes with the paid plan: ${this.d.teamLink}`);
+    }
+    return this.say(to, agentId, lines.join("\n"), "balance");
+  }
+
+  private async sachLimitNotice(agentId: string, to: string, u: SachStatus) {
+    const month = istClock(this.now()).iso.slice(0, 7);
+    if (this.limitTold.get(agentId) === month) return;
+    this.limitTold.set(agentId, month);
+    await this.say(to, agentId,
+      `You've used all ${u.limit} Sach Assistant replies this month. Until ${dayMonth(u.resetsOn)} I'll work on short commands (reply HELP to see them).`,
+      "sach_limit");
+  }
+
+  private async buildBrief(agentId: string, name: string | null): Promise<string | null> {
+    const e = this.d.engine;
+    const [followups, renewals, views, claims] = await Promise.all([e.followups(agentId), e.renewals(agentId), e.views(agentId), e.claims(agentId, null)]);
+    return morningBrief({ name, followups, renewals, views, claims, sinceMs: sincePreviousWorkday(this.now()) });
+  }
+
+  private async today(agentId: string, to: string) {
+    const s = await this.d.engine.sach(agentId);
+    if (!s.paid) return this.say(to, agentId, MORNING.paidOnly(this.d.teamLink), "sach_paid_only");
+    const profile = await this.d.engine.profile(agentId);
+    return this.say(to, agentId, (await this.buildBrief(agentId, profile.name)) ?? MORNING.empty(), "today");
+  }
+
+  /**
+   * Called every minute by index.ts. On weekdays from 9 AM IST, sends each paid advisor
+   * their to-do, 20-40 seconds apart (a personal number must not burst). The backend only
+   * lists advisors not yet sent one today, so a restart never double-sends. An empty list
+   * is not sent.
+   */
+  async morningTick(): Promise<number> {
+    if (!inMorningWindow(this.now()) || this.morningRunning) return 0;
+    const day = istClock(this.now()).iso;
+    if (this.morningDoneDay === day) return 0;
+    this.morningRunning = true;
+    let sent = 0;
+    try {
+      const list = await this.d.engine.morningRecipients();
+      for (const r of list) {
+        const brief = await this.buildBrief(r.agentId, r.name).catch((e) => {
+          log.error("morning brief failed", { error: e?.message });
+          return null;
+        });
+        if (!brief) continue;
+        await this.langOf(r.agentId);
+        if (sent > 0) await this.sleep(20_000 + Math.floor(Math.random() * 20_000));
+        await this.say(`${r.waNumber}@s.whatsapp.net`, r.agentId, brief, "morning_brief");
+        sent++;
+      }
+      this.morningDoneDay = day;
+    } catch (e: any) {
+      log.error("morning run failed", { error: e?.message });
+    } finally {
+      this.morningRunning = false;
+    }
+    return sent;
+  }
+
+  /** Returns true when the reply was consumed by the pending question. */
+  private async onAwaiting(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    const p = conv.pending || {};
+    switch (conv.state) {
+      case "AWAITING_TYPE": {
+        const n = pickNumber(text, POLICY_TYPES.length);
+        if (!n) { await this.say(to, agentId, T.pickType(), "pick_type"); return true; }
+        await this.rest(agentId, to, conv.currentClientId);
+        await this.enqueue(agentId, to, p.file, POLICY_TYPES[n - 1]);
+        return true;
+      }
+      case "AWAITING_DUP_CONFIRM": {
+        if (isYes(text)) {
+          await this.rest(agentId, to, conv.currentClientId);
+          if (p.type) await this.enqueue(agentId, to, p.file, p.type);
+          else {
+            await this.setState(agentId, to, "AWAITING_TYPE", conv.currentClientId, { file: p.file });
+            await this.say(to, agentId, T.pickType(), "pick_type");
+          }
+          return true;
+        }
+        if (isNo(text)) {
+          await this.dropHeldFile(conv);
+          await this.rest(agentId, to, p.existing);
+          await this.say(to, agentId, T.dupNo(), "dup_no");
+          return true;
+        }
+        await this.say(to, agentId, "Reply YES to run a fresh check (it uses 1 policy check), or NO to keep the existing report.", "dup_ask");
+        return true;
+      }
+      case "AWAITING_CUSTOMER": {
+        const clientId: string = p.clientId;
+        if (isSkip(text)) {
+          await this.rest(agentId, to, clientId);
+          await this.say(to, agentId, T.leftUnassigned(), "skip");
+          return true;
+        }
+        const options: { id: string; name: string }[] = p.options || [];
+        const n = options.length ? pickNumber(text, options.length) : null;
+        if (n) {
+          const ok = await this.d.engine.attachCustomer(agentId, clientId, options[n - 1].id);
+          await this.rest(agentId, to, clientId);
+          await this.say(to, agentId, ok ? T.filedUnder(options[n - 1].name) : T.genericError(), "filed");
+          return true;
+        }
+        const cap = parseCaption(text);
+        const q = cap.phone || cap.name;
+        if (!q) return false;
+        const matches = await this.d.engine.searchCustomers(agentId, q);
+        if (matches.length === 1) {
+          const ok = await this.d.engine.attachCustomer(agentId, clientId, matches[0].id);
+          await this.rest(agentId, to, clientId);
+          await this.say(to, agentId, ok ? T.filedUnder(matches[0].name) : T.genericError(), "filed");
+        } else if (matches.length > 1) {
+          await this.setState(agentId, to, "AWAITING_CUSTOMER", clientId, { clientId, options: matches.map((m) => ({ id: m.id, name: m.name })) });
+          await this.say(to, agentId, T.pickCustomer(matches.map((m) => m.name)), "pick_customer");
+        } else {
+          await this.rest(agentId, to, clientId);
+          await this.say(to, agentId, T.noCustomerMatch(q), "no_customer");
+        }
+        return true;
+      }
+      case "AWAITING_SHARE_LANG": {
+        const n = pickNumber(text, 3);
+        const lang = n ? LANGS[n - 1] : langIn(text);
+        if (!lang) { await this.say(to, agentId, T.pickLang(), "pick_lang"); return true; }
+        await this.rest(agentId, to, p.tool ? conv.currentClientId : p.clientId);
+        if (p.tool) await this.shareTool(agentId, to, p.tool, lang, p.phone ?? null);
+        else await this.doShare(agentId, to, p.clientId, lang, p.phone ?? null);
+        return true;
+      }
+      case "AWAITING_CLIENT_PICK": {
+        const ids: string[] = p.options || [];
+        const n = pickNumber(text, ids.length);
+        if (!n) return false;
+        const clientId = ids[n - 1];
+        await this.rest(agentId, to, clientId);
+        if (p.purpose === "draft") {
+          await this.draftForClient(agentId, to, clientId, p.draftKind, p.lang || "english");
+        } else if (p.purpose === "share") {
+          if (p.lang) await this.doShare(agentId, to, clientId, p.lang, p.phone ?? null);
+          else {
+            await this.setState(agentId, to, "AWAITING_SHARE_LANG", clientId, { clientId, phone: p.phone ?? null });
+            await this.say(to, agentId, T.pickLang(), "pick_lang");
+          }
+        } else {
+          await this.answerFor(agentId, to, clientId, p.question || "");
+        }
+        return true;
+      }
+      case "AWAITING_LEAD":
+        return this.leadStep(agentId, conv, to, text);
+      case "AWAITING_CALC":
+        return this.calcStep(agentId, conv, to, text);
+      case "AWAITING_COMPARE_PICK": {
+        const queue: CompareQ[] = p.queue || [];
+        const q = queue[0];
+        const n = q && q.options.length ? pickNumber(text, q.options.length) : null;
+        if (n && q.kind === "company") {
+          const plans = planOptions(await this.d.engine.catalog(agentId), q.options[n - 1].key);
+          await this.compareContinue(agentId, conv, to, p.resolved || [], [{ q: q.options[n - 1].label, kind: "plan", options: plans }, ...queue.slice(1)]);
+          return true;
+        }
+        if (n) {
+          await this.compareContinue(agentId, conv, to, [...(p.resolved || []), q.options[n - 1].key], queue.slice(1));
+          return true;
+        }
+        const catalog = await this.d.engine.catalog(agentId);
+        // Anything else is plan or company names ("hdfc and manipal cigna") in place of the
+        // one being asked about. A company gives its plan list (see comparePlan).
+        const names = parseCompareNames(text);
+        if (!names.length) return false;
+        const tried = names.map((name) => this.comparePlan(name, catalog));
+        // Nothing usable ("number six", a typo): keep the question on screen, don't lose it.
+        if (q?.options.length && tried.every((r) => typeof r !== "string" && (r.kind === "many" || (r.kind === "missing" && !r.options.length)))) {
+          await this.say(to, agentId, `"${text}" isn't a plan I know. Reply with a number from 1 to ${q.options.length}, or type another plan name.`, "compare_pick");
+          return true;
+        }
+        const resolved: string[] = [...(p.resolved || [])];
+        const fresh: CompareQ[] = [];
+        for (const r of tried) {
+          if (typeof r === "string") resolved.push(r); else fresh.push(r);
+        }
+        const rest = queue.slice(1).filter((x) => x.kind !== "ask" && x.kind !== "company");
+        const next = [...fresh, ...rest];
+        if (resolved.length + next.length < 2) next.push({ q: "", kind: "ask", options: [] });
+        await this.compareContinue(agentId, conv, to, resolved, next);
+        return true;
+      }
+      case "AWAITING_LEAD_PICK": {
+        const rows: LeadRow[] = p.rows || [];
+        const n = pickNumber(text, rows.length);
+        if (!n) return false;
+        await this.rest(agentId, to, conv.currentClientId);
+        if (p.pendingAction) {
+          const r = rows[n - 1];
+          const a: Action = p.pendingAction;
+          const op: Op = { kind: "update", leadId: r.id, name: r.name, phone: r.phone, status: a.status, nextFollowUp: a.follow_up_date, note: a.note };
+          await this.proposeWrites(agentId, conv, to, p.restActions || [], [...(p.resolvedOps || []), op]);
+          return true;
+        }
+        if (p.update) await this.leadApply(agentId, to, rows[n - 1], p.update);
+        else if (p.draftKind) await this.sendDraft(agentId, to, { type: "lead", id: rows[n - 1].id, name: rows[n - 1].name, phone: rows[n - 1].phone }, p.draftKind, p.lang);
+        return true;
+      }
+      case "AWAITING_REMIND_PICK": {
+        const rows: Remindable[] = p.rows || [];
+        const n = pickNumber(text, rows.length);
+        if (!n) return false;
+        await this.rest(agentId, to, conv.currentClientId);
+        await this.sendReminder(agentId, to, rows[n - 1], p.lang || "english");
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /* ══ Ask (brief §6.2) ═════════════════════════════════════════════════ */
+
+  private async ask(agentId: string, conv: Conv, to: string, question: string, nameOver?: string | null) {
+    const name = nameOver !== undefined ? nameOver : namedPerson(question);
+    if (name) {
+      const found = await this.d.engine.findClients(agentId, name);
+      if (found.length === 0) return this.say(to, agentId, T.noSuchCustomer(name), "ask");
+      if (found.length > 1) return this.pickClient(agentId, to, conv.currentClientId, found, { purpose: "ask", question });
+      await this.rest(agentId, to, found[0].clientId);
+      return this.answerFor(agentId, to, found[0].clientId, question);
+    }
+    if (!conv.currentClientId) return this.say(to, agentId, T.noReport(), "ask");
+    return this.answerFor(agentId, to, conv.currentClientId, question);
+  }
+
+  private async answerFor(agentId: string, to: string, clientId: string, question: string) {
+    const c = await this.d.engine.getClient(agentId, clientId);
+    const url = portalPolicyUrl(this.d.links, clientId);
+    if (!c) return this.say(to, agentId, T.noReport(), "ask");
+    if (c.status !== "done") return this.say(to, agentId, T.stillChecking(), "ask");
+    if (!c.report) {
+      // Data-entry policies have no audit, but their stored fields answer most questions.
+      this.setLast(agentId, { kind: "policy", clientId });
+      if (VALUE_TYPES.includes(c.insuranceType || "") && /\b(surrender|loan|value|maturity)\b/i.test(question)) {
+        return this.say(to, agentId, valueReply(this.d.links, c, this.now()), "surrender");
+      }
+      return this.say(to, agentId, detailsReply(this.d.links, c), "details");
+    }
+    this.setLast(agentId, { kind: "policy", clientId });
+    if (c.policyholderName) this.lastPerson.set(agentId, c.policyholderName);
+    const ruled = question ? ruleAnswer(question, c) : null;
+    if (ruled) return this.say(to, agentId, `${ruled}\n\nFull report: ${url}`, "ask");
+    const phrased = await this.d.engine.llmPhrase(agentId, clientId, question).catch(() => ({ answer: null }));
+    if (phrased.answer) return this.say(to, agentId, `${phrased.answer}\n\nFull report: ${url}`, "ask_phrased");
+    // Never a bare "not in the report": show what the Policies list shows about it too.
+    return this.say(to, agentId, `${basics(c)}\n\n${T.notInReport(url)}`, (phrased as any).guardFired ? "ask_guard_fired" : "ask_not_in_report");
+  }
+
+  private async pickClient(agentId: string, to: string, current: string | null, found: ClientSummary[], extra: Record<string, unknown>) {
+    const rows = found.slice(0, 5);
+    await this.setState(agentId, to, "AWAITING_CLIENT_PICK", current, { ...extra, options: rows.map((r) => r.clientId) });
+    return this.say(
+      to, agentId,
+      T.whichPolicy(rows.map((r) => ({ name: r.policyholderName || "Unnamed", label: nicePlan(r.insurer, r.policyName) || r.insuranceType || "policy" }))),
+      "pick_client",
+    );
+  }
+
+  /* ══ Share (brief §6.3) ═══════════════════════════════════════════════ */
+
+  private async shareStart(agentId: string, conv: Conv, to: string, text: string, over?: { name: string | null; phone: string | null; lang: Lang | null }) {
+    const lang = over ? over.lang : langIn(text);
+    // "share to 98123 45678": a number typed with SHARE is used for this link.
+    const phone = over ? over.phone : parseCaption(text).phone;
+    const name = over ? over.name : phone ? null : namedPerson(text);
+    let clientId = conv.currentClientId;
+    const last = this.lastShare.get(agentId);
+    if (!name && last && last.kind !== "policy") {
+      if (lang) return this.shareTool(agentId, to, last, lang, phone);
+      await this.setState(agentId, to, "AWAITING_SHARE_LANG", conv.currentClientId, { tool: last, phone });
+      return this.say(to, agentId, T.pickLang(), "pick_lang");
+    }
+    if (!name && last?.kind === "policy") clientId = last.clientId;
+    if (name) {
+      const found = await this.d.engine.findClients(agentId, name);
+      if (found.length === 0) return this.say(to, agentId, T.noSuchCustomer(name), "share");
+      if (found.length > 1) return this.pickClient(agentId, to, conv.currentClientId, found, { purpose: "share", lang, phone });
+      clientId = found[0].clientId;
+    }
+    if (!clientId) return this.say(to, agentId, T.noReport(), "share");
+    if (lang) {
+      await this.rest(agentId, to, clientId);
+      return this.doShare(agentId, to, clientId, lang, phone);
+    }
+    await this.setState(agentId, to, "AWAITING_SHARE_LANG", clientId, { clientId, phone });
+    return this.say(to, agentId, T.pickLang(), "pick_lang");
+  }
+
+  /** Share a calculator result or a comparison. No view tracking exists for these links, so
+   *  the reply does not promise any. */
+  private async shareTool(agentId: string, to: string, s: Shareable, lang: Lang, phone: string | null) {
+    if (s.kind === "policy") return this.doShare(agentId, to, s.clientId, lang, phone);
+    const calc = s as any;
+    const draft = s.kind === "calc" && calc.total
+      ? calcShareText(lang, { name: calc.name ?? null, total: calc.total, structure: calc.structure ?? "", url: calc.url })
+      : toolShareDraft(lang, s);
+    phone = phone || calc.phone || null;
+    const link = waMeLink(phone, draft);
+    return this.say(to, agentId, shareReply(null, draft, link, /wa\.me\/\d/.test(link), false), "share_tool");
+  }
+
+  /** `phone`: a number the advisor typed with SHARE. It wins over the one on file, and is
+   *  used only for this link; nothing is saved to the customer. */
+  private async doShare(agentId: string, to: string, clientId: string, lang: Lang, phone: string | null = null) {
+    const c = await this.d.engine.getClient(agentId, clientId);
+    if (!c) return this.say(to, agentId, T.noReport(), "share");
+    if (c.status !== "done") return this.say(to, agentId, T.stillChecking(), "share");
+    this.setLast(agentId, { kind: "policy", clientId });
+    if (c.policyholderName) this.lastPerson.set(agentId, c.policyholderName);
+    const token = await this.d.engine.share(agentId, clientId);
+    if (!token) return this.say(to, agentId, T.genericError(), "share");
+    const draft = shareDraft(lang, c.policyholderName, c.policyName || c.insurer, sharedReportUrl(this.d.links, token));
+    const link = waMeLink(phone || c.customerPhone, draft);
+    return this.say(to, agentId, shareReply(c.policyholderName, draft, link, /wa\.me\/\d/.test(link)), "share");
+  }
+
+  /* ══ Renewal reminders (brief §6.4) ═══════════════════════════════════ */
+
+  private async remind(agentId: string, to: string, name: string | null, lang: Lang) {
+    if (!name) return this.say(to, agentId, "Who should I remind? For example: REMIND Ramesh", "remind");
+    const data = await this.d.engine.renewals(agentId);
+    const all: Remindable[] = [
+      ...data.leads.map((r) => ({ ...r, source: "lead" as const })),
+      ...data.customers.map((r) => ({ ...r, source: "client" as const })),
+    ];
+    const hits = all.filter((r) => (r.name || "").toLowerCase().includes(name.toLowerCase()));
+    if (hits.length === 0) return this.say(to, agentId, `I couldn't find "${name}" in your renewals list. Type RENEWALS to see who's due.`, "remind");
+    if (hits.length > 1) {
+      const rows = hits.slice(0, 6);
+      const cur = (await this.d.engine.getConversation(agentId)).currentClientId;
+      await this.setState(agentId, to, "AWAITING_REMIND_PICK", cur, { rows, lang });
+      return this.say(to, agentId, `Which one?\n${rows.map((r, i) => `${i + 1}) ${r.name}, ${r.insurer || r.insurance_type || "policy"}, due ${r.due_date.slice(0, 10)}`).join("\n")}`, "remind_pick");
+    }
+    return this.sendReminder(agentId, to, hits[0], lang);
+  }
+
+  private async sendReminder(agentId: string, to: string, r: Remindable, lang: Lang) {
+    // The portal's own "Renewal reminder" template (DraftMessageDialog), unchanged.
+    const draft = buildMessage(
+      { type: r.source, id: r.id, name: r.name, phone: r.phone, insurer: r.insurer, renewalDate: r.due_date },
+      "renewal",
+      lang,
+      null,
+    );
+    const link = waMeLink(r.phone, draft);
+    return this.say(to, agentId, shareReply(r.name, draft, link, /wa\.me\/\d/.test(link), false), "remind");
+  }
+
+  /* ══ Leads (phase 1b) ═════════════════════════════════════════════════ */
+
+  private async leadStart(agentId: string, conv: Conv, to: string, text: string) {
+    const d = parseLeadLine(text);
+    // A name plus a status ("lead Ramesh won") or a complete line goes straight to YES/NO.
+    if (d.name && (d.status || (d.phone && d.interest))) return this.leadSave(agentId, to, { name: d.name, phone: d.phone, interest: d.interest, status: d.status });
+    const step = !d.name ? "name" : !d.phone ? "phone" : "interest";
+    await this.setState(agentId, to, "AWAITING_LEAD", conv.currentClientId, { step, draft: d });
+    return this.say(to, agentId, LEAD_ASK[step], "lead");
+  }
+
+  private async leadStep(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    const p = conv.pending || {};
+    const d = { name: null, phone: null, interest: null, ...(p.draft || {}) } as { name: string | null; phone: string | null; interest: string | null };
+    if (p.step === "name") {
+      const got = parseLeadLine(text);
+      if (!got.name) { await this.say(to, agentId, LEAD_ASK.name, "lead"); return true; }
+      d.name = got.name; d.phone = d.phone || got.phone; d.interest = d.interest || got.interest;
+    } else if (p.step === "phone") {
+      if (!isSkip(text)) {
+        const ph = parseCaption(text).phone;
+        if (!ph) { await this.say(to, agentId, "That doesn't look like a 10-digit mobile number. Send it again, or SKIP.", "lead"); return true; }
+        d.phone = ph;
+      }
+      d.interest = d.interest || interestIn(text);
+    } else {
+      if (!isSkip(text)) {
+        const n = pickNumber(text, INTERESTS.length);
+        const i = n ? INTERESTS[n - 1] : interestIn(text);
+        if (!i) { await this.say(to, agentId, LEAD_ASK.interest, "lead"); return true; }
+        d.interest = i;
+      }
+      await this.rest(agentId, to, conv.currentClientId);
+      await this.leadSave(agentId, to, { name: d.name!, phone: d.phone, interest: d.interest, status: (d as any).status ?? null });
+      return true;
+    }
+    const next = !d.phone && p.step !== "phone" ? "phone" : !d.interest ? "interest" : null;
+    if (!next) {
+      await this.rest(agentId, to, conv.currentClientId);
+      await this.leadSave(agentId, to, { name: d.name!, phone: d.phone, interest: d.interest, status: (d as any).status ?? null });
+      return true;
+    }
+    await this.setState(agentId, to, "AWAITING_LEAD", conv.currentClientId, { step: next, draft: d });
+    await this.say(to, agentId, LEAD_ASK[next], "lead");
+    return true;
+  }
+
+  private async leadSave(agentId: string, to: string, d: { name: string; phone: string | null; interest: string | null; status?: string | null; nextFollowUp?: string | null; note?: string | null }) {
+    const conv = await this.loadConv(agentId, to);
+    return this.proposeWrites(agentId, conv, to, [{
+      type: "add_lead", name: d.name, phone: d.phone, interest: (d.interest as any) ?? null, status: (d.status as any) ?? null,
+      follow_up_date: d.nextFollowUp ?? null, note: d.note ?? null, draft_kind: null, language: null, plans: null, question: null, policy_type: null,
+    }]);
+  }
+
+  /* ══ Cover calculator (phase 1b) ══════════════════════════════════════ */
+
+  private async calcStep(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    const p = conv.pending || {};
+    const cs: CalcState = p.calc ?? { inputs: {}, customer: null, prefilled: [] };
+    if (p.pickCustomer) {
+      const opts: { id: string; name: string; phone: string | null; dob?: string | null; city?: string | null }[] = p.pickCustomer;
+      const n = pickNumber(text, opts.length);
+      if (!n) return false;
+      const c = opts[n - 1];
+      cs.customer = { id: c.id, name: c.name, phone: c.phone };
+      prefillFromCustomer(cs, c, this.now());
+      return this.calcAsk(agentId, conv, to, cs), true;
+    }
+    const step = calcNext(cs.inputs);
+    if (step === "review") {
+      if (isYes(text) || /^(yes|haan|calculate|go|ok|done|theek)\b/i.test(text)) { await this.calcFinish(agentId, conv, to, cs); return true; }
+      const changed = calcChange(text, cs);
+      if (changed) { await this.calcAsk(agentId, conv, to, cs); return true; }
+      await this.say(to, agentId, "Reply YES to calculate, or CHANGE and what to fix, for example: change age", "calc");
+      return true;
+    }
+    const err = calcAnswer(step, text, cs);
+    if (err) { await this.say(to, agentId, err, "calc"); return true; }
+    await this.calcAsk(agentId, conv, to, cs);
+    return true;
+  }
+
+  /** Start the calculator, optionally for a named customer (pre-fills age and city, and the
+   *  result is saved to them), taking anything the message already says. */
+  private async calcStart(agentId: string, conv: Conv, to: string, text: string, customerName: string | null) {
+    const cs: CalcState = { inputs: {}, customer: null, prefilled: [] };
+    const name = customerName ?? (/\bfor\s+([A-Za-z][A-Za-z .]{1,40}?)(?:'s|\s+family|\s*$)/i.exec(text)?.[1] ?? null);
+    if (name) {
+      const matches = (await this.d.engine.searchCustomers(agentId, name)).filter((c) => nameMatches(name, c.name));
+      if (matches.length > 1) {
+        await this.setState(agentId, to, "AWAITING_CALC", conv.currentClientId, { calc: cs, pickCustomer: matches.slice(0, 6) });
+        return this.say(to, agentId, `Which ${name}?\n${matches.slice(0, 6).map((m, i) => `${i + 1}) ${m.name}${m.phone ? ` · ${m.phone}` : ""}`).join("\n")}`, "calc");
+      }
+      if (matches.length === 1) {
+        cs.customer = { id: matches[0].id, name: matches[0].name, phone: matches[0].phone };
+        prefillFromCustomer(cs, matches[0] as any, this.now());
+      } else {
+        await this.say(to, agentId, `No customer called "${name}" in your book, so this won't be saved to a customer.`, "calc");
+      }
+    }
+    prefillFromText(cs, text);
+    const intro = cs.customer ? `Cover calculator for ${b(cs.customer.name)}.` : "Cover calculator.";
+    return this.calcAsk(agentId, conv, to, cs, intro);
+  }
+
+  private async calcAsk(agentId: string, conv: Conv, to: string, cs: CalcState, intro = "") {
+    const step = calcNext(cs.inputs);
+    await this.setState(agentId, to, "AWAITING_CALC", conv.currentClientId, { calc: cs });
+    return this.say(to, agentId, `${intro ? intro + "\n\n" : ""}${calcQuestion(step, cs)}`, "calc");
+  }
+
+  private async calcFinish(agentId: string, conv: Conv, to: string, cs: CalcState) {
+    await this.rest(agentId, to, conv.currentClientId);
+    const profile = await this.d.engine.profile(agentId);
+    const result = calcRun(cs, profile.partneredCompanies);
+    const uuid = await this.d.engine.saveCalculator(agentId, cs.inputs, result, cs.customer?.id ?? null);
+    const url = `${this.d.links.origin}/calculator/report/${uuid}`;
+    this.setLast(agentId, { kind: "calc", url, name: cs.customer?.name ?? null, phone: cs.customer?.phone ?? null, total: result.totalProtection, structure: structureLine(result) } as any);
+    if (cs.customer) this.lastPerson.set(agentId, cs.customer.name);
+    await this.rest(agentId, to, conv.currentClientId);
+    return this.say(to, agentId, calcResultReply(this.d.links, cs, result, uuid), "calc_done");
+  }
+
+  /* ══ Compare (phase 1b, catalogue only: no model cost) ════════════════ */
+
+  /** One typed plan name against the catalogue: a plan key, or a question to ask. */
+  private comparePlan(name: string, catalog: CatalogPlan[]): string | CompareQ {
+    const company = matchCompany(name, catalog);
+    if (company) {
+      const label = companyOptions(catalog).find((c) => c.key === company)?.label ?? company;
+      return { q: label, kind: "plan", options: planOptions(catalog, company) };
+    }
+    const hits = matchPlans(name, catalog);
+    if (hits.length === 1) return hits[0].plan_key;
+    const opt = (h: CatalogPlan) => ({ key: h.plan_key, label: planLabel(h) });
+    if (hits.length === 0) return { q: name, kind: "missing", options: suggestPlans(name, catalog).map(opt) };
+    if (hits.length > 8) return { q: name, kind: "many", options: [] };
+    return { q: name, kind: "pick", options: hits.map(opt) };
+  }
+
+  /** COMPARE, with or without plan names. Asks until there are two plans, and never drops
+   *  the comparison because one name was not in the catalogue. */
+  private async compareStart(agentId: string, conv: Conv, to: string, text: string, namesOver?: string[]) {
+    const names = namesOver && namesOver.length ? namesOver : parseCompareNames(text);
+    const catalog = names.length ? await this.d.engine.catalog(agentId) : [];
+    const resolved: string[] = [];
+    const queue: CompareQ[] = [];
+    for (const name of names) {
+      const r = this.comparePlan(name, catalog);
+      if (typeof r === "string") resolved.push(r); else queue.push(r);
+    }
+    if (resolved.length + queue.length < 2) queue.push({ q: "", kind: "ask", options: [] });
+    return this.compareContinue(agentId, conv, to, resolved, queue);
+  }
+
+  private async compareContinue(agentId: string, conv: Conv, to: string, resolved: string[], queue: CompareQ[]) {
+    // Two different plans are needed; the same plan twice asks again.
+    if (!queue.length && new Set(resolved).size < 2) {
+      if (resolved.length >= 2) await this.say(to, agentId, "Those are the same plan. Pick a different one to compare.", "compare");
+      resolved = [...new Set(resolved)];
+      queue = [{ q: "", kind: "ask", options: [] }];
+    }
+    if (queue.length) {
+      // "Which other plan?" is asked as a list: the company first, then its plans.
+      if (queue[0].kind === "ask") {
+        const companies = companyOptions(await this.d.engine.catalog(agentId));
+        if (companies.length) queue = [{ q: "", kind: "company", options: companies }, ...queue.slice(1)];
+      }
+      const q = queue[0];
+      await this.setState(agentId, to, "AWAITING_COMPARE_PICK", conv.currentClientId, { resolved, queue });
+      const list = q.options.map((o, i) => `${i + 1}) ${o.label}`).join("\n");
+      const msg =
+        q.kind === "company" ? `Plan ${Math.min(resolved.length + 1, 2)} of 2: which company?\n${list}\nReply with the number, or type the plan name.`
+        : q.kind === "plan" ? `Which ${q.q} plan?\n${list}\nReply with the number.`
+        : q.kind === "ask" ? (resolved.length ? "Which plan should I compare it with? Type the plan name, for example: Care Supreme." : COMPARE_ASK)
+        : q.kind === "many" ? `"${q.q}" matches too many plans. Type the insurer and plan name, for example: HDFC Optima Secure.`
+        : q.kind === "missing" && q.options.length ? `"${q.q}" isn't in the plan catalogue yet. The closest ones:\n${list}\nReply with a number, or type another plan name.`
+        : q.kind === "missing" ? `"${q.q}" isn't in the plan catalogue yet. Type another plan name, or CANCEL.`
+        : `Which "${q.q}"?\n${list}\nReply with the number, or type another plan name.`;
+      return this.say(to, agentId, msg, "compare_pick");
+    }
+    await this.rest(agentId, to, conv.currentClientId);
+    const keys = [...new Set(resolved)];
+    const r = await this.d.engine.compare(agentId, keys);
+    this.setLast(agentId, { kind: "compare", url: `${this.d.links.origin}/compare/report/${r.uuid}`, names: r.names.filter(Boolean).join(" and ") });
+    await this.rest(agentId, to, conv.currentClientId);
+    return this.say(to, agentId, compareReply(this.d.links, r), "compare_done");
+  }
+
+  /* ══ CRM: lead updates ════════════════════════════════════════════════ */
+
+  /** Returns false when the name matches no lead, so the text falls through to normal
+   *  handling ("ok done" must not become "no lead called Ok"). */
+  private async leadUpdateStart(agentId: string, conv: Conv, to: string, u: LeadUpdate): Promise<boolean> {
+    // The search is a loose substring match; a typed name that changes data must match
+    // word starts, so "ok done" can never touch "Alok".
+    const rows = (await this.d.engine.leadSearch(agentId, u.name)).filter((r) => nameMatches(u.name, r.name));
+    if (!rows.length) {
+      // A follow-up or a note is clearly about a lead; a bare status word may not be.
+      if (!u.nextFollowUp && !u.note) return false;
+      await this.say(to, agentId, `I couldn't find a lead called "${u.name}". Add them with: lead ${u.name} 98xxxxxxxx health`, "lead_update");
+      return true;
+    }
+    if (rows.length > 1) {
+      await this.setState(agentId, to, "AWAITING_LEAD_PICK", conv.currentClientId, { rows, update: u });
+      await this.say(to, agentId, `Which ${u.name}?\n${rows.map((r, i) => `${i + 1}) ${r.name}${r.phone ? ` · ${r.phone}` : ""} · ${r.status || "new"}`).join("\n")}`, "lead_pick");
+      return true;
+    }
+    await this.leadApply(agentId, to, rows[0], u);
+    return true;
+  }
+
+  private async leadApply(agentId: string, to: string, lead: LeadRow, u: LeadUpdate) {
+    const conv = await this.loadConv(agentId, to);
+    return this.confirm(agentId, conv, to, [{ kind: "update", leadId: lead.id, name: lead.name, phone: lead.phone, status: u.status ?? null, nextFollowUp: u.nextFollowUp ?? null, note: u.note ?? null }]);
+  }
+
+  /* ══ CRM: message drafts (portal templates) ═══════════════════════════ */
+
+  private async draft(agentId: string, conv: Conv, to: string, text: string, over?: { kind: DraftKind | null; name: string | null; lang: Lang | null }) {
+    const d = over ? (over.kind ? { kind: over.kind, name: over.name } : null) : parseDraft(text);
+    if (!d) return this.say(to, agentId, "Which message, and for whom? For example: upgrade message for Santosh, or Diwali message for Ramesh.", "draft");
+    const lang = over?.lang ?? langIn(text) ?? "english";
+    const name = d.name;
+    if (!name) {
+      const last = this.lastShare.get(agentId);
+      const clientId = last?.kind === "policy" ? last.clientId : conv.currentClientId;
+      if (!clientId) return this.say(to, agentId, "Who is it for? For example: upgrade message for Santosh.", "draft");
+      return this.draftForClient(agentId, to, clientId, d.kind, lang);
+    }
+    // Policy-based messages need a customer with a policy; the rest can go to a lead too.
+    const clients = await this.d.engine.findClients(agentId, name);
+    if (CLIENT_ONLY.includes(d.kind) || !clients.length) {
+      if (clients.length === 1) return this.draftForClient(agentId, to, clients[0].clientId, d.kind, lang);
+      if (clients.length > 1) return this.pickClient(agentId, to, conv.currentClientId, clients, { purpose: "draft", draftKind: d.kind, lang });
+      if (CLIENT_ONLY.includes(d.kind)) return this.say(to, agentId, T.noSuchCustomer(name), "draft");
+    } else if (clients.length === 1) {
+      return this.draftForClient(agentId, to, clients[0].clientId, d.kind, lang);
+    }
+    const leads = (await this.d.engine.leadSearch(agentId, name)).filter((r) => nameMatches(name, r.name));
+    if (!leads.length) return this.say(to, agentId, `I couldn't find "${name}" in your policies or leads.`, "draft");
+    if (leads.length > 1) {
+      await this.setState(agentId, to, "AWAITING_LEAD_PICK", conv.currentClientId, { rows: leads, draftKind: d.kind, lang });
+      return this.say(to, agentId, `Which ${name}?\n${leads.map((r, i) => `${i + 1}) ${r.name}${r.phone ? ` · ${r.phone}` : ""}`).join("\n")}`, "lead_pick");
+    }
+    return this.sendDraft(agentId, to, { type: "lead", id: leads[0].id, name: leads[0].name, phone: leads[0].phone, interest: leads[0].insurance_interest }, d.kind, lang);
+  }
+
+  private async draftForClient(agentId: string, to: string, clientId: string, kind: DraftKind, lang: Lang) {
+    const c = await this.d.engine.getClient(agentId, clientId);
+    if (!c) return this.say(to, agentId, T.noReport(), "draft");
+    this.setLast(agentId, { kind: "policy", clientId });
+    return this.sendDraft(agentId, to, {
+      type: "client", id: c.clientId, name: c.policyholderName, phone: c.customerPhone,
+      insurer: c.insurer, renewalDate: c.expiryDate, weakPoint: c.weakPoint ?? null,
+    }, kind, lang);
+  }
+
+  private async sendDraft(agentId: string, to: string, target: any, kind: DraftKind, lang: Lang) {
+    if (target?.name) this.lastPerson.set(agentId, target.name);
+    const profile = await this.d.engine.profile(agentId).catch(() => null);
+    const draft = buildMessage(target, kind, lang, profile?.name ?? null);
+    const link = waMeLink(target.phone, draft);
+    const hint = lang === "english" ? "\n\nWant it in Hinglish or Hindi? Add: in hindi" : "";
+    return this.say(to, agentId, shareReply(target.name, draft, link, /wa\.me\/\d/.test(link), false) + hint, "draft_done");
+  }
+
+  /* ══ CRM: surrender value ═════════════════════════════════════════════ */
+
+  private async surrender(agentId: string, conv: Conv, to: string, text: string, nameOver?: string | null) {
+    const name = nameOver !== undefined ? nameOver ?? "" : text.replace(/^.*?\b(surrender value|surrender|loan value|policy value|paid[\s-]?up value)\b\s*(of|for)?\s*/i, "").replace(/'s.*$/, "").trim();
+    let candidates: ClientSummary[] = [];
+    if (name.length >= 2) {
+      candidates = (await this.d.engine.findClients(agentId, name)).filter((c) => VALUE_TYPES.includes(c.insuranceType || ""));
+      if (!candidates.length) return this.say(to, agentId, `I couldn't find a life or term policy for "${name}". Surrender value is for life policies.`, "surrender");
+    } else {
+      const last = this.lastShare.get(agentId);
+      const id = last?.kind === "policy" ? last.clientId : conv.currentClientId;
+      const c = id ? await this.d.engine.getClient(agentId, id) : null;
+      if (c && VALUE_TYPES.includes(c.insuranceType || "")) candidates = [c];
+      else return this.say(to, agentId, "Whose policy? For example: surrender value Ramesh", "surrender");
+    }
+    if (candidates.length > 1) return this.pickClient(agentId, to, conv.currentClientId, candidates, { purpose: "ask", question: "surrender value" });
+    const c = candidates[0];
+    const full = c.extracted !== undefined ? c : await this.d.engine.getClient(agentId, c.clientId);
+    if (!full) return this.say(to, agentId, T.noReport(), "surrender");
+    this.setLast(agentId, { kind: "policy", clientId: full.clientId });
+    return this.say(to, agentId, valueReply(this.d.links, full, this.now()), "surrender");
+  }
+
+  /* ══ The assistant: the model's form, carried out by code ═════════════ */
+
+  private modelContext(agentId: string, conv: Conv): ModelContext {
+    const last = this.lastShare.get(agentId);
+    const change = this.lastChange.get(agentId);
+    const PENDING: Partial<Record<State, string>> = {
+      AWAITING_CALC: "calculator question", AWAITING_LEAD: "adding a lead", AWAITING_SHARE_LANG: "share: which language",
+      AWAITING_CUSTOMER: "whose policy is this", AWAITING_CONFIRM: "confirm a change",
+    };
+    return {
+      lastPerson: this.lastPerson.get(agentId) ?? null,
+      lastItem: last ? (last.kind === "policy" ? "policy report" : last.kind === "calc" ? "calculator result" : "comparison") : null,
+      pending: PENDING[conv.state] ?? null,
+      lastChange: change && this.now() - change.at < UNDO_WINDOW_MS
+        ? change.kind === "create" ? `added lead ${change.name}` : `updated lead ${change.name}`
+        : null,
+    };
+  }
+
+  private async dispatch(agentId: string, conv: Conv, to: string, text: string, u: Understanding) {
+    const writes: Action[] = [];
+    for (const a of u.actions) {
+      // A name the model filled in that the advisor never typed (and no he/she/uska to point
+      // at the last person) is dropped: a change is never aimed at someone by guesswork.
+      if (a.name && !nameInMessage(a.name, text) && !PRONOUN.test(text)) a.name = null;
+      if (a.type === "add_lead" || a.type === "update_lead") { writes.push(a); continue; }
+      await this.runAction(agentId, conv, to, text, a, u.clarify);
+    }
+    if (writes.length) await this.proposeWrites(agentId, conv, to, writes);
+  }
+
+  private async runAction(agentId: string, conv: Conv, to: string, text: string, a: Action, clarify: string | null) {
+    const e = this.d.engine;
+    const lang = (a.language as Lang | null) ?? null;
+    switch (a.type) {
+      case "help": return this.say(to, agentId, T.help(), "help");
+      case "cancel":
+        await this.rest(agentId, to, conv.currentClientId);
+        return this.say(to, agentId, T.cancelled(), "cancel");
+      case "undo": return this.proposeUndo(agentId, conv, to);
+      case "unknown": return this.say(to, agentId, clarify || T.didNotCatch(), "unknown");
+      case "ask_report": return this.ask(agentId, conv, to, text, a.name);
+      case "share": return this.shareStart(agentId, conv, to, text, { name: a.name, phone: a.phone, lang });
+      case "renewals": return this.say(to, agentId, renewalsReply(await e.renewals(agentId), this.d.links), "renewals");
+      case "followups": return this.showFollowups(agentId, to);
+      case "list_leads": return this.say(to, agentId, leadsListReply(this.d.links, await e.leadsList(agentId)), "list_leads");
+      case "checks": {
+        const n = await e.checksLeft(agentId);
+        return this.say(to, agentId, `You have ${b(String(n))} policy ${n === 1 ? "check" : "checks"} left.\n${n <= 0 ? `To get more: ${this.d.teamLink}` : "Next: send a health policy PDF to use one."}`, "checks");
+      }
+      case "views": {
+        const rows = await e.views(agentId);
+        const mine = a.name ? rows.filter((r) => nameMatches(a.name!, r.name)) : rows;
+        if (a.name && !mine.length) return this.say(to, agentId, `${a.name} hasn't opened a shared report yet.`, "views");
+        return this.say(to, agentId, viewsReply(mine), "views");
+      }
+      case "claims": return this.say(to, agentId, claimsReply(this.d.links, await e.claims(agentId, a.name), a.name), "claims");
+      case "lookup": {
+        const q = a.name || a.phone || "";
+        if (!q) return this.say(to, agentId, "Who should I look up? For example: find Ramesh", "lookup");
+        const r = await e.lookup(agentId, q);
+        if (r.policies.length === 1) this.setLast(agentId, { kind: "policy", clientId: r.policies[0].clientId });
+        const person = r.policies[0]?.policyholderName || r.leads[0]?.name;
+        if (person) this.lastPerson.set(agentId, person);
+        return this.say(to, agentId, lookupReply(this.d.links, q, r.policies, r.leads), "lookup");
+      }
+      case "list_clients": {
+        const type = typeIn(a.policy_type || text);
+        return this.say(to, agentId, clientsReply(this.d.links, type, await e.policies(agentId, type)), "clients");
+      }
+      case "draft_message": return this.draft(agentId, conv, to, text, { kind: (a.draft_kind as DraftKind) ?? null, name: a.name, lang });
+      case "calculator": return this.calcStart(agentId, conv, to, text, a.name);
+      case "compare": return this.compareStart(agentId, conv, to, text, a.plans ?? []);
+      case "surrender_value": return this.surrender(agentId, conv, to, text, a.name);
+      case "website": return this.say(to, agentId, websiteReply(await e.profile(agentId), this.d.links), "website");
+    }
+  }
+
+  /** Turn lead actions into concrete changes against the real book, then ask for YES.
+   *  add of someone who already exists becomes an update; update of someone unknown
+   *  becomes an add (said plainly); two matches get a numbered pick. */
+  private async proposeWrites(agentId: string, conv: Conv, to: string, actions: Action[], pre: Op[] = []) {
+    const ops = [...pre];
+    for (let k = 0; k < actions.length; k++) {
+      const a = actions[k];
+      if (!a.name && !a.phone) {
+        if (a.type === "add_lead") {
+          await this.setState(agentId, to, "AWAITING_LEAD", conv.currentClientId, { step: "name", draft: { name: null, phone: a.phone, interest: a.interest } });
+          return this.say(to, agentId, LEAD_ASK.name, "lead");
+        }
+        return this.say(to, agentId, "Which lead? For example: Ramesh won, or follow up Ramesh Friday.", "lead_update");
+      }
+      const found = await this.d.engine.leadSearch(agentId, a.name || a.phone!);
+      const rows = found.filter((r) => (a.name ? nameMatches(a.name, r.name) : (r.phone || "").endsWith(a.phone!)));
+      const changes = !!(a.status || a.follow_up_date || a.note);
+      if (a.type === "add_lead") {
+        const same = rows.filter((r) => (a.phone && (r.phone || "").endsWith(a.phone)) || normName(r.name) === normName(a.name));
+        // "lead Ramesh won" with exactly one Ramesh in the book and no new number: that is
+        // Ramesh, not a second Ramesh. (The YES step still shows exactly who.)
+        if (!same.length && !a.phone && changes && rows.length === 1) same.push(rows[0]);
+        if (same.length === 1 && changes) {
+          ops.push({ kind: "update", leadId: same[0].id, name: same[0].name, phone: same[0].phone, status: a.status, nextFollowUp: a.follow_up_date, note: a.note });
+          continue;
+        }
+        if (same.length >= 1 && !changes) {
+          await this.say(to, agentId, `${b(same[0].name)} is already in your leads.\n${this.d.links.origin}/agent/leads/${same[0].id}`, "lead_exists");
+          continue;
+        }
+        ops.push({ kind: "create", name: a.name || "Unnamed", phone: a.phone, interest: a.interest, status: a.status, nextFollowUp: a.follow_up_date, note: a.note });
+        continue;
+      }
+      // update_lead
+      if (!rows.length) {
+        ops.push({ kind: "create", name: a.name!, phone: a.phone, interest: a.interest, status: a.status, nextFollowUp: a.follow_up_date, note: a.note, notFound: true });
+        continue;
+      }
+      if (rows.length > 1) {
+        await this.setState(agentId, to, "AWAITING_LEAD_PICK", conv.currentClientId, { rows, pendingAction: a, resolvedOps: ops, restActions: actions.slice(k + 1) });
+        return this.say(to, agentId, `Which ${a.name}?\n${rows.map((r, i) => `${i + 1}) ${r.name}${r.phone ? ` · ${r.phone}` : ""} · ${r.status || "new"}`).join("\n")}`, "lead_pick");
+      }
+      ops.push({ kind: "update", leadId: rows[0].id, name: rows[0].name, phone: rows[0].phone, status: a.status, nextFollowUp: a.follow_up_date, note: a.note });
+    }
+    if (ops.length) return this.confirm(agentId, conv, to, ops);
+  }
+
+  private describe(op: Op): string {
+    const ph = (p: string | null) => (p ? `${p.slice(0, 5)} ${p.slice(5)}` : null);
+    if (op.kind === "undo") {
+      if (op.change.kind === "bulk") return `Undo: put ${op.change.items.length} leads back as they were`;
+      return op.change.kind === "create" ? `Undo: remove the lead ${b(op.change.name)} you just added` : `Undo: put ${b(op.change.name)} back as it was`;
+    }
+    const bits = [
+      op.status && !(op.kind === "create" && op.status === "new") ? `mark ${op.status}` : null,
+      op.nextFollowUp ? `follow-up ${prettyDate(op.nextFollowUp)}` : null,
+      op.note ? `note "${op.note}"` : null,
+    ].filter(Boolean);
+    if (op.kind === "create") {
+      const extra = [ph(op.phone), op.interest, ...bits].filter(Boolean).join(", ");
+      return `${op.notFound ? `No lead called ${b(op.name)} yet. ` : ""}Add lead ${b(op.name)}${extra ? `: ${extra}` : ""}`;
+    }
+    return `${b(op.name)}${op.phone ? ` (${ph(op.phone)})` : ""}: ${bits.join(", ")}`;
+  }
+
+  private async confirm(agentId: string, conv: Conv, to: string, ops: Op[]) {
+    await this.setState(agentId, to, "AWAITING_CONFIRM", conv.currentClientId, { ops });
+    const lines = ops.map((o) => `• ${this.describe(o)}`);
+    return this.say(to, agentId, `Please confirm:\n${lines.join("\n")}\n\nReply YES to save, or NO.`, "confirm_ask");
+  }
+
+  private async confirmYes(agentId: string, conv: Conv, to: string) {
+    const ops: Op[] = conv.pending?.ops || [];
+    await this.rest(agentId, to, conv.currentClientId);
+    const out: string[] = [];
+    const changes: LastChange[] = [];
+    for (const op of ops) {
+      if (op.kind === "create") {
+        const r = await this.d.engine.createLead(agentId, { name: op.name, phone: op.phone, interest: op.interest, status: op.status, nextFollowUp: op.nextFollowUp, note: op.note });
+        if (!r.duplicateOf) changes.push({ kind: "create", leadId: r.id, name: op.name, at: this.now() });
+        this.lastPerson.set(agentId, r.duplicateOf ?? op.name);
+        out.push(leadSavedReply(this.d.links, r, { name: op.name, phone: op.phone, interest: op.interest }));
+      } else if (op.kind === "update") {
+        const r = await this.d.engine.leadUpdate(agentId, op.leadId, { status: op.status ?? undefined, nextFollowUp: op.nextFollowUp ?? undefined, note: op.note ?? undefined });
+        changes.push({ kind: "update", leadId: op.leadId, name: r.lead.name, before: { status: r.before.status, next_follow_up: r.before.next_follow_up, notes: r.before.notes }, at: this.now() });
+        this.lastPerson.set(agentId, r.lead.name);
+        out.push(leadUpdatedReply(this.d.links, r.lead, { name: op.name, status: op.status ?? undefined, nextFollowUp: op.nextFollowUp ?? undefined, note: op.note ?? undefined }));
+      } else {
+        const c = op.change;
+        const undoOne = async (x: LastChange): Promise<boolean> =>
+          x.kind === "create" ? this.d.engine.leadUndoCreate(agentId, x.leadId)
+          : x.kind === "update" ? !!(await this.d.engine.leadRestore(agentId, x.leadId, x.before))
+          : (await Promise.all(x.items.map(undoOne))).every(Boolean);
+        const ok = await undoOne(c);
+        this.lastChange.delete(agentId);
+        out.push(!ok ? "That change is too old to undo here. Please fix it in the portal."
+          : c.kind === "bulk" ? `Undone: ${c.items.length} leads are back as they were.`
+          : `Undone: ${c.kind === "create" ? `removed the lead ${b(c.name)}` : `${b(c.name)} is back as it was`}.`);
+      }
+    }
+    if (changes.length === 1) this.lastChange.set(agentId, changes[0]);
+    else if (changes.length > 1) this.lastChange.set(agentId, { kind: "bulk", items: changes, name: `${changes.length} leads`, at: this.now() });
+    await this.saveConv(agentId, { state: conv.currentClientId ? "REPORT_READY" : "IDLE", currentClientId: conv.currentClientId, pending: { to }, updatedAt: null });
+    return this.say(to, agentId, out.join("\n\n") + (ops.some((o) => o.kind !== "undo") ? "\n\n(Wrong? Reply UNDO within 15 minutes.)" : ""), "confirm_saved");
+  }
+
+  /** The follow-up list, remembered so "sabke reminders 1st November" means these leads. */
+  private readonly lastFollowups = new Map<string, LeadRow[]>();
+
+  private async showFollowups(agentId: string, to: string) {
+    const rows = await this.d.engine.followups(agentId);
+    this.lastFollowups.set(agentId, rows);
+    return this.say(to, agentId, followupsReply(this.d.links, rows), "followups");
+  }
+
+  /** One new follow-up date for every lead on the follow-up list, after one YES. */
+  private async bulkFollowUp(agentId: string, conv: Conv, to: string, u: { nextFollowUp?: string; status?: string }) {
+    const rows = this.lastFollowups.get(agentId) ?? (await this.d.engine.followups(agentId));
+    if (!rows.length) return this.say(to, agentId, "There are no follow-ups due to move. Set one with: follow up Ramesh Friday", "bulk_none");
+    return this.confirm(agentId, conv, to, rows.slice(0, 30).map((r) => ({
+      kind: "update" as const, leadId: r.id, name: r.name, phone: r.phone, status: u.status ?? null, nextFollowUp: u.nextFollowUp ?? null, note: null,
+    })));
+  }
+
+  private async proposeUndo(agentId: string, conv: Conv, to: string) {
+    const c = this.lastChange.get(agentId);
+    if (!c || this.now() - c.at > UNDO_WINDOW_MS) {
+      return this.say(to, agentId, "There's nothing recent to undo. I can undo a change for 15 minutes after it's saved.", "undo_none");
+    }
+    return this.confirm(agentId, conv, to, [{ kind: "undo", change: c }]);
+  }
+}

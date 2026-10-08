@@ -49,7 +49,9 @@ function getDays(expiry_date: string | null): number | null {
   return Math.ceil((new Date(expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
-function NextPremiumBadge({ dateStr }: { dateStr: string | null }) {
+const lifeLike = (type: string | null | undefined) => type === "life" || type === "term";
+
+function NextPremiumBadge({ dateStr, type }: { dateStr: string | null; type?: string | null }) {
   const { t, locale } = useLanguage();
   if (!dateStr) return <span className="text-slate-400 text-sm">—</span>;
   const d = new Date(dateStr);
@@ -57,7 +59,7 @@ function NextPremiumBadge({ dateStr }: { dateStr: string | null }) {
   const days = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   const dateLabel = format(d, "d MMM yyyy", { locale: dateLocale(locale) });
   const sub =
-    days < 0 ? { text: t("common.overdue"), cls: "text-red-400" }
+    days < 0 ? { text: lifeLike(type) ? t("common.premium_date_passed") : t("common.overdue"), cls: "text-red-400" }
     : days <= 60 ? { text: t("common.in_days", { days }), cls: days <= 15 ? "text-red-400" : days <= 30 ? "text-amber-500" : "text-slate-400" }
     : null;
   const dateCls = days < 0 || days <= 15 ? "text-red-600" : days <= 30 ? "text-amber-600" : "text-slate-700";
@@ -586,7 +588,7 @@ export default function PoliciesNew() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-slate-500" data-label={t("policies.col_insurer")}>{p.insurer || "—"}</td>
-                      <td className="px-6 py-4" data-label={t("policies.col_next_premium")}><NextPremiumBadge dateStr={npDate} /></td>
+                      <td className="px-6 py-4" data-label={t("policies.col_next_premium")}><NextPremiumBadge dateStr={npDate} type={p.insurance_type} /></td>
                       <td className="px-6 py-4" data-label={t("policies.col_score")}>{isHealth ? <ScoreBadge score={p.score} /> : isMotor ? <MotorScoreBadge extracted={p.extracted_data} /> : <span className="text-slate-300 text-sm">—</span>}</td>
                       <td className="px-6 py-4" data-label={t("policies.col_recommendation")} onClick={e => e.stopPropagation()}>
                         {isHealth ? <SwitchCell shouldSwitch={shouldSwitch} reportData={p.report_data} /> : <span className="text-slate-300 text-sm">—</span>}

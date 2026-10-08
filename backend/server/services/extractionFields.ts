@@ -124,6 +124,25 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "fund_value_as_on", label: "Fund value as on (statement date)", type: "date" },
     { key: "age_at_entry", label: "Age when the policy started", type: "number" },
     { key: "illustrated_maturity_value", label: "Maturity value stated in the document's illustration", type: "number" },
+    // Surrender-value evidence (lib/policyValue). Read only where the document
+    // states them; absent stays absent. field_sources keeps the words each key
+    // figure was read from, checked against the document text on extraction.
+    { key: "uin", label: "Product UIN", type: "text" },
+    { key: "issue_date", label: "Policy issue date", type: "date" },
+    { key: "basic_sum_assured", label: "Basic sum assured", type: "number" },
+    { key: "annualised_premium", label: "Annualised premium", type: "number" },
+    { key: "premium_excluding_taxes", label: "Premium per instalment without taxes and riders", type: "number" },
+    { key: "premium_due_schedule", label: "Premium due dates as stated", type: "text" },
+    { key: "last_premium_due_date", label: "Due date of last premium", type: "date" },
+    { key: "stated_paid_to_date", label: "Premiums paid up to (as stated)", type: "date" },
+    { key: "policy_status_stated", label: "Policy status (as stated)", type: "text" },
+    { key: "status_as_on", label: "Status as on", type: "date" },
+    { key: "vested_bonus", label: "Bonus already added (vested)", type: "number" },
+    { key: "vested_bonus_as_on", label: "Vested bonus as on", type: "date" },
+    { key: "loan_outstanding", label: "Policy loan outstanding", type: "number" },
+    { key: "loan_interest_accrued", label: "Loan interest due", type: "number" },
+    { key: "loan_statement_date", label: "Loan statement date", type: "date" },
+    { key: "field_sources", label: "Where key figures were read", type: "json" },
     { key: "policy_parameters", label: "Charges and assumptions", type: "json" },
     { key: "nominee_name", label: "Nominee", type: "text" },
   ],
@@ -146,6 +165,16 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "death_benefit_payout", label: "Death benefit payout (lump sum / income)", type: "text" },
     { key: "age_at_entry", label: "Age when the policy started", type: "number" },
     { key: "illustrated_maturity_value", label: "Maturity value stated in the document's illustration", type: "number" },
+    // Evidence fields, read only where stated (see the life list).
+    { key: "uin", label: "Product UIN", type: "text" },
+    { key: "issue_date", label: "Policy issue date", type: "date" },
+    { key: "annualised_premium", label: "Annualised premium", type: "number" },
+    { key: "premium_due_schedule", label: "Premium due dates as stated", type: "text" },
+    { key: "last_premium_due_date", label: "Due date of last premium", type: "date" },
+    { key: "stated_paid_to_date", label: "Premiums paid up to (as stated)", type: "date" },
+    { key: "policy_status_stated", label: "Policy status (as stated)", type: "text" },
+    { key: "status_as_on", label: "Status as on", type: "date" },
+    { key: "field_sources", label: "Where key figures were read", type: "json" },
     { key: "policy_parameters", label: "Charges and assumptions", type: "json" },
     { key: "nominee_name", label: "Nominee", type: "text" },
   ],
@@ -263,10 +292,26 @@ export function buildExtractionPrompt(type: DataEntryType): string {
     : "";
 
   const hasNextPremium = fields.some((f) => f.key === "next_premium_date");
-  const today = new Date().toISOString().slice(0, 10);
+  /* The next premium date used to be WORKED OUT here: the model was told to
+     roll the recurring due date forward past today. That produced a date that
+     looked read from the document and quietly implied every earlier premium
+     had been paid. Now it is read only where the document states one, and the
+     schedule itself is extracted so code can work out due dates openly. */
   const nextPremiumRule = hasNextPremium
     ? `
-- "next_premium_date": today's date is ${today}. Premiums are usually stated as a recurring schedule (e.g. "Due Dates of Premium: 21 June of every Year") alongside a "Due Date of Last Premium". Return the NEXT premium due date strictly AFTER today — the next future occurrence of that recurring due date — NOT the maturity date and NOT the last/final premium date. If one explicit upcoming due date is stated, use it. If the plan is single-premium / fully paid-up / no further premium is payable, use null. (This is the only field where computing the next recurring date from the stated schedule is expected.)`
+- "next_premium_date": only an upcoming due date the document explicitly states as the next premium due. Do NOT calculate one from a recurring schedule, and do not assume any premium has been paid. If none is stated, use null.
+- "premium": the amount paid at each instalment, exactly as stated. "annualised_premium": the yearly total, only if stated separately. Never multiply or divide one to get the other.`
+    : "";
+
+  const hasEvidence = fields.some((f) => f.key === "field_sources");
+  const evidenceRule = hasEvidence
+    ? `
+- "premium_due_schedule": the premium due dates as written (e.g. "21 June every year"). "last_premium_due_date": the stated due date of the last premium.
+- "stated_paid_to_date", "policy_status_stated", "status_as_on", "vested_bonus", "vested_bonus_as_on", "loan_outstanding", "loan_interest_accrued", "loan_statement_date": only if the document (for example a premium receipt, bonus statement or loan statement) states them. A policy schedule issued at the start does not tell you later payments; use null.
+- "basic_sum_assured": the basic sum assured if the document states it separately from the death benefit; otherwise null. Never copy the death benefit into it.
+- "premium_excluding_taxes": the instalment premium before GST, rider premiums and extra loadings, only if stated.
+- "uin": the product's UIN as printed (e.g. "512N123V01"), otherwise null.
+- "field_sources": an object. For each of premium, premium_excluding_taxes, sum_assured, basic_sum_assured, maturity_amount, policy_term_years, premium_paying_term_years, start_date, uin, vested_bonus, loan_outstanding, stated_paid_to_date and policy_status_stated that you filled, add "<key>": {"excerpt": "<the exact words from the document the value was read from, at most 200 characters>", "page": <page number if printed, else null>}. Copy the words exactly; do not paraphrase.`
     : "";
 
   return `You are an insurance policy data-entry assistant for ${TYPE_PROMPT_NAME[type]} insurance.
@@ -280,7 +325,7 @@ ${lines}
 Rules:
 - Use null for any field not clearly stated in the document. Do NOT guess or infer.
 - Dates must be formatted as YYYY-MM-DD.
-- Numeric fields must contain a plain number (e.g. 500000), no currency symbols, commas, or words.${odTpRule}${nextPremiumRule}
+- Numeric fields must contain a plain number (e.g. 500000), no currency symbols, commas, or words.${odTpRule}${nextPremiumRule}${evidenceRule}
 - Do NOT add extra keys, comments, or markdown. Return only the raw JSON object.`;
 }
 

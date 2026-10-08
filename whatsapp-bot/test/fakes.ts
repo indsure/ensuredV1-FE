@@ -1,0 +1,285 @@
+/** In-memory fakes for bot-core tests. No network, no WhatsApp, no model. */
+
+import os from "node:os";
+import path from "node:path";
+import crypto from "node:crypto";
+import type { ClientSummary, Engine, JobStatus, RenewalRow } from "../src/engine.js";
+import type { InboundMessage, Transport } from "../src/transport/types.js";
+import { Bot } from "../src/core/bot.js";
+import type { Inspection } from "../src/core/pdfInspect.js";
+
+export const AGENT = "11111111-1111-4111-8111-111111111111";
+export const ADVISOR = "919800000001";
+export const ADVISOR_JID = `${ADVISOR}@s.whatsapp.net`;
+export const STRANGER = "919800000009";
+
+const COMMAND_WORDS = /\*(MORNING OFF \/ ON|MORNING OFF|MORNING ON|FOLLOW UPS|MY CLIENTS|SURRENDER VALUE|UPGRADE MESSAGE|DIWALI MESSAGE|TIER 1|TIER 2|RENEWALS|CALCULATOR|COMPARE|BALANCE|HINGLISH|ENGLISH|HINDI|REMIND|CANCEL|CHANGE|CHECKS|CLAIMS|VIEWS|SHARE|TODAY|METRO|UNDO|HELP|MORE|SKIP|NONE|LEAD|FIND|LINK|YES|NO)\*/g;
+export function plainText(t: string): string {
+  return t
+    .replace(/^(📝|✅|👋|🌐|📊|⚠️|🤔|⚖️|🧮|👤|⏳|📤|ℹ️) /u, "")
+    .replace(COMMAND_WORDS, "$1")
+    .replace(/^(\d{1,2})\. /gm, "$1) ");
+}
+
+export class FakeTransport implements Transport {
+  sent: { to: string; text: string }[] = [];
+  files = new Map<string, Buffer>();
+  async start() {}
+  onMessage() {}
+  async sendText(to: string, text: string) { this.sent.push({ to, text }); }
+  async sendTyping() {}
+  async downloadMedia(m: InboundMessage) { return this.files.get(m.id) ?? Buffer.from("%PDF-1.4 x"); }
+  async markRead() {}
+  contacts: { to: string; name: string }[] = [];
+  async sendContact(to: string, name: string) { this.contacts.push({ to, name }); }
+  /** The words of each message, without the house style (a leading emoji, bold commands,
+   *  "1." lists), so tests read content. style.test.ts checks the styling on lastRaw(). */
+  texts() { return this.sent.map((s) => plainText(s.text)); }
+  last() { return plainText(this.sent[this.sent.length - 1]?.text ?? ""); }
+  lastRaw() { return this.sent[this.sent.length - 1]?.text ?? ""; }
+}
+
+export function healthClient(id: string, over: Partial<ClientSummary> = {}): ClientSummary {
+  return {
+    clientId: id, status: "done", errorMessage: null, insuranceType: "health",
+    policyholderName: "Ramesh Kumar", customerId: null, customerPhone: "9812345678",
+    insurer: "Care Health", policyName: "Care Supreme", score: 65, shareToken: null, views: 0, expiryDate: null,
+    report: {
+      verdictLabel: "BORDERLINE", verdictSummary: "Decent base cover with a costly room rent cap",
+      interpretation: "Good for small claims, weak for long stays.", effectiveCover: 700000, baseSumInsured: 500000,
+      premiumTotal: 18450,
+      whereItMayCost: [
+        { issue: "Room rent capped at 1% of sum insured", impact: "Bills shrink in proportion", outOfPocket: "₹40,000 on a ₹3L bill" },
+        { issue: "Cataract sub-limit", impact: "Capped", outOfPocket: null },
+      ],
+      whatWorks: [{ benefit: "Unlimited restoration", why: "Cover comes back", value: null }],
+      roomRent: { limit: "1% of sum insured per day", perDay: 5000, penalty: "proportional", explanation: "Choosing a bigger room cuts every other charge too." },
+      coPay: { exists: false, percentage: null, conditions: null, outOfPocketOn5L: null },
+      subLimits: [{ procedure: "Cataract", limit: 40000, gap: 20000 }],
+      waitingPeriods: null,
+    },
+    ...over,
+  };
+}
+
+export class FakeEngine implements Engine {
+  links = new Map<string, { agentId: string; servable: boolean }>([[ADVISOR, { agentId: AGENT, servable: true }]]);
+  pendingCodes = new Map<string, { code: string; agentId: string }>();
+  seenIds = new Set<string>();
+  unknownReplied = new Set<string>();
+  conv: any = { state: "IDLE", currentClientId: null, pending: {}, updatedAt: null };
+  checks = 5;
+  hashes = new Map<string, string>();
+  jobs = new Map<string, any>();
+  analyzeCalls: any[] = [];
+  inFlight = 0;
+  maxInFlight = 0;
+  clients = new Map<string, ClientSummary>();
+  /** Per engine job: how many polls before it finishes, and how it finishes. */
+  plan = new Map<string, { polls: number; end: "completed" | "error"; error?: string }>();
+  nextOutcome: { type?: string; end?: "completed" | "error"; error?: string; polls?: number } = {};
+  customers: { id: string; name: string; phone: string | null; dob?: string | null; city?: string | null }[] = [];
+  attached: [string, string][] = [];
+  shared: string[] = [];
+  renewalData: { leads: RenewalRow[]; customers: RenewalRow[] } = { leads: [], customers: [] };
+  llmIntentCalls = 0;
+  llmPhraseCalls = 0;
+  phraseAnswer: { answer: string | null; guardFired?: boolean } = { answer: null };
+  messages: any[] = [];
+
+  async resolve(n: string) { const l = this.links.get(n); return l ? { agentId: l.agentId, servable: l.servable } : { agentId: null, servable: false }; }
+  async link(n: string, code: string) {
+    const p = this.pendingCodes.get(n);
+    if (!p) return { ok: false, reason: "no_pending" };
+    if (p.code !== code) return { ok: false, reason: "bad_code" };
+    this.links.set(n, { agentId: p.agentId, servable: true });
+    return { ok: true, agentId: p.agentId, servable: true };
+  }
+  async unlink() { this.links.delete(ADVISOR); }
+  async logMessage(m: any) {
+    this.messages.push(m);
+    if (m.direction === "out" && String(m.intent || "").startsWith("unknown:")) this.unknownReplied.add(m.intent.slice(8));
+    if (m.direction !== "in" || !m.waMessageId) return { duplicate: false };
+    if (this.seenIds.has(m.waMessageId)) return { duplicate: true };
+    this.seenIds.add(m.waMessageId);
+    return { duplicate: false };
+  }
+  async unknownSeen(h: string) { return this.unknownReplied.has(h); }
+  async getConversation() { return JSON.parse(JSON.stringify(this.conv)); }
+  async putConversation(_a: string, c: any) { this.conv = { ...JSON.parse(JSON.stringify(c)), updatedAt: new Date(0).toISOString() }; this.conv.updatedAt = null; }
+  async checksLeft() { return this.checks; }
+  async jobByHash(_a: string, sha: string) { return this.hashes.get(sha) ?? null; }
+  async createJob(_a: string, j: any) { const id = crypto.randomUUID(); this.jobs.set(id, { ...j, status: "queued" }); return id; }
+  async updateJob(_a: string, id: string, patch: any) { Object.assign(this.jobs.get(id) ?? {}, patch); }
+  async openJobs() { return []; }
+  async analyze(_a: string, f: any) {
+    this.analyzeCalls.push(f);
+    this.inFlight++;
+    this.maxInFlight = Math.max(this.maxInFlight, this.inFlight);
+    if (f.type === "health" && this.checks <= 0) { this.inFlight--; return { ok: false as const, code: "NO_CREDITS" as const, message: "none" }; }
+    const clientId = crypto.randomUUID();
+    const jobId = crypto.randomUUID();
+    const o = this.nextOutcome;
+    this.plan.set(jobId, { polls: o.polls ?? 2, end: o.end ?? "completed", error: o.error });
+    const base = healthClient(clientId, { insuranceType: f.type, policyholderName: f.policyholderName ?? null });
+    if (f.type !== "health") base.report = null;
+    if (o.end === "error") { base.status = "failed"; base.errorMessage = o.error ?? "error"; }
+    this.clients.set(clientId, base);
+    (this as any)._jobClient = { ...(this as any)._jobClient, [jobId]: { clientId, type: f.type, sha: f.sha } };
+    return { ok: true as const, clientId, jobId };
+  }
+  async jobStatus(_a: string, jobId: string): Promise<JobStatus> {
+    const p = this.plan.get(jobId)!;
+    const clientId = (this as any)._jobClient[jobId].clientId;
+    if (p.polls-- > 0) return { status: "processing", clientId };
+    this.inFlight--;
+    if (p.end === "error") return { status: "error", clientId, error: p.error ?? "" };
+    if ((this as any)._jobClient[jobId].type === "health") this.checks--;
+    return { status: "completed", clientId };
+  }
+  async getClient(_a: string, id: string) { return this.clients.get(id) ?? null; }
+  async findClients(_a: string, name: string) { return [...this.clients.values()].filter((c) => (c.policyholderName || "").toLowerCase().includes(name.toLowerCase())); }
+  async share(_a: string, id: string) { this.shared.push(id); return "tok-" + id.slice(0, 8); }
+  async attachCustomer(_a: string, clientId: string, customerId: string) { this.attached.push([clientId, customerId]); return true; }
+  async searchCustomers(_a: string, q: string) { return this.customers.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()) || (c.phone || "").endsWith(q)); }
+  async renewals() { return this.renewalData; }
+  async llmIntent() { this.llmIntentCalls++; return "unknown"; }
+  profileData: any = { name: "Deep Shah", partneredCompanies: [], page: { slug: "deep-shah", live: true, enabled: true, published: true } };
+  leads: any[] = [];
+  calcSaved: any[] = [];
+  compared: string[][] = [];
+  catalogRows = [
+    { plan_key: "UIN-CARE-SUP", insurer: "Care Health Insurance", plan_name: "Care Supreme", variant: "" },
+    { plan_key: "UIN-NIVA-RA2", insurer: "Niva Bupa Health Insurance", plan_name: "ReAssure 2.0", variant: "" },
+    { plan_key: "UIN-HDFC-OPT:Silver", insurer: "HDFC ERGO", plan_name: "Optima Secure", variant: "Silver" },
+    { plan_key: "UIN-HDFC-OPT:Gold", insurer: "HDFC ERGO", plan_name: "Optima Secure", variant: "Gold" },
+  ];
+  async profile() { return this.profileData; }
+  async createLead(_a: string, l: any) {
+    const dup = [...this.leads, ...this.leadRows].find((x) => x.phone && x.phone === l.phone);
+    if (dup) return { id: dup.id, duplicateOf: dup.name };
+    const id = crypto.randomUUID();
+    this.leads.push({ id, ...l });
+    // Created leads are findable afterwards, like the real table.
+    this.leadRows.push({ id, name: l.name, phone: l.phone ?? null, status: l.status ?? "new", insurance_interest: l.interest ?? null, next_follow_up: l.nextFollowUp ?? null, notes: l.note ?? null });
+    return { id };
+  }
+  async saveCalculator(_a: string, inputs: any, result: any, customerId: string | null = null) { this.calcSaved.push({ inputs, result, customerId }); return "calc-uuid-1"; }
+  /** Model stand-in: tests script what the model would return for a message. Off by default,
+   *  exactly like production until WA_LLM_ENABLED=true. */
+  understandMap = new Map<string, any>();
+  understandCalls: { text: string; ctx: any }[] = [];
+  modelOn = false;
+  /** Sach Assistant: the plan and this month's count, as the backend reports them. */
+  sachData = { plan: "agent", paid: true, used: 0, limit: 500, resetsOn: "2026-10-01" };
+  /** Why the backend would not call the model (free_plan, limit...), when it would not. */
+  sachReason: string | null = null;
+  async sach() { return { ...this.sachData }; }
+  morningList: { agentId: string; waNumber: string; name: string | null }[] = [];
+  async morningRecipients() { return this.morningList; }
+  async morningOn() { return true; }
+  async understand(_a: string, text: string, ctx: any) {
+    this.understandCalls.push({ text, ctx });
+    if (this.sachReason) return { enabled: false, understanding: null, reason: this.sachReason, usage: { ...this.sachData } };
+    if (!this.modelOn) return { enabled: false, understanding: null };
+    const u = this.understandMap.get(text);
+    this.sachData.used++;
+    return { enabled: true, understanding: u ?? { actions: [{ type: "unknown" }], clarify: null }, usage: { ...this.sachData } };
+  }
+  async leadsList() { return { total: this.leadRows.length, leads: this.leadRows.slice(0, 15) }; }
+  restored: any[] = [];
+  async leadRestore(_a: string, id: string, before: any) {
+    this.restored.push({ id, before });
+    const r = this.leadRows.find((x) => x.id === id);
+    if (r) Object.assign(r, { status: before.status, next_follow_up: before.next_follow_up, notes: before.notes });
+    return r ?? null;
+  }
+  undoneCreates: string[] = [];
+  async leadUndoCreate(_a: string, id: string) {
+    this.undoneCreates.push(id);
+    this.leadRows = this.leadRows.filter((x) => x.id !== id);
+    return true;
+  }
+  async catalog() { return this.catalogRows; }
+  leadRows: any[] = [];
+  leadUpdates: any[] = [];
+  followupRows: any[] = [];
+  viewRows: any[] = [];
+  claimRows: any[] = [];
+  claimQueries: (string | null)[] = [];
+  async leadSearch(_a: string, q: string) {
+    const d = q.replace(/\D/g, "");
+    return this.leadRows.filter((r) => r.name.toLowerCase().includes(q.toLowerCase()) || (d.length >= 10 && (r.phone || "").endsWith(d.slice(-10))));
+  }
+  async leadUpdate(_a: string, id: string, u: any) {
+    this.leadUpdates.push({ id, ...u });
+    const r = this.leadRows.find((x) => x.id === id);
+    const before = { ...r };
+    if (u.status) r.status = u.status;
+    if (u.nextFollowUp) r.next_follow_up = u.nextFollowUp;
+    if (u.note) r.notes = [r.notes, u.note].filter(Boolean).join("\n");
+    return { lead: r, before };
+  }
+  async followups() { return this.followupRows; }
+  async lookup(_a: string, q: string) {
+    return { policies: [...this.clients.values()].filter((c) => (c.policyholderName || "").toLowerCase().includes(q.toLowerCase())), leads: await this.leadSearch(_a, q) };
+  }
+  async views() { return this.viewRows; }
+  async claims(_a: string, q: string | null) { this.claimQueries.push(q); return this.claimRows; }
+  policyType: (string | null)[] = [];
+  async policies(_a: string, type: string | null) {
+    this.policyType.push(type);
+    const rows = [...this.clients.values()].filter((c) => !type || c.insuranceType === type)
+      .map((c) => ({ clientId: c.clientId, name: c.policyholderName, insuranceType: c.insuranceType, insurer: c.insurer, policyName: c.policyName, score: c.score }));
+    return { total: rows.length, rows };
+  }
+  async compare(_a: string, keys: string[]) {
+    this.compared.push(keys);
+    return { uuid: "cmp-uuid-1", names: ["Care Health Insurance Care Supreme", "Niva Bupa Health Insurance ReAssure 2.0"], verdict: { winner_index: 0, winner_name: "Care Supreme", reasons: ["No room rent cap", "Shorter PED wait"], counterpoint: "ReAssure 2.0 has a bigger bonus" } };
+  }
+  async llmPhrase() { this.llmPhraseCalls++; return this.phraseAnswer; }
+}
+
+/** A fake clock: sleeping advances time instantly. */
+export function makeBot(over: { inspect?: (b: Buffer) => Promise<Inspection> } = {}) {
+  const transport = new FakeTransport();
+  const engine = new FakeEngine();
+  let t = 1_000_000;
+  const bot = new Bot({
+    transport, engine,
+    links: { origin: "https://indsure.in" },
+    tmpDir: path.join(os.tmpdir(), "indsure-wa-test-" + crypto.randomUUID()),
+    teamLink: "https://indsure.in/advisors-pricing",
+    replyDelay: () => 0,
+    sleep: async (ms) => { t += ms; },
+    now: () => t,
+    inspect: over.inspect ?? (async (buf) => {
+      const s = buf.toString("latin1");
+      if (s.includes("LOCKED")) return { kind: "locked" };
+      if (s.includes("HINDI")) return { kind: "ok", text: "", hindi: true, guess: null, scores: {} };
+      const guess = s.includes("MOTOR") ? "motor" : s.includes("UNKNOWN") ? null : "health";
+      return { kind: "ok", text: s, hindi: false, guess, scores: {} };
+    }),
+  });
+  return { bot, transport, engine, advance: (ms: number) => { t += ms; } };
+}
+
+let seq = 0;
+export function text(body: string, from: string = ADVISOR): InboundMessage {
+  return { id: `m${++seq}`, from, replyTo: `${from}@s.whatsapp.net`, kind: "text", text: body, fileName: null, mimeType: null, fileSize: null, timestampMs: Date.now(), raw: null };
+}
+
+export function pdf(t: FakeTransport, content: string, opts: { caption?: string; name?: string; size?: number; from?: string } = {}): InboundMessage {
+  const id = `m${++seq}`;
+  t.files.set(id, Buffer.from(`%PDF-1.4 ${content}`));
+  const from = opts.from ?? ADVISOR;
+  return { id, from, replyTo: `${from}@s.whatsapp.net`, kind: "document", text: opts.caption ?? "", fileName: opts.name ?? "policy.pdf", mimeType: "application/pdf", fileSize: opts.size ?? 1000, timestampMs: Date.now(), raw: null };
+}
+
+/** Let fire-and-forget queue work finish (it does real temp-file I/O). */
+export async function settle(bot?: { busy(): boolean }) {
+  for (let i = 0; i < 400; i++) {
+    await new Promise((r) => setTimeout(r, 5));
+    if (bot && !bot.busy() && i > 3) return;
+  }
+}

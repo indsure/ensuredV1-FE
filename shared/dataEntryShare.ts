@@ -50,6 +50,8 @@ export interface ShareableField {
   key: string;
   label: string;
   format: ShareFormat;
+  /** Only published when this other field has a value too (a figure needs its date). */
+  requires?: string;
 }
 
 /** The data-entry types, repeated here so this module stands alone. */
@@ -103,7 +105,7 @@ export const SHAREABLE_FIELDS: Record<ShareableType, ShareableField[]> = {
     { key: "policy_term_years", label: "Policy term (years)", format: "number" },
     { key: "premium_paying_term_years", label: "Premiums payable for (years)", format: "number" },
     { key: "start_date", label: "Started", format: "date" },
-    { key: "next_premium_date", label: "Next premium due", format: "date" },
+    { key: "next_premium_date", label: "Next premium date (as scheduled)", format: "date" },
     { key: "maturity_date", label: "Matures", format: "date" },
     { key: "maturity_amount", label: "Maturity amount", format: "money" },
     { key: "illustrated_maturity_value", label: "Illustrated maturity value", format: "money" },
@@ -112,7 +114,7 @@ export const SHAREABLE_FIELDS: Record<ShareableType, ShareableField[]> = {
     { key: "payout_start_date", label: "First payout", format: "date" },
     { key: "payout_end_date", label: "Last payout", format: "date" },
     { key: "bonus_per_1000", label: "Declared bonus per ₹1,000", format: "money" },
-    { key: "fund_value", label: "Fund value", format: "money" },
+    { key: "fund_value", label: "Fund value (on the date below)", format: "money", requires: "fund_value_as_on" },
     { key: "fund_value_as_on", label: "Fund value as on", format: "date" },
   ],
   term: [
@@ -128,7 +130,7 @@ export const SHAREABLE_FIELDS: Record<ShareableType, ShareableField[]> = {
     { key: "cover_till_age", label: "Cover till age", format: "number" },
     { key: "death_benefit_payout", label: "Death benefit paid as", format: "text" },
     { key: "start_date", label: "Started", format: "date" },
-    { key: "next_premium_date", label: "Next premium due", format: "date" },
+    { key: "next_premium_date", label: "Next premium date (as scheduled)", format: "date" },
     { key: "cover_end_date", label: "Cover ends", format: "date" },
   ],
   travel: [
@@ -217,6 +219,10 @@ export function pickShareableFields(
   for (const field of SHAREABLE_FIELDS[type]) {
     const value = (extracted as Record<string, unknown>)[field.key];
     if (value === null || value === undefined) continue;
+    if (field.requires) {
+      const need = (extracted as Record<string, unknown>)[field.requires];
+      if (need === null || need === undefined || (typeof need === "string" && need.trim() === "")) continue;
+    }
     if (typeof value === "string" && value.trim() === "") continue;
     out[field.key] = value;
   }

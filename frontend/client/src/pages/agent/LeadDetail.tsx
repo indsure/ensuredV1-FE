@@ -5,6 +5,7 @@ import { format } from "date-fns";
 
 import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { BackLink } from "@/components/agent/BackLink";
 import { LeadPoliciesSection } from "@/components/agent/LeadPoliciesSection";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { dateLocale } from "@/i18n";
 import { statusLabel, sourceLabel, interestLabel } from "@/lib/leadLabels";
+import { InterestPicker } from "@/components/agent/InterestPicker";
 import { formatAmount } from "@/lib/customers";
 import {
   convertLeadToCustomer,
@@ -30,7 +32,6 @@ import {
 } from "@/lib/leads";
 
 const inputCls = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30";
-const INTEREST_OPTIONS = ["Health", "Motor", "Life", "Term", "Travel", "Property"];
 
 type DraftState = {
   name: string; phone: string; email: string; city: string; source: string;
@@ -137,7 +138,19 @@ export default function LeadDetail() {
     }
   }
 
-  if (error) return <InlineErrorState onRetry={load} />;
+  // A stale or shared link to a deleted record lands here: name it, and always
+  // leave a way out, since Try again can never fix "not found".
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <BackLink to="/agent/leads" label={t("lead_detail.back")} />
+        <InlineErrorState
+          message={error === t("lead_detail.not_found") ? error : undefined}
+          onRetry={load}
+        />
+      </div>
+    );
+  }
 
   const tel = telHref(lead?.phone);
   const wa = lead ? waHref(lead.phone, `Hello ${lead.name.split(" ")[0]}, `) : null;
@@ -145,9 +158,7 @@ export default function LeadDetail() {
   return (
     <div className="space-y-6 pb-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" className="text-slate-600" onClick={() => setLocation("/agent/leads")}>
-          {t("lead_detail.back")}
-        </Button>
+        <BackLink to="/agent/leads" label={t("lead_detail.back")} />
         <Button variant="outline" size="sm" className="border-slate-200 bg-white" onClick={load} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> {t("common.refresh")}
         </Button>
@@ -247,12 +258,7 @@ export default function LeadDetail() {
                 <Field label={t("leads.f_phone")}><input value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} inputMode="tel" className={inputCls} /></Field>
                 <Field label={t("leads.f_city")}><input value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} className={inputCls} /></Field>
                 <Field label={t("lead_detail.f_email")}><input value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} inputMode="email" className={inputCls} /></Field>
-                <Field label={t("leads.f_interest")}>
-                  <select value={draft.insurance_interest} onChange={(e) => setDraft({ ...draft, insurance_interest: e.target.value })} className={inputCls}>
-                    <option value="">{t("leads.select")}</option>
-                    {INTEREST_OPTIONS.map((o) => <option key={o} value={o}>{interestLabel(t, o)}</option>)}
-                  </select>
-                </Field>
+                <InterestPicker value={draft.insurance_interest} onChange={(v) => setDraft({ ...draft, insurance_interest: v })} />
                 <Field label={t("leads.f_source")}>
                   <select value={draft.source} onChange={(e) => setDraft({ ...draft, source: e.target.value })} className={inputCls}>
                     <option value="">{t("leads.select")}</option>

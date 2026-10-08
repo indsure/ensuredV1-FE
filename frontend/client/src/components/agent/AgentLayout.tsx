@@ -9,6 +9,7 @@ import PlaygroundTour from "@/components/agent/PlaygroundTour"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext"
+import { recordLocation } from "@/lib/navHistory"
 import { AgentTabBar } from "@/components/agent/AgentTabBar"
 import { preloadAgentRoute } from "@/pages/agent/lazyRoutes"
 
@@ -47,6 +48,10 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
 
   const { t, locale } = useLanguage()
   const search = useSearch()
+  // During render, not in an effect: the page's BackLink renders inside this
+  // layout and must see the stack already updated. Idempotent, so a second
+  // render (StrictMode) records nothing new.
+  recordLocation(search ? `${location}?${search}` : location)
 
   // `t` echoes the key back when a string is missing, so `t(k) ?? "Fallback"`
   // never fires — it renders "layout.grow" on screen. Compare against the key.

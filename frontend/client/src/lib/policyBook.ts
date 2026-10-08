@@ -1,280 +1,268 @@
 /**
- * Book-wide surrender values.
+ * The whole book of life policies, with what can honestly be said about each.
  *
- * One policy at a time is a research task; a thousand of them is the actual job.
- * An agent cannot open a thousand detail pages to find out which clients are
- * sitting on money, which are locked in, and which would lose by surrendering
- * today — and every one of those answers moves on the policy anniversary.
+ * Every life and term policy the advisor holds gets a row, including ones
+ * still being read, ones that could not be read, ones missing details, plan
+ * types this does not handle, and rows whose data is broken. Each row says
+ * why it has no figure and what to do next. Nothing drops out silently.
  *
- * This works the whole book out at once, from data already extracted, and sorts
- * it by what the agent should do about it. Same arithmetic as lib/policyValue,
- * just applied across every life and term policy and anchored to today's date.
+ * Totals only add up figures that are money the customer can get: dated
+ * insurer quotes the advisor entered, and calculations from reviewed product
+ * rules on checked details. The two are kept apart and never summed into one
+ * "cash available today" number. Every total says how many policies it covers
+ * and how many it leaves out, and why.
+ *
+ * Pure. The data comes from the backend (see fetchPolicyValueRows in the page).
  */
 
-import { supabase } from "./supabase";
-import {
-  computePolicyValue, isValueGap, isoDate, policyDate,
-  type PlanShape, type PremiumStatus, type ValueRow,
-} from "./policyValue";
+import { addMonthsIso, compareIso, valuationDateIso } from "./policyNumbers";
+import { DECISION_FIELDS, valuePolicy, type PolicyValuation, type Reason } from "./policyValue";
+import type { RuleSet } from "./productRules";
 
-export type ValueAction =
-  | "lapsed"        // gone reduced paid-up — revivable, but only until a date
-  | "overdue"       // a premium is late but the policy is still on risk
-  | "maturing"      // money is about to land — reinvestment conversation
-  | "jumps"         // surrender value steps up materially at the next anniversary
-  | "underwater"    // surrendering today returns less than has been paid in
-  | "locked"        // nothing is payable yet
-  | "none"          // pure term: there is no surrender value, ever
-  | "steady";
+export interface SourceRow {
+  id: string;
+  name?: string | null;
+  policyholder_name?: string | null;
+  insurer?: string | null;
+  policy_name?: string | null;
+  insurance_type?: string | null;
+  status?: string | null;
+  extracted_data?: Record<string, any> | null;
+}
 
-export interface PolicyValueSummary {
+export type RowState =
+  | "pending"          // still being read
+  | "failed"           // could not be read
+  | "error"            // the stored data broke the calculation
+  | "unsupported"      // a plan type this does not handle
+  | "needs_data"       // details or product terms missing
+  | "check_payments"   // premium payments not accounted for
+  | "term_cover"       // no surrender value by design
+  | "quote_on_file"    // a dated insurer quote the advisor entered
+  | "calculated";      // calculated from reviewed rules on checked details
+
+export type NextStep =
+  | "wait_for_reading" | "reupload" | "fill_details" | "confirm_plan_type" | "ask_insurer"
+  | "check_details" | "record_payments" | "ask_insurer_quote" | "record_loan" | "none" | "review_duplicate" | "confirm_quote";
+
+export type Exclusion =
+  | "no_cash_figure" | "duplicate_counted_once" | "duplicate_disputed" | "pending" | "failed" | "error";
+
+export interface BookRow {
   id: string;
   clientName: string;
   insurer: string | null;
   planName: string | null;
-  shape: PlanShape;
-  policyYear: number;
-  term: number;
-  /** Anniversary that starts the next policy year. */
-  nextAnniversary: string | null;
-  paidSoFar: number;
-  /** Payouts already handed over — kept regardless of what happens next. */
-  receivedSoFar: number;
-  valueToday: number;
-  valueNextYear: number | null;
-  /** Everything the customer ends up with by maturity: the maturity benefit
-   *  plus every payout the plan makes along the way. */
-  totalAtMaturity: number;
-  /** Every premium the policy will ever ask for — the figure the maturity
-   *  total has to be judged against, not just what has been paid so far. */
-  premiumsPayable: number;
-  /** valueNextYear - valueToday. */
-  uplift: number;
-  upliftPct: number;
-  deferredTo: string | null;
-  premiumStatus: PremiumStatus;
-  premiumStatusNote: string | null;
-  /** Annual return (XIRR where dates resolve) if exited today, and if held to the end. */
-  irrToday: number | null;
-  irrAtMaturity: number | null;
-  /**
-   * What the customer could raise against this policy without ending it. The
-   * question behind almost every surrender is "I need money", and this is the
-   * answer that keeps the cover, and the renewal, alive.
-   */
-  canBorrow: number;
-  /** Loan rate, where a reference yield has been set on the policy. */
-  loanRatePct: number | null;
-  /** Cost to bring a lapsed policy back, and the date after which it cannot be. */
-  revivalPayable: number | null;
-  revivalDeadline: string | null;
-  revivalExpired: boolean;
-  /** Share of the benefits still standing. Below 1 once the premiums stopped. */
-  paidUpFactor: number;
-  action: ValueAction;
-  headline: string;
+  policyNumber: string | null;
+  state: RowState;
+  valuation: PolicyValuation | null;
+  nextStep: NextStep;
+  /** The first reason the row has no cash figure, for the row's own message. */
+  reason: Reason | null;
+  maturingSoon: boolean;
+  datePassed: string | null;
+  duplicate: { kind: "confirmed" | "disputed"; countedHere: boolean } | null;
+  /** Why this row is left out of the cash totals, when it is. */
+  excluded: Exclusion | null;
 }
 
-/** Which policy year a policy is in on a given date (1-based, in progress). */
-export function policyYearOn(startDate: string | null, asOf = new Date()): number | null {
-  const start = policyDate(startDate);
-  if (!start) return null;
-  let years = asOf.getFullYear() - start.getFullYear();
-  const anniversaryThisYear = new Date(start);
-  anniversaryThisYear.setFullYear(start.getFullYear() + years);
-  if (anniversaryThisYear > asOf) years -= 1;
-  return years + 1;
+export interface Subtotal {
+  sum: number;
+  count: number;
+  /** Oldest as-of date among the figures added, so a stale quote is visible. */
+  oldest: string | null;
 }
 
-export function anniversaryAfter(startDate: string | null, completedYears: number): string | null {
-  if (!startDate) return null;
-  const d = policyDate(startDate);
-  if (!d) return null;
-  d.setFullYear(d.getFullYear() + completedYears);
-  return isoDate(d);
+export interface BookTotals {
+  rows: number;
+  surrender: { calculated: Subtotal; quotes: Subtotal };
+  borrow: { calculated: Subtotal; quotes: Subtotal };
+  included: number;
+  excluded: number;
+  excludedBy: Partial<Record<Exclusion, number>>;
+  byState: Partial<Record<RowState, number>>;
+  maturingSoon: number;
+  datePassed: number;
 }
 
-const rupee = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
+const NEXT_STEP_BY_REASON: [Reason, NextStep][] = [
+  ["shape_unknown", "confirm_plan_type"],
+  ["shape_candidate", "confirm_plan_type"],
+  ["shape_unsupported", "ask_insurer"],
+  ["premium_missing", "fill_details"],
+  ["premium_invalid", "fill_details"],
+  ["frequency_missing", "fill_details"],
+  ["frequency_unclear", "fill_details"],
+  ["term_invalid", "fill_details"],
+  ["ppt_invalid", "fill_details"],
+  ["start_date_missing", "fill_details"],
+  ["start_date_invalid", "fill_details"],
+  ["dates_conflict", "fill_details"],
+  ["schedule_unknown", "fill_details"],
+  ["inputs_changed_since_check", "check_details"],
+  ["inputs_not_checked", "check_details"],
+  ["payment_records_incomplete", "record_payments"],
+  ["status_not_in_force", "ask_insurer"],
+  ["loan_position_unknown", "record_loan"],
+  ["loan_interest_unknown", "record_loan"],
+  ["no_verified_rules", "ask_insurer_quote"],
+  ["ulip_ask_insurer", "ask_insurer_quote"],
+];
 
-export function summarisePolicy(row: {
-  id: string;
-  policyholder_name?: string | null;
-  name?: string | null;
-  insurer?: string | null;
-  policy_name?: string | null;
-  insurance_type?: string | null;
-  extracted_data?: Record<string, any> | null;
-}): PolicyValueSummary | null {
+const norm = (s: unknown) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+function classify(row: SourceRow, asOf: string, ruleSets?: RuleSet[]): BookRow {
   const data = row.extracted_data ?? null;
-  // The policy year comes off the start date alone, so we can ask for exactly
-  // the two returns this row shows in a single pass. Solving all twenty years
-  // for a book of a thousand policies is seconds of blocked main thread.
-  const year = policyYearOn(data?.start_date ?? null) ?? 1;
-  const result = computePolicyValue(row.insurance_type ?? "life", data, {
-    returnYears: [year],
-  });
-  if (isValueGap(result)) return null;
-  const clamped = Math.min(Math.max(year, 1), result.term);
-  const today: ValueRow = result.rows[clamped - 1];
-  const next: ValueRow | null = clamped < result.term ? result.rows[clamped] : null;
-
-  const uplift = next ? next.back - today.back : 0;
-  const upliftPct = next && today.back > 0 ? (uplift / today.back) * 100 : 0;
-
-  let action: ValueAction = "steady";
-  // A policy that has actually gone paid-up is a different job from one whose
-  // premium is a fortnight late: the first needs reviving before a deadline, the
-  // second needs a phone call before it becomes the first.
-  if (result.premiumStatus === "paid_up") action = "lapsed";
-  else if (result.premiumStatus === "overdue") action = "overdue";
-  else if (result.shape === "pure_term") action = "none";
-  else if (clamped >= result.term - 1) action = "maturing";
-  else if (today.deferredTo) action = "locked";
-  // Payouts already banked are the customer's money too. Judging the surrender
-  // value on its own labels every money-back plan underwater the moment those
-  // payouts start, which is exactly when it is doing what it was sold to do.
-  else if (today.back + today.received < today.paid && clamped >= result.term / 2) action = "underwater";
-  else if (upliftPct >= 15) action = "jumps";
-
-  const nextAnniversary = anniversaryAfter(data?.start_date ?? null, clamped);
-
-  const rev = result.revival;
-  /* The borrowing line, appended wherever it is the more useful answer. Almost
-     every surrender starts as "I need money", and an advisor who can say what
-     the policy will lend has a second answer to give. */
-  const borrow =
-    result.loan.available > 0 ? ` Can borrow ${rupee(result.loan.available)} without ending it.` : "";
-
-  const headline = (() => {
-    switch (action) {
-      case "none":
-        return "No surrender value — term cover.";
-      case "locked":
-        return `Locked in. Nothing payable before ${today.deferredTo}.`;
-      case "lapsed":
-        if (rev?.expired) {
-          return `Lapsed and past the revival window that closed ${rev.deadline}. Benefits are down to ${Math.round(result.paidUpFactor * 100)}% for good.`;
-        }
-        return (
-          `Lapsed: benefits are down to ${Math.round(result.paidUpFactor * 100)}%. ` +
-          `Revive for ${rupee(rev?.payable ?? 0)}${rev?.interest === null ? " plus interest" : ""}` +
-          `${rev?.deadline ? ` by ${rev.deadline}` : ""}.`
-        );
-      case "overdue":
-        return rev && rev.arrears > 0
-          ? `${rupee(rev.arrears)} of premium is overdue. Pay it before the policy goes paid-up.`
-          : result.premiumStatusNote ?? "Premiums are not up to date.";
-      case "underwater":
-        return `Still ${rupee(today.paid - today.back - today.received)} below the premiums paid, past halfway through the term.` + borrow;
-      case "jumps":
-        return `Goes up ${rupee(uplift)} on ${nextAnniversary ?? "the next anniversary"} — worth waiting.` + borrow;
-      case "maturing":
-        return `Maturing: ${rupee(result.rows[result.term - 1].back)} due.`;
-      default:
-        return `Worth ${rupee(today.back)} today.` + borrow;
-    }
-  })();
-
-  return {
+  const out: BookRow = {
     id: row.id,
-    clientName: row.policyholder_name || row.name || "Unnamed",
-    insurer: row.insurer ?? null,
-    planName: row.policy_name ?? null,
-    shape: result.shape,
-    policyYear: clamped,
-    term: result.term,
-    nextAnniversary,
-    paidSoFar: today.paid,
-    receivedSoFar: today.received,
-    valueToday: today.back,
-    valueNextYear: next ? next.back : null,
-    premiumsPayable: result.totalPremiums,
-    totalAtMaturity: (() => {
-      const end = result.rows[result.term - 1];
-      return end.received + end.back;
-    })(),
-    uplift,
-    upliftPct,
-    deferredTo: today.deferredTo,
-    premiumStatus: result.premiumStatus,
-    premiumStatusNote: result.premiumStatusNote,
-    irrToday: today.xirr ?? today.irr,
-    irrAtMaturity: result.xirrAtMaturity ?? result.irrAtMaturity,
-    canBorrow: result.loan.available,
-    loanRatePct: result.loan.ratePct,
-    revivalPayable: rev ? rev.payable : null,
-    revivalDeadline: rev ? rev.deadline : null,
-    revivalExpired: rev ? rev.expired : false,
-    paidUpFactor: result.paidUpFactor,
-    action,
-    headline,
+    clientName: row.policyholder_name || row.name || (data?.policyholder_name as string) || "",
+    insurer: row.insurer ?? (data?.insurer as string) ?? null,
+    planName: row.policy_name ?? (data?.plan_name as string) ?? null,
+    policyNumber: typeof data?.policy_number === "string" && data.policy_number.trim() ? data.policy_number.trim() : null,
+    state: "needs_data", valuation: null, nextStep: "fill_details", reason: null,
+    maturingSoon: false, datePassed: null, duplicate: null, excluded: null,
   };
+  const status = String(row.status ?? "");
+  if (status && status !== "done") {
+    const failed = status === "error" || status === "failed";
+    out.state = failed ? "failed" : "pending";
+    out.nextStep = failed ? "reupload" : "wait_for_reading";
+    out.excluded = failed ? "failed" : "pending";
+    return out;
+  }
+  let v: PolicyValuation;
+  try {
+    v = valuePolicy(row.insurance_type ?? "life", data, { asOf, ruleSets });
+  } catch {
+    // One broken row must never take the book down with it.
+    out.state = "error";
+    out.nextStep = "fill_details";
+    out.excluded = "error";
+    return out;
+  }
+  out.valuation = v;
+  if (v.maturityDate && compareIso(v.maturityDate, asOf) > 0 && compareIso(v.maturityDate, addMonthsIso(asOf, 12)) <= 0) {
+    out.maturingSoon = true;
+  }
+  // With nothing recorded, the latest date on file is the one to check; with a
+  // gap in the records, the first premium that has no record.
+  if (v.payment.state === "date_passed") out.datePassed = v.payment.lastDuePassed;
+  else if (v.payment.state === "recorded_gap") out.datePassed = v.payment.firstUncoveredDue;
+
+  const sp = v.values.surrender_payable;
+  if (v.shape.status === "unsupported") out.state = "unsupported";
+  else if (v.shape.value === "pure_term") out.state = "term_cover";
+  else if (v.cash.surrender === "calculated") out.state = "calculated";
+  else if (v.cash.surrender === "quote") out.state = "quote_on_file";
+  else if (v.shape.value && v.shape.value !== "unit_linked" && !v.payment.upToDate && v.payment.state !== "schedule_unknown") out.state = "check_payments";
+  else out.state = "needs_data";
+
+  const reasons: Reason[] = [...sp.missing, ...v.inputIssues.map((i) => (i.reason === "invalid" ? "premium_invalid" : i.reason) as Reason)];
+  out.reason = reasons[0] ?? null;
+  if (out.state === "term_cover") out.nextStep = "none";
+  else if (out.state === "calculated" || out.state === "quote_on_file") {
+    out.nextStep = v.values.surrender_payable.basis === "insurer_quote" ? "confirm_quote" : "none";
+  } else {
+    const hit = NEXT_STEP_BY_REASON.find(([r]) => reasons.includes(r));
+    out.nextStep = hit ? hit[1] : out.state === "check_payments" ? "record_payments" : "ask_insurer_quote";
+  }
+  if (!v.cash.surrender && !v.cash.borrow) out.excluded = "no_cash_figure";
+  return out;
 }
 
-/** Order the agent should work the list in. */
-export const ACTION_ORDER: ValueAction[] = ["lapsed", "overdue", "maturing", "jumps", "underwater", "steady", "locked", "none"];
+/** Fingerprint of the details that drive a value, to tell real duplicates from disagreeing copies. */
+function fingerprint(r: BookRow, rows: Map<string, SourceRow>): string {
+  const d = rows.get(r.id)?.extracted_data ?? {};
+  return JSON.stringify(DECISION_FIELDS.map((k) => (d[k] === undefined || d[k] === "" ? null : String(d[k]))));
+}
 
-export const ACTION_META: Record<ValueAction, { label: string; tone: string; blurb: string }> = {
-  lapsed: {
-    label: "Lapsed",
-    tone: "border-rose-300 bg-rose-100 text-rose-900",
-    blurb:
-      "The premiums stopped, so the policy is reduced paid-up: the values shown are what is actually " +
-      "left, not what it would have been worth. It can be brought back to full benefit by paying the " +
-      "arrears, but only until the revival window closes.",
-  },
-  overdue: {
-    label: "Premiums overdue",
-    tone: "border-rose-200 bg-rose-50 text-rose-800",
-    blurb:
-      "The premium is past its grace period but the policy has not gone paid-up yet, so the benefits " +
-      "below still stand. Call before it does.",
-  },
-  maturing: {
-    label: "Maturing",
-    tone: "border-[#0D9488]/40 bg-[#0D9488]/5 text-[#0f766e]",
-    blurb: "Money is about to reach the customer. Call before someone else does.",
-  },
-  jumps: {
-    label: "Steps up soon",
-    tone: "border-blue-200 bg-blue-50 text-blue-800",
-    blurb: "The surrender value rises materially at the next anniversary. Tell them to wait.",
-  },
-  underwater: {
-    label: "Below premiums paid",
-    tone: "border-amber-200 bg-amber-50 text-amber-900",
-    blurb:
-      "Past halfway and the surrender value is still under the premiums paid. Normal for these products " +
-      "early on, worth a conversation this late.",
-  },
-  steady: {
-    label: "Has value",
-    tone: "border-slate-200 bg-slate-50 text-slate-700",
-    blurb: "Surrenderable today, above what has been paid in.",
-  },
-  locked: {
-    label: "Locked in",
-    tone: "border-slate-200 bg-slate-50 text-slate-500",
-    blurb: "Nothing is payable yet. No action available.",
-  },
-  none: {
-    label: "Term cover",
-    tone: "border-slate-200 bg-slate-50 text-slate-500",
-    blurb: "No surrender value at any point. Nothing to track.",
-  },
+/**
+ * Same policy uploaded more than once. Matched on the policy number AND the
+ * insurer, within this advisor's own rows only. A name match is never used.
+ * Copies that agree are counted once; copies that disagree, or that cannot be
+ * tied to one insurer, are left out of every total until someone looks.
+ */
+function markDuplicates(book: BookRow[], source: SourceRow[]): void {
+  const byId = new Map(source.map((s) => [s.id, s]));
+  const groups = new Map<string, BookRow[]>();
+  for (const r of book) {
+    if (!r.policyNumber) continue;
+    const k = norm(r.policyNumber);
+    if (!k) continue;
+    groups.set(k, [...(groups.get(k) ?? []), r]);
+  }
+  for (const rows of Array.from(groups.values())) {
+    if (rows.length < 2) continue;
+    const insurers = new Set(rows.map((r) => norm(r.insurer)));
+    if (insurers.size > 1 && !insurers.has("")) continue; // same number, different insurers: not the same policy
+    const sameInsurer = insurers.size === 1 && !insurers.has("");
+    const agree = new Set(rows.map((r) => fingerprint(r, byId))).size === 1;
+    const confirmed = sameInsurer && agree;
+    const keep = [...rows].sort((a, b) => (a.id < b.id ? -1 : 1))[0].id;
+    for (const r of rows) {
+      r.duplicate = { kind: confirmed ? "confirmed" : "disputed", countedHere: confirmed && r.id === keep };
+      if (!confirmed) {
+        r.excluded = "duplicate_disputed";
+        r.nextStep = "review_duplicate";
+      } else if (r.id !== keep) {
+        r.excluded = "duplicate_counted_once";
+      }
+    }
+  }
+}
+
+export function buildBook(source: SourceRow[], options: { asOf?: string; ruleSets?: RuleSet[] } = {}): BookRow[] {
+  const asOf = options.asOf ?? valuationDateIso();
+  const life = source.filter((r) => r.insurance_type === "life" || r.insurance_type === "term");
+  const book = life.map((r) => classify(r, asOf, options.ruleSets));
+  markDuplicates(book, life);
+  return book;
+}
+
+const sub = (): Subtotal => ({ sum: 0, count: 0, oldest: null });
+const add = (s: Subtotal, amount: number, asOf: string) => {
+  s.sum += amount;
+  s.count += 1;
+  if (!s.oldest || compareIso(asOf, s.oldest) < 0) s.oldest = asOf;
 };
 
-export async function fetchPolicyValues(agentId: string): Promise<PolicyValueSummary[]> {
-  const { data, error } = await supabase
-    .from("clients")
-    .select("id, name, policyholder_name, insurer, policy_name, insurance_type, extracted_data, status")
-    .eq("agent_id", agentId)
-    .in("insurance_type", ["life", "term"]);
-
-  if (error) throw new Error(error.message);
-
-  return (data ?? [])
-    .filter((r: any) => r.status === "done")
-    .map((r: any) => summarisePolicy(r))
-    .filter((s): s is PolicyValueSummary => s !== null);
+export function bookTotals(book: BookRow[]): BookTotals {
+  const t: BookTotals = {
+    rows: book.length,
+    surrender: { calculated: sub(), quotes: sub() },
+    borrow: { calculated: sub(), quotes: sub() },
+    included: 0, excluded: 0, excludedBy: {}, byState: {}, maturingSoon: 0, datePassed: 0,
+  };
+  for (const r of book) {
+    t.byState[r.state] = (t.byState[r.state] ?? 0) + 1;
+    if (r.maturingSoon) t.maturingSoon += 1;
+    if (r.datePassed) t.datePassed += 1;
+    const dupOut = r.excluded === "duplicate_counted_once" || r.excluded === "duplicate_disputed";
+    let counted = false;
+    if (!dupOut && r.valuation) {
+      const v = r.valuation;
+      const sp = v.values.surrender_payable;
+      if (v.cash.surrender && sp.amount !== null && sp.asOf) {
+        add(v.cash.surrender === "calculated" ? t.surrender.calculated : t.surrender.quotes, sp.amount, sp.asOf);
+        counted = true;
+      }
+      const lr = v.values.loan_remaining;
+      if (v.cash.borrow && lr.amount !== null && lr.asOf) {
+        add(v.cash.borrow === "calculated" ? t.borrow.calculated : t.borrow.quotes, lr.amount, lr.asOf);
+        counted = true;
+      }
+    }
+    if (counted) t.included += 1;
+    else {
+      t.excluded += 1;
+      const why: Exclusion = r.excluded ?? "no_cash_figure";
+      t.excludedBy[why] = (t.excludedBy[why] ?? 0) + 1;
+    }
+  }
+  return t;
 }
+
+/** Work-list order: what needs the advisor first. */
+export const STATE_ORDER: RowState[] = [
+  "check_payments", "quote_on_file", "calculated", "needs_data", "failed", "error", "pending", "unsupported", "term_cover",
+];

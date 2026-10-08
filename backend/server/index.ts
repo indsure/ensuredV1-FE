@@ -21,6 +21,7 @@ import { log } from "./lib/logger";
 import { containsPersonalData } from "./lib/pii";
 import { parseIntent, answerFromData } from "./services/sachRetrieval";
 import { sendMail } from "./lib/mailer";
+import { isWaBotRequest } from "./whatsapp"; // WHATSAPP-PLUGIN
 
 /* ---------------- UPLOAD DIRECTORY CLEANUP ---------------- */
 
@@ -330,7 +331,10 @@ const globalApiLimiter = rateLimit({
   max: 300, // ~20 req/min/IP sustained
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.path === "/api/health",
+  // WHATSAPP-PLUGIN: the WhatsApp bot (valid shared key, loopback, no proxy headers) is
+  // exempt, since every advisor's traffic arrives from one local address. To unplug, put
+  // this back to: skip: (req) => req.path === "/api/health",
+  skip: (req) => req.path === "/api/health" || isWaBotRequest(req),
   message: { error: "rate_limited", message: "Too many requests, please slow down." },
 });
 app.use("/api", globalApiLimiter);

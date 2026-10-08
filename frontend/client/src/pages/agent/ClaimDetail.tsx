@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import {
-  AlertTriangle, ArrowLeft, Check, CheckCircle2, Circle, Clock, Copy, Download, Eye, Loader2,
+  AlertTriangle, Check, CheckCircle2, Circle, Clock, Copy, Download, Eye, Loader2,
   MessageCircle, Pencil, Phone, Plus, RotateCcw, Trash2, Upload, X,
 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { BackLink } from "@/components/agent/BackLink";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
@@ -62,7 +63,14 @@ export default function ClaimDetail() {
       </div>
     );
   }
-  if (error) return <InlineErrorState message={error} onRetry={load} />;
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <BackLink to="/agent/claims" label={t("claim_detail.back")} />
+        <InlineErrorState message={error} onRetry={load} />
+      </div>
+    );
+  }
   if (!claim) return null;
 
   const meta = CLAIM_STATUS_META[claim.status];
@@ -73,12 +81,7 @@ export default function ClaimDetail() {
   return (
     <div className="space-y-5 animate-in fade-in duration-500 max-w-5xl">
 
-      <button
-        onClick={() => setLocation("/agent/claims")}
-        className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800"
-      >
-        <ArrowLeft size={16} /> {t("claim_detail.back")}
-      </button>
+      <BackLink to="/agent/claims" label={t("claim_detail.back")} />
 
       {/* HEADER */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4">

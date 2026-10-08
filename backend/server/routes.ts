@@ -17,10 +17,10 @@ import { extractStructuredData } from "./services/dataExtraction";
 import {
   isDataEntryType,
   deriveSharedColumns,
-  mergeExtractedData,
   isSupportedInsuranceType,
   SUPPORTED_INSURANCE_TYPES,
 } from "./services/extractionFields";
+import { loadPolicyValueRows, saveExtractedData } from "./services/policyValueStore";
 import { extractWordingProfile, hashText } from "./services/wordingCompare";
 import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage";
 import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
@@ -32,9 +32,12 @@ import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { pool } from "./lib/db";
+import { ingestPolicyDocument } from "./services/policyDocs/ingest";
+import { confirmMany, getDocumentRules, resolveFlag, reviewFact, StoreError, type DbTx } from "./services/policyDocStore";
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
 import { registerTeamRoutes } from "./teamRoutes";
+import { mountWhatsapp, whatsappBotAuth } from "./whatsapp"; // WHATSAPP-PLUGIN
 import { registerAccountDeletionRoutes } from "./services/accountDeletion";
 import { log } from "./lib/logger";
 
@@ -82,6 +85,41 @@ const upload = multer({
 // Supabase Storage bucket where original uploaded policy PDFs are kept,
 // so they can be downloaded later (and re-analyzed without re-uploading).
 const PDF_BUCKET = "policy-pdfs";
+
+/* The document-rules store needs real transactions (a per-policy lock, then
+   inserts). One pooled client per transaction; always released. */
+const docDb: DbTx = {
+  query: (text, params) => pool.query(text, params as any[]),
+  transaction: async (fn) => {
+    const c = await pool.connect();
+    try {
+      await c.query("BEGIN");
+      const out = await fn({ query: (t, ps) => c.query(t, ps as any[]) });
+      await c.query("COMMIT");
+      return out;
+    } catch (e) {
+      await c.query("ROLLBACK").catch(() => {});
+      throw e;
+    } finally {
+      c.release();
+    }
+  },
+};
+
+/* Life and term PDFs also go through the deterministic policy-terms reader
+   (services/policyDocs). It starts on its own and never waits for, or is fed
+   by, the model extraction on the same upload. */
+function startPolicyDocumentRead(agentId: string, clientId: string, insuranceType: string, mimetype: string | undefined, filePath: string) {
+  if (insuranceType !== "life" && insuranceType !== "term") return;
+  if (!(mimetype || "").includes("pdf")) return;
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(fs.readFileSync(filePath));
+  } catch {
+    return;
+  }
+  void ingestPolicyDocument(docDb, agentId, clientId, bytes, `${PDF_BUCKET}/${agentId}/${clientId}.pdf`).catch(() => {});
+}
 
 /**
  * Remove `__internal` before a stored report leaves the server.
@@ -779,6 +817,19 @@ export async function getUserIdFromToken(token: string): Promise<string | null> 
 }
 
 const verifyJwt = async (req: any, res: any): Promise<string | null> => {
+  // WHATSAPP-PLUGIN: the WhatsApp bot acting for a linked advisor, on exactly two routes
+  // (analyze + its status poll), see whatsapp/routes.ts. Bot headers anywhere else are a
+  // hard 401. Returns undefined when the plug-in is off. Remove this block to unplug.
+  const botAgent = await whatsappBotAuth(req);
+  if (botAgent !== undefined) {
+    if (!botAgent) {
+      res.status(401).json({ error: "Invalid bot credentials" });
+      return null;
+    }
+    return botAgent;
+  }
+  // /WHATSAPP-PLUGIN
+
   const authHeader = req.headers["authorization"] as string | undefined;
 
   if (!authHeader?.startsWith("Bearer ")) {
@@ -3893,6 +3944,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               [clientId]
             );
 
+            startPolicyDocumentRead(agentId, clientId, insuranceType, file.mimetype, file.path);
+
             const uploadedPolicyText = await extractPolicyText(file, {
               feature: "image_ocr",
               route: "/api/agent/analyze",
@@ -5583,76 +5636,132 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   });
 
+  /* ── Agent: policy terms read from the document, and their review ─────
+     All scoped to the JWT-verified agent inside services/policyDocStore. */
+
+  const storeFail = (res: any, err: any) => {
+    if (err instanceof StoreError) return res.status(err.status).json({ error: err.code, message: err.message });
+    console.error("Document rules error:", err?.code ?? err?.name ?? "error");
+    return res.status(500).json({ error: "Internal server error" });
+  };
+
+  app.get("/api/agent/clients/:id/document-rules", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const out = await getDocumentRules(docDb, agentId, req.params.id);
+      recordAccess(req, agentId, req.params.id, "read_document_rules");
+      res.json(out);
+    } catch (err: any) {
+      storeFail(res, err);
+    }
+  });
+
+  app.post("/api/agent/clients/:id/document-rules/review", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const b = req.body ?? {};
+      const out = await reviewFact(docDb, agentId, req.params.id, {
+        fieldKey: String(b.field_key ?? ""), action: b.action, expectedRevision: Number(b.expected_revision),
+        value: b.value, reason: typeof b.reason === "string" ? b.reason : undefined, idempotencyKey: String(b.idempotency_key ?? ""),
+      });
+      recordAccess(req, agentId, req.params.id, "review_document_rule");
+      res.json(out);
+    } catch (err: any) {
+      storeFail(res, err);
+    }
+  });
+
+  app.post("/api/agent/clients/:id/document-rules/confirm-many", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const b = req.body ?? {};
+      const items = Array.isArray(b.items) ? b.items.map((i: any) => ({ fieldKey: String(i?.field_key ?? ""), expectedRevision: Number(i?.expected_revision) })) : [];
+      const out = await confirmMany(docDb, agentId, req.params.id, { items, idempotencyKey: String(b.idempotency_key ?? "") });
+      recordAccess(req, agentId, req.params.id, "review_document_rule");
+      res.json(out);
+    } catch (err: any) {
+      storeFail(res, err);
+    }
+  });
+
+  app.post("/api/agent/clients/:id/document-rules/flags", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const b = req.body ?? {};
+      const out = await resolveFlag(docDb, agentId, req.params.id, {
+        flagId: String(b.flag_id ?? ""), choice: String(b.choice ?? ""), reason: String(b.reason ?? ""), idempotencyKey: String(b.idempotency_key ?? ""),
+      });
+      recordAccess(req, agentId, req.params.id, "resolve_document_rule_flag");
+      res.json(out);
+    } catch (err: any) {
+      storeFail(res, err);
+    }
+  });
+
+  /* Re-read the stored PDF with the current reader (for example after a new
+     product adapter or reader version). Awaited, so the advisor sees the result. */
+  app.post("/api/agent/clients/:id/document-rules/parse", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const { id } = req.params;
+      const c = await pool.query("SELECT pdf_url, insurance_type FROM clients WHERE id = $1 AND agent_id = $2", [id, agentId]);
+      if (!c.rows.length) return res.status(404).json({ error: "not_found" });
+      const { pdf_url, insurance_type } = c.rows[0];
+      if (insurance_type !== "life" && insurance_type !== "term") return res.status(400).json({ error: "not_life_or_term" });
+      const m = typeof pdf_url === "string" ? pdf_url.match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/) : null;
+      if (!m) return res.status(409).json({ error: "NO_PDF", message: "No stored PDF for this policy." });
+      const [bucket, ...rest] = m[1].split("/");
+      const storagePath = rest.join("/");
+      if (!/\.pdf$/i.test(storagePath)) return res.status(409).json({ error: "NOT_PDF", message: "The stored file is not a PDF." });
+      const { data: blob, error: dlErr } = await supabaseAdmin.storage.from(bucket).download(storagePath);
+      if (dlErr || !blob) return res.status(409).json({ error: "NO_PDF", message: "Could not fetch the stored document." });
+      const out = await ingestPolicyDocument(docDb, agentId, id, new Uint8Array(await blob.arrayBuffer()), `${bucket}/${storagePath}`);
+      recordAccess(req, agentId, id, "parse_document_rules");
+      res.json(out);
+    } catch (err: any) {
+      storeFail(res, err);
+    }
+  });
+
+  /* ── Agent: life and term policies for the surrender-value book ─────
+     Scoped to the agent id verified from the JWT. Replaces a direct browser
+     read of `clients`, whose row security lives in the live database and is
+     not in this repo. Every status is returned so the book can show pending
+     and failed rows too. */
+
+  app.get("/api/agent/policy-values", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const rows = await loadPolicyValueRows(pool, agentId);
+      res.json({ rows });
+    } catch (err: any) {
+      console.error("Policy values read error:", err?.message);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   /* ── Agent: Save edited data-entry fields ───────────────────────────── */
 
   app.patch("/api/agent/clients/:id/extracted-data", async (req, res) => {
     try {
       const agentId = await verifyJwt(req, res);
       if (!agentId) return;
-
       const { id } = req.params;
-      const extractedData = req.body?.extracted_data;
-
-      if (!extractedData || typeof extractedData !== "object") {
-        return res.status(400).json({ error: "extracted_data object required" });
-      }
-
-      // Verify ownership and fetch the insurance type for shared-column mapping,
-      // plus the stored blob so this save merges into it instead of replacing it.
-      const ownerCheck = await pool.query(
-        "SELECT insurance_type, extracted_data FROM clients WHERE id = $1 AND agent_id = $2",
-        [id, agentId]
-      );
-      if (ownerCheck.rows.length === 0) {
-        return res.status(404).json({ error: "Client not found" });
-      }
-
-      recordAccess(req, agentId, id, "update_client");
-      const insuranceType = ownerCheck.rows[0].insurance_type;
-      // Callers send a partial: the review form omits every `json` field, the
-      // value card sends only the value keys. Merging keeps what the caller did
-      // not send. See mergeExtractedData for what this used to destroy.
-      const merged = mergeExtractedData(ownerCheck.rows[0].extracted_data, extractedData);
-      // Derived from the merged blob, not the patch — otherwise a partial save
-      // that omits `insurer` would null the column it maps to.
-      const shared = deriveSharedColumns(insuranceType, merged);
-
-      /* A hand-corrected field can move the score. `coverage_type` is the one
-         that does: it is how own damage is read when the document prints no
-         own-damage premium, and own damage is worth two add-ons. So the number
-         is recomputed from the MERGED blob, the same helper every other write
-         path uses.
-
-         The CASE is not decoration. This endpoint serves every line of
-         business, and scoreFromExtractedData returns null for anything that is
-         not motor, so an unguarded assignment would wipe the audit score off
-         every health policy an advisor edits. Motor only, always. */
-      const motorScore = scoreFromExtractedData(insuranceType, merged);
-      await pool.query(
-        `UPDATE clients SET
-          extracted_data = $1,
-          insurer = $2,
-          policy_name = $3,
-          expiry_date = $4,
-          sum_insured = $5,
-          policyholder_name = COALESCE($6, policyholder_name),
-          score = CASE WHEN $9 = 'motor' THEN $10::int ELSE score END
-        WHERE id = $7 AND agent_id = $8`,
-        [
-          JSON.stringify(merged),
-          shared.insurer ?? null,
-          shared.policy_name ?? null,
-          shared.expiry_date ?? null,
-          shared.sum_insured ?? null,
-          shared.policyholder_name ?? null,
-          id,
-          agentId,
-          insuranceType,
-          motorScore,
-        ]
-      );
-
-      res.json({ ok: true, extracted_data: merged });
+      /* Validation, record-by-record evidence merge and the save revision all
+         live in services/policyValueStore.ts, where they are tested against a
+         two-agent fake database. Every query is scoped to the verified agent. */
+      const result = await saveExtractedData(pool, agentId, id, req.body, {
+        deriveSharedColumns,
+        scoreFromExtractedData,
+      });
+      if (result.status === 200) recordAccess(req, agentId, id, "update_client");
+      res.status(result.status).json(result.body);
     } catch (err: any) {
       console.error("Save extracted-data error:", err);
       res.status(500).json({ error: "Internal server error" });
@@ -5749,6 +5858,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             mimetype,
             originalname: client.filename || `policy.${ext}`,
           } as Express.Multer.File;
+          startPolicyDocumentRead(agentId, id, insuranceType, mimetype, tempPath);
+
           const policyText = await extractPolicyText(fileLike, {
             feature: "image_ocr",
             route: "/api/agent/clients/:id/rerun",
@@ -5779,9 +5890,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                  null. Same helper as both upload paths. */
               const motorScore = scoreFromExtractedData(insuranceType, extraction.data);
               await pool.query(
+                /* A re-read replaces what the document says, never what the
+                   advisor recorded. Evidence (payments, loans, quotes) and the
+                   old parameter blob are taken from the row as it is NOW, in
+                   SQL, so anything saved while the re-read ran survives, and
+                   the save revision moves on so a stale editor cannot
+                   overwrite the new reading. */
                 `UPDATE clients SET
                   status = 'done',
-                  extracted_data = $1,
+                  extracted_data = $1::jsonb
+                    || jsonb_strip_nulls(jsonb_build_object(
+                         'value_evidence', extracted_data->'value_evidence',
+                         'policy_parameters', extracted_data->'policy_parameters'))
+                    || jsonb_build_object('_rev', COALESCE((extracted_data->>'_rev')::int, 0) + 1),
                   insurer = $2,
                   policy_name = $3,
                   expiry_date = $4,
@@ -6720,6 +6841,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      that makes "you see each time your owner opens your book" true. See the
      header of teamRoutes.ts before adding any route that reads member data. */
   registerTeamRoutes(app, verifyJwt, isAdmin);
+  mountWhatsapp(app, verifyJwt); // WHATSAPP-PLUGIN: WhatsApp channel (beta), a no-op unless WA_BOT_KEY is set
 
   /* ── Account deletion ────────────────────────────────────────────────────
      DELETE /api/me/account and DELETE /api/agent/account. The mirror of the
