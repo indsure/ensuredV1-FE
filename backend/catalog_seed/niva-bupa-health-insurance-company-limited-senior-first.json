@@ -6,7 +6,7 @@
   "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Policy mentions eligible room category and additional 10% co-pay for higher room, but no explicit room rent cap or type stated in wording; likely specified in Policy Schedule",
     "optional": false,
     "ordinal": 0
@@ -167,8 +167,11 @@
     "optional": true
   },
   "source_file": "Senior-First-Policy-Wording.pdf",
-  "status": "audited",
+  "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-17T13:43:00.900Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "audit_gaps": [
+    "icu"
+  ]
 }

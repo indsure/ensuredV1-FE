@@ -74,13 +74,13 @@
   },
   "pre_hosp": {
     "number": null,
-    "display": "Not specified (days per Product Benefits Table)",
+    "display": "As per Policy Schedule",
     "note": "Pre-hospitalisation cover exists under Section 2.A.2 but exact number of days is referenced to Policy Schedule/Product Benefits Table, not stated in wording.",
     "optional": false
   },
   "post_hosp": {
     "number": null,
-    "display": "Not specified (days per Product Benefits Table); 90 days with optional cover 2.B.1 (Gold only)",
+    "display": "As per Policy Schedule",
     "note": "Post-hospitalisation cover under Section 2.A.3; exact base days in Policy Schedule/Product Benefits Table. Optional cover 2.B.1 (Gold plan only) extends to 90 days.",
     "optional": false
   },

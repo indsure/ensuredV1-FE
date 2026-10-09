@@ -167,8 +167,11 @@
     "optional": false
   },
   "source_file": "Elder_Care_Policy_Wordings_9d18315430.pdf",
-  "status": "audited",
+  "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-17T13:45:05.899Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "audit_gaps": [
+    "icu"
+  ]
 }

@@ -167,8 +167,11 @@
     "optional": true
   },
   "source_file": "Health-Companion-Variant2022-PolicyWording.pdf",
-  "status": "audited",
+  "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-17T14:01:03.111Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "audit_gaps": [
+    "icu"
+  ]
 }

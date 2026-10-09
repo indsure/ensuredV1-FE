@@ -6,16 +6,16 @@
   "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Room rent eligibility is referenced as per Policy Schedule; specific category/limit not stated in wording text",
     "optional": false,
     "ordinal": 0
   },
   "icu": {
-    "display": "Not specified",
+    "display": "No separate ICU limit",
     "note": "ICU charges covered under inpatient care but specific cap not stated in wording; subject to Policy Schedule",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "copayment": {
     "display": "As per Policy Schedule",

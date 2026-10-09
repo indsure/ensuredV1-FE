@@ -12,7 +12,7 @@
     "ordinal": 4
   },
   "icu": {
-    "display": "Not specified (no separate cap stated)",
+    "display": "No separate ICU limit",
     "note": "ICU charges are listed as covered under in-patient treatment but no separate sub-limit or cap is mentioned; covered up to Sum Insured.",
     "optional": false,
     "ordinal": 5

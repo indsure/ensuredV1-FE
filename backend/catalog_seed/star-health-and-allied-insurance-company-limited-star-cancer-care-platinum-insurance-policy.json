@@ -109,7 +109,7 @@
     "exists": false
   },
   "ambulance": {
-    "display": "Covered (limit not specified)",
+    "display": "Covered, no rupee limit stated",
     "note": "Emergency road ambulance covered when medically necessary and there is an admissible claim; no rupee cap stated",
     "optional": false,
     "number": 999999

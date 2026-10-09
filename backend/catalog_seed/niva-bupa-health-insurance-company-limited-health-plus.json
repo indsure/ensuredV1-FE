@@ -12,10 +12,10 @@
     "ordinal": 0
   },
   "icu": {
-    "display": "Not specified (as per Policy Schedule)",
+    "display": "No separate ICU limit",
     "note": "ICU charges covered under inpatient care; specific cap not stated in wording, deferred to Policy Schedule.",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "copayment": {
     "display": "As per Policy Schedule",

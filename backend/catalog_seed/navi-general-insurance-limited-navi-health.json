@@ -72,13 +72,13 @@
     "ordinal": 5
   },
   "pre_hosp": {
-    "display": "Not specified (days per Policy Schedule)",
+    "display": "As per Policy Schedule",
     "note": "Pre-hospitalisation expenses covered under Section 3.2; exact number of days not stated in wording, referenced to Policy Schedule.",
     "optional": false,
     "number": null
   },
   "post_hosp": {
-    "display": "Not specified (days per Policy Schedule)",
+    "display": "As per Policy Schedule",
     "note": "Post-hospitalisation expenses covered under Section 3.3; exact number of days not stated in wording, referenced to Policy Schedule.",
     "optional": false,
     "number": null
