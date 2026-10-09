@@ -49,6 +49,7 @@ async function loadBlogData() {
       `export { CLAUSE_LIBRARY } from "../client/src/data/clause-library.ts";`,
       `export { PAGE_SEO, clauseTitle, blogTitle, blogDescription, metaDescription, TITLE_MAX } from "../client/src/data/seo-pages.ts";`,
       `export { DOC_PAGES, DOC_SECTIONS, docPath } from "../client/src/docs/content.ts";`,
+      `export { INSURANCE_PAGES, INSURANCE_HUB } from "../client/src/data/insurance-pages.ts";`,
     ].join("\n"),
   );
   const outfile = join(__dirname, ".blog-bundle.mjs");
@@ -205,6 +206,7 @@ const SITE_NAV = [
   { name: "Compare policies", url: "/compare" },
   { name: "Pricing", url: "/pricing" },
   { name: "Clause library", url: "/learn" },
+  { name: "Health plans explained", url: "/insurance" },
   { name: "Advisor Portal", url: "/agent" },
   { name: "Your insurance portfolio", url: "/start" },
   { name: "Network hospital finder", url: "/find-provider" },
@@ -576,6 +578,8 @@ async function main() {
 
   const {
     blogPosts,
+    INSURANCE_PAGES,
+    INSURANCE_HUB,
     slugFor,
     POST_SLUGS,
     FOUNDERS,
@@ -896,6 +900,84 @@ async function main() {
     await writeRoute(path, html);
   }
 
+  // Insurer and plan pages (/insurance, /insurance/:slug). The whole page goes
+  // into the static body, tables included: the answer is the point of the page.
+  const tableHtml = (t) =>
+    `<table><thead><tr>${t.head.map((h) => `<th scope="col">${escText(h)}</th>`).join("")}</tr></thead><tbody>` +
+    t.rows.map((r) => `<tr>${r.map((c, j) => (j === 0 ? `<th scope="row">${escText(c)}</th>` : `<td>${escText(c)}</td>`)).join("")}</tr>`).join("") +
+    `</tbody></table>`;
+  {
+    const canonical = `${SITE}/insurance`;
+    let html = applyHead(template, { title: INSURANCE_HUB.title, description: INSURANCE_HUB.description, canonical });
+    html = injectJsonLd(html, [
+      breadcrumbLd([{ name: "Home", url: `${SITE}/` }, { name: "Insurance plans", url: canonical }]),
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: "Health insurance plans, read from the policy wording",
+        description: INSURANCE_HUB.description,
+        url: canonical,
+        hasPart: INSURANCE_PAGES.map((p) => ({ "@type": "WebPage", name: p.h1, url: `${SITE}/insurance/${p.slug}` })),
+      },
+    ]);
+    const list = INSURANCE_PAGES.map((p) => `<li><a href="/insurance/${p.slug}">${escText(p.h1)}</a></li>`).join("");
+    const body =
+      `<main><h1>Health insurance plans, read from the policy wording</h1>` +
+      `<p>Each page explains one plan, or two plans side by side, using only what the insurer's own policy wording says.</p>` +
+      `<ul>${list}</ul></main>`;
+    html = injectBody(html, body, "/insurance");
+    await writeRoute("/insurance", html);
+  }
+  for (const p of INSURANCE_PAGES) {
+    const path = `/insurance/${p.slug}`;
+    const canonical = SITE + path;
+    if (p.title.length > TITLE_MAX) longTitles.push(path);
+    let html = applyHead(template, { title: p.title, description: p.description, canonical, ogType: "article" });
+    html = injectJsonLd(html, [
+      breadcrumbLd([
+        { name: "Home", url: `${SITE}/` },
+        { name: "Insurance plans", url: `${SITE}/insurance` },
+        { name: p.h1, url: canonical },
+      ]),
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: p.faqs.map((f) => ({ "@type": "Question", name: f.question, acceptedAnswer: { "@type": "Answer", text: f.answer } })),
+      },
+    ]);
+    const sections = p.sections
+      .map(
+        (s) =>
+          `<h2>${escText(s.h2)}</h2>` +
+          (s.body ?? []).map((x) => `<p>${escText(x)}</p>`).join("") +
+          (s.bullets ? `<ul>${s.bullets.map((x) => `<li>${escText(x)}</li>`).join("")}</ul>` : "") +
+          (s.table ? tableHtml(s.table) : ""),
+      )
+      .join("");
+    const faqs = `<h2>Frequently asked questions</h2>${p.faqs.map((f) => `<h3>${escText(f.question)}</h3><p>${escText(f.answer)}</p>`).join("")}`;
+    const sources =
+      `<h2>Where this comes from</h2><ul>${p.sources.map((s) => `<li>${escText(s.document)}, UIN ${escText(s.uin)}. Clauses ${escText(s.clauses)}.</li>`).join("")}</ul>` +
+      `<p>Checked against the wording on ${escText(p.checkedOn)}.</p>`;
+    const learn = p.learn
+      .map((s) => CLAUSE_LIBRARY.find((c) => c.slug === s))
+      .filter(Boolean)
+      .map((c) => `<li><a href="/learn/${c.slug}">${escText(c.term)}</a></li>`)
+      .join("");
+    const related = p.related
+      .map((s) => INSURANCE_PAGES.find((x) => x.slug === s))
+      .filter(Boolean)
+      .map((x) => `<li><a href="/insurance/${x.slug}">${escText(x.h1)}</a></li>`)
+      .join("");
+    const body =
+      `<article><h1>${escText(p.h1)}</h1><p>${escText(p.answer)}</p>${sections}${faqs}` +
+      `<p><a href="/compare">Compare these plans clause by clause</a></p>${sources}` +
+      (learn ? `<h2>Terms on this page, explained</h2><ul>${learn}</ul>` : "") +
+      (related ? `<h2>Related</h2><ul>${related}</ul>` : "") +
+      `<p><a href="/insurance">All plans</a></p></article>`;
+    html = injectBody(html, body, path);
+    await writeRoute(path, html);
+  }
+
   // Advisor docs (/docs). The whole article goes into the static body, not just
   // a title and intro: these pages exist to answer questions, so a crawler and
   // a no-JavaScript reader should get the answer itself.
@@ -944,7 +1026,7 @@ async function main() {
   }
 
   await checkRoutesServed(POST_SLUGS);
-  const urlCount = await writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_SEO, DOC_PAGES, docPath);
+  const urlCount = await writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_SEO, DOC_PAGES, docPath, INSURANCE_PAGES);
 
   if (longTitles.length) {
     // A warning, not a failure: these are article headlines, and Google
@@ -972,7 +1054,7 @@ async function checkRoutesServed(POST_SLUGS) {
   const rewrites = vercel.rewrites
     .filter((r) => !r.source.includes(":"))
     .map((r) => new RegExp(`^${r.source}$`));
-  const exempt = new Set(["/a/:slug", "/blog/:id", "/learn/:slug", "/author/:slug", "/docs/:slug"]);
+  const exempt = new Set(["/a/:slug", "/blog/:id", "/learn/:slug", "/insurance/:slug", "/author/:slug", "/docs/:slug"]);
   const unserved = [];
   // A <Route> whose path is not a plain string literal cannot be checked, so
   // it fails loudly rather than being skipped.
@@ -1005,7 +1087,7 @@ async function checkRoutesServed(POST_SLUGS) {
 // sitemap is a contradiction Search Console reports). lastmod is the post date
 // for blog posts and the last git commit of the page's source for everything
 // else, and is left out when neither is known.
-async function writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_SEO, DOC_PAGES, docPath) {
+async function writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_SEO, DOC_PAGES, docPath, INSURANCE_PAGES) {
   const priority = {
     "/": ["1.0", "weekly"],
     "/policychecker": ["0.9", "weekly"],
@@ -1042,6 +1124,10 @@ async function writeSitemap(blogPosts, slugFor, FOUNDERS, CLAUSE_LIBRARY, PAGE_S
   const clauseDate = gitDate(["data/clause-library.ts"]);
   add("/learn", clauseDate, "weekly", "0.8");
   for (const c of CLAUSE_LIBRARY) add(`/learn/${c.slug}`, clauseDate, "monthly", "0.7");
+  // lastmod is the date each page's facts were last checked against the wording.
+  const plansDate = INSURANCE_PAGES.map((p) => p.checkedOn).sort().at(-1);
+  add("/insurance", plansDate, "weekly", "0.8");
+  for (const p of INSURANCE_PAGES) add(`/insurance/${p.slug}`, p.checkedOn, "monthly", "0.7");
   const teamDate = gitDate(["data/team.ts"]);
   for (const f of FOUNDERS) add(`/author/${f.slug}`, teamDate, "monthly", "0.4");
   const docsDate = gitDate(["docs/content.ts"]);

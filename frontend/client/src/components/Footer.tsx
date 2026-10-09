@@ -22,6 +22,7 @@ const columns: { heading: string; links: { label: string; href: string }[] }[] =
       { label: "site.f_compare", href: "/compare" },
       { label: "site.f_calc", href: "/calculator" },
       { label: "site.f_clauses", href: "/learn" },
+      { label: "site.f_plans", href: "/insurance" },
       { label: "site.f_hospital", href: "/find-provider" },
     ],
   },
