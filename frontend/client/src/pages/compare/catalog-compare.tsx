@@ -340,12 +340,13 @@ function HealthCatalogCompare() {
           </p>
         </div>
 
-        {loadingCatalog ? (
-          <div className="flex flex-col items-center py-14 sm:py-20 lg:py-24 text-[var(--color-text-muted)]">
-            <Loader2 className="h-7 w-7 animate-spin mb-2" /> {t("ccmp.loading")}
-          </div>
-        ) : (
-          <>
+        {/* The builder and the worked example render straight away, catalog or
+            not. They used to wait behind a full-height spinner, so the page
+            (prerendered HTML included) showed a spinner and the footer, then
+            jumped when the catalog arrived: PageSpeed measured a 0.2 layout
+            shift. Now only the picker waits, disabled, with the loading line
+            in the same slot as the hint it replaces. */}
+        <>
             {/* Builder */}
             <div className="bg-white rounded-2xl border border-[var(--color-border-light)] p-5 shadow-sm">
               <div className="flex flex-wrap gap-3 items-stretch">
@@ -353,12 +354,12 @@ function HealthCatalogCompare() {
                   byKey[uin] ? <PlanCard key={uin} item={byKey[uin]} index={i} onRemove={() => removePlan(uin)} /> : null
                 )}
                 {selected.length < MAX_PLANS && (
-                  <AddPlanPicker grouped={grouped} exclude={excludeSet} onAdd={addPlan} />
+                  <AddPlanPicker grouped={grouped} exclude={excludeSet} onAdd={addPlan} disabled={loadingCatalog} />
                 )}
               </div>
               <p className="text-xs text-[var(--color-text-muted)] mt-3">
                 {t("ccmp.selected", { n: selected.length, max: MAX_PLANS })} ·{" "}
-                {selected.length < 2 ? t("ccmp.add_two") : comparing ? t("ccmp.comparing_l") : t("ccmp.instant")}
+                {loadingCatalog ? t("ccmp.loading") : selected.length < 2 ? t("ccmp.add_two") : comparing ? t("ccmp.comparing_l") : t("ccmp.instant")}
               </p>
             </div>
 
@@ -442,8 +443,7 @@ function HealthCatalogCompare() {
                 </span>
               </Link>
             </div>
-          </>
-        )}
+        </>
       </main>
 
       <Footer />
