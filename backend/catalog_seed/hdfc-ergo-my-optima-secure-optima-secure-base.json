@@ -1,6 +1,6 @@
 {
-  "variant": "Optima Super Secure",
-  "sum_insured_options": "₹10/15/20/25/50/100/200 Lakhs",
+  "variant": "Optima Secure",
+  "sum_insured_options": "₹5/10/15/20/25/50/100/200 Lakhs",
   "confidence": "high",
   "room_rent": {
     "ordinal": 5,
@@ -50,7 +50,7 @@
   "restoration": {
     "ordinal": 4,
     "display": "Once/yr, 100% of Base SI",
-    "note": "Triggers on partial or complete exhaustion; usable for same or different illness. Unlimited Restore add-on available."
+    "note": "Once a year, 100% of Base SI, triggers on partial or complete exhaustion; usable for the same or a different illness."
   },
   "pre_hosp": {
     "number": 60,
@@ -111,7 +111,7 @@
     "display": "Allowed"
   },
   "notable_exclusions": "Maternity, congenital external anomalies, stem cell harvesting, cosmetic surgery, OPD treatment, hearing aids/spectacles",
-  "optional_riders": "Aggregate deductible, Infinite Benefit (optional, 100% of BSI a year), Emergency Air Ambulance, Daily Cash for Shared Room, PED wait modification, Room Rent modification, Critical Illness add-on, Parenthood",
+  "optional_riders": "Aggregate deductible, Emergency Air Ambulance (inbuilt up to ₹5L), Daily Cash for Shared Room, PED wait modification, Room Rent modification (Single Private room), Critical Illness add-on, Parenthood",
   "insurer": "HDFC ERGO",
   "plan_name": "my: Optima Secure",
   "uin": "HDFHLIP26058V082526",
@@ -120,5 +120,6 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T08:02:10.966Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "source_note": "Built from the Annexure C plan chart column 'Optima Secure': Secure Benefit 100% of Base SI, Plus Benefit 50%/yr up to 100%, Automatic Restore 100% once, Protect Benefit inbuilt (removable), room and ICU at actuals."
 }

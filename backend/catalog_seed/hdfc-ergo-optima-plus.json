@@ -4,18 +4,18 @@
   "uin": "HDHHLIP21336V022021",
   "sum_insured_options": "₹5L (fixed, with deductible options)",
   "confidence": "high",
-  "product_type": "comprehensive_health_indemnity",
+  "product_type": "top_up",
   "room_rent": {
-    "display": "Not specified",
+    "display": "No limit (at actuals)",
     "note": "Policy wording covers room rent and boarding expenses under in-patient treatment but no specific cap or category is mentioned in the schedule of benefits.",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "icu": {
-    "display": "Not specified",
+    "display": "No limit (at actuals)",
     "note": "ICU is listed as a covered in-patient expense but no specific cap is mentioned.",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "copayment": {
     "display": "None",
@@ -30,8 +30,8 @@
     "ordinal": 3
   },
   "deductible": {
-    "display": "₹1L – ₹5L (as per schedule)",
-    "note": "Deductible options: ₹1,00,000; ₹2,00,000; ₹3,00,000; ₹4,00,000; ₹5,00,000. Applies per hospitalisation except for Any One Illness.",
+    "display": "Per-hospitalisation deductible, as per Policy Schedule",
+    "note": "A top-up: each hospitalisation must exceed the deductible before the policy pays.",
     "optional": false,
     "number": 100000
   },
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording or schedule of benefits.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -115,10 +115,10 @@
     "number": 2000
   },
   "modern_treatments": {
-    "display": "Not specified",
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "Modern/robotic treatments not specifically mentioned in the policy wording.",
     "optional": false,
-    "exists": false
+    "exists": true
   },
   "consumables": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "optima-plus-policy-wordings-579493504477.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:33:07.434Z"
+  "extracted_at": "2026-09-17T13:33:07.434Z",
+  "audited_at": "2026-10-09"
 }

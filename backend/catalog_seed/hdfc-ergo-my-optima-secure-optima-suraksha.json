@@ -30,8 +30,8 @@
     "display": "30 days"
   },
   "ped_waiting": {
-    "number": 36,
-    "display": "36 months (reducible to 12mo via optional channel-level add-on)",
+    "number": 12,
+    "display": "36 months (12 or 24 months with optional cover)",
     "note": "Optional PED wait modification to 24 or 12 months available at channel level"
   },
   "specific_disease_waiting": {
@@ -120,7 +120,8 @@
   "uin": "HDFHLIP26058V082526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "PolicyWordings_myOptimaSecure-76673175551.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:02:10.762Z"
+  "extracted_at": "2026-09-20T08:02:10.762Z",
+  "audited_at": "2026-10-09"
 }

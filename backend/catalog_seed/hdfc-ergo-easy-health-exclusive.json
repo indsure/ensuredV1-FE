@@ -3,9 +3,9 @@
   "sum_insured_options": "Individual: ₹3L, 4L, 5L, 7.5L, 10L, 15L, 20L, 25L, 50L; Family: ₹3L, 4L, 5L, 7.5L, 10L, 15L, 20L, 25L, 50L",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 4,
-    "display": "Single private room",
-    "note": "Exclusive plan entitles insured to single occupancy or higher accommodation; daily cash paid if insured opts for shared room instead"
+    "ordinal": 5,
+    "display": "No limit (at actuals)",
+    "note": "The wording sets no room-rent limit. Daily cash is paid if you choose a shared room."
   },
   "icu": {
     "ordinal": 5,
@@ -41,7 +41,7 @@
   "maternity": {
     "exists": true,
     "number": 48,
-    "display": "Inbuilt (4-yr wait Individual, 3-yr wait Family)",
+    "display": "Inbuilt, Rs.15,000 to Rs.50,000 a delivery (4-year wait at SI 15L+, 6 years below)",
     "note": "Individual: Normal ₹30,000, C-section ₹50,000 (incl. pre/post natal ₹5,000 & newborn ₹5,000); waiting 4 yrs. Family: Normal ₹30,000, C-section ₹50,000 (incl. pre/post natal ₹5,000 & newborn ₹5,000); waiting 3 yrs. Limited to 2 deliveries lifetime. Not subject to in-patient SI."
   },
   "cumulative_bonus": {
@@ -123,7 +123,8 @@
   "uin": "HDFHLIP26054V102526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "PolicyWordings_EasyHealth-114935539788.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:01:24.464Z"
+  "extracted_at": "2026-09-20T08:01:24.464Z",
+  "audited_at": "2026-10-09"
 }

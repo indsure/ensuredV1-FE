@@ -30,8 +30,8 @@
     "display": "30 days"
   },
   "ped_waiting": {
-    "number": 36,
-    "display": "36 months (reducible to 12mo via optional channel-level add-on)"
+    "number": 12,
+    "display": "36 months (12 or 24 months with optional cover)"
   },
   "specific_disease_waiting": {
     "number": 24,
@@ -43,14 +43,14 @@
     "display": "Not covered (Parenthood add-on available)"
   },
   "cumulative_bonus": {
-    "number": 0,
-    "display": "Not covered (Plus Benefit instead)",
-    "note": "Plus Benefit (50% of BSI/yr up to 100%) is inbuilt"
+    "number": 100,
+    "display": "Up to 100% (Plus Benefit, 50% a year)",
+    "note": "Plus Benefit adds 50% of Base SI each renewal, up to 100%. No separate cumulative bonus."
   },
   "restoration": {
-    "ordinal": 5,
-    "display": "Unlimited times, 100% of Base SI",
-    "note": "Unlimited Automatic Restore; triggers on partial or complete exhaustion"
+    "ordinal": 4,
+    "display": "Once/yr, 100% of Base SI",
+    "note": "Triggers on partial or complete exhaustion; usable for the same or a different illness."
   },
   "pre_hosp": {
     "number": 60,
@@ -116,7 +116,8 @@
   "uin": "HDFHLIP26058V082526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "PolicyWordings_myOptimaSecure-76673175551.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:02:11.173Z"
+  "extracted_at": "2026-09-20T08:02:11.173Z",
+  "audited_at": "2026-10-09"
 }

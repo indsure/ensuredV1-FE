@@ -32,8 +32,8 @@
     "note": "Except claims arising from accident"
   },
   "ped_waiting": {
-    "number": 24,
-    "display": "24 months (disability PED); 36 months (other PEDs)",
+    "number": 36,
+    "display": "36 months (24 months for pre-existing disability)",
     "note": "24 months for pre-existing disability; 36 months for all other pre-existing conditions except HIV/AIDS"
   },
   "specific_disease_waiting": {
@@ -48,8 +48,8 @@
     "note": "Maternity explicitly excluded (Excl18); ectopic pregnancy is covered"
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
+    "number": 0,
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording"
   },
   "restoration": {
@@ -132,7 +132,8 @@
   "uin": "HDFHLIP23192V012223",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "equicover-health-cis-pw-108534555408.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:00:18.211Z"
+  "extracted_at": "2026-09-20T08:00:18.211Z",
+  "audited_at": "2026-10-09"
 }

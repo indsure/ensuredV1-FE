@@ -3,9 +3,9 @@
   "sum_insured_options": "Individual: ₹1L, 1.5L, 2L, 2.5L, 3L, 4L, 5L, 7.5L, 10L, 15L; Family: ₹2L, 3L, 4L, 5L, 7.5L, 10L, 15L",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 1,
-    "display": "Shared room only",
-    "note": "Daily cash benefit paid if insured voluntarily chooses shared accommodation in a network hospital; no explicit private room entitlement stated for Standard plan — shared accommodation is the covered room type"
+    "ordinal": 5,
+    "display": "No limit (at actuals)",
+    "note": "The wording sets no room-rent limit. A daily cash of Rs.500 (max Rs.3,000) is paid if you choose a shared room."
   },
   "icu": {
     "ordinal": 5,
@@ -39,10 +39,11 @@
     "display": "24 months"
   },
   "maternity": {
-    "exists": true,
-    "number": 72,
-    "display": "Optional add-on (6-yr wait)",
-    "note": "Individual: Normal ₹15,000, C-section ₹25,000 (incl. pre/post natal ₹1,500 & newborn ₹2,000); Family: Normal ₹15,000, C-section ₹25,000 (incl. pre/post natal ₹1,500 & newborn ₹2,000); waiting period 6 yrs (Individual), 4 yrs (Family); limited to 2 deliveries lifetime"
+    "exists": false,
+    "number": null,
+    "display": "Not covered",
+    "note": "Individual: Normal ₹15,000, C-section ₹25,000 (incl. pre/post natal ₹1,500 & newborn ₹2,000); Family: Normal ₹15,000, C-section ₹25,000 (incl. pre/post natal ₹1,500 & newborn ₹2,000); waiting period 6 yrs (Individual), 4 yrs (Family); limited to 2 deliveries lifetime",
+    "optional": false
   },
   "cumulative_bonus": {
     "number": 100,
@@ -123,7 +124,8 @@
   "uin": "HDFHLIP26054V102526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "PolicyWordings_EasyHealth-114935539788.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:01:24.359Z"
+  "extracted_at": "2026-09-20T08:01:24.359Z",
+  "audited_at": "2026-10-09"
 }
