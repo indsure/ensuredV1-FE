@@ -51,12 +51,14 @@
   "cumulative_bonus": {
     "number": null,
     "display": "Optional; rate/max as per Schedule",
-    "note": "Cumulative Bonus (3.3.3) is an optional Basic Benefit Option; percentage and cap specified in Schedule; no impact on accrual even if claim made"
+    "note": "Cumulative Bonus (3.3.3) is an optional Basic Benefit Option; percentage and cap specified in Schedule; no impact on accrual even if claim made",
+    "optional": true
   },
   "restoration": {
-    "ordinal": 0,
-    "display": "Optional; conditions as per Schedule",
-    "note": "Restore Sum Insured (3.3.2) is optional; available for related or related+unrelated conditions as per Schedule; does not trigger on first claim; unlimited restorations possible if Schedule so specifies"
+    "ordinal": 4,
+    "display": "Optional: restore sum insured (related and unrelated illness)",
+    "note": "Restore Sum Insured (3.3.2) is optional; available for related or related+unrelated conditions as per Schedule; does not trigger on first claim; unlimited restorations possible if Schedule so specifies",
+    "optional": true
   },
   "pre_hosp": {
     "number": null,
@@ -135,7 +137,8 @@
   "uin": "ACKHLIP26036V012526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy_Wordings_Acko_Health_II_63fc0c985c.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:50:58.997Z"
+  "extracted_at": "2026-09-20T07:50:58.997Z",
+  "audited_at": "2026-10-09"
 }

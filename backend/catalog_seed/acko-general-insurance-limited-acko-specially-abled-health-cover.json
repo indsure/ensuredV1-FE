@@ -31,8 +31,8 @@
     "display": "30 days"
   },
   "ped_waiting": {
-    "number": 24,
-    "display": "24 months (disability PED); 36 months (other PED)",
+    "number": 36,
+    "display": "36 months (24 months for pre-existing disability)",
     "note": "24 months for pre-existing disability; 36 months for all other pre-existing conditions except HIV/AIDS"
   },
   "specific_disease_waiting": {
@@ -47,8 +47,8 @@
     "note": "Maternity explicitly excluded under Excl18; ectopic pregnancy is covered"
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
+    "number": 0,
+    "display": "None",
     "note": "Cumulative bonus defined in definitions but no specific rate or cap mentioned in wording"
   },
   "restoration": {
@@ -129,7 +129,8 @@
   "uin": "ACKHLIP23202V012223",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy_Wordings_Acko_Specially_Abled_Health_Cover_9911aa1e7a.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:50:49.395Z"
+  "extracted_at": "2026-09-20T07:50:49.395Z",
+  "audited_at": "2026-10-09"
 }

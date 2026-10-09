@@ -49,14 +49,16 @@
     "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy for in-patient only is covered. No maternity add-on offered in this wording."
   },
   "cumulative_bonus": {
-    "number": 100,
-    "display": "Up to 100% of base SI",
-    "note": "NCB Sum Insured (Basic Benefit Option 3.3.3) is optional. Rate per year as per schedule; NCB cannot exceed base SI in any policy year. Must be opted."
+    "number": null,
+    "display": "Optional: no-claim bonus at a fixed % set in the Policy Schedule",
+    "note": "NCB Sum Insured (Basic Benefit Option 3.3.3) is optional. Rate per year as per schedule; NCB cannot exceed base SI in any policy year. Must be opted.",
+    "optional": true
   },
   "restoration": {
-    "ordinal": 5,
-    "display": "Unlimited restorations, 100% SI",
-    "note": "Restore Sum Insured (Basic Benefit Option 3.3.2) is optional. Restores full SI unlimited times but NOT for the same illness for which a claim was already made in the current policy year."
+    "ordinal": 3,
+    "display": "Optional: restore sum insured (not for an illness already claimed)",
+    "note": "Restore Sum Insured (Basic Benefit Option 3.3.2) is optional. Restores full SI unlimited times but NOT for the same illness for which a claim was already made in the current policy year.",
+    "optional": true
   },
   "pre_hosp": {
     "number": null,
@@ -139,7 +141,8 @@
   "uin": "ACKHLIP25035V022425",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy_Wordings_Acko_Peronal_Health_Policy_03b2e386d7.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:50:59.951Z"
+  "extracted_at": "2026-09-20T07:50:59.951Z",
+  "audited_at": "2026-10-09"
 }
