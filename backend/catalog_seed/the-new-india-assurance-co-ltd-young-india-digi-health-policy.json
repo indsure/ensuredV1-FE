@@ -21,7 +21,7 @@
     "display": "10% if Zone II insured treats in Zone I",
     "note": "No co-pay for Zone I insured or for accidents. 10% co-pay applies only when Zone II policyholder takes treatment in Zone I cities. No co-pay on sub-limited illnesses.",
     "optional": false,
-    "number": 10
+    "number": 0
   },
   "sub_limits": {
     "display": "Cataract, modern treatments, hazardous sports, ARMD, mental illness, genetic disorders, life support, puberty/menopause capped",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Policy clause Young India.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:43:34.636Z"
+  "extracted_at": "2026-09-17T13:43:34.636Z",
+  "audited_at": "2026-10-09"
 }

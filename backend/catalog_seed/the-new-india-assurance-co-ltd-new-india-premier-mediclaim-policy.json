@@ -61,10 +61,10 @@
     "exists": true
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "Policy defines Claim Free Year but does not specify a cumulative/no-claim bonus percentage in the wording provided",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Policy Clause New India Premier Mediclaim.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:43:27.131Z"
+  "extracted_at": "2026-09-17T13:43:27.131Z",
+  "audited_at": "2026-10-09"
 }

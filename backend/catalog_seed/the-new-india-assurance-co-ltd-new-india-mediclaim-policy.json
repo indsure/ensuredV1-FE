@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy Clause New India mediclaim.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:43:28.847Z"
+  "extracted_at": "2026-09-17T13:43:28.847Z",
+  "audited_at": "2026-10-09"
 }

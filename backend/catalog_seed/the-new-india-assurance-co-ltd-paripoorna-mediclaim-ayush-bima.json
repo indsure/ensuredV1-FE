@@ -159,7 +159,8 @@
   "notable_exclusions": "Domiciliary treatment, treatment outside India, maternity, acupressure/acupuncture/magnetic therapy, external prosthetics/hearing aids, CPAP/BIPAP home equipment, vaccination",
   "optional_riders": "Co-payment ratio choice (30% or 50%) at inception; premium discount in lieu of cumulative bonus at renewal",
   "source_file": "PMAB POLICY CLAUSE UPDATED.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:35:49.129Z"
+  "extracted_at": "2026-09-17T13:35:49.129Z",
+  "audited_at": "2026-10-09"
 }

@@ -21,7 +21,7 @@
     "display": "20% for out-of-zone treatment",
     "note": "20% co-payment applies when insured is treated in a hospital outside their designated zone (Zone I/II/III). No co-pay for in-zone treatment.",
     "optional": false,
-    "number": 20
+    "number": 0
   },
   "sub_limits": {
     "display": "Cataract, modern treatments, ARMD, mental illness, genetic disorders capped",
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "Policy references 'Claim Free Year' definition but no cumulative/no-claim bonus benefit is described in the wording.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -163,7 +163,8 @@
     "display": "Optional Cover I: Enhanced cataract limit (SI ₹8L+, benefit after 36 months)"
   },
   "source_file": "New India Asha kiran policy clause.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:35:23.829Z"
+  "extracted_at": "2026-09-17T13:35:23.829Z",
+  "audited_at": "2026-10-09"
 }

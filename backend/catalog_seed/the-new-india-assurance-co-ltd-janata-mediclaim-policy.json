@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Policy Clause Janata Mediclaim Policy.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:35:16.038Z"
+  "extracted_at": "2026-09-17T13:35:16.038Z",
+  "audited_at": "2026-10-09"
 }

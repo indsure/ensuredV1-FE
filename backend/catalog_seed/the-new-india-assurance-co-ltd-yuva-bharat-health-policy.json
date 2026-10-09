@@ -9,7 +9,7 @@
     "display": "Single AC (₹5L–15L SI); Deluxe AC (₹25L–1Cr SI)",
     "note": "SI ₹5L/10L/15L: Single AC room; SI ₹25L/50L/75L/1Cr: Deluxe AC room. Proportionate deduction applies if higher room chosen.",
     "optional": false,
-    "ordinal": 4
+    "ordinal": 5
   },
   "icu": {
     "display": "No cap (at actuals)",
@@ -21,7 +21,7 @@
     "display": "10% if Zone II insured treats in Zone I",
     "note": "Zone I insured: no co-pay. Zone II insured taking treatment in Zone I cities: 10% co-pay. No co-pay for accidents or sub-limited treatments.",
     "optional": false,
-    "number": 10
+    "number": 0
   },
   "sub_limits": {
     "display": "Cataract, modern treatments, congenital external, mental illness, ARMD, genetic disorders capped",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy Clause Yuva Bharat Health Policy.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:35:50.756Z"
+  "extracted_at": "2026-09-17T13:35:50.756Z",
+  "audited_at": "2026-10-09"
 }
