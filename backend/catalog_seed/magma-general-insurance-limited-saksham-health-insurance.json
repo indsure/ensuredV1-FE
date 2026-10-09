@@ -42,8 +42,8 @@
     "optional": false
   },
   "ped_waiting": {
-    "number": 24,
-    "display": "24 months (disability/HIV); 36 months (other PEDs)",
+    "number": 36,
+    "display": "36 months (24 months for pre-existing disability)",
     "note": "24 months for pre-existing disability and HIV/AIDS; 36 months for all other pre-existing conditions",
     "optional": false
   },
@@ -61,8 +61,8 @@
     "optional": false
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
+    "number": 0,
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording",
     "optional": false
   },
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Policy Wordings – Saksham Health Insurance (w.e.f. 1st Oct, 2024).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-18T05:34:11.795Z"
+  "extracted_at": "2026-09-18T05:34:11.795Z",
+  "audited_at": "2026-10-09"
 }

@@ -19,7 +19,7 @@
   },
   "copayment": {
     "number": 30,
-    "display": "30% mandatory (waived for accidents; sublimit procedures exempt; joint replacement has additional 30% Gold / 20% Platinum)",
+    "display": "30% on all claims (not accidents); more for joint replacement",
     "note": "30% co-pay on all admissible claims except accident claims and procedures with defined sublimits. Joint replacement attracts additional co-pay of 30% (Gold) or 20% (Platinum). Optional cover 2.B.2 can reduce co-pay; optional cover 2.B.9 can increase it.",
     "optional": false
   },
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy Wordings – OneHealth Senior (w.e.f. 1st Oct, 2024).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-18T05:34:12.875Z"
+  "extracted_at": "2026-09-18T05:34:12.875Z",
+  "audited_at": "2026-10-09"
 }

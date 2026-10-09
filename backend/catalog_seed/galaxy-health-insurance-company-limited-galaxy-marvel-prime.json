@@ -32,8 +32,8 @@
     "display": "30 days"
   },
   "ped_waiting": {
-    "number": 24,
-    "display": "24 months (reducible to 12 mo via optional add-on)",
+    "number": 12,
+    "display": "24 months (12 months with optional cover)",
     "note": "Base PED waiting period is 24 months (better than Neo's 36 months). Optional cover allows further reduction to 12 months at inception only."
   },
   "specific_disease_waiting": {
@@ -129,7 +129,8 @@
   "uin": "GHIHLIP26042V012526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy Wording (6).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:57:19.648Z"
+  "extracted_at": "2026-09-20T07:57:19.648Z",
+  "audited_at": "2026-10-09"
 }

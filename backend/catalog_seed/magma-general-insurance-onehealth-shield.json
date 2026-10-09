@@ -54,8 +54,8 @@
     "note": "20% of SI per year, max 100%. Bonus Booster not available for Shield plan."
   },
   "restoration": {
-    "ordinal": 3,
-    "display": "Unlimited, 100% (unrelated only)",
+    "ordinal": 5,
+    "display": "Unlimited, 100% (not for an illness already claimed)",
     "note": "100% recharge unlimited times from 2nd claim onwards for unrelated illness/injury. Optional cover 13 extends to same/related illness."
   },
   "pre_hosp": {
@@ -127,7 +127,8 @@
   "uin": "MAGHLIP27039V072627",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy Wordings – OneHealth (w.e.f. 27th May, 2026).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:05:11.340Z"
+  "extracted_at": "2026-09-20T08:05:11.340Z",
+  "audited_at": "2026-10-09"
 }

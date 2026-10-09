@@ -131,7 +131,8 @@
   "uin": "GHIHLIP25037V012425",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy Wording (1).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:56:57.839Z"
+  "extracted_at": "2026-09-20T07:56:57.839Z",
+  "audited_at": "2026-10-09"
 }

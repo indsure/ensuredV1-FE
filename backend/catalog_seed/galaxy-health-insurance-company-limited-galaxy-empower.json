@@ -32,8 +32,8 @@
     "note": "90-day waiting period applies for HIV/AIDS benefit basis cover"
   },
   "ped_waiting": {
-    "number": 24,
-    "display": "24 months (disability PED); 36 months (other PED)",
+    "number": 36,
+    "display": "36 months (24 months for pre-existing disability)",
     "note": "PED waiting: 36 months for general diseases, 24 months for pre-existing disability, 90 days for HIV/AIDS"
   },
   "specific_disease_waiting": {
@@ -48,8 +48,8 @@
     "note": "Maternity explicitly excluded under Code Excl 18; ectopic pregnancy is covered"
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
+    "number": 0,
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording"
   },
   "restoration": {
@@ -130,7 +130,8 @@
   "uin": "GHIHLIP25040V012425",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy Wording (5).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:56:50.135Z"
+  "extracted_at": "2026-09-20T07:56:50.135Z",
+  "audited_at": "2026-10-09"
 }
