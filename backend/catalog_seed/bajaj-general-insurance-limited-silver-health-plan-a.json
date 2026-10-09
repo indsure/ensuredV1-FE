@@ -3,8 +3,8 @@
   "sum_insured_options": "₹50,000 / ₹1 Lac / ₹1.5 Lacs / ₹2 Lacs / ₹3 Lacs / ₹5 Lacs / ₹7.5 Lacs / ₹10 Lacs",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 4,
-    "display": "Single Private AC Room",
+    "ordinal": 5,
+    "display": "No limit (at actuals)",
     "note": "Proportionate deduction applies if higher room taken. Optional add-on can cap to 1% of SI/day (max ₹7,500) for a premium discount."
   },
   "icu": {
@@ -57,12 +57,12 @@
   },
   "pre_hosp": {
     "number": null,
-    "display": "3% of hospitalisation expenses",
+    "display": "3% of the hospital bill, for pre and post together (no day limit)",
     "note": "Pre-hospitalisation covered as 3% of admissible hospitalisation expenses (not day-based)."
   },
   "post_hosp": {
     "number": null,
-    "display": "3% of hospitalisation expenses",
+    "display": "3% of the hospital bill, for pre and post together (no day limit)",
     "note": "Post-hospitalisation covered as 3% of admissible hospitalisation expenses (not day-based)."
   },
   "day_care": {
@@ -79,7 +79,7 @@
   },
   "organ_donor": {
     "exists": false,
-    "display": "Not specified"
+    "display": "Not covered"
   },
   "ambulance": {
     "number": 1000,
@@ -123,7 +123,8 @@
   "uin": "BAJHLIP23213V052223",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Silver-Health_PW.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:53:49.140Z"
+  "extracted_at": "2026-09-20T07:53:49.140Z",
+  "audited_at": "2026-10-09"
 }

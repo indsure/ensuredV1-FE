@@ -3,9 +3,9 @@
   "sum_insured_options": "Not specified in wording (room rent plan opted by insured drives coverage)",
   "confidence": "medium",
   "room_rent": {
-    "ordinal": 3,
-    "display": "Per day room rent plan opted by insured",
-    "note": "Insured selects a per-day room rent limit at inception; proportionate deduction applies if higher room is taken. ICU at actuals."
+    "ordinal": 2,
+    "display": "Fixed rupee limit per day, chosen at purchase (in Policy Schedule)",
+    "note": "The buyer picks a per-day room rent plan. Listed conditions are also capped at 100 times that daily limit per claim."
   },
   "icu": {
     "ordinal": 5,
@@ -49,8 +49,8 @@
     "note": "Excl18 explicitly excludes maternity expenses (childbirth, C-section, miscarriage, MTP). Ectopic pregnancy is covered."
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
+    "number": 0,
+    "display": "None",
     "note": "Cumulative Bonus is defined in the policy but no rate or maximum accumulation is stated in the wording."
   },
   "restoration": {
@@ -135,7 +135,8 @@
   "uin": "BAJHLIP21005V022021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Health-Infinity_PW.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:53:08.203Z"
+  "extracted_at": "2026-09-20T07:53:08.203Z",
+  "audited_at": "2026-10-09"
 }
