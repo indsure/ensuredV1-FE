@@ -103,7 +103,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "Policy wording does not mention organ donor expense cover.",
     "optional": false,
     "exists": false
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Arogya_Sanjeevani_Policy_Policy_Wordings_1_e781099458.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:33:00.969Z"
+  "extracted_at": "2026-09-20T07:33:00.969Z",
+  "audited_at": "2026-10-09"
 }

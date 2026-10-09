@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy_Document_Multiplier.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:31:32.516Z"
+  "extracted_at": "2026-09-20T07:31:32.516Z",
+  "audited_at": "2026-10-09"
 }

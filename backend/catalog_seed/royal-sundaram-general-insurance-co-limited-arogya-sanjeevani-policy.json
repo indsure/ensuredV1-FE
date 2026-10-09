@@ -103,7 +103,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "No mention of organ donor expense cover in the policy wording",
     "optional": false,
     "exists": false
@@ -159,7 +159,8 @@
   "notable_exclusions": "Domiciliary & OPD, maternity, infertility/IVF, overseas treatment, refractive error <7.5D, war, nuclear/bio/chemical, substance abuse",
   "optional_riders": "Not specified",
   "source_file": "Policy_Document_Arogya_Sanjeevani_Policy.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:31:19.638Z"
+  "extracted_at": "2026-09-20T07:31:19.638Z",
+  "audited_at": "2026-10-09"
 }

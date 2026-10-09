@@ -6,16 +6,16 @@
   "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "1% of SI/day (SI ≥5L: 1% or Single AC room, higher)",
+    "display": "Single standard AC room or 1% of SI, whichever is higher (SI 5L+); 1% of SI below 5L",
     "note": "For SI < ₹5L: 1% of SI per day. For SI ≥ ₹5L: 1% of SI or Single Occupancy Standard AC Room, whichever is higher. Proportionate deduction applies if higher room taken.",
     "optional": false,
-    "ordinal": 3
+    "ordinal": 4
   },
   "icu": {
-    "display": "2% of SI/day (<₹5L); Actuals (≥₹5L)",
+    "display": "Actuals (SI 5L+); 2% of SI per day below 5L",
     "note": "For SI < ₹5L: 2% of SI per day. For SI ≥ ₹5L: actuals.",
     "optional": false,
-    "ordinal": 3
+    "ordinal": 5
   },
   "copayment": {
     "display": "10% (age of entry above 60)",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy Wordings - SHIP.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:34:57.567Z"
+  "extracted_at": "2026-09-20T07:34:57.567Z",
+  "audited_at": "2026-10-09"
 }

@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "20230913_Policy_Wordings_IHIP.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:33:57.937Z"
+  "extracted_at": "2026-09-20T07:33:57.937Z",
+  "audited_at": "2026-10-09"
 }

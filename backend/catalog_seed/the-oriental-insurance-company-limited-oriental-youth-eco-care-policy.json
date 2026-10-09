@@ -9,13 +9,13 @@
     "display": "Up to 1% of SI/day (≤₹5L); ₹10k/day (₹7-10L); Actuals (>₹10L)",
     "note": "Single room cap applies for SI up to 10L; proportionate clause applies if higher room taken",
     "optional": false,
-    "ordinal": 3
+    "ordinal": 5
   },
   "icu": {
     "display": "Up to ₹10k/day (≤₹5L); ₹20k/day (₹7-10L); Actuals (>₹10L)",
     "note": "Fixed daily cap for SI up to 10L; actuals for SI above 10L",
     "optional": false,
-    "ordinal": 2
+    "ordinal": 5
   },
   "copayment": {
     "display": "None",
@@ -166,7 +166,8 @@
     "optional": true
   },
   "source_file": "Oriental_Youth_Eco_Care_POLICY_PDF_PDF_1_93bd2ab510.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:33:51.250Z"
+  "extracted_at": "2026-09-20T07:33:51.250Z",
+  "audited_at": "2026-10-09"
 }

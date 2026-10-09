@@ -81,7 +81,7 @@
   },
   "organ_donor": {
     "exists": false,
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "No mention of organ donor expense cover in policy wording"
   },
   "ambulance": {
@@ -131,7 +131,8 @@
   "uin": "IFFPMIP23040V012223",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "wording-arogya-sanjeevani-mi-itgi.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:02:27.717Z"
+  "extracted_at": "2026-09-20T08:02:27.717Z",
+  "audited_at": "2026-10-09"
 }
