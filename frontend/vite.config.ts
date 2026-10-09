@@ -42,6 +42,11 @@ export default defineConfig(({ isSsrBuild }) => ({
       },
     },
     chunkSizeWarningLimit: 1000,
+    // Never inline fonts into the CSS. The stylesheet blocks rendering on every
+    // page, and the rupee-only faces (client/src/fonts) are small enough to be
+    // inlined by default, which added ~8 KB to it for a glyph most pages never
+    // show. As files, the browser fetches one only when the page uses it.
+    assetsInlineLimit: (file) => (/\.(woff2?|ttf)$/.test(file) ? false : undefined),
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'wouter'],

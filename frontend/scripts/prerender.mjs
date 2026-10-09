@@ -477,11 +477,18 @@ function gitDate(files) {
 // build, rather than in index.html. Every page below is built from this
 // template, so they all get it. A missing file fails the build: a stale
 // preload of a font nobody uses is wasted bandwidth on every page view.
+// Playfair Display 700 is preloaded too: it sets the hero heading on every
+// prerendered page, the heading is the largest paint, and without the hint the
+// browser only finds the font after the CSS has downloaded and parsed.
+const PRELOAD_FONTS = [/^inter-latin-400-normal-[\w-]+\.woff2$/, /^playfair-display-latin-700-normal-[\w-]+\.woff2$/];
+
 function withFontPreload(html, assetFiles) {
-  const font = assetFiles.find((f) => /^inter-latin-400-normal-[\w-]+\.woff2$/.test(f));
-  if (!font) throw new Error("[prerender] Inter latin 400 woff2 not found in dist/assets; fix the preload");
-  const tag = `<link rel="preload" href="/assets/${font}" as="font" type="font/woff2" crossorigin />`;
-  return html.replace("</title>", `</title>\n  ${tag}`);
+  const tags = PRELOAD_FONTS.map((pattern) => {
+    const font = assetFiles.find((f) => pattern.test(f));
+    if (!font) throw new Error(`[prerender] no font in dist/assets matches ${pattern}; fix the preload`);
+    return `<link rel="preload" href="/assets/${font}" as="font" type="font/woff2" crossorigin />`;
+  });
+  return html.replace("</title>", `</title>\n  ${tags.join("\n  ")}`);
 }
 
 // ---------------------------------------------------------------------------
