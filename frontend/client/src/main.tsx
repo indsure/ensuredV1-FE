@@ -1,28 +1,11 @@
 import { createRoot, hydrateRoot } from "react-dom/client";
 import App from "./App";
-// Self-hosted fonts (no Google request, no consent banner needed). Only the
-// latin and latin-ext subsets: latin-ext is not optional, it is where the rupee
-// sign lives (U+20B9). The cyrillic, greek and vietnamese faces were dead CSS.
-// Hindi text uses the system Devanagari font either way; neither family has it.
-// Inter latin 400 is preloaded by scripts/prerender.mjs.
-import "@fontsource/inter/latin-300.css";
-import "@fontsource/inter/latin-ext-300.css";
-import "@fontsource/inter/latin-400.css";
-import "@fontsource/inter/latin-ext-400.css";
-import "@fontsource/inter/latin-500.css";
-import "@fontsource/inter/latin-ext-500.css";
-import "@fontsource/inter/latin-600.css";
-import "@fontsource/inter/latin-ext-600.css";
-import "@fontsource/playfair-display/latin-400.css";
-import "@fontsource/playfair-display/latin-ext-400.css";
-import "@fontsource/playfair-display/latin-400-italic.css";
-import "@fontsource/playfair-display/latin-ext-400-italic.css";
-import "@fontsource/playfair-display/latin-500.css";
-import "@fontsource/playfair-display/latin-ext-500.css";
-import "@fontsource/playfair-display/latin-600.css";
-import "@fontsource/playfair-display/latin-ext-600.css";
-import "@fontsource/playfair-display/latin-700.css";
-import "@fontsource/playfair-display/latin-ext-700.css";
+// Self-hosted fonts (no Google request, no consent banner needed): the latin
+// and latin-ext faces of Inter and Playfair Display, with unicode-range, so a
+// page downloads latin-ext only if it shows one of those glyphs (the rupee
+// sign is one). See fonts.css. Inter latin 400 is preloaded by
+// scripts/prerender.mjs.
+import "./fonts.css";
 import "./index.css";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import { getSavedLocale, loadLocale } from "./i18n";
