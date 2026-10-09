@@ -130,7 +130,19 @@ const app = (
 
 if (canHydrate) {
   enableStaticFirstPaint();
-  hydrateRoot(root, app);
+  // Paint first, hydrate second. The entry script often arrives before the
+  // browser has painted the HTML, and hydration is one long task, so running
+  // it straight away held the first paint back by over a second on /pricing.
+  // Waiting for the next frame lets the HTML reach the screen. The timer is a
+  // backstop for a tab opened in the background, where frames never fire.
+  let started = false;
+  const hydrate = () => {
+    if (started) return;
+    started = true;
+    hydrateRoot(root, app);
+  };
+  requestAnimationFrame(() => setTimeout(hydrate, 0));
+  setTimeout(hydrate, 300);
 } else {
   Promise.allSettled(ready).then(() => {
     createRoot(root).render(app);
