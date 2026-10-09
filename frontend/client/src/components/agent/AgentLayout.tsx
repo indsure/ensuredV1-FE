@@ -243,7 +243,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         <div className={`${sidebarCollapsed ? 'lg:px-3' : 'lg:px-6'} px-6 py-4 border-b border-white/5 flex items-center justify-between transition-all duration-300`}>
           <Link to="/agent/dashboard" className={`flex items-center ${sidebarCollapsed ? 'lg:justify-center' : 'gap-3'} flex-1 min-w-0`}>
             <img
-              src="/logo-white.png"
+              src="/logo-white.png" width={784} height={599}
               alt="IndSure"
               className={`${sidebarCollapsed ? 'lg:h-9 lg:w-9 h-10 w-10' : 'h-10 w-10'} object-contain flex-shrink-0`}
             />
@@ -487,7 +487,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
             <Menu className="h-6 w-6" />
           </button>
           <Link to="/agent/dashboard" className="flex min-h-11 items-center gap-2 px-1">
-            <img src="/logo-white.png" alt="IndSure" className="h-8 w-8 object-contain" />
+            <img src="/logo-white.png" width={784} height={599} alt="IndSure" className="h-8 w-8 object-contain" />
             <span className="font-bold">IndSure</span>
           </Link>
           <LanguageToggle variant="dark" />

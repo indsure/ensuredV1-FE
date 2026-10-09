@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { enterPlayground } from "@/lib/playground/mode";
-import { installPlaygroundFetch } from "@/lib/playground/mockClient";
+import { loadPlayground } from "@/lib/supabase";
 import { setTourState } from "@/lib/playground/tour";
 import { DEMO_ROUTES } from "@/lib/advisorGuide";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -31,12 +31,21 @@ export default function PlaygroundEntry() {
     const go = params.get("go");
     const target = go && DEMO_ROUTES.has(go) ? go : "/agent/dashboard";
 
-    enterPlayground();
-    installPlaygroundFetch(); // patch fetch now so /api flows simulate without a reload
-    if (params.get("tour") === "1") setTourState(0);
-    else if (!go) setTourState("welcome");
-    else setTourState(null);
-    setLocation(params.get("tour") === "1" ? "/agent/dashboard" : target, { replace: true });
+    let cancelled = false;
+    // The mock must be in memory before the flag goes on, or the dashboard's
+    // first queries would reach the real client. It also patches fetch, so
+    // /api flows simulate without a reload.
+    loadPlayground().then(() => {
+      if (cancelled) return;
+      enterPlayground();
+      if (params.get("tour") === "1") setTourState(0);
+      else if (!go) setTourState("welcome");
+      else setTourState(null);
+      setLocation(params.get("tour") === "1" ? "/agent/dashboard" : target, { replace: true });
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [search, setLocation]);
 
   return (

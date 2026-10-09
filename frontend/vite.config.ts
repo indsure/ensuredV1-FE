@@ -23,10 +23,18 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'router-vendor': ['wouter'],
-          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-toast'],
+        // Long-lived vendor code in its own files, so an app deploy does not
+        // invalidate it (assets are cached immutably, see vercel.json). The
+        // object form of manualChunks silently produced an EMPTY react-vendor
+        // chunk and left react-dom in the entry. Radix is no longer grouped:
+        // a forced group made every page download the dialog, dropdown and
+        // select code that only a few lazy pages use.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react-vendor';
+          if (/[\\/]node_modules[\\/](@supabase[\\/]|iceberg-js)/.test(id)) return 'supabase-vendor';
+          if (/[\\/]node_modules[\\/]wouter[\\/]/.test(id)) return 'router-vendor';
+          return undefined;
         },
       },
     },

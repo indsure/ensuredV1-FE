@@ -1,4 +1,4 @@
-import mixpanel from "mixpanel-browser";
+import type { OverridedMixpanel } from "mixpanel-browser";
 
 /**
  * Mixpanel analytics + Session Replay for the IndSure frontend.
@@ -59,9 +59,23 @@ const ENABLED = Boolean(TOKEN) && (import.meta.env.PROD || DEBUG_MODE);
 
 let started = false;
 
+// The SDK (with its Session Replay recorder) is the single largest dependency
+// in the app, so it is fetched as its own chunk only when analytics is enabled.
+// Production ships with no token, so there it is never downloaded at all.
+let mixpanel: OverridedMixpanel;
+
+// Calls made while the SDK chunk is still loading (the first page view, mostly)
+// wait here and replay once init lands. Capped so a load that never finishes
+// cannot grow it without bound.
+const pending: Array<() => void> = [];
+let loading = false;
+
 /** Swallow SDK failures — analytics must never take a page down. */
 function safe<T>(fn: () => T): T | undefined {
-  if (!started) return undefined;
+  if (!started) {
+    if (loading && pending.length < 50) pending.push(() => void fn());
+    return undefined;
+  }
   try {
     return fn();
   } catch {
@@ -74,8 +88,24 @@ function safe<T>(fn: () => T): T | undefined {
 // ---------------------------------------------------------------------------
 
 export function initMixpanel(): void {
-  if (started || !ENABLED) return;
+  if (started || loading || !ENABLED) return;
+  loading = true;
+  import("mixpanel-browser")
+    .then((mod) => {
+      mixpanel = mod.default;
+      startMixpanel();
+    })
+    .catch(() => {
+      /* analytics is optional; the page carries on without it */
+    })
+    .finally(() => {
+      loading = false;
+      const queued = pending.splice(0);
+      if (started) queued.forEach((fn) => { try { fn(); } catch { /* non-fatal */ } });
+    });
+}
 
+function startMixpanel(): void {
   try {
     mixpanel.init(TOKEN, {
       api_host: API_HOST,
@@ -333,5 +363,3 @@ export function startRecording(): void {
 export function stopRecording(): void {
   safe(() => mixpanel.stop_session_recording());
 }
-
-export { mixpanel };

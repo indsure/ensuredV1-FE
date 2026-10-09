@@ -1,5 +1,4 @@
 import en from "./locales/en.json";
-import hi from "./locales/hi.json";
 import { hi as hiDates } from "date-fns/locale/hi";
 import type { Locale as DateLocale } from "date-fns";
 
@@ -10,7 +9,19 @@ export const SUPPORTED_LANGUAGES: { code: Locale; label: string }[] = [
   { code: "hi", label: "हिंदी" },
 ];
 
-const translations: Record<Locale, Record<string, any>> = { en, hi };
+// English ships in the entry bundle because it is the fallback for every key.
+// Hindi is fetched only by a visitor who picks it (main.tsx loads it before the
+// first render when it was saved), so English readers never download it.
+const translations: Partial<Record<Locale, Record<string, any>>> = { en };
+
+export function isLocaleLoaded(locale: Locale): boolean {
+  return Boolean(translations[locale]);
+}
+
+export async function loadLocale(locale: Locale): Promise<void> {
+  if (translations[locale]) return;
+  if (locale === "hi") translations.hi = (await import("./locales/hi.json")).default;
+}
 
 export type TranslateVars = Record<string, string | number>;
 

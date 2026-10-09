@@ -1,17 +1,33 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
-// Self-hosted fonts (no Google request, no consent banner needed).
-import "@fontsource/inter/300.css";
-import "@fontsource/inter/400.css";
-import "@fontsource/inter/500.css";
-import "@fontsource/inter/600.css";
-import "@fontsource/playfair-display/400.css";
-import "@fontsource/playfair-display/400-italic.css";
-import "@fontsource/playfair-display/500.css";
-import "@fontsource/playfair-display/600.css";
-import "@fontsource/playfair-display/700.css";
+// Self-hosted fonts (no Google request, no consent banner needed). Only the
+// latin and latin-ext subsets: latin-ext is not optional, it is where the rupee
+// sign lives (U+20B9). The cyrillic, greek and vietnamese faces were dead CSS.
+// Hindi text uses the system Devanagari font either way; neither family has it.
+// Inter latin 400 is preloaded by scripts/prerender.mjs.
+import "@fontsource/inter/latin-300.css";
+import "@fontsource/inter/latin-ext-300.css";
+import "@fontsource/inter/latin-400.css";
+import "@fontsource/inter/latin-ext-400.css";
+import "@fontsource/inter/latin-500.css";
+import "@fontsource/inter/latin-ext-500.css";
+import "@fontsource/inter/latin-600.css";
+import "@fontsource/inter/latin-ext-600.css";
+import "@fontsource/playfair-display/latin-400.css";
+import "@fontsource/playfair-display/latin-ext-400.css";
+import "@fontsource/playfair-display/latin-400-italic.css";
+import "@fontsource/playfair-display/latin-ext-400-italic.css";
+import "@fontsource/playfair-display/latin-500.css";
+import "@fontsource/playfair-display/latin-ext-500.css";
+import "@fontsource/playfair-display/latin-600.css";
+import "@fontsource/playfair-display/latin-ext-600.css";
+import "@fontsource/playfair-display/latin-700.css";
+import "@fontsource/playfair-display/latin-ext-700.css";
 import "./index.css";
 import { LanguageProvider } from "./i18n/LanguageContext";
+import { getSavedLocale, loadLocale } from "./i18n";
+import { isPlaygroundMode } from "./lib/playground/mode";
+import { loadPlayground } from "./lib/supabase";
 
 // #region agent log
 try {
@@ -83,8 +99,18 @@ function recoverFromStaleChunk(reason: unknown) {
 window.addEventListener("vite:preloadError", (e) => recoverFromStaleChunk((e as any)?.payload));
 window.addEventListener("unhandledrejection", (e) => recoverFromStaleChunk(e.reason));
 
-createRoot(document.getElementById("root")!).render(
-  <LanguageProvider>
-    <App />
-  </LanguageProvider>
-);
+// Two optional chunks have to be in memory before the first render, or the page
+// would paint wrong and then change: Hindi strings for a visitor who chose Hindi,
+// and the demo mock for a tab already in playground mode. Everyone else renders
+// straight away. A failed fetch still renders (English / an empty portal).
+const ready: Promise<unknown>[] = [];
+if (getSavedLocale() === "hi") ready.push(loadLocale("hi"));
+if (isPlaygroundMode()) ready.push(loadPlayground());
+
+Promise.allSettled(ready).then(() => {
+  createRoot(document.getElementById("root")!).render(
+    <LanguageProvider>
+      <App />
+    </LanguageProvider>
+  );
+});

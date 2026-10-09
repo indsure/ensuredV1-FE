@@ -13,7 +13,7 @@
 // (already a Vite dependency). No headless browser, so it is safe in CI/Vercel.
 
 import { build } from "esbuild";
-import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rm, readdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -463,13 +463,25 @@ function gitDate(files) {
 
 // ---------------------------------------------------------------------------
 // Build
+// Body text is Inter 400, so the browser should not wait for the CSS to find
+// it. Vite gives the file a content hash, so the tag is written here, after the
+// build, rather than in index.html. Every page below is built from this
+// template, so they all get it. A missing file fails the build: a stale
+// preload of a font nobody uses is wasted bandwidth on every page view.
+function withFontPreload(html, assetFiles) {
+  const font = assetFiles.find((f) => /^inter-latin-400-normal-[\w-]+\.woff2$/.test(f));
+  if (!font) throw new Error("[prerender] Inter latin 400 woff2 not found in dist/assets; fix the preload");
+  const tag = `<link rel="preload" href="/assets/${font}" as="font" type="font/woff2" crossorigin />`;
+  return html.replace("</title>", `</title>\n  ${tag}`);
+}
+
 // ---------------------------------------------------------------------------
 async function main() {
   if (!existsSync(DIST)) {
     console.error("[prerender] dist/ not found. Run `vite build` first.");
     process.exit(1);
   }
-  const template = await readFile(join(DIST, "index.html"), "utf8");
+  const template = withFontPreload(await readFile(join(DIST, "index.html"), "utf8"), await readdir(join(DIST, "assets")));
 
   const {
     blogPosts,

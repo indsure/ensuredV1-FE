@@ -57,7 +57,7 @@ export function AuthShell({
           <div className="flex items-center justify-between gap-4">
             <Link href="/">
               <img
-                src="/logo-white.png"
+                src="/logo-white.png" width={784} height={599}
                 alt="IndSure"
                 className="h-9 lg:h-10 w-auto object-contain cursor-pointer"
               />

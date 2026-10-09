@@ -17,7 +17,8 @@ import ReportDispatcher from "@/components/ReportDispatcher";
 const AuthProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
 /* ===================== ADD (Sach AI) ===================== */
-import SachAIChat from "@/components/SachAIChat";
+// Lazy: the widget pulls in the whole clause library, which no page needs to paint.
+const SachAIChat = lazy(() => import("@/components/SachAIChat"));
 /* ========================================================= */
 
 // --- Agent Auth ---
@@ -58,7 +59,8 @@ import {
   AgentHelp,
 } from "@/pages/agent/lazyRoutes";
 const JoinTeam = lazy(() => import("@/pages/agent/JoinTeam"));
-import AgentProtectedRoute from "@/components/agent/ProtectedRoute";
+// Lazy: it brings AgentLayout (sidebar, playground tour) that public pages never use.
+const AgentProtectedRoute = lazy(() => import("@/components/agent/ProtectedRoute"));
 
 // --- Advisor landing pages (public, per-agent lead capture) ---
 const AdvisorPage = lazy(() => import("@/pages/advisor-page"));
@@ -341,7 +343,9 @@ function App() {
                   </Suspense>
 
                   <MobileNav />
-                  <SachAIChat />
+                  <Suspense fallback={null}>
+                    <SachAIChat />
+                  </Suspense>
                 </TooltipProvider>
             </AnalysisProvider>
           </AuthProvider>

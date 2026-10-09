@@ -416,7 +416,7 @@ export default function PortfolioPage() {
       <header className="sticky top-0 z-30 border-b border-[var(--color-border-light)] bg-[var(--color-cream-main)]/85 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-5 sm:px-6 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <img src="/logo.png" alt="IndSure" className="h-7 sm:h-8 w-auto" />
+            <img src="/logo.png" width={784} height={599} alt="IndSure" className="h-7 sm:h-8 w-auto" />
             <span className="hidden sm:inline text-[var(--color-border-medium)]">/</span>
             <span className="hidden sm:inline text-sm font-semibold text-[var(--color-text-secondary)]">{t("pf.portfolio")}</span>
           </div>

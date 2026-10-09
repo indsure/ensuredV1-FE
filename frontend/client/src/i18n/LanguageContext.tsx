@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { Locale, SUPPORTED_LANGUAGES, getTranslator, getSavedLocale, type TranslateVars } from "./index";
+import { Locale, SUPPORTED_LANGUAGES, getTranslator, getSavedLocale, loadLocale, type TranslateVars } from "./index";
 
 type LanguageContextType = {
   locale: Locale;
@@ -16,7 +16,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     try { localStorage.setItem("indsure_lang", next); } catch { /* still switch for this visit */ }
     // Screen readers and the browser's own hyphenation read the page language.
     if (typeof document !== "undefined") document.documentElement.lang = next;
-    setLocaleState(next);
+    // Hindi is its own chunk. Switch once it has arrived; if the fetch fails,
+    // switch anyway and every key falls back to English.
+    loadLocale(next).then(() => setLocaleState(next), () => setLocaleState(next));
   }
 
   return (

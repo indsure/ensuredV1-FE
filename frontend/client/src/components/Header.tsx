@@ -129,7 +129,7 @@ export function Header() {
         <div className="flex items-center gap-8 xl:gap-11 min-w-0">
           <Link href="/" aria-label={t("site.home_aria")} className="shrink-0">
             <img
-              src="/logo.png"
+              src="/logo.png" width={784} height={599}
               alt="IndSure"
               className={`w-auto transition-[height,transform] duration-300 hover:scale-[1.04] ${isScrolled ? "h-9" : "h-11"}`}
             />

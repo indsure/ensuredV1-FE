@@ -105,7 +105,7 @@ export default function LoginNew() {
 
         <div className="relative z-10 flex flex-col">
           <Link href="/" aria-label="IndSure home" className="w-fit">
-            <img src="/logo-white.png" alt="IndSure" className="h-12 w-auto object-contain cursor-pointer" />
+            <img src="/logo-white.png" width={784} height={599} alt="IndSure" className="h-12 w-auto object-contain cursor-pointer" />
           </Link>
 
           <div className="mt-14">
@@ -151,7 +151,7 @@ export default function LoginNew() {
         <div className="w-full max-w-md space-y-10">
           {/* Logo — visible on mobile where the left panel is hidden */}
           <Link href="/" aria-label="IndSure home">
-            <img src="/logo.png" alt="IndSure" className="lg:hidden h-9 w-auto mx-auto cursor-pointer" />
+            <img src="/logo.png" width={784} height={599} alt="IndSure" className="lg:hidden h-9 w-auto mx-auto cursor-pointer" />
           </Link>
 
           <div className="text-center">

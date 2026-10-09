@@ -58,7 +58,7 @@ export default function Start() {
         {/* LOGO — not a link. The only way off this page is the CTA. */}
         {/* No site header on this page, so the language toggle sits by the logo. */}
         <div className="max-w-2xl mx-auto mb-10 md:mb-14 flex items-center justify-between gap-4">
-          <img src="/logo.png" alt="IndSure" className="h-9 w-auto" />
+          <img src="/logo.png" width={784} height={599} alt="IndSure" className="h-9 w-auto" />
           <LanguageToggle />
         </div>
 

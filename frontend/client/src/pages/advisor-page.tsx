@@ -22,7 +22,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRoute } from "wouter";
 import { Loader2, Upload, MessageCircle, Phone, Check, X, ShieldCheck, FileText } from "lucide-react";
-import { getTranslator } from "@/i18n";
+import { getTranslator, loadLocale } from "@/i18n";
 import { useSEO } from "@/hooks/use-seo";
 import { MpEvent, track } from "@/lib/mixpanel";
 import {
@@ -60,6 +60,11 @@ export default function AdvisorPage() {
 
   const utm = useMemo(() => readUtm(), []);
   const t = useMemo(() => getTranslator(locale), [locale]);
+  // Hindi strings are a separate chunk; switch only once they are in, so the
+  // page never shows a half-English frame. A failed fetch falls back to English.
+  const switchLocale = (next: PageLocale) => {
+    loadLocale(next).then(() => setLocale(next), () => setLocale(next));
+  };
 
   useEffect(() => {
     let alive = true;
@@ -69,7 +74,7 @@ export default function AdvisorPage() {
         if (!res) return setState({ kind: "notfound" });
         if (!res.live) return setState({ kind: "inactive", name: res.display_name });
         setState({ kind: "live", page: res });
-        setLocale(res.primary_locale);
+        switchLocale(res.primary_locale);
         recordView(slug, utm.source);
       })
       .catch(() => alive && setState({ kind: "notfound" }));
@@ -143,7 +148,7 @@ export default function AdvisorPage() {
             {(["en", "hi"] as PageLocale[]).map((l) => (
               <button
                 key={l}
-                onClick={() => setLocale(l)}
+                onClick={() => switchLocale(l)}
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition ${
                   locale === l
                     ? "bg-[var(--color-green-primary)] text-white"
