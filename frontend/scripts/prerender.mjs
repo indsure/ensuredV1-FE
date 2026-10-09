@@ -174,7 +174,9 @@ function injectJsonLd(html, blocks) {
 function injectBody(html, bodyHtml, currentPath) {
   const rendered = currentPath !== undefined ? SSR_HTML.get(currentPath) : undefined;
   if (rendered !== undefined) {
-    return html.replace(/<div id="root">[\s\S]*?<\/div>/, () => `<div id="root" data-prerendered>${rendered}</div>`);
+    return loadAppAfterPaint(
+      html.replace(/<div id="root">[\s\S]*?<\/div>/, () => `<div id="root" data-prerendered>${rendered}</div>`),
+    );
   }
   if (currentPath !== undefined) bodyHtml += navHtml(currentPath);
   return html.replace(
@@ -489,6 +491,24 @@ function withFontPreload(html, assetFiles) {
     return `<link rel="preload" href="/assets/${font}" as="font" type="font/woff2" crossorigin />`;
   });
   return html.replace("</title>", `</title>\n  ${tags.join("\n  ")}`);
+}
+
+// A prerendered page is complete without JavaScript, so its app bundle starts
+// loading only after the first frame has painted. With the usual
+// <script type="module"> (plus modulepreloads) in <head>, the bundle often
+// arrived and ran before the browser had painted the HTML, holding the first
+// paint back on slow phones, and PageSpeed scores flipped between ~82 and ~95
+// depending on which happened first. The vendor chunks are fetched by the
+// entry's own imports instead of being preloaded. The timer covers a tab opened
+// in the background, where frames never fire.
+function loadAppAfterPaint(html) {
+  const entry = html.match(/<script type="module" crossorigin src="([^"]+)"><\/script>/);
+  if (!entry) throw new Error("[prerender] entry <script type=module> not found; fix loadAppAfterPaint");
+  const loader =
+    `<script>(function(){var d=false;function go(){if(d)return;d=true;` +
+    `var s=document.createElement("script");s.type="module";s.crossOrigin="";s.src=${JSON.stringify(entry[1])};` +
+    `document.head.appendChild(s)}requestAnimationFrame(function(){setTimeout(go,0)});setTimeout(go,1000)})()</script>`;
+  return html.replace(entry[0], loader).replace(/\s*<link rel="modulepreload"[^>]*>/g, "");
 }
 
 // ---------------------------------------------------------------------------
