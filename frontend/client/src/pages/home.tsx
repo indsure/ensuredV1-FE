@@ -74,11 +74,11 @@ function Hero() {
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute inset-0 bg-grid-faint mask-fade-edges" />
         <div
-          className="absolute -top-32 -right-24 h-[520px] w-[520px] rounded-full opacity-60 blur-3xl"
+          className="absolute -top-32 -right-24 h-[520px] w-[520px] rounded-full opacity-60"
           style={{ background: "radial-gradient(circle, rgba(45,212,191,0.20), transparent 68%)" }}
         />
         <div
-          className="absolute top-40 -left-40 h-[460px] w-[460px] rounded-full opacity-50 blur-3xl"
+          className="absolute top-40 -left-40 h-[460px] w-[460px] rounded-full opacity-50"
           style={{ background: "radial-gradient(circle, rgba(180,83,9,0.10), transparent 68%)" }}
         />
       </div>
@@ -871,7 +871,7 @@ export default function Home() {
           <div className="pointer-events-none absolute inset-0" aria-hidden="true">
             <div className="absolute inset-0 bg-grid-faint-dark mask-fade-edges" />
             <div
-              className="absolute left-1/2 top-0 h-[420px] w-[820px] -translate-x-1/2 -translate-y-1/3 rounded-full blur-3xl"
+              className="absolute left-1/2 top-0 h-[420px] w-[820px] -translate-x-1/2 -translate-y-1/3 rounded-full"
               style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.22), transparent 70%)" }}
             />
           </div>

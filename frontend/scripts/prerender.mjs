@@ -499,15 +499,22 @@ function withFontPreload(html, assetFiles) {
 // arrived and ran before the browser had painted the HTML, holding the first
 // paint back on slow phones, and PageSpeed scores flipped between ~82 and ~95
 // depending on which happened first. The vendor chunks are fetched by the
-// entry's own imports instead of being preloaded. The timer covers a tab opened
-// in the background, where frames never fire.
+// entry's own imports instead of being preloaded.
+//
+// A visible tab waits for a real frame, however long the first frame takes to
+// draw (a slow phone can need over a second): an earlier version also had a
+// 1 s timer, which on exactly those phones fired first and put the JavaScript
+// back ahead of the paint. A tab opened in the background never draws frames,
+// so it loads the app when it is shown, or after 1 s, whichever comes first.
 function loadAppAfterPaint(html) {
   const entry = html.match(/<script type="module" crossorigin src="([^"]+)"><\/script>/);
   if (!entry) throw new Error("[prerender] entry <script type=module> not found; fix loadAppAfterPaint");
   const loader =
     `<script>(function(){var d=false;function go(){if(d)return;d=true;` +
     `var s=document.createElement("script");s.type="module";s.crossOrigin="";s.src=${JSON.stringify(entry[1])};` +
-    `document.head.appendChild(s)}requestAnimationFrame(function(){setTimeout(go,0)});setTimeout(go,1000)})()</script>`;
+    `document.head.appendChild(s)}` +
+    `if(document.visibilityState==="hidden"){document.addEventListener("visibilitychange",go,{once:true});setTimeout(go,1000)}` +
+    `else requestAnimationFrame(function(){setTimeout(go,0)})})()</script>`;
   return html.replace(entry[0], loader).replace(/\s*<link rel="modulepreload"[^>]*>/g, "");
 }
 

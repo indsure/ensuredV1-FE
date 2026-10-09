@@ -107,7 +107,7 @@ export function CalculatorLanding({ onStart }: LandingProps) {
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div className="absolute inset-0 bg-grid-faint mask-fade-edges" />
           <div
-            className="absolute -top-32 left-1/2 h-[480px] w-[860px] -translate-x-1/2 rounded-full opacity-60 blur-3xl"
+            className="absolute -top-32 left-1/2 h-[480px] w-[860px] -translate-x-1/2 rounded-full opacity-60"
             style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.20), transparent 68%)" }}
           />
         </div>
@@ -293,7 +293,7 @@ export function CalculatorLanding({ onStart }: LandingProps) {
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div className="absolute inset-0 bg-grid-faint-dark mask-fade-edges" />
           <div
-            className="absolute -top-24 right-0 h-[420px] w-[560px] rounded-full blur-3xl"
+            className="absolute -top-24 right-0 h-[420px] w-[560px] rounded-full"
             style={{ background: "radial-gradient(circle, rgba(180,83,9,0.22), transparent 70%)" }}
           />
         </div>

@@ -133,7 +133,7 @@ export default function HowItWorks() {
           <div className="pointer-events-none absolute inset-0" aria-hidden="true">
             <div className="absolute inset-0 bg-grid-faint mask-fade-edges" />
             <div
-              className="absolute -top-40 left-1/2 h-[520px] w-[880px] -translate-x-1/2 rounded-full opacity-70 blur-3xl"
+              className="absolute -top-40 left-1/2 h-[520px] w-[880px] -translate-x-1/2 rounded-full opacity-70"
               style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.20), transparent 68%)" }}
             />
           </div>
@@ -329,7 +329,7 @@ export default function HowItWorks() {
           <div className="pointer-events-none absolute inset-0" aria-hidden="true">
             <div className="absolute inset-0 bg-grid-faint-dark mask-fade-edges" />
             <div
-              className="absolute left-1/2 top-0 h-[420px] w-[820px] -translate-x-1/2 -translate-y-1/3 rounded-full blur-3xl"
+              className="absolute left-1/2 top-0 h-[420px] w-[820px] -translate-x-1/2 -translate-y-1/3 rounded-full"
               style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.22), transparent 70%)" }}
             />
           </div>

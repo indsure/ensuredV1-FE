@@ -94,7 +94,7 @@ export function PolicyCheckerLanding() {
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div className="absolute inset-0 bg-grid-faint mask-fade-edges" />
           <div
-            className="absolute -top-32 right-0 h-[480px] w-[620px] rounded-full opacity-60 blur-3xl"
+            className="absolute -top-32 right-0 h-[480px] w-[620px] rounded-full opacity-60"
             style={{ background: "radial-gradient(circle, rgba(45,212,191,0.20), transparent 68%)" }}
           />
         </div>
