@@ -131,7 +131,14 @@
   "uin": "RELHLGP21524V022021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "indusind-yes-plus-health-insurance-pw.pdf",
-  "status": "unverified",
+  "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:03:15.140Z"
+  "extracted_at": "2026-09-20T08:03:15.140Z",
+  "audit_gaps": [
+    "room_rent",
+    "icu",
+    "cumulative_bonus",
+    "deductible"
+  ],
+  "audited_at": "2026-10-09"
 }

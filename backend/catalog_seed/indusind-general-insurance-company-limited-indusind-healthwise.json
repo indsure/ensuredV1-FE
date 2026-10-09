@@ -3,13 +3,13 @@
   "sum_insured_options": "Not specified in wording; refer Policy Schedule",
   "confidence": "low",
   "room_rent": {
-    "ordinal": 0,
-    "display": "Not specified",
+    "ordinal": 5,
+    "display": "No limit (at actuals)",
     "note": "Room rent limit not stated in wording; specified in Policy Schedule per plan"
   },
   "icu": {
-    "ordinal": 0,
-    "display": "Not specified",
+    "ordinal": 5,
+    "display": "No limit (at actuals)",
     "note": "ICU limit not stated in wording; specified in Policy Schedule per plan"
   },
   "copayment": {
@@ -59,12 +59,12 @@
   },
   "pre_hosp": {
     "number": null,
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Number of days specified in Policy Schedule"
   },
   "post_hosp": {
     "number": null,
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Number of days specified in Policy Schedule"
   },
   "day_care": {
@@ -128,8 +128,9 @@
   "uin": "RELHLIP22185V042122",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "revised-indusind-healthwise-policy-wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T08:03:39.249Z",
-  "variant_note": "Sold in named plans (Standard, Silver, Gold). The wording points to \"Section 7 Coverage Summary\" for the differences, and that section is absent from the document, so the plans cannot be told apart here. Confirm against the policy schedule."
+  "variant_note": "Sold in named plans (Standard, Silver, Gold). The wording points to \"Section 7 Coverage Summary\" for the differences, and that section is absent from the document, so the plans cannot be told apart here. Confirm against the policy schedule.",
+  "audited_at": "2026-10-09"
 }

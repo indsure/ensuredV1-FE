@@ -27,7 +27,7 @@
     "display": "None"
   },
   "initial_waiting": {
-    "number": 90,
+    "number": 30,
     "display": "90 days (Global); 30 days (India Cover)",
     "note": "Global Cover: 90-day initial waiting period for illness. India Cover: 30-day initial waiting period. Both waived for accidents."
   },
@@ -58,12 +58,12 @@
     "note": "India Cover: Unlimited Reinstatement of India Base SI for related and unrelated illness/injury. Not applicable for Unlimited India Base SI option."
   },
   "pre_hosp": {
-    "number": 15,
+    "number": 90,
     "display": "15 days (Global); 90 days (India Cover)",
     "note": "Global Cover: up to 15 days from arrival in city of treatment. India Cover: 90 days."
   },
   "post_hosp": {
-    "number": 30,
+    "number": 180,
     "display": "30 days (Global); 180 days (India Cover)",
     "note": "Global Cover: 30 days. India Cover: 180 days."
   },
@@ -127,7 +127,8 @@
   "uin": "IRDAN103RP0001V01202324",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "indusind-global-health-pw.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-21T10:54:14.911Z"
+  "extracted_at": "2026-09-21T10:54:14.911Z",
+  "audited_at": "2026-10-09"
 }

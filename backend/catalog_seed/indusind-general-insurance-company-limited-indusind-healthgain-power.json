@@ -129,7 +129,8 @@
   "uin": "INIHLIP26040V042526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "revised-indusind-health-gain-policy-wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:03:46.480Z"
+  "extracted_at": "2026-09-20T08:03:46.480Z",
+  "audited_at": "2026-10-09"
 }
