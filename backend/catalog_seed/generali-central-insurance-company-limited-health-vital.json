@@ -139,7 +139,8 @@
   "uin": "GCIHLIP25038V022425",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "health-vital-policy-wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:58:53.559Z"
+  "extracted_at": "2026-09-20T07:58:53.559Z",
+  "audited_at": "2026-10-09"
 }

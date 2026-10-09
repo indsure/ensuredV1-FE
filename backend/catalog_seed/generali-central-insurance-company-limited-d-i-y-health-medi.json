@@ -3,18 +3,18 @@
   "sum_insured_options": "₹6L, ₹7L, ₹8L, ₹9L, ₹10L",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 3,
-    "display": "1% of SI/day or No cap (choosable)",
+    "ordinal": 5,
+    "display": "No limit, or 1% of SI per day for a discount (buyer's choice)",
     "note": "Policyholder selects either 1% of SI per day or No Capping at inception. Proportionate deduction applies if room taken above selected limit."
   },
   "icu": {
-    "ordinal": 3,
-    "display": "2x selected Room Rent limit or No cap",
+    "ordinal": 5,
+    "display": "No limit when room has no cap; else 2x the room limit",
     "note": "ICU = 2 times the Room Rent selected; if No Capping chosen for room, ICU also has no cap."
   },
   "copayment": {
-    "number": 0,
-    "display": "None (20% if aged 61–65 at first entry)",
+    "number": 20,
+    "display": "20% if entry age 61+",
     "note": "Mandatory 20% co-pay applies only to insured persons aged 61+ at first policy issuance; applies on all subsequent renewals too."
   },
   "sub_limits": {
@@ -128,7 +128,8 @@
   "uin": "GCIHLIP26046V022526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "diy-health-policy-wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:58:10.621Z"
+  "extracted_at": "2026-09-20T07:58:10.621Z",
+  "audited_at": "2026-10-09"
 }

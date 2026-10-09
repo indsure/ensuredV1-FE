@@ -3,8 +3,8 @@
   "sum_insured_options": "₹50,000; ₹1L; ₹1.5L (children up to 25 yrs only); ₹2L; ₹2.5L; ₹3L; ₹3.5L; ₹4L; ₹4.5L; ₹5L; ₹6L; ₹7.5L; ₹8L; ₹9L; ₹10L",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 3,
-    "display": "1% of SI/day (SI ≤1.5L); No cap for SI ≥2L",
+    "ordinal": 5,
+    "display": "Actuals (SI 2L+); 1% of SI per day below 2L",
     "note": "For SI ₹50k–₹1.5L: 1% of SI/day non-ICU, 2% ICU, capped at 35% of SI per claim. For SI ₹2L+: actuals."
   },
   "icu": {
@@ -124,7 +124,8 @@
   "uin": "GCIHLIP25017V052425",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "health-surkasha-policy-wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:58:55.497Z"
+  "extracted_at": "2026-09-20T07:58:55.497Z",
+  "audited_at": "2026-10-09"
 }

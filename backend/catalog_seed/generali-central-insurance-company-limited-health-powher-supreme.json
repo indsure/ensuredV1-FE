@@ -124,7 +124,8 @@
   "uin": "GCIHLIP24180V012324",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "health-powher-policy-wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:58:28.005Z"
+  "extracted_at": "2026-09-20T07:58:28.005Z",
+  "audited_at": "2026-10-09"
 }
