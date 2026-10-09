@@ -9,7 +9,7 @@
     "display": "Twin Sharing Room (default)",
     "note": "Optional upgrade to General Ward, Single Private Room, or All Room Category available. Upgrading to higher category triggers 20–30% co-payment on associated medical expenses. ICU always paid up to SI.",
     "optional": false,
-    "ordinal": 2
+    "ordinal": 1
   },
   "icu": {
     "display": "No cap (up to SI)",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Rise_Policy_Wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:41:53.850Z"
+  "extracted_at": "2026-09-17T13:41:53.850Z",
+  "audited_at": "2026-10-09"
 }

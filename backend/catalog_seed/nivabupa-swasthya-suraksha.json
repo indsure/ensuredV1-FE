@@ -4,39 +4,160 @@
   "plan_name": "Swasthya Suraksha",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "nivabupa/Swasthya-Suraksha-Policy-Wording.txt",
-  "status": "unverified",
+  "status": "audited",
   "confidence": "medium",
   "sum_insured_options": "₹3L – ₹25L (3/5/7.5/10/15/20/25 lakh)",
-
-  "room_rent": { "display": "Per eligible category (schedule)", "ordinal": 4, "optional": false, "note": "Room category as per Policy Schedule; pro-rata deduction if higher room opted. VERIFY exact eligibility/variant" },
-  "icu": { "display": "Per schedule", "ordinal": 4, "optional": false, "note": "ICU/ICCU covered; limit per schedule. VERIFY" },
-  "copayment": { "display": "None (base)", "number": 0, "optional": false, "note": "No mandatory base co-pay found; co-pay/zone options may be opted per schedule. VERIFY" },
-  "sub_limits": { "display": "Modern treatment limits per schedule", "ordinal": 3, "optional": false, "note": "Modern treatment limits and some sub-limits per Certificate of Insurance. VERIFY" },
-  "deductible": { "display": "None (base)", "number": 0, "optional": false, "note": "Aggregate deductible may be opted per schedule" },
-
-  "initial_waiting": { "display": "30 days", "number": 30, "optional": false, "note": "VERIFY exact initial waiting in schedule" },
-  "ped_waiting": { "display": "36 months (options 12/24/36/48)", "number": 36, "optional": false, "note": "PED waiting configurable: 12/24/36/48 months per schedule; baseline 36mo assumed. VERIFY chosen option" },
-  "specific_disease_waiting": { "display": "24 months (options 12/24)", "number": 24, "optional": false, "note": "Specific illness waiting 12 or 24 months per schedule" },
-  "maternity": { "display": "Covered (10mo wait, optional)", "exists": true, "optional": true, "note": "Maternity-related illness has 10-month waiting; maternity under Excl18 base, appears available as option. VERIFY" },
-
-  "cumulative_bonus": { "display": "No Claim Bonus (per schedule)", "number": null, "optional": false, "note": "NCB benefit (Section I.8); rate and max per schedule. VERIFY %" },
-  "restoration": { "display": "ReAssure (unlimited) OR Re-fill", "ordinal": 5, "optional": false, "note": "ReAssure triggered on first paid claim, available for all subsequent claims (baseline taken). Alternatively Re-fill once/yr; cannot opt both" },
-
-  "pre_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "Pre-hospitalization days per Policy Schedule. VERIFY" },
-  "post_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "Post-hospitalization days per Policy Schedule. VERIFY" },
-  "day_care": { "display": "All / listed 536 (per schedule)", "exists": true, "optional": false, "note": "Schedule states whether all day-care or 536 listed procedures covered" },
-  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Domiciliary hospitalization on reimbursement basis" },
-  "ayush": { "display": "Covered (optional benefit)", "exists": true, "optional": false, "note": "AYUSH benefit; min 24hr admission in AYUSH hospital" },
-  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
-  "ambulance": { "display": "Road + Air (per schedule)", "number": null, "optional": false, "note": "Emergency road + air ambulance; options/limits per schedule; only when hospitalization claim paid. VERIFY" },
-  "modern_treatments": { "display": "Covered (limits per schedule)", "exists": true, "optional": false },
-  "consumables": { "display": "Covered", "exists": true, "optional": false, "note": "Medicines, drugs and consumables covered up to Base SI" },
-  "global_cover": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY overseas cover" },
-
-  "moratorium": { "display": "60 months", "number": 60, "optional": false },
-  "grace_period": { "display": "30 days", "number": 30, "optional": false, "note": "30 days annual; 15 days for monthly instalments" },
-  "free_look": { "display": "30 days", "number": 30, "optional": false },
-  "portability": { "display": "Allowed", "exists": true, "optional": false },
-  "notable_exclusions": { "display": "Highly schedule-configured (group product); maternity 10mo wait; modern treatment sub-limits per schedule" },
-  "optional_riders": { "display": "AYUSH Benefit, ReAssure / Re-fill, room category options, PED/specific waiting options, air ambulance, co-pay options" }
+  "room_rent": {
+    "display": "Per Certificate of Insurance: 1%/2% of SI, Twin/Single room, or actuals",
+    "ordinal": 0,
+    "optional": false,
+    "note": "The employer/group picks one: Option A 1% or 2% of base SI per day; Option B Twin Sharing or Single Private Room; Option C actuals up to base SI. Higher room means proportionate deduction."
+  },
+  "icu": {
+    "display": "Per Certificate: 2x room rent/day or actuals",
+    "ordinal": 0,
+    "optional": false,
+    "note": "Option 1: double the room-rent limit per day; Option 2: actuals up to sum insured."
+  },
+  "copayment": {
+    "display": "None (base)",
+    "number": 0,
+    "optional": false,
+    "note": "No mandatory base co-pay found; co-pay/zone options may be opted per schedule. VERIFY"
+  },
+  "sub_limits": {
+    "display": "Modern treatment limits per schedule",
+    "ordinal": 3,
+    "optional": false,
+    "note": "Modern treatment limits and some sub-limits per Certificate of Insurance. VERIFY"
+  },
+  "deductible": {
+    "display": "None (base)",
+    "number": 0,
+    "optional": false,
+    "note": "Aggregate deductible may be opted per schedule"
+  },
+  "initial_waiting": {
+    "display": "30 days",
+    "number": 30,
+    "optional": false,
+    "note": "VERIFY exact initial waiting in schedule"
+  },
+  "ped_waiting": {
+    "display": "12, 24, 36 or 48 months (per Certificate)",
+    "number": 12,
+    "optional": false,
+    "note": "The group chooses 12, 24, 36 or 48 months; check the Certificate of Insurance."
+  },
+  "specific_disease_waiting": {
+    "display": "24 months (options 12/24)",
+    "number": 24,
+    "optional": false,
+    "note": "Specific illness waiting 12 or 24 months per schedule"
+  },
+  "maternity": {
+    "display": "Not covered",
+    "exists": false,
+    "optional": false,
+    "note": "Maternity is a standard exclusion (Excl18); ectopic pregnancy is covered. No maternity benefit or option in this wording.",
+    "number": null
+  },
+  "cumulative_bonus": {
+    "display": "10%/20%/25% a year, up to 200% (per Certificate)",
+    "number": 200,
+    "optional": false,
+    "note": "Group chooses 10%, 20% or 25% per claim-free year, capped at 200% of base SI."
+  },
+  "restoration": {
+    "display": "Per Certificate: ReAssure (unlimited) or Re-fill (up to 5x)",
+    "ordinal": 5,
+    "optional": true,
+    "note": "Group may choose ReAssure (unlimited reinstatement up to base SI per claim, for different or same illness) or Re-fill (up to 5 times base SI), not both."
+  },
+  "pre_hosp": {
+    "display": "30 or 60 days (per Certificate)",
+    "number": 60,
+    "optional": false,
+    "note": "Pre-hospitalization days per Policy Schedule. VERIFY"
+  },
+  "post_hosp": {
+    "display": "60 or 90 days (per Certificate)",
+    "number": 90,
+    "optional": false,
+    "note": "Post-hospitalization days per Policy Schedule. VERIFY"
+  },
+  "day_care": {
+    "display": "All / listed 536 (per schedule)",
+    "exists": true,
+    "optional": false,
+    "note": "Schedule states whether all day-care or 536 listed procedures covered"
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "exists": true,
+    "optional": false,
+    "note": "Domiciliary hospitalization on reimbursement basis"
+  },
+  "ayush": {
+    "display": "Covered up to 50% of SI",
+    "exists": true,
+    "optional": false,
+    "note": "AYUSH inpatient treatment up to 50% of the sum insured, minimum 24-hour admission in an AYUSH hospital."
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "exists": true,
+    "optional": false
+  },
+  "ambulance": {
+    "display": "Road ₹2,000; Air ₹2,00,000 per hospitalisation",
+    "number": 2000,
+    "optional": false,
+    "note": "Emergency road + air ambulance; options/limits per schedule; only when hospitalization claim paid. VERIFY"
+  },
+  "modern_treatments": {
+    "display": "Covered (limits per schedule)",
+    "exists": true,
+    "optional": false
+  },
+  "consumables": {
+    "display": "Not covered",
+    "exists": false,
+    "optional": false,
+    "note": "Non-medical items in List I are not payable."
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "exists": false,
+    "optional": false,
+    "note": "All benefits are available in India only."
+  },
+  "moratorium": {
+    "display": "60 months",
+    "number": 60,
+    "optional": false
+  },
+  "grace_period": {
+    "display": "30 days",
+    "number": 30,
+    "optional": false,
+    "note": "30 days annual; 15 days for monthly instalments"
+  },
+  "free_look": {
+    "display": "30 days",
+    "number": 30,
+    "optional": false
+  },
+  "portability": {
+    "display": "Allowed",
+    "exists": true,
+    "optional": false
+  },
+  "notable_exclusions": {
+    "display": "Highly schedule-configured (group product); maternity 10mo wait; modern treatment sub-limits per schedule"
+  },
+  "optional_riders": {
+    "display": "AYUSH Benefit, ReAssure / Re-fill, room category options, PED/specific waiting options, air ambulance, co-pay options"
+  },
+  "audited_at": "2026-10-09"
 }

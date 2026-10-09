@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Senior-First-Policy-Wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:43:00.900Z"
+  "extracted_at": "2026-09-17T13:43:00.900Z",
+  "audited_at": "2026-10-09"
 }

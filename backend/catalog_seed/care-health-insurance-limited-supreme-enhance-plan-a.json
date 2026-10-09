@@ -23,9 +23,10 @@
     "note": "Plan A has no disease/procedure sub-limits in the base cover. Optional Benefit 3.2.8 can add a sub-limit on Advance Technology Methods if opted."
   },
   "deductible": {
-    "number": 0,
-    "display": "Optional; aggregate basis per policy year",
-    "note": "Deductible is optional and applied on aggregate basis for all claims in a policy year under Plan A. Amount chosen by policyholder and shown in Policy Schedule."
+    "number": null,
+    "display": "Mandatory aggregate deductible (chosen at purchase)",
+    "note": "Super top-up: cover starts only once the year's claims exceed the aggregate deductible you choose at purchase.",
+    "optional": false
   },
   "initial_waiting": {
     "number": 30,
@@ -129,9 +130,10 @@
   "insurer": "Care Health Insurance Limited",
   "plan_name": "Supreme Enhance",
   "uin": "CHIHLIP25036V012425",
-  "product_type": "comprehensive_health_indemnity",
+  "product_type": "top_up",
   "source_file": "supreme-enhance---policy-terms-and-conditions.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:55:50.822Z"
+  "extracted_at": "2026-09-20T07:55:50.822Z",
+  "audited_at": "2026-10-09"
 }

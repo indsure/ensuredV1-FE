@@ -159,7 +159,8 @@
   "notable_exclusions": "Hormone replacement therapy, sleep disorders, STIs (non-HIV), external congenital anomaly, circumcision (non-medical), multifocal lens, ambulatory devices, animal bite (unless opted)",
   "optional_riders": "Hospital Cash Benefit, ICU Cash, OPD cover (video/tele/physical consultations, diagnostics, pharmacy), Accidental Cover, Critical Illness Cover, Critical Illness Multiplier Indemnity, Income Protector, EMI Cover, Air Ambulance, Health Check-up, Second Medical Opinion, Empathy Benefit",
   "source_file": "SmartHealth_FINALpolicyWording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T14:01:49.689Z"
+  "extracted_at": "2026-09-17T14:01:49.689Z",
+  "audited_at": "2026-10-09"
 }

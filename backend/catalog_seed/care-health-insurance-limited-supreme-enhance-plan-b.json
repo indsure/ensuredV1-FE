@@ -23,9 +23,9 @@
     "note": "Plan B covers over and above base policy sub-limits (room rent proportionate charges and cataract). The base policy sub-limits act as deductibles."
   },
   "deductible": {
-    "number": 0,
-    "display": "Base policy sub-limit acts as deductible (per claim basis)",
-    "note": "Deductible is the sub-limit as per the active base policy, applied on a per-claim basis. Plan B cannot be opted without an active base policy."
+    "number": null,
+    "display": "Your base policy's sub-limits act as the deductible (per claim)",
+    "note": "Plan B only pays the part of a claim above your other (base) policy's sub-limits, such as room-rent proportionate deductions or cataract caps."
   },
   "initial_waiting": {
     "number": 30,
@@ -130,9 +130,10 @@
   "insurer": "Care Health Insurance Limited",
   "plan_name": "Supreme Enhance",
   "uin": "CHIHLIP25036V012425",
-  "product_type": "comprehensive_health_indemnity",
+  "product_type": "top_up",
   "source_file": "supreme-enhance---policy-terms-and-conditions.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:55:50.890Z"
+  "extracted_at": "2026-09-20T07:55:50.890Z",
+  "audited_at": "2026-10-09"
 }

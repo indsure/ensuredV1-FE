@@ -4,12 +4,12 @@
   "confidence": "medium",
   "room_rent": {
     "ordinal": 3,
-    "display": "1% of SI/day (upgradable to Single Private AC Room via optional rider)",
-    "note": "Base cover: 1% of SI per day. Optional Benefit 'Room Rent Modification' upgrades to Single Private AC Room (only for SI < ₹5L). If room taken is higher than eligible, ratable proportion of associate medical expenses borne by insured."
+    "display": "Per Schedule: Single Private AC Room, or 1% of SI/day (SI under ₹5L, upgradeable)",
+    "note": "The Policy Schedule sets either a single private AC room or 1% of sum insured per day. The 1% limit applies below ₹5 lakh sum insured and can be upgraded. A higher room means proportionate deduction."
   },
   "icu": {
     "ordinal": 3,
-    "display": "2% of SI/day (upgradable to no limit via optional rider)",
+    "display": "Per Schedule: 2% of SI/day (SI under ₹5L, upgradeable) or no limit",
     "note": "Base cover: 2% of SI per day. Optional Benefit 'Room Rent Modification' upgrades ICU to no limit (only for SI < ₹5L)."
   },
   "copayment": {
@@ -46,7 +46,8 @@
     "exists": true,
     "number": 24,
     "display": "Optional add-on (24mo wait)",
-    "note": "Optional Benefit 'Maternity and New Born Baby Cover'; 24-month waiting period; max 2 living children per insured lifetime; primary insured or spouse only; age limit 45 years at policy start; limit as per policy schedule."
+    "note": "Optional Benefit 'Maternity and New Born Baby Cover'; 24-month waiting period; max 2 living children per insured lifetime; primary insured or spouse only; age limit 45 years at policy start; limit as per policy schedule.",
+    "optional": true
   },
   "cumulative_bonus": {
     "number": 200,
@@ -136,7 +137,8 @@
   "uin": "CHIHLIP22047V012122",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "care-plus----policy-terms-and-conditions-(effective-from-29-september-2024-).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:54:41.108Z"
+  "extracted_at": "2026-09-20T07:54:41.108Z",
+  "audited_at": "2026-10-09"
 }

@@ -46,10 +46,10 @@
     "note": "Benefit 4: Maternity cover with 24-month waiting period for Joy Tomorrow. Insured must be ≤45 years. Limit as per Policy Schedule. Pre-natal and post-natal expenses included. Voluntary termination before 12 weeks not covered. Ectopic pregnancy covered under Benefit 1."
   },
   "cumulative_bonus": {
-    "number": 100,
-    "display": "Up to 100% (optional)",
-    "note": "No Claim Bonanza is an optional cover (Optional Cover 1). Provides 100% of SI after 3 consecutive claim-free years. Inbuilt cumulative bonus not mentioned; this is entirely optional.",
-    "optional": true
+    "number": 0,
+    "display": "None (optional No Claim Bonanza: +100% after 3 claim-free years)",
+    "note": "No built-in bonus. The optional No Claim Bonanza adds 100% of sum insured after 3 consecutive claim-free years.",
+    "optional": false
   },
   "restoration": {
     "ordinal": 0,
@@ -69,9 +69,9 @@
     "display": "All day-care (extensive listed procedures)"
   },
   "domiciliary": {
-    "exists": true,
-    "display": "Covered",
-    "note": "Domiciliary hospitalisation covered under Benefit 1 conditions (patient unable to be moved or no hospital room available)."
+    "exists": false,
+    "display": "Not covered",
+    "note": "The wording defines domiciliary hospitalisation but has no benefit that pays for it."
   },
   "ayush": {
     "exists": true,
@@ -126,7 +126,8 @@
   "uin": "RHIHLIP21373V022021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "joy----t&c-(effective-from-12-september-2024-).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:55:38.099Z"
+  "extracted_at": "2026-09-20T07:55:38.099Z",
+  "audited_at": "2026-10-09"
 }

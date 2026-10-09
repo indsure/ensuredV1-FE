@@ -38,9 +38,9 @@
     "note": "Policy states pre-existing diseases are covered from inception of the Policy subject to exclusions (Clause 3.1). No separate PED waiting period is mentioned for Base Benefit 1."
   },
   "specific_disease_waiting": {
-    "number": null,
-    "display": "Not specified",
-    "note": "No named-disease specific waiting period is explicitly listed in the policy wording beyond the standard 30-day initial waiting period."
+    "number": 0,
+    "display": "None",
+    "note": "The wording has no specified-disease waiting period; only the 30-day initial wait and 9 months for maternity."
   },
   "maternity": {
     "exists": true,
@@ -49,9 +49,9 @@
     "note": "Base Benefit 1 includes Maternity Expenses (Clause 3.1.4) with 9-month waiting period. Waiting period waivable via Optional Benefit 3. Coverage up to Coverage Amount; limited to first two living children; insured must be 18-45 years; covers normal/caesarean delivery, miscarriage, congenital diseases of newborn."
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
-    "note": "No cumulative bonus / no-claim bonus mentioned in the policy wording."
+    "number": 0,
+    "display": "None",
+    "note": "The wording has no cumulative or no-claim bonus."
   },
   "restoration": {
     "ordinal": 3,
@@ -89,9 +89,9 @@
     "note": "Clause 4.2.2(xvii) explicitly excludes all expenses related to donor treatment including surgery to remove organs from the donor in case of transplant surgery."
   },
   "ambulance": {
-    "number": null,
-    "display": "Not specified",
-    "note": "Ambulance is listed as an excluded non-medical item in Annexure II (List I, item 67), suggesting ambulance charges are not covered."
+    "number": 0,
+    "display": "Not covered",
+    "note": "No ambulance benefit; ambulance charges are a non-payable item."
   },
   "modern_treatments": {
     "exists": true,
@@ -135,7 +135,8 @@
   "uin": "CHIHMGP25039V022425",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "grameen-care-plus----micro-insurance-product---t&c-(effective-prior-to-29-september-2024).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:55:12.795Z"
+  "extracted_at": "2026-09-20T07:55:12.795Z",
+  "audited_at": "2026-10-09"
 }

@@ -6,20 +6,20 @@
   "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "Variant-based (Classic: General Ward; Select: Single Private; Elite: Any room)",
-    "note": "Classic variant eligible for General Ward (co-pay if higher); Select eligible for Single Private Room (co-pay if higher); Elite eligible for all room categories including deluxe/suite without co-pay. Room upgrade triggers proportionate co-payment on entire claim.",
+    "display": "Variant-based (Classic: General Ward; Select: Twin Sharing; Elite: any room except Deluxe/Suite)",
+    "note": "Staying above your variant's eligible room means a co-pay on the entire claim, up to 50% (Annexure V).",
     "optional": false,
     "ordinal": 3
   },
   "icu": {
-    "display": "No cap (covered up to Sum Insured)",
-    "note": "No specific ICU sub-limit mentioned; covered as part of hospitalisation expenses up to Sum Insured.",
+    "display": "No separate ICU limit",
+    "note": "The wording sets no ICU-specific limit. ICU is not one of the room categories that trigger the room co-pay.",
     "optional": false,
     "ordinal": 5
   },
   "copayment": {
     "display": "None (base); room upgrade or HeadsUp/Tiered network breach triggers 20%",
-    "note": "No mandatory co-payment on base plan. Optional co-payment can be chosen (reduces premium). Room upgrade beyond eligible category triggers proportionate co-pay. HeadsUp/Tiered network breach triggers 20%. Prolonged hospitalisation >7 days without intimation triggers 10% additional co-pay.",
+    "note": "No co-pay on the base plan. Room above your variant's eligible category: co-pay on the entire claim (Annexure V). Late notice: an extra 10% co-pay if a stay over 7 days is not intimated within 7 days of admission (9 days for road accidents). Optional co-pay can be chosen for a lower premium.",
     "optional": false,
     "number": 0
   },
@@ -54,8 +54,8 @@
     "number": 24
   },
   "maternity": {
-    "display": "Not covered (standard exclusion; lawful MTP covered)",
-    "note": "Maternity expenses are a standard exclusion (Excl18). Ectopic pregnancy and lawful medical termination of pregnancy are covered. No optional maternity add-on mentioned in this wording.",
+    "display": "Not covered (standard exclusion)",
+    "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered; miscarriage (unless due to an accident) and lawful medical termination of pregnancy are excluded.",
     "optional": false,
     "exists": false,
     "number": null
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "ReAssure30_Policy_Wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:42:27.729Z"
+  "extracted_at": "2026-09-17T13:42:27.729Z",
+  "audited_at": "2026-10-09"
 }

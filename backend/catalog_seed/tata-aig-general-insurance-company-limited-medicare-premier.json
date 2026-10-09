@@ -6,16 +6,16 @@
   "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "Not specified",
-    "note": "Policy wording does not mention a room rent cap or eligibility tier; shared accommodation daily cash benefit exists as a separate incentive (B18)",
+    "display": "No room-rent limit",
+    "note": "B1 pays hospitalisation expenses with no room limit and no proportionate-deduction clause. Choosing a shared room earns a daily cash benefit (B18).",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "icu": {
-    "display": "Not specified",
-    "note": "No ICU sub-limit mentioned in the policy wording",
+    "display": "No ICU limit",
+    "note": "No separate ICU limit in the wording.",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "copayment": {
     "display": "None",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "tata_aig_medicare_premier_policy_wordings_781aa2fd94.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:45:29.386Z"
+  "extracted_at": "2026-09-17T13:45:29.386Z",
+  "audited_at": "2026-10-09"
 }

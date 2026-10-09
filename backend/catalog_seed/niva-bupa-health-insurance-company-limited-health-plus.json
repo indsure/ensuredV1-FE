@@ -42,16 +42,16 @@
     "number": 30
   },
   "ped_waiting": {
-    "display": "As per Policy Schedule (typically 36 months)",
-    "note": "PED waiting period stated as 'number of months as mentioned in Policy Schedule/Certificate of Insurance'. PED definition uses 36-month look-back. Exact waiting period not fixed in wording.",
+    "display": "As per Policy Schedule",
+    "note": "The wording leaves the pre-existing disease waiting period to the Policy Schedule / Certificate of Insurance.",
     "optional": false,
-    "number": 36
+    "number": null
   },
   "specific_disease_waiting": {
-    "display": "As per Policy Schedule (typically 24–36 months)",
-    "note": "Specific disease/procedure waiting period per Policy Schedule. Standard list includes cataract, hernia, kidney disease, etc. Exact months not fixed in wording; definition references up to 36 months.",
+    "display": "As per Policy Schedule (up to 36 months)",
+    "note": "The wording leaves the specified-disease waiting period to the Policy Schedule; the definition caps it at 36 months.",
     "optional": false,
-    "number": 36
+    "number": null
   },
   "maternity": {
     "display": "Covered (waiting period as per Policy Schedule; family floater only)",
@@ -67,9 +67,9 @@
     "number": 100
   },
   "restoration": {
-    "display": "Once/year up to 100% Base SI (unrelated illness)",
+    "display": "Optional: once/year up to 100% Base SI (unrelated illness)",
     "note": "Re-fill Benefit (Sec 3.1.1.23): up to 100% of Base SI restored once SI exhausted; cannot be used for same illness/complication already claimed in that year. Not available for maternity or health check-up claims.",
-    "optional": false,
+    "optional": true,
     "ordinal": 3
   },
   "pre_hosp": {
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "healthplus-policydocument.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T14:01:24.336Z"
+  "extracted_at": "2026-09-17T14:01:24.336Z",
+  "audited_at": "2026-10-09"
 }

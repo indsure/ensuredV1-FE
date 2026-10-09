@@ -3,7 +3,7 @@
   "sum_insured_options": "1L, 2L, 3L, 4L, 5L, 7L, 10L, 20L, 25L, 50L, 100L, 200L, 300L, 600L (individual basis)",
   "confidence": "medium",
   "room_rent": {
-    "ordinal": 4,
+    "ordinal": 3,
     "display": "Single Private Room (or 1% of SI/day depending on plan schedule)",
     "note": "Policy Schedule specifies either 'Single Private Room' or 'up to 1% of SI per day'. If room chosen exceeds eligible category, Associate Medical Expenses are pro-rated. Optional Benefit 5 (Room Rent Modification) removes all room/ICU limits for SI ≥5L.",
     "optional": false
@@ -15,9 +15,9 @@
     "optional": false
   },
   "copayment": {
-    "number": 0,
-    "display": "None (20% mandatory if age 61+ at first policy issuance)",
-    "note": "Mandatory 20% co-pay per claim for insured persons aged 61+ at first policy issuance. Optional Co-Payment benefit (Optional Benefit 2) allows voluntary co-pay for premium discount. Global Coverage (Benefit 12) carries additional 10% co-pay."
+    "number": 20,
+    "display": "20% if entry age 61+ (plus 10% on global claims)",
+    "note": "Mandatory 20% co-pay on every claim for anyone aged 61 or above at first policy issuance. Claims under Global Coverage carry an extra 10%. Voluntary co-pay can be chosen for a discount."
   },
   "sub_limits": {
     "ordinal": 3,
@@ -77,9 +77,9 @@
     "note": "Day care treatment covered only for procedures listed in Annexure I to policy terms. List varies by plan opted."
   },
   "domiciliary": {
-    "exists": true,
-    "display": "Covered",
-    "note": "Domiciliary hospitalisation covered where patient cannot be moved to hospital or no room available in hospital."
+    "exists": false,
+    "display": "Not covered",
+    "note": "The wording defines domiciliary hospitalisation but has no benefit that pays for it."
   },
   "ayush": {
     "exists": true,
@@ -138,7 +138,8 @@
   "uin": "RHIHLIP21374V022021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "super-mediclaim---policy-terms-and-conditions-(effective-from-29-september-2024-).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:55:47.390Z"
+  "extracted_at": "2026-09-20T07:55:47.390Z",
+  "audited_at": "2026-10-09"
 }

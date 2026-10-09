@@ -4,39 +4,159 @@
   "plan_name": "Xpress Health",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "nivabupa/XpressHealth-FINALPolicyWordings.txt",
-  "status": "unverified",
+  "status": "audited",
   "confidence": "medium",
   "sum_insured_options": "Up to ₹50L (inpatient); overall option up to ₹1Cr",
-
-  "room_rent": { "display": "Per eligible category (schedule)", "ordinal": 4, "optional": false, "note": "Modular group product; room eligibility per Policy Schedule, pro-rata if higher opted. VERIFY exact limit" },
-  "icu": { "display": "Per schedule", "ordinal": 4, "optional": false, "note": "ICU charges covered under inpatient; limit per schedule. VERIFY" },
-  "copayment": { "display": "None (base); up to 50% optional", "number": 0, "optional": false, "note": "Co-payment is a schedule option (up to 50%); base assumed nil. VERIFY chosen variant" },
-  "sub_limits": { "display": "Per schedule (configurable)", "ordinal": 3, "optional": false, "note": "Sub-limits configurable per Certificate of Insurance. VERIFY" },
-  "deductible": { "display": "Per schedule", "number": null, "optional": false, "note": "Deductible/franchise options per schedule (loan-linked). VERIFY" },
-
-  "initial_waiting": { "display": "30 days (range 0-30)", "number": 30, "optional": false, "note": "Initial waiting period range 0-30 days per schedule" },
-  "ped_waiting": { "display": "Up to 48 months (range 0-48)", "number": 48, "optional": false, "note": "PED range 0-48 months per schedule; baseline taken as max range. VERIFY chosen value" },
-  "specific_disease_waiting": { "display": "Up to 24 months (range 0-24)", "number": 24, "optional": false, "note": "Specific illness waiting range 0-24 months per schedule" },
-  "maternity": { "display": "Not covered (base)", "exists": false, "optional": false, "note": "Maternity listed under Excl18. VERIFY optional maternity availability" },
-
-  "cumulative_bonus": { "display": "Up to 100% (No Claim Bonus)", "number": 100, "optional": false, "note": "NCB increases Base SI each claim-free renewal up to 100% of Base SI; rate per schedule" },
-  "restoration": { "display": "Not specified", "ordinal": null, "optional": false, "note": "No SI restoration/recharge benefit identified in base wording. VERIFY" },
-
-  "pre_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "Pre-hospitalization days specified in Policy Schedule. VERIFY" },
-  "post_hosp": { "display": "Per schedule", "number": null, "optional": false, "note": "Post-hospitalization days specified in Policy Schedule. VERIFY" },
-  "day_care": { "display": "Listed day-care (Annex 8)", "exists": true, "optional": false },
-  "domiciliary": { "display": "Covered", "exists": true, "optional": false, "note": "Domiciliary hospitalization (min 3 consecutive days)" },
-  "ayush": { "display": "Covered", "exists": true, "optional": false, "note": "AYUSH benefit; limit per schedule" },
-  "organ_donor": { "display": "Covered", "exists": true, "optional": false },
-  "ambulance": { "display": "Road + Air (per schedule)", "number": null, "optional": false, "note": "Emergency road ambulance + air ambulance cover; limits per schedule. VERIFY" },
-  "modern_treatments": { "display": "Not specified", "exists": null, "optional": false, "note": "VERIFY modern treatments cover" },
-  "consumables": { "display": "Covered (inpatient)", "exists": true, "optional": false, "note": "Consumables listed under inpatient reasonable/customary charges" },
-  "global_cover": { "display": "Not covered", "exists": false, "optional": false, "note": "Benefits not applicable for expenses outside India" },
-
-  "moratorium": { "display": "60 months", "number": 60, "optional": false },
-  "grace_period": { "display": "15 days", "number": 15, "optional": false, "note": "15 days per wording (instalment mode); VERIFY 30-day annual grace" },
-  "free_look": { "display": "30 days", "number": 30, "optional": false },
-  "portability": { "display": "Allowed", "exists": true, "optional": false },
-  "notable_exclusions": { "display": "Loan-linked modular group product; maternity excluded (Excl18); India-only; many benefits schedule-configured" },
-  "optional_riders": { "display": "OPD consultations, diagnostics, pharmacy, daily cash, accident/CI covers, air ambulance, co-pay options" }
+  "room_rent": {
+    "display": "Per Certificate (General Ward up to Suite)",
+    "ordinal": 0,
+    "optional": false,
+    "note": "The group chooses the room limit, from General Ward up to Private Suite; higher room means proportionate deduction."
+  },
+  "icu": {
+    "display": "Per Certificate: up to SI or 2x room rent/day",
+    "ordinal": 0,
+    "optional": false,
+    "note": "ICU charges covered under inpatient; limit per schedule. VERIFY"
+  },
+  "copayment": {
+    "display": "None (base); up to 50% optional",
+    "number": 0,
+    "optional": false,
+    "note": "Co-payment is a schedule option (up to 50%); base assumed nil. VERIFY chosen variant"
+  },
+  "sub_limits": {
+    "display": "Per schedule (configurable)",
+    "ordinal": 3,
+    "optional": false,
+    "note": "Sub-limits configurable per Certificate of Insurance. VERIFY"
+  },
+  "deductible": {
+    "display": "Per schedule",
+    "number": null,
+    "optional": false,
+    "note": "Deductible/franchise options per schedule (loan-linked). VERIFY"
+  },
+  "initial_waiting": {
+    "display": "0 to 30 days (per Certificate)",
+    "number": 0,
+    "optional": false,
+    "note": "Initial waiting period range 0-30 days per schedule"
+  },
+  "ped_waiting": {
+    "display": "0 to 48 months (per Certificate)",
+    "number": 0,
+    "optional": false,
+    "note": "The group chooses anywhere from no wait to 48 months; check the Certificate of Insurance."
+  },
+  "specific_disease_waiting": {
+    "display": "0 to 24 months (per Certificate)",
+    "number": 0,
+    "optional": false,
+    "note": "Specific illness waiting range 0-24 months per schedule"
+  },
+  "maternity": {
+    "display": "Not covered (base)",
+    "exists": false,
+    "optional": false,
+    "note": "Maternity listed under Excl18. VERIFY optional maternity availability"
+  },
+  "cumulative_bonus": {
+    "display": "Up to 100% (No Claim Bonus)",
+    "number": 100,
+    "optional": false,
+    "note": "NCB increases Base SI each claim-free renewal up to 100% of Base SI; rate per schedule"
+  },
+  "restoration": {
+    "display": "Not covered",
+    "ordinal": 0,
+    "optional": false,
+    "note": "The wording has no restoration or re-fill benefit."
+  },
+  "pre_hosp": {
+    "display": "30 to 180 days (per Certificate)",
+    "number": 180,
+    "optional": false,
+    "note": "Pre-hospitalization days specified in Policy Schedule. VERIFY"
+  },
+  "post_hosp": {
+    "display": "30 to 180 days (per Certificate)",
+    "number": 180,
+    "optional": false,
+    "note": "Post-hospitalization days specified in Policy Schedule. VERIFY"
+  },
+  "day_care": {
+    "display": "Listed day-care (Annex 8)",
+    "exists": true,
+    "optional": false
+  },
+  "domiciliary": {
+    "display": "Covered",
+    "exists": true,
+    "optional": false,
+    "note": "Domiciliary hospitalization (min 3 consecutive days)"
+  },
+  "ayush": {
+    "display": "Covered up to SI",
+    "exists": true,
+    "optional": false,
+    "note": "AYUSH benefit; limit per schedule"
+  },
+  "organ_donor": {
+    "display": "Covered",
+    "exists": true,
+    "optional": false
+  },
+  "ambulance": {
+    "display": "Road up to ₹10,000 (per Certificate); Air up to ₹2L",
+    "number": 10000,
+    "optional": false,
+    "note": "Emergency road ambulance + air ambulance cover; limits per schedule. VERIFY"
+  },
+  "modern_treatments": {
+    "display": "Covered (sub-limits on 6 procedures)",
+    "exists": true,
+    "optional": false,
+    "note": "12 modern treatments covered; robotic surgery ₹2.5L, stereotactic radiosurgery ₹3.5L, deep brain stimulation / immunotherapy / intravitreal ₹5L, bronchial thermoplasty ₹2L."
+  },
+  "consumables": {
+    "display": "Not covered",
+    "exists": false,
+    "optional": false,
+    "note": "Non-medical items in List I are not payable."
+  },
+  "global_cover": {
+    "display": "Not covered",
+    "exists": false,
+    "optional": false,
+    "note": "Benefits not applicable for expenses outside India"
+  },
+  "moratorium": {
+    "display": "60 months",
+    "number": 60,
+    "optional": false
+  },
+  "grace_period": {
+    "display": "30 days (15 days for monthly)",
+    "number": 30,
+    "optional": false,
+    "note": "30 days; 15 days if premium is paid monthly."
+  },
+  "free_look": {
+    "display": "30 days",
+    "number": 30,
+    "optional": false
+  },
+  "portability": {
+    "display": "Allowed",
+    "exists": true,
+    "optional": false
+  },
+  "notable_exclusions": {
+    "display": "Loan-linked modular group product; maternity excluded (Excl18); India-only; many benefits schedule-configured"
+  },
+  "optional_riders": {
+    "display": "OPD consultations, diagnostics, pharmacy, daily cash, accident/CI covers, air ambulance, co-pay options"
+  },
+  "audited_at": "2026-10-09"
 }

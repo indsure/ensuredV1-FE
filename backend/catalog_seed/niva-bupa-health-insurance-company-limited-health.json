@@ -25,7 +25,7 @@
   },
   "sub_limits": {
     "display": "Many sub-limits (cataract, knee, CABG, angioplasty, hernia, etc.)",
-    "note": "Annexure III lists sub-limits: e.g. Cataract ₹26,000/eye, TKR unilateral ₹1,09,000, CABG ₹1,45,000, Angioplasty ₹1,45,000, Hernioplasty ₹18,000–₹43,000, Hip replacement ₹1,09,000–₹29,000, Hysterectomy ₹72,000, Valve replacement ₹1,09,000, and more",
+    "note": "Annexure III caps 19 procedures, e.g. cataract ₹18,000 per eye, knee replacement ₹72,000 (one knee) / ₹1,09,000 (both), angioplasty ₹1,09,000, CABG ₹1,45,000, hysterectomy ₹40,000, hernia ₹32,000. Robotic surgeries capped at ₹1 lakh except listed types.",
     "optional": false,
     "ordinal": 1
   },
@@ -48,10 +48,10 @@
     "number": 36
   },
   "specific_disease_waiting": {
-    "display": "36 months",
-    "note": "Specific waiting period defined as up to 36 months for specified diseases/treatments (Section 2.1.41)",
+    "display": "None",
+    "note": "The wording has no specified-disease waiting period (no Excl02). Pre-existing diseases still wait 36 months.",
     "optional": false,
-    "number": 36
+    "number": 0
   },
   "maternity": {
     "display": "Not covered",
@@ -61,14 +61,14 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
-    "note": "Cumulative bonus is defined in the policy (Section 2.1.7) but rate and maximum are not stated in the wording; subject to Policy Schedule",
+    "display": "None",
+    "note": "The wording has no cumulative or no-claim bonus.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
-    "display": "Not specified",
-    "note": "No restoration/reset benefit mentioned in the policy wording",
+    "display": "Not covered",
+    "note": "The wording has no restoration or refill benefit.",
     "optional": false,
     "ordinal": 0
   },
@@ -98,7 +98,7 @@
   },
   "ayush": {
     "display": "Not covered",
-    "note": "AYUSH treatment is explicitly excluded under Specific Exclusion 4.2.6; policy covers Allopathic treatment only per Preamble",
+    "note": "Excluded by specific exclusion 4.2.6, although the Preamble says AYUSH treatment in India is covered. The wording contradicts itself; check with the insurer.",
     "optional": false,
     "exists": false
   },
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Healthplus_Policy_Wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:41:46.790Z"
+  "extracted_at": "2026-09-17T13:41:46.790Z",
+  "audited_at": "2026-10-09"
 }

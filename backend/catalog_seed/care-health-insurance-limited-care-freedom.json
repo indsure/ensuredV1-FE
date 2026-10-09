@@ -49,9 +49,9 @@
     "note": "Maternity is a permanent exclusion (Excl18). Ectopic pregnancy is covered under Benefit 1."
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
-    "note": "Cumulative Bonus is defined in the policy but no rate or cap is stated in the wording text provided."
+    "number": 0,
+    "display": "None",
+    "note": "The wording has no cumulative or no-claim bonus."
   },
   "restoration": {
     "ordinal": 3,
@@ -59,14 +59,14 @@
     "note": "Benefit 7: Recharge of Sum Insured activated once SI is fully exhausted; not available for same illness/injury already claimed in that policy year. Cannot be carried forward. Not applicable to Optional Covers."
   },
   "pre_hosp": {
-    "number": 30,
-    "display": "30 days",
-    "note": "Pre-hospitalisation expenses covered for the period immediately prior to admission; no expenses before Policy Start Date. Exact number of days per Schedule of Benefits (wording references 'pre-defined number of days'; illustration context suggests 30 days)."
+    "number": null,
+    "display": "Up to the amount in the Schedule of Benefits (no day limit stated)",
+    "note": "Pre-hospitalisation costs are paid up to a rupee amount in the Schedule of Benefits; the wording sets no number of days."
   },
   "post_hosp": {
-    "number": 30,
-    "display": "30 days",
-    "note": "Post-hospitalisation expenses covered for pre-defined days after discharge; no expenses incurred 30+ days after Policy End Date. Exact days per Schedule of Benefits."
+    "number": null,
+    "display": "Up to the amount in the Schedule of Benefits (no day limit stated)",
+    "note": "Post-hospitalisation costs are paid up to a rupee amount in the Schedule of Benefits; the wording sets no number of days."
   },
   "day_care": {
     "exists": true,
@@ -99,8 +99,8 @@
   },
   "consumables": {
     "exists": true,
-    "display": "Benefit 2: Consumable Allowance (fixed daily amount, inbuilt)",
-    "note": "Benefit 2 pays a fixed amount per 24-hour period of in-patient hospitalisation (from day 4 to day 7 max per illness). Not applicable for first 3 days or beyond 7 consecutive days. Amount per Schedule of Benefits."
+    "display": "Daily allowance only (days 4 to 7 of a stay)",
+    "note": "Pays a fixed daily amount (from the 4th to the 7th day of a hospital stay) towards consumables; it does not cover the non-payable items in Annexure II List I."
   },
   "global_cover": {
     "exists": false,
@@ -138,7 +138,8 @@
   "uin": "CHIHLIP26052V032526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "care-freedom----t&c-(effective-from-3-september-2025-).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:54:39.495Z"
+  "extracted_at": "2026-09-20T07:54:39.495Z",
+  "audited_at": "2026-10-09"
 }

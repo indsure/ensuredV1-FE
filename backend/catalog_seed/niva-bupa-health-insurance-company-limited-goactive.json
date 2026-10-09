@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
-    "note": "No cumulative/no-claim bonus mentioned in the policy wording. I-Protect (optional) increases SI by 10%/yr but is not a no-claim bonus.",
+    "display": "None (optional I-Protect: +10% of base SI a year)",
+    "note": "No inbuilt cumulative bonus. The optional I-Protect benefit (extra premium) raises the sum insured by 10% of base SI each renewal, regardless of claims.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Once/yr, 100% of Base SI (different illness only)",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "goactive-policy-document.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:41:59.434Z"
+  "extracted_at": "2026-09-17T13:41:59.434Z",
+  "audited_at": "2026-10-09"
 }

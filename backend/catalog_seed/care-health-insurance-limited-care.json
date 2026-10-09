@@ -5,7 +5,7 @@
   "room_rent": {
     "ordinal": 3,
     "display": "1% of SI/day (or Single Private Room, per Policy Schedule)",
-    "note": "Policy Schedule specifies either 'Single Private Room', 'Single Private Room (upgradable to next level)', or '1% of SI per day'. Optional Cover 16 (Room Rent Modification) can upgrade to Single Private Room or No Limit. Baseline depends on SI/plan chosen; most common base is 1% of SI/day or Single Private Room."
+    "note": "The Policy Schedule sets the room limit: single private room, single private room upgradable to the next category (only if a single room is unavailable), or 1% of sum insured per day. A higher room means proportionate deduction."
   },
   "icu": {
     "ordinal": 3,
@@ -32,8 +32,8 @@
     "display": "30 days"
   },
   "ped_waiting": {
-    "number": 36,
-    "display": "36 months (reducible to 24 months via Optional Cover 12)",
+    "number": 24,
+    "display": "36 months (24 months with optional cover)",
     "note": "Base PED waiting period is 36 months. Optional Cover 12 (Reduction in PED Wait Period) reduces it to 24 months at additional premium."
   },
   "specific_disease_waiting": {
@@ -126,7 +126,8 @@
   "uin": "CHIHLIP26055V092526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "care---policy-terms-&-conditions-(effective-from-21-march-2026).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:54:03.798Z"
+  "extracted_at": "2026-09-20T07:54:03.798Z",
+  "audited_at": "2026-10-09"
 }

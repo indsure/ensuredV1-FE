@@ -103,8 +103,8 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
-    "note": "Policy wording does not explicitly mention organ donor expense cover.",
+    "display": "Not covered",
+    "note": "The wording has no organ donor benefit.",
     "optional": false,
     "exists": false
   },
@@ -115,10 +115,10 @@
     "number": 5000
   },
   "modern_treatments": {
-    "display": "Not specified",
-    "note": "Policy wording does not explicitly mention modern/robotic surgery treatments as a named benefit.",
+    "display": "No modern-treatment clause in wording",
+    "note": "The wording has no modern-treatment section. Check with the insurer before relying on robotic or other advanced procedures.",
     "optional": false,
-    "exists": false
+    "exists": null
   },
   "consumables": {
     "display": "Covered (inbuilt, B12)",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Elder_Care_Policy_Wordings_9d18315430.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:45:05.899Z"
+  "extracted_at": "2026-09-17T13:45:05.899Z",
+  "audited_at": "2026-10-09"
 }

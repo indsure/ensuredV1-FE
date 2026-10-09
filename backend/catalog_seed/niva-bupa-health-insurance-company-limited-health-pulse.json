@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "health-pulse-t-and-c.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:41:57.763Z"
+  "extracted_at": "2026-09-17T13:41:57.763Z",
+  "audited_at": "2026-10-09"
 }
