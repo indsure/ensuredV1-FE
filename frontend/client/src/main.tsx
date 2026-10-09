@@ -1,4 +1,5 @@
 import { createRoot, hydrateRoot } from "react-dom/client";
+import { flushSync } from "react-dom";
 import App from "./App";
 // Self-hosted fonts (no Google request, no consent banner needed): the latin
 // and latin-ext faces of Inter and Playfair Display, with unicode-range, so a
@@ -88,7 +89,12 @@ window.addEventListener("unhandledrejection", (e) => recoverFromStaleChunk(e.rea
 // and the demo mock for a tab already in playground mode. Everyone else renders
 // straight away. A failed fetch still renders (English / an empty portal).
 const ready: Promise<unknown>[] = [];
-if (getSavedLocale() === "hi") ready.push(loadLocale("hi"));
+if (getSavedLocale() === "hi") {
+  ready.push(loadLocale("hi"));
+  // Screen readers and hyphenation read the page language; the switcher sets it
+  // on a change, but a returning Hindi visitor arrives with "en" from the HTML.
+  document.documentElement.lang = "hi";
+}
 if (isPlaygroundMode()) ready.push(loadPlayground());
 
 // The main public pages ship as real HTML (scripts/prerender.mjs marks them
@@ -128,6 +134,12 @@ if (canHydrate) {
   setTimeout(hydrate, 300);
 } else {
   Promise.allSettled(ready).then(() => {
-    createRoot(root).render(app);
+    const reactRoot = createRoot(root);
+    // A prerendered page was hidden for a Hindi visitor (see loadAppAfterPaint
+    // in scripts/prerender.mjs) so it never flashed in English. flushSync makes
+    // the first commit synchronous, so React's own output has replaced that
+    // HTML before the page is shown again.
+    flushSync(() => reactRoot.render(app));
+    document.documentElement.classList.remove("hi-pending");
   });
 }

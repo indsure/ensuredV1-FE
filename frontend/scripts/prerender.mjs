@@ -509,13 +509,26 @@ function withFontPreload(html, assetFiles) {
 // without paint timing fall back to the next frame. A tab opened in the
 // background never paints, so it loads the app when shown, or after 1 s. The
 // 3 s timer is a last resort if no paint is ever reported.
+//
+// The prerendered HTML is English. A visitor who chose Hindi would see it for a
+// moment before the app swapped in Hindi, so for them the page stays hidden
+// (as every page did before prerendering), <html lang> says "hi", and the app
+// loads at once instead of waiting for a paint. main.tsx removes "hi-pending"
+// once React has rendered; the 4 s timer shows the English page if the app
+// never loads at all.
 function loadAppAfterPaint(html) {
   const entry = html.match(/<script type="module" crossorigin src="([^"]+)"><\/script>/);
   if (!entry) throw new Error("[prerender] entry <script type=module> not found; fix loadAppAfterPaint");
+  const hindi =
+    `<style>.hi-pending #root{visibility:hidden}</style>` +
+    `<script>try{if(localStorage.getItem("indsure_lang")==="hi"){var h=document.documentElement;h.lang="hi";` +
+    `h.classList.add("hi-pending");setTimeout(function(){h.classList.remove("hi-pending")},4000)}}catch(e){}</script>`;
   const loader =
+    hindi +
     `<script>(function(){var d=false;function go(){if(d)return;d=true;` +
     `var s=document.createElement("script");s.type="module";s.crossOrigin="";s.src=${JSON.stringify(entry[1])};` +
     `document.head.appendChild(s)}` +
+    `if(document.documentElement.classList.contains("hi-pending")){go();return}` +
     `if(document.visibilityState==="hidden"){document.addEventListener("visibilitychange",go,{once:true});setTimeout(go,1000);return}` +
     `setTimeout(go,3000);` +
     `try{new PerformanceObserver(function(l){if(l.getEntriesByName("first-contentful-paint").length)setTimeout(go,0)})` +
