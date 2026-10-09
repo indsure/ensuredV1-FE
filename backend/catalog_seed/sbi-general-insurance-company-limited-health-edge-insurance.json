@@ -6,14 +6,14 @@
   "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "At actuals up to SI (base); 2% of SI/day optional modifier",
-    "note": "Base plan covers room rent at actuals up to Sum Insured. An optional base cover modifier caps room rent at 2% of SI per day.",
+    "display": "No limit (actuals up to SI)",
+    "note": "",
     "optional": false,
     "ordinal": 5
   },
   "icu": {
-    "display": "At actuals up to SI (base); 4% of SI/day optional modifier",
-    "note": "Base plan covers ICU at actuals up to Sum Insured. Optional modifier caps ICU at 4% of SI per day.",
+    "display": "No limit (actuals up to SI)",
+    "note": "",
     "optional": false,
     "ordinal": 5
   },
@@ -103,7 +103,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "Policy wording does not explicitly mention organ donor expense cover.",
     "optional": false,
     "exists": false
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Health_Edge_Insurance_Policy_wording_75e1ad1343.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:44:32.161Z"
+  "extracted_at": "2026-09-17T13:44:32.161Z",
+  "audited_at": "2026-10-09"
 }

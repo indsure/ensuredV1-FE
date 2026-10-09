@@ -42,10 +42,10 @@
     "number": 30
   },
   "ped_waiting": {
-    "display": "24 months (disability/HIV); 36 months (others)",
+    "display": "36 months (24 months for pre-existing disability)",
     "note": "24 months for pre-existing disability and HIV/AIDS; 36 months for all other pre-existing conditions",
     "optional": false,
-    "number": 24
+    "number": 36
   },
   "specific_disease_waiting": {
     "display": "24 months",
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "SecureHealth-TnC.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:40:16.935Z"
+  "extracted_at": "2026-09-17T13:40:16.935Z",
+  "audited_at": "2026-10-09"
 }

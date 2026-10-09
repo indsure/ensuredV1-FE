@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Sarvah-Uttam-TnC.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T14:00:31.404Z"
+  "extracted_at": "2026-09-17T14:00:31.404Z",
+  "audited_at": "2026-10-09"
 }
