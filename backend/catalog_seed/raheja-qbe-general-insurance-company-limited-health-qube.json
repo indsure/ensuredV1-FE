@@ -18,10 +18,10 @@
     "ordinal": 3
   },
   "copayment": {
-    "display": "20% (entry age 60+); None below 60 (most plans)",
+    "display": "20% if entry age above 60",
     "note": "Mandatory 20% co-pay for insured persons whose entry age is 60 years and above. Super Saver plan has inbuilt 20% co-pay for all ages/insured persons. Voluntary 20% co-pay optional add-on available. Section L (Advance Treatment) has 50% co-pay.",
     "optional": false,
-    "number": 0
+    "number": 20
   },
   "sub_limits": {
     "display": "Cataract ₹50k/eye, Joint replacement ₹3L/joint, Mental health ₹50k; Doctor fees 25% of SI/claim",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "policy-wordings-health-Qube-V04 (1).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:30:56.486Z"
+  "extracted_at": "2026-09-20T07:30:56.486Z",
+  "audited_at": "2026-10-09"
 }

@@ -6,10 +6,10 @@
   "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "As per Policy Schedule (optional cap available)",
+    "display": "No limit (optional room cap for a discount)",
     "note": "Room rent limit is specified in the Policy Schedule. An optional 'Cap on Room Rent' cover is available for a premium discount; if cap is not opted, full room rent is payable subject to SI. Proportionate deduction applies if room exceeds eligible limit when cap is opted.",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "icu": {
     "display": "No cap (proportionate deduction not applied to ICU)",
@@ -42,10 +42,10 @@
     "number": 30
   },
   "ped_waiting": {
-    "display": "36 months (or 24 months as per Policy Schedule)",
+    "display": "36 months (24 months on some plans)",
     "note": "Policy states 36/24 months as mentioned in the Policy Schedule. Base/default is 36 months; 24 months may be available depending on plan opted.",
     "optional": false,
-    "number": 36
+    "number": 24
   },
   "specific_disease_waiting": {
     "display": "24 months",
@@ -115,10 +115,10 @@
     "number": null
   },
   "modern_treatments": {
-    "display": "Not specified",
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "Policy wording does not explicitly mention modern/robotic/advanced treatments as a named benefit or exclusion beyond standard IRDAI exclusions.",
     "optional": false,
-    "exists": false
+    "exists": true
   },
   "consumables": {
     "display": "Not covered (non-medical items excluded per Annexure III)",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "KHP_Policy_Wordings_Website_1_d4b4eba506_778e64aae1.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:37:39.552Z"
+  "extracted_at": "2026-09-20T07:37:39.552Z",
+  "audited_at": "2026-10-09"
 }

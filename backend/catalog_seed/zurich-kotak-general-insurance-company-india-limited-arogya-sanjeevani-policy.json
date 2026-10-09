@@ -103,7 +103,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "No mention of organ donor expense cover in the policy wording",
     "optional": false,
     "exists": false
@@ -159,7 +159,8 @@
   "notable_exclusions": "Domiciliary & OPD, maternity, infertility/IVF, refractive error <7.5D, treatment outside India, obesity surgery (conditional), gender change",
   "optional_riders": "None mentioned in policy wording",
   "source_file": "ASP_Policy_Wording_18072025_97a2b4ccb0_2_e85b31e83f_a3c482394e.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:37:05.551Z"
+  "extracted_at": "2026-09-20T07:37:05.551Z",
+  "audited_at": "2026-10-09"
 }
