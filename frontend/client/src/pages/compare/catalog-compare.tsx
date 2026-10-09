@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { Loader2, Scale, Zap, Search, Plus, X, ArrowRight, Lock, FileText, ChevronRight, ChevronLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { MpEvent, track } from "@/lib/mixpanel";
@@ -232,7 +232,8 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
 export default function PublicCatalogCompare() {
   // ?type=life|term|vehicle keep their dedicated comparers (they render their
   // own full page chrome) — identical behavior to the old /compare.
-  const compareType = new URLSearchParams(window.location.search).get("type");
+  // From the router rather than window, so the page can also render at build time.
+  const compareType = new URLSearchParams(useSearch()).get("type");
   if (compareType === "life") return <LifeInsuranceComparer />;
   if (compareType === "term") return <TermInsuranceComparer />;
   if (compareType === "vehicle") return <VehicleInsuranceComparer />;

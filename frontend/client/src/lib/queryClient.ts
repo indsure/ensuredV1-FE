@@ -1,10 +1,11 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { supabase } from "./supabase";
+import { getSupabase } from "./supabaseLazy";
 
 // Attach the Supabase bearer token the same way apiFetch (lib/api.ts) does.
 // The backend authenticates via Authorization: Bearer <token>, not cookies.
 async function withAuthHeaders(init?: HeadersInit): Promise<Headers> {
   const headers = new Headers(init);
+  const supabase = await getSupabase();
   const {
     data: { session },
   } = await supabase.auth.getSession();

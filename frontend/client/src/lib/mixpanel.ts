@@ -57,6 +57,11 @@ const RECORD_PERCENT = Number(import.meta.env.VITE_MIXPANEL_RECORD_PERCENT ?? 10
 const DEBUG_MODE = import.meta.env.VITE_MIXPANEL_DEBUG === "true";
 const ENABLED = Boolean(TOKEN) && (import.meta.env.PROD || DEBUG_MODE);
 
+/** False on builds without a token (production today), where nothing loads. */
+export function isAnalyticsEnabled(): boolean {
+  return ENABLED;
+}
+
 let started = false;
 
 // The SDK (with its Session Replay recorder) is the single largest dependency

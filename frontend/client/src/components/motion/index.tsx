@@ -20,6 +20,7 @@ import {
   type Variants,
   type HTMLMotionProps,
 } from "motion/react";
+import { useStaticFirstPaint } from "@/lib/staticFirstPaint";
 
 /* One easing curve for the whole site. A gentle deceleration:
    content arrives and settles rather than springing. */
@@ -67,7 +68,9 @@ export function Reveal({
   className,
   ...rest
 }: RevealProps) {
-  const reduced = useReducedMotion();
+  // Prerendered first paint renders like reduced motion; see lib/staticFirstPaint.
+  const staticPaint = useStaticFirstPaint();
+  const reduced = useReducedMotion() || staticPaint;
 
   if (reduced) {
     return <div className={className}>{children}</div>;
@@ -105,7 +108,9 @@ export function Stagger({
   children: React.ReactNode;
   className?: string;
 } & Omit<HTMLMotionProps<"div">, "children" | "variants" | "initial" | "whileInView">) {
-  const reduced = useReducedMotion();
+  // Prerendered first paint renders like reduced motion; see lib/staticFirstPaint.
+  const staticPaint = useStaticFirstPaint();
+  const reduced = useReducedMotion() || staticPaint;
 
   if (reduced) {
     return <div className={className}>{children}</div>;
@@ -133,7 +138,9 @@ export function RevealItem({
   children: React.ReactNode;
   className?: string;
 } & Omit<HTMLMotionProps<"div">, "children" | "variants">) {
-  const reduced = useReducedMotion();
+  // Prerendered first paint renders like reduced motion; see lib/staticFirstPaint.
+  const staticPaint = useStaticFirstPaint();
+  const reduced = useReducedMotion() || staticPaint;
 
   if (reduced) {
     return <div className={className}>{children}</div>;
@@ -169,7 +176,9 @@ export function AnimatedNumber({
   className?: string;
   duration?: number;
 }) {
-  const reduced = useReducedMotion();
+  // Prerendered first paint renders like reduced motion; see lib/staticFirstPaint.
+  const staticPaint = useStaticFirstPaint();
+  const reduced = useReducedMotion() || staticPaint;
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "0px 0px -15% 0px" });
   const [display, setDisplay] = useState(value);
@@ -244,7 +253,9 @@ export function GrowBar({
   label?: string;
   delay?: number;
 }) {
-  const reduced = useReducedMotion();
+  // Prerendered first paint renders like reduced motion; see lib/staticFirstPaint.
+  const staticPaint = useStaticFirstPaint();
+  const reduced = useReducedMotion() || staticPaint;
   const clamped = Math.max(0, Math.min(100, percent));
 
   return (

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { isPlaygroundMode } from './playground/mode'
-type PlaygroundModule = typeof import('./playground/mockClient')
+import { getPlayground } from './playground/registry'
 
 // Supabase configuration - Updated 2026-04-27
 const SUPABASE_URL = 'https://khxbabotbvnyjwvqtumt.supabase.co'
@@ -12,21 +12,10 @@ const realClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 // mock — see ./playground. We expose ONE `supabase` symbol that every page
 // already imports and transparently route it to the mock when the flag is set,
 // so no page, link or query has to change. Real mode is untouched.
-//
-// The mock and its seed data are a separate chunk, so ordinary visitors never
-// download the demo. loadPlayground() fetches it; main.tsx awaits it before the
-// first render when the flag is already set, and PlaygroundEntry awaits it
-// before turning the flag on, so no query can run against the real client while
-// the mock is still on its way.
-let playground: PlaygroundModule | null = null
-
-export async function loadPlayground(): Promise<void> {
-  if (!playground) playground = await import('./playground/mockClient')
-  playground.installPlaygroundFetch()
-}
-
+// The mock is a separate chunk, loaded by ./playground/registry.
 export const supabase = new Proxy(realClient, {
   get(target, prop, receiver) {
+    const playground = getPlayground()
     if (playground && isPlaygroundMode()) {
       const mock = playground.getMockClient()
       const mv = mock[prop as keyof typeof mock]

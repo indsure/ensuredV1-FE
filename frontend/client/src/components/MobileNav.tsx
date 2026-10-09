@@ -25,20 +25,20 @@ export function MobileNav() {
 
   // Fix 2: Hide D2C chrome on agent/admin routes
   // MUST BE AFTER ALL HOOKS
-  if (window.location.pathname.startsWith('/agent') || window.location.pathname.startsWith('/admin')) {
+  if (location.startsWith('/agent') || location.startsWith('/admin')) {
     return null;
   }
 
   // Advisor landing pages (/a/<slug>) are ad + referral destinations, not part
   // of the D2C site: this bar would sit on top of the lead form on a phone and
   // hand the visitor a way off the page before they submit.
-  if (window.location.pathname.startsWith('/a/')) {
+  if (location.startsWith('/a/')) {
     return null;
   }
 
   // Same for /start, the reel campaign page: this bar would sit over its CTA
   // on a phone and offer four ways off the page before the visitor signs up.
-  if (window.location.pathname === '/start') {
+  if (location === '/start') {
     return null;
   }
 
@@ -47,7 +47,7 @@ export function MobileNav() {
   // form card while offering four ways to leave before the person is in. On
   // /login in particular everybody arriving is already a customer: the last
   // thing that screen needs is a link to the blog.
-  const p = window.location.pathname;
+  const p = location;
   if (p === '/login' || p === '/signup' || p === '/forgot-password' || p === '/reset-password') {
     return null;
   }
@@ -55,7 +55,7 @@ export function MobileNav() {
   // The signed-in consumer portfolio (/app) is the product, not the marketing
   // site: a bar offering Home / Calculator / Compare / Blog is a way *out* of
   // the app, and on a phone it covers the portfolio's own actions.
-  const path = window.location.pathname;
+  const path = location;
   if (path === '/app' || path.startsWith('/app/')) {
     return null;
   }

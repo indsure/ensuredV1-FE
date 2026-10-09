@@ -119,7 +119,8 @@ const ResetPasswordPublic = lazy(() => import("@/pages/reset-password"));
 // --- Consumer (D2C individual) portfolio app ---
 const PortfolioPage = lazy(() => import("@/pages/app/portfolio"));
 const ConsumerPolicyDetail = lazy(() => import("@/pages/app/policy-detail"));
-import UserProtectedRoute from "@/components/UserProtectedRoute";
+// Lazy for the same reason: it needs the Supabase SDK, which public pages do not.
+const UserProtectedRoute = lazy(() => import("@/components/UserProtectedRoute"));
 
 // Loading fallback component
 function PageLoader() {

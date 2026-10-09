@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
   plugins: [
     react(),
     tailwindcss(),
@@ -18,6 +18,9 @@ export default defineConfig({
     postcss: { plugins: [] },
   },
   root: path.resolve(import.meta.dirname, "client"),
+  // The SSR build (entry-server.tsx, used only by scripts/prerender.mjs at
+  // build time) has no use for a second copy of the public folder.
+  publicDir: isSsrBuild ? false : undefined,
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
@@ -61,4 +64,4 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
-});
+}));

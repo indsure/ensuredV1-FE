@@ -1,4 +1,4 @@
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import App from "./App";
 // Self-hosted fonts (no Google request, no consent banner needed). Only the
 // latin and latin-ext subsets: latin-ext is not optional, it is where the rupee
@@ -27,7 +27,8 @@ import "./index.css";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import { getSavedLocale, loadLocale } from "./i18n";
 import { isPlaygroundMode } from "./lib/playground/mode";
-import { loadPlayground } from "./lib/supabase";
+import { loadPlayground } from "./lib/playground/registry";
+import { enableStaticFirstPaint } from "./lib/staticFirstPaint";
 
 // #region agent log
 try {
@@ -107,10 +108,31 @@ const ready: Promise<unknown>[] = [];
 if (getSavedLocale() === "hi") ready.push(loadLocale("hi"));
 if (isPlaygroundMode()) ready.push(loadPlayground());
 
-Promise.allSettled(ready).then(() => {
-  createRoot(document.getElementById("root")!).render(
-    <LanguageProvider>
-      <App />
-    </LanguageProvider>
-  );
-});
+// The main public pages ship as real HTML (scripts/prerender.mjs marks them
+// with data-prerendered), so they are already on screen. Hydrating keeps that
+// HTML and attaches React to it instead of throwing it away and rebuilding.
+// It is only attempted when this visit would render exactly what was built:
+// English, not the demo, and no query string beyond campaign tags (?type= on
+// /compare, for one, switches to a different page). Otherwise React renders
+// fresh over the HTML, which stays visible until then.
+const root = document.getElementById("root")!;
+const onlyCampaignParams = Array.from(new URLSearchParams(window.location.search).keys()).every(
+  (k) => k.startsWith("utm_") || k === "gclid" || k === "fbclid"
+);
+const canHydrate =
+  root.hasAttribute("data-prerendered") && ready.length === 0 && onlyCampaignParams;
+
+const app = (
+  <LanguageProvider>
+    <App />
+  </LanguageProvider>
+);
+
+if (canHydrate) {
+  enableStaticFirstPaint();
+  hydrateRoot(root, app);
+} else {
+  Promise.allSettled(ready).then(() => {
+    createRoot(root).render(app);
+  });
+}

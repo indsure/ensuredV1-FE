@@ -1,5 +1,5 @@
 import { getApiBase } from "./queryClient";
-import { supabase } from "./supabase";
+import { getSupabase } from "./supabaseLazy";
 
 export async function apiFetch(
   path: string,
@@ -9,6 +9,7 @@ export async function apiFetch(
   const url = `${base}${path}`;
   
   // Get the current session token
+  const supabase = await getSupabase();
   const { data: { session } } = await supabase.auth.getSession();
   
   // Merge headers with authentication token

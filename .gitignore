@@ -10,6 +10,7 @@ coverage/
 dist/
 build/
 frontend/dist/
+frontend/dist-ssr/
 backend/dist/
 
 # Environment variables (root and all subdirectories)

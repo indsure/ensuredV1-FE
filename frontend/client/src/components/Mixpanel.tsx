@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { supabase } from "@/lib/supabase";
-import { identifyUser, initMixpanel, resetUser, trackPageView } from "@/lib/mixpanel";
+import { getSupabase } from "@/lib/supabaseLazy";
+import { identifyUser, initMixpanel, isAnalyticsEnabled, resetUser, trackPageView } from "@/lib/mixpanel";
 
 /**
  * Mounts Mixpanel (analytics + Session Replay) for the whole app.
@@ -30,7 +30,11 @@ export function Mixpanel() {
   const identifiedFor = useRef<string | null>(null);
 
   useEffect(() => {
+    // With analytics off there is nobody to identify, so do not fetch the
+    // Supabase SDK just for this.
+    if (!isAnalyticsEnabled()) return;
     let cancelled = false;
+    let unsubscribe = () => {};
 
     async function sync(session: { user?: { id?: string } } | null) {
       const userId = session?.user?.id;
@@ -48,6 +52,7 @@ export function Mixpanel() {
 
       let userType: "agent" | "consumer" = "consumer";
       try {
+        const supabase = await getSupabase();
         const { data } = await supabase
           .from("agents")
           .select("id")
@@ -62,15 +67,18 @@ export function Mixpanel() {
       identifyUser(userId, { userType });
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => void sync(session));
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => void sync(session));
+    getSupabase().then((supabase) => {
+      if (cancelled) return;
+      supabase.auth.getSession().then(({ data: { session } }) => void sync(session));
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => void sync(session));
+      unsubscribe = () => subscription.unsubscribe();
+    });
 
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 

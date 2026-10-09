@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { enterPlayground } from "@/lib/playground/mode";
-import { loadPlayground } from "@/lib/supabase";
+import { loadPlayground } from "@/lib/playground/registry";
 import { setTourState } from "@/lib/playground/tour";
 import { DEMO_ROUTES } from "@/lib/advisorGuide";
 import { useLanguage } from "@/i18n/LanguageContext";

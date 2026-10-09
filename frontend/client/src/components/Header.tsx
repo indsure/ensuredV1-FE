@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "motion/react";
+import { useStaticFirstPaint } from "@/lib/staticFirstPaint";
 import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext";
 
 /* ============================================================
@@ -77,6 +78,8 @@ export function Header() {
   const { t } = useLanguage();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Prerendered first paint shows the header in place; see lib/staticFirstPaint.
+  const staticPaint = useStaticFirstPaint();
 
   // Hooks MUST come before any conditional return
   useEffect(() => {
@@ -114,7 +117,7 @@ export function Header() {
 
   return (
     <motion.header
-      initial={{ opacity: 0, y: -10 }}
+      initial={staticPaint ? false : { opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className={`fixed top-0 left-0 right-0 z-50 border-b transition-[padding,background-color,border-color,box-shadow] duration-300 ${

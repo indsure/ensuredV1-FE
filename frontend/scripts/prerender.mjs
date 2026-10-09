@@ -18,6 +18,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -166,7 +167,15 @@ function injectJsonLd(html, blocks) {
 // paint and createRoot replacing #root, a real visitor sees an unstyled <h1>
 // and paragraph fill the screen. <noscript> keeps the markup in the document
 // for the crawlers that need it and renders nothing for everyone else.
+//
+// The exception is a page in SSR_ROUTES: it gets the real React render instead
+// (see renderApp below), painted as soon as the HTML and CSS arrive, and
+// main.tsx hydrates it rather than replacing it.
 function injectBody(html, bodyHtml, currentPath) {
+  const rendered = currentPath !== undefined ? SSR_HTML.get(currentPath) : undefined;
+  if (rendered !== undefined) {
+    return html.replace(/<div id="root">[\s\S]*?<\/div>/, () => `<div id="root" data-prerendered>${rendered}</div>`);
+  }
   if (currentPath !== undefined) bodyHtml += navHtml(currentPath);
   return html.replace(
     /<div id="root">[\s\S]*?<\/div>/,
@@ -476,6 +485,49 @@ function withFontPreload(html, assetFiles) {
 }
 
 // ---------------------------------------------------------------------------
+// Real HTML for the main public pages.
+//
+// `npm run build` also produces an SSR bundle (client/src/entry-server.tsx ->
+// dist-ssr/). Each route below is rendered through it with React's static
+// prerender, which waits for every lazy chunk, so the page is complete: header,
+// hero, body, footer. Before this, every page reached the browser as an empty
+// #root and painted nothing until the JavaScript had downloaded and run.
+//
+// A route that fails to render falls back to the <noscript> seed with a loud
+// warning rather than failing the deploy: the site still works, it is just
+// slower to paint.
+// ---------------------------------------------------------------------------
+const SSR_ROUTES = ["/", "/how-it-works", "/pricing", "/policychecker", "/compare", "/calculator", "/learn", "/agent"];
+const SSR_HTML = new Map();
+
+async function renderApp() {
+  const entry = join(ROOT, "dist-ssr", "entry-server.js");
+  if (!existsSync(entry)) {
+    console.warn("[prerender] WARNING: dist-ssr/entry-server.js missing, pages ship without real HTML. Run `npm run build`.");
+    return;
+  }
+  const require = createRequire(join(ROOT, "package.json"));
+  const { createElement } = require("react");
+  const { prerenderToNodeStream } = require("react-dom/static");
+  const { AppForPath } = await import(pathToFileURL(entry).href);
+  for (const path of SSR_ROUTES) {
+    const errors = [];
+    try {
+      const { prelude } = await prerenderToNodeStream(createElement(AppForPath, { path }), {
+        onError: (err) => void errors.push(err),
+      });
+      let html = "";
+      for await (const chunk of prelude) html += chunk;
+      if (errors.length) throw errors[0];
+      if (!/<h1[\s>]/.test(html)) throw new Error("rendered without an <h1>");
+      SSR_HTML.set(path, html);
+    } catch (err) {
+      console.warn(`[prerender] WARNING: ${path} could not be rendered, falling back to the noscript seed: ${err?.message ?? err}`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 async function main() {
   if (!existsSync(DIST)) {
     console.error("[prerender] dist/ not found. Run `vite build` first.");
@@ -502,6 +554,7 @@ async function main() {
     docPath,
   } = await loadBlogData();
   checkPageSeo(PAGE_SEO);
+  await renderApp();
 
   // Shells for everything that is not a prerendered page. Written first, from
   // the pristine template, before "/" overwrites dist/index.html.
@@ -860,7 +913,7 @@ async function main() {
     console.warn(`[prerender] ${longTitles.length} blog/clause titles exceed ${TITLE_MAX} chars.`);
   }
   console.log(
-    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + ${FOUNDERS.length} author pages + ${CLAUSE_LIBRARY.length} clause pages + ${DOC_PAGES.length} docs pages + 404/app shells + sitemap (${urlCount} URLs).`,
+    `[prerender] wrote ${STATIC_ROUTES.length} static pages + ${postCount} blog posts + ${FOUNDERS.length} author pages + ${CLAUSE_LIBRARY.length} clause pages + ${DOC_PAGES.length} docs pages + 404/app shells + sitemap (${urlCount} URLs); ${SSR_HTML.size}/${SSR_ROUTES.length} with real HTML.`,
   );
 }
 

@@ -18,6 +18,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { useStaticFirstPaint } from "@/lib/staticFirstPaint";
 import { ArrowRight, FileText, TriangleAlert, IndianRupee } from "lucide-react";
 import { EASE, AnimatedNumber } from "@/components/motion";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -114,7 +115,9 @@ const CLAUSES: Clause[] = [
 
 export function ClauseDecoder({ className = "" }: { className?: string }) {
   const [active, setActive] = useState(0);
-  const reduced = useReducedMotion();
+  // Prerendered first paint renders like reduced motion; see lib/staticFirstPaint.
+  const staticPaint = useStaticFirstPaint();
+  const reduced = useReducedMotion() || staticPaint;
   const clause = CLAUSES[active];
   const { t } = useLanguage();
 
@@ -274,7 +277,9 @@ export function ScoreDial({
   caption?: string;
   className?: string;
 }) {
-  const reduced = useReducedMotion();
+  // Prerendered first paint renders like reduced motion; see lib/staticFirstPaint.
+  const staticPaint = useStaticFirstPaint();
+  const reduced = useReducedMotion() || staticPaint;
   const { t } = useLanguage();
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(reduced ? score : 0);
@@ -409,7 +414,9 @@ export function SpotlightCard({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: -300, y: -300 });
-  const reduced = useReducedMotion();
+  // Prerendered first paint renders like reduced motion; see lib/staticFirstPaint.
+  const staticPaint = useStaticFirstPaint();
+  const reduced = useReducedMotion() || staticPaint;
 
   return (
     <div
@@ -523,7 +530,9 @@ export function CoverGap({
   monthly?: number;
   className?: string;
 }) {
-  const reduced = useReducedMotion();
+  // Prerendered first paint renders like reduced motion; see lib/staticFirstPaint.
+  const staticPaint = useStaticFirstPaint();
+  const reduced = useReducedMotion() || staticPaint;
   const { t } = useLanguage();
   const pct = Math.max(0, Math.min(100, (have / need) * 100));
   const fmt = (n: number) =>

@@ -13,6 +13,7 @@ import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 import { AnimatedNumber, GrowBar, Reveal } from "@/components/motion";
+import { useStaticFirstPaint } from "@/lib/staticFirstPaint";
 import { calculatorIllustration, ILLUSTRATION_PROFILE } from "@/lib/calculator-illustration";
 
 /* Every rupee figure inside a product panel on this page is illustrative and is
@@ -63,6 +64,8 @@ const panelShadow =
 
 function Hero() {
   const { t } = useLanguage();
+  // Prerendered first paint shows the hero as-is; see lib/staticFirstPaint.
+  const staticPaint = useStaticFirstPaint();
   return (
     <section className="relative bg-[var(--color-cream-main)] pb-4">
       {/* The fold used to be flat cream from edge to edge, which read as an
@@ -81,7 +84,7 @@ function Hero() {
       </div>
 
       <div className="container-editorial relative px-6">
-        <motion.div variants={wrap} initial="hidden" animate="visible" className="flex flex-col gap-6 pt-10 lg:pt-16">
+        <motion.div variants={wrap} initial={staticPaint ? false : "hidden"} animate="visible" className="flex flex-col gap-6 pt-10 lg:pt-16">
           <motion.h1
             variants={rise}
             className="font-serif font-bold tracking-[-0.035em] leading-[1.04] text-4xl sm:text-6xl lg:text-7xl max-w-4xl text-[var(--color-navy-900)]"
@@ -141,13 +144,14 @@ function HeroPanels() {
   // calculator landing page uses, so the two can never disagree.
   const illustration = calculatorIllustration();
   const { t } = useLanguage();
+  const staticPaint = useStaticFirstPaint();
 
   return (
     <div className="container-editorial px-6 pt-10 lg:pt-14">
       <div className="rounded-3xl bg-[var(--color-cream-dark)] border border-[var(--color-border-light)] p-4 sm:p-8 lg:p-12">
         <div className="grid lg:grid-cols-5 gap-5">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
+            initial={staticPaint ? false : { opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.8, ease: "easeOut" }}
@@ -216,7 +220,7 @@ function HeroPanels() {
 
           <div className="lg:col-span-2 flex flex-col gap-5">
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
+              initial={staticPaint ? false : { opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
@@ -263,7 +267,7 @@ function HeroPanels() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
+              initial={staticPaint ? false : { opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
               transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
@@ -726,6 +730,7 @@ function ProductSection() {
 
 function HowItWorks() {
   const { t } = useLanguage();
+  const staticPaint = useStaticFirstPaint();
   return (
     <section id="how-it-works" className="scroll-mt-28 bg-white py-14 sm:py-20 lg:py-24">
       <div className="container-editorial px-6 flex flex-col gap-10">
@@ -758,7 +763,7 @@ function HowItWorks() {
                   key={t.cls}
                   className={`absolute ${t.cls} flex h-11 w-11 items-center justify-center rounded-xl bg-white/85 shadow-sm`}
                   style={{ color: t.c }}
-                  initial={{ opacity: 0, scale: 0.7 }}
+                  initial={staticPaint ? false : { opacity: 0, scale: 0.7 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true, margin: "0px 0px -12% 0px" }}
                   transition={{ duration: 0.5, delay: 0.25 + t.d, ease: [0.22, 1, 0.36, 1] }}
@@ -795,7 +800,7 @@ function HowItWorks() {
                   key={size}
                   className={`absolute rounded-full ${i === 0 ? "border border-dashed" : "border"}`}
                   style={{ width: size, height: size, borderColor: "var(--lob-life)", opacity: 0.35 }}
-                  initial={{ scale: 0.85, opacity: 0 }}
+                  initial={staticPaint ? false : { scale: 0.85, opacity: 0 }}
                   whileInView={{ scale: 1, opacity: 0.35 }}
                   viewport={{ once: true, margin: "0px 0px -12% 0px" }}
                   transition={{ duration: 0.7, delay: 0.2 + i * 0.12, ease: [0.22, 1, 0.36, 1] }}
