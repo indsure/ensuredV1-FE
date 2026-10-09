@@ -119,7 +119,13 @@
   "uin": "GODHLIP25039V022425",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "policy-wordings-digit-health-insurance-policy.pdf",
-  "status": "unverified",
+  "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:00:25.871Z"
+  "extracted_at": "2026-09-20T08:00:25.871Z",
+  "audit_gaps": [
+    "restoration",
+    "cumulative_bonus",
+    "ped_waiting"
+  ],
+  "audited_at": "2026-10-09"
 }
