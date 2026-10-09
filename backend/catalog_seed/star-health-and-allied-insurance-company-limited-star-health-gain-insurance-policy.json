@@ -12,10 +12,10 @@
     "ordinal": 3
   },
   "icu": {
-    "display": "Not specified separately",
-    "note": "ICU charges are covered under Section I(C) but no separate ICU sub-limit or cap is stated; subject to overall SI.",
+    "display": "No separate ICU limit (up to Sum Insured)",
+    "note": "ICU charges are listed among covered in-patient expenses with no separate cap.",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "copayment": {
     "display": "20% (age 61+ at entry)",
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Policy_Star_Health_Gain_Insurance_Policy_V_17_21eac0dc50 (1).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:25:36.498Z"
+  "extracted_at": "2026-09-20T07:25:36.498Z",
+  "audited_at": "2026-10-09"
 }

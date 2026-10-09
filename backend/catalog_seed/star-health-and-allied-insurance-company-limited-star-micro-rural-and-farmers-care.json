@@ -12,10 +12,10 @@
     "ordinal": 3
   },
   "icu": {
-    "display": "Not specified separately",
+    "display": "No separate ICU limit (up to Sum Insured)",
     "note": "ICU charges covered under general hospitalisation expenses; no separate ICU sub-limit stated in policy wording",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "copayment": {
     "display": "20% (age 61+ at entry)",
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -73,16 +73,16 @@
     "ordinal": 0
   },
   "pre_hosp": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "Pre-hospitalisation expenses not explicitly mentioned as a separate benefit in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "post_hosp": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "Post-hospitalisation expenses not explicitly mentioned as a separate benefit in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "day_care": {
     "display": "All day-care covered",
@@ -109,10 +109,10 @@
     "exists": false
   },
   "ambulance": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "Ambulance cover not mentioned in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "modern_treatments": {
     "display": "Sub-limited",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Policy_Star_Micro_Rural_And_Farmers_Care_V_13_74fd886525.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:25:57.787Z"
+  "extracted_at": "2026-09-20T07:25:57.787Z",
+  "audited_at": "2026-10-09"
 }

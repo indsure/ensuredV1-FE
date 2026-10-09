@@ -42,10 +42,10 @@
     "number": 30
   },
   "ped_waiting": {
-    "display": "36 months",
+    "display": "36 months (24 or 12 months with optional cover)",
     "note": "Reducible to 24 or 12 months via optional paid add-on (first purchase only, subject to underwriter approval)",
     "optional": false,
-    "number": 36
+    "number": 12
   },
   "specific_disease_waiting": {
     "display": "24 months",
@@ -103,7 +103,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "Organ donor expenses not explicitly mentioned in the policy wording",
     "optional": false,
     "exists": false
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy_Smart_Health_Pro_V_3_51c653ee1a.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:24:15.688Z"
+  "extracted_at": "2026-09-20T07:24:15.688Z",
+  "audited_at": "2026-10-09"
 }

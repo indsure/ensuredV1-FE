@@ -102,7 +102,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "Organ donor expenses are not explicitly mentioned in the policy wording.",
     "optional": false,
     "exists": false
@@ -166,7 +166,8 @@
     "optional": true
   },
   "source_file": "Policy_Young_Star_Insurance_Policy_V_12_59f47a25f5.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:26:49.539Z"
+  "extracted_at": "2026-09-20T07:26:49.539Z",
+  "audited_at": "2026-10-09"
 }

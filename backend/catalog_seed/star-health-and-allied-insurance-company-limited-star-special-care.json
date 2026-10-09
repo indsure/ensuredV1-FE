@@ -12,7 +12,7 @@
     "ordinal": 2
   },
   "icu": {
-    "display": "Not specified separately",
+    "display": "No separate ICU limit (up to Sum Insured)",
     "note": "ICU charges covered under general hospitalisation expenses (Section C); no separate daily cap stated. ICU stay not counted as shared accommodation.",
     "optional": false,
     "ordinal": 5
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Policy_Star_Special_Care_V_12_1dceede2eb.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:26:12.120Z"
+  "extracted_at": "2026-09-20T07:26:12.120Z",
+  "audited_at": "2026-10-09"
 }

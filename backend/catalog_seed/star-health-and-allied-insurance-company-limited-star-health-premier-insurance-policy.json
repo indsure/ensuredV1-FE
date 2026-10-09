@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Policy_Star_Health_Premier_Insurance_Policy_V_7_676175d548.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:25:46.819Z"
+  "extracted_at": "2026-09-20T07:25:46.819Z",
+  "audited_at": "2026-10-09"
 }

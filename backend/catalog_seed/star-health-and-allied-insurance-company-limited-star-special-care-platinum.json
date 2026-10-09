@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No Claim Bonus is referenced in renewal/portability/migration context (credits protected) but no explicit NCB accumulation rate or cap is stated in the policy wording.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -109,10 +109,10 @@
     "exists": false
   },
   "ambulance": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "Road ambulance cover is not mentioned in the policy wording.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "modern_treatments": {
     "display": "Sub-limited",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy_Star_Special_Care_Platinum_3f1e4f7e09.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:26:11.369Z"
+  "extracted_at": "2026-09-20T07:26:11.369Z",
+  "audited_at": "2026-10-09"
 }

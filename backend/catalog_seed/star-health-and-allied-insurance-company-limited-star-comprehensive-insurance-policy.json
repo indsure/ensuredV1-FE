@@ -42,10 +42,10 @@
     "number": 30
   },
   "ped_waiting": {
-    "display": "36 months",
+    "display": "36 months (12 months with optional Buy Back cover)",
     "note": "Base PED waiting period is 36 months. Reducible to 12 months via optional paid 'Buy Back of PED Waiting Period' add-on available only at first purchase.",
     "optional": false,
-    "number": 36
+    "number": 12
   },
   "specific_disease_waiting": {
     "display": "24 months",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy_Star_Comprehensive_Insurance_Policy_V_21_3a414ab104.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:25:17.925Z"
+  "extracted_at": "2026-09-20T07:25:17.925Z",
+  "audited_at": "2026-10-09"
 }
