@@ -129,7 +129,7 @@
   "insurer": "IndusInd General Insurance Company Limited",
   "plan_name": "IndusInd Yes Plus Health Insurance",
   "uin": "RELHLGP21524V022021",
-  "product_type": "comprehensive_health_indemnity",
+  "product_type": "top_up",
   "source_file": "indusind-yes-plus-health-insurance-pw.pdf",
   "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",

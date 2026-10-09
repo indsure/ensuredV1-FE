@@ -2,7 +2,7 @@
   "uin": "TATHLIP27059V012627",
   "insurer": "Tata AIG General Insurance",
   "plan_name": "MediCare Reserve",
-  "product_type": "comprehensive_health_indemnity",
+  "product_type": "top_up",
   "source_file": "tataaig/tata-aig-medicare-reserve-policy-wordings-2250e635.txt",
   "status": "audited",
   "confidence": "high",

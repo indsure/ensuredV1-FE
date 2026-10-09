@@ -137,7 +137,7 @@
   "insurer": "IndusInd General Insurance Company Limited",
   "plan_name": "Yes Plus Health Insurance",
   "uin": "RELHLGP21006V012021",
-  "product_type": "comprehensive_health_indemnity",
+  "product_type": "top_up",
   "source_file": "group-mediclaim-policy-wordings-for-indusind-yes-plus-health-insurance.pdf",
   "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
