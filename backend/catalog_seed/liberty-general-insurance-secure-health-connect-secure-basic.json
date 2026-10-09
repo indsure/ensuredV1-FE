@@ -4,12 +4,12 @@
   "confidence": "medium",
   "room_rent": {
     "ordinal": 0,
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Room rent limit not stated in wording; sub-limits table implies differential billing applies. Refer policy schedule."
   },
   "icu": {
     "ordinal": 0,
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "ICU charges covered under in-patient benefit but no specific cap stated in wording."
   },
   "copayment": {
@@ -52,18 +52,19 @@
     "note": "10% or 25% per claim-free year up to 50% or 100% depending on plan; Secure Basic assumed lower tier (50% max). Enhanced CB up to 150% available as optional add-on."
   },
   "restoration": {
-    "ordinal": 2,
-    "display": "Once/yr, 100% (optional)",
-    "note": "Reload of Sum Insured is an optional cover; triggers after original SI + CB exhausted; available for in-patient claims only; cannot be carried forward."
+    "ordinal": 4,
+    "display": "Optional: reload 100% once SI is used up (any illness)",
+    "note": "Reload of Sum Insured is an optional cover; triggers after original SI + CB exhausted; available for in-patient claims only; cannot be carried forward.",
+    "optional": true
   },
   "pre_hosp": {
     "number": null,
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Period not stated in wording; refer policy schedule."
   },
   "post_hosp": {
     "number": null,
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Period not stated in wording; refer policy schedule."
   },
   "day_care": {
@@ -91,8 +92,8 @@
     "note": "Emergency local road ambulance covered; maximum liability as per schedule (amount not stated in wording)."
   },
   "modern_treatments": {
-    "exists": false,
-    "display": "Not specified",
+    "exists": true,
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "No explicit modern/robotic treatment benefit mentioned; day-care list covers many procedures but no specific modern treatment clause."
   },
   "consumables": {
@@ -128,7 +129,8 @@
   "uin": "LIBHLIP21503V022021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Secure Health Connect_Policy Wordings_ LIBHLIP21503V022021(Effective from 07.01.2026)_06_04_26.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:04:42.882Z"
+  "extracted_at": "2026-09-20T08:04:42.882Z",
+  "audited_at": "2026-10-09"
 }
