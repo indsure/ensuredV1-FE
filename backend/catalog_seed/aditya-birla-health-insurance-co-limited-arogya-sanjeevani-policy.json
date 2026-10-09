@@ -124,7 +124,8 @@
   "uin": "ADIHLIP20170V011920",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "20250407T110432.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:51:19.585Z"
+  "extracted_at": "2026-09-20T07:51:19.585Z",
+  "audited_at": "2026-10-09"
 }

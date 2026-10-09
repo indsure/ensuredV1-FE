@@ -136,7 +136,15 @@
   "uin": "ADIHLIP22008V012223",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "20250821T102947.pdf",
-  "status": "unverified",
+  "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:51:39.530Z"
+  "extracted_at": "2026-09-20T07:51:39.530Z",
+  "audit_gaps": [
+    "room_rent",
+    "icu",
+    "pre_hosp",
+    "post_hosp",
+    "ambulance"
+  ],
+  "audited_at": "2026-10-09"
 }
