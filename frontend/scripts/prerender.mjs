@@ -501,11 +501,14 @@ function withFontPreload(html, assetFiles) {
 // depending on which happened first. The vendor chunks are fetched by the
 // entry's own imports instead of being preloaded.
 //
-// A visible tab waits for a real frame, however long the first frame takes to
-// draw (a slow phone can need over a second): an earlier version also had a
-// 1 s timer, which on exactly those phones fired first and put the JavaScript
-// back ahead of the paint. A tab opened in the background never draws frames,
-// so it loads the app when it is shown, or after 1 s, whichever comes first.
+// A visible tab waits for the browser's own first-contentful-paint entry, which
+// is reported once the paint has really reached the screen. Waiting for the
+// next animation frame was not enough: the frame starts long before it appears
+// on a slow phone (rasterising the first frame can take over a second without
+// a GPU), and the JavaScript then still landed ahead of the paint. Browsers
+// without paint timing fall back to the next frame. A tab opened in the
+// background never paints, so it loads the app when shown, or after 1 s. The
+// 3 s timer is a last resort if no paint is ever reported.
 function loadAppAfterPaint(html) {
   const entry = html.match(/<script type="module" crossorigin src="([^"]+)"><\/script>/);
   if (!entry) throw new Error("[prerender] entry <script type=module> not found; fix loadAppAfterPaint");
@@ -513,8 +516,10 @@ function loadAppAfterPaint(html) {
     `<script>(function(){var d=false;function go(){if(d)return;d=true;` +
     `var s=document.createElement("script");s.type="module";s.crossOrigin="";s.src=${JSON.stringify(entry[1])};` +
     `document.head.appendChild(s)}` +
-    `if(document.visibilityState==="hidden"){document.addEventListener("visibilitychange",go,{once:true});setTimeout(go,1000)}` +
-    `else requestAnimationFrame(function(){setTimeout(go,0)})})()</script>`;
+    `if(document.visibilityState==="hidden"){document.addEventListener("visibilitychange",go,{once:true});setTimeout(go,1000);return}` +
+    `setTimeout(go,3000);` +
+    `try{new PerformanceObserver(function(l){if(l.getEntriesByName("first-contentful-paint").length)setTimeout(go,0)})` +
+    `.observe({type:"paint",buffered:true})}catch(e){requestAnimationFrame(function(){setTimeout(go,0)})}})()</script>`;
   return html.replace(entry[0], loader).replace(/\s*<link rel="modulepreload"[^>]*>/g, "");
 }
 
