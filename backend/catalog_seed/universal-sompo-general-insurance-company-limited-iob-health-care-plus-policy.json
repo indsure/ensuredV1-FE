@@ -6,16 +6,16 @@
   "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "Not specified",
+    "display": "No limit (at actuals)",
     "note": "Policy wording covers room, boarding and nursing expenses but does not state any specific room rent cap or category limit",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "icu": {
-    "display": "Not specified",
+    "display": "No limit (at actuals)",
     "note": "ICU charges are covered as part of hospitalisation expenses but no specific cap or sub-limit is mentioned",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "copayment": {
     "display": "20% (age above 55)",
@@ -61,10 +61,10 @@
     "number": 9
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None (health check-up after 3 claim-free years)",
     "note": "Policy mentions cumulative bonus in definitions and migration/portability clauses but does not specify the rate or maximum percentage",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -115,10 +115,10 @@
     "number": 1000
   },
   "modern_treatments": {
-    "display": "Not specified",
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "Policy wording does not explicitly mention robotic surgery or other modern/advanced treatments; general surgical procedures are covered",
     "optional": false,
-    "exists": false
+    "exists": true
   },
   "consumables": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "iob-policywordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:35:55.024Z"
+  "extracted_at": "2026-09-20T07:35:55.024Z",
+  "audited_at": "2026-10-09"
 }

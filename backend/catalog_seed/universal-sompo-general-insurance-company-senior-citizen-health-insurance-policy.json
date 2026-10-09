@@ -115,10 +115,10 @@
     "number": 1500
   },
   "modern_treatments": {
-    "display": "Not specified",
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "Policy wording does not explicitly mention modern/robotic treatments as a covered or excluded benefit",
     "optional": false,
-    "exists": false
+    "exists": true
   },
   "consumables": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "senior-citizen-health-insurance-policy-wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:36:33.995Z"
+  "extracted_at": "2026-09-20T07:36:33.995Z",
+  "audited_at": "2026-10-09"
 }

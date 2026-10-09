@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "Cumulative bonus is defined in the policy but no rate or maximum percentage is stated in the wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -103,7 +103,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "No mention of organ donor expenses in the policy wording",
     "optional": false,
     "exists": false
@@ -167,7 +167,12 @@
     "optional": false
   },
   "source_file": "muskaan-policy-wordings.pdf",
-  "status": "unverified",
+  "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:36:14.930Z"
+  "extracted_at": "2026-09-20T07:36:14.930Z",
+  "audit_gaps": [
+    "room_rent",
+    "ambulance"
+  ],
+  "audited_at": "2026-10-09"
 }

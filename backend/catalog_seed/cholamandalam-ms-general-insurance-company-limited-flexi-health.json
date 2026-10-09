@@ -3,8 +3,8 @@
   "sum_insured_options": "Rs. 50,000; Rs. 1 Lakh; Rs. 2 Lakhs; Rs. 3 Lakhs; Rs. 5 Lakhs; Rs. 7.5 Lakhs; Rs. 10 Lakhs; Rs. 15 Lakhs; Rs. 20 Lakhs; Rs. 25 Lakhs",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 4,
-    "display": "No cap (SI >2L); ₹2,000/day (SI ≤2L)",
+    "ordinal": 5,
+    "display": "No limit (SI above 2L); Rs.2,000/day (SI up to 2L)",
     "note": "Room rent capped at Rs.2,000/day for SI of Rs.50,000, Rs.1L and Rs.2L. No room rent limit for SI above Rs.2 Lakhs."
   },
   "icu": {
@@ -125,7 +125,8 @@
   "uin": "CHOHLIP24145V062526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Flexi Health CHOHLIP24145V062526-Policywording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:56:36.827Z"
+  "extracted_at": "2026-09-20T07:56:36.827Z",
+  "audited_at": "2026-10-09"
 }

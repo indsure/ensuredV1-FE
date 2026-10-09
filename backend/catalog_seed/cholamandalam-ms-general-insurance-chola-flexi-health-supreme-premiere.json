@@ -50,8 +50,8 @@
     "note": "Maximum cumulative bonus 100% under Premiere plan; health checkup every 2 years irrespective of claim status."
   },
   "restoration": {
-    "ordinal": 3,
-    "display": "Once/yr, 100% of Base SI",
+    "ordinal": 4,
+    "display": "Restores 100% of Base SI after exhaustion (any illness)",
     "note": "Automatic restoration of Base SI when Base SI and Cumulative Bonus exhausted/insufficient; not applicable for RTA, Home Care, Maternity, Infertility, Bariatric, High End Diagnostics, Global Hospitalisation."
   },
   "pre_hosp": {
@@ -122,7 +122,8 @@
   "uin": "CHOHLIP27040V032627",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Chola Flexi Health Supreme CHOHLIP27040V032627-Policy Wording wef 09042026.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:56:25.522Z"
+  "extracted_at": "2026-09-20T07:56:25.522Z",
+  "audited_at": "2026-10-09"
 }

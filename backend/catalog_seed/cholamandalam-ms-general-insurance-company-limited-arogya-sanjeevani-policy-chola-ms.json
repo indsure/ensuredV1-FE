@@ -81,7 +81,7 @@
   },
   "organ_donor": {
     "exists": false,
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "No mention of organ donor expenses in policy wording"
   },
   "ambulance": {
@@ -130,7 +130,8 @@
   "uin": "CHOHLIP20035V021920",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Arogya Sanjeevani Policy Chola MS CHOHLIP20035V021920-Policy Wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:56:08.026Z"
+  "extracted_at": "2026-09-20T07:56:08.026Z",
+  "audited_at": "2026-10-09"
 }

@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "a-plus-health-insurance-policy-wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:35:20.246Z"
+  "extracted_at": "2026-09-20T07:35:20.246Z",
+  "audited_at": "2026-10-09"
 }

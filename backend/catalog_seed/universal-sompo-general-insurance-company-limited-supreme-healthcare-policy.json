@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "supreme-healthcare-policy-wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:36:43.631Z"
+  "extracted_at": "2026-09-20T07:36:43.631Z",
+  "audited_at": "2026-10-09"
 }
