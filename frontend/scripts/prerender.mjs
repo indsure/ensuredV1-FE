@@ -15,7 +15,7 @@
 import { build } from "esbuild";
 import { readFile, writeFile, mkdir, rm, readdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -25,6 +25,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 const DIST = join(ROOT, "dist");
 const SITE = "https://indsure.in";
+
+// English UI strings, for JSON-LD that must match on-screen text (FAQPage).
+// A missing key throws: a schema built from a key name would be wrong, not empty.
+let EN_STRINGS = null;
+function enText(key) {
+  EN_STRINGS ??= JSON.parse(readFileSync(join(__dirname, "../client/src/i18n/locales/en.json"), "utf8"));
+  const v = key.split(".").reduce((o, k) => (o == null ? o : o[k]), EN_STRINGS);
+  if (typeof v !== "string") throw new Error(`[prerender] missing en string for FAQ key ${key}`);
+  return v;
+}
 // Canonical URLs/JSON-LD always point at production (SITE) so the beta preview
 // never competes with prod for indexing. Social-preview images are the one
 // exception: they must be absolute, so on Vercel *preview* builds we serve them
@@ -50,6 +60,7 @@ async function loadBlogData() {
       `export { PAGE_SEO, clauseTitle, blogTitle, blogDescription, metaDescription, TITLE_MAX } from "../client/src/data/seo-pages.ts";`,
       `export { DOC_PAGES, DOC_SECTIONS, docPath } from "../client/src/docs/content.ts";`,
       `export { INSURANCE_PAGES, INSURANCE_HUB } from "../client/src/data/insurance-pages.ts";`,
+      `export { PAGE_FAQS } from "../client/src/data/page-faqs.ts";`,
     ].join("\n"),
   );
   const outfile = join(__dirname, ".blog-bundle.mjs");
@@ -294,7 +305,7 @@ const STATIC_ROUTES = [
   {
     path: "/compare",
     src: ["pages/compare/catalog-compare.tsx"],
-    h1: "Compare health insurance policies",
+    h1: "Compare health insurance policies, clause by clause",
     intro:
       "Put up to four health plans side by side and IndSure compares them wording to wording, so you can see the real differences in room limits, waiting periods, co-pay and exclusions.",
   },
@@ -359,7 +370,7 @@ const STATIC_ROUTES = [
   {
     path: "/calculator",
     src: ["pages/calculator.tsx", "components/CalculatorLanding.tsx"],
-    h1: "Health cover calculator",
+    h1: "Health insurance calculator",
     intro:
       "How much health cover your family actually needs, worked out from hospital costs in your city, your ages and your obligations. It takes two to three minutes, asks for no policy upload and no medical history, and there is nothing to buy at the end of it.",
   },
@@ -593,6 +604,7 @@ async function main() {
     blogPosts,
     INSURANCE_PAGES,
     INSURANCE_HUB,
+    PAGE_FAQS,
     slugFor,
     POST_SLUGS,
     FOUNDERS,
@@ -670,6 +682,20 @@ async function main() {
           { "@type": "HowToStep", position: 2, name: "IndSure reads it", text: "IndSure reads the policy clause by clause and extracts the terms that matter." },
           { "@type": "HowToStep", position: 3, name: "Get a plain-language verdict", text: "See your coverage, limits, waiting periods, exclusions, and gaps explained simply." },
         ],
+      });
+    }
+    // FAQPage from the same i18n strings the page shows (data/page-faqs.ts),
+    // English being the indexed language.
+    const faqKeys = PAGE_FAQS[r.path];
+    if (faqKeys && !seo.noindex) {
+      blocks.push({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqKeys.map(([q, a]) => ({
+          "@type": "Question",
+          name: enText(q),
+          acceptedAnswer: { "@type": "Answer", text: enText(a) },
+        })),
       });
     }
     if (blocks.length) html = injectJsonLd(html, blocks);

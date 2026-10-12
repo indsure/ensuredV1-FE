@@ -23,7 +23,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
-import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
+
 import { loadSampleReport, mockReportLife } from "@/lib/mock-data";
 
 // TermAnalyzer Component
@@ -183,11 +183,10 @@ export default function TermPage() {
     },
   ];
 
-  const faqData = createFAQSchema(faqList);
+  // No FAQPage JSON-LD for this page: the answers below are under review.
 
   return (
     <div className="min-h-screen bg-[#F0FFFE] dark:bg-[#0F1419] flex flex-col">
-      <SchemaMarkup type="FAQPage" data={faqData} />
       <Header />
 
       {/* Hero Section */}

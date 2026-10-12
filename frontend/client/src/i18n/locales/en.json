@@ -3860,7 +3860,17 @@
     "chk_sub": "Grouped the way a customer asks about them rather than the way the pipeline runs.",
     "back_eyebrow": "What comes back",
     "back_h": "Three things, and nothing to buy",
-    "read_first": "Read a finished one first"
+    "read_first": "Read a finished one first",
+    "faq_q1": "What does the health insurance policy checker look for?",
+    "faq_a1": "Room rent caps, co-payments, disease sub-limits, waiting periods, permanent exclusions, restoration terms, zone limits, and which riders change a claim.",
+    "faq_q2": "What can I upload for a policy review?",
+    "faq_a2": "A PDF of your policy, or a clear photo of the printed document.",
+    "faq_q3": "How long does a policy review take?",
+    "faq_a3": "About a minute.",
+    "faq_q4": "Is my policy kept private?",
+    "faq_a4": "Yes. The report is private to your account. IndSure never sells your document and does not share it with an insurer or an advisor unless you ask.",
+    "faq_q5": "Is the policy checker free?",
+    "faq_a5": "Your first health policy check is free, with a free IndSure account and no card. More checks come with the Personal plan."
   },
   "cland": {
     "o1": "A number, not a range",
@@ -3883,7 +3893,7 @@
     "m2r": "A base plus a super top-up usually holds the same total cover for substantially less premium. Most people are never shown the structure.",
     "m3": "Riders are just marketing.",
     "m3r": "Some are. A Room Rent Waiver is not: it decides whether your claim pays in full or gets cut proportionately across the entire bill.",
-    "eyebrow": "Health cover calculator",
+    "eyebrow": "Health insurance calculator",
     "h_a": "Exact coverage.",
     "h_b": "Zero sales.",
     "sub": "How much health cover your family actually needs, worked out from hospital costs in your city, your ages and your obligations. No policy upload, and nothing to buy at the end of it.",
@@ -3907,7 +3917,15 @@
     "no_sell": "IndSure does not sell insurance and earns no commission. The result is a calculation, not a recommendation to buy anything in particular.",
     "mis_eyebrow": "Before you start",
     "mis_h": "Three things almost everybody gets wrong",
-    "work_out": "Work out my number"
+    "work_out": "Work out my number",
+    "faq_q1": "How does the health insurance calculator work?",
+    "faq_a1": "It starts from private hospital costs in your city, plans for medical inflation, and accounts for your family's ages and obligations. Every step is arithmetic you can see and check.",
+    "faq_q2": "Do I need to upload my policy or share my medical history?",
+    "faq_a2": "No. The calculator needs no policy upload and no medical history.",
+    "faq_q3": "How long does it take?",
+    "faq_a3": "Two to three minutes.",
+    "faq_q4": "Does the calculator recommend a policy?",
+    "faq_a4": "No. It gives you a cover amount and shows a cheaper way to hold it, such as a smaller base policy with a super top-up. IndSure sells no insurance and earns no commission."
   },
   "crep": {
     "more_info": "More information",
@@ -4011,7 +4029,7 @@
     "q_disagree": "What if I disagree with the report?",
     "q_custom": "What if my policy is unusual or custom?",
     "a_safe": "Yes. Your document is stored so you can open and download it again from your portfolio, and it is encrypted in transit. We never sell it and never pass it to an insurer or an advisor unless you ask us to. You can delete any policy, and the file behind it, whenever you want.",
-    "a_download": "Yes. Your full verdict, findings, and recommendations are downloadable as PDF, shareable with family, advisors, or agents.",
+    "a_download": "You can open your policy again from your portfolio at any time and download the file you uploaded.",
     "you_understand": "You Understand",
     "l_riders_d": "Accidental death, critical illness and disability riders: how they actually trigger and what they don't cover. Most people get this completely wrong and are shocked at claim time.",
     "l_calc": "Calculate Your Needs",
@@ -4064,7 +4082,7 @@
     "load_failed": "Could not load the catalog. Please try again in a minute.",
     "failed": "Compare failed",
     "crumb": "Compare",
-    "eyebrow": "Compare plans",
+    "eyebrow": "Compare health insurance policies, clause by clause",
     "h_a": "The fine print,",
     "h_b": "compared.",
     "sub": "Pick up to {{n}} real health plans and we'll compare the actual policy wordings: room limits, waiting periods, co-pays, exclusions. Instant, free, no signup.",
@@ -4100,7 +4118,15 @@
     "upload_own": "Upload the policy you actually own and get an unbiased, full check in about a minute, saved to your private portfolio.",
     "analyze_free": "Check my policy, free",
     "no_spam": "No spam. No cold calls. An advisor reaches out only if you ask.",
-    "see_full": "See what a full policy check looks like"
+    "see_full": "See what a full policy check looks like",
+    "faq_q1": "How do I compare health insurance plans on IndSure?",
+    "faq_a1": "Pick 2 to 4 plans from the list of plans we have already read. IndSure lines up their policy wordings side by side: room limits, co-pays, waiting periods, restoration and exclusions.",
+    "faq_q2": "Where does the plan information come from?",
+    "faq_a2": "From each insurer's filed policy wording, not the brochure. Every plan's terms are checked against its wording before it goes into the list.",
+    "faq_q3": "Is comparing plans free?",
+    "faq_a3": "Yes. Comparing plans is free and needs no signup.",
+    "faq_q4": "Does IndSure tell me which plan to buy?",
+    "faq_a4": "No. IndSure does not sell insurance and earns no commission. It shows what each wording says, so you can decide."
   },
   "scmp": {
     "loading": "Loading your comparison…",
@@ -4613,5 +4639,8 @@
     "cover_rule": "Rises to 105% of premiums paid once that is higher",
     "foot_ill": "Read from the insurer's benefit illustration by our general reader. Check the figures against it.",
     "loading": "Loading the policy summary"
+  },
+  "pagefaq": {
+    "title": "Common questions"
   }
 }

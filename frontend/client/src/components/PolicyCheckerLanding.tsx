@@ -8,6 +8,7 @@ import { Reveal, Stagger, RevealItem } from "@/components/motion";
 import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
 import { ClauseDecoder, ScoreDial, SpotlightCard } from "@/components/marketing/showcase";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { PageFaq } from "@/components/PageFaq";
 
 /* ============================================================
    POLICY CHECKER — value page
@@ -300,6 +301,7 @@ export function PolicyCheckerLanding() {
           </Reveal>
         </div>
       </Section>
+      <PageFaq route="/policychecker" />
     </>
   );
 }

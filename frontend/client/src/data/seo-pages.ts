@@ -33,12 +33,12 @@ export const PAGE_SEO: Record<string, PageSeo> = {
   "/policychecker": {
     title: "Health Insurance Policy Checker: Find Gaps | IndSure",
     description:
-      "Upload your health or mediclaim PDF and IndSure shows your room-rent cap, co-pay, sub-limits and waiting periods in plain language. Free and private.",
+      "A free health insurance policy review: upload your PDF and IndSure shows your room-rent cap, co-pay, sub-limits and waiting periods in plain language.",
   },
   "/calculator": {
-    title: "Health Cover Calculator: How Much Do You Need? | IndSure",
+    title: "Health Insurance Calculator: How Much Cover? | IndSure",
     description:
-      "IndSure's free cover calculator works out how much health insurance your family needs from your city's hospital costs and your ages. No upload, nothing to buy.",
+      "IndSure's free health insurance calculator works out how much cover your family needs from your city's hospital costs and your ages. No upload, nothing to buy.",
   },
   "/compare": {
     title: "Compare Health Insurance Policies Clause by Clause | IndSure",
@@ -68,7 +68,7 @@ export const PAGE_SEO: Record<string, PageSeo> = {
       "Upload your term plan PDF and IndSure checks your sum assured against your family's needs, plus claim conditions and exclusions. Free and private.",
   },
   "/vehicle": {
-    title: "Car & Bike Insurance Checker: IDV, NCB, Add-ons | IndSure",
+    title: "Car and Bike Insurance Checker: IDV, NCB | IndSure",
     description:
       "Upload your car or bike policy and IndSure shows your IDV, deductibles, NCB and add-ons, and what an accident would really cost you. Free and private.",
   },
@@ -83,7 +83,7 @@ export const PAGE_SEO: Record<string, PageSeo> = {
       "IndSure earns no commission and sells no leads. See how its policy catalog and clause-by-clause engine give you an honest read of your insurance.",
   },
   "/blog": {
-    title: "Insurance Guides for India: Health, Life & Motor | IndSure",
+    title: "Insurance Guides for India: Health, Life, Motor | IndSure",
     description:
       "Plain-language guides from IndSure on health, term life and motor insurance in India: claims, waiting periods, room-rent caps, tax benefits and more.",
   },
