@@ -98,7 +98,7 @@ export const OTHERS_A_PAGES: InsurancePage[] = [
     ],
     kind: "review",
     insurers: ["Aditya Birla Health"],
-    title: "Aditya Birla Activ Yuva Review: Yuva Credit, Reload | IndSure",
+    title: "Activ Yuva Review: Yuva Credit and Reload | IndSure",
     description:
       "IndSure reads the Activ Yuva wording: any room, Yuva Credit of 100% a year up to 10x, unlimited reload, Claim Protect, 24-month waits.",
     h1: "Aditya Birla Activ Yuva review: what the policy wording says",
@@ -182,7 +182,7 @@ export const OTHERS_A_PAGES: InsurancePage[] = [
     ],
     kind: "review",
     insurers: ["Zuno"],
-    title: "Zuno Health Insurance Review: Silver, Gold, Platinum | IndSure",
+    title: "Zuno Health Insurance: Silver, Gold, Platinum | IndSure",
     description:
       "IndSure reads the Zuno Health Insurance wording: 20% co-pay above age 60, room by plan, pre and post days by plan, maternity on Gold and Platinum.",
     h1: "Zuno Health Insurance review: Silver, Gold and Platinum",

@@ -63,6 +63,7 @@ import { NIVA_PAGES } from "./insurance-pages/niva";
 import { HDFC_PAGES } from "./insurance-pages/hdfc";
 import { STAR_PAGES } from "./insurance-pages/star";
 import { OTHERS_A_PAGES } from "./insurance-pages/others-a";
+import { OTHERS_B_PAGES } from "./insurance-pages/others-b";
 
 const SAMPLE_PAGES: InsurancePage[] = [
   {
@@ -398,7 +399,7 @@ const SAMPLE_PAGES: InsurancePage[] = [
   },
 ];
 
-export const INSURANCE_PAGES: InsurancePage[] = [...SAMPLE_PAGES, ...CARE_PAGES, ...NIVA_PAGES, ...HDFC_PAGES, ...STAR_PAGES, ...OTHERS_A_PAGES];
+export const INSURANCE_PAGES: InsurancePage[] = [...SAMPLE_PAGES, ...CARE_PAGES, ...NIVA_PAGES, ...HDFC_PAGES, ...STAR_PAGES, ...OTHERS_A_PAGES, ...OTHERS_B_PAGES];
 
 export function insurancePageBySlug(slug: string) {
   return INSURANCE_PAGES.find((p) => p.slug === slug);
