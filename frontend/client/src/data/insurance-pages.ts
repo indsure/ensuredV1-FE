@@ -13,7 +13,8 @@
 //    None of those are in a policy wording. They go in only with an IRDAI
 //    source, never a competitor article.
 //
-// Import-free on purpose: scripts/prerender.mjs bundles this file for Node.
+// scripts/prerender.mjs bundles this file (and the per-insurer files under
+// ./insurance-pages/) for Node, so imports must stay relative and runtime-free.
 
 export interface InsurancePageSource {
   document: string;
@@ -57,7 +58,10 @@ export interface InsurancePage {
   related: string[];
 }
 
-export const INSURANCE_PAGES: InsurancePage[] = [
+import { CARE_PAGES } from "./insurance-pages/care";
+import { NIVA_PAGES } from "./insurance-pages/niva";
+
+const SAMPLE_PAGES: InsurancePage[] = [
   {
     slug: "niva-bupa-aspire",
     primaryKeyword: "niva bupa aspire plan",
@@ -390,6 +394,8 @@ export const INSURANCE_PAGES: InsurancePage[] = [
     related: ["care-supreme-vs-niva-bupa-reassure-3"],
   },
 ];
+
+export const INSURANCE_PAGES: InsurancePage[] = [...SAMPLE_PAGES, ...CARE_PAGES, ...NIVA_PAGES];
 
 export function insurancePageBySlug(slug: string) {
   return INSURANCE_PAGES.find((p) => p.slug === slug);
