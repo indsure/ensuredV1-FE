@@ -1,5 +1,4 @@
-// Shape of a DRAFT blog post. Drafts are not published; when approved, each one
-// moves into the live blog data (blog-data.ts) with an id, date and icon.
+// Shape of a Phase 3 guide. blog-data.ts adds the id, date, icon and sources box.
 export interface DraftPost {
   slug: string;
   title: string;

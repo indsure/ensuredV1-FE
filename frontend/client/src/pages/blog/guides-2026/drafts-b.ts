@@ -1,4 +1,4 @@
-// DRAFT blog posts (Phase 3, 13 Oct 2026). NOT PUBLISHED. See drafts-a.ts.
+// Phase 3 guides (13 Oct 2026). Published via blog-data.ts.
 import type { DraftPost } from "./types";
 
 export const DRAFTS_B: DraftPost[] = [
@@ -40,7 +40,7 @@ export const DRAFTS_B: DraftPost[] = [
 
   {
     slug: "maternity-cover-if-already-pregnant",
-    title: "Maternity Cover: Can You Get It If Already Pregnant?",
+    title: "Maternity Cover If You Are Already Pregnant",
     excerpt: "A new policy will not pay for a current pregnancy. Maternity waits run from 9 months to 6 years. Real waits and limits, and what to check in the clause.",
     tags: ["Maternity", "Waiting period", "Newborn"],
     sheetRows: ["can you get maternity insurance if already pregnant", "is it possible to get maternity insurance when already pregnant", "what should you check in a maternity cover", "is pregnancy covered in health insurance", "how to file claim for maternity health insurance"],

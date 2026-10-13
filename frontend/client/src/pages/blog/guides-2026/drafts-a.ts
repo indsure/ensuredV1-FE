@@ -1,5 +1,4 @@
-// DRAFT blog posts (Phase 3, 13 Oct 2026). NOT PUBLISHED: nothing imports this
-// file. Facts come from policy wordings checked in the Oct 2026 catalogue audit
+// Phase 3 guides (13 Oct 2026), published via blog-data.ts (ids 54 to 73). Facts come from policy wordings checked in the Oct 2026 catalogue audit
 // (cited by UIN in `sources`), the Insurance Ombudsman's site, and standard
 // IRDAI clauses as printed in current wordings. No premiums, no claim ratios,
 // no "best plan" picks.
@@ -120,7 +119,7 @@ export const DRAFTS_A: DraftPost[] = [
 
   {
     slug: "does-health-insurance-cover-therapy-mental-health",
-    title: "Does Health Insurance Cover Therapy and Mental Health?",
+    title: "Is Therapy and Mental Health Covered by Insurance?",
     excerpt: "Hospital treatment for mental illness is covered under Indian law. Outpatient therapy usually is not. What is paid, what to disclose, and the limits to look for.",
     tags: ["Mental health", "Physiotherapy", "OPD"],
     sheetRows: ["does health insurance cover therapy", "does a health insurance policy cover depression", "can one get health insurance if he is taking antidepression medicines", "is speech therapy covered by health insurance in india", "is physiotherapy covered in health insurance"],

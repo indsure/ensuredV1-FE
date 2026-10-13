@@ -61,6 +61,27 @@ export const POST_SLUGS: Record<number, string> = {
   51: "irdai-rule-changes-what-they-mean-for-your-policy",
   52: "tax-benefits-health-life-insurance-80d-80c",
   53: "buying-insurance-before-or-after-a-diagnosis",
+  // Phase 3 guides (13 Oct 2026), from guides-2026/
+  54: "co-payment-vs-deductible",
+  55: "does-health-insurance-cover-dental",
+  56: "does-health-insurance-cover-therapy-mental-health",
+  57: "is-robotic-surgery-covered-by-health-insurance",
+  58: "is-cataract-surgery-covered-by-health-insurance",
+  59: "is-lasik-covered-by-health-insurance",
+  60: "maternity-cover-if-already-pregnant",
+  61: "why-health-insurance-premium-goes-up",
+  62: "how-to-lower-health-insurance-premium",
+  63: "what-to-disclose-when-buying-health-insurance",
+  64: "health-insurance-with-no-waiting-period",
+  65: "critical-illness-cover-vs-health-insurance",
+  66: "how-to-complain-about-health-insurer",
+  67: "how-to-file-reimbursement-health-claim",
+  68: "opd-vs-ipd-health-insurance",
+  69: "is-treatment-at-home-covered-by-health-insurance",
+  70: "health-insurance-with-diabetes-or-high-bp",
+  71: "is-cancer-covered-by-health-insurance",
+  72: "add-ons-vs-riders-in-health-insurance",
+  73: "what-is-tpa-in-health-insurance",
 };
 
 const SLUG_TO_ID: Record<string, number> = Object.fromEntries(

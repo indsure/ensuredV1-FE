@@ -1,4 +1,4 @@
-// DRAFT blog posts (Phase 3, 13 Oct 2026). NOT PUBLISHED. See drafts-a.ts.
+// Phase 3 guides (13 Oct 2026). Published via blog-data.ts.
 import type { DraftPost } from "./types";
 
 export const DRAFTS_D: DraftPost[] = [

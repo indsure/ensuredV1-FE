@@ -1,5 +1,4 @@
-// All 20 Phase 3 DRAFT posts. NOT PUBLISHED: nothing in the app imports this.
-// On approval, move each post into blog-data.ts with an id, date and icon.
+// All 20 Phase 3 guides. blog-data.ts turns them into BlogPosts (ids 54 to 73).
 import { DRAFTS_A } from "./drafts-a";
 import { DRAFTS_B } from "./drafts-b";
 import { DRAFTS_C } from "./drafts-c";
