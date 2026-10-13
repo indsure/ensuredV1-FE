@@ -38,28 +38,28 @@ export const PAGE_FAQS: Record<string, FaqKeys[]> = {
     ["pricing.q6", "pricing.a6"],
     ["pricing.q7", "pricing.a7"],
   ],
-  // how.q6 ("upload up to four policies" to compare) is left out: the public
-  // compare works from the plan catalogue, not uploads. Copy under review.
   "/how-it-works": [
     ["how.q1", "how.a1"],
     ["how.q2", "how.a2"],
     ["how.q3", "how.a3"],
     ["how.q4", "how.a4"],
     ["how.q5", "how.a5"],
+    ["how.q6", "how.a6"],
   ],
-  // help.q3 (PDF only; photos are accepted elsewhere), help.q6 (says compare
-  // shows premiums) and help.q8 (free plan "check of each type") are left out
-  // until their copy is corrected.
   "/help": [
     ["help.q1", "help.a1"],
     ["help.q2", "help.a2"],
+    ["help.q3", "help.a3"],
     ["help.q4", "help.a4"],
     ["help.q5", "help.a5"],
+    ["help.q6", "help.a6"],
     ["help.q7", "help.a7"],
+    ["help.q8", "help.a8"],
   ],
-  // advp.q1 (says a comparison uses a check) and advp.q4/q5 (upcoming
-  // features and future prices) are left out of the schema.
+  // advp.q4/q5 (upcoming features and future prices) are left out of the
+  // schema.
   "/advisors/pricing": [
+    ["advp.q1", "advp.a1"],
     ["advp.q2", "advp.a2"],
     ["advp.q3", "advp.a3"],
     ["advp.q6", "advp.a6"],
@@ -73,6 +73,16 @@ export const PAGE_FAQS: Record<string, FaqKeys[]> = {
     ["lobp.q_custom", "lobp.l_a_custom"],
     ["lobp.q_download", "lobp.a_download"],
     ["lobp.q_disagree", "lobp.a_disagree"],
+  ],
+  "/term": [
+    ["termfaq.q1", "termfaq.a1"],
+    ["termfaq.q2", "termfaq.a2"],
+    ["termfaq.q3", "termfaq.a3"],
+    ["termfaq.q4", "termfaq.a4"],
+    ["termfaq.q5", "termfaq.a5"],
+    ["termfaq.q6", "termfaq.a6"],
+    ["termfaq.q7", "termfaq.a7"],
+    ["lobp.q_safe", "lobp.a_safe"],
   ],
   "/vehicle": [
     ["lobp.q_how", "lobp.v_a_how"],
