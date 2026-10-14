@@ -48,8 +48,8 @@
     "note": "Maternity is a standard exclusion (Excl18); ectopic pregnancy is covered"
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
+    "number": 0,
+    "display": "None",
     "note": "No cumulative bonus mentioned in the policy wording"
   },
   "restoration": {
@@ -132,7 +132,8 @@
   "uin": "BAJHLIP23184V012223",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Nidaan-Swasthya-Bima_PW.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:53:29.488Z"
+  "extracted_at": "2026-09-20T07:53:29.488Z",
+  "audited_at": "2026-10-09"
 }

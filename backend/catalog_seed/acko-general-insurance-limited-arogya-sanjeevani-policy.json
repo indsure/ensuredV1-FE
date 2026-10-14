@@ -78,7 +78,7 @@
   },
   "organ_donor": {
     "exists": false,
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "No mention of organ donor expenses in policy wording"
   },
   "ambulance": {
@@ -124,7 +124,8 @@
   "uin": "ACKHLIP20183V011920",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy_Wordings_Arogya_Sanjeevani_Policy_7d59902cc3.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:51:07.831Z"
+  "extracted_at": "2026-09-20T07:51:07.831Z",
+  "audited_at": "2026-10-09"
 }

@@ -6,10 +6,10 @@
   "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "1% of SI/day (₹5L); Any Room except suite (₹10L–₹25L); Any Room (₹50L–₹1Cr)",
+    "display": "Any room (SI 50L+); any room except suite (SI 10L-25L); 1% of SI per day (SI 5L)",
     "note": "For ₹5L SI: 1% of SI per day. For ₹10L, ₹15L, ₹20L, ₹25L: Any room except suite or above. For ₹50L and ₹1Cr: Any room. Proportionate deduction on associated medical expenses if higher room chosen.",
     "optional": false,
-    "ordinal": 3
+    "ordinal": 5
   },
   "icu": {
     "display": "Not separately capped; covered under hospitalisation expenses",
@@ -166,7 +166,8 @@
     "optional": true
   },
   "source_file": "Policy_Star_Women_Care_Insurance_Policy_V_10_df1ca05df6.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:26:33.420Z"
+  "extracted_at": "2026-09-20T07:26:33.420Z",
+  "audited_at": "2026-10-09"
 }

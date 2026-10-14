@@ -134,7 +134,8 @@
   "uin": "CHIHLIP27061V032627",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "care-supreme---policy-terms-&-conditions-(effective-from-29-april-2026).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:55:10.430Z"
+  "extracted_at": "2026-09-20T07:55:10.430Z",
+  "audited_at": "2026-10-09"
 }

@@ -123,7 +123,17 @@
   "uin": "ADIHLIP26042V062526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "20260427T053449.pdf",
-  "status": "unverified",
+  "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:52:10.331Z"
+  "extracted_at": "2026-09-20T07:52:10.331Z",
+  "audit_gaps": [
+    "room_rent",
+    "pre_hosp",
+    "post_hosp",
+    "restoration",
+    "ambulance",
+    "cumulative_bonus",
+    "copayment"
+  ],
+  "audited_at": "2026-10-09"
 }

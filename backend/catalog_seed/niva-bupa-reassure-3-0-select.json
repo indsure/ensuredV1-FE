@@ -3,19 +3,19 @@
   "sum_insured_options": "Not specified in wording (refer policy schedule)",
   "confidence": "medium",
   "room_rent": {
-    "ordinal": 3,
-    "display": "Single Private Room (0% copay); Deluxe/Suite attract copay",
-    "note": "Select: All room categories except Deluxe and Suite = 0% copay; All room categories (incl. Deluxe/Suite) = 0% copay per Annexure V rows — actually Select rows show: 'All Room Categories except deluxe and Suite' = 0%, 'All Room Categories' = 0%, 'General Ward' = 20%, 'Twin Sharing Room' = 40%. This implies eligible room is Single Private Room; downgrading to General Ward or Twin Sharing triggers copay."
+    "ordinal": 1,
+    "display": "Twin Sharing (0% co-pay); higher rooms attract co-pay",
+    "note": "Eligible room: General Ward or Twin Sharing. Staying higher means a co-pay on the entire claim: any room except Deluxe/Suite 20%, Deluxe/Suite 40% (Annexure V)."
   },
   "icu": {
     "ordinal": 5,
-    "display": "No cap stated",
-    "note": "No specific ICU sub-limit mentioned for Select; covered up to Sum Insured."
+    "display": "No separate ICU limit",
+    "note": "The wording sets no ICU-specific limit. ICU is not one of the room categories that trigger the room co-pay."
   },
   "copayment": {
     "number": 0,
-    "display": "None (if Single Private Room or above chosen); General Ward 20%, Twin Sharing 40%",
-    "note": "Mandatory copay only if insured chooses a room below eligible category (General Ward 20%, Twin Sharing 40%). No mandatory copay on admissible claim otherwise. HeadsUp/Tiered Network non-compliance triggers 20% copay."
+    "display": "None up to Twin Sharing; 20%-40% on the whole claim in a higher room",
+    "note": "Room co-pay per Annexure V. Late notice: an extra 10% co-pay if a stay over 7 days is not intimated within 7 days of admission (9 days for road accidents). Optional co-pay can be chosen for a lower premium."
   },
   "sub_limits": {
     "ordinal": 3,
@@ -125,7 +125,8 @@
   "uin": "NBHHLIP26047V012526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "ReAssure30_Policy_Wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:49:20.118Z"
+  "extracted_at": "2026-09-20T07:49:20.118Z",
+  "audited_at": "2026-10-09"
 }

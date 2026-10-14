@@ -46,7 +46,8 @@
     "exists": true,
     "number": null,
     "display": "Optional add-on",
-    "note": "Maternity Cover is an optional benefit (Clause 3.2.15). Waiting period as specified in Policy Schedule. Coverage up to specified % of SI per policy year, accumulates up to 3x if no claim. Age 18-45 years. New Born Baby Cover also optional."
+    "note": "Maternity Cover is an optional benefit (Clause 3.2.15). Waiting period as specified in Policy Schedule. Coverage up to specified % of SI per policy year, accumulates up to 3x if no claim. Age 18-45 years. New Born Baby Cover also optional.",
+    "optional": true
   },
   "cumulative_bonus": {
     "number": 100,
@@ -139,7 +140,8 @@
   "uin": "CHIHLIP26058V022526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "ultimate-care---policy-terms-&-conditions-(effective-from-16-january-2026).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:56:09.235Z"
+  "extracted_at": "2026-09-20T07:56:09.235Z",
+  "audited_at": "2026-10-09"
 }

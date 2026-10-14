@@ -135,7 +135,18 @@
   "uin": "ICIHLGP21390V032021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "health-care-plus8c0007ff45fd68ff8a0df0055fa762ab.pdf",
-  "status": "unverified",
+  "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:01:38.566Z"
+  "extracted_at": "2026-09-20T08:01:38.566Z",
+  "audit_gaps": [
+    "room_rent",
+    "icu",
+    "sub_limits",
+    "deductible",
+    "cumulative_bonus",
+    "pre_hosp",
+    "post_hosp",
+    "modern_treatments"
+  ],
+  "audited_at": "2026-10-09"
 }

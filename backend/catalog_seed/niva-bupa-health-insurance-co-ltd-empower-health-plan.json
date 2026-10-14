@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
-    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "display": "None",
+    "note": "The wording has no cumulative or no-claim bonus.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -159,7 +159,8 @@
   "notable_exclusions": "Overseas treatment, organ donor hospitalisation, domiciliary, ART for HIV, STDs, stem cell storage, alternative therapies (acupuncture etc.), maternity",
   "optional_riders": "Co-pay waiver (additional premium)",
   "source_file": "Empower_Health_Plan_Niva Bupa_Policy_Wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:41:22.363Z"
+  "extracted_at": "2026-09-17T13:41:22.363Z",
+  "audited_at": "2026-10-09"
 }

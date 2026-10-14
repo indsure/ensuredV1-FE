@@ -14,7 +14,7 @@
   },
   "copayment": {
     "number": 35,
-    "display": "35% if treated in Zone A city",
+    "display": "35% if treated in a Zone A (metro) city; none elsewhere",
     "note": "35% co-pay applies when insured takes treatment in a Zone A city (as defined in the policy). No co-pay for Zone B."
   },
   "sub_limits": {
@@ -49,14 +49,15 @@
     "note": "Maternity expenses explicitly excluded (Code Excl18). Ectopic pregnancy is covered."
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
+    "number": 0,
+    "display": "None",
     "note": "Policy mentions cumulative bonus in context of grace period and portability but does not define the rate or maximum in the wording provided."
   },
   "restoration": {
     "ordinal": 2,
-    "display": "Optional paid reinstatement",
-    "note": "Sum insured can be reinstated after a claim by paying additional premium (deducted from claim amount). Reinstated SI not available for same illness relapse within 45 days, chronic diseases listed (cancer, CABG, stroke, etc.), or domiciliary hospitalisation. Not a free automatic restoration."
+    "display": "Optional: reinstatement on extra premium",
+    "note": "Sum insured can be reinstated after a claim by paying additional premium (deducted from claim amount). Reinstated SI not available for same illness relapse within 45 days, chronic diseases listed (cancer, CABG, stroke, etc.), or domiciliary hospitalisation. Not a free automatic restoration.",
+    "optional": true
   },
   "pre_hosp": {
     "number": 30,
@@ -135,7 +136,8 @@
   "uin": "IFFHLIP21326V022021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "policy_wording_srb_2020.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:02:24.699Z"
+  "extracted_at": "2026-09-20T08:02:24.699Z",
+  "audited_at": "2026-10-09"
 }

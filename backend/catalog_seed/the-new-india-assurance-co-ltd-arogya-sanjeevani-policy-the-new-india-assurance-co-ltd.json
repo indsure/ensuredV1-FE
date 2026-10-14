@@ -42,10 +42,10 @@
     "number": 30
   },
   "ped_waiting": {
-    "display": "48 months",
+    "display": "36 months",
     "note": "Table of Benefits states 4 years (48 months) for declared PEDs; policy clause 6.1 states 36 months — Table of Benefits takes precedence as product-specific; reducible via portability credit",
     "optional": false,
-    "number": 48
+    "number": 36
   },
   "specific_disease_waiting": {
     "display": "24 months",
@@ -103,7 +103,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "No mention of organ donor expense cover in policy wording",
     "optional": false,
     "exists": false
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "POLICY CLAUSES Arogya Sanjeevani.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:35:05.771Z"
+  "extracted_at": "2026-09-17T13:35:05.771Z",
+  "audited_at": "2026-10-09"
 }

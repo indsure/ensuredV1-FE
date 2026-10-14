@@ -278,6 +278,106 @@
       "source": "/blog/53",
       "destination": "/blog/buying-insurance-before-or-after-a-diagnosis",
       "permanent": true
+    },
+    {
+      "source": "/blog/54",
+      "destination": "/blog/co-payment-vs-deductible",
+      "permanent": true
+    },
+    {
+      "source": "/blog/55",
+      "destination": "/blog/does-health-insurance-cover-dental",
+      "permanent": true
+    },
+    {
+      "source": "/blog/56",
+      "destination": "/blog/does-health-insurance-cover-therapy-mental-health",
+      "permanent": true
+    },
+    {
+      "source": "/blog/57",
+      "destination": "/blog/is-robotic-surgery-covered-by-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/58",
+      "destination": "/blog/is-cataract-surgery-covered-by-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/59",
+      "destination": "/blog/is-lasik-covered-by-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/60",
+      "destination": "/blog/maternity-cover-if-already-pregnant",
+      "permanent": true
+    },
+    {
+      "source": "/blog/61",
+      "destination": "/blog/why-health-insurance-premium-goes-up",
+      "permanent": true
+    },
+    {
+      "source": "/blog/62",
+      "destination": "/blog/how-to-lower-health-insurance-premium",
+      "permanent": true
+    },
+    {
+      "source": "/blog/63",
+      "destination": "/blog/what-to-disclose-when-buying-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/64",
+      "destination": "/blog/health-insurance-with-no-waiting-period",
+      "permanent": true
+    },
+    {
+      "source": "/blog/65",
+      "destination": "/blog/critical-illness-cover-vs-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/66",
+      "destination": "/blog/how-to-complain-about-health-insurer",
+      "permanent": true
+    },
+    {
+      "source": "/blog/67",
+      "destination": "/blog/how-to-file-reimbursement-health-claim",
+      "permanent": true
+    },
+    {
+      "source": "/blog/68",
+      "destination": "/blog/opd-vs-ipd-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/69",
+      "destination": "/blog/is-treatment-at-home-covered-by-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/70",
+      "destination": "/blog/health-insurance-with-diabetes-or-high-bp",
+      "permanent": true
+    },
+    {
+      "source": "/blog/71",
+      "destination": "/blog/is-cancer-covered-by-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/72",
+      "destination": "/blog/add-ons-vs-riders-in-health-insurance",
+      "permanent": true
+    },
+    {
+      "source": "/blog/73",
+      "destination": "/blog/what-is-tpa-in-health-insurance",
+      "permanent": true
     }
   ],
   "rewrites": [

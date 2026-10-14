@@ -133,7 +133,8 @@
   "uin": "CHIHLIP22223V012122",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "senior-health-advantage---policy-terms-and-conditions-(effective-from-29-september-2024-).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:55:43.696Z"
+  "extracted_at": "2026-09-20T07:55:43.696Z",
+  "audited_at": "2026-10-09"
 }

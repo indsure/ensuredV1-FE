@@ -6,8 +6,8 @@
   "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "Single Standard A/C Room (SI ≥3L); fixed ₹/day for lower SIs",
-    "note": "SI ₹1L: up to ₹2,000/day; SI ₹2L: up to ₹5,000/day; SI ₹3L and above: Single Standard A/C Room. Proportionate deduction applies on associated medical expenses if higher room is taken.",
+    "display": "Single Standard A/C Room (SI 5L+); ₹5,000/day (SI 3L-4L); ₹2,000/day (SI 1L-2L)",
+    "note": "Merged-cell table read by word position: 1L-2L ₹2,000/day, 3L-4L ₹5,000/day, 5L and above Single Standard A/C Room. Proportionate deduction on associated medical expenses if a higher room is taken. Seed had 2L at ₹5,000 and 3L+ at single room.",
     "optional": false,
     "ordinal": 4
   },
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy_Family_Health_Optima_Insurance_Plan_V_21_bbe089bd74.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:22:24.044Z"
+  "extracted_at": "2026-09-20T07:22:24.044Z",
+  "audited_at": "2026-10-09"
 }

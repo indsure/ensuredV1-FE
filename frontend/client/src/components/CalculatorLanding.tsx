@@ -9,6 +9,7 @@ import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
 import { CoverGap, SpotlightCard } from "@/components/marketing/showcase";
 import { calculatorIllustration, ILLUSTRATION_PROFILE } from "@/lib/calculator-illustration";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { PageFaq } from "@/components/PageFaq";
 
 interface LandingProps {
   onStart: () => void;
@@ -325,6 +326,7 @@ export function CalculatorLanding({ onStart }: LandingProps) {
           </Reveal>
         </div>
       </Section>
+      <PageFaq route="/calculator" />
     </>
   );
 }

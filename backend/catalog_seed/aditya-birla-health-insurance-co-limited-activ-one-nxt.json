@@ -54,8 +54,9 @@
   },
   "cumulative_bonus": {
     "number": 100,
-    "display": "Up to 100% via HealthReturns™",
-    "note": "HealthReturns™ (inbuilt) allows earning up to 100% of annual premium back based on health activity and Healthy Heart Score. Super Credit (optional) adds up to 100% of Base SI irrespective of claims."
+    "display": "Optional: Super Credit (up to 100% of base SI)",
+    "note": "No inbuilt cumulative bonus. The optional Super Credit adds a fixed % of base sum insured each renewal, up to 100%, even after a claim. HealthReturns (up to 100% of premium back for staying active) is a separate wellness reward, not extra cover.",
+    "optional": true
   },
   "restoration": {
     "ordinal": 5,
@@ -141,7 +142,8 @@
   "uin": "ADIHLIP24097V012324",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "policy-document.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:52:20.314Z"
+  "extracted_at": "2026-09-20T07:52:20.314Z",
+  "audited_at": "2026-10-09"
 }

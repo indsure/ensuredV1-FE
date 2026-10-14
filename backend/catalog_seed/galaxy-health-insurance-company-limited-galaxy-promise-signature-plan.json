@@ -3,7 +3,7 @@
   "sum_insured_options": "₹5L, ₹7.5L, ₹10L, ₹15L, ₹20L, ₹25L, ₹50L, ₹1Cr",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 4,
+    "ordinal": 5,
     "display": "Deluxe room (SI 5L–20L); Any room (SI 25L–1Cr)",
     "note": "SI 5L–20L: up to Deluxe room. SI 25L–1Cr: any room. Optional Room Rent Enhancement add-on available to upgrade to any room for SI 5L–20L. Proportionate deductions apply on associated medical expenses if higher room chosen."
   },
@@ -32,8 +32,8 @@
     "display": "30 days"
   },
   "ped_waiting": {
-    "number": 36,
-    "display": "36 months (reducible to 12 or 24 mo via optional PED Buy Back)",
+    "number": 12,
+    "display": "36 months (12 or 24 months with optional Buy Back)",
     "note": "Base: 36 months for 1-year and 2-year terms; 25 months for 3-year term. Optional PED Buy Back add-on can reduce to 12 or 24 months. Optional Insta Care Cover waives PED waiting for Asthma, Hypertension, Cholesterol from 31st day."
   },
   "specific_disease_waiting": {
@@ -128,7 +128,8 @@
   "uin": "GHIHLIP25035V012425",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy Wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:57:50.471Z"
+  "extracted_at": "2026-09-20T07:57:50.471Z",
+  "audited_at": "2026-10-09"
 }

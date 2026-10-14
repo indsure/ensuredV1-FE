@@ -32,8 +32,8 @@
     "display": "30 days"
   },
   "ped_waiting": {
-    "number": 36,
-    "display": "36 months (reducible to 24 or 12 mo via optional add-on)",
+    "number": 12,
+    "display": "36 months (12 or 24 months with optional cover)",
     "note": "Base PED waiting period is 36 months. Optional cover allows reduction to 24 or 12 months on payment of additional premium at inception only."
   },
   "specific_disease_waiting": {
@@ -129,7 +129,8 @@
   "uin": "GHIHLIP26042V012526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy Wording (6).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:57:19.572Z"
+  "extracted_at": "2026-09-20T07:57:19.572Z",
+  "audited_at": "2026-10-09"
 }

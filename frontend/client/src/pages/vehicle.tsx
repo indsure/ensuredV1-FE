@@ -29,7 +29,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
-import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
+
 import { loadSampleReport, mockReportVehicle } from "@/lib/mock-data";
 
 export default function VehiclePage() {
@@ -39,25 +39,8 @@ export default function VehiclePage() {
   // SEO
   useSEO(seoFor("/vehicle"));
 
-  // FAQ Schema
-  const faqData = createFAQSchema([
-    {
-      question: "How do you analyze policies?",
-      answer: "The engine reads your policy PDF clause by clause and pulls out the key terms: coverage type, IDV, deductibles, NCB level, add-ons, claim conditions, exclusions and so on. Then it turns them into a plain-language verdict.",
-    },
-    {
-      question: "Is my data safe?",
-      answer: "Yes. Your document is stored so you can open and download it again from your portfolio, and it is encrypted in transit. We never sell it and never pass it to an insurer or an advisor unless you ask us to. You can delete any policy, and the file behind it, whenever you want.",
-    },
-    {
-      question: "What if my policy is unusual or custom?",
-      answer: "We handle standard comprehensive and third-party policies. Custom policies with unusual terms may need manual cross-checking with your insurer, and we flag this in the report.",
-    },
-    {
-      question: "Can I download my analysis?",
-      answer: "Yes. Your full verdict, findings, and recommendations are downloadable as PDF, shareable with family, advisors, or agents.",
-    },
-  ]);
+  // FAQPage JSON-LD is written by scripts/prerender.mjs from data/page-faqs.ts,
+  // using the same text as the visible FAQ below.
 
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +71,6 @@ export default function VehiclePage() {
 
   return (
     <div className="min-h-screen bg-[#F0FFFE] dark:bg-[#0F1419] flex flex-col relative">
-      <SchemaMarkup type="FAQPage" data={faqData} />
       {/* Animated background elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-20 -left-40 w-80 h-80 bg-blue-400/30 dark:bg-blue-500/15 rounded-full blur-3xl animate-pulse"></div>

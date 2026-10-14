@@ -12,10 +12,10 @@
     "ordinal": 3
   },
   "icu": {
-    "display": "2% of SI/day (actuals for ₹15L–₹25L)",
+    "display": "Actuals (SI 15L+); 2% of SI per day (SI 1L-10L)",
     "note": "₹1L–₹10L: up to 2% of SI per day; ₹15L–₹25L: actuals",
     "optional": false,
-    "ordinal": 3
+    "ordinal": 5
   },
   "copayment": {
     "display": "30% on all claims",
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -79,7 +79,7 @@
     "number": 30
   },
   "post_hosp": {
-    "display": "7% of hospitalisation expenses",
+    "display": "7% of the hospital bill, capped at ₹5,000 to ₹10,000 (no day limit stated)",
     "note": "Post-hospitalisation covered as 7% of hospitalisation expenses (nursing, surgeon, diagnostics, medicines) subject to per-SI caps: ₹1L–₹7.5L: ₹5,000; ₹10L–₹15L: ₹7,000; ₹20L–₹25L: ₹10,000",
     "optional": false,
     "number": null
@@ -103,7 +103,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "Organ donor expenses not mentioned in the policy wording; transplant-related surgeries are excluded under specific disease waiting period (24 months)",
     "optional": false,
     "exists": false
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Policy_Senior_Citizens_Red_Carpet_Policy_V_19_293f3b97b4.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:23:49.402Z"
+  "extracted_at": "2026-09-20T07:23:49.402Z",
+  "audited_at": "2026-10-09"
 }

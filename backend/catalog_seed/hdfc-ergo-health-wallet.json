@@ -90,8 +90,8 @@
     "display": "₹2,000 per hospitalisation"
   },
   "modern_treatments": {
-    "exists": false,
-    "display": "Not specified",
+    "exists": true,
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "Policy wording does not explicitly mention modern/robotic treatments as a named benefit."
   },
   "consumables": {
@@ -130,7 +130,8 @@
   "uin": "HDHHLIP21337V022021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "health-wallet-combined-pw-cis-hegi-373014324919.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:00:50.812Z"
+  "extracted_at": "2026-09-20T08:00:50.812Z",
+  "audited_at": "2026-10-09"
 }

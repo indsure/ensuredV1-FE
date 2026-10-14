@@ -4,12 +4,12 @@
   "confidence": "medium",
   "room_rent": {
     "ordinal": 3,
-    "display": "1% of SI/day (upgradeable to Single Private AC Room via optional rider)",
-    "note": "Base cover is 1% of SI per day. Optional Benefit: Room Rent and ICU Modification upgrades to Single Private AC Room for SI < 5 Lakhs only."
+    "display": "Per Schedule: Single Private AC Room, or 1% of SI/day (SI under ₹5L, upgradeable)",
+    "note": "The Policy Schedule sets either a single private AC room or 1% of sum insured per day. The 1% limit applies below ₹5 lakh sum insured and can be upgraded with the Room Rent and ICU Modification option. A higher room means proportionate deduction."
   },
   "icu": {
     "ordinal": 3,
-    "display": "2% of SI/day (upgradeable to no limit via optional rider)",
+    "display": "Per Schedule: 2% of SI/day (SI under ₹5L, upgradeable) or no limit",
     "note": "Base cover is 2% of SI per day. Optional Benefit: Room Rent and ICU Modification upgrades to no limit for SI < 5 Lakhs only."
   },
   "copayment": {
@@ -45,7 +45,8 @@
     "exists": true,
     "number": 24,
     "display": "Optional add-on (24-month wait)",
-    "note": "Optional Benefit: Maternity and New Born Baby Cover; 24-month waiting period; covers delivery and newborn expenses up to limit in Policy Schedule; max 2 living children; available only if primary insured or spouse delivers; age limit 45 years at policy start."
+    "note": "Optional Benefit: Maternity and New Born Baby Cover; 24-month waiting period; covers delivery and newborn expenses up to limit in Policy Schedule; max 2 living children; available only if primary insured or spouse delivers; age limit 45 years at policy start.",
+    "optional": true
   },
   "cumulative_bonus": {
     "number": 150,
@@ -127,7 +128,8 @@
   "uin": "CHIHLIP26048V022526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "care-classic---policy-terms--conditions-(effective-from-09-april-2025-).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:54:20.311Z"
+  "extracted_at": "2026-09-20T07:54:20.311Z",
+  "audited_at": "2026-10-09"
 }

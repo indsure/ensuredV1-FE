@@ -18,9 +18,9 @@
     "note": "No mandatory co-pay in base policy. Optional voluntary co-pay of 5%/10%/15%/20% available for premium discount. If 'Cashless Discount' optional cover is opted, 20% co-pay applies on reimbursement claims."
   },
   "sub_limits": {
-    "ordinal": 3,
-    "display": "Cataract capped at 10% of SI, max ₹50,000/eye",
-    "note": "Inbuilt cataract sub-limit: 10% of SI per eye, max ₹50,000. Optional 'Procedure/Disease Sublimit' cover adds caps on cardiac, joints, hernia, calculi, hysterectomy, gall bladder, spine, cancer, kidney, liver, infectious conditions."
+    "ordinal": 5,
+    "display": "No sub-limits (optional sub-limit plan gives a premium discount)",
+    "note": "Sub-limits (e.g. cataract Rs.40,000-55,000 per eye) apply only if the buyer opts for the sub-limit plan in return for a 15-20% discount."
   },
   "deductible": {
     "number": 0,
@@ -54,9 +54,10 @@
     "note": "CB increases 10% of base SI per claim-free year, max 100%. Reduces at same rate on claim. Optional 'Super Cumulative Bonus' add-on offers up to 200% at 25%/yr or 100% at 50%/yr."
   },
   "restoration": {
-    "ordinal": 0,
-    "display": "Not covered (base)",
-    "note": "Sum Insured Reinstatement is an optional add-on. Options: once per year or unlimited times per year. Not available for organ donor or modern treatment claims."
+    "ordinal": 5,
+    "display": "Optional: reinstatement once or unlimited times a year",
+    "note": "Not built in. If bought, the in-patient Sum Insured is reinstated once or unlimited times a year, for a later hospitalisation at least 2 days after discharge.",
+    "optional": true
   },
   "pre_hosp": {
     "number": 30,
@@ -133,7 +134,8 @@
   "uin": "BAJHLIP26047V012526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Aapke_Liye-Madhya_Pradesh_Chhattisgarh_Policy_Wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:52:39.188Z"
+  "extracted_at": "2026-09-20T07:52:39.188Z",
+  "audited_at": "2026-10-09"
 }

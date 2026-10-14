@@ -139,7 +139,8 @@
   "uin": "CHIHLIP26053V032526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "care-heart---policy-terms-and-conditions-(effective-from-03-september-2025).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:54:41.923Z"
+  "extracted_at": "2026-09-20T07:54:41.923Z",
+  "audited_at": "2026-10-09"
 }

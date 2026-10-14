@@ -6,13 +6,13 @@
   "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "Not specified (up to SI)",
+    "display": "No limit (as provided by the hospital)",
     "note": "Policy covers room rent as part of hospitalisation expenses; no explicit cap or sub-limit stated in wording. SI is only ₹5,000 per person.",
     "optional": false,
     "ordinal": 5
   },
   "icu": {
-    "display": "Not specified",
+    "display": "No separate limit",
     "note": "ICU defined but no separate cap mentioned; covered under hospitalisation expenses.",
     "optional": false,
     "ordinal": 5
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -103,7 +103,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "No mention of organ donor expense cover in the policy wording.",
     "optional": false,
     "exists": false
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Policy Clause Jan Arogya Bima Policy.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:35:07.619Z"
+  "extracted_at": "2026-09-17T13:35:07.619Z",
+  "audited_at": "2026-10-09"
 }

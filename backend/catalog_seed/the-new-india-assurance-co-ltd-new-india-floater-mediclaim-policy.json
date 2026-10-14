@@ -21,7 +21,7 @@
     "display": "20% if Zone 2 insured treated in Zone 1",
     "note": "20% co-pay applies only when insured opts Zone 2 (Rest of India) and gets treated in Zone 1 (Maharashtra & Gujarat). No co-pay for accidents or sub-limited treatments.",
     "optional": false,
-    "number": 20
+    "number": 0
   },
   "sub_limits": {
     "display": "Cataract, modern treatments, mental illness, ARMD, genetic disorders capped",
@@ -163,7 +163,8 @@
     "display": "Enhanced cataract limit (₹80k–₹1.5L for SI ₹8L–₹15L, 36mo wait)"
   },
   "source_file": "Policy Clause New India Floater Mediclaim Policy (1) (1).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:42:58.099Z"
+  "extracted_at": "2026-09-17T13:42:58.099Z",
+  "audited_at": "2026-10-09"
 }

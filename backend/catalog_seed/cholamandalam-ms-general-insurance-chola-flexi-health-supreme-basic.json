@@ -3,8 +3,8 @@
   "sum_insured_options": "₹5/7.5/10/15/20/25 Lakhs",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 2,
-    "display": "₹2,000/day (SI ≤2L); no limit above ₹2L",
+    "ordinal": 5,
+    "display": "No limit (SI above 2L); Rs.2,000/day (SI up to 2L)",
     "note": "Room rent capped at ₹2,000/day for SI options ₹50k, ₹1L, ₹2L; no room limit for SI above ₹2L. Basic plan SI starts at ₹5L so effectively no room limit for all available SI options."
   },
   "icu": {
@@ -50,8 +50,8 @@
     "note": "Maximum cumulative bonus 50% under Basic plan; rate and reduction % not explicitly stated per year."
   },
   "restoration": {
-    "ordinal": 3,
-    "display": "Once/yr, 100% of Base SI",
+    "ordinal": 4,
+    "display": "Restores 100% of Base SI after exhaustion (any illness)",
     "note": "Automatic restoration of Base SI when Base SI and Cumulative Bonus exhausted/insufficient; available once per policy year; not applicable for RTA claims."
   },
   "pre_hosp": {
@@ -122,7 +122,8 @@
   "uin": "CHOHLIP27040V032627",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Chola Flexi Health Supreme CHOHLIP27040V032627-Policy Wording wef 09042026.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:56:25.376Z"
+  "extracted_at": "2026-09-20T07:56:25.376Z",
+  "audited_at": "2026-10-09"
 }

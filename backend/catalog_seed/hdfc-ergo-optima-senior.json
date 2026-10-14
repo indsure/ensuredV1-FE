@@ -3,9 +3,9 @@
   "sum_insured_options": "Not specified in wording",
   "confidence": "medium",
   "room_rent": {
-    "ordinal": 0,
-    "display": "Not specified",
-    "note": "Policy wording does not specify a room rent cap. Co-payment structure references 'Shared Accommodation' (15% copay) vs 'Single occupancy or higher' (30% copay), implying room choice is unrestricted but drives copay level."
+    "ordinal": 5,
+    "display": "Any room, but 30% co-pay in a single room (15% in shared)",
+    "note": "No room-rent cap. The room type sets the co-pay instead: 15% in shared accommodation, 30% in single occupancy or higher."
   },
   "icu": {
     "ordinal": 5,
@@ -14,7 +14,7 @@
   },
   "copayment": {
     "number": 15,
-    "display": "15% (shared room) / 30% (single/higher room); 30% for listed illnesses/surgeries; 15% for day care",
+    "display": "15% in a shared room; 30% in a single room or for 14 listed surgeries",
     "note": "Mandatory copay on every claim: 15% if shared accommodation, 30% if single occupancy or higher. Exception: 15% applies for acute cardiac/accident in single room if shared unavailable. 30% copay for 14 listed illnesses/surgeries (cataract, hysterectomy, cholecystectomy, TURP, hernia, angiography, arthroscopy, PID-discectomy, mastectomy, joint replacement, PTCA, hydrocele, major organ transplant, CABG). Day care: 15% flat. If illness-specific 30% copay applies, accommodation copay does not stack."
   },
   "sub_limits": {
@@ -33,13 +33,13 @@
     "note": "Endorsement option available to delete this waiting period entirely."
   },
   "ped_waiting": {
-    "number": 12,
-    "display": "36 months (reducible to 24 or 12 months via endorsement)",
+    "number": 36,
+    "display": "36 months (can be reduced by endorsement)",
     "note": "Base is 36 months. Endorsements allow reduction to 24 months or 12 months, or full deletion. Best achievable is deletion (0 months) but lowest stated option is 12 months."
   },
   "specific_disease_waiting": {
-    "number": 12,
-    "display": "24 months (reducible to 12 months or deleted via endorsement)",
+    "number": 24,
+    "display": "24 months (can be reduced by endorsement)",
     "note": "Base is 24 months for listed conditions. Endorsements allow reduction to 12 months or full deletion."
   },
   "maternity": {
@@ -49,8 +49,8 @@
     "note": "Maternity is a standard exclusion (Excl18). Ectopic pregnancy is covered."
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "5% no-claim discount on renewal premium (non-cumulative)",
+    "number": 0,
+    "display": "None (5% renewal premium discount instead)",
     "note": "Policy offers a 5% non-cumulative discount on renewal premium after each claim-free year. This is a premium discount, not a sum insured bonus. No cumulative SI bonus described."
   },
   "restoration": {
@@ -94,8 +94,8 @@
     "note": "Emergency ambulance only; non-emergency and non-registered providers excluded."
   },
   "modern_treatments": {
-    "exists": false,
-    "display": "Not specified",
+    "exists": true,
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "Policy wording does not explicitly mention modern/robotic treatments as a named benefit."
   },
   "consumables": {
@@ -135,7 +135,8 @@
   "uin": "HDHHLIP21379V022021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "optima-senior-combined-pw-cis-hegi-757265377962.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:01:17.634Z"
+  "extracted_at": "2026-09-20T08:01:17.634Z",
+  "audited_at": "2026-10-09"
 }

@@ -51,12 +51,14 @@
   "cumulative_bonus": {
     "number": null,
     "display": "Optional; cap per Schedule",
-    "note": "Cumulative Bonus (2.12.8) is an optional benefit; fixed % of base SI added each renewal up to cap in Schedule. No-Claim Bonus SI (2.12.9) also optional, capped at base SI. Inflation Protect SI (2.12.5) also optional. Rates and caps per Schedule."
+    "note": "Cumulative Bonus (2.12.8) is an optional benefit; fixed % of base SI added each renewal up to cap in Schedule. No-Claim Bonus SI (2.12.9) also optional, capped at base SI. Inflation Protect SI (2.12.5) also optional. Rates and caps per Schedule.",
+    "optional": true
   },
   "restoration": {
-    "ordinal": 0,
-    "display": "Optional; unlimited if specified",
-    "note": "Restore Sum Insured (2.12.11) is an optional benefit. If opted, restores SI after exhaustion; can be unlimited if Schedule specifies; available for related/unrelated illnesses as per Schedule. Not available for first claim in policy year."
+    "ordinal": 5,
+    "display": "Optional: restore sum insured, up to unlimited times if chosen",
+    "note": "Restore Sum Insured (2.12.11) is an optional benefit. If opted, restores SI after exhaustion; can be unlimited if Schedule specifies; available for related/unrelated illnesses as per Schedule. Not available for first claim in policy year.",
+    "optional": true
   },
   "pre_hosp": {
     "number": null,
@@ -135,7 +137,8 @@
   "uin": "ACKHLIP27040V012627",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy_Wordings_ACKO_Health_III_de395d1997.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:50:59.677Z"
+  "extracted_at": "2026-09-20T07:50:59.677Z",
+  "audited_at": "2026-10-09"
 }

@@ -30,8 +30,8 @@
     "display": "30 days"
   },
   "ped_waiting": {
-    "number": 36,
-    "display": "36 months (reducible to 12mo via optional channel-level add-on)"
+    "number": 12,
+    "display": "36 months (12 or 24 months with optional cover)"
   },
   "specific_disease_waiting": {
     "number": 24,
@@ -43,9 +43,9 @@
     "display": "Not covered (Parenthood add-on available)"
   },
   "cumulative_bonus": {
-    "number": 0,
-    "display": "Not covered (Plus Benefit instead)",
-    "note": "CB not available; Plus Benefit (50% of BSI/yr up to 100%) is inbuilt; Infinite Benefit (100% BSI/yr, unlimited) optional"
+    "number": 100,
+    "display": "Up to 100% (Plus Benefit, 50% a year)",
+    "note": "Plus Benefit adds 50% of Base SI each renewal, up to 100%. No separate cumulative bonus."
   },
   "restoration": {
     "ordinal": 4,
@@ -111,13 +111,14 @@
     "display": "Allowed"
   },
   "notable_exclusions": "Maternity, congenital external anomalies, stem cell harvesting, cosmetic surgery, OPD treatment, hearing aids/spectacles",
-  "optional_riders": "Aggregate deductible, Secure Benefit (200% BSI), Infinite Benefit (100% BSI/yr unlimited), Emergency Air Ambulance, Daily Cash for Shared Room, PED wait modification, Room Rent modification, Unlimited Restore add-on, Critical Illness add-on, Parenthood add-on",
+  "optional_riders": "Aggregate deductible, Infinite Benefit (optional, 100% of BSI a year), Emergency Air Ambulance, Daily Cash for Shared Room, PED wait modification, Room Rent modification, Critical Illness add-on, Parenthood",
   "insurer": "HDFC ERGO",
   "plan_name": "my: Optima Secure",
   "uin": "HDFHLIP26058V082526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "PolicyWordings_myOptimaSecure-76673175551.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:02:10.966Z"
+  "extracted_at": "2026-09-20T08:02:10.966Z",
+  "audited_at": "2026-10-09"
 }

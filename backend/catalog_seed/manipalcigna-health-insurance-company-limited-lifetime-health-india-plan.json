@@ -67,7 +67,7 @@
     "number": null
   },
   "restoration": {
-    "display": "Unlimited restorations, partial or full SI",
+    "display": "Unlimited, refills the used amount (not for an illness already claimed)",
     "note": "Restoration triggers every time Base SI1 is completely or partially utilised. Restored amount not available for same illness/same insured person in same policy year (including complications). Available for unrelated illnesses of same insured and any illness of other insured members. Unlimited times per year.",
     "optional": false,
     "ordinal": 5
@@ -163,7 +163,11 @@
     "display": "Health+ (air ambulance, non-medical items, bariatric, hospi cash, concierge, tele-consult), Women+ (cancer screening/vaccination, gynaec consults), Lifetime Plus (maternity, cumulative bonus, worldwide emergency), Critical Illness add-on, Personal Accident Plus, Health 360 (OPD, room upgrade, restoration)"
   },
   "source_file": "LifetimeHealth-India-Plan-TnC.pdf",
-  "status": "unverified",
+  "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:59:54.109Z"
+  "extracted_at": "2026-09-17T13:59:54.109Z",
+  "audit_gaps": [
+    "room_rent"
+  ],
+  "audited_at": "2026-10-09"
 }

@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy Clause New India Sixty Plus Mediclaim Policy.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:35:36.815Z"
+  "extracted_at": "2026-09-17T13:35:36.815Z",
+  "audited_at": "2026-10-09"
 }

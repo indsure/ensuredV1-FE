@@ -42,10 +42,10 @@
     "number": 30
   },
   "ped_waiting": {
-    "display": "24 months (disability PED); 36 months (other PED)",
+    "display": "36 months (24 months for pre-existing disability, 90 days for HIV/AIDS)",
     "note": "24 months for pre-existing disability; 36 months for other pre-existing diseases; 90 days for HIV/AIDS",
     "optional": false,
-    "number": 24
+    "number": 36
   },
   "specific_disease_waiting": {
     "display": "24 months",
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -103,7 +103,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "No mention of organ donor expenses in the policy wording",
     "optional": false,
     "exists": false
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy_Special_Care_Gold_V_5_e9a939e041.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:24:45.934Z"
+  "extracted_at": "2026-09-20T07:24:45.934Z",
+  "audited_at": "2026-10-09"
 }

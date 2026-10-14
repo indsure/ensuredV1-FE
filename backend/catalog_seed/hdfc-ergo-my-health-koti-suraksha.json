@@ -53,9 +53,10 @@
     "note": "50% of Base SI added per renewal year irrespective of claims, up to 100% maximum. Not applicable if Aggregate Deductible opted. Optional 'Cumulative Bonus Booster' can enhance the rate."
   },
   "restoration": {
-    "ordinal": 2,
-    "display": "Sum Insured Rebound (optional)",
-    "note": "No inbuilt restoration. Optional 'Sum Insured Rebound' cover adds back claim amount paid (up to Base SI) for subsequent hospitalisations in same policy year. Not available if Aggregate Deductible opted. Chemo/dialysis: once in policy lifetime."
+    "ordinal": 4,
+    "display": "Optional: Sum Insured Rebound, up to 100% once a year",
+    "note": "No inbuilt restoration. Optional 'Sum Insured Rebound' cover adds back claim amount paid (up to Base SI) for subsequent hospitalisations in same policy year. Not available if Aggregate Deductible opted. Chemo/dialysis: once in policy lifetime.",
+    "optional": true
   },
   "pre_hosp": {
     "number": 60,
@@ -90,19 +91,21 @@
     "note": "Road ambulance covered at actuals for each admissible claim (emergency transfer, hospital-to-hospital, hospital-to-home within same city)."
   },
   "modern_treatments": {
-    "exists": false,
-    "display": "Not specified",
+    "exists": true,
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "Policy wording does not explicitly list modern/robotic treatments as a named benefit. Standard medical expenses are covered; no specific modern treatment clause found."
   },
   "consumables": {
     "exists": true,
     "display": "Optional rider",
-    "note": "Non-Medical Expenses cover is an optional add-on (Optional Cover 1 under Section 1). By default, non-medical/consumable expenses are excluded."
+    "note": "Non-Medical Expenses cover is an optional add-on (Optional Cover 1 under Section 1). By default, non-medical/consumable expenses are excluded.",
+    "optional": true
   },
   "global_cover": {
     "exists": true,
     "display": "Optional",
-    "note": "Two optional covers: 'Emergency Medical Expenses' (life-threatening situations outside India) and 'Overseas Treatment' (major illnesses outside India). Both require additional premium."
+    "note": "Two optional covers: 'Emergency Medical Expenses' (life-threatening situations outside India) and 'Overseas Treatment' (major illnesses outside India). Both require additional premium.",
+    "optional": true
   },
   "moratorium": {
     "number": 60,
@@ -128,7 +131,8 @@
   "uin": "HDFHLIP21131V012021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "myhealth-koti-suraksha-pw-327779800227.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:00:54.434Z"
+  "extracted_at": "2026-09-20T08:00:54.434Z",
+  "audited_at": "2026-10-09"
 }

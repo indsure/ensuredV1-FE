@@ -33,12 +33,12 @@ export const PAGE_SEO: Record<string, PageSeo> = {
   "/policychecker": {
     title: "Health Insurance Policy Checker: Find Gaps | IndSure",
     description:
-      "Upload your health or mediclaim PDF and IndSure shows your room-rent cap, co-pay, sub-limits and waiting periods in plain language. Free and private.",
+      "A free health insurance policy review: upload your PDF and IndSure shows your room-rent cap, co-pay, sub-limits and waiting periods in plain language.",
   },
   "/calculator": {
-    title: "Health Cover Calculator: How Much Do You Need? | IndSure",
+    title: "Health Insurance Calculator: How Much Cover? | IndSure",
     description:
-      "IndSure's free cover calculator works out how much health insurance your family needs from your city's hospital costs and your ages. No upload, nothing to buy.",
+      "IndSure's free health insurance calculator works out how much cover your family needs from your city's hospital costs and your ages. No upload, nothing to buy.",
   },
   "/compare": {
     title: "Compare Health Insurance Policies Clause by Clause | IndSure",
@@ -68,7 +68,7 @@ export const PAGE_SEO: Record<string, PageSeo> = {
       "Upload your term plan PDF and IndSure checks your sum assured against your family's needs, plus claim conditions and exclusions. Free and private.",
   },
   "/vehicle": {
-    title: "Car & Bike Insurance Checker: IDV, NCB, Add-ons | IndSure",
+    title: "Car and Bike Insurance Checker: IDV, NCB | IndSure",
     description:
       "Upload your car or bike policy and IndSure shows your IDV, deductibles, NCB and add-ons, and what an accident would really cost you. Free and private.",
   },
@@ -83,7 +83,7 @@ export const PAGE_SEO: Record<string, PageSeo> = {
       "IndSure earns no commission and sells no leads. See how its policy catalog and clause-by-clause engine give you an honest read of your insurance.",
   },
   "/blog": {
-    title: "Insurance Guides for India: Health, Life & Motor | IndSure",
+    title: "Insurance Guides for India: Health, Life, Motor | IndSure",
     description:
       "Plain-language guides from IndSure on health, term life and motor insurance in India: claims, waiting periods, room-rent caps, tax benefits and more.",
   },
@@ -200,8 +200,16 @@ export function seoFor(path: string) {
 export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 155;
 
+// Head titles for clause terms too long for either automatic form. Keyed by term.
+const CLAUSE_TITLES: Record<string, string> = {
+  "Motor add-ons (engine protect, RSA, RTI, consumables)": "Motor Add-ons Explained: Engine Protect, RSA, RTI | IndSure",
+  "Compulsory vs voluntary deductible (motor)": "Compulsory vs Voluntary Motor Deductible | IndSure",
+  "Pre-existing disease (PED) waiting period": "Pre-existing Disease (PED) Waiting Period | IndSure",
+};
+
 /** "Room Rent Cap Explained: Meaning & Examples | IndSure", or a shorter form for long terms. */
 export function clauseTitle(term: string) {
+  if (CLAUSE_TITLES[term]) return CLAUSE_TITLES[term];
   const full = `${term} Explained: Meaning & Examples | IndSure`;
   return full.length <= TITLE_MAX ? full : `${term} Explained | IndSure`;
 }
@@ -213,6 +221,34 @@ export const BLOG_SEO: Record<string, { title?: string; description?: string }> 
     description:
       "Mediclaim is the older term; modern health insurance covers more. IndSure explains the difference in plain language and which one suits your family.",
   },
+  // Shorter head titles (60 chars max) for posts whose H1 runs long; the
+  // on-page H1 keeps the full title.
+  "buying-insurance-before-or-after-a-diagnosis": { title: "Buying Insurance Before or After a Diagnosis | IndSure" },
+  "cashless-vs-reimbursement-claims": { title: "Cashless vs Reimbursement Claims Explained | IndSure" },
+  "claim-health-insurance-for-existing-disease": { title: "Claiming Health Insurance for an Existing Disease | IndSure" },
+  "common-hidden-clauses-in-indian-health-policies": { title: "Common Hidden Clauses in Indian Health Policies | IndSure" },
+  "cover-size-5-lakh-vs-10-lakh-vs-1-crore": { title: "5 Lakh vs 10 Lakh vs 1 Crore Health Cover | IndSure" },
+  "family-floater-vs-individual-policies": { title: "Family Floater vs Individual Health Policy | IndSure" },
+  "health-insurance-claim-rejected-what-to-do": { title: "Health Insurance Claim Rejected? What to Do | IndSure" },
+  "health-insurance-sufficiency-guide": { title: "Is Your Health Insurance Enough? A Guide | IndSure" },
+  "home-insurance-building-vs-contents": { title: "Home Insurance: Building vs Contents Cover | IndSure" },
+  "how-many-health-insurance-claims-per-year": { title: "How Many Health Insurance Claims Per Year? | IndSure" },
+  "how-much-health-cover-do-you-need-by-life-stage": { title: "How Much Health Cover You Need, by Life Stage | IndSure" },
+  "how-to-port-health-insurance-without-losing-benefits": { title: "Port Health Insurance Without Losing Benefits | IndSure" },
+  "how-to-read-a-policy-wording-in-10-minutes": { title: "How to Read a Policy Wording in 10 Minutes | IndSure" },
+  "individual-vs-group-health-insurance": { title: "Individual vs Group Health Insurance | IndSure" },
+  "irdai-rule-changes-what-they-mean-for-your-policy": { title: "IRDAI Rule Changes: What They Mean for You | IndSure" },
+  "liability-insurance-explained": { title: "Liability Insurance: Professional and General | IndSure" },
+  "property-insurance-explained": { title: "Property Insurance: Commercial and Residential | IndSure" },
+  "restoration-benefit-explained": { title: "Restoration Benefit in Health Insurance | IndSure" },
+  "tax-benefits-health-life-insurance-80d-80c": { title: "Tax Benefits on Insurance: Sec 80D and 80C | IndSure" },
+  "term-life-insurance-basics": { title: "Term Life Insurance Basics Explained | IndSure" },
+  "third-party-vs-comprehensive-car-insurance": { title: "Third-Party vs Comprehensive Car Insurance | IndSure" },
+  "top-5-health-insurance-gaps": { title: "Top 5 Gaps in Health Insurance Policies | IndSure" },
+  "travel-insurance-domestic-vs-international": { title: "Domestic vs International Travel Insurance | IndSure" },
+  "what-is-health-insurance": { title: "What Is Health Insurance? A Guide for India | IndSure" },
+  "what-is-life-insurance": { title: "What Is Life Insurance? A Guide for Families | IndSure" },
+  "why-insurers-reject-claims-how-to-claim-proof": { title: "Why Insurers Reject Claims and How to Avoid It | IndSure" },
 };
 
 export function blogTitle(title: string, slug?: string) {

@@ -126,7 +126,8 @@
   "uin": "BAJHLIP23209V022223",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Global-Health-Care_PW.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-21T10:51:55.865Z"
+  "extracted_at": "2026-09-21T10:51:55.865Z",
+  "audited_at": "2026-10-09"
 }

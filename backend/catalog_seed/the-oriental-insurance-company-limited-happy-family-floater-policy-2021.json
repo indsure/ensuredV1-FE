@@ -18,10 +18,10 @@
     "ordinal": 3
   },
   "copayment": {
-    "display": "10% (Silver plan); None (Gold/Diamond/Platinum)",
+    "display": "None on Gold/Diamond/Platinum; 10% on Silver; 20% if entry age 66-70",
     "note": "Compulsory 10% co-pay on every claim under Silver plan. Waiver available on payment of extra premium. Additionally, 20% co-pay for persons aged 65-70 under Silver/Gold plans.",
     "optional": false,
-    "number": 10
+    "number": 0
   },
   "sub_limits": {
     "display": "Advanced treatments sub-limited; ambulance, maternity, domiciliary capped",
@@ -61,10 +61,10 @@
     "number": 24
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No Claim Discount was discontinued under HFF-2015 and is not offered as a standard ongoing benefit under HFF-2021. A one-time NCD credit from previous HFF policy is allowed on first renewal only.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Optional; 50% or 100% of SI (Silver & Gold only)",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Happy_Family_Floater_2021_policy_wordings_1_e31b8d9fe9.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:33:11.788Z"
+  "extracted_at": "2026-09-20T07:33:11.788Z",
+  "audited_at": "2026-10-09"
 }

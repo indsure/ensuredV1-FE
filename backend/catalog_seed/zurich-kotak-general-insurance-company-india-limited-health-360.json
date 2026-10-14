@@ -166,7 +166,8 @@
     "optional": true
   },
   "source_file": "Health_360_Policy_Wordings_FY_24_25_v1_06022025_6e8f3d3b36_922a215c71_98b5adf727.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:37:31.550Z"
+  "extracted_at": "2026-09-20T07:37:31.550Z",
+  "audited_at": "2026-10-09"
 }

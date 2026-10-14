@@ -14,7 +14,7 @@
   },
   "copayment": {
     "number": 0,
-    "display": "10% non-network; 10% age 61+; 10% zone upgrade; 5% Green Channel non-use",
+    "display": "Only on plans with compulsory co-pay: 10% at non-network hospitals plus 10% above age 60",
     "note": "10% compulsory co-pay for non-network hospitals; additional 10% for insured above 60 years on all claims; 10% if lower-zone insured treated in Zone A hospital; 5% if Green Channel benefit opted but treatment not at Green Channel hospital. Voluntary co-pay of 5/10/15/20% also available as optional add-on."
   },
   "sub_limits": {
@@ -129,7 +129,8 @@
   "uin": "LIBHLIP27040V012627",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Liberty Eternia Health Policy - Policy Wordings (UIN - LIBHLIP27040V012627) (Effective from 15.04.2026).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:03:57.494Z"
+  "extracted_at": "2026-09-20T08:03:57.494Z",
+  "audited_at": "2026-10-09"
 }

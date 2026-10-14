@@ -6,16 +6,16 @@
   "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "Not specified (schedule-dependent)",
+    "display": "No limit (at actuals)",
     "note": "Room rent limit is mentioned as per Policy Schedule; no explicit cap stated in wording",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "icu": {
-    "display": "Not specified (schedule-dependent)",
+    "display": "No limit (at actuals)",
     "note": "ICU charges covered under inpatient benefit; specific limit not stated in wording",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "copayment": {
     "display": "None (base); optional co-pay add-on available",
@@ -166,7 +166,8 @@
     "optional": true
   },
   "source_file": "chi-policy-wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:35:27.542Z"
+  "extracted_at": "2026-09-20T07:35:27.542Z",
+  "audited_at": "2026-10-09"
 }

@@ -50,7 +50,7 @@
   },
   "cumulative_bonus": {
     "number": 0,
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording. A 'Stay Healthy Discount' of up to 10% on renewal premium is available for submitting annual health check-up results, but this is a premium discount, not a SI increase."
   },
   "restoration": {
@@ -125,7 +125,8 @@
   "uin": "RELHLIP23120V042223",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "indusind-health-infinity-pw.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:03:02.494Z"
+  "extracted_at": "2026-09-20T08:03:02.494Z",
+  "audited_at": "2026-10-09"
 }

@@ -6,16 +6,16 @@
   "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "1% of SI/day (<₹5L); 1% or Single AC Room, whichever higher (≥₹5L)",
+    "display": "Single standard AC room or 1% of SI, whichever is higher (SI 5L+); 1% of SI below 5L",
     "note": "Proportionate deduction applies on associated medical expenses if higher room taken",
     "optional": false,
-    "ordinal": 3
+    "ordinal": 4
   },
   "icu": {
-    "display": "2% of SI/day (<₹5L); Actuals (≥₹5L)",
+    "display": "Actuals (SI 5L+); 2% of SI per day below 5L",
     "note": "No cap for SI ≥₹5L",
     "optional": false,
-    "ordinal": 3
+    "ordinal": 5
   },
   "copayment": {
     "display": "None",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy Wordings - FMP.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:34:56.970Z"
+  "extracted_at": "2026-09-20T07:34:56.970Z",
+  "audited_at": "2026-10-09"
 }

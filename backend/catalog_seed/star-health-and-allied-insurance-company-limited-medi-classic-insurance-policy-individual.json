@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy_Medi_Classic_Insurance_Policy_Individual_V_24_efeec2343d.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:22:59.206Z"
+  "extracted_at": "2026-09-20T07:22:59.206Z",
+  "audited_at": "2026-10-09"
 }

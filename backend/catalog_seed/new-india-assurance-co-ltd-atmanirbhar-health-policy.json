@@ -42,10 +42,10 @@
     "number": 30
   },
   "ped_waiting": {
-    "display": "36 months (24mo for disability PED)",
+    "display": "36 months (24 months for pre-existing disability)",
     "note": "36 months for all PEDs except pre-existing disability (24 months) and HIV/AIDS (30-day initial wait only)",
     "optional": false,
-    "number": 24
+    "number": 36
   },
   "specific_disease_waiting": {
     "display": "24 months",
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Policy Clause Atmanirbhar Health Policy.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:34:41.576Z"
+  "extracted_at": "2026-09-17T13:34:41.576Z",
+  "audited_at": "2026-10-09"
 }

@@ -6,7 +6,7 @@
   "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "As per Plan/Schedule",
+    "display": "No limit (optional room cap for a discount)",
     "note": "Room rent cap is optional — insured can opt for 'Cap on Room Rent' for a premium discount; if not opted, full room rent and associated expenses are covered up to SI. Proportionate deduction applies if opted and room exceeds eligible limit. ICU charges exempt from proportionate deduction.",
     "optional": false,
     "ordinal": 5
@@ -115,10 +115,10 @@
     "number": null
   },
   "modern_treatments": {
-    "display": "Not specified",
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "Policy wording does not explicitly mention modern/robotic surgery as a named benefit or exclusion. Day-care list includes some advanced procedures (stereotactic radiosurgery, VMAT, etc.).",
     "optional": false,
-    "exists": null
+    "exists": true
   },
   "consumables": {
     "display": "Not covered (listed as non-medical expenses)",
@@ -163,7 +163,8 @@
     "display": "Critical Illness Cover (18 CIs), Personal Accident Cover (death & PTD), Cap on Room Rent (premium discount), Hospital Daily Cash, Convalescence Benefit, Air Ambulance, Maternity Benefit"
   },
   "source_file": "Health_Maximiser_Policy_Wording_e64479e8f4_7851c943b7.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:37:39.293Z"
+  "extracted_at": "2026-09-20T07:37:39.293Z",
+  "audited_at": "2026-10-09"
 }

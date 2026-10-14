@@ -18,7 +18,7 @@
     "ordinal": 5
   },
   "copayment": {
-    "display": "20% (age 61+)",
+    "display": "20% for anyone aged above 60",
     "note": "Compulsory 20% co-payment for each insured person aged above 60 years on every claim. Optional voluntary co-pay of 10% or 20% available for insured aged 60 or below in exchange for premium discount.",
     "optional": false,
     "number": 20
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Zuno_Health_Insurance_policy_wording_V_1_5_9bbbe898b2.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:37:03.165Z"
+  "extracted_at": "2026-09-20T07:37:03.165Z",
+  "audited_at": "2026-10-09"
 }

@@ -163,7 +163,8 @@
     "display": "Road/Air Ambulance, Organ Donor, Modern Treatments, Home Health Care, Consumables, Restore Benefit, OPD Cover, Global Cover, Critical Illness, Personal Accident, Maternity & Child Care, Endless SI, Adventure Sports, Gym & Sports Injury"
   },
   "source_file": "SBI_General_Health_Alpha_Policy_Wording_New_002_a04e639c0d.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:44:59.446Z"
+  "extracted_at": "2026-09-17T13:44:59.446Z",
+  "audited_at": "2026-10-09"
 }

@@ -24,7 +24,7 @@
     "number": 0
   },
   "sub_limits": {
-    "display": "Many sub-limits: 15% SI for surgeon/nursing fees, 15% SI for medicines/OT, ₹15,000 per illness cap",
+    "display": "Rs.15,000 per illness; heads capped at 15% of SI",
     "note": "Section B capped at 15% of SI per illness; Section C capped at 15% of SI per illness; total per illness capped at ₹15,000; overall SI is ₹30,000",
     "optional": false,
     "ordinal": 1
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -73,16 +73,16 @@
     "ordinal": 0
   },
   "pre_hosp": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "Pre-hospitalisation expenses are defined but no specific number of days is stated in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "post_hosp": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "Post-hospitalisation expenses are defined but no specific number of days is stated in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "day_care": {
     "display": "Listed procedures only",
@@ -159,7 +159,8 @@
   "notable_exclusions": "Ambulance, maternity, dental (cosmetic/wear), spectacles/hearing aids, circumcision, RFQMR/ECP/EECP/hyperbaric O2, venereal disease, suicide injury, war, NBC weapons",
   "optional_riders": "Not specified",
   "source_file": "Policy Clause Universal Health Insurance Policy.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:35:30.799Z"
+  "extracted_at": "2026-09-17T13:35:30.799Z",
+  "audited_at": "2026-10-09"
 }

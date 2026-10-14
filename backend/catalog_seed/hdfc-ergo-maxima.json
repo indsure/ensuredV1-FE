@@ -3,13 +3,13 @@
   "sum_insured_options": "₹3,00,000 (1 Adult / 2 Adults / 2 Adults + 2 Children)",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 0,
-    "display": "Not specified",
+    "ordinal": 5,
+    "display": "No limit (at actuals)",
     "note": "Policy wording does not specify a room rent cap or entitlement tier; room rent is listed as a covered inpatient expense but no limit or room category is stated."
   },
   "icu": {
-    "ordinal": 0,
-    "display": "Not specified",
+    "ordinal": 5,
+    "display": "No limit (at actuals)",
     "note": "ICU is listed as a covered inpatient expense but no specific cap is mentioned."
   },
   "copayment": {
@@ -94,8 +94,8 @@
     "note": "Road ambulance reimbursement capped at ₹2,000 per hospitalisation."
   },
   "modern_treatments": {
-    "exists": false,
-    "display": "Not specified",
+    "exists": true,
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "No explicit mention of modern/robotic surgery cover or sub-limits in the policy wording."
   },
   "consumables": {
@@ -139,7 +139,8 @@
   "uin": "HDHHLIP21338V022021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "maxima-pw-cis-418068097035.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:00:50.337Z"
+  "extracted_at": "2026-09-20T08:00:50.337Z",
+  "audited_at": "2026-10-09"
 }

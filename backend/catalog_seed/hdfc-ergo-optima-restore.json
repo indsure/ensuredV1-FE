@@ -41,10 +41,11 @@
     "note": "Applies to listed conditions including cataract, hernia, joint replacement, cholecystectomy, sinusitis, GERD, calculus diseases, etc."
   },
   "maternity": {
-    "exists": false,
+    "exists": true,
     "number": null,
     "display": "Optional add-on (Parenthood)",
-    "note": "Maternity is excluded from base plan (Excl18). Available via 'Parenthood' add-on covering maternity, embryo storage and IVF with 2-year waiting period."
+    "note": "Maternity is excluded from base plan (Excl18). Available via 'Parenthood' add-on covering maternity, embryo storage and IVF with 2-year waiting period.",
+    "optional": true
   },
   "cumulative_bonus": {
     "number": 100,
@@ -86,19 +87,21 @@
     "note": "Road ambulance ₹2,000 per hospitalisation. Emergency air ambulance up to ₹2.5L per hospitalisation (within India only)."
   },
   "modern_treatments": {
-    "exists": false,
-    "display": "Not specified",
-    "note": "Policy wording does not explicitly list modern/robotic treatments as a named benefit; covered under general in-patient treatment if medically necessary."
+    "exists": true,
+    "display": "No separate clause, paid as normal in-patient treatment",
+    "note": "The wording neither lists nor excludes modern treatments (robotic surgery, oral chemotherapy and so on), so they are paid like any in-patient treatment, with no separate cap."
   },
   "consumables": {
     "exists": true,
     "display": "Optional rider (Protector Rider)",
-    "note": "Base plan excludes items in List I (consumables/non-medical). 'Protector Rider' add-on covers IRDAI-listed excluded items."
+    "note": "Base plan excludes items in List I (consumables/non-medical). 'Protector Rider' add-on covers IRDAI-listed excluded items.",
+    "optional": true
   },
   "global_cover": {
     "exists": true,
-    "display": "Optional (Critical Advantage rider)",
-    "note": "Base plan covers India only. 'Critical Advantage rider' covers planned treatment abroad for 8 major illnesses."
+    "display": "Optional rider (planned treatment abroad for 8 major illnesses)",
+    "note": "Base plan covers India only. 'Critical Advantage rider' covers planned treatment abroad for 8 major illnesses.",
+    "optional": true
   },
   "moratorium": {
     "number": 60,
@@ -123,7 +126,8 @@
   "uin": "HDFHLIP26055V102526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "PolicyWordings_OptimaRestore-811520192624.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:01:41.599Z"
+  "extracted_at": "2026-09-20T08:01:41.599Z",
+  "audited_at": "2026-10-09"
 }

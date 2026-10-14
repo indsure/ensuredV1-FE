@@ -33,9 +33,9 @@
     "note": "30-day waiting period for all illnesses except accidents"
   },
   "ped_waiting": {
-    "number": 24,
-    "display": "24 months (disability/HIV); 36 months (other PEDs)",
-    "note": "24 months for pre-existing disability and HIV/AIDS; 36 months for all other pre-existing conditions"
+    "number": 36,
+    "display": "36 months (24 months for the pre-existing disability)",
+    "note": "36 months for pre-existing diseases; 24 months only for the pre-existing disability (and HIV/AIDS as stated) the policy is built for."
   },
   "specific_disease_waiting": {
     "number": 24,
@@ -49,9 +49,9 @@
     "note": "Maternity is a standard exclusion (Excl18); not covered under this policy"
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
-    "note": "No cumulative/no-claim bonus mentioned in the policy wording"
+    "number": 0,
+    "display": "None",
+    "note": "The wording has no cumulative or no-claim bonus."
   },
   "restoration": {
     "ordinal": 0,
@@ -135,7 +135,8 @@
   "uin": "CHIHLIP23186V012223",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "care-saksham----t&c-(effective-from-12-september-2024-).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:54:42.999Z"
+  "extracted_at": "2026-09-20T07:54:42.999Z",
+  "audited_at": "2026-10-09"
 }

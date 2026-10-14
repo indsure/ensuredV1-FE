@@ -159,7 +159,8 @@
   "notable_exclusions": "Hormone replacement therapy, sleep disorders, STIs (non-HIV), external congenital anomaly, ancillary hospital charges, refractive error <7.5D, artificial life maintenance (brain dead)",
   "optional_riders": "Personal Accident cover, Critical Illness cover (20 conditions), Hospital Cash, e-Consultation, Premium Waiver, Enhanced International Cover (USA/Canada)",
   "source_file": "HBPolicy-Wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:42:30.828Z"
+  "extracted_at": "2026-09-17T13:42:30.828Z",
+  "audited_at": "2026-10-09"
 }

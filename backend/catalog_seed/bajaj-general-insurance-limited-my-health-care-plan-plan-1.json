@@ -3,8 +3,8 @@
   "sum_insured_options": "₹3L, 4L, 5L, 7.5L, 10L, 15L, 20L, 25L, 30L, 35L, 40L, 45L, 50L, 75L, 1Cr, 2Cr, 3Cr, 4Cr, 5Cr",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 4,
-    "display": "Single Private AC Room (SI ≤10L); Actuals (SI >10L)",
+    "ordinal": 5,
+    "display": "Actuals (SI above 10L); single private AC room (SI 3L-10L)",
     "note": "For SI 3L–10L: Single Private AC Room. For SI above 10L: at actuals. Options to downgrade to General Ward, Twin Sharing, or 1%/1.5%/2% of SI per day are available."
   },
   "icu": {
@@ -135,7 +135,8 @@
   "uin": "BAJHLIP26074V022526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "My-Health-Care-Plan1-PW.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:53:33.121Z"
+  "extracted_at": "2026-09-20T07:53:33.121Z",
+  "audited_at": "2026-10-09"
 }

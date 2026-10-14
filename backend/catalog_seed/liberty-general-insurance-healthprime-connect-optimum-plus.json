@@ -4,12 +4,12 @@
   "confidence": "medium",
   "room_rent": {
     "ordinal": 0,
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Limit as per Policy Schedule; higher SI options (75L, 100L) may have no cap - confirm in schedule"
   },
   "icu": {
     "ordinal": 0,
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Limit as per Policy Schedule"
   },
   "copayment": {
@@ -59,12 +59,12 @@
   },
   "pre_hosp": {
     "number": null,
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Days as per Policy Schedule"
   },
   "post_hosp": {
     "number": null,
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Days as per Policy Schedule"
   },
   "day_care": {
@@ -88,7 +88,7 @@
   },
   "ambulance": {
     "number": null,
-    "display": "Not specified",
+    "display": "As per Policy Schedule",
     "note": "Road ambulance covered; limit as per Policy Schedule; air ambulance via emergency assistance (cashless, 150km+ from home)"
   },
   "modern_treatments": {
@@ -129,7 +129,8 @@
   "uin": "LIBHLIP25037V032425",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Health Prime Connect - Policy Wordings (UIN - LIBHLIP25037V032425) (Effective from 30.09.2024)_06_04_26.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:04:03.404Z"
+  "extracted_at": "2026-09-20T08:04:03.404Z",
+  "audited_at": "2026-10-09"
 }

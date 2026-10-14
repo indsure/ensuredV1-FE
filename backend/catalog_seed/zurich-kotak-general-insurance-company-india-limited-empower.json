@@ -4,7 +4,7 @@
   "uin": "ZUKHLIP25036V012425",
   "sum_insured_options": "Not specified in wording",
   "confidence": "high",
-  "product_type": "comprehensive_health_indemnity",
+  "product_type": "top_up",
   "room_rent": {
     "display": "1% of SI/day, max ₹5,000/day",
     "note": "Associated medical expenses proportionally reduced if room exceeds limit",
@@ -30,10 +30,10 @@
     "ordinal": 1
   },
   "deductible": {
-    "display": "As per Policy Schedule (aggregate basis)",
-    "note": "Deductible applies on aggregate basis for all hospitalisation in a policy year; exact amount in schedule (illustrations show ₹1,00,000)",
+    "display": "Aggregate yearly deductible, as per Policy Schedule",
+    "note": "Pays only above a yearly deductible.",
     "optional": false,
-    "number": 100000
+    "number": null
   },
   "initial_waiting": {
     "display": "30 days",
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative/no-claim bonus mentioned in the policy wording",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Empower_Policy_Wording_62ee3d39f7_1_c7f9e45cc1_ce34f58908.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:37:07.075Z"
+  "extracted_at": "2026-09-20T07:37:07.075Z",
+  "audited_at": "2026-10-09"
 }

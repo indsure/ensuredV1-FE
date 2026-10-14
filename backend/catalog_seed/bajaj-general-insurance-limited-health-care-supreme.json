@@ -3,13 +3,13 @@
   "sum_insured_options": "Vital: ₹5,00,000 (Plan A), ₹8,00,000 (Plan B), ₹10,00,000 (Plan C) | Smart: ₹15,00,000 (Plan D), ₹20,00,000 (Plan E), ₹25,00,000 (Plan F), ₹30,00,000 (Plan G) | Ultimo: ₹35,00,000 (Plan H), ₹40,00,000 (Plan I), ₹45,00,000 (Plan J), ₹50,00,000 (Plan K)",
   "confidence": "medium",
   "room_rent": {
-    "ordinal": 0,
-    "display": "Not specified",
+    "ordinal": 5,
+    "display": "No limit (at actuals)",
     "note": "Policy wording does not specify a room-rent cap or entitlement tier; no sub-limit table found in the wording for room rent."
   },
   "icu": {
-    "ordinal": 0,
-    "display": "Not specified",
+    "ordinal": 5,
+    "display": "No limit (at actuals)",
     "note": "ICU charges covered under hospitalisation SI but no specific cap stated in wording."
   },
   "copayment": {
@@ -130,8 +130,9 @@
   "uin": "BAJHLIP23210V042223",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Health-Care-Supreme_PW.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T08:31:54.482Z",
-  "variant_note": "Sold as three named bands (Vital, Smart, Ultimo) that differ only by sum insured; the policy terms, waiting periods and co-payment are identical across all three."
+  "variant_note": "Sold as three named bands (Vital, Smart, Ultimo) that differ only by sum insured; the policy terms, waiting periods and co-payment are identical across all three.",
+  "audited_at": "2026-10-09"
 }

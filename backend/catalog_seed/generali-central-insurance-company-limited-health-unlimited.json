@@ -3,7 +3,7 @@
   "sum_insured_options": "₹7.5L, ₹10L, ₹15L, ₹25L, ₹50L, ₹100L, ₹200L",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 4,
+    "ordinal": 5,
     "display": "Single Private Room (₹7.5L–15L); No cap (₹25L+)",
     "note": "SI ₹7.5L, ₹10L, ₹15L: Single Private Room. SI ₹25L and above: up to SI (no cap)."
   },
@@ -128,7 +128,8 @@
   "uin": "GCIHLIP26041V012526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "health-unlimited-policy-wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:58:45.044Z"
+  "extracted_at": "2026-09-20T07:58:45.044Z",
+  "audited_at": "2026-10-09"
 }

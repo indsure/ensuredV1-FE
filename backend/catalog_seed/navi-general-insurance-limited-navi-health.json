@@ -72,13 +72,13 @@
     "ordinal": 5
   },
   "pre_hosp": {
-    "display": "Not specified (days per Policy Schedule)",
+    "display": "As per Policy Schedule",
     "note": "Pre-hospitalisation expenses covered under Section 3.2; exact number of days not stated in wording, referenced to Policy Schedule.",
     "optional": false,
     "number": null
   },
   "post_hosp": {
-    "display": "Not specified (days per Policy Schedule)",
+    "display": "As per Policy Schedule",
     "note": "Post-hospitalisation expenses covered under Section 3.3; exact number of days not stated in wording, referenced to Policy Schedule.",
     "optional": false,
     "number": null
@@ -166,7 +166,8 @@
     "optional": false
   },
   "source_file": "navi_health_policy_wordings_26_27.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:28:54.253Z"
+  "extracted_at": "2026-09-20T07:28:54.253Z",
+  "audited_at": "2026-10-09"
 }

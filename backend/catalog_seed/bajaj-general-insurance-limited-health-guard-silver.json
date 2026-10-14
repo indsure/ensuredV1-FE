@@ -54,9 +54,9 @@
     "note": "10% of base SI per claim-free year; max 100% of base SI. Reduced by 10% in year after a claim."
   },
   "restoration": {
-    "ordinal": 3,
-    "display": "Once/yr, 100% of base SI",
-    "note": "Triggered only after full SI (including CB) is exhausted. Reinstated SI usable for subsequent claims same or other members. Cancer/Kidney Failure: once in lifetime; other conditions: every year."
+    "ordinal": 4,
+    "display": "Once/yr, 100% of base SI (after full exhaustion)",
+    "note": "Usable for the same or another illness; for cancer and dialysis only once in a lifetime."
   },
   "pre_hosp": {
     "number": 60,
@@ -131,7 +131,8 @@
   "uin": "BAJHLIP26073V082526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Health-Guard_PW.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:53:20.217Z"
+  "extracted_at": "2026-09-20T07:53:20.217Z",
+  "audited_at": "2026-10-09"
 }

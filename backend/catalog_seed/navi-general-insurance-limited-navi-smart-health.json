@@ -4,7 +4,7 @@
   "uin": "NAVHLIP23003V012223",
   "sum_insured_options": "Not specified in wording",
   "confidence": "medium",
-  "product_type": "comprehensive_health_indemnity",
+  "product_type": "top_up",
   "room_rent": {
     "display": "Single room (proportionate deduction above)",
     "note": "Proportionate deduction on Associated Medical Expenses if room category is higher than single room occupancy. No explicit ₹ or % cap on room rent itself, but upgrade triggers proportionate cuts.",
@@ -30,8 +30,8 @@
     "ordinal": 5
   },
   "deductible": {
-    "display": "As per Policy Schedule",
-    "note": "A deductible is referenced and defined; the exact amount is specified in the Policy Schedule, not in the wording. Deductible applies once per policy year (individual/floater basis). Amount not stated in wording.",
+    "display": "Aggregate yearly deductible, as per Policy Schedule",
+    "note": "A top-up: the yearly deductible must be used up before the policy pays.",
     "optional": false,
     "number": null
   },
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
+    "display": "None",
     "note": "No cumulative bonus or no-claim bonus mentioned anywhere in the policy wording.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -97,7 +97,7 @@
     "exists": true
   },
   "ayush": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "AYUSH treatment is not mentioned anywhere in the policy wording — neither covered nor explicitly excluded.",
     "optional": false,
     "exists": false
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Navi Smart Health - Policy Wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:28:28.907Z"
+  "extracted_at": "2026-09-20T07:28:28.907Z",
+  "audited_at": "2026-10-09"
 }

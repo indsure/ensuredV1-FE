@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "Super_Health_Insurance_Policy_Wording_New_1512_1a70d6d07a.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:44:48.512Z"
+  "extracted_at": "2026-09-17T13:44:48.512Z",
+  "audited_at": "2026-10-09"
 }

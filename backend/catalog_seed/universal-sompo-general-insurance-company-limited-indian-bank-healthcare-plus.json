@@ -6,16 +6,16 @@
   "confidence": "medium",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "Not specified",
+    "display": "No limit (at actuals)",
     "note": "Policy covers room, boarding and nursing expenses as per hospital but no explicit room rent cap or category mentioned in wording",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "icu": {
-    "display": "Not specified",
+    "display": "No limit (at actuals)",
     "note": "ICU charges defined and covered but no explicit cap or sub-limit stated",
     "optional": false,
-    "ordinal": 0
+    "ordinal": 5
   },
   "copayment": {
     "display": "20% (age above 55)",
@@ -61,7 +61,7 @@
     "number": 9
   },
   "cumulative_bonus": {
-    "display": "Health check-up after 3 claim-free years",
+    "display": "None (health check-up after 3 claim-free years)",
     "note": "No traditional cumulative bonus on SI mentioned; only health check-up reimbursement up to 1% of average SI after 3 claim-free policy years",
     "optional": false,
     "number": 0
@@ -115,10 +115,10 @@
     "number": 1000
   },
   "modern_treatments": {
-    "display": "Not specified",
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "No explicit mention of modern/robotic treatments coverage or sub-limits in policy wording",
     "optional": false,
-    "exists": false
+    "exists": true
   },
   "consumables": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "indianbank-policy-wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:35:43.776Z"
+  "extracted_at": "2026-09-20T07:35:43.776Z",
+  "audited_at": "2026-10-09"
 }

@@ -23,7 +23,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
-import { SchemaMarkup, createFAQSchema } from "@/components/SEO";
+import { PAGE_FAQS } from "@/data/page-faqs";
+import { useLanguage } from "@/i18n/LanguageContext";
+
 import { loadSampleReport, mockReportLife } from "@/lib/mock-data";
 
 // TermAnalyzer Component
@@ -133,61 +135,12 @@ export default function TermPage() {
   // SEO
   useSEO(seoFor("/term"));
 
-  // FAQ Schema - Term-specific
-  const faqList = [
-    {
-      question: "What is term life insurance? How is it different from whole life?",
-      answer: "Term life insurance is pure protection—you pay premium for 20–30 years. If you die during the term, your family gets the sum assured. If you survive the term, the policy expires (no return). Cost: ₹500–₹1500/month for ₹1cr at age 30. Whole life insurance: You pay premium for LIFE (or until age 100). If you die anytime, family gets sum assured. Also builds cash value (like savings). Cost: ₹5000–₹10000+/month for ₹1cr (10x expensive). For most Indians: Term life is best—pure protection, maximum coverage per rupee, affordable.",
-    },
-    {
-      question: "How much term life insurance should I buy? ₹50L or ₹1cr?",
-      answer: "Formula: Get 10–12x your annual income as sum assured. Age 30 with ₹12L income? Get ₹1.2cr–₹1.4cr term life. Age 50 with ₹25L income? Get ₹2.5cr–₹3cr term life. Why? Because term life is pure protection—maximum coverage per rupee. ₹50L covers home loan + 5 years living = NOT ENOUGH. ₹1cr covers home loan + 10 years living + partial education. ₹1.5–2cr covers all above + spouse's 20-year retirement. Benchmark by life stage: Age 25–35 (young professional): 10–12x income. Age 35–45 (parent): 12–15x income. Age 45–55 (peak earner): 8–10x income (lower, kids grown). Age 55+ (near retirement): 5–7x income. Use calculator: Tell us your income + dependents + goals → we compute exact need.",
-    },
-    {
-      question: "Why choose term life over whole life or endowment?",
-      answer: "Term life = Pure protection, maximum coverage per rupee, affordable. Whole life = 10x expensive, builds cash value (but returns are low). Endowment = Hybrid, 2–3x expensive, returns mediocre. For most Indians: Term life is best because: 1) Maximum coverage per rupee (₹1cr for ₹1000/month vs ₹5000/month for whole life). 2) Pure protection focus (no investment confusion). 3) Affordable (1–2% of income vs 5–10% for whole life). 4) Flexible (can increase/decrease coverage as needs change). 5) Better returns if you invest the premium difference separately in mutual funds. Bottom line: Buy term life ₹1cr and invest ₹4000/month separately = Better protection + better returns.",
-    },
-    {
-      question: "What's the suicide clause? Why does it matter?",
-      answer: "Suicide clause: If you die by suicide within [12–24 months] of policy start, family gets ₹0 (policy denied). Why? Insurers prevent fraud (someone buying insurance planning suicide). Reality: Most people don't buy insurance with suicide intent. Clause protects insurer from this tiny risk. After 12–24 months, clause expires. Impact on you: If you're suicidal NOW, don't buy insurance expecting to use this. If you're healthy, this clause doesn't matter. Most claims happen from accidents/illness, not suicide. Bottom line: Standard legal protection. Don't overthink it.",
-    },
-    {
-      question: "What if I don't disclose a health condition (diabetes, BP) at purchase?",
-      answer: "RISK: If claim happens and insurer discovers non-disclosure: Claim DENIED (entire ₹1cr, not partial). Family gets ₹0. Possible legal case against you. Reality: 30% of policy buyers don't fully disclose. But risk = ₹1cr loss if caught. Solution: Be 100% honest at purchase. Disclose: 'I have diabetes, controlled with insulin'. Disclose: 'I had depression in 2020, treated'. Disclose: 'My father died of heart disease at 50'. These increase premium 10–30%, but claims are APPROVED. Bottom line: Higher premium now > ₹0 claim later. Always declare.",
-    },
-    {
-      question: "Can I get term life if I smoke?",
-      answer: "YES, but cost is 2–3x higher. Non-smoker: ₹500–₹800/month for ₹1cr at age 35. Smoker: ₹1500–₹2400+/month for same ₹1cr. Reason: Smokers have higher death risk (lung cancer, heart disease). Solution: ✅ Disclose: Insurer charges high but claims covered. ❌ Don't disclose: Premium cheaper, but claim can be DENIED if death is smoking-related. Recommendation: If smoker, disclose and pay higher premium. Better than risking claim denial.",
-    },
-    {
-      question: "What if my claim gets denied? Can I appeal?",
-      answer: "YES. Claim denial process: Step 1: Insurer denies claim (sends letter with reason). Step 2: You can appeal (within 30 days typically). Step 3: Ombudsman review (free, neutral party). Step 4: Legal case (if still denied, escalate). Common denial reasons + appeal chances: 1. Non-disclosure: 80% denial upheld (hard to appeal). 2. Suicide within clause: 95% denial upheld (legal). 3. High-risk activity: 60% appeal success. 4. Incomplete documentation: 30% denial upheld (easy to appeal, resubmit docs). Timeline: Appeal + ombudsman = 3–6 months. Pro tip: Get ombudsman involved immediately if denied. Pressure often works.",
-    },
-    {
-      question: "Should I add Accidental Death (ADB) or Critical Illness (CI) rider?",
-      answer: "Depends on your risk profile and age: ACCIDENTAL DEATH RIDER (+₹200–500/month): ✅ If: Age <50, drive daily, live in metro (accident risk high). ❌ If: Retired, don't commute, low-risk job. Amount: Usually adds ₹50L–₹1cr more death benefit for accidents only. CRITICAL ILLNESS RIDER (+₹500–1500/month): ✅ If: Age 35–50, sole earner, significant loans, high medical costs possible. ✅ Covers: Cancer, heart attack, stroke, kidney failure (diagnosis = gets ₹X lump sum while alive). ❌ If: Already have health insurance, age 50+ (expensive), low cancer risk. DISABILITY RIDER (+₹300–800/month): ✅ If: Age 30–50, sole income earner. ✅ Covers: If you become disabled, premiums auto-waived + family still protected. RECOMMENDATION: Age 25–35, healthy: Get ADB only (cheap, useful for accident). Age 35–50, prime earner: Get CI rider (more likely to face critical illness). Age 50+: Skip riders (expensive, limited time left). My take: If income ₹15L+, add CI rider. Protects against illness-caused income loss.",
-    },
-    {
-      question: "Can I cancel my term policy early? Will I get my money back?",
-      // claim-source: illustrative arithmetic inside the answer itself (10
-      // years of premium at the stated rate), not a claim about IndSure.
-      answer: "YES, you can cancel anytime. But NO refund (unless policy has rider). Scenario: You bought 20-year term at age 30. At age 40, you want to cancel. You've paid 10 years of premiums: ₹2,00,000+. Insurer says: Policy is EXPIRED (no death benefit after cancellation). You get: ₹0 back (pure insurance, not savings). Options if you want to cancel: 1. Stop paying premium → policy lapses (after grace period). 2. Surrender policy formally. 3. Convert to lower sum assured (keep some protection, reduce premium). AVOID cancellation if: You have dependents (they lose protection). Your health has deteriorated (can't get new policy). You still have loans. Recommendation: Only cancel if you've upgraded to better policy elsewhere.",
-    },
-    {
-      question: "What if I miss a premium payment? Does my policy lapse immediately?",
-      answer: "NO, there's a GRACE PERIOD (usually 30 days). Timeline: Day 1: Premium due. Day 1–30: Grace period (missed but recoverable). Day 31: Policy lapses (protection ENDS). If you pay during grace period: ✅ Policy continues. ✅ All previous terms still valid. If you miss grace period: 🔴 Policy LAPSES. 🔴 If you die while lapsed, family gets ₹0. AVOID LAPSING by: ✅ Setting auto-debit (premium auto-paid). ✅ Setting phone reminder (manual payment). Pro tip: If you lapsed accidentally, contact insurer ASAP (within 1–2 years, they may restart without full medical exam).",
-    },
-    {
-      question: "Does term life insurance have any investment/savings component?",
-      answer: "NO (standard term life). You pay premium, get death protection only. If policy expires and you're alive, you get ₹0 (no return). This is WHY it's affordable—pure protection, maximum coverage per rupee. BUT: Some insurers offer optional add-ons: ✅ Return of premium rider (if alive at end, get all premiums back). Cost: 2–3x higher premium. Example: 20-year term, ₹1000/month → ₹2000–3000/month with rider. Verdict: Usually not worth it (better to invest separately). ❌ Money-back policies (insurer pays 10% every 5 years if alive). Cost: 1.5–2x higher premium. Verdict: Waste (invest separately instead). ❌ ULIPs (Unit-linked insurance) – Part insurance, part mutual fund. Cost: 2–4x higher than term life. Risk: Returns depend on market (can lose money). My take: Keep term life PURE and cheap. Buy term life ₹1cr and invest ₹1000/month separately in mutual funds. Better returns, lower insurance cost.",
-    },
-  ];
-
-  const faqData = createFAQSchema(faqList);
+  // Same keys as the FAQPage JSON-LD the prerender writes (data/page-faqs.ts).
+  const { t } = useLanguage();
+  const faqList = (PAGE_FAQS["/term"] ?? []).map(([q, a]) => ({ question: t(q), answer: t(a) }));
 
   return (
     <div className="min-h-screen bg-[#F0FFFE] dark:bg-[#0F1419] flex flex-col">
-      <SchemaMarkup type="FAQPage" data={faqData} />
       <Header />
 
       {/* Hero Section */}

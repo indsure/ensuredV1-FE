@@ -16,6 +16,7 @@ import { LifeInsuranceComparer } from "@/components/LifeInsuranceComparer";
 import { TermInsuranceComparer } from "@/components/TermInsuranceComparer";
 import { VehicleInsuranceComparer } from "@/components/VehicleInsuranceComparer";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { PageFaq } from "@/components/PageFaq";
 
 /**
  * PUBLIC catalog compare — the consumer version of the agent's
@@ -327,9 +328,13 @@ function HealthCatalogCompare() {
 
         {/* Hero */}
         <div className="mt-6 mb-10 max-w-2xl">
-          <Eyebrow icon={Scale}>{t("ccmp.eyebrow")}</Eyebrow>
-          <h1 className="mt-4 text-4xl md:text-5xl font-serif font-bold leading-[1.1]">
-            {t("ccmp.h_a")} <span className="italic text-[var(--color-teal-600)]">{t("ccmp.h_b")}</span>
+          {/* The eyebrow sits inside the h1 so the heading carries the search
+              phrase ("compare health insurance policies"), as on /calculator. */}
+          <h1 className="flex flex-col items-start gap-4">
+            <Eyebrow icon={Scale} className="font-sans">{t("ccmp.eyebrow")}</Eyebrow>
+            <span className="block text-4xl md:text-5xl font-serif font-bold leading-[1.1]">
+              {t("ccmp.h_a")} <span className="italic text-[var(--color-teal-600)]">{t("ccmp.h_b")}</span>
+            </span>
           </h1>
           <p className="mt-4 text-lg text-[var(--color-text-secondary)] leading-relaxed">
             {t("ccmp.sub", { n: MAX_PLANS })}
@@ -444,6 +449,7 @@ function HealthCatalogCompare() {
               </Link>
             </div>
         </>
+        <PageFaq route="/compare" className="px-0 sm:px-0" />
       </main>
 
       <Footer />

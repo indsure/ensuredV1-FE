@@ -90,6 +90,7 @@ import {
   artTaxContent, artTaxFAQs,
   artDiagnosisContent, artDiagnosisFAQs,
 } from "./blog-narrative-2026b";
+import { ALL_DRAFTS } from "./guides-2026";
 
 export interface BlogPost {
   id: number;
@@ -602,6 +603,45 @@ const article8Content = `
   <p>Generic advice ends here. Which hospitals are empaneled, what gets reimbursed, and within what limits — that's all written in YOUR policy. Check it before the emergency, not during.</p>
 </div>
 `;
+
+// Phase 3 guides (13 Oct 2026): ids 54 to 73, in the order of ALL_DRAFTS.
+// Each guide ends with the policy wordings it relies on.
+const GUIDE_ICONS: Record<string, any> = {
+  "co-payment-vs-deductible": Wallet,
+  "why-health-insurance-premium-goes-up": TrendingUp,
+  "how-to-lower-health-insurance-premium": Wallet,
+  "what-to-disclose-when-buying-health-insurance": FileText,
+  "health-insurance-with-no-waiting-period": AlertCircle,
+  "how-to-complain-about-health-insurer": HelpCircle,
+  "how-to-file-reimbursement-health-claim": FileText,
+  "add-ons-vs-riders-in-health-insurance": Lightbulb,
+  "what-is-tpa-in-health-insurance": Users,
+};
+
+const escHtml = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+const GUIDE_POSTS: BlogPost[] = ALL_DRAFTS.map((d, i) => {
+  const words = d.content.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+  const sources =
+    `<div class="blog-article-content"><h3 id="sources">Sources</h3><ul>` +
+    d.sources.map((src) => `<li>${escHtml(src)}</li>`).join("") +
+    `</ul></div>`;
+  return {
+    id: 54 + i,
+    title: d.title,
+    excerpt: d.excerpt,
+    author: "IndSure Team",
+    date: "2026-10-13",
+    readTime: `${Math.max(2, Math.ceil(words / 200))} min read`,
+    category: "Health Insurance",
+    icon: GUIDE_ICONS[d.slug] ?? Heart,
+    featured: false,
+    insuranceType: "Health",
+    tags: d.tags,
+    content: d.content + sources,
+    faqs: d.faqs,
+  };
+});
 
 export const blogPosts: BlogPost[] = [
   {
@@ -1404,4 +1444,5 @@ export const blogPosts: BlogPost[] = [
     content: artDiagnosisContent,
     faqs: artDiagnosisFAQs,
   },
+  ...GUIDE_POSTS,
 ];

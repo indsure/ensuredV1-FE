@@ -6,10 +6,10 @@
   "confidence": "high",
   "product_type": "comprehensive_health_indemnity",
   "room_rent": {
-    "display": "1% of SI/day (SI ₹5L–₹7.5L); Any Room except Suite (SI ₹10L+)",
-    "note": "For SI of ₹5L and ₹7.5L: up to 1% of SI per day. For SI ₹10L and above: any room except suite or above category.",
+    "display": "Any room (SI 50L+); any room except suite (SI 10L-25L); 1% of SI per day (SI 5L-7.5L)",
+    "note": "Three bands in the wording. The seed missed the 'Any room' band for SI 50 lakh and above. Proportionate deduction applies where a higher room is taken.",
     "optional": false,
-    "ordinal": 3
+    "ordinal": 5
   },
   "icu": {
     "display": "At actuals",
@@ -163,7 +163,8 @@
     "display": "Optional aggregate deductible (₹50K or ₹1L, premium discount 35–55%); Star Wellness Program (premium discount up to 20% via wellness points)"
   },
   "source_file": "Policy_Star_Health_Assure_Insurance_Policy_V_9_c53663e68a.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:25:31.632Z"
+  "extracted_at": "2026-09-20T07:25:31.632Z",
+  "audited_at": "2026-10-09"
 }

@@ -31,8 +31,8 @@
     "display": "30 days"
   },
   "ped_waiting": {
-    "number": 48,
-    "display": "48 months",
+    "number": 36,
+    "display": "36 months (one clause of the wording says 48)",
     "note": "PED waiting period is 36 months per standard exclusion clause, but Table of Benefits states 4 years (48 months) for declared PEDs; 48 months used as per schedule"
   },
   "specific_disease_waiting": {
@@ -80,7 +80,7 @@
   },
   "organ_donor": {
     "exists": false,
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "No mention of organ donor expenses cover in the policy wording"
   },
   "ambulance": {
@@ -126,7 +126,8 @@
   "uin": "MAGHLIP20172V011920",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Policy Wordings - Arogya Sanjeevani (w.e.f. 1st Oct, 2024).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:04:24.295Z"
+  "extracted_at": "2026-09-20T08:04:24.295Z",
+  "audited_at": "2026-10-09"
 }

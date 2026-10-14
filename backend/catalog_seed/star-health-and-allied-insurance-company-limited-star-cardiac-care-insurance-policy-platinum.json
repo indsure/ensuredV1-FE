@@ -42,10 +42,10 @@
     "number": 30
   },
   "ped_waiting": {
-    "display": "36 months (Section 1); 30 days (Section 2)",
+    "display": "36 months (30 days for cardiac ailments under Section 2)",
     "note": "Section 1 non-cardiac PED: 36 months; Section 2 cardiac PED: only 30 days waiting period applies",
     "optional": false,
-    "number": 1
+    "number": 36
   },
   "specific_disease_waiting": {
     "display": "24 months",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Policy_Star_Cardiac_Care_Insurance_Policy_Platinum_V_6_Web_64fd06faa4.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:24:51.280Z"
+  "extracted_at": "2026-09-20T07:24:51.280Z",
+  "audited_at": "2026-10-09"
 }

@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
-    "note": "No cumulative/no-claim bonus terms found in the policy wording.",
+    "display": "None",
+    "note": "The wording has no cumulative or no-claim bonus.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Once/year, 100% of Base SI (unrelated illness only)",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "HealthMultiplier_FINALPolicyDocument.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T14:01:11.582Z"
+  "extracted_at": "2026-09-17T14:01:11.582Z",
+  "audited_at": "2026-10-09"
 }

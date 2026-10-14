@@ -51,9 +51,10 @@
     "note": "Base inbuilt: 5% per claim-free year, max 25%. Optional Cumulative Bonus Enhancement add-on raises rate to 25%/yr and max to 200% of SI (for SI ≥5L)"
   },
   "restoration": {
-    "ordinal": 0,
-    "display": "Not covered (inbuilt)",
-    "note": "Sum Insured Reinstatement (100% of base SI, once per year) is an optional paid add-on available for SI ≥5L; lifetime limit for cancer and kidney failure requiring dialysis"
+    "ordinal": 4,
+    "display": "Optional (SI 5L+): reinstatement once a year, 100%",
+    "note": "Sum Insured Reinstatement (100% of base SI, once per year) is an optional paid add-on available for SI ≥5L; lifetime limit for cancer and kidney failure requiring dialysis",
+    "optional": true
   },
   "pre_hosp": {
     "number": 30,
@@ -122,7 +123,8 @@
   "uin": "BAJHLIP24149V062324",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Health_Ensure_PW.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:53:21.722Z"
+  "extracted_at": "2026-09-20T07:53:21.722Z",
+  "audited_at": "2026-10-09"
 }

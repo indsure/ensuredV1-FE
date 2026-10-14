@@ -27,7 +27,7 @@
     "display": "Cataract ₹40k/eye; Modern treatments 50% of SI",
     "note": "Cataract capped at ₹40,000 per eye per year; modern treatments capped at 50% of SI; ambulance ₹2,000/hospitalisation",
     "optional": false,
-    "ordinal": 1
+    "ordinal": 3
   },
   "deductible": {
     "display": "None",
@@ -42,10 +42,10 @@
     "number": 30
   },
   "ped_waiting": {
-    "display": "24 months (disability PED); 36 months (other PED/HIV)",
-    "note": "24 months for pre-existing disability; 36 months for all other pre-existing conditions and HIV/AIDS",
+    "display": "36 months (24 months for the pre-existing disability)",
+    "note": "36 months for pre-existing diseases and HIV/AIDS; 24 months only for the pre-existing disability the policy is built for.",
     "optional": false,
-    "number": 24
+    "number": 36
   },
   "specific_disease_waiting": {
     "display": "24 months",
@@ -61,10 +61,10 @@
     "number": null
   },
   "cumulative_bonus": {
-    "display": "Not specified",
-    "note": "No cumulative/no-claim bonus mentioned in the policy wording",
+    "display": "None",
+    "note": "The wording has no cumulative or no-claim bonus.",
     "optional": false,
-    "number": null
+    "number": 0
   },
   "restoration": {
     "display": "Not covered",
@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Model_Policy_for_Persons_with_Disabilities_and_HIVAIDS_Tata_AIG_Poliy_Wordings_26cd9652de.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:32:34.322Z"
+  "extracted_at": "2026-09-20T07:32:34.322Z",
+  "audited_at": "2026-10-09"
 }

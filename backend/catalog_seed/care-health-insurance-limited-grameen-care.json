@@ -3,14 +3,14 @@
   "sum_insured_options": "Not specified in wording (micro insurance product)",
   "confidence": "medium",
   "room_rent": {
-    "ordinal": 0,
-    "display": "Not specified",
-    "note": "Policy wording does not specify any room rent cap or entitlement; treatment must be at empanelled Network Providers only."
+    "ordinal": 5,
+    "display": "No room-rent limit stated",
+    "note": "The wording sets no room limit; treatment must be at the insurer's network hospitals."
   },
   "icu": {
-    "ordinal": 0,
-    "display": "Not specified",
-    "note": "No ICU sub-limit mentioned in the wording."
+    "ordinal": 5,
+    "display": "No ICU limit stated",
+    "note": "The wording sets no ICU limit."
   },
   "copayment": {
     "number": 0,
@@ -38,9 +38,9 @@
     "note": "Policy states pre-existing diseases are covered from inception of the policy subject to exclusions (Clause 4). No separate PED waiting period stated."
   },
   "specific_disease_waiting": {
-    "number": null,
-    "display": "Not specified",
-    "note": "No named-disease specific waiting period list found in the wording."
+    "number": 0,
+    "display": "None",
+    "note": "The wording has no specified-disease waiting period; only the 30-day initial wait and 9 months for maternity."
   },
   "maternity": {
     "exists": true,
@@ -49,14 +49,15 @@
     "note": "Normal delivery, C-section, miscarriage, abortion due to accident/emergency covered up to SI at Network Providers. Only first two living children. Pre/post-natal covered if hospitalisation required. 9-month waiting period from first policy inception."
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
-    "note": "Cumulative Bonus is defined in the policy but no specific rate or maximum is stated in the wording."
+    "number": 0,
+    "display": "None",
+    "note": "The wording has no cumulative or no-claim bonus."
   },
   "restoration": {
     "ordinal": 3,
-    "display": "Once/year, 100% (unrelated)",
-    "note": "Reinstatement of Sum Insured available once per Cover Period after SI exhaustion. Reinstated amount cannot be used for same illness/injury already claimed. Available as inbuilt or can be opted at inception/renewal or mid-term on payment of additional premium."
+    "display": "Optional: once/yr, 100% (unrelated illness)",
+    "note": "Reinstatement of Sum Insured available once per Cover Period after SI exhaustion. Reinstated amount cannot be used for same illness/injury already claimed. Available as inbuilt or can be opted at inception/renewal or mid-term on payment of additional premium.",
+    "optional": true
   },
   "pre_hosp": {
     "number": 1,
@@ -89,9 +90,9 @@
     "note": "Donor treatment expenses explicitly excluded under Clause 4.2(c)(x)."
   },
   "ambulance": {
-    "number": null,
-    "display": "Not specified",
-    "note": "Ambulance is listed as a non-medical excluded item in Annexure II List-I, suggesting it is not covered."
+    "number": 0,
+    "display": "Not covered",
+    "note": "No ambulance benefit; ambulance charges are a non-payable item."
   },
   "modern_treatments": {
     "exists": true,
@@ -135,7 +136,8 @@
   "uin": "RHIHMGP21370V022021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "grameen-care----t&c-(effective-from-12-september-2024-).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:55:09.326Z"
+  "extracted_at": "2026-09-20T07:55:09.326Z",
+  "audited_at": "2026-10-09"
 }

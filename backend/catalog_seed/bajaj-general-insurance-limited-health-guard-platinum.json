@@ -3,8 +3,8 @@
   "sum_insured_options": "₹3L, ₹5L, ₹7.5L, ₹10L and above (refer schedule)",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 4,
-    "display": "Single Private Room (SI 3L–7.5L); Any room (SI 10L+)",
+    "ordinal": 5,
+    "display": "Any room (SI 10L+); single private AC room (SI 3L-7.5L)",
     "note": "SI 3L–7.5L: Single Private AC room. SI 10L and above: any room category. Proportionate deduction applies if higher room taken."
   },
   "icu": {
@@ -54,9 +54,9 @@
     "note": "Super Cumulative Bonus: 50% of base SI/yr for first 2 claim-free years, then 10%/yr for next 5 years; max 150% of base SI. Reduced by one slab after a claim year."
   },
   "restoration": {
-    "ordinal": 3,
-    "display": "Once/yr, 100% of base SI + Recharge Benefit",
-    "note": "Sum Insured Reinstatement: 100% of base SI once per year after full SI exhausted. Additionally, Recharge Benefit: 20% of SI (up to ₹5L) if claim exceeds limit of indemnity, once per year. Cancer/Kidney Failure reinstatement: once in lifetime."
+    "ordinal": 4,
+    "display": "Once/yr, 100% of base SI (after full exhaustion)",
+    "note": "Usable for the same or another illness; for cancer and dialysis only once in a lifetime."
   },
   "pre_hosp": {
     "number": 60,
@@ -128,7 +128,8 @@
   "uin": "BAJHLIP26073V082526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Health-Guard_PW.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:53:20.333Z"
+  "extracted_at": "2026-09-20T07:53:20.333Z",
+  "audited_at": "2026-10-09"
 }

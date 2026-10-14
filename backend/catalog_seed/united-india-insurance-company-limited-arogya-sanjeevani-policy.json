@@ -103,7 +103,7 @@
     "exists": true
   },
   "organ_donor": {
-    "display": "Not specified",
+    "display": "Not covered",
     "note": "No mention of organ donor expenses in the policy wording",
     "optional": false,
     "exists": false
@@ -159,7 +159,8 @@
   "notable_exclusions": "Maternity, domiciliary (non-epidemic), OPD, overseas treatment, sterility/IVF, consumables, refractive error <7.5D, war, nuclear/bio/chemical",
   "optional_riders": "Not specified",
   "source_file": "Policy Wordings - ASP.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:34:47.209Z"
+  "extracted_at": "2026-09-20T07:34:47.209Z",
+  "audited_at": "2026-10-09"
 }

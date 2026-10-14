@@ -3,13 +3,13 @@
   "sum_insured_options": "Not specified in wording; policy references SI bands (below ₹7L, ₹7L and above, ₹3L minimum for reinstatement, up to ₹25L+ for health check-up tiers)",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 3,
-    "display": "1.25–1.5% of SI/day (no cap for SI ≥₹7L)",
+    "ordinal": 5,
+    "display": "No limit (SI 7L+); 1.25-1.5% of SI per day below 7L",
     "note": "For SI <₹7L: 1.5% of SI/day in Class A cities, 1.25% elsewhere. For SI ≥₹7L (excl. CI top-up): no room rent cap. ICU: 2.5% (Class A) / 2% (others) for SI <₹7L; no cap for SI ≥₹7L. Room rent cap can be removed for SI <₹7L on payment of 6% additional premium."
   },
   "icu": {
-    "ordinal": 3,
-    "display": "2–2.5% of SI/day (no cap for SI ≥₹7L)",
+    "ordinal": 5,
+    "display": "No limit (SI 7L+); 2-2.5% of SI per day below 7L",
     "note": "For SI <₹7L: 2.5% of SI/day in Class A cities, 2% elsewhere. No cap for SI ≥₹7L. Optional extension available to remove cap for SI <₹7L at 6% extra premium."
   },
   "copayment": {
@@ -52,7 +52,7 @@
   },
   "restoration": {
     "ordinal": 4,
-    "display": "Once per claim, full base SI reinstated",
+    "display": "Reinstated after each claim (free for the first claim, extra premium after)",
     "note": "Basic SI reinstated to extent of claim paid after each claim. First reinstatement free; subsequent reinstatements charged pro-rata premium. Reinstated SI available for same illness (except chronic diseases listed) and other illnesses. Not available for domiciliary, CI extension, or cumulative bonus. Unutilised reinstated SI cannot be carried forward."
   },
   "pre_hosp": {
@@ -125,7 +125,8 @@
   "uin": "IFFHLIP26042V062526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "policy-wordingfhpv-8.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:02:07.546Z"
+  "extracted_at": "2026-09-20T08:02:07.546Z",
+  "audited_at": "2026-10-09"
 }

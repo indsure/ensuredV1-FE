@@ -120,7 +120,8 @@
   "uin": "CHOHLIP24153V062526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "Chola Healthline CHOHLIP24153V062526-Policywording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:56:28.179Z"
+  "extracted_at": "2026-09-20T07:56:28.179Z",
+  "audited_at": "2026-10-09"
 }

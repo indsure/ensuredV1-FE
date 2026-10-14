@@ -3,18 +3,18 @@
   "sum_insured_options": "₹2,00,000 / ₹3,00,000 / ₹4,00,000 / ₹5,00,000 / ₹7,50,000 / ₹10,00,000",
   "confidence": "high",
   "room_rent": {
-    "ordinal": 0,
-    "display": "Not specified",
+    "ordinal": 5,
+    "display": "No limit (as provided by the hospital)",
     "note": "Policy wording covers room rent and boarding expenses but does not specify any cap or room category entitlement."
   },
   "icu": {
-    "ordinal": 0,
-    "display": "Not specified",
+    "ordinal": 5,
+    "display": "No separate limit",
     "note": "ICU charges are defined and covered as part of hospitalisation but no specific cap or limit is stated."
   },
   "copayment": {
-    "number": 50,
-    "display": "50% for PED claims; 25% for all other claims (waivable)",
+    "number": 25,
+    "display": "25% on all claims (waivable for extra premium); 50% on pre-existing disease claims",
     "note": "50% co-pay on PED-related hospitalisation claims is mandatory and cannot be waived. 25% co-pay on all other hospitalisation claims can be waived by paying an additional 20% loading on standard premium. Both apply lifelong. Co-payments do not apply to pre/post-hospitalisation expenses or to listed sub-limit procedures."
   },
   "sub_limits": {
@@ -49,8 +49,8 @@
     "note": "Maternity expenses are explicitly excluded under standard exclusion Excl18. Ectopic pregnancy is covered."
   },
   "cumulative_bonus": {
-    "number": null,
-    "display": "Not specified",
+    "number": 0,
+    "display": "None",
     "note": "Cumulative bonus is defined in the policy but no specific rate or maximum accumulation is mentioned in the wording."
   },
   "restoration": {
@@ -135,7 +135,8 @@
   "uin": "GCIHLIP26045V052526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "varishta-bima-policy-wordings.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:59:22.535Z"
+  "extracted_at": "2026-09-20T07:59:22.535Z",
+  "audited_at": "2026-10-09"
 }

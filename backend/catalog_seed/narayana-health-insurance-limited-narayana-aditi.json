@@ -167,7 +167,8 @@
     "optional": false
   },
   "source_file": "Aditi_Policy_Wording_1_0c8662e67b.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:27:35.383Z"
+  "extracted_at": "2026-09-20T07:27:35.383Z",
+  "audited_at": "2026-10-09"
 }

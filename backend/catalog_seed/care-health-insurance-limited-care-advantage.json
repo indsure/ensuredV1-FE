@@ -49,8 +49,8 @@
     "note": "Maternity is a permanent exclusion (Code Excl18). No optional maternity cover offered in this product."
   },
   "cumulative_bonus": {
-    "number": 150,
-    "display": "Up to 50% (base NCB) + up to 100% (NCB Super add-on)",
+    "number": 50,
+    "display": "Up to 50% (10%/yr); up to 150% with optional NCB Super",
     "note": "Base Benefit 5: 10%/yr, max 50% of SI. Optional Cover 1 (NCB Super): additional 50%/yr, max 100% of SI, cumulative max 150% combined. In event of claim, bonus reduces at same rate it accrued."
   },
   "restoration": {
@@ -133,7 +133,8 @@
   "uin": "CHIHLIP27062V052627",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "care-advantage---policy-terms-&-condition-(effective-from-02-jun-2026).pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:54:02.365Z"
+  "extracted_at": "2026-09-20T07:54:02.365Z",
+  "audited_at": "2026-10-09"
 }

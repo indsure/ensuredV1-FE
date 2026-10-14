@@ -9,7 +9,7 @@
     "display": "As per Policy Schedule",
     "note": "Room category is specified in the Policy Schedule; Single Private Room is defined as the base single-occupancy room. An optional 'Room Category Select' add-on (C6) can change the entitlement. Proportionate deduction applies if higher room is chosen.",
     "optional": false,
-    "ordinal": 4
+    "ordinal": 0
   },
   "icu": {
     "display": "No cap (proportionate deduction not applicable for ICU)",
@@ -167,7 +167,8 @@
     "optional": true
   },
   "source_file": "medicare_select_policy_wording_0faeeb61c5.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-17T13:45:19.503Z"
+  "extracted_at": "2026-09-17T13:45:19.503Z",
+  "audited_at": "2026-10-09"
 }

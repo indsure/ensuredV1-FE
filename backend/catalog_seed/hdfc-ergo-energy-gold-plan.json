@@ -3,13 +3,13 @@
   "sum_insured_options": "₹2L, ₹3L, ₹5L, ₹10L, ₹20L, ₹25L, ₹50L",
   "confidence": "medium",
   "room_rent": {
-    "ordinal": 0,
-    "display": "Not specified",
+    "ordinal": 5,
+    "display": "No limit (at actuals)",
     "note": "Policy wording does not specify a room rent cap; shared accommodation benefit waives non-medical expense exclusion if shared room chosen at network hospital"
   },
   "icu": {
-    "ordinal": 0,
-    "display": "Not specified",
+    "ordinal": 5,
+    "display": "No limit (at actuals)",
     "note": "ICU covered under in-patient treatment but no specific cap mentioned"
   },
   "copayment": {
@@ -89,8 +89,8 @@
     "display": "₹2,000 per hospitalisation"
   },
   "modern_treatments": {
-    "exists": false,
-    "display": "Not specified",
+    "exists": true,
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "No explicit mention of modern/robotic surgery cover in policy wording"
   },
   "consumables": {
@@ -126,7 +126,8 @@
   "uin": "HDFHLIP26048V052526",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "energy-combined-pw-cis-919573709506.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T08:00:26.971Z"
+  "extracted_at": "2026-09-20T08:00:26.971Z",
+  "audited_at": "2026-10-09"
 }

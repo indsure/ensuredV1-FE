@@ -13,8 +13,8 @@
     "note": "No ICU sub-limit specified; covered up to SI"
   },
   "copayment": {
-    "number": 0,
-    "display": "None (age-based co-pay if first entry at 60+)",
+    "number": 20,
+    "display": "20% if entry age 60-64; 25% if 65-69",
     "note": "No mandatory co-pay for entry below 60. 20% for entry age 60-64, 25% for 65-69, 30% for 70-74, 40% for 75+ (first-time entrants only)"
   },
   "sub_limits": {
@@ -125,7 +125,8 @@
   "uin": "GCIHLIP25037V062425",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "health-total-policy-wording.pdf",
-  "status": "unverified",
+  "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
-  "extracted_at": "2026-09-20T07:58:52.923Z"
+  "extracted_at": "2026-09-20T07:58:52.923Z",
+  "audited_at": "2026-10-09"
 }

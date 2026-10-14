@@ -84,12 +84,12 @@
   },
   "ambulance": {
     "number": null,
-    "display": "Not specified",
+    "display": "Covered, limit as per Product Benefit Table",
     "note": "Road ambulance covered; limit in Policy Schedule. Air ambulance via Domestic/International Emergency Assistance (inbuilt)."
   },
   "modern_treatments": {
-    "exists": false,
-    "display": "Not specified",
+    "exists": true,
+    "display": "No separate clause, paid as normal in-patient treatment",
     "note": "No explicit modern treatment cover clause. Some specific treatments excluded (RF ablation, cyber knife, femto laser, SMILE surgery)."
   },
   "consumables": {
@@ -125,8 +125,17 @@
   "uin": "ADIHLIP21062V022021",
   "product_type": "comprehensive_health_indemnity",
   "source_file": "20250407T104705.pdf",
-  "status": "unverified",
+  "status": "audited_partial",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T07:51:43.804Z",
-  "variant_note": "Sold in named plans (Standard, Classic, Premier). The policy wording defers every benefit limit to the Product Benefit Table, which is not part of this document, so the differences between the plans cannot be shown here. Confirm the plan limits against the policy schedule."
+  "variant_note": "Sold in named plans (Standard, Classic, Premier). The policy wording defers every benefit limit to the Product Benefit Table, which is not part of this document, so the differences between the plans cannot be shown here. Confirm the plan limits against the policy schedule.",
+  "audit_gaps": [
+    "room_rent",
+    "pre_hosp",
+    "post_hosp",
+    "ambulance",
+    "cumulative_bonus",
+    "copayment"
+  ],
+  "audited_at": "2026-10-09"
 }
