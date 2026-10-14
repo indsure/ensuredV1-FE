@@ -817,6 +817,18 @@ function HowItWorks() {
               <strong className="font-bold text-[var(--color-navy-900)]">{t("home.step2_b")}</strong>{" "}
               {t("home.step2")}
             </p>
+            <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+              {t("home.irdai_pre")}{" "}
+              <a
+                href="https://irdai.gov.in/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[var(--color-teal-600)] underline underline-offset-2 hover:text-[var(--color-navy-900)]"
+              >
+                {t("home.irdai_link")}
+              </a>
+              {t("home.irdai_post")}
+            </p>
           </Reveal>
 
           <Reveal className="flex flex-col gap-4" delay={0.2}>

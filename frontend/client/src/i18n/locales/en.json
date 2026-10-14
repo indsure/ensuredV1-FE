@@ -2652,7 +2652,10 @@
     "score_hint": "Score out of 100: how well each policy covers that customer.",
     "draft_text": "Namaste Vikram ji, your health policy renews in 3 days. Shall I send you the check before you pay?",
     "plan_a": "Plan A",
-    "plan_b": "Plan B"
+    "plan_b": "Plan B",
+    "irdai_pre": "Every insurer files its policy wording with",
+    "irdai_link": "IRDAI",
+    "irdai_post": ", India's insurance regulator. That wording is what we read."
   },
   "cauth": {
     "pill_spam": "No spam, ever",
