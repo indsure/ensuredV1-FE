@@ -1,0 +1,52 @@
+{
+  "dataset_version": "FAKE-TEST-FIXTURE",
+  "definitions": {
+    "csr": "FAKE TEST FIXTURE. Not real data. Never ship.",
+    "icr": "FAKE TEST FIXTURE. Not real data. Never ship.",
+    "grievances_per_10k": "FAKE TEST FIXTURE. Not real data. Never ship."
+  },
+  "insurers": [
+    {
+      "slug": "fakeco-health",
+      "name": "Fakeco Health Insurance Co. Ltd.",
+      "aliases": ["Fakeco", "FakeCo Health Insurance"],
+      "csr": { "value": 11.11, "fy": "1999-00", "source_doc": "IRDAI FAKE TEST FIXTURE", "source_url": "https://example.invalid/fake.pdf", "page": 1 },
+      "icr": { "value": 22.22, "fy": "1999-00", "source_doc": "FAKE TEST FIXTURE", "source_url": "https://example.invalid/fake.pdf", "page": 2 },
+      "grievances_per_10k": { "value": 3.333, "fy": "1999-00", "source_doc": "FAKE TEST FIXTURE", "source_url": "https://example.invalid/fake.pdf", "page": 3 },
+      "grievances_raw": { "value": 44, "fy": "1999-00", "source_doc": "FAKE TEST FIXTURE", "source_url": "https://example.invalid/fake.pdf", "page": 3 },
+      "verified_by_second_reader": true
+    },
+    {
+      "slug": "pretendia-general",
+      "name": "Pretendia General Insurance Limited",
+      "aliases": ["Pretendia"],
+      "csr": { "value": 55.55, "fy": "1999-00", "source_doc": "FAKE TEST FIXTURE", "source_url": "https://example.invalid/fake.pdf", "page": 1 },
+      "icr": null,
+      "grievances_per_10k": { "value": 66.66, "fy": "1999-00", "source_doc": "FAKE TEST FIXTURE", "source_url": "not-a-url", "page": 1 },
+      "verified_by_second_reader": true
+    },
+    {
+      "slug": "unchecked-mock",
+      "name": "Unchecked Mock Insurance Co Ltd",
+      "aliases": [],
+      "csr": { "value": 77.77, "fy": "1999-00", "source_doc": "FAKE TEST FIXTURE", "source_url": "https://example.invalid/fake.pdf", "page": 1 },
+      "icr": null,
+      "grievances_per_10k": null,
+      "verified_by_second_reader": false
+    },
+    {
+      "slug": "twin-one",
+      "name": "Twin Dummy Health Insurance",
+      "aliases": [],
+      "csr": null, "icr": null, "grievances_per_10k": null,
+      "verified_by_second_reader": true
+    },
+    {
+      "slug": "twin-two",
+      "name": "Twin Dummy General Insurance",
+      "aliases": [],
+      "csr": null, "icr": null, "grievances_per_10k": null,
+      "verified_by_second_reader": true
+    }
+  ]
+}

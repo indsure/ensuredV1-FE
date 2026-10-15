@@ -1,0 +1,9 @@
+{
+  "dataset_version": "placeholder",
+  "definitions": {
+    "csr": "TODO(claim): filled in by the insurer data workstream from IRDAI sources.",
+    "icr": "TODO(claim): filled in by the insurer data workstream from IRDAI sources.",
+    "grievances_per_10k": "TODO(claim): filled in by the insurer data workstream from IRDAI sources."
+  },
+  "insurers": []
+}
