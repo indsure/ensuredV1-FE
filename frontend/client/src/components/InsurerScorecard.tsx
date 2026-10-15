@@ -8,8 +8,8 @@ import {
 import { SIDE_PALETTE } from "@/components/ComparisonView";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-// Until the IRDAI dataset lands this file holds "insurers": [], so every row
-// reads "Not available yet". No number here is ever typed in by hand.
+// Until the IRDAI dataset lands this file holds "insurers": [], so no insurer
+// matches and the card does not render. No number here is ever typed in by hand.
 const DATASET: InsurerMetricsDataset = metricsJson;
 
 const LABEL_KEY: Record<MetricKey, string> = {
@@ -45,6 +45,8 @@ export default function InsurerScorecard({
 }) {
   const { t } = useLanguage();
   const rows = sides.map((s) => matchInsurer(s.insurer, dataset));
+  // A card of nothing but "Not available yet" tells the advisor nothing.
+  if (rows.every((r) => r === null)) return null;
   const gridClass = GRID[sides.length] ?? GRID[4];
 
   return (
