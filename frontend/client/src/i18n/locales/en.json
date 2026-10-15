@@ -1862,6 +1862,27 @@
     "doc_loan_needs_quote": "The loan limit is a share of the surrender value, so it needs the insurer's surrender quote.",
     "doc_no_maturity": "The policy document says this plan has no maturity benefit. It pays the survival benefits instead."
   },
+  "insurer_scorecard": {
+    "title": "Insurer track record",
+    "subtitle": "Numbers each insurer reports to IRDAI, the insurance regulator. They describe the company as a whole, not this plan.",
+    "csr_label": "Claim settlement ratio",
+    "icr_label": "Incurred claim ratio",
+    "grievances_label": "Complaints per 10,000 policies",
+    "fy": "FY {{fy}}",
+    "csr_line": "Out of 100 claims, about {{n}} were paid.",
+    "icr_line": "For every ₹100 taken in premium, about ₹{{n}} went to claims.",
+    "grievances_line": "About {{n}} complaints for every 10,000 policies.",
+    "not_available": "Not available yet",
+    "not_published": "IRDAI does not publish this for this insurer",
+    "no_insurer": "Insurer name not found in the wording",
+    "source": "Source: {{doc}}",
+    "source_page": "Source: {{doc}}, page {{page}}",
+    "new_tab": "(opens in a new tab)",
+    "explain_title": "What these mean",
+    "explain_csr": "Claim settlement ratio: the share of claims the insurer paid. Higher is better.",
+    "explain_icr": "Incurred claim ratio: claims paid as a share of the premium earned. A middle range is healthy. A very low or a very high number both deserve a question to the insurer.",
+    "explain_grievances": "Complaints per 10,000 policies: how often customers complained. Lower is better."
+  },
   "compare": {
     "remove": "Remove",
     "choose_pdf": "Choose policy wording PDF",

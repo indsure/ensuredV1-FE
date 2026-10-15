@@ -8,6 +8,7 @@ import { apiFetch } from "@/lib/api";
 import ComparisonShareBar from "@/components/agent/ComparisonShareBar";
 import { type CompareResponse, type ComparisonResult } from "@/lib/wordingProfile";
 import ComparisonView, { TEAL, AMBER } from "@/components/ComparisonView";
+import InsurerScorecard from "@/components/InsurerScorecard";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { useAgent } from "@/context/AgentContext";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -179,6 +180,7 @@ export default function Compare() {
         )}
         <ComparisonShareBar data={response.result} profiles={response.profiles} />
         <ComparisonView data={response.result} audience="advisor" />
+        <InsurerScorecard sides={response.result.sides} />
       </div>
     );
   }
