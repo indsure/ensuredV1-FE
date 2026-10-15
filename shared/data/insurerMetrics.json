@@ -411,7 +411,9 @@
       "aliases": [
         "Go Digit General",
         "Go Digit General Insurance",
-        "Go Digit Health"
+        "Go Digit Health",
+        "Digit",
+        "Digit General Insurance"
       ],
       "segment": "general",
       "csr": null,
@@ -511,7 +513,8 @@
       "aliases": [
         "ICICI Lombard",
         "ICICI Lombard General",
-        "ICICI Lombard Health"
+        "ICICI Lombard Health",
+        "ICICI Lombard GIC"
       ],
       "segment": "general",
       "csr": null,
@@ -1268,7 +1271,8 @@
         "Care Health",
         "Care Health Insurance",
         "Care Insurance",
-        "Religare Health"
+        "Religare Health",
+        "Care"
       ],
       "segment": "standalone_health",
       "csr": {
