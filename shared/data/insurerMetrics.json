@@ -1,0 +1,1739 @@
+{
+  "dataset_version": "2026-10-15",
+  "definitions": {
+    "csr": "Claim settlement ratio by NUMBER of claims, FY 2024-25 = claims paid during the year / (claims outstanding at the start of the year + claims intimated during the year) x 100, from IRDAI Handbook 2024-25 Table 53 (Status of Claims of General and Health Insurers). This is the same formula IRDAI applies to the whole health market in Annual Report 2024-25 Table I.29 (326.01 / 372.58 lakh claims = 87.50%), although that table is a separate dataset that excludes PA and travel. Claims still pending at year end count against the ratio. Given ONLY for standalone health insurers, whose Table 53 row covers their whole book (Table 53 does not state its scope; for a standalone health insurer that book is health and may include personal accident and travel). IRDAI does not publish an insurer-wise, health-only claim count for multi-line general insurers (Table 53 mixes motor, fire, crop and every other line), so csr is null for every general insurer by design.",
+    "icr": "Incurred claims ratio for health insurance EXCLUDING personal accident and travel, FY 2024-25 = net claims incurred / net earned premium x 100, all health segments combined (government schemes, group, family floater, individual). Taken as published in IRDAI Handbook 2024-25 Table 62, 'Total' column, shown as a percentage to 2 decimals. Available for general insurers and standalone health insurers alike. Note: IRDAI Annual Report 2024-25 Statement 10 shows a different 'Health' ICR that INCLUDES personal accident, so it will not match.",
+    "grievances_per_10k": "Grievances per 10,000 policies, FY 2024-25 = Table 56 grievances 'reported during the year' (IRDAI footnote: including opening balance; all lines of business) / Table 58 total health policies (excluding PA and travel) x 10,000. Given ONLY for standalone health insurers, whose grievances come almost entirely from their health book. The bases are close but not identical: Table 56 grievances include any personal accident and travel business, while Table 58 policies exclude it. For general insurers it is null by design: Table 56 counts grievances across all lines (motor, fire, etc.) and IRDAI publishes no insurer-wise all-lines policy count (Handbook Statement 43 is sector totals only), so any per-10k figure would mix bases.",
+    "grievances_raw": "Grievances reported during FY 2024-25 as published in IRDAI Handbook 2024-25 Table 56 (Status of Grievances with General and Health Insurers). IRDAI footnote: the figure INCLUDES the opening balance. All lines of business, not health only. Stored for reference, not for display.",
+    "page": "All values come from the Handbook's XLSX tables, which have no page numbers, so page is null; locate a value by file + sheet + row (Excel row number). source_url is IRDAI's direct download of the Handbook 2024-25 zip from https://irdai.gov.in/handbook-of-indian-insurance.",
+    "fy": "Financial year April 2024 to March 2025, the latest FY for which IRDAI has published insurer-wise data (Handbook 2024-25, released February 2026).",
+    "names": "name is the insurer's name as IRDAI lists it for FY 2024-25. aliases are for matching free-text insurer names (compare page); they include later trade names only where this repo documents the change (IndusInd General is the former Reliance General per its Health Infinity wording, UIN RELHLIP23120V042223; Bajaj General per the Bajaj Health Guard page). Match aliases exactly (case-insensitive, whole name), never by prefix or fuzzy match: several general insurers share a brand with a life insurer (Acko Life, Go Digit Life, Future Generali Life, Kotak Mahindra Life, Tata AIA Life), and those must not match.",
+    "null_reason": "Per-insurer null_reason explains, metric by metric, why a value is null."
+  },
+  "insurers": [
+    {
+      "slug": "national-insurance",
+      "name": "National Insurance Co. Ltd.",
+      "aliases": [
+        "National Insurance",
+        "National Insurance Company"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 95.77,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 7,
+        "inputs": {
+          "net_earned_premium_lakh": 691737.6059999999,
+          "claims_incurred_net_lakh": 662472.33,
+          "icr_ratio_as_published": 0.9576930967086963
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 12858,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 5,
+        "inputs": {
+          "opening_balance": 3596,
+          "reported_incl_opening": 12858,
+          "attended": 6637,
+          "closing_balance": 6221
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "new-india-assurance",
+      "name": "The New India Assurance Co. Ltd.",
+      "aliases": [
+        "New India Assurance",
+        "New India"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 101.28,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 8,
+        "inputs": {
+          "net_earned_premium_lakh": 1768294.5620000002,
+          "claims_incurred_net_lakh": 1790960.4649999999,
+          "icr_ratio_as_published": 1.0128179453169635
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 7768,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 6,
+        "inputs": {
+          "opening_balance": 3,
+          "reported_incl_opening": 7768,
+          "attended": 7741,
+          "closing_balance": 27
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "oriental-insurance",
+      "name": "The Oriental Insurance Co. Ltd.",
+      "aliases": [
+        "Oriental Insurance"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 103.77,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 9,
+        "inputs": {
+          "net_earned_premium_lakh": 774022.6534832,
+          "claims_incurred_net_lakh": 803182,
+          "icr_ratio_as_published": 1.037672471710717
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 6854,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 7,
+        "inputs": {
+          "opening_balance": 302,
+          "reported_incl_opening": 6854,
+          "attended": 5265,
+          "closing_balance": 1589
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "united-india-insurance",
+      "name": "United India Insurance Co. Ltd.",
+      "aliases": [
+        "United India Insurance",
+        "United India"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 100.09,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 10,
+        "inputs": {
+          "net_earned_premium_lakh": 667129.0519900001,
+          "claims_incurred_net_lakh": 667725.0401699999,
+          "icr_ratio_as_published": 1.0008933626533307
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 10126,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 8,
+        "inputs": {
+          "opening_balance": 45,
+          "reported_incl_opening": 10126,
+          "attended": 9856,
+          "closing_balance": 270
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "acko",
+      "name": "Acko General Insurance Ltd.",
+      "aliases": [
+        "Acko General",
+        "Acko General Insurance"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 58.48,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 13,
+        "inputs": {
+          "net_earned_premium_lakh": 75376.94194975894,
+          "claims_incurred_net_lakh": 44078.12485646816,
+          "icr_ratio_as_published": 0.5847693434664355
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 1441,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 15,
+        "inputs": {
+          "opening_balance": 140,
+          "reported_incl_opening": 1441,
+          "attended": 985,
+          "closing_balance": 456
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "bajaj-allianz-general",
+      "name": "Bajaj Allianz General Insurance Co. Ltd.",
+      "aliases": [
+        "Bajaj Allianz General",
+        "Bajaj General",
+        "Bajaj General Insurance"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 90.01,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 14,
+        "inputs": {
+          "net_earned_premium_lakh": 384294.61795,
+          "claims_incurred_net_lakh": 345884.43837,
+          "icr_ratio_as_published": 0.90005017560512
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 3807,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 16,
+        "inputs": {
+          "opening_balance": 1,
+          "reported_incl_opening": 3807,
+          "attended": 3807,
+          "closing_balance": 0
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "cholamandalam-ms",
+      "name": "Cholamandalam MS General Insurance Co. Ltd.",
+      "aliases": [
+        "Cholamandalam MS",
+        "Chola MS",
+        "Cholamandalam MS General"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 86.63,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 16,
+        "inputs": {
+          "net_earned_premium_lakh": 75046.1542647687,
+          "claims_incurred_net_lakh": 65014.326081835796,
+          "icr_ratio_as_published": 0.8663245534536009
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 3467,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 18,
+        "inputs": {
+          "opening_balance": 13,
+          "reported_incl_opening": 3467,
+          "attended": 3461,
+          "closing_balance": 6
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "future-generali",
+      "name": "Future Generali India Insurance Co. Ltd.",
+      "aliases": [
+        "Future Generali India Insurance",
+        "Future Generali General",
+        "Future Generali General Insurance"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 99.45,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 17,
+        "inputs": {
+          "net_earned_premium_lakh": 125074.306,
+          "claims_incurred_net_lakh": 124385.96399999999,
+          "icr_ratio_as_published": 0.9944965355234511
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 1211,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 19,
+        "inputs": {
+          "opening_balance": 11,
+          "reported_incl_opening": 1211,
+          "attended": 1208,
+          "closing_balance": 3
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "go-digit",
+      "name": "Go Digit General Insurance Ltd.",
+      "aliases": [
+        "Go Digit General",
+        "Go Digit General Insurance",
+        "Go Digit Health",
+        "Digit",
+        "Digit General Insurance"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 90.06,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 18,
+        "inputs": {
+          "net_earned_premium_lakh": 144635,
+          "claims_incurred_net_lakh": 130257,
+          "icr_ratio_as_published": 0.9005911432225948
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 2362,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 20,
+        "inputs": {
+          "opening_balance": 0,
+          "reported_incl_opening": 2362,
+          "attended": 2362,
+          "closing_balance": 0
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "hdfc-ergo",
+      "name": "HDFC ERGO General Insurance Co. Ltd.",
+      "aliases": [
+        "HDFC ERGO",
+        "HDFC ERGO General",
+        "HDFC Ergo Health"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 87.04,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 20,
+        "inputs": {
+          "net_earned_premium_lakh": 356232.75456258113,
+          "claims_incurred_net_lakh": 310066.51446908,
+          "icr_ratio_as_published": 0.870404280622121
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 7326,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 21,
+        "inputs": {
+          "opening_balance": 0,
+          "reported_incl_opening": 7326,
+          "attended": 7326,
+          "closing_balance": 0
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "icici-lombard",
+      "name": "ICICI Lombard General Insurance Co. Ltd.",
+      "aliases": [
+        "ICICI Lombard",
+        "ICICI Lombard General",
+        "ICICI Lombard Health",
+        "ICICI Lombard GIC"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 85.53,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 21,
+        "inputs": {
+          "net_earned_premium_lakh": 632204.0071754999,
+          "claims_incurred_net_lakh": 540747.4834851999,
+          "icr_ratio_as_published": 0.855337007275704
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 7782,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 23,
+        "inputs": {
+          "opening_balance": 150,
+          "reported_incl_opening": 7782,
+          "attended": 7585,
+          "closing_balance": 197
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "iffco-tokio",
+      "name": "IFFCO Tokio General Insurance Co. Ltd.",
+      "aliases": [
+        "IFFCO Tokio"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 85.31,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 22,
+        "inputs": {
+          "net_earned_premium_lakh": 76205.86674689999,
+          "claims_incurred_net_lakh": 65012.958364089805,
+          "icr_ratio_as_published": 0.8531227468354264
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 3697,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 24,
+        "inputs": {
+          "opening_balance": 68,
+          "reported_incl_opening": 3697,
+          "attended": 3612,
+          "closing_balance": 85
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "zurich-kotak",
+      "name": "Zurich Kotak General Insurance Co. (India) Ltd.",
+      "aliases": [
+        "Zurich Kotak",
+        "Kotak Mahindra General",
+        "Kotak General",
+        "Kotak Mahindra General Insurance"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 55.16,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 23,
+        "inputs": {
+          "net_earned_premium_lakh": 54534.3646914,
+          "claims_incurred_net_lakh": 30079.14390730021,
+          "icr_ratio_as_published": 0.551563112131453
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": null,
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator.",
+        "grievances_raw": "Handbook Table 56 FY 2024-25 has two rows for this one company (r25 Kotak Mahindra General: 436; r38 Zurich Kotak General: 547). IRDAI does not say whether they overlap, so neither is used and they are not summed."
+      }
+    },
+    {
+      "slug": "liberty-general",
+      "name": "Liberty General Insurance Ltd.",
+      "aliases": [
+        "Liberty General",
+        "Liberty Insurance"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 85.66,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 25,
+        "inputs": {
+          "net_earned_premium_lakh": 43029.7792865,
+          "claims_incurred_net_lakh": 36859.59299989999,
+          "icr_ratio_as_published": 0.8566066015463896
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 609,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 27,
+        "inputs": {
+          "opening_balance": 0,
+          "reported_incl_opening": 609,
+          "attended": 609,
+          "closing_balance": 0
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "magma-general",
+      "name": "Magma General Insurance Ltd.",
+      "aliases": [
+        "Magma General",
+        "Magma HDI",
+        "Magma HDI General",
+        "Magma HDI General Insurance"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 86.23,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 26,
+        "inputs": {
+          "net_earned_premium_lakh": 81597.20000000001,
+          "claims_incurred_net_lakh": 70361.57900000001,
+          "icr_ratio_as_published": 0.8623038413082802
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 673,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 28,
+        "inputs": {
+          "opening_balance": 2,
+          "reported_incl_opening": 673,
+          "attended": 671,
+          "closing_balance": 2
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "navi-general",
+      "name": "Navi General Insurance Ltd.",
+      "aliases": [
+        "Navi",
+        "Navi General"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 106.07,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 27,
+        "inputs": {
+          "net_earned_premium_lakh": 6138.1427016,
+          "claims_incurred_net_lakh": 6510.534795700001,
+          "icr_ratio_as_published": 1.0606685299126284
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 367,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 29,
+        "inputs": {
+          "opening_balance": 57,
+          "reported_incl_opening": 367,
+          "attended": 366,
+          "closing_balance": 1
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "raheja-qbe",
+      "name": "Raheja QBE General Insurance Co. Ltd.",
+      "aliases": [
+        "Raheja QBE"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 112.41,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 28,
+        "inputs": {
+          "net_earned_premium_lakh": 3311.521128611801,
+          "claims_incurred_net_lakh": 3722.573264074674,
+          "icr_ratio_as_published": 1.1241278915333954
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 273,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 30,
+        "inputs": {
+          "opening_balance": 11,
+          "reported_incl_opening": 273,
+          "attended": 268,
+          "closing_balance": 5
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "reliance-general",
+      "name": "Reliance General Insurance Co. Ltd.",
+      "aliases": [
+        "Reliance General",
+        "IndusInd General",
+        "IndusInd General Insurance"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 97.1,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 29,
+        "inputs": {
+          "net_earned_premium_lakh": 136520.35947715573,
+          "claims_incurred_net_lakh": 132556.2890364141,
+          "icr_ratio_as_published": 0.9709635218078594
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 3396,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 31,
+        "inputs": {
+          "opening_balance": 75,
+          "reported_incl_opening": 3396,
+          "attended": 3340,
+          "closing_balance": 56
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "royal-sundaram",
+      "name": "Royal Sundaram General Insurance Co. Ltd.",
+      "aliases": [
+        "Royal Sundaram"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 97.2,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 30,
+        "inputs": {
+          "net_earned_premium_lakh": 63332.97028171948,
+          "claims_incurred_net_lakh": 61558.00139385996,
+          "icr_ratio_as_published": 0.971974014798863
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 1052,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 32,
+        "inputs": {
+          "opening_balance": 11,
+          "reported_incl_opening": 1052,
+          "attended": 1043,
+          "closing_balance": 9
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "sbi-general",
+      "name": "SBI General Insurance Co. Ltd.",
+      "aliases": [
+        "SBI General",
+        "SBI General Insurance"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 94.2,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 31,
+        "inputs": {
+          "net_earned_premium_lakh": 273979.467,
+          "claims_incurred_net_lakh": 258090.54,
+          "icr_ratio_as_published": 0.9420068694417892
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 4503,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 33,
+        "inputs": {
+          "opening_balance": 34,
+          "reported_incl_opening": 4503,
+          "attended": 4493,
+          "closing_balance": 10
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "shriram-general",
+      "name": "Shriram General Insurance Co. Ltd.",
+      "aliases": [
+        "Shriram General"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 23.76,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 32,
+        "inputs": {
+          "net_earned_premium_lakh": 72.3449129283985,
+          "claims_incurred_net_lakh": 17.188560399999997,
+          "icr_ratio_as_published": 0.23759183202019923
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 3733,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 34,
+        "inputs": {
+          "opening_balance": 0,
+          "reported_incl_opening": 3733,
+          "attended": 3733,
+          "closing_balance": 0
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "tata-aig",
+      "name": "Tata AIG General Insurance Co. Ltd.",
+      "aliases": [
+        "Tata AIG"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 80.65,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 33,
+        "inputs": {
+          "net_earned_premium_lakh": 228499.67843399983,
+          "claims_incurred_net_lakh": 184291.12420369982,
+          "icr_ratio_as_published": 0.8065268426928256
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 3577,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 35,
+        "inputs": {
+          "opening_balance": 13,
+          "reported_incl_opening": 3577,
+          "attended": 3555,
+          "closing_balance": 22
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "universal-sompo",
+      "name": "Universal Sompo General Insurance Co. Ltd.",
+      "aliases": [
+        "Universal Sompo"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 96.41,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 34,
+        "inputs": {
+          "net_earned_premium_lakh": 62723.31965998611,
+          "claims_incurred_net_lakh": 60468.448746300004,
+          "icr_ratio_as_published": 0.9640505170021384
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 1259,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 36,
+        "inputs": {
+          "opening_balance": 0,
+          "reported_incl_opening": 1259,
+          "attended": 1258,
+          "closing_balance": 1
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "zuno",
+      "name": "Zuno General Insurance Co. Ltd.",
+      "aliases": [
+        "Zuno",
+        "Zuno General",
+        "Edelweiss General"
+      ],
+      "segment": "general",
+      "csr": null,
+      "icr": {
+        "value": 96.15,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 35,
+        "inputs": {
+          "net_earned_premium_lakh": 28708.834,
+          "claims_incurred_net_lakh": 27602.284,
+          "icr_ratio_as_published": 0.961456114866943
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": {
+        "value": 491,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 37,
+        "inputs": {
+          "opening_balance": 0,
+          "reported_incl_opening": 491,
+          "attended": 490,
+          "closing_balance": 1
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "csr": "IRDAI publishes no insurer-wise, health-only claim count for general insurers (Handbook Table 53 is all lines; Table 66 is market-wide).",
+        "grievances_per_10k": "Table 56 grievances are all lines and IRDAI publishes no insurer-wise all-lines policy count, so no like-for-like denominator."
+      }
+    },
+    {
+      "slug": "aditya-birla-health",
+      "name": "Aditya Birla Health Insurance Co. Ltd.",
+      "aliases": [
+        "Aditya Birla Health",
+        "Aditya Birla Health Insurance",
+        "ABHI",
+        "Aditya Birla Activ"
+      ],
+      "segment": "standalone_health",
+      "csr": {
+        "value": 94.09,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 53",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 53",
+        "file": "Part II.xlsx",
+        "sheet": "53",
+        "row": 38,
+        "inputs": {
+          "claims_os_start": 15197,
+          "claims_intimated": 2412454,
+          "claims_paid": 2284121,
+          "claims_repudiated": 96675,
+          "claims_closed": 0,
+          "claims_os_end": 46855
+        },
+        "derivation": "claims_paid / (claims_os_start + claims_intimated) x 100"
+      },
+      "icr": {
+        "value": 75.97,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 38,
+        "inputs": {
+          "net_earned_premium_lakh": 302973.20800000004,
+          "claims_incurred_net_lakh": 230158.34100000001,
+          "icr_ratio_as_published": 0.759665656641164
+        }
+      },
+      "grievances_per_10k": {
+        "value": 46.66,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56 and Table 58",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56 and Table 58",
+        "file": "Part II + Part III.xlsx",
+        "sheet": "56 / 58",
+        "row": null,
+        "inputs": {
+          "grievances_reported_incl_opening": 5329,
+          "grievances_row_table56": 40,
+          "health_policies_table58": 1142116,
+          "policies_row_table58": 38
+        },
+        "derivation": "Table 56 grievances reported (incl. opening balance) / Table 58 total health policies x 10,000"
+      },
+      "grievances_raw": {
+        "value": 5329,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 40,
+        "inputs": {
+          "opening_balance": 38,
+          "reported_incl_opening": 5329,
+          "attended": 5275,
+          "closing_balance": 54
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": null
+    },
+    {
+      "slug": "care-health",
+      "name": "Care Health Insurance Ltd.",
+      "aliases": [
+        "Care Health",
+        "Care Health Insurance",
+        "Care Insurance",
+        "Religare Health",
+        "Care"
+      ],
+      "segment": "standalone_health",
+      "csr": {
+        "value": 95.19,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 53",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 53",
+        "file": "Part II.xlsx",
+        "sheet": "53",
+        "row": 39,
+        "inputs": {
+          "claims_os_start": 22223,
+          "claims_intimated": 1486706,
+          "claims_paid": 1436282,
+          "claims_repudiated": 46710,
+          "claims_closed": 0,
+          "claims_os_end": 25937
+        },
+        "derivation": "claims_paid / (claims_os_start + claims_intimated) x 100"
+      },
+      "icr": {
+        "value": 65.1,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 39,
+        "inputs": {
+          "net_earned_premium_lakh": 588505.6849492532,
+          "claims_incurred_net_lakh": 383100.38020662265,
+          "icr_ratio_as_published": 0.6509714179560684
+        }
+      },
+      "grievances_per_10k": {
+        "value": 37.33,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56 and Table 58",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56 and Table 58",
+        "file": "Part II + Part III.xlsx",
+        "sheet": "56 / 58",
+        "row": null,
+        "inputs": {
+          "grievances_reported_incl_opening": 10281,
+          "grievances_row_table56": 41,
+          "health_policies_table58": 2754040,
+          "policies_row_table58": 39
+        },
+        "derivation": "Table 56 grievances reported (incl. opening balance) / Table 58 total health policies x 10,000"
+      },
+      "grievances_raw": {
+        "value": 10281,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 41,
+        "inputs": {
+          "opening_balance": 0,
+          "reported_incl_opening": 10281,
+          "attended": 10281,
+          "closing_balance": 0
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": null
+    },
+    {
+      "slug": "galaxy-health",
+      "name": "Galaxy Health Insurance Co. Ltd.",
+      "aliases": [
+        "Galaxy Health",
+        "Galaxy Health and Allied"
+      ],
+      "segment": "standalone_health",
+      "csr": {
+        "value": 66.67,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 53",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 53",
+        "file": "Part II.xlsx",
+        "sheet": "53",
+        "row": 40,
+        "inputs": {
+          "claims_os_start": 0,
+          "claims_intimated": 75,
+          "claims_paid": 50,
+          "claims_repudiated": 13,
+          "claims_closed": 0,
+          "claims_os_end": 12
+        },
+        "derivation": "claims_paid / (claims_os_start + claims_intimated) x 100"
+      },
+      "icr": {
+        "value": 8.33,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 40,
+        "inputs": {
+          "net_earned_premium_lakh": 710.2320447718961,
+          "claims_incurred_net_lakh": 59.192419199999996,
+          "icr_ratio_as_published": 0.08334236625300498
+        }
+      },
+      "grievances_per_10k": null,
+      "grievances_raw": null,
+      "verified_by_second_reader": true,
+      "null_reason": {
+        "grievances_per_10k": "No grievance count (see grievances_raw).",
+        "grievances_raw": "Galaxy Health has no row in Handbook Table 56 (FY 2024-25 or 2023-24)."
+      }
+    },
+    {
+      "slug": "manipalcigna",
+      "name": "ManipalCigna Health Insurance Co. Ltd.",
+      "aliases": [
+        "ManipalCigna",
+        "Manipal Cigna",
+        "ManipalCigna Health"
+      ],
+      "segment": "standalone_health",
+      "csr": {
+        "value": 93.06,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 53",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 53",
+        "file": "Part II.xlsx",
+        "sheet": "53",
+        "row": 41,
+        "inputs": {
+          "claims_os_start": 4330,
+          "claims_intimated": 488416,
+          "claims_paid": 458566,
+          "claims_repudiated": 30771,
+          "claims_closed": 0,
+          "claims_os_end": 3409
+        },
+        "derivation": "claims_paid / (claims_os_start + claims_intimated) x 100"
+      },
+      "icr": {
+        "value": 73.31,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 42,
+        "inputs": {
+          "net_earned_premium_lakh": 164066.88199999998,
+          "claims_incurred_net_lakh": 120282.22723014609,
+          "icr_ratio_as_published": 0.7331292322002322
+        }
+      },
+      "grievances_per_10k": {
+        "value": 53.01,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56 and Table 58",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56 and Table 58",
+        "file": "Part II + Part III.xlsx",
+        "sheet": "56 / 58",
+        "row": null,
+        "inputs": {
+          "grievances_reported_incl_opening": 2041,
+          "grievances_row_table56": 43,
+          "health_policies_table58": 385024,
+          "policies_row_table58": 42
+        },
+        "derivation": "Table 56 grievances reported (incl. opening balance) / Table 58 total health policies x 10,000"
+      },
+      "grievances_raw": {
+        "value": 2041,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 43,
+        "inputs": {
+          "opening_balance": 0,
+          "reported_incl_opening": 2041,
+          "attended": 2041,
+          "closing_balance": 0
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": null
+    },
+    {
+      "slug": "narayana-health",
+      "name": "Narayana Health Insurance Ltd.",
+      "aliases": [
+        "Narayana Health",
+        "Narayana Health Insurance",
+        "Narayana Health Insurance Co. Ltd."
+      ],
+      "segment": "standalone_health",
+      "csr": {
+        "value": 91.67,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 53",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 53",
+        "file": "Part II.xlsx",
+        "sheet": "53",
+        "row": 42,
+        "inputs": {
+          "claims_os_start": 0,
+          "claims_intimated": 12,
+          "claims_paid": 11,
+          "claims_repudiated": 0,
+          "claims_closed": 0,
+          "claims_os_end": 1
+        },
+        "derivation": "claims_paid / (claims_os_start + claims_intimated) x 100"
+      },
+      "icr": {
+        "value": 57.06,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 43,
+        "inputs": {
+          "net_earned_premium_lakh": 113.845,
+          "claims_incurred_net_lakh": 64.96,
+          "icr_ratio_as_published": 0.5706003777065307
+        }
+      },
+      "grievances_per_10k": {
+        "value": 18.43,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56 and Table 58",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56 and Table 58",
+        "file": "Part II + Part III.xlsx",
+        "sheet": "56 / 58",
+        "row": null,
+        "inputs": {
+          "grievances_reported_incl_opening": 3,
+          "grievances_row_table56": 44,
+          "health_policies_table58": 1628,
+          "policies_row_table58": 43
+        },
+        "derivation": "Table 56 grievances reported (incl. opening balance) / Table 58 total health policies x 10,000"
+      },
+      "grievances_raw": {
+        "value": 3,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 44,
+        "inputs": {
+          "opening_balance": 0,
+          "reported_incl_opening": 3,
+          "attended": 3,
+          "closing_balance": 0
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": null
+    },
+    {
+      "slug": "niva-bupa",
+      "name": "Niva Bupa Health Insurance Co. Ltd.",
+      "aliases": [
+        "Niva Bupa",
+        "Niva Bupa Health",
+        "Max Bupa"
+      ],
+      "segment": "standalone_health",
+      "csr": {
+        "value": 90.64,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 53",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 53",
+        "file": "Part II.xlsx",
+        "sheet": "53",
+        "row": 43,
+        "inputs": {
+          "claims_os_start": 15127,
+          "claims_intimated": 1024782,
+          "claims_paid": 942543,
+          "claims_repudiated": 75892,
+          "claims_closed": 0,
+          "claims_os_end": 21474
+        },
+        "derivation": "claims_paid / (claims_os_start + claims_intimated) x 100"
+      },
+      "icr": {
+        "value": 61.63,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 44,
+        "inputs": {
+          "net_earned_premium_lakh": 479541.7794057981,
+          "claims_incurred_net_lakh": 295564.61038,
+          "icr_ratio_as_published": 0.6163479869183351
+        }
+      },
+      "grievances_per_10k": {
+        "value": 33.04,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56 and Table 58",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56 and Table 58",
+        "file": "Part II + Part III.xlsx",
+        "sheet": "56 / 58",
+        "row": null,
+        "inputs": {
+          "grievances_reported_incl_opening": 7970,
+          "grievances_row_table56": 45,
+          "health_policies_table58": 2412265,
+          "policies_row_table58": 44
+        },
+        "derivation": "Table 56 grievances reported (incl. opening balance) / Table 58 total health policies x 10,000"
+      },
+      "grievances_raw": {
+        "value": 7970,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 45,
+        "inputs": {
+          "opening_balance": 0,
+          "reported_incl_opening": 7970,
+          "attended": 7970,
+          "closing_balance": 0
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": null
+    },
+    {
+      "slug": "star-health",
+      "name": "Star Health and Allied Insurance Co. Ltd.",
+      "aliases": [
+        "Star Health",
+        "Star Health and Allied",
+        "Star Health Insurance",
+        "Star Health & Allied",
+        "Star Health and Allied Insurance"
+      ],
+      "segment": "standalone_health",
+      "csr": {
+        "value": 78.5,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 53",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 53",
+        "file": "Part II.xlsx",
+        "sheet": "53",
+        "row": 45,
+        "inputs": {
+          "claims_os_start": 201662,
+          "claims_intimated": 2374200,
+          "claims_paid": 2022177,
+          "claims_repudiated": 317661,
+          "claims_closed": 0,
+          "claims_os_end": 236024
+        },
+        "derivation": "claims_paid / (claims_os_start + claims_intimated) x 100"
+      },
+      "icr": {
+        "value": 70.53,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 62",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 62",
+        "file": "Part III.xlsx",
+        "sheet": "62",
+        "row": 46,
+        "inputs": {
+          "net_earned_premium_lakh": 1465934.3345514468,
+          "claims_incurred_net_lakh": 1033956.2741500182,
+          "icr_ratio_as_published": 0.7053223666163688
+        }
+      },
+      "grievances_per_10k": {
+        "value": 24.56,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56 and Table 58",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56 and Table 58",
+        "file": "Part II + Part III.xlsx",
+        "sheet": "56 / 58",
+        "row": null,
+        "inputs": {
+          "grievances_reported_incl_opening": 20527,
+          "grievances_row_table56": 47,
+          "health_policies_table58": 8358581,
+          "policies_row_table58": 46
+        },
+        "derivation": "Table 56 grievances reported (incl. opening balance) / Table 58 total health policies x 10,000"
+      },
+      "grievances_raw": {
+        "value": 20527,
+        "fy": "2024-25",
+        "source_doc": "IRDAI Handbook on Indian Insurance Statistics 2024-25, Table 56",
+        "source_url": "https://irdai.gov.in/documents/37343/825690/Handbook+on+Indian+Insurance+Statistics+2024-25.zip/c754826c-a24f-6adf-65d9-bba0e1bb8d2a?version=1.1&t=1770357151427&download=true",
+        "page": null,
+        "table": "Table 56",
+        "file": "Part II.xlsx",
+        "sheet": "56",
+        "row": 47,
+        "inputs": {
+          "opening_balance": 331,
+          "reported_incl_opening": 20527,
+          "attended": 20071,
+          "closing_balance": 456
+        }
+      },
+      "verified_by_second_reader": true,
+      "null_reason": null
+    }
+  ]
+}
