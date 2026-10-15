@@ -35,6 +35,7 @@ import { apiFetch } from "@/lib/api";
 import { LeadCollectionCTA } from "./LeadCollectionCTA";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
+import { formatPolicyDate, policyTermYears } from "@/lib/policyFacts";
 
 /** Plain-English names for the other-cover kinds the audit can return. */
 const OTHER_COVER_LABEL: Record<string, string> = {
@@ -531,6 +532,11 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
         return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     })();
 
+    const dateLocale = locale === "hi" ? "hi-IN" : "en-IN";
+    const policyStart = formatPolicyDate(data.policy_timeline?.policy_inception_date, dateLocale);
+    const policyEnd = formatPolicyDate(data.policy_timeline?.policy_expiry_date, dateLocale);
+    const policyTerm = policyTermYears(data.policy_timeline?.policy_tenure_years);
+
     const portingRec = data.recommendations?.should_port_to_better_policy;
     // Other cover uploaded with this policy. Absent on every pre-feature report.
     const otherCover = data.other_cover ?? [];
@@ -632,18 +638,40 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4">
                         <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.insured")}</div>
+                            <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.insured")}</div>
                             <div className="font-semibold text-lg">{data.identity?.insured_names?.join(", ")}</div>
                         </div>
                         <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.effective_cover")}</div>
+                            <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.effective_cover")}</div>
                             <div className="font-semibold text-lg font-mono text-[var(--color-green-primary)]">
                                 {formatINR(effectiveCoverage)}
                             </div>
                             <CoverageDiagnostic report={data} effectiveCoverage={effectiveCoverage || 0} />
                         </div>
+                        {/* Each date is shown only when the policy states it: a missing
+                            row reads as missing data, a dash would read as a value. */}
+                        {policyStart && (
+                            <div>
+                                <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_start")}</div>
+                                <div className="font-semibold text-lg">{policyStart}</div>
+                            </div>
+                        )}
+                        {policyEnd && (
+                            <div>
+                                <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_end")}</div>
+                                <div className="font-semibold text-lg">{policyEnd}</div>
+                            </div>
+                        )}
+                        {policyTerm != null && (
+                            <div>
+                                <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_term")}</div>
+                                <div className="font-semibold text-lg">
+                                    {policyTerm === 1 ? t("rpt.term_one") : t("rpt.term_many", { n: policyTerm })}
+                                </div>
+                            </div>
+                        )}
                         <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_age")}</div>
+                            <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_age")}</div>
                             <div className="font-semibold text-lg">
                                 {realTimePolicyAgeDays > 365
                                     ? t("rpt.years", { n: (realTimePolicyAgeDays / 365).toFixed(1) })
@@ -651,7 +679,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             </div>
                         </div>
                         <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.data_quality")}</div>
+                            <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.data_quality")}</div>
                             <div className="font-semibold text-lg capitalize">{data.data_quality?.overall ? tOr(t, `rpt.dq_${data.data_quality.overall}`, data.data_quality.overall) : t("rpt.na")}</div>
                         </div>
                     </div>

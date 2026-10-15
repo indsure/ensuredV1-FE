@@ -27,6 +27,7 @@ import {
     Image,
 } from '@react-pdf/renderer';
 import { ForensicAuditReport, deriveCoverView, describeRestoration } from '@shared/policy';
+import { formatPolicyDate, policyTermYears } from '@/lib/policyFacts';
 
 /* ------------------------------------------------------------------ fonts */
 
@@ -435,6 +436,10 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
         ageDays >= 365
             ? `${Math.floor(ageDays / 365)} yr ${ageDays % 365} days`
             : `${ageDays} days`;
+    const startLabel = formatPolicyDate(data.policy_timeline?.policy_inception_date);
+    const endLabel = formatPolicyDate(data.policy_timeline?.policy_expiry_date);
+    const termYears = policyTermYears(data.policy_timeline?.policy_tenure_years);
+    const termLabel = termYears == null ? null : `${termYears} ${termYears === 1 ? 'year' : 'years'}`;
 
     const bd = data.audit_score?.breakdown ?? ({} as Record<string, number>);
     const meters = [
@@ -596,6 +601,9 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                         ['Plan', meta.policyName],
                         ['Policy number', meta.policyNumber],
                         ['Effective cover', cover.effectiveCover ? inr(cover.effectiveCover) : null],
+                        ['Policy start', startLabel],
+                        ['Ends / renews on', endLabel],
+                        ['Policy term', termLabel],
                         ['Policy age', ageLabel],
                         ['Data quality', data.data_quality?.overall ? titleCaseKey(String(data.data_quality.overall)) : null],
                     ] as [string, string | null | undefined][])

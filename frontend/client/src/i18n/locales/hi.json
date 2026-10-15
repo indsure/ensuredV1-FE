@@ -3350,7 +3350,12 @@
     "th_category": "हिस्सा",
     "th_severity": "गंभीरता",
     "th_points": "अंक",
-    "th_reason": "वजह"
+    "th_reason": "वजह",
+    "policy_start": "पॉलिसी शुरू",
+    "policy_end": "खत्म / रिन्यू होगी",
+    "policy_term": "पॉलिसी अवधि",
+    "term_one": "1 साल",
+    "term_many": "{{n}} साल"
   },
   "pricing": {
     "free": "मुफ़्त",
