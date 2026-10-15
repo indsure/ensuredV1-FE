@@ -3,19 +3,25 @@ import metricsJson from "@shared/data/insurerMetrics.json";
 import { type ComparisonSide, sideName } from "@/lib/wordingProfile";
 import {
   type InsurerMetricsDataset, type MetricKey, type MetricPoint,
-  METRIC_KEYS, matchInsurer, usableMetric, sourceLabel, formatMetric,
+  METRIC_KEYS, matchInsurer, usableMetric, notPublished, sourceLabel, formatMetric,
 } from "@/lib/insurerMetrics";
 import { SIDE_PALETTE } from "@/components/ComparisonView";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-// Until the IRDAI dataset lands this file holds "insurers": [], so no insurer
-// matches and the card does not render. No number here is ever typed in by hand.
+// Built from IRDAI publications by a research pass and an independent second
+// reader (docs/plans/2026-10-15-insurer-metrics-sources.md). No number here is
+// ever typed in by hand.
 const DATASET: InsurerMetricsDataset = metricsJson;
 
 const LABEL_KEY: Record<MetricKey, string> = {
   csr: "insurer_scorecard.csr_label",
   icr: "insurer_scorecard.icr_label",
   grievances_per_10k: "insurer_scorecard.grievances_label",
+};
+const EXPLAIN_KEY: Record<MetricKey, string> = {
+  csr: "insurer_scorecard.explain_csr",
+  icr: "insurer_scorecard.explain_icr",
+  grievances_per_10k: "insurer_scorecard.explain_grievances",
 };
 const LINE_KEY: Record<MetricKey, string> = {
   csr: "insurer_scorecard.csr_line",
@@ -45,8 +51,12 @@ export default function InsurerScorecard({
 }) {
   const { t } = useLanguage();
   const rows = sides.map((s) => matchInsurer(s.insurer, dataset));
-  // A card of nothing but "Not available yet" tells the advisor nothing.
-  if (rows.every((r) => r === null)) return null;
+  // A metric no side has a number for is left out, and a card with no numbers
+  // at all is not shown: rows of "Not available" tell the advisor nothing.
+  // IRDAI publishes CSR and complaints per policy only for standalone health
+  // insurers, so two general insurers show ICR alone.
+  const shown = METRIC_KEYS.filter((key) => rows.some((r) => usableMetric(r, key)));
+  if (shown.length === 0) return null;
   const gridClass = GRID[sides.length] ?? GRID[4];
 
   return (
@@ -54,7 +64,7 @@ export default function InsurerScorecard({
       <h2 id="insurer-scorecard-title" className="text-xl font-black text-[#0B1120]">{t("insurer_scorecard.title")}</h2>
       <p className="mt-1 text-[15px] text-slate-600">{t("insurer_scorecard.subtitle")}</p>
 
-      {METRIC_KEYS.map((key) => (
+      {shown.map((key) => (
         <div key={key} className="mt-5">
           <h3 className="text-base font-bold text-[#0B1120]">{t(LABEL_KEY[key])}</h3>
           <div className={`mt-2 grid gap-3 ${gridClass}`}>
@@ -66,6 +76,7 @@ export default function InsurerScorecard({
                 color={SIDE_PALETTE[i % SIDE_PALETTE.length].accent}
                 metricKey={key}
                 metric={usableMetric(rows[i], key)}
+                unpublished={notPublished(rows[i], key)}
               />
             ))}
           </div>
@@ -75,9 +86,7 @@ export default function InsurerScorecard({
       <div className="mt-6 rounded-xl bg-[#F8FAFC] border border-slate-200 p-4">
         <h3 className="text-base font-bold text-[#0B1120]">{t("insurer_scorecard.explain_title")}</h3>
         <ul className="mt-2 space-y-2 text-[15px] leading-relaxed text-slate-700">
-          <li>{t("insurer_scorecard.explain_csr")}</li>
-          <li>{t("insurer_scorecard.explain_icr")}</li>
-          <li>{t("insurer_scorecard.explain_grievances")}</li>
+          {shown.map((key) => <li key={key}>{t(EXPLAIN_KEY[key])}</li>)}
         </ul>
       </div>
     </section>
@@ -85,13 +94,14 @@ export default function InsurerScorecard({
 }
 
 function MetricCell({
-  name, named, color, metricKey, metric,
+  name, named, color, metricKey, metric, unpublished,
 }: {
   name: string;
   named: boolean;
   color: string;
   metricKey: MetricKey;
   metric: MetricPoint | null;
+  unpublished: boolean;
 }) {
   const { t } = useLanguage();
   const unit = metricKey === "grievances_per_10k" ? "" : "%";
@@ -119,7 +129,7 @@ function MetricCell({
             className="mt-1 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-[#0F766E] underline underline-offset-2 hover:text-[#115E59] break-words"
           >
             <span className="min-w-0">
-              {metric.page > 0
+              {metric.page != null && metric.page > 0
                 ? t("insurer_scorecard.source_page", { doc: sourceLabel(metric.source_doc), page: metric.page })
                 : t("insurer_scorecard.source", { doc: sourceLabel(metric.source_doc) })}
             </span>
@@ -129,7 +139,7 @@ function MetricCell({
         </>
       ) : (
         <>
-          <p className="mt-2 text-[15px] font-semibold text-slate-700">{t("insurer_scorecard.not_available")}</p>
+          <p className="mt-2 text-[15px] font-semibold text-slate-700">{t(unpublished ? "insurer_scorecard.not_published" : "insurer_scorecard.not_available")}</p>
           {!named && <p className="mt-1 text-sm text-slate-600">{t("insurer_scorecard.no_insurer")}</p>}
         </>
       )}

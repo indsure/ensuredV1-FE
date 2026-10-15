@@ -14,7 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  normalizeInsurerName, matchInsurer, usableMetric, sourceLabel, formatMetric,
+  normalizeInsurerName, matchInsurer, usableMetric, notPublished, sourceLabel, formatMetric,
   type InsurerMetricsDataset, type InsurerMetricsRow,
 } from "../../../frontend/client/src/lib/insurerMetrics";
 
@@ -88,9 +88,33 @@ describe("matchInsurer", () => {
     assert.equal(matchInsurer("Twin Dummy", FAKE), null);
   });
 
-  test("the shipped placeholder matches nothing", () => {
-    assert.deepEqual(SHIPPED.insurers, []);
-    assert.equal(matchInsurer("Fakeco", SHIPPED), null);
+  test("fake fixture names never match the shipped data", () => {
+    for (const row of FAKE.insurers) assert.equal(matchInsurer(row.name, SHIPPED), null, row.name);
+  });
+});
+
+describe("shipped dataset", () => {
+  test("every name and alias leads back to its own row", () => {
+    for (const row of SHIPPED.insurers) {
+      for (const n of [row.name, ...(row.aliases ?? [])]) {
+        assert.equal(matchInsurer(n, SHIPPED)?.slug, row.slug, `${n} should match ${row.slug}`);
+      }
+    }
+  });
+
+  test("every number present is one the card will show", () => {
+    for (const row of SHIPPED.insurers) {
+      for (const key of ["csr", "icr", "grievances_per_10k"] as const) {
+        if (row[key] == null) continue;
+        assert.ok(usableMetric(row, key), `${row.slug}.${key} is present but would be hidden`);
+      }
+    }
+  });
+
+  test("life insurers sharing a brand do not match a general insurer", () => {
+    for (const n of ["SBI Life Insurance", "HDFC Life", "Bajaj Allianz Life", "Tata AIA Life", "Kotak Mahindra Life"]) {
+      assert.equal(matchInsurer(n, SHIPPED), null, n);
+    }
   });
 });
 
@@ -109,6 +133,23 @@ describe("usableMetric", () => {
     assert.equal(usableMetric(pretendia, "grievances_per_10k"), null);
     assert.equal(usableMetric(unchecked, "csr"), null);
     assert.equal(usableMetric(null, "csr"), null);
+  });
+});
+
+describe("notPublished", () => {
+  const fakeco = matchInsurer("Fakeco", FAKE);
+  const pretendia = matchInsurer("Pretendia", FAKE);
+
+  test("true only for a null metric the dataset gives a reason for", () => {
+    assert.equal(notPublished(pretendia, "icr"), true);
+    assert.equal(notPublished(pretendia, "csr"), false);
+    assert.equal(notPublished(fakeco, "icr"), false);
+    assert.equal(notPublished(null, "icr"), false);
+  });
+
+  test("a metric with a null page still shows", () => {
+    assert.equal(usableMetric(fakeco, "icr")?.page, null);
+    assert.equal(usableMetric(fakeco, "icr")?.value, 22.22);
   });
 });
 

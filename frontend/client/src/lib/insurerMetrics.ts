@@ -14,7 +14,8 @@ export interface MetricPoint {
   fy: string;
   source_doc: string;
   source_url: string;
-  page: number;
+  /** Null when the source is a spreadsheet with no page numbers. */
+  page: number | null;
 }
 
 export interface InsurerMetricsRow {
@@ -26,6 +27,8 @@ export interface InsurerMetricsRow {
   grievances_per_10k: MetricPoint | null;
   grievances_raw?: MetricPoint | null;
   verified_by_second_reader?: boolean;
+  /** Why a metric is null, e.g. IRDAI publishes no insurer-wise figure for it. */
+  null_reason?: Partial<Record<MetricKey, string>> | null;
 }
 
 export interface InsurerMetricsDataset {
@@ -93,6 +96,15 @@ export function usableMetric(row: InsurerMetricsRow | null, key: MetricKey): Met
   if (!m || typeof m.value !== "number" || !Number.isFinite(m.value) || m.value < 0) return null;
   if (!m.fy || !m.source_doc || !isHttpUrl(m.source_url)) return null;
   return m;
+}
+
+/**
+ * True when the dataset says IRDAI does not publish this figure for this
+ * insurer at all (e.g. CSR for a multi-line general insurer), so "not
+ * available yet" would wrongly suggest it is coming.
+ */
+export function notPublished(row: InsurerMetricsRow | null, key: MetricKey): boolean {
+  return !!row && row[key] == null && !!row.null_reason?.[key];
 }
 
 export function isHttpUrl(url: string | null | undefined): boolean {

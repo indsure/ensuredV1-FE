@@ -1873,6 +1873,7 @@
     "icr_line": "For every ₹100 taken in premium, about ₹{{n}} went to claims.",
     "grievances_line": "About {{n}} complaints for every 10,000 policies.",
     "not_available": "Not available yet",
+    "not_published": "IRDAI does not publish this for this insurer",
     "no_insurer": "Insurer name not found in the wording",
     "source": "Source: {{doc}}",
     "source_page": "Source: {{doc}}, page {{page}}",
