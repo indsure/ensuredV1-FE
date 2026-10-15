@@ -852,9 +852,15 @@ export async function runAnalysisPipeline(
     let clauseSources: { offered: number; kept: number } | null = null;
     if (insuranceType === "health") {
       const insuredNames = parsed?.identity?.insured_names;
+      // The fetcher returns a one-line placeholder when no wording was found;
+      // that is not a document a quote can be attributed to.
+      const wordings =
+        budget.wordings && !budget.wordings.trimStart().startsWith("OFFICIAL POLICY WORDINGS NOT FOUND")
+          ? budget.wordings
+          : null;
       clauseSources = attachClauseSources(parsed, {
         evidence: budget.evidence.split(COMPANION_FENCE)[0],
-        wordings: budget.wordings,
+        wordings,
         insuredNames,
       });
       normalizePremium(parsed, insuredNames);
