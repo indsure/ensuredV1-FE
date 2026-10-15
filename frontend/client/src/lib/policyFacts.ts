@@ -7,6 +7,7 @@
  * reads as a value.
  */
 import { parseIsoDate } from "@shared/policyNumbers";
+import type { PolicyPremium } from "@shared/policy";
 
 /** "12 March 2026". ISO dates are built from their parts, not `new Date(iso)`,
  *  which reads them as UTC midnight and shows the day before west of UTC. */
@@ -24,9 +25,17 @@ export function formatPolicyDate(raw: unknown, locale = "en-IN"): string | null 
     return date.toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
 }
 
-/** Whole years only. A term the document did not state is null, never "0 years". */
+/** Years, to one decimal. A term the document did not state is null, never "0 years". */
 export function policyTermYears(raw: unknown): number | null {
     const n = typeof raw === "string" ? Number(raw) : raw;
     if (typeof n !== "number" || !Number.isFinite(n) || n <= 0) return null;
     return Math.round(n * 10) / 10;
+}
+
+/** The premium only when it is a real positive amount; older reports have no
+ *  premium block at all, and the server nulls one it could not read. */
+export function readPremium(raw: PolicyPremium | null | undefined): PolicyPremium | null {
+    if (!raw || typeof raw !== "object") return null;
+    if (typeof raw.amount !== "number" || !Number.isFinite(raw.amount) || raw.amount <= 0) return null;
+    return raw;
 }

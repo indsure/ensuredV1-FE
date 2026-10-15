@@ -3340,7 +3340,20 @@
     "policy_end": "Ends / Renews On",
     "policy_term": "Policy Term",
     "term_one": "1 Year",
-    "term_many": "{{n}} Years"
+    "term_many": "{{n}} Years",
+    "premium": "Premium",
+    "prem_annual": "a year",
+    "prem_half": "every 6 months",
+    "prem_quarter": "every 3 months",
+    "prem_month": "a month",
+    "prem_once": "paid once",
+    "prem_term": "for {{n}} years",
+    "prem_gst_in": "incl. GST",
+    "prem_gst_out": "plus GST",
+    "src_show": "Source",
+    "src_hide": "Hide source",
+    "src_uploaded": "From your policy document",
+    "src_wording": "From the insurer's official wording"
   },
   "pricing": {
     "free": "Free",

@@ -1,6 +1,18 @@
 /**
  * MASTER HEALTH AUDIT PROMPT
  *
+ * 1.6.0 - premium block, and a verbatim source sentence on nine clause findings.
+ *
+ *   - premium { amount, frequency, gst_included, evidence } is read off the
+ *     schedule. It is display only: nothing in scoring reads it, so
+ *     SCORING_VERSION does not move and scores stay comparable with 1.5.0.
+ *   - room_rent, co_payment, sub_limits, deductibles, the four main waiting
+ *     periods and restoration each gain source_quote: one sentence copied
+ *     exactly from the document. The server (services/clauseSources.ts) checks
+ *     it against the text the model was sent and against personal data, and
+ *     drops it if either check fails. Only the server writes the stored
+ *     `source` object.
+ *
  * 1.4.0 - identity gains insurer_name and previous_insurer.
  *
  *   - Who issued the policy was decided by a regex pre-pass over the whole
@@ -60,7 +72,7 @@
  * Because scores from 1.2.0 are NOT directly comparable with 1.1.0, every job
  * row stamps prompt_version — split any quality comparison on that column.
  */
-export const PROMPT_VERSION = "1.5.0";
+export const PROMPT_VERSION = "1.6.0";
 
 export const MASTER_AUDIT_PROMPT = `
 🔐 SYSTEM PROMPT — IndSure Forensic Policy Intelligence Engine
@@ -550,6 +562,41 @@ State in the explanation which step did the most damage, in plain rupees.
 **NON-POLICY / UNREADABLE INPUT:** If the supplied document is NOT a health insurance policy (e.g. a bank statement, ID, blank/garbled text) or contains too little legible content to audit, do NOT fabricate an analysis. Instead output exactly:
 { "error": true, "message": "Document does not appear to be a readable health insurance policy." }
 
+### PREMIUM (READ ONLY, NOT SCORED)
+
+Read the premium from the policy schedule. It is shown to the customer as a fact
+and is NEVER used in any score, penalty or verdict.
+- premium.amount: the total premium payable for this policy, as stated, in rupees,
+  as a raw JSON number. Prefer the final amount payable including taxes when the
+  schedule states one. Never compute, estimate or annualise a premium yourself.
+- premium.frequency: how often that amount is paid: "annual", "half_yearly",
+  "quarterly", "monthly", or "single" (one payment for a multi-year term).
+  null if the document does not say.
+- premium.gst_included: true if the amount you report includes GST, false if it
+  excludes GST, null if the document does not make this clear.
+- premium.evidence: the short label and amount exactly as printed, for example
+  "Total Premium (incl. GST) 23,456". Never include a name, policy number, phone
+  or address.
+- If the document states no premium, set "premium" to null.
+
+### CLAUSE SOURCE QUOTES (MANDATORY)
+
+Nine findings carry a "source_quote": room_rent, co_payment, sub_limits,
+deductibles, initial_waiting_period, pre_existing_disease, specific_diseases,
+maternity and restoration. For each one, copy the ONE sentence from the supplied
+document text that states the rule your finding relies on.
+- Copy it EXACTLY, character for character. Do not paraphrase, shorten, fix
+  spelling, join two sentences, or use "..." to skip words. A quote that is not
+  in the document word for word is thrown away by the server.
+- One sentence only, at most 300 characters. If the rule sits inside a longer
+  sentence, copy that whole sentence only if it fits; otherwise use null.
+- Take it from the policy wording or terms, never from the schedule page or
+  proposal form. Never quote a sentence that contains a person's name, a policy
+  number, a phone number, an email, an address or anyone's health details.
+- If no single sentence in the document states the rule (for example the clause
+  is absent, or the rule is only in a table), set "source_quote" to null. Never
+  invent one.
+
 ### WORDING MATCH STATUS (MANDATORY)
 
 The system has attempted to match this policy document with the master policy wording repository.
@@ -590,6 +637,12 @@ Output this exact structure:
     "analysis_date": "YYYY-MM-DD",
     "confidence": "high | medium | low"
   },
+  "premium": {
+    "amount": "number",
+    "frequency": "annual | half_yearly | quarterly | monthly | single | null",
+    "gst_included": "boolean | null",
+    "evidence": "string | null"
+  },
   "coverage_structure": {
     "base_sum_insured": "number | null",
     "top_up": {
@@ -616,7 +669,8 @@ Output this exact structure:
       "triggers_on_first_claim": "boolean | null (false where the wording excludes the first claim from triggering a restore, which caps what the FIRST hospitalisation can draw at the base cover)",
       "trigger_conditions": "string | null (quote the clause that decides same_illness_covered. This is the source of truth for that boolean and must not be left null when the boolean is set.)",
       "actually_useful": "boolean | null",
-      "remarks": "string"
+      "remarks": "string",
+      "source_quote": "string | null"
     },
     "no_claim_bonus": {
       "exists": "boolean",
@@ -643,7 +697,8 @@ Output this exact structure:
       "duration_days": "number",
       "end_date": "YYYY-MM-DD | null",
       "is_active_today": "boolean",
-      "risk_commentary": "string"
+      "risk_commentary": "string",
+      "source_quote": "string | null"
     },
     "pre_existing_disease": {
       "duration_months": "number | null",
@@ -652,14 +707,16 @@ Output this exact structure:
       "end_date": "YYYY-MM-DD | null",
       "is_active_today": "boolean | null",
       "months_remaining": "number | null",
-      "risk_commentary": "string"
+      "risk_commentary": "string",
+      "source_quote": "string | null"
     },
     "specific_diseases": {
       "duration_months": "number",
       "diseases_covered": ["string"],
       "end_date": "YYYY-MM-DD | null",
       "is_active_today": "boolean",
-      "risk_commentary": "string"
+      "risk_commentary": "string",
+      "source_quote": "string | null"
     },
     "personal_waiting_periods": [
       {
@@ -678,7 +735,8 @@ Output this exact structure:
       "is_active_today": "boolean | null",
       "months_remaining": "number | null",
       "risk_commentary": "string | null",
-      "relevant": "boolean"
+      "relevant": "boolean",
+      "source_quote": "string | null"
     },
     "policy_fully_active": "boolean"
   },
@@ -691,7 +749,8 @@ Output this exact structure:
       "penalty_calculation": "string | null",
       "risk_level": "low | medium | high",
       "zone_adequacy": "adequate | marginal | inadequate",
-      "explanation": "string"
+      "explanation": "string",
+      "source_quote": "string | null"
     },
     "co_payment": {
       "exists": "boolean",
@@ -700,7 +759,8 @@ Output this exact structure:
       "applies_to": "all_claims | seniors_only | specific_treatments | unclear | null",
       "waiver_conditions": "string | null",
       "risk_level": "low | medium | high",
-      "oop_on_5L_claim": "number | null"
+      "oop_on_5L_claim": "number | null",
+      "source_quote": "string | null"
     },
     "sub_limits": {
       "exists": "boolean",
@@ -714,12 +774,14 @@ Output this exact structure:
         }
       ],
       "risk_level": "low | medium | high",
-      "remarks": "string"
+      "remarks": "string",
+      "source_quote": "string | null"
     },
     "deductibles": {
       "base_deductible": "number | null",
       "per_claim_impact": "string | null",
-      "remarks": "string"
+      "remarks": "string",
+      "source_quote": "string | null"
     }
   },
   "claim_simulations": [

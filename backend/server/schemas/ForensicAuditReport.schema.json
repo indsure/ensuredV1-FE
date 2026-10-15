@@ -134,6 +134,53 @@
             },
             "additionalProperties": false
         },
+        "premium": {
+            "description": "Read off the schedule for display only. Never used in scoring. Null when the document states no premium.",
+            "type": [
+                "object",
+                "null"
+            ],
+            "required": [
+                "amount",
+                "frequency",
+                "gst_included",
+                "evidence"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                },
+                "frequency": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "enum": [
+                        "annual",
+                        "half_yearly",
+                        "quarterly",
+                        "monthly",
+                        "single",
+                        null
+                    ]
+                },
+                "gst_included": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "evidence": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "maxLength": 400
+                }
+            },
+            "additionalProperties": false
+        },
         "coverage_structure": {
             "type": "object",
             "required": [
@@ -284,6 +331,9 @@
                                 "string",
                                 "null"
                             ]
+                        },
+                        "source": {
+                            "$ref": "#/definitions/ClauseSource"
                         }
                     }
                 },
@@ -421,6 +471,9 @@
                                 "string",
                                 "null"
                             ]
+                        },
+                        "source": {
+                            "$ref": "#/definitions/ClauseSource"
                         }
                     },
                     "additionalProperties": false
@@ -464,6 +517,9 @@
                                 "string",
                                 "null"
                             ]
+                        },
+                        "source": {
+                            "$ref": "#/definitions/ClauseSource"
                         }
                     },
                     "additionalProperties": false
@@ -499,6 +555,9 @@
                                 "string",
                                 "null"
                             ]
+                        },
+                        "source": {
+                            "$ref": "#/definitions/ClauseSource"
                         }
                     },
                     "additionalProperties": false
@@ -593,6 +652,9 @@
                         "relevant": {
                             "type": "boolean",
                             "description": "false if male or age > 45. Skip scoring entirely if false."
+                        },
+                        "source": {
+                            "$ref": "#/definitions/ClauseSource"
                         }
                     },
                     "additionalProperties": false
@@ -684,6 +746,9 @@
                                 "string",
                                 "null"
                             ]
+                        },
+                        "source": {
+                            "$ref": "#/definitions/ClauseSource"
                         }
                     },
                     "additionalProperties": false
@@ -742,6 +807,9 @@
                                 "number",
                                 "null"
                             ]
+                        },
+                        "source": {
+                            "$ref": "#/definitions/ClauseSource"
                         }
                     },
                     "additionalProperties": false
@@ -806,6 +874,9 @@
                                 "string",
                                 "null"
                             ]
+                        },
+                        "source": {
+                            "$ref": "#/definitions/ClauseSource"
                         }
                     },
                     "additionalProperties": false
@@ -833,6 +904,9 @@
                                 "string",
                                 "null"
                             ]
+                        },
+                        "source": {
+                            "$ref": "#/definitions/ClauseSource"
                         }
                     },
                     "additionalProperties": false
@@ -1552,9 +1626,38 @@
             "additionalProperties": false
         }
     },
+    "definitions": {
+        "ClauseSource": {
+            "description": "A sentence the server found verbatim in the document the model was sent and that passed the personal-data check. Written only by services/clauseSources.ts; an unverified quote is removed, never stored.",
+            "type": "object",
+            "required": [
+                "quote",
+                "origin",
+                "verified"
+            ],
+            "properties": {
+                "quote": {
+                    "type": "string",
+                    "maxLength": 400
+                },
+                "origin": {
+                    "type": "string",
+                    "enum": [
+                        "uploaded",
+                        "official_wording"
+                    ]
+                },
+                "verified": {
+                    "const": true
+                }
+            },
+            "additionalProperties": false
+        }
+    },
     "additionalProperties": false,
-    "_version": "3.0",
+    "_version": "3.1",
     "_changelog": {
-        "3.0": "Removed duplicate audit_ledger/audit_score. Removed zone D and Unknown. Added no_claim_bonus. Added personal_waiting_periods. Added claim_simulations as top-level array. Made critical_actions required. Prompt is single source of scoring truth."
+        "3.0": "Removed duplicate audit_ledger/audit_score. Removed zone D and Unknown. Added no_claim_bonus. Added personal_waiting_periods. Added claim_simulations as top-level array. Made critical_actions required. Prompt is single source of scoring truth.",
+        "3.1": "Added premium (display only, not scored) and a server-verified source on room_rent, co_payment, sub_limits, deductibles, the four main waiting periods and restoration. Prompt 1.6.0."
     }
 }

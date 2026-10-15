@@ -3355,7 +3355,20 @@
     "policy_end": "खत्म / रिन्यू होगी",
     "policy_term": "पॉलिसी अवधि",
     "term_one": "1 साल",
-    "term_many": "{{n}} साल"
+    "term_many": "{{n}} साल",
+    "premium": "प्रीमियम",
+    "prem_annual": "हर साल",
+    "prem_half": "हर 6 महीने",
+    "prem_quarter": "हर 3 महीने",
+    "prem_month": "हर महीने",
+    "prem_once": "एक बार में",
+    "prem_term": "{{n}} साल के लिए",
+    "prem_gst_in": "GST सहित",
+    "prem_gst_out": "GST अलग से",
+    "src_show": "स्रोत",
+    "src_hide": "स्रोत छिपाएं",
+    "src_uploaded": "आपकी पॉलिसी के दस्तावेज़ से",
+    "src_wording": "बीमा कंपनी की आधिकारिक पॉलिसी शर्तों से"
   },
   "pricing": {
     "free": "मुफ़्त",

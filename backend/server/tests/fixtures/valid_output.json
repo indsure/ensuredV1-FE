@@ -55,6 +55,12 @@
         "policy_expiry_date": "2025-01-01",
         "policy_age_days": 365
     },
+    "premium": {
+        "amount": 23456,
+        "frequency": "annual",
+        "gst_included": true,
+        "evidence": "Total Premium (incl. GST) 23,456"
+    },
     "coverage_structure": {
         "base_sum_insured": 500000,
         "total_effective_coverage": 500000,
@@ -133,6 +139,11 @@
                 "page_number": 5,
                 "text_snippet": "Room rent 1%",
                 "confidence": 0.99
+            },
+            "source": {
+                "quote": "Room rent is payable up to 1% of the Sum Insured per day.",
+                "origin": "official_wording",
+                "verified": true
             }
         },
         "co_payment": {

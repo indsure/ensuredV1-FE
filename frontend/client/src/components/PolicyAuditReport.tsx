@@ -23,9 +23,10 @@ import {
     isScoredUnderOldRules,
     getBenefitStatus
 } from "@shared/policy";
-import type { WaitingPeriodView, BenefitView } from "@shared/policy";
+import type { WaitingPeriodView, BenefitView, ClauseSource } from "@shared/policy";
 import { cn } from "@/lib/utils";
 import { CoverageDiagnostic } from "./CoverageDiagnostic";
+import { ClauseSourceButton } from "./ClauseSourceButton";
 import { Tooltip } from "@/components/ui/tooltip";
 import { getZoneForCity } from "@/lib/data/zones";
 import { CALCULATOR_CONFIG } from "@/lib/health-engine-logic";
@@ -35,7 +36,7 @@ import { apiFetch } from "@/lib/api";
 import { LeadCollectionCTA } from "./LeadCollectionCTA";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
-import { formatPolicyDate, policyTermYears } from "@/lib/policyFacts";
+import { formatPolicyDate, policyTermYears, readPremium } from "@/lib/policyFacts";
 
 /** Plain-English names for the other-cover kinds the audit can return. */
 const OTHER_COVER_LABEL: Record<string, string> = {
@@ -190,17 +191,20 @@ const WAITING_TONE: Record<WaitingPeriodView["tone"], string> = {
  * for a benefit the policy does not cover. The colour and the words are decided
  * once, by getWaitingPeriodStatus, and only rendered here.
  */
-function WaitingPeriodRow({ title, detail, view }: { title: string; detail: string; view: WaitingPeriodView }) {
+function WaitingPeriodRow({ title, detail, view, source }: { title: string; detail: string; view: WaitingPeriodView; source?: ClauseSource }) {
     return (
-        <li className="flex justify-between items-center text-sm border-b border-blue-100 last:border-0 pb-2">
-            <div>
-                <span className="block font-medium">{title}</span>
-                <span className="text-xs text-[var(--color-text-secondary)]">{view.detail ?? detail}</span>
+        <li className="text-sm border-b border-blue-100 last:border-0 pb-2">
+            <div className="flex justify-between items-center">
+                <div>
+                    <span className="block font-medium">{title}</span>
+                    <span className="text-xs text-[var(--color-text-secondary)]">{view.detail ?? detail}</span>
+                </div>
+                <div className="flex items-center">
+                    <span className={cn("text-xs font-bold px-2 py-1 rounded", WAITING_TONE[view.tone])}>{view.label}</span>
+                    {view.note ? <span title={view.note} className="ml-1 text-slate-400 cursor-help">ℹ</span> : null}
+                </div>
             </div>
-            <div className="flex items-center">
-                <span className={cn("text-xs font-bold px-2 py-1 rounded", WAITING_TONE[view.tone])}>{view.label}</span>
-                {view.note ? <span title={view.note} className="ml-1 text-slate-400 cursor-help">ℹ</span> : null}
-            </div>
+            <ClauseSourceButton source={source} />
         </li>
     );
 }
@@ -250,7 +254,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
     };
 
     const getRiskItems = (auditResult: ForensicAuditReport) => {
-        const items: { issue: string; real_world_claim_impact: string; quantified_oop_risk?: string; severity: "high" | "medium" | "low" }[] = [];
+        const items: { issue: string; real_world_claim_impact: string; quantified_oop_risk?: string; severity: "high" | "medium" | "low"; source?: ClauseSource }[] = [];
 
         try {
             const ageStr = auditResult.identity?.ages?.[0]?.toString() || "35";
@@ -284,14 +288,16 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             issue: "Zone Mismatch — Extra Costs at Home",
                             real_world_claim_impact: `Your policy is registered as Zone ${policyZone}, but your city (${city || "your city"}) is Zone ${actualZone}. Every hospitalisation here triggers a ${copay.percentage || "mandatory"}% co-payment automatically.`,
                             quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 100000)} out of pocket on a ₹5L claim.`,
-                            severity: "high"
+                            severity: "high",
+                            source: copay.source,
                         });
                     } else {
                         items.push({
                             issue: "Zone Upgrade Co-payment",
                             real_world_claim_impact: `Your policy is Zone ${policyZone}. You have full coverage in your city, but if you get treated in a more expensive zone (like a Zone A metro hospital), an ${copay.percentage || "mandatory"}% co-payment applies.`,
                             quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 100000)} out of pocket on a ₹5L claim if treated outside your zone.`,
-                            severity: "low"
+                            severity: "low",
+                            source: copay.source,
                         });
                     }
                 } else {
@@ -299,7 +305,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         issue: "Mandatory Co-payment on Every Claim",
                         real_world_claim_impact: `This policy requires you to pay ${copay.percentage || "a portion"}% of every claim bill regardless of hospital.`,
                         quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 50000)} out of pocket on a ₹5L claim.`,
-                        severity: copay.percentage && copay.percentage > 10 ? "high" : "medium"
+                        severity: copay.percentage && copay.percentage > 10 ? "high" : "medium",
+                        source: copay.source,
                     });
                 }
             }
@@ -309,7 +316,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     issue: "Room Rent Capping Penalty",
                     real_world_claim_impact: roomRent.explanation || "Room rent is capped, leading to proportional deductions on all hospital bills.",
                     quantified_oop_risk: "If your room costs more than this limit, the insurer cuts the entire bill proportionally.",
-                    severity: roomRent.risk_level || "high"
+                    severity: roomRent.risk_level || "high",
+                    source: roomRent.source,
                 });
             }
 
@@ -337,7 +345,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             issue: `${cat.procedure} Sub-limit`,
                             real_world_claim_impact: customBody,
                             quantified_oop_risk: customRed,
-                            severity: cat.severity || "medium"
+                            severity: cat.severity || "medium",
+                            source: subLimitsWrapper.source,
                         });
                     }
                 });
@@ -348,7 +357,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     issue: "Base Deductible Applied",
                     real_world_claim_impact: `You must pay the first ${formatINR(deduct.base_deductible)} of your hospital bills every year before the insurer pays anything.`,
                     quantified_oop_risk: deduct.per_claim_impact || `Routine claims below ${formatINR(deduct.base_deductible)} won't be paid.`,
-                    severity: "medium"
+                    severity: "medium",
+                    source: deduct.source,
                 });
             }
 
@@ -388,7 +398,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             issue: "Pre-Existing Diseases Not Covered",
                             real_world_claim_impact: `${live.monthsLeft ?? "Several"} months remaining before pre-existing conditions are covered.`,
                             quantified_oop_risk: `Claims will be rejected until ${live.endDate || "waiting period ends"}.`,
-                            severity: "high"
+                            severity: "high",
+                            source: ped.source,
                         });
                     }
                 }
@@ -400,7 +411,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             issue: "Specific Surgeries Locked",
                             real_world_claim_impact: `Waiting period active for: ${dlist}.`,
                             quantified_oop_risk: `Claims for these conditions before ${live.endDate || "waiting period ends"} will be rejected.`,
-                            severity: "medium"
+                            severity: "medium",
+                            source: waiting.specific_diseases.source,
                         });
                     }
                 }
@@ -437,7 +449,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             issue: "Maternity Waiting Period Active",
                             real_world_claim_impact: `${waiting.maternity.months_remaining || "Several"} months remaining before maternity claims are payable.`,
                             quantified_oop_risk: `Planned delivery before ${matEnd || "waiting period ends"} will not be covered.`,
-                            severity: "medium"
+                            severity: "medium",
+                            source: waiting.maternity.source,
                         });
                     }
                 }
@@ -536,6 +549,18 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
     const policyStart = formatPolicyDate(data.policy_timeline?.policy_inception_date, dateLocale);
     const policyEnd = formatPolicyDate(data.policy_timeline?.policy_expiry_date, dateLocale);
     const policyTerm = policyTermYears(data.policy_timeline?.policy_tenure_years);
+    const premium = readPremium(data.premium);
+    const premiumEvery = (() => {
+        if (!premium) return null;
+        switch (premium.frequency) {
+            case "annual": return t("rpt.prem_annual");
+            case "half_yearly": return t("rpt.prem_half");
+            case "quarterly": return t("rpt.prem_quarter");
+            case "monthly": return t("rpt.prem_month");
+            case "single": return policyTerm && policyTerm > 1 ? t("rpt.prem_term", { n: policyTerm }) : t("rpt.prem_once");
+            default: return null;
+        }
+    })();
 
     const portingRec = data.recommendations?.should_port_to_better_policy;
     // Other cover uploaded with this policy. Absent on every pre-feature report.
@@ -648,6 +673,21 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             </div>
                             <CoverageDiagnostic report={data} effectiveCoverage={effectiveCoverage || 0} />
                         </div>
+                        {premium && (
+                            <div>
+                                <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.premium")}</div>
+                                {/* Exact, never abbreviated: this is the figure on the schedule. */}
+                                <div className="font-semibold text-lg font-mono">₹{premium.amount.toLocaleString("en-IN")}</div>
+                                {(premiumEvery || premium.gst_included != null) && (
+                                    <div className="text-sm text-[var(--color-text-secondary)]">
+                                        {[
+                                            premiumEvery,
+                                            premium.gst_included === true ? t("rpt.prem_gst_in") : premium.gst_included === false ? t("rpt.prem_gst_out") : null,
+                                        ].filter(Boolean).join(", ")}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         {/* Each date is shown only when the policy states it: a missing
                             row reads as missing data, a dash would read as a value. */}
                         {policyStart && (
@@ -690,7 +730,10 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     {(restorationNote || coverView.restated) && (
                         <div className="mt-4 pt-4 border-t border-[var(--color-border-light)] space-y-1">
                             {restorationNote && (
-                                <p className="text-sm text-[var(--color-text-secondary)]">{restorationNote}</p>
+                                <>
+                                    <p className="text-sm text-[var(--color-text-secondary)]">{restorationNote}</p>
+                                    <ClauseSourceButton source={data.coverage_structure?.restoration?.source} />
+                                </>
                             )}
                             {/* A number that changed under the reader's feet has to say so.
                                 Older reports counted a restoration tranche inside this
@@ -966,6 +1009,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                                 {item.quantified_oop_risk && (
                                                     <span className="text-xs text-red-500 font-mono block mt-2.5">{item.quantified_oop_risk}</span>
                                                 )}
+                                                <ClauseSourceButton source={item.source} />
                                             </li>
                                         ))
                                     ) : (
@@ -1270,6 +1314,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                     {data.claim_risk_analysis?.room_rent?.explanation && (
                                         <p className="text-xs text-slate-400 mt-1 italic">{data.claim_risk_analysis.room_rent.explanation}</p>
                                     )}
+                                    <ClauseSourceButton source={data.claim_risk_analysis?.room_rent?.source} />
                                 </div>
                                 <div>
                                     <div className="flex justify-between mb-1">
@@ -1290,6 +1335,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             {t("rpt.oop_5l", { amount: formatINR(data.claim_risk_analysis.co_payment.oop_on_5L_claim) })}
                                         </p>
                                     )}
+                                    <ClauseSourceButton source={data.claim_risk_analysis?.co_payment?.source} />
                                 </div>
                             </div>
                         </div>
@@ -1351,7 +1397,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             isActive: endDate ? new Date() < new Date(endDate) : !!wp.is_active_today,
                                             endDate,
                                         });
-                                        return <WaitingPeriodRow title={t("rpt.wp_initial")} detail={t("rpt.n_days", { n: wp.duration_days ?? "" })} view={view} />;
+                                        return <WaitingPeriodRow title={t("rpt.wp_initial")} detail={t("rpt.n_days", { n: wp.duration_days ?? "" })} view={view} source={wp.source} />;
                                     })()}
 
                                     {(() => {
@@ -1376,7 +1422,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             };
                                         }
                                         const detail = `${t("rpt.n_months", { n: wp.duration_months ?? "" })}${wp.stated === false ? t("rpt.est_from_specific") : ""}`;
-                                        return <WaitingPeriodRow title={t("rpt.wp_ped")} detail={detail} view={view} />;
+                                        return <WaitingPeriodRow title={t("rpt.wp_ped")} detail={detail} view={view} source={wp.source} />;
                                     })()}
 
                                     {(() => {
@@ -1391,7 +1437,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                         const named = wp.diseases_covered?.length
                                             ? `: ${wp.diseases_covered.slice(0, 3).join(", ")}${wp.diseases_covered.length > 3 ? "…" : ""}`
                                             : "";
-                                        return <WaitingPeriodRow title={t("rpt.wp_specific")} detail={`${t("rpt.n_months", { n: wp.duration_months ?? "" })}${named}`} view={view} />;
+                                        return <WaitingPeriodRow title={t("rpt.wp_specific")} detail={`${t("rpt.n_months", { n: wp.duration_months ?? "" })}${named}`} view={view} source={wp.source} />;
                                     })()}
 
                                     {data.waiting_period_analysis?.personal_waiting_periods?.map((wp, i) => {
@@ -1419,7 +1465,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             monthsRemaining: wp.months_remaining,
                                             endDate,
                                         });
-                                        return <WaitingPeriodRow title={t("rpt.wp_maternity")} detail={t("rpt.n_months", { n: wp.duration_months ?? "" })} view={view} />;
+                                        return <WaitingPeriodRow title={t("rpt.wp_maternity")} detail={t("rpt.n_months", { n: wp.duration_months ?? "" })} view={view} source={wp.source} />;
                                     })()}
                                 </ul>
                             </div>

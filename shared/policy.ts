@@ -62,6 +62,33 @@ export interface PolicyTimeline {
   confidence: Confidence;
 }
 
+// ─── Premium ──────────────────────────────────────────────────────────────────
+
+/** Read off the schedule from prompt 1.6.0. Display only: nothing in scoring
+ *  reads it. Absent on older reports, null when the document states none. */
+export interface PolicyPremium {
+  amount: number;
+  frequency: "annual" | "half_yearly" | "quarterly" | "monthly" | "single" | null;
+  gst_included: boolean | null;
+  /** The label and amount as printed. Server-checked for personal data. */
+  evidence: string | null;
+}
+
+// ─── Clause Sources ───────────────────────────────────────────────────────────
+
+/**
+ * The sentence a clause finding rests on. Written only by the server
+ * (backend/server/services/clauseSources.ts) after it found the sentence in the
+ * document the model was sent and checked it for personal data. An unverified
+ * quote is removed, never stored, so `verified` is always true when present.
+ * Absent on reports before prompt 1.6.0 and wherever no quote passed.
+ */
+export interface ClauseSource {
+  quote: string;
+  origin: "uploaded" | "official_wording";
+  verified: true;
+}
+
 // ─── Coverage Structure ───────────────────────────────────────────────────────
 
 export interface TopUp {
@@ -100,6 +127,7 @@ export interface Restoration {
   trigger_conditions: string | null;
   actually_useful: boolean | null;
   remarks: string | null;
+  source?: ClauseSource;
 }
 
 export interface NoClaimBonus {
@@ -137,6 +165,7 @@ export interface InitialWaitingPeriod {
   end_date: string | null;
   is_active_today: boolean;
   risk_commentary: string | null;
+  source?: ClauseSource;
 }
 
 export interface PEDWaitingPeriod {
@@ -148,6 +177,7 @@ export interface PEDWaitingPeriod {
   is_active_today: boolean | null;
   months_remaining: number | null;
   risk_commentary: string | null;
+  source?: ClauseSource;
 }
 
 export interface SpecificDiseaseWaiting {
@@ -156,6 +186,7 @@ export interface SpecificDiseaseWaiting {
   end_date: string | null;
   is_active_today: boolean;
   risk_commentary: string | null;
+  source?: ClauseSource;
 }
 
 export interface PersonalWaitingPeriod {
@@ -176,6 +207,7 @@ export interface MaternityWaiting {
   risk_commentary: string | null;
   /** LEGACY: absent on reports written before this field was introduced. */
   relevant?: boolean;
+  source?: ClauseSource;
 }
 
 export interface WaitingPeriodAnalysis {
@@ -201,6 +233,7 @@ export interface RoomRentAnalysis {
   risk_level: RiskLevel;
   zone_adequacy: "adequate" | "marginal" | "inadequate" | null;
   explanation: string | null;
+  source?: ClauseSource;
 }
 
 export interface CoPaymentAnalysis {
@@ -211,6 +244,7 @@ export interface CoPaymentAnalysis {
   waiver_conditions: string | null;
   risk_level: RiskLevel;
   oop_on_5L_claim: number | null;
+  source?: ClauseSource;
 }
 
 export interface SubLimitCategory {
@@ -226,12 +260,14 @@ export interface SubLimitsAnalysis {
   categories: SubLimitCategory[];
   risk_level: RiskLevel;
   remarks: string | null;
+  source?: ClauseSource;
 }
 
 export interface DeductibleAnalysis {
   base_deductible: number | null;
   per_claim_impact: string | null;
   remarks: string | null;
+  source?: ClauseSource;
 }
 
 export interface ClaimRiskAnalysis {
@@ -473,6 +509,8 @@ export interface CoverStack {
 export interface ForensicAuditReport {
   identity: Identity;
   policy_timeline: PolicyTimeline;
+  /** LEGACY: absent before prompt 1.6.0; null when the policy states none. */
+  premium?: PolicyPremium | null;
   coverage_structure: CoverageStructure;
   waiting_period_analysis: WaitingPeriodAnalysis;
   claim_risk_analysis: ClaimRiskAnalysis;
