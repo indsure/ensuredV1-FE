@@ -644,6 +644,7 @@ export default function PolicyDetail() {
             <PolicyAuditReport
               data={reportData}
               hideNav
+              detailsOpen
               pdfMeta={{
                 insurer: policy.insurer_name,
                 // product_name only: product_name_suggested is a guess, and a guess
