@@ -3395,7 +3395,13 @@
     "also_flagged": "Also flagged",
     "covered_since": "Covered since",
     "ncar_words": "This cover is {{pct}}% of what we recommend for this family's ages and city.",
-    "score_how_link": "How the score was worked out"
+    "score_how_link": "How the score was worked out",
+    "reach_cover": "This policy: {{amount}} per stay",
+    "reach_short": "Short by {{amount}}",
+    "reach_met": "Fully covered",
+    "reach_today_mk": "Today",
+    "reach_later_mk": "In {{n}} years",
+    "reach_with_other": "With the other cover uploaded, the family has {{amount}} in total (lighter part of the bar)."
   },
   "pricing": {
     "free": "Free",

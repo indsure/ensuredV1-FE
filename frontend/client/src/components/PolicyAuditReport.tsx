@@ -659,13 +659,29 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
             more: [],
         }));
         (data.benefit_evaluation?.what_actually_works ?? []).forEach((w) => rows.push({
-            key: "works",
+            // Keyed like the problem rows, so a good clause ("No room rent cap")
+            // finds the same verified quote a bad one would.
+            key: ruleKeyOf(w.benefit) || ruleKeyOf(w.why_it_matters_in_claim) || "works",
             tone: "good",
             title: w.benefit,
             body: w.why_it_matters_in_claim,
             amount: w.quantified_value ?? null,
             more: [],
         }));
+        // A row the model wrote has no quote of its own; give it the verified
+        // quote stored on the clause it is about. Only server-verified quotes
+        // are ever stored, so nothing unverified can appear this way.
+        const quoteByKey: Record<string, ClauseSource | undefined> = {
+            room: data.claim_risk_analysis?.room_rent?.source,
+            copay: data.claim_risk_analysis?.co_payment?.source,
+            sublimit: data.claim_risk_analysis?.sub_limits?.source,
+            deductible: data.claim_risk_analysis?.deductibles?.source,
+            ped: data.waiting_period_analysis?.pre_existing_disease?.source,
+            specific: data.waiting_period_analysis?.specific_diseases?.source,
+            maternity: data.waiting_period_analysis?.maternity?.source,
+            restoration: data.coverage_structure?.restoration?.source,
+        };
+        rows.forEach((r) => { if (!r.source && quoteByKey[r.key]) r.source = quoteByKey[r.key]; });
         const rowFor = (text: string) => {
             const k = ruleKeyOf(text);
             return k ? rows.find((r) => r.key === k && r.tone !== "good") ?? null : null;
@@ -969,11 +985,14 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         </div>
                     </section>
                 )}
-                {/* 2b. COVER TODAY vs COVER IN FIVE YEARS.
-                    The report used to state only the first, so an advisor could read
-                    "Good" here while the cover plan on another page told the same
-                    family to buy four times what they had, and nothing on either page
-                    acknowledged the other. Stated as facts, not as a second verdict. */}
+                {/* 2b. COVER AGAINST ONE SERIOUS ADMISSION, today and in five years.
+                    One bar instead of two boxes of sentences: the policy's cover is
+                    the fill, today's cost and the five-year cost are markers, so the
+                    gap is visible before anything is read. Every sentence the two
+                    boxes carried is still here, under the figures. The first marker
+                    is what the score is measured against; the second is shown, not
+                    scored. Other cover the family uploaded is drawn on the same bar,
+                    so it is never stated twice. */}
                 {(() => {
                     const outlook = coverOutlook(
                         data.identity?.ages,
@@ -986,53 +1005,85 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     const pctToday = Math.round((held / outlook.today) * 100);
                     const pctTarget = Math.round((held / outlook.target) * 100);
                     const shortToday = outlook.today - held;
+                    const shortLater = outlook.target - held;
+                    const combined =
+                        otherCover.length > 0 && typeof coverView.stack?.combined === "number" && coverView.stack.combined > held
+                            ? coverView.stack.combined
+                            : null;
+                    const max = Math.max(outlook.target, outlook.today, held, combined ?? 0);
+                    const pct = (v: number) => Math.min(100, (v / max) * 100);
+                    // Labels near the right edge hang left of their marker so they stay inside the card.
+                    const anchorAt = (v: number) => (pct(v) > 80 ? "-translate-x-full" : pct(v) < 12 ? "" : "-translate-x-1/2");
+                    const toneOf = (short: number, share: number) =>
+                        short <= 0 ? "text-green-700" : share < 50 ? "text-red-600" : "text-amber-700";
 
                     return (
-                        <section className="mb-16">
-                            <div className="flex items-center gap-3 mb-2">
-                                <Layers className="w-6 h-6 text-[var(--color-teal-600)]" />
-                                <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.how_far")}</h3>
-                            </div>
-                            <p className="text-sm text-[var(--color-text-muted)] mb-6">
-                                {t("rpt.how_far_d")}
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
-                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                        {t("rpt.admission_today")}
-                                    </div>
-                                    <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
-                                        {formatINR(outlook.today)}
-                                    </div>
-                                    <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                                        {t("rpt.covers_pct", { held: formatINR(held), pct: pctToday })}{" "}
-                                        {shortToday > 0
-                                            ? t("rpt.leaves_short", { short: formatINR(shortToday) })
-                                            : t("rpt.met_in_full")}
-                                    </p>
+                        <section className="mb-16" aria-labelledby="cover-reach">
+                            <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-5 md:p-7 shadow-sm">
+                                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                                    <h3 id="cover-reach" className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.how_far")}</h3>
+                                    <span className="text-sm text-[var(--color-text-secondary)]">{t("rpt.reach_cover", { amount: formatINR(held) })}</span>
                                 </div>
-                                <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
-                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                        {t("rpt.admission_later", { n: outlook.years })}
+
+                                {/* The bar. Labels sit above (today) and below (five years) so they never collide. */}
+                                <div className="relative mt-12 mb-14" aria-hidden="true">
+                                    <div className="relative h-4 w-full rounded-full bg-[var(--color-cream-dark)] overflow-hidden">
+                                        {combined !== null && (
+                                            <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--color-teal-200)]" style={{ width: `${pct(combined)}%` }} />
+                                        )}
+                                        <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--color-teal-600)]" style={{ width: `${pct(held)}%` }} />
                                     </div>
-                                    <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
-                                        {formatINR(outlook.target)}
+                                    <div className="absolute -top-2 h-8 w-0.5 bg-[var(--color-navy-900)]" style={{ left: `${pct(outlook.today)}%` }} />
+                                    <div className={cn("absolute -top-9 whitespace-nowrap text-sm font-semibold text-[var(--color-navy-900)]", anchorAt(outlook.today))} style={{ left: `${pct(outlook.today)}%` }}>
+                                        {t("rpt.reach_today_mk")} {formatINR(outlook.today)}
                                     </div>
-                                    <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                                        {t("rpt.later_d", { pct: pctTarget, rate: Math.round(CALCULATOR_CONFIG.medicalInflationRate * 100) })}
-                                    </p>
+                                    <div className="absolute -top-2 h-8 w-0.5 bg-slate-400" style={{ left: `calc(${pct(outlook.target)}% - 2px)` }} />
+                                    <div className={cn("absolute top-8 whitespace-nowrap text-sm font-semibold text-[var(--color-text-secondary)]", anchorAt(outlook.target))} style={{ left: `${pct(outlook.target)}%` }}>
+                                        {t("rpt.reach_later_mk", { n: outlook.years })} {formatINR(outlook.target)}
+                                    </div>
                                 </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{t("rpt.admission_today")}</div>
+                                        <div className={cn("mt-1 text-xl font-bold", toneOf(shortToday, pctToday))}>
+                                            {shortToday > 0 ? t("rpt.reach_short", { amount: formatINR(shortToday) }) : t("rpt.reach_met")}
+                                        </div>
+                                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                                            {t("rpt.covers_pct", { held: formatINR(held), pct: pctToday })}{" "}
+                                            {shortToday > 0
+                                                ? t("rpt.leaves_short", { short: formatINR(shortToday) })
+                                                : t("rpt.met_in_full")}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{t("rpt.admission_later", { n: outlook.years })}</div>
+                                        <div className={cn("mt-1 text-xl font-bold", toneOf(shortLater, pctTarget))}>
+                                            {shortLater > 0 ? t("rpt.reach_short", { amount: formatINR(shortLater) }) : t("rpt.reach_met")}
+                                        </div>
+                                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                                            {t("rpt.later_d", { pct: pctTarget, rate: Math.round(CALCULATOR_CONFIG.medicalInflationRate * 100) })}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {combined !== null && (
+                                    <p className="mt-5 text-sm text-[var(--color-navy-900)]">
+                                        {t("rpt.reach_with_other", { amount: formatINR(combined) })}
+                                    </p>
+                                )}
+
+                                <p className="mt-5 pt-4 border-t border-[var(--color-border-light)] text-sm text-[var(--color-text-muted)]">
+                                    {t("rpt.how_far_d")} {t("rpt.assume_nothing")}
+                                </p>
                             </div>
-                            <p className="mt-3 text-sm text-slate-500">
-                                {t("rpt.assume_nothing")}
-                            </p>
                         </section>
                     );
                 })()}
                 {/* 3b. OTHER COVER HELD + TOTAL STACK.
                        Only rendered when other cover was uploaded with the policy —
                        every report produced before this feature simply has none. */}
-                {(otherCover.length > 0 || coverStack) && (
+                {(otherCover.length > 0 || (coverStack?.where_the_stack_still_breaks?.length ?? 0) > 0) && (
                     <section className="mb-16">
                         <div className="flex items-center gap-3 mb-2">
                             <Layers className="w-6 h-6 text-[var(--color-teal-600)]" />
@@ -1077,7 +1128,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                     <p className="mt-4 text-sm text-[var(--color-navy-900)]">{coverView.stack.remarks}</p>
                                 )}
 
-                                {(coverView.stack.counted.length || coverView.stack.excluded.length) && (
+                                {(coverView.stack.counted.length > 0 || coverView.stack.excluded.length > 0) && (
                                     <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                                         {coverView.stack.counted.length > 0 && (
                                             <div>

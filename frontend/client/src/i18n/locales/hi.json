@@ -3410,7 +3410,13 @@
     "also_flagged": "और ध्यान देने योग्य",
     "covered_since": "कब से कवर",
     "ncar_words": "यह कवर इस परिवार की उम्र और शहर के लिए सुझाए गए कवर का {{pct}}% है।",
-    "score_how_link": "स्कोर कैसे बना"
+    "score_how_link": "स्कोर कैसे बना",
+    "reach_cover": "यह पॉलिसी: एक बार भर्ती पर {{amount}}",
+    "reach_short": "{{amount}} कम",
+    "reach_met": "पूरा कवर",
+    "reach_today_mk": "आज",
+    "reach_later_mk": "{{n}} साल में",
+    "reach_with_other": "अपलोड किए गए दूसरे कवर के साथ परिवार के पास कुल {{amount}} है (बार का हल्का हिस्सा)।"
   },
   "pricing": {
     "free": "मुफ़्त",
