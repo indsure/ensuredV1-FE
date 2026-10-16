@@ -3239,6 +3239,8 @@
     "dq_high": "high",
     "dq_medium": "medium",
     "dq_low": "low",
+    "dq_schedule_only": "We could read only the policy schedule, not the insurer's full policy wording, so some clauses could not be checked. Ask your client for the complete policy document.",
+    "dq_missing": "Not found in the document:",
     "restated": "This figure is what the policy pays for one hospitalisation. An earlier version of this report added a restoration refill on top of it.",
     "audit_score": "Audit Score",
     "ncar_meaning": "Your cover is {{x}}× the minimum recommended for your age and city.",

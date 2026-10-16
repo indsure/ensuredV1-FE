@@ -654,7 +654,6 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                         ['Ends / renews on', endLabel],
                         ['Policy term', termLabel],
                         ['Policy age', ageLabel],
-                        ['Data quality', data.data_quality?.overall ? titleCaseKey(String(data.data_quality.overall)) : null],
                     ] as [string, string | null | undefined][])
                         // A cell the document cannot source is left out entirely rather
                         // than printed as a dash: an absent row reads as absent data.

@@ -718,11 +718,31 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                     : t("rpt.days", { n: realTimePolicyAgeDays })}
                             </div>
                         </div>
-                        <div>
-                            <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.data_quality")}</div>
-                            <div className="font-semibold text-lg capitalize">{data.data_quality?.overall ? tOr(t, `rpt.dq_${data.data_quality.overall}`, data.data_quality.overall) : t("rpt.na")}</div>
-                        </div>
                     </div>
+
+                    {/* What we could not read, said plainly. Replaces a "Data quality:
+                        Medium" tile, which was the model grading itself and told the
+                        advisor nothing to do. Shown only when something is missing. */}
+                    {(() => {
+                        const scheduleOnly = data.data_quality?.wording_source === "schedule_only";
+                        const missing = (data.data_quality?.missing_critical_fields ?? [])
+                            .filter((f): f is string => typeof f === "string" && f.trim() !== "")
+                            .map((f) => f.replace(/_/g, " ").trim())
+                            .slice(0, 4);
+                        if (!scheduleOnly && missing.length === 0) return null;
+                        return (
+                            <div className="mt-4 rounded-lg border-l-4 border-[#B45309] bg-[#FFFBEB] px-4 py-3">
+                                {scheduleOnly && (
+                                    <p className="text-sm text-[var(--color-navy-900)]">{t("rpt.dq_schedule_only")}</p>
+                                )}
+                                {missing.length > 0 && (
+                                    <p className={`text-sm text-[var(--color-navy-900)]${scheduleOnly ? " mt-2" : ""}`}>
+                                        <span className="font-semibold">{t("rpt.dq_missing")}</span> {missing.join(", ")}
+                                    </p>
+                                )}
+                            </div>
+                        );
+                    })()}
 
                     {/* Effective Cover is single-event money, so a restore is not inside
                         that number. It is real value and has to be visible somewhere, or
