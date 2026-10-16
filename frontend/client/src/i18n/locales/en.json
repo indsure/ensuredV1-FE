@@ -3401,7 +3401,9 @@
     "reach_met": "Fully covered",
     "reach_today_mk": "Today",
     "reach_later_mk": "In {{n}} years",
-    "reach_with_other": "With the other cover uploaded, the family has {{amount}} in total (lighter part of the bar)."
+    "reach_with_other": "With the other cover uploaded, the family has {{amount}} in total (lighter part of the bar).",
+    "cover_per_stay": "Cover per stay",
+    "ncar_short": "{{pct}}% of what we recommend"
   },
   "pricing": {
     "free": "Free",

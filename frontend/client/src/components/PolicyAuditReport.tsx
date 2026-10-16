@@ -763,26 +763,47 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     </p>
                 )}
 
-                {/* ANSWER 1. Is this policy good enough? */}
-                <section aria-labelledby="ans-1">
+                {/* ANSWER 1. Is this policy good enough?
+                    Verdict and score side by side, then the policy's facts in a full
+                    3 x 2 grid, then what is good and what we could not read, together.
+                    Nothing from the old header is gone: policy age is the line under
+                    "Covered since", NCAR and its label are in the score working under
+                    The full picture, and the coverage-stress check is in the link row. */}
+                <section aria-labelledby="ans-1" className="mb-16">
                     <AnswerHead n="1" id="ans-1" title={t("rpt.q1")} />
-                {/* 1. VERDICT HEADER */}
-                <div className="mb-12 border-b border-[var(--color-border-light)] pb-12">
-                    <span className={cn(
-                        "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-6 border",
-                        verdict === "SAFE" ? "bg-green-50 text-green-700 border-green-200" :
-                            verdict === "BORDERLINE" ? "bg-amber-50 text-amber-700 border-amber-200" :
-                                "bg-red-50 text-red-700 border-red-200"
-                    )}>
-                        {verdict === "SAFE" && <CheckCircle2 className="w-4 h-4" />}
-                        {verdict === "BORDERLINE" && <AlertTriangle className="w-4 h-4" />}
-                        {verdict === "RISKY" && <AlertCircle className="w-4 h-4" />}
-                        {t("rpt.verdict", {
-                            label: verdict === "SAFE" ? t("rpt.v_safe") :
-                                verdict === "BORDERLINE" ? t("rpt.v_borderline") :
-                                    t("rpt.v_risky"),
-                        })}
-                    </span>
+
+                    <div className="flex flex-wrap items-center gap-3 mb-6">
+                        <span className={cn(
+                            "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border",
+                            verdict === "SAFE" ? "bg-green-50 text-green-700 border-green-200" :
+                                verdict === "BORDERLINE" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                    "bg-red-50 text-red-700 border-red-200"
+                        )}>
+                            {verdict === "SAFE" && <CheckCircle2 className="w-4 h-4" />}
+                            {verdict === "BORDERLINE" && <AlertTriangle className="w-4 h-4" />}
+                            {verdict === "RISKY" && <AlertCircle className="w-4 h-4" />}
+                            {t("rpt.verdict", {
+                                label: verdict === "SAFE" ? t("rpt.v_safe") :
+                                    verdict === "BORDERLINE" ? t("rpt.v_borderline") :
+                                        t("rpt.v_risky"),
+                            })}
+                        </span>
+                        <span className="inline-flex items-baseline gap-1.5 rounded-full border border-[var(--color-border-light)] bg-white px-4 py-1">
+                            <span className={cn(
+                                "font-serif text-2xl leading-none",
+                                verdict === "SAFE" ? "text-[var(--color-green-primary)]" : verdict === "RISKY" ? "text-red-600" : "text-amber-600"
+                            )}>{score}</span>
+                            <span className="text-sm text-slate-500">/ 100</span>
+                            {data.audit_score?.bucket_label && (
+                                <span className="text-sm font-semibold text-[var(--color-navy-900)]">· {data.audit_score.bucket_label}</span>
+                            )}
+                        </span>
+                    </div>
+                    {isScoredUnderOldRules(data) && (
+                        <p className="-mt-3 mb-6 text-sm text-amber-800">
+                            {t("rpt.old_rules", { when: data.engine?.scored_at ? ` (${data.engine.scored_at})` : "" })}
+                        </p>
+                    )}
 
                     <div className="mb-8 max-w-4xl">
                         <h1 className="text-3xl md:text-4xl font-serif text-[var(--color-navy-900)] mb-4 leading-tight">
@@ -793,17 +814,19 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-6 border-t border-[var(--color-border-light)] pt-6">
                         <div>
                             <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.insured")}</div>
                             <div className="font-semibold text-lg">{data.identity?.insured_names?.join(", ")}</div>
                         </div>
                         <div>
-                            <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.effective_cover")}</div>
+                            <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.cover_per_stay")}</div>
                             <div className="font-semibold text-lg font-mono text-[var(--color-green-primary)]">
                                 {formatINR(effectiveCoverage)}
                             </div>
-                            <CoverageDiagnostic report={data} effectiveCoverage={effectiveCoverage || 0} />
+                            {hasNcar && (
+                                <div className="text-sm text-[var(--color-text-secondary)]">{t("rpt.ncar_short", { pct: Math.round(ncar * 100) })}</div>
+                            )}
                         </div>
                         {premium && (
                             <div>
@@ -826,6 +849,11 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             <div>
                                 <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.covered_since")}</div>
                                 <div className="font-semibold text-lg">{policyStart}</div>
+                                <div className="text-sm text-[var(--color-text-secondary)]">
+                                    {realTimePolicyAgeDays > 365
+                                        ? t("rpt.years", { n: (realTimePolicyAgeDays / 365).toFixed(1) })
+                                        : t("rpt.days", { n: realTimePolicyAgeDays })}
+                                </div>
                             </div>
                         )}
                         {policyEnd && (
@@ -842,95 +870,77 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                 </div>
                             </div>
                         )}
-                        <div>
-                            <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_age")}</div>
-                            <div className="font-semibold text-lg">
-                                {realTimePolicyAgeDays > 365
-                                    ? t("rpt.years", { n: (realTimePolicyAgeDays / 365).toFixed(1) })
-                                    : t("rpt.days", { n: realTimePolicyAgeDays })}
+                        {!policyStart && (
+                            <div>
+                                <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_age")}</div>
+                                <div className="font-semibold text-lg">
+                                    {realTimePolicyAgeDays > 365
+                                        ? t("rpt.years", { n: (realTimePolicyAgeDays / 365).toFixed(1) })
+                                        : t("rpt.days", { n: realTimePolicyAgeDays })}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
-                    {/* What we could not read, said plainly. Replaces a "Data quality:
-                        Medium" tile, which was the model grading itself and told the
-                        advisor nothing to do. Shown only when something is missing. */}
-                    {(() => {
-                        const scheduleOnly = data.data_quality?.wording_source === "schedule_only";
-                        const missing = (data.data_quality?.missing_critical_fields ?? [])
-                            .filter((f): f is string => typeof f === "string" && f.trim() !== "")
-                            .map((f) => f.replace(/_/g, " ").trim())
-                            .slice(0, 4);
-                        if (!scheduleOnly && missing.length === 0) return null;
-                        return (
-                            <div className="mt-4 rounded-lg border-l-4 border-[#B45309] bg-[#FFFBEB] px-4 py-3">
-                                {scheduleOnly && (
-                                    <p className="text-sm text-[var(--color-navy-900)]">{t("rpt.dq_schedule_only")}</p>
-                                )}
-                                {missing.length > 0 && (
-                                    <p className={`text-sm text-[var(--color-navy-900)]${scheduleOnly ? " mt-2" : ""}`}>
-                                        <span className="font-semibold">{t("rpt.dq_missing")}</span> {missing.join(", ")}
-                                    </p>
-                                )}
-                            </div>
-                        );
-                    })()}
-
-                    {/* Effective Cover is single-event money, so a restore is not inside
-                        that number. It is real value and has to be visible somewhere, or
-                        removing it from the headline just loses the information. */}
-                    {(restorationNote || coverView.restated) && (
-                        <div className="mt-4 pt-4 border-t border-[var(--color-border-light)] space-y-1">
-                            {restorationNote && (
-                                <>
-                                    <p className="text-sm text-[var(--color-text-secondary)]">{restorationNote}</p>
+                    {/* What is good and what we could not read, side by side in one stack. */}
+                    <div className="mt-6 space-y-3">
+                        {restorationNote && (
+                            <div className={cn(
+                                "flex items-start gap-3 rounded-lg px-4 py-3",
+                                data.coverage_structure?.restoration?.same_illness_covered === true ? "bg-green-50" : "bg-white border border-[var(--color-border-light)]"
+                            )}>
+                                <CheckCircle2 className={cn(
+                                    "w-5 h-5 mt-0.5 flex-shrink-0",
+                                    data.coverage_structure?.restoration?.same_illness_covered === true ? "text-green-600" : "text-slate-400"
+                                )} aria-hidden="true" />
+                                <div className="min-w-0">
+                                    <p className="text-sm text-[var(--color-navy-900)]">{restorationNote}</p>
                                     <ClauseSourceButton source={data.coverage_structure?.restoration?.source} />
-                                </>
-                            )}
-                            {/* A number that changed under the reader's feet has to say so.
-                                Older reports counted a restoration tranche inside this
-                                figure; they are re-derived on read, not rewritten. */}
-                            {coverView.restated && (
-                                <p className="text-sm text-[var(--color-text-secondary)]">
-                                    {t("rpt.restated")}
-                                </p>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                    {/* The score, said once up here; its full working is under The full picture. */}
-                    <div className="mb-12 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border border-[var(--color-border-light)] bg-white px-5 py-4">
-                        <div className="flex items-baseline gap-2">
-                            <span className={cn(
-                                "font-serif text-4xl leading-none",
-                                verdict === "SAFE" ? "text-[var(--color-green-primary)]" : verdict === "RISKY" ? "text-red-600" : "text-amber-600"
-                            )}>{score}</span>
-                            <span className="text-slate-500">/ 100</span>
-                            {data.audit_score?.bucket_label && (
-                                <span className="text-sm font-medium text-[var(--color-text-secondary)]">{data.audit_score.bucket_label}</span>
-                            )}
-                        </div>
-                        {hasNcar && (
-                            <p className="flex-1 min-w-[14rem] text-sm text-[var(--color-navy-900)]">
-                                {t("rpt.ncar_words", { pct: Math.round(ncar * 100) })}{" "}
-                                <span className="text-[var(--color-text-secondary)]">(NCAR {ncar.toFixed(2)}×, {getNCARLabel(ncar)})</span>
-                            </p>
+                                </div>
+                            </div>
                         )}
+                        {(() => {
+                            // What we could not read, said plainly; shown only when something is missing.
+                            const scheduleOnly = data.data_quality?.wording_source === "schedule_only";
+                            const missing = (data.data_quality?.missing_critical_fields ?? [])
+                                .filter((f): f is string => typeof f === "string" && f.trim() !== "")
+                                .map((f) => f.replace(/_/g, " ").trim())
+                                .slice(0, 4);
+                            if (!scheduleOnly && missing.length === 0) return null;
+                            return (
+                                <div className="flex items-start gap-3 rounded-lg bg-[#FFFBEB] px-4 py-3">
+                                    <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-[#B45309]" aria-hidden="true" />
+                                    <div className="min-w-0">
+                                        {scheduleOnly && (
+                                            <p className="text-sm text-[var(--color-navy-900)]">{t("rpt.dq_schedule_only")}</p>
+                                        )}
+                                        {missing.length > 0 && (
+                                            <p className={`text-sm text-[var(--color-navy-900)]${scheduleOnly ? " mt-2" : ""}`}>
+                                                <span className="font-semibold">{t("rpt.dq_missing")}</span> {missing.join(", ")}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                        {/* A number that changed under the reader's feet has to say so.
+                            Older reports counted a restoration tranche inside this
+                            figure; they are re-derived on read, not rewritten. */}
+                        {coverView.restated && (
+                            <p className="text-sm text-[var(--color-text-secondary)]">{t("rpt.restated")}</p>
+                        )}
+                    </div>
+
+                    <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2">
                         <a
                             href="#score-detail"
                             onClick={() => setScoreOpen(true)}
                             className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[var(--color-teal-700)] underline underline-offset-2"
                         >
-                            {t("rpt.score_how_link")}
+                            {t("rpt.score_how_link")} ↓
                         </a>
-                        {isScoredUnderOldRules(data) && (
-                            <p className="basis-full text-sm text-amber-800">
-                                {t("rpt.old_rules", { when: data.engine?.scored_at ? ` (${data.engine.scored_at})` : "" })}
-                            </p>
-                        )}
+                        <CoverageDiagnostic report={data} effectiveCoverage={effectiveCoverage || 0} />
                     </div>
-
                 </section>
 
                 {/* ANSWER 2. What would a claim cost? Simulations, cover reach, other cover. */}
