@@ -19,6 +19,7 @@ import {
 } from "./seed";
 import { DEMO_AGENT_ID, DEMO_EMAIL, exitPlayground } from "./mode";
 import { playgroundTeamApi } from "./teamSeed";
+import { buildDemoDocumentRules } from "./policyTermsSeed";
 
 let store: Store | null = null;
 function getStore(): Store {
@@ -366,14 +367,15 @@ function playgroundApiResponse(url: string, init?: any): Response {
     return json({ ok: true, extracted_data: row?.extracted_data ?? patch, rev: row?.extracted_data?._rev ?? null });
   }
 
-  /* Policy terms read from a document. The demo has no reader; terms exist
-     only if a development session loaded synthetic ones into the store. Review
+  /* Policy terms read from a document. The demo has no reader, so the savings
+     policies start with the terms the general reader would return for them
+     (./policyTermsSeed); that is what fills the Policy summary table. Review
      actions are applied in memory, the same way the server appends revisions. */
   const docRules = url.match(/\/api\/agent\/clients\/([^/]+)\/document-rules(?:\/(review|flags|parse|confirm-many))?/);
   if (docRules) {
     const id = decodeURIComponent(docRules[1]);
     const st: any = getStore();
-    st.documentRules = st.documentRules ?? {};
+    st.documentRules = st.documentRules ?? buildDemoDocumentRules(st.clients);
     const cur = st.documentRules[id] ?? { parse: null, fields: [], history: {}, flagDecisions: {} };
     let body: any = {};
     try { body = JSON.parse(init?.body ?? "{}"); } catch { /* ignore */ }
