@@ -3,7 +3,7 @@ import metricsJson from "@shared/data/insurerMetrics.json";
 import { type ComparisonSide, sideName } from "@/lib/wordingProfile";
 import {
   type InsurerMetricsDataset, type MetricKey, type MetricPoint,
-  METRIC_KEYS, matchInsurer, usableMetric, notPublished, sourceLabel, formatMetric,
+  METRIC_KEYS, matchInsurer, usableMetric, notPublished, sourceLabel, formatMetric, smallBase,
 } from "@/lib/insurerMetrics";
 import { SIDE_PALETTE } from "@/components/ComparisonView";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -122,6 +122,17 @@ function MetricCell({
           <p className="mt-2 text-[15px] leading-snug text-slate-700">
             {t(LINE_KEY[metricKey], { n: metricKey === "grievances_per_10k" ? formatMetric(metric.value) : Math.round(metric.value) })}
           </p>
+          {(() => {
+            const sb = smallBase(metricKey, metric);
+            if (!sb) return null;
+            const text =
+              sb.kind === "claims"
+                ? t("insurer_scorecard.small_claims", { n: sb.n.toLocaleString("en-IN") })
+                : sb.kind === "policies"
+                  ? t("insurer_scorecard.small_policies", { n: sb.n.toLocaleString("en-IN") })
+                  : t("insurer_scorecard.small_premium", { n: Math.round(sb.lakh).toLocaleString("en-IN") });
+            return <p className="mt-2 rounded-md bg-[#FFFBEB] px-2 py-1 text-sm text-[#78350F]">{text}</p>;
+          })()}
           <a
             href={metric.source_url}
             target="_blank"

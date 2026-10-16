@@ -14,7 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  normalizeInsurerName, matchInsurer, usableMetric, notPublished, sourceLabel, formatMetric,
+  normalizeInsurerName, matchInsurer, usableMetric, notPublished, sourceLabel, formatMetric, smallBase,
   type InsurerMetricsDataset, type InsurerMetricsRow,
 } from "../../../frontend/client/src/lib/insurerMetrics";
 
@@ -163,5 +163,30 @@ describe("display helpers", () => {
     assert.equal(formatMetric(98.6), "98.6");
     assert.equal(formatMetric(3.333), "3.33");
     assert.equal(formatMetric(0), "0");
+  });
+});
+
+describe("smallBase (founder 2026-10-16: show thin figures with a note)", () => {
+  const row = (slug: string) => SHIPPED.insurers.find((r) => r.slug.startsWith(slug))!;
+
+  test("Galaxy and Narayana CSR rest on fewer than 1,000 claims", () => {
+    assert.deepEqual(smallBase("csr", row("galaxy").csr), { kind: "claims", n: 75 });
+    assert.deepEqual(smallBase("csr", row("narayana").csr), { kind: "claims", n: 12 });
+  });
+
+  test("Star Health's figures are not flagged", () => {
+    assert.equal(smallBase("csr", row("star").csr), null);
+    assert.equal(smallBase("icr", row("star").icr), null);
+    assert.equal(smallBase("grievances_per_10k", row("star").grievances_per_10k), null);
+  });
+
+  test("a small premium base flags ICR, a small policy count flags complaints", () => {
+    assert.equal(smallBase("icr", row("shriram").icr)?.kind, "premium");
+    assert.deepEqual(smallBase("grievances_per_10k", row("narayana").grievances_per_10k), { kind: "policies", n: 1628 });
+  });
+
+  test("no inputs means no note, never a guess", () => {
+    assert.equal(smallBase("csr", { value: 90, fy: "2024-25", source_doc: "x", source_url: "https://x", page: null }), null);
+    assert.equal(smallBase("csr", null), null);
   });
 });

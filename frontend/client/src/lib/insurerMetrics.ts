@@ -16,6 +16,36 @@ export interface MetricPoint {
   source_url: string;
   /** Null when the source is a spreadsheet with no page numbers. */
   page: number | null;
+  /** The raw figures the value was read or computed from (IRDAI table cells). */
+  inputs?: Record<string, number> | null;
+}
+
+/** Below these, a published figure is correct but rests on too little to judge
+ *  an insurer by. Founder decision 2026-10-16: show it, with a note. */
+export const SMALL_BASE = { claims: 1000, premiumLakh: 1000, policies: 10000 } as const;
+
+export type SmallBase =
+  | { kind: "claims"; n: number }
+  | { kind: "premium"; lakh: number }
+  | { kind: "policies"; n: number };
+
+/** What a metric rests on, when that is small enough to deserve a caution. */
+export function smallBase(key: "csr" | "icr" | "grievances_per_10k", m: MetricPoint | null): SmallBase | null {
+  const i = m?.inputs;
+  if (!i) return null;
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  if (key === "csr") {
+    const intimated = num(i.claims_intimated);
+    if (intimated == null) return null;
+    const n = (num(i.claims_os_start) ?? 0) + intimated;
+    return n < SMALL_BASE.claims ? { kind: "claims", n } : null;
+  }
+  if (key === "icr") {
+    const lakh = num(i.net_earned_premium_lakh);
+    return lakh != null && lakh < SMALL_BASE.premiumLakh ? { kind: "premium", lakh } : null;
+  }
+  const n = num(i.health_policies_table58);
+  return n != null && n < SMALL_BASE.policies ? { kind: "policies", n } : null;
 }
 
 export interface InsurerMetricsRow {

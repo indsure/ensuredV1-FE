@@ -1881,7 +1881,10 @@
     "explain_title": "What these mean",
     "explain_csr": "Claim settlement ratio: the share of claims the insurer paid. Higher is better.",
     "explain_icr": "Incurred claim ratio: claims paid as a share of the premium earned. A middle range is healthy. A very low or a very high number both deserve a question to the insurer.",
-    "explain_grievances": "Complaints per 10,000 policies: how often customers complained. Lower is better."
+    "explain_grievances": "Complaints per 10,000 policies: how often customers complained. Lower is better.",
+    "small_claims": "Based on only {{n}} claims, so read it with care.",
+    "small_policies": "Based on only {{n}} health policies, so read it with care.",
+    "small_premium": "Based on a small premium base of ₹{{n}} lakh, so read it with care."
   },
   "compare": {
     "remove": "Remove",
