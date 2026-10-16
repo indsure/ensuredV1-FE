@@ -19,6 +19,7 @@ import {
   InputTooLargeError,
 } from "../utils/inputBudget";
 import type { GeminiCallMeta } from "./geminiUsage";
+import { attachClauseSources, normalizePremium } from "./clauseSources";
 
 /**
  * A second health cover the SAME insured already holds, uploaded alongside the
@@ -47,6 +48,11 @@ const COMPANION_LABEL: Record<CompanionKind, string> = {
  *  large prompt; three untrimmed companion policies could double the token
  *  bill for context that is only used qualitatively. */
 const COMPANION_TEXT_CHAR_CAP = 20000;
+
+/** Opens the companion block. Clause quotes are verified against the text
+ *  before it, so a sentence from a companion cover is never labelled as a
+ *  line from the policy under audit. */
+export const COMPANION_FENCE = "==================== ADDITIONAL COVER HELD BY THE SAME INSURED ====================";
 
 /**
  * The rules for handling companion covers. These are interpolated INTO the audit
@@ -144,7 +150,7 @@ export function buildCompanionDocuments(companions: CompanionDoc[]): string {
 
   return `
 
-==================== ADDITIONAL COVER HELD BY THE SAME INSURED ====================
+${COMPANION_FENCE}
 
 These are NOT the policy under audit. They are other health covers the same
 insured already holds. Handle them exactly as instructed under "OTHER COVER HELD
@@ -840,6 +846,25 @@ export async function runAnalysisPipeline(
     // Continuous-cover start from the schedule's previous-policy list. Base text
     // only: a companion's own renewal history is not this policy's.
     if (insuranceType === "health") reconcileInceptionDate(parsed, policyText, todayISO(), pushConfidenceNote);
+    // Clause quotes and the premium evidence line are checked here, against the
+    // exact text the model was sent, because that text is not kept afterwards.
+    // Anything that fails is dropped, never shown as unverified.
+    let clauseSources: { offered: number; kept: number } | null = null;
+    if (insuranceType === "health") {
+      const insuredNames = parsed?.identity?.insured_names;
+      // The fetcher returns a one-line placeholder when no wording was found;
+      // that is not a document a quote can be attributed to.
+      const wordings =
+        budget.wordings && !budget.wordings.trimStart().startsWith("OFFICIAL POLICY WORDINGS NOT FOUND")
+          ? budget.wordings
+          : null;
+      clauseSources = attachClauseSources(parsed, {
+        evidence: budget.evidence.split(COMPANION_FENCE)[0],
+        wordings,
+        insuredNames,
+      });
+      normalizePremium(parsed, insuredNames);
+    }
     // RCT next: NCAR, the net-cover penalty, the score and the verdict all
     // derive from it, so it has to be right before anything downstream runs.
     enforceRequiredCover(parsed);
@@ -910,6 +935,7 @@ export async function runAnalysisPipeline(
         // document; anything else is offered to the advisor as a suggestion.
         planName: planCandidate,
         planNameVerified: planVerified,
+        clause_sources: clauseSources,
         input_budget: {
           original_tokens: budget.originalTokens,
           sent_tokens: budget.estimatedTokens,

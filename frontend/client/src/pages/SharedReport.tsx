@@ -32,7 +32,9 @@ function PageChrome({ label, children }: { label: string; children: React.ReactN
       <div className="bg-white border-b border-[var(--color-border-light)] py-4 px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" width={784} height={599} alt="IndSure" className="h-8" />
+            {/* w-auto: the width/height attributes are there to reserve space, and
+                without it the 784px width wins over h-8 and the logo smears flat. */}
+            <img src="/logo.png" width={784} height={599} alt="IndSure" className="h-8 w-auto" />
             <span className="text-lg font-semibold text-[var(--color-navy-900)]">IndSure</span>
           </div>
           <div className="flex items-center gap-3">

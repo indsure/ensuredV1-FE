@@ -23,9 +23,10 @@ import {
     isScoredUnderOldRules,
     getBenefitStatus
 } from "@shared/policy";
-import type { WaitingPeriodView, BenefitView } from "@shared/policy";
+import type { WaitingPeriodView, BenefitView, ClauseSource } from "@shared/policy";
 import { cn } from "@/lib/utils";
 import { CoverageDiagnostic } from "./CoverageDiagnostic";
+import { ClauseSourceButton } from "./ClauseSourceButton";
 import { Tooltip } from "@/components/ui/tooltip";
 import { getZoneForCity } from "@/lib/data/zones";
 import { CALCULATOR_CONFIG } from "@/lib/health-engine-logic";
@@ -35,6 +36,7 @@ import { apiFetch } from "@/lib/api";
 import { LeadCollectionCTA } from "./LeadCollectionCTA";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
+import { formatPolicyDate, policyTermYears, readPremium } from "@/lib/policyFacts";
 
 /** Plain-English names for the other-cover kinds the audit can return. */
 const OTHER_COVER_LABEL: Record<string, string> = {
@@ -63,6 +65,10 @@ interface PolicyAuditReportProps {
      *  Every field is optional and an absent one is omitted from the document,
      *  never printed as a placeholder. */
     pdfMeta?: PdfMeta;
+    /** Open "The full picture" sections on load. The advisor portal opens them;
+     *  share links and the consumer view show them as tap-to-open headings, so
+     *  the four answers come first without anything being removed. */
+    detailsOpen?: boolean;
 }
 
 function getRiskColor(level: "low" | "medium" | "high") {
@@ -189,22 +195,76 @@ const WAITING_TONE: Record<WaitingPeriodView["tone"], string> = {
  * for a benefit the policy does not cover. The colour and the words are decided
  * once, by getWaitingPeriodStatus, and only rendered here.
  */
-function WaitingPeriodRow({ title, detail, view }: { title: string; detail: string; view: WaitingPeriodView }) {
+function WaitingPeriodRow({ title, detail, view, source }: { title: string; detail: string; view: WaitingPeriodView; source?: ClauseSource }) {
     return (
-        <li className="flex justify-between items-center text-sm border-b border-blue-100 last:border-0 pb-2">
-            <div>
-                <span className="block font-medium">{title}</span>
-                <span className="text-xs text-[var(--color-text-secondary)]">{view.detail ?? detail}</span>
+        <li className="text-sm border-b border-blue-100 last:border-0 pb-2">
+            <div className="flex justify-between items-center">
+                <div>
+                    <span className="block font-medium">{title}</span>
+                    <span className="text-xs text-[var(--color-text-secondary)]">{view.detail ?? detail}</span>
+                </div>
+                <div className="flex items-center">
+                    <span className={cn("text-xs font-bold px-2 py-1 rounded", WAITING_TONE[view.tone])}>{view.label}</span>
+                    {view.note ? <span title={view.note} className="ml-1 text-slate-400 cursor-help">ℹ</span> : null}
+                </div>
             </div>
-            <div className="flex items-center">
-                <span className={cn("text-xs font-bold px-2 py-1 rounded", WAITING_TONE[view.tone])}>{view.label}</span>
-                {view.note ? <span title={view.note} className="ml-1 text-slate-400 cursor-help">ℹ</span> : null}
-            </div>
+            <ClauseSourceButton source={source} />
         </li>
     );
 }
 
-export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, pdfMeta }: PolicyAuditReportProps) {
+/**
+ * Which rule a line of text is about. Used to file the model's key failure
+ * points and the score deductions under the answer-3 row they describe, so the
+ * same clause is read in one place instead of six. Text that matches no row is
+ * never dropped: it is listed under "Also flagged".
+ */
+const RULE_KEYS: Array<[RegExp, string]> = [
+    [/room/i, "room"],
+    [/co-?pay/i, "copay"],
+    [/deductible/i, "deductible"],
+    [/pre-?existing|\bped\b/i, "ped"],
+    [/specific|surger/i, "specific"],
+    [/sub-?limit|cataract|knee|joint|cardiac/i, "sublimit"],
+    [/restor/i, "restoration"],
+    [/maternity/i, "maternity"],
+    [/critical illness/i, "ci"],
+    [/\bopd\b/i, "opd"],
+];
+
+function ruleKeyOf(text: string | null | undefined): string {
+    const s = String(text ?? "");
+    for (const [re, key] of RULE_KEYS) if (re.test(s)) return key;
+    return "";
+}
+
+type RuleTone = "bad" | "limit" | "good";
+
+interface RuleRow {
+    key: string;
+    tone: RuleTone;
+    title: string;
+    body?: string | null;
+    amount?: string | null;
+    source?: ClauseSource;
+    severity?: "high" | "medium" | "low";
+    more: { label: string; text: string }[];
+}
+
+const RULE_BAR: Record<RuleTone, string> = { bad: "bg-red-500", limit: "bg-amber-500", good: "bg-green-500" };
+const RULE_AMOUNT: Record<RuleTone, string> = { bad: "text-red-600", limit: "text-amber-700", good: "text-green-700" };
+
+/** Numbered heading for each of the four answers. */
+function AnswerHead({ n, id, title }: { n: string; id: string; title: string }) {
+    return (
+        <div className="flex items-center gap-3 mb-6">
+            <span className="w-8 h-8 rounded-full bg-[var(--color-navy-900)] text-white grid place-items-center text-sm font-bold flex-shrink-0" aria-hidden="true">{n}</span>
+            <h2 id={id} className="font-serif text-2xl md:text-3xl text-[var(--color-navy-900)]">{title}</h2>
+        </div>
+    );
+}
+
+export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, pdfMeta, detailsOpen = false }: PolicyAuditReportProps) {
     // Headings and labels are translated. The findings themselves (the model's text,
     // getRiskItems below and the @shared/policy helpers) are read from an English
     // policy and stay English, which the page says in Hindi mode.
@@ -249,7 +309,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
     };
 
     const getRiskItems = (auditResult: ForensicAuditReport) => {
-        const items: { issue: string; real_world_claim_impact: string; quantified_oop_risk?: string; severity: "high" | "medium" | "low" }[] = [];
+        const items: { issue: string; real_world_claim_impact: string; quantified_oop_risk?: string; severity: "high" | "medium" | "low"; source?: ClauseSource }[] = [];
 
         try {
             const ageStr = auditResult.identity?.ages?.[0]?.toString() || "35";
@@ -283,14 +343,16 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             issue: "Zone Mismatch — Extra Costs at Home",
                             real_world_claim_impact: `Your policy is registered as Zone ${policyZone}, but your city (${city || "your city"}) is Zone ${actualZone}. Every hospitalisation here triggers a ${copay.percentage || "mandatory"}% co-payment automatically.`,
                             quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 100000)} out of pocket on a ₹5L claim.`,
-                            severity: "high"
+                            severity: "high",
+                            source: copay.source,
                         });
                     } else {
                         items.push({
                             issue: "Zone Upgrade Co-payment",
                             real_world_claim_impact: `Your policy is Zone ${policyZone}. You have full coverage in your city, but if you get treated in a more expensive zone (like a Zone A metro hospital), an ${copay.percentage || "mandatory"}% co-payment applies.`,
                             quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 100000)} out of pocket on a ₹5L claim if treated outside your zone.`,
-                            severity: "low"
+                            severity: "low",
+                            source: copay.source,
                         });
                     }
                 } else {
@@ -298,7 +360,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         issue: "Mandatory Co-payment on Every Claim",
                         real_world_claim_impact: `This policy requires you to pay ${copay.percentage || "a portion"}% of every claim bill regardless of hospital.`,
                         quantified_oop_risk: `${formatINR(copay.oop_on_5L_claim || 50000)} out of pocket on a ₹5L claim.`,
-                        severity: copay.percentage && copay.percentage > 10 ? "high" : "medium"
+                        severity: copay.percentage && copay.percentage > 10 ? "high" : "medium",
+                        source: copay.source,
                     });
                 }
             }
@@ -308,7 +371,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     issue: "Room Rent Capping Penalty",
                     real_world_claim_impact: roomRent.explanation || "Room rent is capped, leading to proportional deductions on all hospital bills.",
                     quantified_oop_risk: "If your room costs more than this limit, the insurer cuts the entire bill proportionally.",
-                    severity: roomRent.risk_level || "high"
+                    severity: roomRent.risk_level || "high",
+                    source: roomRent.source,
                 });
             }
 
@@ -336,7 +400,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             issue: `${cat.procedure} Sub-limit`,
                             real_world_claim_impact: customBody,
                             quantified_oop_risk: customRed,
-                            severity: cat.severity || "medium"
+                            severity: cat.severity || "medium",
+                            source: subLimitsWrapper.source,
                         });
                     }
                 });
@@ -347,7 +412,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     issue: "Base Deductible Applied",
                     real_world_claim_impact: `You must pay the first ${formatINR(deduct.base_deductible)} of your hospital bills every year before the insurer pays anything.`,
                     quantified_oop_risk: deduct.per_claim_impact || `Routine claims below ${formatINR(deduct.base_deductible)} won't be paid.`,
-                    severity: "medium"
+                    severity: "medium",
+                    source: deduct.source,
                 });
             }
 
@@ -387,7 +453,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             issue: "Pre-Existing Diseases Not Covered",
                             real_world_claim_impact: `${live.monthsLeft ?? "Several"} months remaining before pre-existing conditions are covered.`,
                             quantified_oop_risk: `Claims will be rejected until ${live.endDate || "waiting period ends"}.`,
-                            severity: "high"
+                            severity: "high",
+                            source: ped.source,
                         });
                     }
                 }
@@ -399,7 +466,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             issue: "Specific Surgeries Locked",
                             real_world_claim_impact: `Waiting period active for: ${dlist}.`,
                             quantified_oop_risk: `Claims for these conditions before ${live.endDate || "waiting period ends"} will be rejected.`,
-                            severity: "medium"
+                            severity: "medium",
+                            source: waiting.specific_diseases.source,
                         });
                     }
                 }
@@ -436,7 +504,8 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                             issue: "Maternity Waiting Period Active",
                             real_world_claim_impact: `${waiting.maternity.months_remaining || "Several"} months remaining before maternity claims are payable.`,
                             quantified_oop_risk: `Planned delivery before ${matEnd || "waiting period ends"} will not be covered.`,
-                            severity: "medium"
+                            severity: "medium",
+                            source: waiting.maternity.source,
                         });
                     }
                 }
@@ -531,6 +600,25 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
         return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     })();
 
+    const dateLocale = locale === "hi" ? "hi-IN" : "en-IN";
+    const policyStart = formatPolicyDate(data.policy_timeline?.policy_inception_date, dateLocale);
+    const policyEnd = formatPolicyDate(data.policy_timeline?.policy_expiry_date, dateLocale);
+    const policyTerm = policyTermYears(data.policy_timeline?.policy_tenure_years);
+    const premium = readPremium(data.premium);
+    const premiumEvery = (() => {
+        if (!premium) return null;
+        switch (premium.frequency) {
+            case "annual": return t("rpt.prem_annual");
+            case "half_yearly": return t("rpt.prem_half");
+            case "quarterly": return t("rpt.prem_quarter");
+            case "monthly": return t("rpt.prem_month");
+            // One payment for a one-year policy is an annual premium; "paid once"
+            // read as if no renewal premium would ever fall due.
+            case "single": return policyTerm && policyTerm > 1 ? t("rpt.prem_term", { n: policyTerm }) : policyTerm === 1 ? t("rpt.prem_annual") : t("rpt.prem_once");
+            default: return null;
+        }
+    })();
+
     const portingRec = data.recommendations?.should_port_to_better_policy;
     // Other cover uploaded with this policy. Absent on every pre-feature report.
     const otherCover = data.other_cover ?? [];
@@ -548,6 +636,78 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                 ? rawZoneCount.trim()   // keep useful shapes like "450+" or "200-300"
                 : null;
     const countFallback = zoneCount ?? "—";
+
+    // Answer 3. Every finding the old "Coverage overview", "Key failure points"
+    // and deduction table carried, filed under the rule it describes.
+    const claimRules = (() => {
+        const rows: RuleRow[] = [];
+        dynamicRiskItems.forEach((it) => rows.push({
+            key: ruleKeyOf(it.issue),
+            tone: it.severity === "high" ? "bad" : "limit",
+            title: it.issue,
+            body: it.real_world_claim_impact,
+            amount: it.quantified_oop_risk ?? null,
+            source: it.source,
+            more: [],
+        }));
+        (data.benefit_evaluation?.structural_red_flags ?? []).forEach((f) => rows.push({
+            key: "redflag",
+            tone: f.severity === "low" ? "limit" : "bad",
+            title: f.flag,
+            body: f.why_it_is_dangerous,
+            severity: f.severity,
+            more: [],
+        }));
+        (data.benefit_evaluation?.what_actually_works ?? []).forEach((w) => rows.push({
+            // Keyed like the problem rows, so a good clause ("No room rent cap")
+            // finds the same verified quote a bad one would.
+            key: ruleKeyOf(w.benefit) || ruleKeyOf(w.why_it_matters_in_claim) || "works",
+            tone: "good",
+            title: w.benefit,
+            body: w.why_it_matters_in_claim,
+            amount: w.quantified_value ?? null,
+            more: [],
+        }));
+        // A row the model wrote has no quote of its own; give it the verified
+        // quote stored on the clause it is about. Only server-verified quotes
+        // are ever stored, so nothing unverified can appear this way.
+        const quoteByKey: Record<string, ClauseSource | undefined> = {
+            room: data.claim_risk_analysis?.room_rent?.source,
+            copay: data.claim_risk_analysis?.co_payment?.source,
+            sublimit: data.claim_risk_analysis?.sub_limits?.source,
+            deductible: data.claim_risk_analysis?.deductibles?.source,
+            ped: data.waiting_period_analysis?.pre_existing_disease?.source,
+            specific: data.waiting_period_analysis?.specific_diseases?.source,
+            maternity: data.waiting_period_analysis?.maternity?.source,
+            restoration: data.coverage_structure?.restoration?.source,
+        };
+        rows.forEach((r) => { if (!r.source && quoteByKey[r.key]) r.source = quoteByKey[r.key]; });
+        const rowFor = (text: string) => {
+            const k = ruleKeyOf(text);
+            return k ? rows.find((r) => r.key === k && r.tone !== "good") ?? null : null;
+        };
+        const leftover: string[] = [];
+        (data.final_verdict?.key_failure_points ?? []).forEach((fp) => {
+            const r = rowFor(fp);
+            if (r) r.more.push({ label: t("rpt.mi_failure"), text: fp });
+            else leftover.push(fp);
+        });
+        const seen = new Set<string>();
+        (data.audit_score?.deductions ?? []).forEach((d) => {
+            if (!d?.reason || seen.has(d.reason)) return;
+            seen.add(d.reason);
+            const r = rowFor(d.reason);
+            if (!r) return; // still listed in the deduction table under The full picture
+            const cat = tOr(t, `rpt.cat_${d.category}`, DEDUCTION_CATEGORY_LABELS[d.category] ?? d.category);
+            r.more.push({ label: t("rpt.mi_score"), text: `${cat}: ${d.reason}, ${t("rpt.pts", { n: Math.abs(d.points) })}` });
+        });
+        const order: Record<RuleTone, number> = { bad: 0, limit: 1, good: 2 };
+        rows.sort((a, b) => order[a.tone] - order[b.tone]);
+        return { rows, leftover };
+    })();
+
+    const [scoreOpen, setScoreOpen] = useState(detailsOpen);
+    const [policyOpen, setPolicyOpen] = useState(detailsOpen);
 
     useEffect(() => {
         const city = data.identity?.city;
@@ -603,23 +763,47 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     </p>
                 )}
 
-                {/* 1. VERDICT HEADER */}
-                <div className="mb-12 border-b border-[var(--color-border-light)] pb-12">
-                    <span className={cn(
-                        "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-6 border",
-                        verdict === "SAFE" ? "bg-green-50 text-green-700 border-green-200" :
-                            verdict === "BORDERLINE" ? "bg-amber-50 text-amber-700 border-amber-200" :
-                                "bg-red-50 text-red-700 border-red-200"
-                    )}>
-                        {verdict === "SAFE" && <CheckCircle2 className="w-4 h-4" />}
-                        {verdict === "BORDERLINE" && <AlertTriangle className="w-4 h-4" />}
-                        {verdict === "RISKY" && <AlertCircle className="w-4 h-4" />}
-                        {t("rpt.verdict", {
-                            label: verdict === "SAFE" ? t("rpt.v_safe") :
-                                verdict === "BORDERLINE" ? t("rpt.v_borderline") :
-                                    t("rpt.v_risky"),
-                        })}
-                    </span>
+                {/* ANSWER 1. Is this policy good enough?
+                    Verdict and score side by side, then the policy's facts in a full
+                    3 x 2 grid, then what is good and what we could not read, together.
+                    Nothing from the old header is gone: policy age is the line under
+                    "Covered since", NCAR and its label are in the score working under
+                    The full picture, and the coverage-stress check is in the link row. */}
+                <section aria-labelledby="ans-1" className="mb-16">
+                    <AnswerHead n="1" id="ans-1" title={t("rpt.q1")} />
+
+                    <div className="flex flex-wrap items-center gap-3 mb-6">
+                        <span className={cn(
+                            "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border",
+                            verdict === "SAFE" ? "bg-green-50 text-green-700 border-green-200" :
+                                verdict === "BORDERLINE" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                    "bg-red-50 text-red-700 border-red-200"
+                        )}>
+                            {verdict === "SAFE" && <CheckCircle2 className="w-4 h-4" />}
+                            {verdict === "BORDERLINE" && <AlertTriangle className="w-4 h-4" />}
+                            {verdict === "RISKY" && <AlertCircle className="w-4 h-4" />}
+                            {t("rpt.verdict", {
+                                label: verdict === "SAFE" ? t("rpt.v_safe") :
+                                    verdict === "BORDERLINE" ? t("rpt.v_borderline") :
+                                        t("rpt.v_risky"),
+                            })}
+                        </span>
+                        <span className="inline-flex items-baseline gap-1.5 rounded-full border border-[var(--color-border-light)] bg-white px-4 py-1">
+                            <span className={cn(
+                                "font-serif text-2xl leading-none",
+                                verdict === "SAFE" ? "text-[var(--color-green-primary)]" : verdict === "RISKY" ? "text-red-600" : "text-amber-600"
+                            )}>{score}</span>
+                            <span className="text-sm text-slate-500">/ 100</span>
+                            {data.audit_score?.bucket_label && (
+                                <span className="text-sm font-semibold text-[var(--color-navy-900)]">· {data.audit_score.bucket_label}</span>
+                            )}
+                        </span>
+                    </div>
+                    {isScoredUnderOldRules(data) && (
+                        <p className="-mt-3 mb-6 text-sm text-amber-800">
+                            {t("rpt.old_rules", { when: data.engine?.scored_at ? ` (${data.engine.scored_at})` : "" })}
+                        </p>
+                    )}
 
                     <div className="mb-8 max-w-4xl">
                         <h1 className="text-3xl md:text-4xl font-serif text-[var(--color-navy-900)] mb-4 leading-tight">
@@ -630,52 +814,672 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-6 border-t border-[var(--color-border-light)] pt-6">
                         <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.insured")}</div>
+                            <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.insured")}</div>
                             <div className="font-semibold text-lg">{data.identity?.insured_names?.join(", ")}</div>
                         </div>
                         <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.effective_cover")}</div>
+                            <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.cover_per_stay")}</div>
                             <div className="font-semibold text-lg font-mono text-[var(--color-green-primary)]">
                                 {formatINR(effectiveCoverage)}
                             </div>
-                            <CoverageDiagnostic report={data} effectiveCoverage={effectiveCoverage || 0} />
+                            {hasNcar && (
+                                <div className="text-sm text-[var(--color-text-secondary)]">{t("rpt.ncar_short", { pct: Math.round(ncar * 100) })}</div>
+                            )}
                         </div>
-                        <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_age")}</div>
-                            <div className="font-semibold text-lg">
-                                {realTimePolicyAgeDays > 365
-                                    ? t("rpt.years", { n: (realTimePolicyAgeDays / 365).toFixed(1) })
-                                    : t("rpt.days", { n: realTimePolicyAgeDays })}
+                        {premium && (
+                            <div>
+                                <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.premium")}</div>
+                                {/* Exact, never abbreviated: this is the figure on the schedule. */}
+                                <div className="font-semibold text-lg font-mono">₹{premium.amount.toLocaleString("en-IN")}</div>
+                                {(premiumEvery || premium.gst_included != null) && (
+                                    <div className="text-sm text-[var(--color-text-secondary)]">
+                                        {[
+                                            premiumEvery,
+                                            premium.gst_included === true ? t("rpt.prem_gst_in") : premium.gst_included === false ? t("rpt.prem_gst_out") : null,
+                                        ].filter(Boolean).join(", ")}
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                        <div>
-                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.data_quality")}</div>
-                            <div className="font-semibold text-lg capitalize">{data.data_quality?.overall ? tOr(t, `rpt.dq_${data.data_quality.overall}`, data.data_quality.overall) : t("rpt.na")}</div>
-                        </div>
+                        )}
+                        {/* Each date is shown only when the policy states it: a missing
+                            row reads as missing data, a dash would read as a value. */}
+                        {policyStart && (
+                            <div>
+                                <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.covered_since")}</div>
+                                <div className="font-semibold text-lg">{policyStart}</div>
+                                <div className="text-sm text-[var(--color-text-secondary)]">
+                                    {realTimePolicyAgeDays > 365
+                                        ? t("rpt.years", { n: (realTimePolicyAgeDays / 365).toFixed(1) })
+                                        : t("rpt.days", { n: realTimePolicyAgeDays })}
+                                </div>
+                            </div>
+                        )}
+                        {policyEnd && (
+                            <div>
+                                <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_end")}</div>
+                                <div className="font-semibold text-lg">{policyEnd}</div>
+                            </div>
+                        )}
+                        {policyTerm != null && (
+                            <div>
+                                <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_term")}</div>
+                                <div className="font-semibold text-lg">
+                                    {policyTerm === 1 ? t("rpt.term_one") : t("rpt.term_many", { n: policyTerm })}
+                                </div>
+                            </div>
+                        )}
+                        {!policyStart && (
+                            <div>
+                                <div className="text-sm text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">{t("rpt.policy_age")}</div>
+                                <div className="font-semibold text-lg">
+                                    {realTimePolicyAgeDays > 365
+                                        ? t("rpt.years", { n: (realTimePolicyAgeDays / 365).toFixed(1) })
+                                        : t("rpt.days", { n: realTimePolicyAgeDays })}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Effective Cover is single-event money, so a restore is not inside
-                        that number. It is real value and has to be visible somewhere, or
-                        removing it from the headline just loses the information. */}
-                    {(restorationNote || coverView.restated) && (
-                        <div className="mt-4 pt-4 border-t border-[var(--color-border-light)] space-y-1">
-                            {restorationNote && (
-                                <p className="text-sm text-[var(--color-text-secondary)]">{restorationNote}</p>
-                            )}
-                            {/* A number that changed under the reader's feet has to say so.
-                                Older reports counted a restoration tranche inside this
-                                figure; they are re-derived on read, not rewritten. */}
-                            {coverView.restated && (
-                                <p className="text-sm text-[var(--color-text-secondary)]">
-                                    {t("rpt.restated")}
+                    {/* What is good and what we could not read, side by side in one stack. */}
+                    <div className="mt-6 space-y-3">
+                        {restorationNote && (
+                            <div className={cn(
+                                "flex items-start gap-3 rounded-lg px-4 py-3",
+                                data.coverage_structure?.restoration?.same_illness_covered === true ? "bg-green-50" : "bg-white border border-[var(--color-border-light)]"
+                            )}>
+                                <CheckCircle2 className={cn(
+                                    "w-5 h-5 mt-0.5 flex-shrink-0",
+                                    data.coverage_structure?.restoration?.same_illness_covered === true ? "text-green-600" : "text-slate-400"
+                                )} aria-hidden="true" />
+                                <div className="min-w-0">
+                                    <p className="text-sm text-[var(--color-navy-900)]">{restorationNote}</p>
+                                    <ClauseSourceButton source={data.coverage_structure?.restoration?.source} />
+                                </div>
+                            </div>
+                        )}
+                        {(() => {
+                            // What we could not read, said plainly; shown only when something is missing.
+                            const scheduleOnly = data.data_quality?.wording_source === "schedule_only";
+                            const missing = (data.data_quality?.missing_critical_fields ?? [])
+                                .filter((f): f is string => typeof f === "string" && f.trim() !== "")
+                                .map((f) => f.replace(/_/g, " ").trim())
+                                .slice(0, 4);
+                            if (!scheduleOnly && missing.length === 0) return null;
+                            return (
+                                <div className="flex items-start gap-3 rounded-lg bg-[#FFFBEB] px-4 py-3">
+                                    <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0 text-[#B45309]" aria-hidden="true" />
+                                    <div className="min-w-0">
+                                        {scheduleOnly && (
+                                            <p className="text-sm text-[var(--color-navy-900)]">{t("rpt.dq_schedule_only")}</p>
+                                        )}
+                                        {missing.length > 0 && (
+                                            <p className={`text-sm text-[var(--color-navy-900)]${scheduleOnly ? " mt-2" : ""}`}>
+                                                <span className="font-semibold">{t("rpt.dq_missing")}</span> {missing.join(", ")}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                        {/* A number that changed under the reader's feet has to say so.
+                            Older reports counted a restoration tranche inside this
+                            figure; they are re-derived on read, not rewritten. */}
+                        {coverView.restated && (
+                            <p className="text-sm text-[var(--color-text-secondary)]">{t("rpt.restated")}</p>
+                        )}
+                    </div>
+
+                    <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2">
+                        <a
+                            href="#score-detail"
+                            onClick={() => setScoreOpen(true)}
+                            className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[var(--color-teal-700)] underline underline-offset-2"
+                        >
+                            {t("rpt.score_how_link")} ↓
+                        </a>
+                        <CoverageDiagnostic report={data} effectiveCoverage={effectiveCoverage || 0} />
+                    </div>
+                </section>
+
+                {/* ANSWER 2. What would a claim cost? Simulations, cover reach, other cover. */}
+                <section aria-labelledby="ans-2" className="mb-16">
+                    <AnswerHead n="2" id="ans-2" title={t("rpt.q2")} />
+                {/* 4. CLAIM SIMULATIONS */}
+                {simulations?.length > 0 && (
+                    <section className="mb-16">
+                        <div className="flex items-center gap-3 mb-6">
+                            <Activity className="w-6 h-6 text-[var(--color-teal-600)]" />
+                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.simulations")}</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {simulations.map((sim, i) => (
+                                <div key={i} className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                                            {sim.scenario}
+                                        </div>
+                                        <span className={cn(
+                                            "text-xs font-bold uppercase px-2 py-0.5 rounded border",
+                                            getSimulationVerdictColor(sim.verdict)
+                                        )}>{tOr(t, `rpt.sim_${sim.verdict}`, sim.verdict)}</span>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <span className="text-sm">{t("rpt.total_bill")}</span>
+                                            <span className="font-mono font-bold text-slate-600">{'₹' + (sim.total_bill || 0)?.toLocaleString('en-IN')}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-sm">{t("rpt.insurer_pays")}</span>
+                                            <span className="font-mono font-bold text-green-600">{'₹' + (sim.insurer_pays || 0)?.toLocaleString('en-IN')}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-sm">{t("rpt.you_pay")}</span>
+                                            <span className="font-mono font-bold text-amber-600">{'₹' + ((sim.total_bill || 0) - (sim.insurer_pays || 0))?.toLocaleString('en-IN')}</span>
+                                        </div>
+                                        <div className="h-px bg-slate-200 my-2" />
+                                        <div className="flex justify-between text-xs text-[var(--color-text-secondary)]">
+                                            <span>{t("rpt.oop_ratio")}</span>
+                                            <span className="font-mono">{((sim.oop_ratio || 0) * 100).toFixed(1)}%</span>
+                                        </div>
+                                        {sim.explanation && (
+                                            <p className="text-xs text-slate-500 mt-2 leading-relaxed border-t border-slate-100 pt-2">
+                                                {sim.explanation}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+                {/* 2b. COVER AGAINST ONE SERIOUS ADMISSION, today and in five years.
+                    One bar instead of two boxes of sentences: the policy's cover is
+                    the fill, today's cost and the five-year cost are markers, so the
+                    gap is visible before anything is read. Every sentence the two
+                    boxes carried is still here, under the figures. The first marker
+                    is what the score is measured against; the second is shown, not
+                    scored. Other cover the family uploaded is drawn on the same bar,
+                    so it is never stated twice. */}
+                {(() => {
+                    const outlook = coverOutlook(
+                        data.identity?.ages,
+                        data.identity?.assumed_zone,
+                        data.coverage_structure?.restoration?.exists === true,
+                    );
+                    const held = coverView.effectiveCover;
+                    if (!outlook || typeof held !== "number" || held <= 0) return null;
+
+                    const pctToday = Math.round((held / outlook.today) * 100);
+                    const pctTarget = Math.round((held / outlook.target) * 100);
+                    const shortToday = outlook.today - held;
+                    const shortLater = outlook.target - held;
+                    const combined =
+                        otherCover.length > 0 && typeof coverView.stack?.combined === "number" && coverView.stack.combined > held
+                            ? coverView.stack.combined
+                            : null;
+                    const max = Math.max(outlook.target, outlook.today, held, combined ?? 0);
+                    const pct = (v: number) => Math.min(100, (v / max) * 100);
+                    // Labels near the right edge hang left of their marker so they stay inside the card.
+                    const anchorAt = (v: number) => (pct(v) > 80 ? "-translate-x-full" : pct(v) < 12 ? "" : "-translate-x-1/2");
+                    const toneOf = (short: number, share: number) =>
+                        short <= 0 ? "text-green-700" : share < 50 ? "text-red-600" : "text-amber-700";
+
+                    return (
+                        <section className="mb-16" aria-labelledby="cover-reach">
+                            <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-5 md:p-7 shadow-sm">
+                                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                                    <h3 id="cover-reach" className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.how_far")}</h3>
+                                    <span className="text-sm text-[var(--color-text-secondary)]">{t("rpt.reach_cover", { amount: formatINR(held) })}</span>
+                                </div>
+
+                                {/* The bar. Labels sit above (today) and below (five years) so they never collide. */}
+                                <div className="relative mt-12 mb-14" aria-hidden="true">
+                                    <div className="relative h-4 w-full rounded-full bg-[var(--color-cream-dark)] overflow-hidden">
+                                        {combined !== null && (
+                                            <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--color-teal-200)]" style={{ width: `${pct(combined)}%` }} />
+                                        )}
+                                        <div className="absolute inset-y-0 left-0 rounded-full bg-[var(--color-teal-600)]" style={{ width: `${pct(held)}%` }} />
+                                    </div>
+                                    <div className="absolute -top-2 h-8 w-0.5 bg-[var(--color-navy-900)]" style={{ left: `${pct(outlook.today)}%` }} />
+                                    <div className={cn("absolute -top-9 whitespace-nowrap text-sm font-semibold text-[var(--color-navy-900)]", anchorAt(outlook.today))} style={{ left: `${pct(outlook.today)}%` }}>
+                                        {t("rpt.reach_today_mk")} {formatINR(outlook.today)}
+                                    </div>
+                                    <div className="absolute -top-2 h-8 w-0.5 bg-slate-400" style={{ left: `calc(${pct(outlook.target)}% - 2px)` }} />
+                                    <div className={cn("absolute top-8 whitespace-nowrap text-sm font-semibold text-[var(--color-text-secondary)]", anchorAt(outlook.target))} style={{ left: `${pct(outlook.target)}%` }}>
+                                        {t("rpt.reach_later_mk", { n: outlook.years })} {formatINR(outlook.target)}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{t("rpt.admission_today")}</div>
+                                        <div className={cn("mt-1 text-xl font-bold", toneOf(shortToday, pctToday))}>
+                                            {shortToday > 0 ? t("rpt.reach_short", { amount: formatINR(shortToday) }) : t("rpt.reach_met")}
+                                        </div>
+                                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                                            {t("rpt.covers_pct", { held: formatINR(held), pct: pctToday })}{" "}
+                                            {shortToday > 0
+                                                ? t("rpt.leaves_short", { short: formatINR(shortToday) })
+                                                : t("rpt.met_in_full")}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{t("rpt.admission_later", { n: outlook.years })}</div>
+                                        <div className={cn("mt-1 text-xl font-bold", toneOf(shortLater, pctTarget))}>
+                                            {shortLater > 0 ? t("rpt.reach_short", { amount: formatINR(shortLater) }) : t("rpt.reach_met")}
+                                        </div>
+                                        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                                            {t("rpt.later_d", { pct: pctTarget, rate: Math.round(CALCULATOR_CONFIG.medicalInflationRate * 100) })}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {combined !== null && (
+                                    <p className="mt-5 text-sm text-[var(--color-navy-900)]">
+                                        {t("rpt.reach_with_other", { amount: formatINR(combined) })}
+                                    </p>
+                                )}
+
+                                <p className="mt-5 pt-4 border-t border-[var(--color-border-light)] text-sm text-[var(--color-text-muted)]">
+                                    {t("rpt.how_far_d")} {t("rpt.assume_nothing")}
                                 </p>
-                            )}
+                            </div>
+                        </section>
+                    );
+                })()}
+                {/* 3b. OTHER COVER HELD + TOTAL STACK.
+                       Only rendered when other cover was uploaded with the policy —
+                       every report produced before this feature simply has none. */}
+                {(otherCover.length > 0 || (coverStack?.where_the_stack_still_breaks?.length ?? 0) > 0) && (
+                    <section className="mb-16">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Layers className="w-6 h-6 text-[var(--color-teal-600)]" />
+                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.other_cover")}</h3>
+                        </div>
+                        <p className="text-sm text-[var(--color-text-muted)] mb-6">
+                            {t("rpt.other_cover_d")}
+                        </p>
+
+                        {/* Total across the stack — deliberately styled as a fact panel,
+                            not a score, so it never reads as a competing verdict. */}
+                        {coverView.stack && (
+                            <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm mb-6">
+                                <div className="flex flex-wrap items-end justify-between gap-4">
+                                    <div>
+                                        <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                                            {t("rpt.usable_all")}
+                                        </div>
+                                        <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
+                                            {formatINR(coverView.stack.combined)}
+                                        </div>
+                                        {typeof coverView.stack.required === "number" && (
+                                            <div className="mt-1 text-sm text-[var(--color-text-muted)]">
+                                                {t("rpt.against", { amount: formatINR(coverView.stack.required) })}
+                                                {typeof coverView.stack.ratio === "number" && `, ${Math.round(coverView.stack.ratio * 100)}%`}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {coverView.stack.verdict !== "unclear" && (
+                                        <span className={cn(
+                                            "text-xs font-bold uppercase px-3 py-1 rounded border",
+                                            coverView.stack.verdict === "ADEQUATE"
+                                                ? "border-green-300 bg-green-50 text-green-700"
+                                                : coverView.stack.verdict === "THIN"
+                                                ? "border-amber-300 bg-amber-50 text-amber-700"
+                                                : "border-red-300 bg-red-50 text-red-700"
+                                        )}>{tOr(t, `rpt.stack_${coverView.stack.verdict}`, coverView.stack.verdict)}</span>
+                                    )}
+                                </div>
+
+                                {coverView.stack.remarks && (
+                                    <p className="mt-4 text-sm text-[var(--color-navy-900)]">{coverView.stack.remarks}</p>
+                                )}
+
+                                {(coverView.stack.counted.length > 0 || coverView.stack.excluded.length > 0) && (
+                                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        {coverView.stack.counted.length > 0 && (
+                                            <div>
+                                                <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+                                                    {t("rpt.counted")}
+                                                </div>
+                                                <ul className="space-y-1">
+                                                    {coverView.stack.counted.map((c, i) => (
+                                                        <li key={i} className="text-sm text-[var(--color-navy-900)]">• {c}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        {coverView.stack.excluded.length > 0 && (
+                                            <div>
+                                                <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+                                                    {t("rpt.not_counted")}
+                                                </div>
+                                                <ul className="space-y-1">
+                                                    {coverView.stack.excluded.map((c, i) => (
+                                                        <li key={i} className="text-sm text-slate-600">• {c}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {coverStack?.where_the_stack_still_breaks && coverStack.where_the_stack_still_breaks.length > 0 && (
+                                    <div className="mt-4 border-t border-[var(--color-border-light)] pt-4">
+                                        <div className="text-xs font-bold uppercase tracking-wider text-red-700 mb-1">
+                                            {t("rpt.still_breaks")}
+                                        </div>
+                                        <ul className="space-y-1">
+                                            {coverStack.where_the_stack_still_breaks.map((c, i) => (
+                                                <li key={i} className="text-sm text-[var(--color-navy-900)]">• {c}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {otherCover.map((cover, i) => (
+                                <div key={i} className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
+                                    <div className="flex justify-between items-start gap-3 mb-4">
+                                        <div className="min-w-0">
+                                            <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                                                {tOr(t, `rpt.oc_${cover.kind}`, OTHER_COVER_LABEL[cover.kind] ?? cover.kind)}
+                                            </div>
+                                            <div className="mt-1 font-semibold text-[var(--color-navy-900)] break-words">
+                                                {[cover.insurer, cover.plan_name].filter(Boolean).join(" · ") || t("rpt.details_not_stated")}
+                                            </div>
+                                        </div>
+                                        {/* A cover can be usable today and still be left out of the
+                                            total (employer cover ends with the job) — the card must
+                                            say so, or only the "Not counted" list would reveal it. */}
+                                        {cover.usable_today === false ? (
+                                            <span className="flex-shrink-0 text-xs font-bold uppercase px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-700">
+                                                {t("rpt.not_usable")}
+                                            </span>
+                                        ) : cover.counted_in_total === false ? (
+                                            <span className="flex-shrink-0 text-xs font-bold uppercase px-2 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-600">
+                                                {t("rpt.not_in_total")}
+                                            </span>
+                                        ) : null}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {typeof cover.sum_insured === "number" && (
+                                            <div className="flex justify-between">
+                                                <span className="text-sm">{t("rpt.sum_insured")}</span>
+                                                <span className="font-mono font-bold text-slate-600">{formatINR(cover.sum_insured)}</span>
+                                            </div>
+                                        )}
+                                        {/* A group policy has no deductible; the model returns 0
+                                            rather than null, and "Deductible ₹0" reads as a finding. */}
+                                        {typeof cover.deductible === "number" && cover.deductible > 0 && (
+                                            <div className="flex justify-between">
+                                                <span className="text-sm">{t("rpt.deductible")}</span>
+                                                <span className="font-mono font-bold text-slate-600">{formatINR(cover.deductible)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {cover.own_limits && cover.own_limits.length > 0 && (
+                                        <div className="mt-4">
+                                            <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+                                                {t("rpt.own_limits")}
+                                            </div>
+                                            <ul className="space-y-1">
+                                                {cover.own_limits.map((l, j) => (
+                                                    <li key={j} className="text-sm text-[var(--color-navy-900)]">• {l}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {cover.dependency_risk && (
+                                        <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3">
+                                            <div className="text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">
+                                                {t("rpt.take_away")}
+                                            </div>
+                                            <p className="text-sm text-amber-900">{cover.dependency_risk}</p>
+                                        </div>
+                                    )}
+
+                                    {cover.what_it_does_not_solve && (
+                                        <p className="mt-3 text-sm text-slate-600">
+                                            <span className="font-semibold">{t("rpt.does_not_fix")} </span>
+                                            {cover.what_it_does_not_solve}
+                                        </p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+                </section>
+
+                {/* ANSWER 3. What could cut a claim? */}
+                <section aria-labelledby="ans-3" className="mb-16">
+                    <AnswerHead n="3" id="ans-3" title={t("rpt.q3")} />
+
+                    {claimRules.rows.length === 0 ? (
+                        <p className="text-sm text-slate-500 italic">{t("rpt.no_cost_risks")}</p>
+                    ) : (
+                        <ul className="space-y-3">
+                            {claimRules.rows.map((r, i) => (
+                                <li key={i} className="rounded-lg border border-[var(--color-border-light)] bg-white">
+                                    <div className="grid grid-cols-[4px_minmax(0,1fr)] md:grid-cols-[4px_minmax(0,1fr)_minmax(0,13rem)] gap-x-4 gap-y-1 p-4">
+                                        <span className={cn("row-span-2 md:row-span-1 rounded-full self-stretch", RULE_BAR[r.tone])} aria-hidden="true" />
+                                        <div className="min-w-0">
+                                            <div className="font-semibold text-[var(--color-navy-900)]">
+                                                {r.title}
+                                                {r.severity && (
+                                                    <span className={cn("ml-2 align-middle text-xs font-bold uppercase px-2 py-0.5 rounded border", getRiskColor(r.severity))}>
+                                                        {tOr(t, `rpt.sev_${r.severity}`, r.severity)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {r.body && <p className="mt-1 text-sm text-[var(--color-text-secondary)] leading-relaxed">{r.body}</p>}
+                                            <ClauseSourceButton source={r.source} />
+                                            {r.more.length > 0 && (
+                                                <details className="group mt-2">
+                                                    <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 rounded-full border border-[var(--color-border-medium)] bg-white px-3 text-sm font-medium text-[var(--color-navy-900)] [&::-webkit-details-marker]:hidden">
+                                                        {t("rpt.more_on_this")}
+                                                        <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+                                                    </summary>
+                                                    <dl className="mt-2 space-y-2 rounded-lg bg-[var(--color-cream-100)] px-4 py-3">
+                                                        {r.more.map((m, j) => (
+                                                            <div key={j} className="grid gap-0.5 md:grid-cols-[10rem_minmax(0,1fr)] md:gap-3">
+                                                                <dt className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] pt-0.5">{m.label}</dt>
+                                                                <dd className="text-sm text-[var(--color-navy-900)]">{m.text}</dd>
+                                                            </div>
+                                                        ))}
+                                                    </dl>
+                                                </details>
+                                            )}
+                                        </div>
+                                        {r.amount && (
+                                            <span className={cn("col-start-2 md:col-start-auto text-sm font-semibold md:text-right", RULE_AMOUNT[r.tone])}>{r.amount}</span>
+                                        )}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {claimRules.leftover.length > 0 && (
+                        <div className="mt-6 rounded-lg border border-[var(--color-border-light)] bg-white p-5">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-secondary)] mb-3">{t("rpt.also_flagged")}</h3>
+                            <ul className="space-y-2">
+                                {claimRules.leftover.map((fp, i) => (
+                                    <li key={i} className="text-sm text-[var(--color-navy-900)] flex items-start gap-2">
+                                        <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                                        <span>{fp}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     )}
-                </div>
 
+                </section>
+
+                {/* ANSWER 4. What should we do? */}
+                <section aria-labelledby="ans-4" className="mb-16">
+                    <AnswerHead n="4" id="ans-4" title={t("rpt.q4")} />
+                {/* 7. RECOMMENDATIONS */}
+                {data.recommendations && (
+                    <section className="mb-16">
+                        <div className="flex items-center gap-3 mb-6">
+                            <Zap className="w-6 h-6 text-amber-500" />
+                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.recs")}</h3>
+                        </div>
+
+                        {data.recommendations.critical_actions?.length > 0 && (
+                            <div className="border border-red-100 bg-red-50/30 p-6 rounded-lg mb-6">
+                                <div className="text-sm font-bold uppercase tracking-wider text-red-700 mb-4 flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4" /> {t("rpt.critical")}
+                                </div>
+                                <ul className="space-y-4">
+                                    {data.recommendations.critical_actions.map((action, i) => (
+                                        <li key={i} className="border-l-2 border-red-300 pl-3">
+                                            <span className="font-medium block text-sm">{action.action}</span>
+                                            <span className="text-xs text-slate-600">{action.reason}</span>
+                                            {action.oop_risk_if_ignored && (
+                                                <span className="text-xs text-red-500 font-mono block mt-0.5">
+                                                    {t("rpt.risk_ignored", { risk: action.oop_risk_if_ignored })}
+                                                </span>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {portingRec && (
+                            <div className={cn(
+                                "border p-6 rounded-lg mb-6",
+                                portingRec.recommendation === "yes" ? "bg-red-50 border-red-200" :
+                                    portingRec.recommendation === "consider" ? "bg-amber-50 border-amber-200" :
+                                        "bg-green-50 border-green-200"
+                            )}>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-navy-900)]">{t("rpt.port_q")}</div>
+                                    <span className={cn(
+                                        "text-xs font-bold px-2 py-0.5 rounded-full",
+                                        portingRec.recommendation === "yes" ? "bg-red-100 text-red-700" :
+                                            portingRec.recommendation === "consider" ? "bg-amber-100 text-amber-700" :
+                                                "bg-green-100 text-green-700"
+                                    )}>
+                                        {portingRec.recommendation === "yes" ? t("rpt.badge_yes") :
+                                            portingRec.recommendation === "consider" ? t("rpt.badge_consider") :
+                                                t("rpt.badge_no")}
+                                    </span>
+                                </div>
+                                <p className="text-sm">{portingRec.reason}</p>
+                                {portingRec.what_to_look_for?.length > 0 && (
+                                    <ul className="mt-3 space-y-1">
+                                        {portingRec.what_to_look_for.map((item, i) => (
+                                            <li key={i} className="text-xs flex items-start gap-2">
+                                                <CheckCircle2 className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                                <span>{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {portingRec.recommendation === "consider" && !hideLeadCTA && (
+                                    <>
+                                        <div className="h-px bg-amber-200/50 my-4" />
+                                        <Button 
+                                            variant="outline" 
+                                            className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 hover:text-amber-800" 
+                                            onClick={() => {
+                                                setShowLeadForm(true);
+                                                setTimeout(() => {
+                                                    leadFormRef.current?.scrollIntoView({ 
+                                                        behavior: 'smooth', 
+                                                        block: 'start' 
+                                                    });
+                                                }, 100);
+                                            }}
+                                        >
+                                            {t("rpt.talk_cta")}
+                                        </Button>
+                                    </>
+                                )}
+                                {portingRec.recommendation === "yes" && !hideLeadCTA && (
+                                    <>
+                                        <div className="h-px bg-red-200/50 my-4" />
+                                        <Button 
+                                            className="w-full bg-red-600 text-white hover:bg-red-700" 
+                                            onClick={() => {
+                                                setShowLeadForm(true);
+                                                setTimeout(() => {
+                                                    leadFormRef.current?.scrollIntoView({ 
+                                                        behavior: 'smooth', 
+                                                        block: 'start' 
+                                                    });
+                                                }, 100);
+                                            }}
+                                        >
+                                            {t("rpt.better_cta")}
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {(data.recommendations.medium_priority?.length > 0 || data.recommendations.low_priority?.length > 0) && (
+                            <div className="bg-white border border-[var(--color-border-light)] p-6 rounded-lg">
+                                <div className="text-sm font-bold uppercase tracking-wider text-slate-600 mb-4 flex items-center gap-2">
+                                    <Info className="w-4 h-4" /> {t("rpt.other_recs")}
+                                </div>
+                                <ul className="space-y-3">
+                                    {[...data.recommendations.medium_priority ?? [], ...data.recommendations.low_priority ?? []].map((item, i) => (
+                                        <li key={i} className="text-sm border-l-2 border-slate-300 pl-3">
+                                            <span className="font-medium block">{item.action}</span>
+                                            <span className="text-xs text-slate-500">{item.reason}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </section>
+                )}
+                {/* 7.5 LEAD COLLECTION CTA */}
+                {!hideLeadCTA && showLeadForm && portingRec && (
+                    <section ref={leadFormRef} className="mb-16 scroll-mt-24">
+                        <LeadCollectionCTA 
+                            policyData={{
+                                insured_names: data.identity?.insured_names,
+                                city: data.identity?.city ?? undefined,
+                            }}
+                            isOpen={showLeadForm}
+                            onClose={() => setShowLeadForm(false)}
+                            variant={portingRec.recommendation === "yes" ? "yes" : "consider"}
+                        />
+                    </section>
+                )}
+                </section>
+
+                {/* THE FULL PICTURE. Everything else, unchanged, one tap away. */}
+                <section aria-labelledby="ans-full" className="mb-16">
+                    <AnswerHead n="+" id="ans-full" title={t("rpt.q_full")} />
+
+                    <details
+                        id="score-detail"
+                        open={scoreOpen}
+                        onToggle={(e) => setScoreOpen((e.currentTarget as HTMLDetailsElement).open)}
+                        className="group mb-4 rounded-lg border border-[var(--color-border-light)] bg-white scroll-mt-24"
+                    >
+                        <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
+                            <span>
+                                <span className="block font-serif text-xl text-[var(--color-navy-900)]">{t("rpt.full_score")}</span>
+                                <span className="block text-sm text-[var(--color-text-secondary)]">{t("rpt.full_score_d")}</span>
+                            </span>
+                            <ChevronDown className="h-5 w-5 flex-shrink-0 text-slate-500 transition-transform group-open:rotate-180" aria-hidden="true" />
+                        </summary>
+                        <div className="px-3 pb-4 md:px-5">
                 {/* 2. SCORECARD + SCORE BREAKDOWN */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-16">
 
@@ -701,7 +1505,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         {hasNcar && (
                         <div className="text-xs text-[var(--color-text-secondary)] mb-3">
                             NCAR: <span className="font-mono font-bold">{ncar.toFixed(2)}×</span>
-                            {" — "}<span className="italic">{getNCARLabel(ncar)}</span>
+                            {", "}<span className="italic">{getNCARLabel(ncar)}</span>
                             <div className="text-xs text-slate-500 mt-1">
                                 {t("rpt.ncar_meaning", { x: ncar.toFixed(2) })}
                             </div>
@@ -833,384 +1637,69 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                         </div>
                     )}
                 </div>
-
-                {/* 2b. COVER TODAY vs COVER IN FIVE YEARS.
-                    The report used to state only the first, so an advisor could read
-                    "Good" here while the cover plan on another page told the same
-                    family to buy four times what they had, and nothing on either page
-                    acknowledged the other. Stated as facts, not as a second verdict. */}
-                {(() => {
-                    const outlook = coverOutlook(
-                        data.identity?.ages,
-                        data.identity?.assumed_zone,
-                        data.coverage_structure?.restoration?.exists === true,
-                    );
-                    const held = coverView.effectiveCover;
-                    if (!outlook || typeof held !== "number" || held <= 0) return null;
-
-                    const pctToday = Math.round((held / outlook.today) * 100);
-                    const pctTarget = Math.round((held / outlook.target) * 100);
-                    const shortToday = outlook.today - held;
-
-                    return (
-                        <section className="mb-16">
-                            <div className="flex items-center gap-3 mb-2">
-                                <Layers className="w-6 h-6 text-[var(--color-teal-600)]" />
-                                <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.how_far")}</h3>
-                            </div>
-                            <p className="text-sm text-[var(--color-text-muted)] mb-6">
-                                {t("rpt.how_far_d")}
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
-                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                        {t("rpt.admission_today")}
-                                    </div>
-                                    <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
-                                        {formatINR(outlook.today)}
-                                    </div>
-                                    <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                                        {t("rpt.covers_pct", { held: formatINR(held), pct: pctToday })}{" "}
-                                        {shortToday > 0
-                                            ? t("rpt.leaves_short", { short: formatINR(shortToday) })
-                                            : t("rpt.met_in_full")}
-                                    </p>
-                                </div>
-                                <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
-                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                        {t("rpt.admission_later", { n: outlook.years })}
-                                    </div>
-                                    <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
-                                        {formatINR(outlook.target)}
-                                    </div>
-                                    <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                                        {t("rpt.later_d", { pct: pctTarget, rate: Math.round(CALCULATOR_CONFIG.medicalInflationRate * 100) })}
-                                    </p>
-                                </div>
-                            </div>
-                            <p className="mt-3 text-sm text-slate-500">
-                                {t("rpt.assume_nothing")}
-                            </p>
-                        </section>
-                    );
-                })()}
-
-                {/* 3. BENEFIT EVALUATION */}
-                {data.benefit_evaluation && (
+                {/* 8. SCORE DEDUCTIONS */}
+                {data.audit_score?.deductions?.length > 0 && (
                     <section className="mb-16">
-                        <div className="flex items-center gap-3 mb-6">
-                            <Shield className="w-6 h-6 text-[var(--color-green-primary)]" />
-                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.overview")}</h3>
-                        </div>
+                        <button onClick={() => setShowDeductions(!showDeductions)} className="flex items-center gap-3 mb-4 w-full text-left group">
+                            <FileText className="w-5 h-5 text-slate-400" />
+                            <span className="font-serif text-lg text-slate-500 group-hover:text-[var(--color-navy-900)] transition-colors">
+                                {t("rpt.deductions_btn", { n: data.audit_score.deductions?.length ?? 0 })}
+                            </span>
+                            {showDeductions ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                        </button>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-                            <div className="border border-[var(--color-border-light)] bg-white p-8 rounded-xl shadow-sm flex flex-col h-full">
-                                <div className="text-sm font-bold uppercase tracking-wider text-green-700 mb-6 flex items-center gap-2">
-                                    <CheckCircle2 className="w-5 h-5" /> {t("rpt.works")}
-                                </div>
-                                <ul className="space-y-6 flex-1">
-                                    {data.benefit_evaluation.what_actually_works?.length > 0 ? (
-                                        data.benefit_evaluation.what_actually_works.map((item, i) => (
-                                            <li key={i} className="text-sm border-l-2 border-green-300 pl-4">
-                                                <span className="font-semibold block mb-1.5">{item.benefit}</span>
-                                                <span className="text-[var(--color-text-secondary)] block leading-relaxed">{item.why_it_matters_in_claim}</span>
-                                                {item.quantified_value && (
-                                                    <span className="text-xs text-green-600 font-mono block mt-2.5">{item.quantified_value}</span>
-                                                )}
-                                            </li>
-                                        ))
-                                    ) : (
-                                        <li className="text-sm text-slate-500 italic border-l-2 border-slate-200 pl-4">{t("rpt.none_detected")}</li>
-                                    )}
-                                </ul>
-                            </div>
-
-                            <div className="border border-[var(--color-border-light)] bg-white p-8 rounded-xl shadow-sm flex flex-col h-full">
-                                <div className="text-sm font-bold uppercase tracking-wider text-amber-700 mb-6 flex items-center gap-2">
-                                    <AlertTriangle className="w-5 h-5" /> {t("rpt.may_cost")}
-                                </div>
-                                <ul className="space-y-6 flex-1">
-                                    {dynamicRiskItems?.length > 0 ? (
-                                        dynamicRiskItems.map((item, i) => (
-                                            <li key={i} className="text-sm border-l-2 border-amber-300 pl-4">
-                                                <span className="font-semibold block mb-1.5">{item.issue}</span>
-                                                <span className="text-[var(--color-text-secondary)] block leading-relaxed">{item.real_world_claim_impact}</span>
-                                                {item.quantified_oop_risk && (
-                                                    <span className="text-xs text-red-500 font-mono block mt-2.5">{item.quantified_oop_risk}</span>
-                                                )}
-                                            </li>
-                                        ))
-                                    ) : (
-                                        <li className="text-sm text-slate-500 italic border-l-2 border-slate-200 pl-4">{t("rpt.no_cost_risks")}</li>
-                                    )}
-                                </ul>
-                            </div>
-                        </div>
-
-                        {data.benefit_evaluation.structural_red_flags?.length > 0 && (
-                            <div className="mt-6 border border-red-100 bg-red-50/30 p-6 rounded-lg">
-                                <div className="text-sm font-bold uppercase tracking-wider text-red-700 mb-4 flex items-center gap-2">
-                                    <AlertCircle className="w-4 h-4" /> {t("rpt.red_flags")}
-                                </div>
-                                <ul className="space-y-3">
-                                    {data.benefit_evaluation.structural_red_flags.map((flag, i) => (
-                                        <li key={i} className="text-sm border-l-2 border-red-300 pl-3">
-                                            <span className="font-medium block">{flag.flag}</span>
-                                            <span className="text-[var(--color-text-secondary)]">{flag.why_it_is_dangerous}</span>
-                                            <span className={cn("text-xs font-bold uppercase mt-1 inline-block px-2 py-0.5 rounded", getRiskColor(flag.severity))}>{tOr(t, `rpt.sev_${flag.severity}`, flag.severity)}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </section>
-                )}
-
-                {/* 3b. OTHER COVER HELD + TOTAL STACK.
-                       Only rendered when other cover was uploaded with the policy —
-                       every report produced before this feature simply has none. */}
-                {(otherCover.length > 0 || coverStack) && (
-                    <section className="mb-16">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Layers className="w-6 h-6 text-[var(--color-teal-600)]" />
-                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.other_cover")}</h3>
-                        </div>
-                        <p className="text-sm text-[var(--color-text-muted)] mb-6">
-                            {t("rpt.other_cover_d")}
-                        </p>
-
-                        {/* Total across the stack — deliberately styled as a fact panel,
-                            not a score, so it never reads as a competing verdict. */}
-                        {coverView.stack && (
-                            <div className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm mb-6">
-                                <div className="flex flex-wrap items-end justify-between gap-4">
-                                    <div>
-                                        <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                            {t("rpt.usable_all")}
-                                        </div>
-                                        <div className="mt-1 text-3xl font-bold text-[var(--color-navy-900)]">
-                                            {formatINR(coverView.stack.combined)}
-                                        </div>
-                                        {typeof coverView.stack.required === "number" && (
-                                            <div className="mt-1 text-sm text-[var(--color-text-muted)]">
-                                                {t("rpt.against", { amount: formatINR(coverView.stack.required) })}
-                                                {typeof coverView.stack.ratio === "number" && `, ${Math.round(coverView.stack.ratio * 100)}%`}
-                                            </div>
-                                        )}
-                                    </div>
-                                    {coverView.stack.verdict !== "unclear" && (
-                                        <span className={cn(
-                                            "text-xs font-bold uppercase px-3 py-1 rounded border",
-                                            coverView.stack.verdict === "ADEQUATE"
-                                                ? "border-green-300 bg-green-50 text-green-700"
-                                                : coverView.stack.verdict === "THIN"
-                                                ? "border-amber-300 bg-amber-50 text-amber-700"
-                                                : "border-red-300 bg-red-50 text-red-700"
-                                        )}>{tOr(t, `rpt.stack_${coverView.stack.verdict}`, coverView.stack.verdict)}</span>
-                                    )}
-                                </div>
-
-                                {coverView.stack.remarks && (
-                                    <p className="mt-4 text-sm text-[var(--color-navy-900)]">{coverView.stack.remarks}</p>
-                                )}
-
-                                {(coverView.stack.counted.length || coverView.stack.excluded.length) && (
-                                    <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                                        {coverView.stack.counted.length > 0 && (
-                                            <div>
-                                                <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
-                                                    {t("rpt.counted")}
-                                                </div>
-                                                <ul className="space-y-1">
-                                                    {coverView.stack.counted.map((c, i) => (
-                                                        <li key={i} className="text-sm text-[var(--color-navy-900)]">• {c}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                        {coverView.stack.excluded.length > 0 && (
-                                            <div>
-                                                <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
-                                                    {t("rpt.not_counted")}
-                                                </div>
-                                                <ul className="space-y-1">
-                                                    {coverView.stack.excluded.map((c, i) => (
-                                                        <li key={i} className="text-sm text-slate-600">• {c}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {coverStack?.where_the_stack_still_breaks && coverStack.where_the_stack_still_breaks.length > 0 && (
-                                    <div className="mt-4 border-t border-[var(--color-border-light)] pt-4">
-                                        <div className="text-xs font-bold uppercase tracking-wider text-red-700 mb-1">
-                                            {t("rpt.still_breaks")}
-                                        </div>
-                                        <ul className="space-y-1">
-                                            {coverStack.where_the_stack_still_breaks.map((c, i) => (
-                                                <li key={i} className="text-sm text-[var(--color-navy-900)]">• {c}</li>
+                        {showDeductions && (
+                            <div className="overflow-hidden">
+                                <div className="bg-white border border-[var(--color-border-light)] rounded-lg overflow-hidden">
+                                    <table className="table-cards w-full text-sm">
+                                        <thead>
+                                            <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
+                                                <th className="px-4 py-3">{t("rpt.th_category")}</th>
+                                                <th className="px-4 py-3">{t("rpt.th_severity")}</th>
+                                                <th className="px-4 py-3">{t("rpt.th_points")}</th>
+                                                <th className="px-4 py-3">{t("rpt.th_reason")}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.audit_score.deductions.map((entry, i) => (
+                                                <tr key={i} className="border-t border-slate-100 hover:bg-slate-50/50">
+                                                    <td className="px-4 py-3" data-label={t("rpt.th_category")} data-cell="title">
+                                                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{tOr(t, `rpt.cat_${entry.category}`, DEDUCTION_CATEGORY_LABELS[entry.category] ?? entry.category)}</span>
+                                                    </td>
+                                                    <td className="px-4 py-3" data-label={t("rpt.th_severity")}>
+                                                        <span className={cn("text-xs font-bold uppercase px-2 py-0.5 rounded border", getRiskColor(entry.severity))}>
+                                                            {tOr(t, `rpt.sev_${entry.severity}`, entry.severity)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 font-mono font-bold text-red-600" data-label={t("rpt.th_points")}>{entry.points}</td>
+                                                    <td className="px-4 py-3 text-slate-600 text-xs leading-relaxed" data-label={t("rpt.th_reason")} data-cell="stack">{entry.reason}</td>
+                                                </tr>
                                             ))}
-                                        </ul>
-                                    </div>
-                                )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {otherCover.map((cover, i) => (
-                                <div key={i} className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
-                                    <div className="flex justify-between items-start gap-3 mb-4">
-                                        <div className="min-w-0">
-                                            <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                                {tOr(t, `rpt.oc_${cover.kind}`, OTHER_COVER_LABEL[cover.kind] ?? cover.kind)}
-                                            </div>
-                                            <div className="mt-1 font-semibold text-[var(--color-navy-900)] break-words">
-                                                {[cover.insurer, cover.plan_name].filter(Boolean).join(" · ") || t("rpt.details_not_stated")}
-                                            </div>
-                                        </div>
-                                        {/* A cover can be usable today and still be left out of the
-                                            total (employer cover ends with the job) — the card must
-                                            say so, or only the "Not counted" list would reveal it. */}
-                                        {cover.usable_today === false ? (
-                                            <span className="flex-shrink-0 text-xs font-bold uppercase px-2 py-0.5 rounded border border-amber-300 bg-amber-50 text-amber-700">
-                                                {t("rpt.not_usable")}
-                                            </span>
-                                        ) : cover.counted_in_total === false ? (
-                                            <span className="flex-shrink-0 text-xs font-bold uppercase px-2 py-0.5 rounded border border-slate-300 bg-slate-50 text-slate-600">
-                                                {t("rpt.not_in_total")}
-                                            </span>
-                                        ) : null}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        {typeof cover.sum_insured === "number" && (
-                                            <div className="flex justify-between">
-                                                <span className="text-sm">{t("rpt.sum_insured")}</span>
-                                                <span className="font-mono font-bold text-slate-600">{formatINR(cover.sum_insured)}</span>
-                                            </div>
-                                        )}
-                                        {/* A group policy has no deductible; the model returns 0
-                                            rather than null, and "Deductible ₹0" reads as a finding. */}
-                                        {typeof cover.deductible === "number" && cover.deductible > 0 && (
-                                            <div className="flex justify-between">
-                                                <span className="text-sm">{t("rpt.deductible")}</span>
-                                                <span className="font-mono font-bold text-slate-600">{formatINR(cover.deductible)}</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {cover.own_limits && cover.own_limits.length > 0 && (
-                                        <div className="mt-4">
-                                            <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
-                                                {t("rpt.own_limits")}
-                                            </div>
-                                            <ul className="space-y-1">
-                                                {cover.own_limits.map((l, j) => (
-                                                    <li key={j} className="text-sm text-[var(--color-navy-900)]">• {l}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    {cover.dependency_risk && (
-                                        <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3">
-                                            <div className="text-xs font-bold uppercase tracking-wider text-amber-800 mb-1">
-                                                {t("rpt.take_away")}
-                                            </div>
-                                            <p className="text-sm text-amber-900">{cover.dependency_risk}</p>
-                                        </div>
-                                    )}
-
-                                    {cover.what_it_does_not_solve && (
-                                        <p className="mt-3 text-sm text-slate-600">
-                                            <span className="font-semibold">{t("rpt.does_not_fix")} </span>
-                                            {cover.what_it_does_not_solve}
-                                        </p>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
                     </section>
                 )}
-
-                {/* 4. CLAIM SIMULATIONS */}
-                {simulations?.length > 0 && (
-                    <section className="mb-16">
-                        <div className="flex items-center gap-3 mb-6">
-                            <Activity className="w-6 h-6 text-[var(--color-teal-600)]" />
-                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.simulations")}</h3>
                         </div>
+                    </details>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {simulations.map((sim, i) => (
-                                <div key={i} className="bg-white border border-[var(--color-border-light)] rounded-lg p-6 shadow-sm">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                                            {sim.scenario}
-                                        </div>
-                                        <span className={cn(
-                                            "text-xs font-bold uppercase px-2 py-0.5 rounded border",
-                                            getSimulationVerdictColor(sim.verdict)
-                                        )}>{tOr(t, `rpt.sim_${sim.verdict}`, sim.verdict)}</span>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between">
-                                            <span className="text-sm">{t("rpt.total_bill")}</span>
-                                            <span className="font-mono font-bold text-slate-600">{'₹' + (sim.total_bill || 0)?.toLocaleString('en-IN')}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-sm">{t("rpt.insurer_pays")}</span>
-                                            <span className="font-mono font-bold text-green-600">{'₹' + (sim.insurer_pays || 0)?.toLocaleString('en-IN')}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-sm">{t("rpt.you_pay")}</span>
-                                            <span className="font-mono font-bold text-amber-600">{'₹' + ((sim.total_bill || 0) - (sim.insurer_pays || 0))?.toLocaleString('en-IN')}</span>
-                                        </div>
-                                        <div className="h-px bg-slate-200 my-2" />
-                                        <div className="flex justify-between text-xs text-[var(--color-text-secondary)]">
-                                            <span>{t("rpt.oop_ratio")}</span>
-                                            <span className="font-mono">{((sim.oop_ratio || 0) * 100).toFixed(1)}%</span>
-                                        </div>
-                                        {sim.explanation && (
-                                            <p className="text-xs text-slate-500 mt-2 leading-relaxed border-t border-slate-100 pt-2">
-                                                {sim.explanation}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                )}
 
-                {/* 5. KEY FAILURE POINTS */}
-                {data.final_verdict?.key_failure_points?.length > 0 && (
-                    <section className={cn(
-                        "border rounded-xl p-8 md:p-12 mb-16 shadow-lg relative overflow-hidden",
-                        verdict === "SAFE" ? "bg-[#F0FDF4] border-green-100" : "bg-white border-slate-200"
-                    )}>
-                        <div className="absolute top-0 right-0 p-6 sm:p-8 lg:p-12 opacity-5">
-                            {verdict === "SAFE"
-                                ? <Shield className="w-64 h-64 text-green-600" />
-                                : <Zap className="w-64 h-64 text-slate-900" />
-                            }
-                        </div>
-                        <div className="relative z-10">
-                            <h3 className="font-serif text-xl text-[var(--color-navy-900)] mb-6">{t("rpt.failure_points")}</h3>
-                            <div className="space-y-2">
-                                {data.final_verdict.key_failure_points.map((point, i) => (
-                                    <div key={i} className="text-sm text-slate-700 flex items-start gap-2">
-                                        <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-                                        <span>{point}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </section>
-                )}
-
+                    <details
+                        id="policy-detail"
+                        open={policyOpen}
+                        onToggle={(e) => setPolicyOpen((e.currentTarget as HTMLDetailsElement).open)}
+                        className="group mb-4 rounded-lg border border-[var(--color-border-light)] bg-white scroll-mt-24"
+                    >
+                        <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
+                            <span>
+                                <span className="block font-serif text-xl text-[var(--color-navy-900)]">{t("rpt.full_details")}</span>
+                                <span className="block text-sm text-[var(--color-text-secondary)]">{t("rpt.full_details_d")}</span>
+                            </span>
+                            <ChevronDown className="h-5 w-5 flex-shrink-0 text-slate-500 transition-transform group-open:rotate-180" aria-hidden="true" />
+                        </summary>
+                        <div className="px-3 pb-4 md:px-5">
                 {/* 6. EXTRACTED POLICY DETAILS */}
                 <section className="mb-16">
                     <div className="flex items-center gap-3 mb-6">
@@ -1242,6 +1731,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                     {data.claim_risk_analysis?.room_rent?.explanation && (
                                         <p className="text-xs text-slate-400 mt-1 italic">{data.claim_risk_analysis.room_rent.explanation}</p>
                                     )}
+                                    <ClauseSourceButton source={data.claim_risk_analysis?.room_rent?.source} />
                                 </div>
                                 <div>
                                     <div className="flex justify-between mb-1">
@@ -1262,6 +1752,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             {t("rpt.oop_5l", { amount: formatINR(data.claim_risk_analysis.co_payment.oop_on_5L_claim) })}
                                         </p>
                                     )}
+                                    <ClauseSourceButton source={data.claim_risk_analysis?.co_payment?.source} />
                                 </div>
                             </div>
                         </div>
@@ -1323,7 +1814,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             isActive: endDate ? new Date() < new Date(endDate) : !!wp.is_active_today,
                                             endDate,
                                         });
-                                        return <WaitingPeriodRow title={t("rpt.wp_initial")} detail={t("rpt.n_days", { n: wp.duration_days ?? "" })} view={view} />;
+                                        return <WaitingPeriodRow title={t("rpt.wp_initial")} detail={t("rpt.n_days", { n: wp.duration_days ?? "" })} view={view} source={wp.source} />;
                                     })()}
 
                                     {(() => {
@@ -1348,7 +1839,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             };
                                         }
                                         const detail = `${t("rpt.n_months", { n: wp.duration_months ?? "" })}${wp.stated === false ? t("rpt.est_from_specific") : ""}`;
-                                        return <WaitingPeriodRow title={t("rpt.wp_ped")} detail={detail} view={view} />;
+                                        return <WaitingPeriodRow title={t("rpt.wp_ped")} detail={detail} view={view} source={wp.source} />;
                                     })()}
 
                                     {(() => {
@@ -1363,7 +1854,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                         const named = wp.diseases_covered?.length
                                             ? `: ${wp.diseases_covered.slice(0, 3).join(", ")}${wp.diseases_covered.length > 3 ? "…" : ""}`
                                             : "";
-                                        return <WaitingPeriodRow title={t("rpt.wp_specific")} detail={`${t("rpt.n_months", { n: wp.duration_months ?? "" })}${named}`} view={view} />;
+                                        return <WaitingPeriodRow title={t("rpt.wp_specific")} detail={`${t("rpt.n_months", { n: wp.duration_months ?? "" })}${named}`} view={view} source={wp.source} />;
                                     })()}
 
                                     {data.waiting_period_analysis?.personal_waiting_periods?.map((wp, i) => {
@@ -1391,7 +1882,7 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                                             monthsRemaining: wp.months_remaining,
                                             endDate,
                                         });
-                                        return <WaitingPeriodRow title={t("rpt.wp_maternity")} detail={t("rpt.n_months", { n: wp.duration_months ?? "" })} view={view} />;
+                                        return <WaitingPeriodRow title={t("rpt.wp_maternity")} detail={t("rpt.n_months", { n: wp.duration_months ?? "" })} view={view} source={wp.source} />;
                                     })()}
                                 </ul>
                             </div>
@@ -1456,187 +1947,10 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
 
                     </div>
                 </section>
-
-                {/* 7. RECOMMENDATIONS */}
-                {data.recommendations && (
-                    <section className="mb-16">
-                        <div className="flex items-center gap-3 mb-6">
-                            <Zap className="w-6 h-6 text-amber-500" />
-                            <h3 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("rpt.recs")}</h3>
                         </div>
+                    </details>
 
-                        {data.recommendations.critical_actions?.length > 0 && (
-                            <div className="border border-red-100 bg-red-50/30 p-6 rounded-lg mb-6">
-                                <div className="text-sm font-bold uppercase tracking-wider text-red-700 mb-4 flex items-center gap-2">
-                                    <AlertCircle className="w-4 h-4" /> {t("rpt.critical")}
-                                </div>
-                                <ul className="space-y-4">
-                                    {data.recommendations.critical_actions.map((action, i) => (
-                                        <li key={i} className="border-l-2 border-red-300 pl-3">
-                                            <span className="font-medium block text-sm">{action.action}</span>
-                                            <span className="text-xs text-slate-600">{action.reason}</span>
-                                            {action.oop_risk_if_ignored && (
-                                                <span className="text-xs text-red-500 font-mono block mt-0.5">
-                                                    {t("rpt.risk_ignored", { risk: action.oop_risk_if_ignored })}
-                                                </span>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                        {portingRec && (
-                            <div className={cn(
-                                "border p-6 rounded-lg mb-6",
-                                portingRec.recommendation === "yes" ? "bg-red-50 border-red-200" :
-                                    portingRec.recommendation === "consider" ? "bg-amber-50 border-amber-200" :
-                                        "bg-green-50 border-green-200"
-                            )}>
-                                <div className="flex items-center gap-2 mb-3">
-                                    <div className="text-sm font-bold uppercase tracking-wider text-[var(--color-navy-900)]">{t("rpt.port_q")}</div>
-                                    <span className={cn(
-                                        "text-xs font-bold px-2 py-0.5 rounded-full",
-                                        portingRec.recommendation === "yes" ? "bg-red-100 text-red-700" :
-                                            portingRec.recommendation === "consider" ? "bg-amber-100 text-amber-700" :
-                                                "bg-green-100 text-green-700"
-                                    )}>
-                                        {portingRec.recommendation === "yes" ? t("rpt.badge_yes") :
-                                            portingRec.recommendation === "consider" ? t("rpt.badge_consider") :
-                                                t("rpt.badge_no")}
-                                    </span>
-                                </div>
-                                <p className="text-sm">{portingRec.reason}</p>
-                                {portingRec.what_to_look_for?.length > 0 && (
-                                    <ul className="mt-3 space-y-1">
-                                        {portingRec.what_to_look_for.map((item, i) => (
-                                            <li key={i} className="text-xs flex items-start gap-2">
-                                                <CheckCircle2 className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                                                <span>{item}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                                {portingRec.recommendation === "consider" && !hideLeadCTA && (
-                                    <>
-                                        <div className="h-px bg-amber-200/50 my-4" />
-                                        <Button 
-                                            variant="outline" 
-                                            className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 hover:text-amber-800" 
-                                            onClick={() => {
-                                                setShowLeadForm(true);
-                                                setTimeout(() => {
-                                                    leadFormRef.current?.scrollIntoView({ 
-                                                        behavior: 'smooth', 
-                                                        block: 'start' 
-                                                    });
-                                                }, 100);
-                                            }}
-                                        >
-                                            {t("rpt.talk_cta")}
-                                        </Button>
-                                    </>
-                                )}
-                                {portingRec.recommendation === "yes" && !hideLeadCTA && (
-                                    <>
-                                        <div className="h-px bg-red-200/50 my-4" />
-                                        <Button 
-                                            className="w-full bg-red-600 text-white hover:bg-red-700" 
-                                            onClick={() => {
-                                                setShowLeadForm(true);
-                                                setTimeout(() => {
-                                                    leadFormRef.current?.scrollIntoView({ 
-                                                        behavior: 'smooth', 
-                                                        block: 'start' 
-                                                    });
-                                                }, 100);
-                                            }}
-                                        >
-                                            {t("rpt.better_cta")}
-                                        </Button>
-                                    </>
-                                )}
-                            </div>
-                        )}
-
-                        {(data.recommendations.medium_priority?.length > 0 || data.recommendations.low_priority?.length > 0) && (
-                            <div className="bg-white border border-[var(--color-border-light)] p-6 rounded-lg">
-                                <div className="text-sm font-bold uppercase tracking-wider text-slate-600 mb-4 flex items-center gap-2">
-                                    <Info className="w-4 h-4" /> {t("rpt.other_recs")}
-                                </div>
-                                <ul className="space-y-3">
-                                    {[...data.recommendations.medium_priority ?? [], ...data.recommendations.low_priority ?? []].map((item, i) => (
-                                        <li key={i} className="text-sm border-l-2 border-slate-300 pl-3">
-                                            <span className="font-medium block">{item.action}</span>
-                                            <span className="text-xs text-slate-500">{item.reason}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </section>
-                )}
-
-                {/* 7.5 LEAD COLLECTION CTA */}
-                {!hideLeadCTA && showLeadForm && portingRec && (
-                    <section ref={leadFormRef} className="mb-16 scroll-mt-24">
-                        <LeadCollectionCTA 
-                            policyData={{
-                                insured_names: data.identity?.insured_names,
-                                city: data.identity?.city ?? undefined,
-                            }}
-                            isOpen={showLeadForm}
-                            onClose={() => setShowLeadForm(false)}
-                            variant={portingRec.recommendation === "yes" ? "yes" : "consider"}
-                        />
-                    </section>
-                )}
-
-                {/* 8. SCORE DEDUCTIONS */}
-                {data.audit_score?.deductions?.length > 0 && (
-                    <section className="mb-16">
-                        <button onClick={() => setShowDeductions(!showDeductions)} className="flex items-center gap-3 mb-4 w-full text-left group">
-                            <FileText className="w-5 h-5 text-slate-400" />
-                            <span className="font-serif text-lg text-slate-500 group-hover:text-[var(--color-navy-900)] transition-colors">
-                                {t("rpt.deductions_btn", { n: data.audit_score.deductions?.length ?? 0 })}
-                            </span>
-                            {showDeductions ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                        </button>
-
-                        {showDeductions && (
-                            <div className="overflow-hidden">
-                                <div className="bg-white border border-[var(--color-border-light)] rounded-lg overflow-hidden">
-                                    <table className="table-cards w-full text-sm">
-                                        <thead>
-                                            <tr className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
-                                                <th className="px-4 py-3">{t("rpt.th_category")}</th>
-                                                <th className="px-4 py-3">{t("rpt.th_severity")}</th>
-                                                <th className="px-4 py-3">{t("rpt.th_points")}</th>
-                                                <th className="px-4 py-3">{t("rpt.th_reason")}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {data.audit_score.deductions.map((entry, i) => (
-                                                <tr key={i} className="border-t border-slate-100 hover:bg-slate-50/50">
-                                                    <td className="px-4 py-3" data-label={t("rpt.th_category")} data-cell="title">
-                                                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{tOr(t, `rpt.cat_${entry.category}`, DEDUCTION_CATEGORY_LABELS[entry.category] ?? entry.category)}</span>
-                                                    </td>
-                                                    <td className="px-4 py-3" data-label={t("rpt.th_severity")}>
-                                                        <span className={cn("text-xs font-bold uppercase px-2 py-0.5 rounded border", getRiskColor(entry.severity))}>
-                                                            {tOr(t, `rpt.sev_${entry.severity}`, entry.severity)}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-3 font-mono font-bold text-red-600" data-label={t("rpt.th_points")}>{entry.points}</td>
-                                                    <td className="px-4 py-3 text-slate-600 text-xs leading-relaxed" data-label={t("rpt.th_reason")} data-cell="stack">{entry.reason}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                    </section>
-                )}
+                </section>
 
             </main>
 

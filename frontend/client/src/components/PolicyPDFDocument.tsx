@@ -26,7 +26,8 @@ import {
     Line,
     Image,
 } from '@react-pdf/renderer';
-import { ForensicAuditReport, deriveCoverView, describeRestoration } from '@shared/policy';
+import { ForensicAuditReport, deriveCoverView, describeRestoration, type ClauseSource } from '@shared/policy';
+import { formatPolicyDate, policyTermYears, readPremium } from '@/lib/policyFacts';
 
 /* ------------------------------------------------------------------ fonts */
 
@@ -118,6 +119,27 @@ const inrLoose = (v: number | string | null | undefined): string => {
     if (v === null || v === undefined || v === '') return '—';
     return typeof v === 'number' ? inr(v) : String(v);
 };
+
+const PREMIUM_EVERY: Record<string, string> = {
+    annual: 'a year',
+    half_yearly: 'every 6 months',
+    quarterly: 'every 3 months',
+    monthly: 'a month',
+};
+
+/** The verified sentence a finding rests on. Only the server writes `source`,
+ *  and only after finding it in the document, so anything else prints nothing. */
+const SourceQuote = ({ source }: { source?: ClauseSource | null }) =>
+    source?.verified === true && source.quote ? (
+        <View style={s.srcQuote}>
+            <Text style={s.srcQuoteText}>"{source.quote}"</Text>
+            <Text style={s.srcQuoteFrom}>
+                {source.origin === 'official_wording'
+                    ? "From the insurer's official wording"
+                    : 'From your policy document'}
+            </Text>
+        </View>
+    ) : null;
 
 const titleCaseKey = (k: string) =>
     k === 'opd' ? 'OPD' : k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -328,6 +350,16 @@ const s = StyleSheet.create({
     wpFill: { height: 2.5, backgroundColor: C.amber },
     wpNote: { fontSize: 7.5, color: C.muted, marginTop: 4, lineHeight: 1.5 },
 
+    /* the verified policy sentence under a clause finding */
+    srcQuote: {
+        marginTop: 5,
+        paddingLeft: 7,
+        borderLeftWidth: 1.2,
+        borderLeftColor: C.teal,
+    },
+    srcQuoteText: { fontSize: 7.8, color: C.inkSoft, lineHeight: 1.5 },
+    srcQuoteFrom: { fontSize: 6.6, color: C.faint, marginTop: 2 },
+
     /* checklist */
     checkRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 6.5 },
     checkMark: { width: 14, marginTop: 1.5 },
@@ -435,6 +467,25 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
         ageDays >= 365
             ? `${Math.floor(ageDays / 365)} yr ${ageDays % 365} days`
             : `${ageDays} days`;
+    const startLabel = formatPolicyDate(data.policy_timeline?.policy_inception_date);
+    const endLabel = formatPolicyDate(data.policy_timeline?.policy_expiry_date);
+    const termYears = policyTermYears(data.policy_timeline?.policy_tenure_years);
+    const termLabel = termYears == null ? null : `${termYears} ${termYears === 1 ? 'year' : 'years'}`;
+    const premium = readPremium(data.premium);
+    const premiumLabel = premium
+        ? [
+              premium.frequency === 'single' && termYears && termYears > 1
+                  ? `${inr(premium.amount)} for ${termYears} years`
+                  : premium.frequency === 'single'
+                    ? `${inr(premium.amount)}, paid once`
+                    : premium.frequency
+                      ? `${inr(premium.amount)} ${PREMIUM_EVERY[premium.frequency]}`
+                      : inr(premium.amount),
+              premium.gst_included === true ? 'incl. GST' : premium.gst_included === false ? 'plus GST' : null,
+          ]
+              .filter(Boolean)
+              .join(', ')
+        : null;
 
     const bd = data.audit_score?.breakdown ?? ({} as Record<string, number>);
     const meters = [
@@ -480,6 +531,7 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                         <Text style={[s.wpStatus, { color: C.amber }]}>Not stated</Text>
                     </View>
                     <Text style={s.wpNote}>Duration is absent from the policy document. Confirm with the insurer.</Text>
+                    <SourceQuote source={wp.source} />
                 </View>
             );
         }
@@ -521,6 +573,7 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                     <View style={[s.wpFill, { width: `${pct}%`, backgroundColor: served ? C.teal : C.amber }]} />
                 </View>
                 {wp.risk_commentary ? <Text style={s.wpNote}>{wp.risk_commentary}</Text> : null}
+                <SourceQuote source={wp.source} />
             </View>
         );
     };
@@ -596,8 +649,11 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                         ['Plan', meta.policyName],
                         ['Policy number', meta.policyNumber],
                         ['Effective cover', cover.effectiveCover ? inr(cover.effectiveCover) : null],
+                        ['Premium', premiumLabel],
+                        ['Policy start', startLabel],
+                        ['Ends / renews on', endLabel],
+                        ['Policy term', termLabel],
                         ['Policy age', ageLabel],
-                        ['Data quality', data.data_quality?.overall ? titleCaseKey(String(data.data_quality.overall)) : null],
                     ] as [string, string | null | undefined][])
                         // A cell the document cannot source is left out entirely rather
                         // than printed as a dash: an absent row reads as absent data.
@@ -749,22 +805,25 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                 {/* ---------------------------------------------- limits */}
                 <SectionHead title="Limits and deductions" />
                 {[
-                    ['Room rent', risk.room_rent?.limit_value ?? risk.room_rent?.limit_type ?? '—', risk.room_rent?.explanation],
+                    ['Room rent', risk.room_rent?.limit_value ?? risk.room_rent?.limit_type ?? '—', risk.room_rent?.explanation, risk.room_rent?.source],
                     [
                         'Co-payment',
                         risk.co_payment?.exists ? `${risk.co_payment.percentage}%` : 'None',
                         risk.co_payment?.exists ? risk.co_payment?.conditions : 'No automatic deduction on a claim.',
+                        risk.co_payment?.source,
                     ],
                     [
                         'Sub-limits',
                         risk.sub_limits?.exists ? 'Present' : 'None',
                         risk.sub_limits?.remarks,
+                        risk.sub_limits?.source,
                     ],
-                    ['Deductible', inrLoose(risk.deductibles?.base_deductible), risk.deductibles?.per_claim_impact],
+                    ['Deductible', inrLoose(risk.deductibles?.base_deductible), risk.deductibles?.per_claim_impact, risk.deductibles?.source],
                     [
                         'Restoration',
                         data.coverage_structure?.restoration?.exists ? (data.coverage_structure.restoration.restore_amount ?? 'Yes') : 'None',
                         restoration ?? data.coverage_structure?.restoration?.remarks,
+                        data.coverage_structure?.restoration?.source,
                     ],
                     [
                         'No-claim bonus',
@@ -773,12 +832,13 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                             : 'None',
                         data.coverage_structure?.no_claim_bonus?.remarks,
                     ],
-                ].map(([k, v, note]: any, i: number) => (
+                ].map(([k, v, note, source]: any, i: number) => (
                     <View style={s.defRow} key={i} wrap={false}>
                         <Text style={s.defKey}>{k}</Text>
                         <View style={{ flex: 1 }}>
                             <Text style={s.defVal}>{v}</Text>
                             {note ? <Text style={[s.simWhy, { marginTop: 2 }]}>{note}</Text> : null}
+                            <SourceQuote source={source} />
                         </View>
                     </View>
                 ))}

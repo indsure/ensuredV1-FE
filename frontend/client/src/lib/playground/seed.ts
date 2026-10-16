@@ -216,6 +216,8 @@ type ReportOpts = {
     zone_adequacy: "adequate" | "marginal" | "inadequate";
     explanation: string;
   };
+  /** Annual premium in rupees, as printed on the demo schedule. */
+  premium?: number;
   copayPct?: number;
   copayConditions?: string;
   copayAppliesTo?: "all_claims" | "seniors_only" | "specific_treatments";
@@ -308,7 +310,12 @@ function healthReport(o: ReportOpts) {
   const pointsIn = (category: DeductionCategory) =>
     deductions.filter((d) => d.category === category).reduce((t, d) => t + d.points, 0);
 
+  /* Demo quotes. They stand in for what the server verifies on a real audit,
+     so each one is built from the same number the finding states. */
+  const src = (quote: string) => ({ quote, origin: "official_wording" as const, verified: true as const });
+
   return {
+    ...(o.premium ? { premium: { amount: o.premium, frequency: "annual", gst_included: true, evidence: null } } : {}),
     identity: {
       insured_names: o.insured,
       ages: o.ages,
@@ -365,6 +372,7 @@ function healthReport(o: ReportOpts) {
         end_date: dateAgo(o.inceptionDays - 30),
         is_active_today: o.inceptionDays < 30,
         risk_commentary: o.inceptionDays < 30 ? "Only accidents are covered right now." : "Served in full.",
+        source: src("Expenses related to the treatment of any illness within 30 days from the first policy commencement date shall be excluded except claims arising due to an accident."),
       },
       pre_existing_disease: {
         duration_months: pedMonths,
@@ -376,6 +384,7 @@ function healthReport(o: ReportOpts) {
           o.inceptionDays < pedMonths * 30
             ? "Anything traced back to a pre-existing condition will be declined until this ends."
             : "Pre-existing conditions are now payable.",
+        source: src(`Expenses related to the treatment of a pre-existing disease and its direct complications shall be excluded until the expiry of ${pedMonths} months of continuous coverage after the date of inception of the first policy with us.`),
       },
       specific_diseases: {
         duration_months: specificMonths,
@@ -386,6 +395,7 @@ function healthReport(o: ReportOpts) {
           o.inceptionDays < specificMonths * 30
             ? "These named procedures are not payable yet, even without any pre-existing condition."
             : "Named procedures are now payable.",
+        source: src(`Expenses related to the treatment of the listed conditions, surgeries or treatments shall be excluded until the expiry of ${specificMonths} months of continuous coverage after the date of inception of the first policy with us.`),
       },
       personal_waiting_periods: [],
       maternity: {
@@ -430,6 +440,7 @@ function healthReport(o: ReportOpts) {
         waiver_conditions: null,
         risk_level: copayPct >= 20 ? "high" : copayPct > 0 ? "medium" : "low",
         oop_on_5L_claim: copayPct > 0 ? Math.round((500000 * copayPct) / 100) : 0,
+        ...(copayPct > 0 ? { source: src(`A co-payment of ${copayPct}% shall apply on each and every admissible claim under this policy.`) } : {}),
       },
       sub_limits: {
         exists: (o.subLimits?.length ?? 0) > 0,
@@ -1005,7 +1016,7 @@ export function buildSeed(): Store {
       report_data: healthReport({
         insured: ["Suresh Agarwal", "Kavita Agarwal"], ages: [54, 49], genders: ["male", "female"],
         city: "Indore", zone: "B", healthFlags: ["Hypertension declared at proposal"],
-        inceptionDays: 347, expiryDays: -18, baseSI: 500000,
+        inceptionDays: 347, expiryDays: -18, baseSI: 500000, premium: 24680,
         roomRent: {
           limit_type: "percentage_of_si", limit_value: "1% of sum insured per day",
           limit_amount_per_day: 5000, penaltyPct: 25, risk_level: "high", zone_adequacy: "inadequate",
