@@ -15,9 +15,8 @@
  * form above it. Surrender value = a whole-percent factor of the premiums paid,
  * less the payouts already received, never below zero.
  *
- * The unit linked plan (no surrender column) and the pure term plan (no
- * surrender value at all) are left unread, as the general reader would refuse
- * both.
+ * Unit linked plans (no surrender column) and pure term plans (no surrender
+ * value at all) are left unread, as the general reader would refuse both.
  */
 
 import type { RulesResponse } from "@/components/agent/policyValue/useDocumentRules";
@@ -99,14 +98,38 @@ function rules(id: string, p: Plan): RulesResponse {
   };
 }
 
-/** Keyed by client id; each call builds a fresh copy, so review actions never touch the template. */
-export function buildDemoDocumentRules(): Record<string, RulesResponse> {
-  return {
-    // Suresh's LIC Jeevan Anand: 21 years, premium every year, death cover 125% of the sum assured.
-    "pol-8": rules("pol-8", { start: "2018-03-15", term: 21, ppt: 21, premium: 96400, survivalPerYear: 0, maturity: 2000000, death: 2500000, page: 6 }),
-    // Anita's LIC New Endowment: 15 years, premium every year.
-    "pol-14": rules("pol-14", { start: "2021-02-20", term: 15, ppt: 15, premium: 72000, survivalPerYear: 0, maturity: 1500000, death: 1875000, page: 5 }),
-    // Prakash's HDFC Life Click 2 Achieve: 7 premiums, Rs 3,380 a month for 15 years, then the maturity amount.
-    "pol-15": rules("pol-15", { start: "2024-03-04", term: 15, ppt: 7, premium: 200000, survivalPerYear: 3380 * 12, maturity: 1400000, death: 2000000, page: 7 }),
-  };
+/** Hand-set figures for the named cast, where the seed row alone does not say enough. */
+const CAST: Record<string, Omit<Plan, "page">> = {
+  // Suresh's LIC Jeevan Anand: 21 years, premium every year, death cover 125% of the sum assured.
+  "pol-8": { start: "2018-03-15", term: 21, ppt: 21, premium: 96400, survivalPerYear: 0, maturity: 2000000, death: 2500000 },
+  // Anita's LIC New Endowment: 15 years, premium every year.
+  "pol-14": { start: "2021-02-20", term: 15, ppt: 15, premium: 72000, survivalPerYear: 0, maturity: 1500000, death: 1875000 },
+  // Prakash's HDFC Life Click 2 Achieve: 7 premiums, Rs 3,380 a month for 15 years, then the maturity amount.
+  "pol-15": { start: "2024-03-04", term: 15, ppt: 7, premium: 200000, survivalPerYear: 3380 * 12, maturity: 1400000, death: 2000000 },
+};
+
+/** The plan behind any other savings policy, from its own seed row; null when the row cannot carry one. */
+function planFromRow(d: Record<string, any> | null): Omit<Plan, "page"> | null {
+  if (!d || /unit linked|term cover/i.test(d.plan_type ?? "")) return null;
+  const { start_date: start, policy_term_years: term, premium, sum_assured: sa } = d;
+  const ppt = d.premium_paying_term_years ?? term;
+  if (typeof start !== "string" || !term || !ppt || !premium || !sa) return null;
+  const perYear = d.payout_amount ? d.payout_amount * (/month/i.test(d.payout_frequency ?? "") ? 12 : 1) : 0;
+  // Death cover on these plans: the higher of 125% of the sum assured and 7 annual premiums.
+  return { start, term, ppt, premium, survivalPerYear: perYear, maturity: d.maturity_amount ?? sa, death: Math.max(Math.round(sa * 1.25), premium * 7) };
+}
+
+/**
+ * Keyed by client id: every life savings policy in the store (the named cast and
+ * the bulk book alike), so the summary table is there on whichever one is opened.
+ * Each call builds a fresh copy, so review actions never touch the template.
+ */
+export function buildDemoDocumentRules(clients: any[]): Record<string, RulesResponse> {
+  const out: Record<string, RulesResponse> = {};
+  clients.forEach((c, i) => {
+    if (c.insurance_type !== "life" || c.status !== "done") return;
+    const plan = CAST[c.id] ?? planFromRow(c.extracted_data);
+    if (plan) out[c.id] = rules(c.id, { ...plan, page: 5 + (i % 3) });
+  });
+  return out;
 }
