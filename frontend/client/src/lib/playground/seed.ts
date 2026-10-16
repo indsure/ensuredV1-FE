@@ -314,8 +314,19 @@ function healthReport(o: ReportOpts) {
      so each one is built from the same number the finding states. */
   const src = (quote: string) => ({ quote, origin: "official_wording" as const, verified: true as const });
 
+  /* Every demo health policy shows a premium, as a real 1.6.0 audit does. A
+     policy without a hand-set figure gets one priced the way Indian retail
+     health cover is: by each member's age, concave in the sum insured, with a
+     family-floater discount. Rounded to the nearest ten rupees. */
+  const rateAt = (age: number) => (age < 36 ? 9000 : age < 46 ? 12000 : age < 56 ? 18000 : age < 61 ? 26000 : 38000);
+  const premium =
+    o.premium ??
+    Math.round(
+      (o.ages.reduce((t, a) => t + rateAt(a), 0) * (o.ages.length > 1 ? 0.75 : 1) * Math.pow(o.baseSI / 500000, 0.32)) / 10,
+    ) * 10;
+
   return {
-    ...(o.premium ? { premium: { amount: o.premium, frequency: "annual", gst_included: true, evidence: null } } : {}),
+    premium: { amount: premium, frequency: "annual", gst_included: true, evidence: null },
     identity: {
       insured_names: o.insured,
       ages: o.ages,
@@ -348,6 +359,9 @@ function healthReport(o: ReportOpts) {
         unlimited: restore.exists ? restore.unlimited ?? false : null,
         triggers_on_first_claim: null,
         trigger_conditions: restore.exists ? "After the base sum insured is exhausted in a policy year." : null,
+        ...(restore.exists
+          ? { source: src(`If the sum insured is exhausted during the policy year, it shall be restored once in that policy year${restore.sameIllness ? "" : " for claims arising from an illness unrelated to the one for which the earlier claim was made"}.`) }
+          : {}),
         actually_useful: restore.exists ? restore.useful ?? true : null,
         remarks: restore.remarks ?? null,
       },
@@ -407,6 +421,9 @@ function healthReport(o: ReportOpts) {
           ? "Relevant for this family — delivery costs fall on them until the wait ends."
           : "Not relevant for the ages on this policy.",
         relevant: o.maternity?.relevant ?? false,
+        ...(o.maternity?.months
+          ? { source: src(`Maternity expenses shall be payable only after ${o.maternity.months} months of continuous coverage from the date of inception of the first policy with us.`) }
+          : {}),
       },
       policy_fully_active: o.inceptionDays > pedMonths * 30,
     },
@@ -421,6 +438,7 @@ function healthReport(o: ReportOpts) {
             risk_level: o.roomRent.risk_level,
             zone_adequacy: o.roomRent.zone_adequacy,
             explanation: o.roomRent.explanation,
+            source: src(`Room rent is payable up to ${o.roomRent.limit_value}. If the insured person is admitted in a room with rent higher than this limit, all associated medical expenses shall be payable in the same proportion as the eligible room rent bears to the actual room rent.`),
           }
         : {
             limit_type: "none",
@@ -453,6 +471,9 @@ function healthReport(o: ReportOpts) {
         })),
         risk_level: (o.subLimits?.length ?? 0) > 1 ? "high" : o.subLimits?.length ? "medium" : "low",
         remarks: o.subLimits?.length ? "Capped procedures are paid up to the cap only; the rest is out of pocket." : null,
+        ...(o.subLimits?.length
+          ? { source: src(`Expenses for ${o.subLimits[0].procedure} shall be payable up to ₹${o.subLimits[0].limit.toLocaleString("en-IN")} per policy year.`) }
+          : {}),
       },
       deductibles: {
         base_deductible: null,
