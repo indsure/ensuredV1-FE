@@ -16,6 +16,7 @@ import {
   attachClauseSources,
   mentionsInsuredName,
   normalizePremium,
+  quoteHasPersonalData,
 } from "../services/clauseSources";
 
 const UPLOADED = `SCHEDULE OF BENEFITS
@@ -90,6 +91,29 @@ describe("verifyQuote: gate 2, nothing personal", () => {
   test("a real line from the document with a phone number fails", () => {
     assert.equal(verifyQuote("Insured: Ramesh Kumar Sharma   Mobile 9876543210", docs), null);
     assert.equal(verifyQuote("Mobile 9876543210", docs), null);
+  });
+
+  test("ordinary clause sentences that say 'policy' pass (2026-10-16 regression)", () => {
+    const lines = [
+      "The Policy Period shall be one year from the Policy commencement date.",
+      "Policy shall cover in-patient hospitalisation for a minimum period of 24 hours.",
+      "The Sum Insured will be restored once in a policy year.",
+      "Room rent is payable up to 1% of the Sum Insured, subject to a maximum of Rs. 5,000 or 1,00,000 in aggregate.",
+    ];
+    for (const l of lines) assert.equal(quoteHasPersonalData(l), false, l);
+  });
+
+  test("identifiers with digits still fail", () => {
+    const lines = [
+      "Policy No: 12345/ABC Premium 18,000",
+      "Member ID - AB1234 is covered",
+      "Policy Number P/211111/01/2025/000123",
+      "Ref P/211111/01/2025/000123 issued",
+      "Period of insurance 01/04/2025 to 31/03/2026",
+      "Write to person@example.com for help",
+      "Aadhaar 1234 5678 9012",
+    ];
+    for (const l of lines) assert.equal(quoteHasPersonalData(l), true, l);
   });
 
   test("a real line naming the insured fails", () => {

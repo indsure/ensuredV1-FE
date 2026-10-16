@@ -14,9 +14,42 @@
  * only ever come from this file.
  */
 import { appearsInDocument } from "../utils/policyWordingsFetcher";
-import { containsPersonalData } from "../lib/pii";
 import { parseRupees } from "../../../shared/policyNumbers";
 import type { ClauseSource, PolicyPremium } from "../../../shared/policy";
+
+/**
+ * Gate 2 for a quote: does this policy sentence carry a personal identifier?
+ *
+ * Not lib/pii.ts containsPersonalData. That one guards free text typed into
+ * Sach, and its policy-number rule fires on "policy" followed by any word of
+ * five letters, so "Policy Period", "policy year shall" and "Policy shall" all
+ * read as a policy number. Nearly every clause sentence says one of those,
+ * which on 2026-10-15 dropped almost every real quote. Founder decision
+ * 2026-10-16: loosen it for quotes only. Here an identifier must contain
+ * digits. Email, phone and Aadhaar rules are the same as lib/pii.ts.
+ */
+export function quoteHasPersonalData(text: string): boolean {
+  const email = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
+  const phone = /\b(?:\+?91[\s-]?)?\d{10}\b/;
+  const aadhaar = /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/;
+  const aadhaarPlain = /\b\d{12}\b/;
+  // "Policy No: 12345/ABC", "Member ID - AB1234", "Certificate number 99881".
+  const labelledId =
+    /\b(?:policy|pol|certificate|member|customer|client|proposal)\.?\s*(?:no\.?|number|id|#)\s*[:\-]?\s*[A-Za-z0-9\/-]*\d/i;
+  if (email.test(text) || phone.test(text) || aadhaar.test(text) || aadhaarPlain.test(text) || labelledId.test(text)) {
+    return true;
+  }
+  // An unlabelled identifier: a token of 8+ characters with 5+ digits that is
+  // not a plain amount ("1,00,000", "5000.00"). Catches "P/211111/01/2025/000123"
+  // and dates like "01/04/2025", which belong to a schedule, not a clause.
+  for (const token of text.split(/\s+/)) {
+    const t = token.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "");
+    if (t.length < 8) continue;
+    if (/^[\d,]+(?:\.\d+)?$/.test(t)) continue;
+    if ((t.match(/\d/g) ?? []).length >= 5) return true;
+  }
+  return false;
+}
 
 type QuoteOrigin = ClauseSource["origin"];
 type PremiumFrequency = NonNullable<PolicyPremium["frequency"]>;
@@ -92,7 +125,7 @@ export function verifyQuote(raw: unknown, docs: QuoteDocuments): ClauseSource | 
   else if (docs.wordings && appearsInDocument(quote, docs.wordings)) origin = "official_wording";
   if (!origin) return null;
 
-  if (containsPersonalData(quote)) return null;
+  if (quoteHasPersonalData(quote)) return null;
   if (mentionsInsuredName(quote, docs.insuredNames)) return null;
 
   return { quote, origin, verified: true };
@@ -167,7 +200,7 @@ export function normalizePremium(parsed: any, insuredNames: unknown): void {
   if (
     !evidence ||
     evidence.length > MAX_QUOTE_CHARS ||
-    containsPersonalData(evidence) ||
+    quoteHasPersonalData(evidence) ||
     mentionsInsuredName(evidence, insuredNames)
   ) {
     evidence = null;
