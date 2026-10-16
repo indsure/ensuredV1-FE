@@ -75,6 +75,26 @@ function applyEmbed(table: string, selectStr: string, rows: any[]): any[] {
   return rows;
 }
 
+/** PostgREST JSON paths in a select (`alias:col->key`, `col->>key`). The real
+ *  API returns just that value under the alias (or the key); without this the
+ *  mock returns whole rows and a page that selects narrowly reads nothing. */
+function applyJsonPaths(selectStr: string, rows: any[]): any[] {
+  const paths: { name: string; col: string; key: string; text: boolean }[] = [];
+  for (const token of selectStr.split(",")) {
+    const m = token.trim().match(/^(?:(\w+)\s*:\s*)?(\w+)\s*(->>?)\s*(\w+)$/);
+    if (m) paths.push({ name: m[1] ?? m[4], col: m[2], key: m[4], text: m[3] === "->>" });
+  }
+  if (!paths.length) return rows;
+  return rows.map((r) => {
+    const out = { ...r };
+    for (const p of paths) {
+      const v = r[p.col]?.[p.key];
+      out[p.name] = v == null ? null : !p.text ? v : typeof v === "object" ? JSON.stringify(v) : String(v);
+    }
+    return out;
+  });
+}
+
 class QueryBuilder {
   private table: string;
   private filters: Filter[] = [];
@@ -192,6 +212,7 @@ class QueryBuilder {
     if (this.headOnly) return ok(null, matched.length);
     let rows = this.sortAndLimit(matched);
     rows = applyEmbed(this.table, this.selectStr, rows);
+    rows = applyJsonPaths(this.selectStr, rows);
     if (this.wantSingle) {
       const one = rows[0] ?? null;
       return { ...ok(one, this.countMode ? matched.length : null), error: one == null && this.wantSingle === "single" ? { message: "No rows found", code: "PGRST116" } : null };

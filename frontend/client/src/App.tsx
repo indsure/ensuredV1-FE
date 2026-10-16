@@ -12,6 +12,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Mixpanel } from "@/components/Mixpanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ReportDispatcher from "@/components/ReportDispatcher";
+import { isPlaygroundMode } from "@/lib/playground/mode";
 
 // ARCHIVED: import { AuthProvider } from "@/hooks/use-auth";
 const AuthProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
@@ -35,6 +36,7 @@ const AgentSignupFlow = lazy(() => import("@/pages/agent/SignupFlow"));
 import {
   DashboardNew,
   Insights,
+  Business,
   LeadRenewals,
   AgentUploads,
   PoliciesNew,
@@ -221,6 +223,13 @@ function App() {
                       </Route>
                       <Route path="/agent/insights">
                         {() => <AgentProtectedRoute><Insights /></AgentProtectedRoute>}
+                      </Route>
+                      {/* Business: playground only until the founder signs it off.
+                          A real agent who types the URL lands on Insights. */}
+                      <Route path="/agent/business">
+                        {() => isPlaygroundMode()
+                          ? <AgentProtectedRoute><Business /></AgentProtectedRoute>
+                          : <Redirect to="/agent/insights" />}
                       </Route>
                       <Route path="/agent/uploads">
                         {() => <AgentProtectedRoute><AgentUploads /></AgentProtectedRoute>}

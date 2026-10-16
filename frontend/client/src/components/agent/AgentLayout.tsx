@@ -1,11 +1,12 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation, useSearch } from "wouter"
-import { BookOpen, ChevronRight, FileText, HelpCircle, LayoutDashboard, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
+import { BookOpen, ChevronRight, FileText, HelpCircle, IndianRupee, LayoutDashboard, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
 import PlaygroundBanner from "@/components/agent/PlaygroundBanner"
 import PlaygroundTour from "@/components/agent/PlaygroundTour"
+import { isPlaygroundMode } from "@/lib/playground/mode"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext"
@@ -92,6 +93,17 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         // child is a click that buys nothing.
         children: [],
       },
+      // Business: the book in rupees. Playground only until the founder signs
+      // it off; App.tsx sends a real agent on /agent/business to Insights.
+      ...(isPlaygroundMode()
+        ? [{
+            key: "business",
+            label: label("layout.nav_business", "Business"),
+            href: "/agent/business",
+            icon: <IndianRupee className="h-4 w-4" />,
+            children: [],
+          }]
+        : []),
       {
         key: "people",
         label: label("layout.nav_people", "People"),
