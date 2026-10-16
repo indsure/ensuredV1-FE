@@ -8,8 +8,6 @@ import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { MASTER_AUDIT_PROMPT, PROMPT_VERSION } from "./promptTemplate";
-import { LIFE_INSURANCE_PROMPT } from "./lifeInsurancePrompt";
-import { VEHICLE_INSURANCE_PROMPT } from "./vehicleInsurancePrompt";
 import { POLICY_EXTRACTION_PROMPT } from "./policyExtractionPrompt";
 import { AIService } from "./services/aiService";
 import { runAnalysisPipeline, type CompanionDoc, type CompanionKind } from "./services/analysisPipeline";
@@ -6446,6 +6444,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       const insuranceType = (client.insurance_type || "health").toLowerCase();
       const isDataEntry = isDataEntryType(insuranceType);
+
+      // Health is the only line with an audit. A legacy row can still carry a
+      // type nothing reads any more ("vehicle" was stored before the type
+      // allowlist). Refuse it here, before the check is reserved and before the
+      // paid OCR read, rather than let runAnalysisPipeline refuse it after both.
+      if (!isDataEntry && insuranceType !== "health") {
+        return res.status(409).json({
+          error: "UNSUPPORTED_INSURANCE_TYPE",
+          message:
+            `This policy is stored as "${insuranceType}", which we no longer recognise. ` +
+            "Delete it and upload the document again, picking the policy type.",
+        });
+      }
 
       // Resolve the storage object behind pdf_url (signed or public URL).
       const owned = ownedStorageObject(client.pdf_url, agentId);

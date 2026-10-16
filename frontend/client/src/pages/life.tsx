@@ -5,12 +5,10 @@ import {
   Upload,
   FileText,
   ChevronRight,
-  ArrowRight,
   Lock,
   Clock,
   CheckCircle2,
   AlertCircle,
-  Scale,
   Lightbulb,
   Shield,
   Info,
@@ -33,7 +31,6 @@ import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 
-import { loadSampleReport, mockReportLife } from "@/lib/mock-data";
 
 export default function LifePage() {
   const [, setLocation] = useLocation();
@@ -97,7 +94,7 @@ export default function LifePage() {
               </p>
 
               {/* Trust badges */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-xs font-medium text-[#6B7280] dark:text-[#9CA3AF]">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-sm font-medium text-[#6B7280] dark:text-[#9CA3AF]">
                 <div className="flex items-center gap-1.5">
                   <Shield className="w-3.5 h-3.5 text-[#00B4D8]" />
                   <span>{t("lobp.irdai")}</span>
@@ -261,7 +258,7 @@ export default function LifePage() {
                           </div>
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); loadSampleReport(mockReportLife); setLocation("/report?sample=life"); }}
+                            onClick={(e) => { e.stopPropagation(); setLocation("/report?sample=life"); }}
                             className="mt-4 min-h-11 text-sm font-semibold text-[#00B4D8] hover:text-[#0099B4] hover:underline inline-flex items-center gap-2"
                           >
                             <FileText className="w-4 h-4" />
@@ -479,25 +476,7 @@ export default function LifePage() {
             {t("lobp.now_what")}
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Compare Policies */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 text-center hover:shadow-lg transition-shadow duration-200">
-              <div className="w-12 h-12 rounded-xl bg-[#10B981]/10 flex items-center justify-center mx-auto mb-4">
-                <Scale className="w-6 h-6 text-[#10B981]" />
-              </div>
-              <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">{t("lobp.compare_alt")}</h3>
-              <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] mb-5 leading-relaxed">
-                {t("lobp.l_switch")}
-              </p>
-              <Button
-                onClick={() => setLocation("/compare?type=life")}
-                className="bg-[#10B981] hover:bg-[#059669] text-white font-semibold h-10 px-5"
-              >
-                {t("lobp.compare_pol")}
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
-
+          <div className="grid grid-cols-1 gap-6 max-w-xl mx-auto">
             {/* Share Analysis */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 text-center">
               <div className="w-12 h-12 rounded-xl bg-[#00B4D8]/10 flex items-center justify-center mx-auto mb-4">
@@ -509,8 +488,8 @@ export default function LifePage() {
               </p>
               <Button
                 variant="outline"
-                disabled
-                className="border-gray-300 dark:border-gray-600 opacity-50 cursor-not-allowed"
+                onClick={() => setLocation("/signup")}
+                className="border-gray-300 dark:border-gray-600"
               >
                 {t("lobp.download_report")}
               </Button>

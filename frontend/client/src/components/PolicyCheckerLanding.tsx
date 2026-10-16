@@ -284,7 +284,7 @@ export function PolicyCheckerLanding() {
             <div className="flex flex-wrap justify-center gap-3">
               {[
                 { label: "pcl.s1", href: "/report?sample=health", accent: "var(--lob-health)" },
-                { label: "pcl.s2", href: "/report?sample=life", accent: "var(--lob-life)" },
+                { label: "pcl.s2", href: "/report?sample=term", accent: "var(--lob-life)" },
                 { label: "pcl.s3", href: "/report?sample=vehicle", accent: "var(--lob-motor)" },
               ].map((s) => (
                 <Link
