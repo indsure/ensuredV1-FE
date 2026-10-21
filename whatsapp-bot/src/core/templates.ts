@@ -38,6 +38,19 @@ const clean = (s: string) => s.replace(/[—–]/g, ", ").replace(/[ \t]+\n/g, "
 
 /* ── T1 to T14 ── */
 
+/** The help menu. `command` is what a reply with that number runs, exactly as if typed. */
+export const MENU: { label: string; command: string }[] = [
+  { label: "Check a policy: send me the PDF", command: "how do i check a policy" },
+  { label: "Who to call today", command: "follow ups" },
+  { label: "Renewals coming up", command: "renewals" },
+  { label: "Add a lead", command: "add a lead" },
+  { label: "Find a customer or lead", command: "find someone" },
+  { label: "Policies that should switch", command: "which policies should switch" },
+  { label: "How is my book", command: "how is my book" },
+  { label: "Cover calculator", command: "calculator" },
+  { label: "Compare two plans", command: "compare" },
+];
+
 export const T = {
   welcome: () =>
     "You're connected to IndSure. Send me a customer's health policy PDF and I'll send back the report. You can also type RENEWALS or HELP.",
@@ -57,31 +70,48 @@ export const T = {
     `You've used all your data entry for now, so I couldn't save this policy. Message the IndSure team to get more: ${url}`,
   notInReport: (url: string) =>
     `The report doesn't cover that. Here it is in full: ${url}. For exact coverage questions, it's best to check with the insurer.`,
-  // Short on purpose: the four things advisors do most. MORE lists everything.
+  // A numbered menu: replying with a number runs that choice (bot.ts menu()), so nobody has
+  // to remember a command. Nine at most, the everyday jobs first. MORE lists everything.
   help: () =>
     [
-      "📋 Here's what I do most:",
-      "• Send a health policy PDF and I'll check it",
-      "• RENEWALS or FOLLOW UPS: who to call",
-      "• LEAD Ramesh 98123 45678 health",
-      "• CALCULATOR, or COMPARE Care Supreme vs ReAssure 2.0",
-      "Or just tell me what you need. Reply MORE for everything else.",
+      "📋 Here's what I do most. Reply with a number:",
+      ...MENU.map((m, i) => `${i + 1}) ${m.label}`),
+      "Or just type what you need, the way you'd say it. Reply MORE for everything else.",
     ].join("\n"),
   more: () =>
     [
-      "📋 Everything I can do:",
-      "• Send a health policy PDF, then ask: room rent? co-pay?",
-      "• SHARE: a message for the customer (report, calculator or comparison)",
-      "• RENEWALS · FOLLOW UPS · MY CLIENTS · CLAIMS · VIEWS · CHECKS",
-      "• LEAD Ramesh 98123 45678 health · Ramesh won · follow up Ramesh Friday · note Ramesh: wants family floater",
-      "• FIND Ramesh: everything on a name or number",
-      "• CALCULATOR · COMPARE Care Supreme vs Niva ReAssure 2.0",
-      "• SURRENDER VALUE Ramesh (life policies)",
+      "📋 Everything I can do. Type it your way, these are just examples:",
+      "",
+      "*Policies*",
+      "• Send a PDF: I check health policies and save motor, life, term and travel",
+      "• Then ask: room rent? co-pay? waiting period?",
+      "• SHARE: send the report to the customer",
+      "• What failed? · Is Ramesh's policy done?",
+      "• Policies to switch · Lowest scores · MY CLIENTS",
+      "",
+      "*Customers and leads*",
+      "• FIND Ramesh · Sunita's portfolio · Is Sunita covered enough?",
+      "• LEAD Ramesh 98123 45678 health · Ramesh won · follow up Ramesh Friday",
+      "• RENEWALS · FOLLOW UPS · VIEWS: who opened their report",
       "• UPGRADE MESSAGE for Santosh · DIWALI MESSAGE for Ramesh in hindi",
-      "• LINK: your website",
-      "• TODAY: your to-do · BALANCE: checks and Sach Assistant replies left · MORNING OFF / ON",
+      "",
+      "*Life, claims and tools*",
+      "• Surrender values · SURRENDER VALUE Ramesh",
+      "• CLAIMS · Where is Sunita's claim?",
+      "• CALCULATOR · COMPARE Care Supreme vs Niva ReAssure 2.0",
+      "",
+      "*Your business*",
+      "• How is my book? · Page stats · LINK: your website",
+      "• CHECKS · BALANCE · TODAY · MORNING OFF / ON",
       "• HINDI, HINGLISH or ENGLISH: the language I reply in",
     ].join("\n"),
+  /** Menu choice 1: there is nothing to run, so say how. */
+  howToCheck: () =>
+    "📄 Send me the customer's policy PDF right here, the one the insurer emailed.\n" +
+    "Health policies get a full check and a report. Motor, life, term and travel are saved with their details.\n" +
+    "Tip: write the customer's name and number with the PDF, for example: Ramesh Kumar 98123 45678",
+  /** Menu choice 5. */
+  howToFind: () => "Type a name or a phone number, for example: find Ramesh, or find 98123 45678",
   unknownNumber: () => "This number is for IndSure advisors. To get started, visit indsure.in/agent.",
 
   /* Extras the brief's flows need, in the same voice. */

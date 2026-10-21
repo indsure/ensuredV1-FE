@@ -11,7 +11,9 @@ export type Intent =
   | "followups" | "draft" | "lookup" | "checks" | "views" | "claims" | "surrender" | "more"
   | "balance" | "today" | "morning_off" | "morning_on" | "leadlist"
   // Stage 1: read-only views of the book
-  | "queue" | "status" | "book" | "portfolio" | "values" | "insights" | "pagestats";
+  | "queue" | "status" | "book" | "portfolio" | "values" | "insights" | "pagestats"
+  // Menu choices that explain rather than run
+  | "howcheck" | "howfind";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -52,6 +54,8 @@ export function ruleIntent(textRaw: string): Intent | null {
   const hindi = hindiIntent(t);
   if (hindi) return hindi;
   if (/^(more|all commands|everything|full menu|help all|all features|what else)[.!?]*$/.test(t)) return "more";
+  if (/^(how (do|can) i check (a )?polic(y|ies)|how to check (a )?polic(y|ies)|check a policy|policy kaise check (karu|karein|kare))[?.!]*$/.test(t)) return "howcheck";
+  if (/^(find|search)( (a|someone|somebody|customer|lead|a customer|a lead|client))?[?.!]*$/.test(t)) return "howfind";
   const stage1 = bookIntent(t);
   if (stage1) return stage1;
   if (/^(?:(?:show|list|see|view)(?: me)?\s+(?:my |all (?:my )?)?|(?:my|all) )leads?(?: list)?[?.!]*$|^leads? list[?.!]*$|^(?:mere|meri|sab|saare|sare)\s+leads?(?:\s+(?:dikhao|batao))?[?.!]*$|^(?:मेरी|मेरे|सारी)\s+(?:लीड|लीड्स)(?:\s+(?:दिखाओ|बताओ))?[?.!।]*$/.test(t)) return "leadlist";
@@ -78,7 +82,8 @@ export function ruleIntent(textRaw: string): Intent | null {
   if (/\b(calculator|calculate|calc|cover calculator)\b/.test(t)) return "calc";
   if (/^(cancel|stop|band karo|rehne do|never ?mind|leave it|forget it|chhodo|chodo)[.!]*$/.test(t)) return "cancel";
   if (/^(hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|good (morning|afternoon|evening)|gm|help|menu|start|\?)(\s+(ji|sir|madam|bhai|there|team))?[.!🙏 ]*$/u.test(t)) return "help";
-  if (/^(what can you do|what do you do|what all can you do|how do i use (this|you)|how does this work)[?.!]*$/.test(t)) return "help";
+  if (/^(what can you do|what do you do|what all can you do|how do i use (this|you)|how does this work|(your |what |which )?services|what services do you (offer|have|give)|what do you offer|features|options|commands|show (me )?(the )?menu|main menu|kya kya (hai|milta hai|kar sakte ho)|aap kya karte ho|kaise use karu|kaise use karein)[?.!]*$/.test(t)) return "help";
+  if (/^(sevaen|सेवाएं|सेवाएँ|क्या क्या है|मेनू)[?.!।]*$/.test(t)) return "help";
   if (/^(नमस्ते|नमस्कार|राम राम)(\s+जी)?[.!।🙏 ]*$/u.test(t)) return "help";
   if (/^remind\b(?! me\b)/.test(t)) return "remind";
   if (/\b(renewals?|renew|renewing|who'?s due|due this week|expiring|expiry list)\b/.test(t)) return "renewals";

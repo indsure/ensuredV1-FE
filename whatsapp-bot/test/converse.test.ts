@@ -175,7 +175,7 @@ test("hi: a hello by name, with today's follow-ups when there are any", async ()
   assert.match(transport.last(), /Here's what I do most/);
   engine.followupRows = [];
   await bot.handle(text("good morning sir"));
-  assert.match(transport.lastRaw(), /^👋 Hi Deep!/);
+  assert.match(transport.lastRaw(), /^👋 Good morning Deep!/, "answered in kind");
   assert.doesNotMatch(transport.last(), /follow-ups? due/);
 });
 
@@ -320,4 +320,51 @@ test("critic round 2: a capitalised first word still lets the pronoun work", () 
 test("critic round 2: 'Sunita, she said no' is about Sunita; 'Thanks, he bought it' changes nothing", () => {
   assert.deepEqual(parseLeadUpdate("Sunita, she said no", NOW), { name: "Sunita", status: "lost" });
   assert.equal(parseLeadUpdate("Thanks, he bought it", NOW), null);
+});
+
+/* ── The help menu: numbers run the choice ── */
+
+test("menu: hi, help, services and 'what can you do' all show the numbered menu", async () => {
+  const { bot, transport } = makeBot();
+  for (const t of ["hi", "help", "services", "what services do you offer?", "what can you do?", "menu"]) {
+    await bot.handle(text(t));
+    assert.match(transport.last(), /Reply with a number:\n1\) Check a policy: send me the PDF/, t);
+    assert.match(transport.lastRaw(), /\n9\. Compare two plans/, t);
+  }
+  await bot.handle(text("kya kya hai"));
+  assert.match(transport.last(), /Number likhiye:\n1\) Policy check/, "asked in Hinglish, menu in Hinglish");
+});
+
+test("menu: a number runs that choice, exactly as if typed", async () => {
+  const { bot, transport } = makeBot();
+  await bot.handle(text("help"));
+  await bot.handle(text("4"));
+  assert.match(transport.last(), /Adding a lead\. What's their name\?/);
+  await bot.handle(text("cancel"));
+  await bot.handle(text("help"));
+  await bot.handle(text("1"));
+  assert.match(transport.last(), /Send me the customer's policy PDF right here/);
+  await bot.handle(text("hi"));
+  await bot.handle(text("5"));
+  assert.match(transport.last(), /find Ramesh, or find 98123 45678/);
+  await bot.handle(text("help"));
+  await bot.handle(text("3"));
+  assert.match(transport.last(), /Nothing due|renewal/i);
+});
+
+test("menu: HELP during a pending question ends that question, so the menu numbers work", async () => {
+  const { bot, transport } = makeBot();
+  await bot.handle(text("calculator"));
+  await bot.handle(text("help"));
+  await bot.handle(text("4"));
+  assert.match(transport.last(), /Adding a lead/);
+});
+
+test("menu: in Hindi the choices are in Hindi, and a number still works", async () => {
+  const { bot, transport } = makeBot();
+  await bot.handle(text("HINDI"));
+  await bot.handle(text("मदद"));
+  assert.match(transport.last(), /नंबर लिखिए:\n1\) पॉलिसी चेक: मुझे PDF भेजिए/);
+  await bot.handle(text("2"));
+  assert.match(transport.last(), /फॉलो-अप|follow/i);
 });

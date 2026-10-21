@@ -110,7 +110,7 @@ test("HINDI / ENGLISH switch the language, and it is remembered", async () => {
   assert.match(transport.last(), /अब जवाब हिंदी में आएँगे/);
   assert.equal(engine.conv.pending.replyLang, "hindi", "saved with the conversation");
   await bot.handle(text("help"));
-  assert.match(transport.last(), /आप मुझसे ये सब करवा सकते हैं/);
+  assert.match(transport.last(), /मैं ये काम सबसे ज़्यादा करता हूँ/);
   await bot.handle(text("renewals"));
   assert.match(transport.last(), /कुछ बाकी नहीं/, "a bare command keeps Hindi");
   await bot.handle(text("ENGLISH"));
@@ -143,6 +143,8 @@ test("the morning brief goes out in the advisor's saved language", async () => {
 test("coverage: menus, PDF replies and every calculator question have Hindi and Hinglish", () => {
   // Lines that are commands or examples to type, the same in every language.
   const same = new Set(["• LEAD Ramesh 98123 45678 health", "• RENEWALS · FOLLOW UPS · MY CLIENTS · CLAIMS · VIEWS · CHECKS",
+    // Commands and words advisors use as they are, in every language
+    "• CHECKS · BALANCE · TODAY · MORNING OFF / ON", "*Policies*", "• Surrender values · SURRENDER VALUE Ramesh",
     "• CALCULATOR · COMPARE Care Supreme vs Niva ReAssure 2.0", "• UPGRADE MESSAGE for Santosh · DIWALI MESSAGE for Ramesh in hindi", "",
     "1) English", "2) Hinglish", "3) Hindi"]);
   const texts = [

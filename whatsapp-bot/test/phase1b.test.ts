@@ -223,8 +223,8 @@ test("compare name parsing and matching", () => {
 test("the help menu lists the new tools", async () => {
   const { bot, transport } = makeBot();
   await bot.handle(text("help"));
-  assert.ok(transport.last().split("\n").length <= 6, "help stays short");
-  assert.match(transport.last(), /Or just tell me what you need\./);
+  assert.ok(transport.last().split("\n").length <= 11, "help stays one screen: 9 numbered choices");
+  assert.match(transport.last(), /Or just type what you need/);
   await bot.handle(text("more"));
   for (const w of ["CALCULATOR", "COMPARE", "LEAD", "LINK", "FOLLOW UPS", "CLAIMS", "VIEWS", "CHECKS", "FIND", "SURRENDER VALUE", "UPGRADE MESSAGE", "MY CLIENTS"]) {
     assert.ok(transport.last().includes(w), w);

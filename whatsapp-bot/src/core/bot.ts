@@ -24,7 +24,7 @@ import { bookReply, claimDetailLines, insightsReply, pageStatsReply, portfolioRe
 import { SWITCH_TOPIC, isPronounName, oneLetterMissing, nameCandidates, rephrase, suggest, suggestReply, withPerson, type Suggestion } from "./converse.js";
 import { basics, ruleAnswer } from "./answers.js";
 import {
-  T, failureReasonFix, portalPolicyUrl, renewalsReply, reportCard, shareDraft, shareReply,
+  MENU, T, failureReasonFix, portalPolicyUrl, renewalsReply, reportCard, shareDraft, shareReply,
   sharedReportUrl, waMeLink, type Lang, type Links,
 } from "./templates.js";
 import { buildMessage } from "../shared/draftMessage.js";
@@ -126,7 +126,7 @@ const GREETING = /^(?:hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|ja
  *  no action for them, so sending these to it (paid plans) would lose the answer. */
 const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats"]);
 
-const FAST_RULE = new Set(["help", "leadlist", "queue", "status", "book", "portfolio", "values", "insights", "pagestats", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
+const FAST_RULE = new Set(["help", "howcheck", "howfind", "leadlist", "queue", "status", "book", "portfolio", "values", "insights", "pagestats", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
 
 type Conv = { state: State; currentClientId: string | null; pending: any; updatedAt: string | null };
 
@@ -275,7 +275,7 @@ export class Bot {
         if (msg.kind === "document") return await this.pdfIn(agentId, conv, msg);
         if (msg.kind === "image") return await this.say(msg.replyTo, agentId, T.notPdf(), "not_pdf");
         if (msg.kind === "text") return await this.onText(agentId, conv, msg);
-        return await this.say(msg.replyTo, agentId, T.help(), "help");
+        return await this.menu(agentId, msg.replyTo, null, "help");
       } catch (err: any) {
         log.error("handle failed", { error: err?.message });
         await this.say(msg.replyTo, agentId, T.genericError(), "error");
@@ -940,8 +940,12 @@ export class Bot {
 
     switch (intent) {
       case "help":
-        if (GREETING.test(typed)) return this.greet(agentId, to);
-        return this.say(to, agentId, T.help(), "help");
+        if (GREETING.test(typed)) return this.greet(agentId, to, typed);
+        return this.menu(agentId, to, null, "help");
+      case "howcheck":
+        return this.say(to, agentId, T.howToCheck(), "howcheck");
+      case "howfind":
+        return this.say(to, agentId, T.howToFind(), "howfind");
       case "leadlist":
         return this.say(to, agentId, leadsListReply(this.d.links, await this.d.engine.leadsList(agentId)), "list_leads");
       case "balance":
@@ -1062,9 +1066,9 @@ export class Bot {
     const day = istClock(this.now()).iso;
     if (sachReason === "free_plan" && this.sachNudged.get(agentId) !== day && words > 2) {
       this.sachNudged.set(agentId, day);
-      return this.say(to, agentId, `${T.didNotCatch()}\n\nWith Sach Assistant (paid plan) you can just type it your way, in English, Hinglish or Hindi: ${this.d.teamLink}`, "unknown");
+      return this.menu(agentId, to, "I didn't catch that.", "unknown", `With Sach Assistant (paid plan) you can just type it your way, in English, Hinglish or Hindi: ${this.d.teamLink}`);
     }
-    return this.say(to, agentId, T.didNotCatch(), "unknown");
+    return this.menu(agentId, to, "I didn't catch that.", "unknown");
   }
 
   /* ══ Sach Assistant: BALANCE, TODAY and the 9 AM brief ════════════════ */
@@ -1082,15 +1086,30 @@ export class Bot {
   }
 
   /** "hi" / "namaste": a hello by name, what's waiting today if anything, then the menu. */
-  private async greet(agentId: string, to: string) {
+  private async greet(agentId: string, to: string, typed = "") {
     const [profile, due] = await Promise.all([
       this.d.engine.profile(agentId).catch(() => null),
       this.d.engine.followups(agentId).catch(() => []),
     ]);
     const first = String(profile?.name || "").trim().split(/\s+/)[0];
-    const lines = [first ? `👋 Hi ${first}!` : "👋 Hi!"];
+    // Answer in kind: "good morning" gets a good morning back.
+    const hello = /good morning|^gm\b/i.test(typed) ? "Good morning" : /good afternoon/i.test(typed) ? "Good afternoon" : /good evening/i.test(typed) ? "Good evening" : "Hi";
+    const lines = [first ? `👋 ${hello} ${first}!` : `👋 ${hello}!`];
     if (due.length) lines.push(`You have ${due.length} ${due.length === 1 ? "follow-up" : "follow-ups"} due. Reply FOLLOW UPS to see them.`);
-    return this.say(to, agentId, `${lines.join("\n")}\n\n${T.help()}`, "help");
+    return this.menu(agentId, to, lines.join("\n"), "help");
+  }
+
+  /** The help menu. Its numbers are remembered (state SUGGESTED, like "did you mean"), so a
+   *  reply "4" runs "add a lead". Never while another question is waiting: a number then
+   *  answers that question, as before. */
+  private async menu(agentId: string | null, to: string, before: string | null, tag: string, after: string | null = null) {
+    if (agentId) {
+      const conv = await this.loadConv(agentId, to);
+      if (!conv.state.startsWith("AWAITING")) {
+        await this.setState(agentId, to, "SUGGESTED", conv.currentClientId, { options: MENU.map((m) => ({ label: m.label, command: m.command })), at: this.now() });
+      }
+    }
+    return this.say(to, agentId, [before, T.help(), after].filter(Boolean).join("\n\n"), tag);
   }
 
   /** Up to three likely commands for a message no rule understood. A word that is a name in
@@ -1830,12 +1849,12 @@ export class Bot {
     const e = this.d.engine;
     const lang = (a.language as Lang | null) ?? null;
     switch (a.type) {
-      case "help": return this.say(to, agentId, T.help(), "help");
+      case "help": return this.menu(agentId, to, null, "help");
       case "cancel":
         await this.rest(agentId, to, conv.currentClientId);
         return this.say(to, agentId, T.cancelled(), "cancel");
       case "undo": return this.proposeUndo(agentId, conv, to);
-      case "unknown": return this.say(to, agentId, clarify || T.didNotCatch(), "unknown");
+      case "unknown": return clarify ? this.say(to, agentId, clarify, "unknown") : this.menu(agentId, to, "I didn't catch that.", "unknown");
       case "ask_report": return this.ask(agentId, conv, to, text, a.name);
       case "share": return this.shareStart(agentId, conv, to, text, { name: a.name, phone: a.phone, lang });
       case "renewals": return this.say(to, agentId, renewalsReply(await e.renewals(agentId), this.d.links), "renewals");
