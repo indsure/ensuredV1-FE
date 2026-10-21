@@ -7,6 +7,7 @@ import type { ClientSummary, Engine, JobStatus, RenewalRow } from "../src/engine
 import type { InboundMessage, Transport } from "../src/transport/types.js";
 import { Bot } from "../src/core/bot.js";
 import type { Inspection } from "../src/core/pdfInspect.js";
+import * as BV from "../../backend/server/whatsapp/bookViews.js";
 
 export const AGENT = "11111111-1111-4111-8111-111111111111";
 export const ADVISOR = "919800000001";
@@ -239,6 +240,39 @@ export class FakeEngine implements Engine {
     return { uuid: "cmp-uuid-1", names: ["Care Health Insurance Care Supreme", "Niva Bupa Health Insurance ReAssure 2.0"], verdict: { winner_index: 0, winner_name: "Care Supreme", reasons: ["No room rent cap", "Shorter PED wait"], counterpoint: "ReAssure 2.0 has a bigger bonus" } };
   }
   async llmPhrase() { this.llmPhraseCalls++; return this.phraseAnswer; }
+
+  /* Stage 1: the backend's real rules (bookViews.ts) over made-up rows. */
+  queueRows: any[] = [];
+  bookRows: any[] = [];
+  customerRows: { id: string; name: string; phone: string | null; city: string | null }[] = [];
+  portfolioPolicies = new Map<string, any[]>();
+  calcFor = new Map<string, any>();
+  valueRows: any[] = [];
+  claimDetails = new Map<string, { claim: any; docs: any[]; queries: any[]; events: any[] }>();
+  claimViews: string[] = [];
+  insightRows: any[] = [];
+  people: number | null = 0;
+  pageRow: { slug: string } | null = null;
+  pageViewRows: any[] = [];
+  pageLeads = 0;
+  now = Date.UTC(2026, 9, 21, 6);
+  async queue() { return BV.queueView(this.queueRows); }
+  async book(_a: string, view: any, sort: any, type: string | null) { return BV.policyView(this.bookRows, view, sort, this.now, type); }
+  async portfolio(_a: string, q: string) {
+    const matches = this.customerRows.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
+    if (matches.length !== 1) return { matches };
+    const c = matches[0];
+    return { matches, customer: c, portfolio: BV.portfolioView(this.portfolioPolicies.get(c.id) ?? [], this.calcFor.get(c.id) ?? null, this.now) };
+  }
+  async policyValueRows() { return this.valueRows; }
+  async claim(_a: string, id: string) {
+    const d = this.claimDetails.get(id);
+    if (!d) return null;
+    this.claimViews.push(id);
+    return BV.claimView(d.claim, d.docs, d.queries, d.events);
+  }
+  async insights() { return BV.insightsView(this.insightRows, this.people, this.now); }
+  async pageStats() { return this.pageRow ? { page: this.pageRow, stats: BV.pageStatsView(this.pageViewRows, this.pageLeads) } : { page: null }; }
 }
 
 /** A fake clock: sleeping advances time instantly. */

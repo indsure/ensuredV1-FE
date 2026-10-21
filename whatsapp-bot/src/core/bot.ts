@@ -18,8 +18,9 @@ import type { Engine, ClientSummary, RenewalRow } from "../engine.js";
 import type { InboundMessage, Transport } from "../transport/types.js";
 import { MIN_TEXT, inspectPdf, looksLikePdf, POLICY_TYPES, sameInsured, type Inspection, type PolicyType } from "./pdfInspect.js";
 import {
-  isAlone, isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, parsePair, pickNumber, ruleIntent,
+  bookAsk, isAlone, isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, parsePair, pickNumber, portfolioName, ruleIntent, statusName,
 } from "./intents.js";
+import { bookReply, claimDetailLines, insightsReply, pageStatsReply, portfolioReply, queueReply, statusReply, valuesReply } from "./bookReplies.js";
 import { SWITCH_TOPIC, isPronounName, oneLetterMissing, nameCandidates, rephrase, suggest, suggestReply, withPerson, type Suggestion } from "./converse.js";
 import { basics, ruleAnswer } from "./answers.js";
 import {
@@ -121,7 +122,7 @@ const UNDO_WINDOW_MS = 15 * 60_000;
 /** A hello on its own: answered by name, with what is waiting today. */
 const GREETING = /^(?:hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|jai shri krishna|good (?:morning|afternoon|evening)|gm)(?:\s+(?:ji|sir|madam|bhai|there|team))?[.!🙏 ]*$|^(?:नमस्ते|नमस्कार|राम राम)(?:\s+जी)?[.!।🙏 ]*$/iu;
 
-const FAST_RULE = new Set(["help", "leadlist", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
+const FAST_RULE = new Set(["help", "leadlist", "queue", "status", "book", "portfolio", "values", "insights", "pagestats", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
 
 type Conv = { state: State; currentClientId: string | null; pending: any; updatedAt: string | null };
 
@@ -975,8 +976,40 @@ export class Bot {
         return this.say(to, agentId, viewsReply(await this.d.engine.views(agentId)), "views");
       case "claims": {
         const q = text.replace(/^(show\s+)?(open\s+)?claims?\s*(status)?\s*(of|for)?\s*/i, "").trim() || null;
-        return this.say(to, agentId, claimsReply(this.d.links, await this.d.engine.claims(agentId, q), q), "claims");
+        const rows = await this.d.engine.claims(agentId, q);
+        const reply = claimsReply(this.d.links, rows, q);
+        // One claim named: also its stage, the documents still missing and the document clock.
+        if (q && rows.length === 1) {
+          const d = await this.d.engine.claim(agentId, rows[0].id).catch(() => null);
+          if (d) {
+            const lines = reply.split("\n");
+            const link = lines.pop()!;
+            return this.say(to, agentId, [...lines, ...claimDetailLines(d), link].join("\n"), "claims");
+          }
+        }
+        return this.say(to, agentId, reply, "claims");
       }
+      /* Stage 1: read-only views of the book */
+      case "queue":
+        return this.say(to, agentId, queueReply(this.d.links, await this.d.engine.queue(agentId)), "queue");
+      case "status": {
+        const name = statusName(text) ?? "";
+        return this.say(to, agentId, statusReply(this.d.links, name, await this.d.engine.findClients(agentId, name)), "status");
+      }
+      case "book": {
+        const ask = bookAsk(text) ?? { view: "all" as const, sort: "score" as const };
+        return this.say(to, agentId, bookReply(this.d.links, ask.view, ask.sort, await this.d.engine.book(agentId, ask.view, ask.sort, typeIn(text))), "book");
+      }
+      case "portfolio": {
+        const name = portfolioName(text) ?? "";
+        return this.say(to, agentId, portfolioReply(this.d.links, name, await this.d.engine.portfolio(agentId, name)), "portfolio");
+      }
+      case "values":
+        return this.say(to, agentId, valuesReply(this.d.links, await this.d.engine.policyValueRows(agentId)), "values");
+      case "insights":
+        return this.say(to, agentId, insightsReply(this.d.links, await this.d.engine.insights(agentId)), "insights");
+      case "pagestats":
+        return this.say(to, agentId, pageStatsReply(this.d.links, await this.d.engine.pageStats(agentId)), "pagestats");
       case "lookup": {
         const q = text.replace(/^(find|search|lookup|look up|who is|details (of|for))\s+/i, "").trim();
         const r = await this.d.engine.lookup(agentId, q);

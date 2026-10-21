@@ -309,6 +309,9 @@ export function lookupReply(l: Links, q: string, policies: ClientSummary[], lead
   leads.forEach((r) => {
     const fu = r.next_follow_up ? `follow up ${dayMonth(r.next_follow_up)}` : null;
     out.push(`• Lead: ${[b(r.name), r.phone, r.status || "new", fu].filter(Boolean).join(" · ")}`, `   ${l.origin}/agent/leads/${r.id}`);
+    // Tap to chat (the number itself is already tap-to-call in WhatsApp).
+    const chat = waChatLink(r.phone);
+    if (chat) out.push(`   WhatsApp: ${chat}`);
   });
   const n = firstName(policies[0]?.policyholderName || leads[0]?.name);
   out.push("", policies.length ? `Ask about it: ${n}'s policy room rent?` : `Next: follow up ${n} Friday`);
@@ -469,4 +472,11 @@ export function leadsListReply(l: Links, data: { total: number; leads: LeadRow[]
   });
   const more = data.total > data.leads.length ? `\n…and ${data.total - data.leads.length} more: ${l.origin}/agent/leads` : "";
   return `📋 Your leads (${data.total}), latest first:\n${lines.join("\n")}${more}\n\nUpdate one, for example: ${firstName(data.leads[0]?.name) || "Ramesh"} interested`;
+}
+
+/** A wa.me chat link for an Indian mobile number (lib/claims.ts waLink), or null. */
+export function waChatLink(phone: string | null | undefined): string | null {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  return `https://wa.me/${digits.length === 10 ? "91" + digits : digits}`;
 }

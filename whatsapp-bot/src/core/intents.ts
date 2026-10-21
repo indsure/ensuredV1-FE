@@ -9,7 +9,9 @@ export type Intent =
   | "link" | "unlink" | "cancel" | "help" | "renewals" | "remind" | "share" | "ask" | "unknown"
   | "website" | "lead" | "calc" | "compare" | "clients"
   | "followups" | "draft" | "lookup" | "checks" | "views" | "claims" | "surrender" | "more"
-  | "balance" | "today" | "morning_off" | "morning_on" | "leadlist";
+  | "balance" | "today" | "morning_off" | "morning_on" | "leadlist"
+  // Stage 1: read-only views of the book
+  | "queue" | "status" | "book" | "portfolio" | "values" | "insights" | "pagestats";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -50,6 +52,8 @@ export function ruleIntent(textRaw: string): Intent | null {
   const hindi = hindiIntent(t);
   if (hindi) return hindi;
   if (/^(more|all commands|everything|full menu|help all|all features|what else)[.!?]*$/.test(t)) return "more";
+  const stage1 = bookIntent(t);
+  if (stage1) return stage1;
   if (/^(?:(?:show|list|see|view)(?: me)?\s+(?:my |all (?:my )?)?|(?:my|all) )leads?(?: list)?[?.!]*$|^leads? list[?.!]*$|^(?:mere|meri|sab|saare|sare)\s+leads?(?:\s+(?:dikhao|batao))?[?.!]*$|^(?:मेरी|मेरे|सारी)\s+(?:लीड|लीड्स)(?:\s+(?:दिखाओ|बताओ))?[?.!।]*$/.test(t)) return "leadlist";
   if (/^(?:(?:send|share|give)(?: me)?|what'?s|whats|what is|where is)\s+(?:my|the)\s+(?:website|site|page|web page)(?:\s+link)?[?.!]*$|^(?:mera|meri)\s+(?:website|site|page)(?:\s+(?:ka\s+)?link)?(?:\s+(?:bhejo|do|dikhao|batao|kya hai))?[?.!]*$/.test(t)) return "website";
   // Bare "link" (no code) is the advisor's own website. "LINK 123456" is connecting, above.
@@ -178,4 +182,49 @@ export function parseCaption(textRaw: string): { name: string | null; phone: str
   const phone = digits ? digits[0].replace(/\D/g, "").slice(-10) : null;
   const name = t.replace(digits ? digits[0] : "", "").replace(/[^A-Za-zऀ-ॿ .]/g, " ").replace(/\s+/g, " ").trim();
   return { name: name.length >= 2 ? name.slice(0, 80) : null, phone };
+}
+
+/* ── Stage 1: read-only views of the book ────────────────────────────── */
+
+const END = "[?.!।]*$";
+
+/** "is Ramesh's policy done?", "Ramesh ki policy ho gayi?" -> "ramesh". */
+export function statusName(textRaw: string): string | null {
+  const t = norm(textRaw);
+  const m = t.match(new RegExp(`^(?:is|has)\\s+(.+?)(?:'s)?\\s+(?:policy|report|check|pdf)\\s+(?:done|ready|finished|complete|completed|checked)(?:\\s+yet)?${END}`))
+    || t.match(new RegExp(`^(.+?)\\s+(?:ki|ka|के|की|का)\\s+(?:policy|report|पॉलिसी|रिपोर्ट)\\s+(?:ho gayi|ho gaya|ready hai|ban gayi|bani|aa gayi|हो गई|तैयार है)${END}`));
+  return m ? m[1].trim() : null;
+}
+
+/** "which policies should switch?", "lowest scores", "healthy policies". */
+export function bookAsk(textRaw: string): { view: "all" | "switch" | "healthy"; sort: "expiry" | "score" } | null {
+  const t = norm(textRaw);
+  if (/\b(should switch|need(?:s)? (?:to )?switch|to switch|weak policies|bad policies|policies (?:are |that are )?(?:weak|bad)|switch karni|switch karna|kamzor policy|kamzor policies)\b|कमज़ोर पॉलिसी|कमजोर पॉलिसी/.test(t)) return { view: "switch", sort: "score" };
+  if (/\b(healthy|good|strong) policies\b|\bpolicies (?:are |that are )?(?:healthy|good|strong)\b|अच्छी पॉलिसी/.test(t)) return { view: "healthy", sort: "score" };
+  if (/\b(lowest|worst|weakest) (?:health )?(?:scores?|policies)\b|\bsort(?:ed)? by score\b|\bscore (?:wise|order)\b/.test(t)) return { view: "all", sort: "score" };
+  return null;
+}
+
+/** "Sunita's portfolio", "is Sunita covered enough?", "cover gap for Sunita". */
+export function portfolioName(textRaw: string): string | null {
+  const t = norm(textRaw);
+  const m = t.match(new RegExp(`^(.+?)(?:'s)?\\s+portfolio${END}`))
+    || t.match(new RegExp(`^portfolio\\s+(?:of\\s+|for\\s+)?(.+?)${END}`))
+    || t.match(new RegExp(`^(?:is|are)\\s+(.+?)\\s+(?:covered enough|under-?insured|fully covered|covered properly)${END}`))
+    || t.match(new RegExp(`^(?:cover gap|gap)\\s+(?:for\\s+|of\\s+)?(.+?)${END}`))
+    || t.match(new RegExp(`^(.+?)\\s+(?:ka|ki|के|का|की)\\s+(?:portfolio|cover gap|पोर्टफोलियो)${END}`))
+    || t.match(new RegExp(`^(.+?)\\s+(?:ka|ki|का|की)\\s+cover\\s+(?:kaafi|kafi|enough|पूरा)\\s+(?:hai|है)${END}`));
+  const name = m ? m[1].trim() : null;
+  return name && !/^(my|all|the|mera|meri)$/.test(name) ? name : null;
+}
+
+function bookIntent(t: string): Intent | null {
+  if (/^(?:what|which|any)\s+(?:checks?\s+)?(?:failed|didn'?t work|did not work|got stuck)|^failed(?: checks?| policies| uploads?)?[?.!]*$|^(?:my\s+)?queue[?.!]*$|^(?:stuck|pending|running) (?:checks?|uploads?)[?.!]*$|^(?:kya|kaun sa|konsa|kaunsi)\s+fail\b|^kya atka hai/.test(t)) return "queue";
+  if (statusName(t)) return "status";
+  if (bookAsk(t)) return "book";
+  if (portfolioName(t)) return "portfolio";
+  if (/^(?:all\s+|my\s+)?(?:surrender values|policy values|values list|surrender list)[?.!]*$|^(?:sab(?:hi)?|saari)\s+surrender values?[?.!]*$/.test(t)) return "values";
+  if (/^(?:how is|how'?s|hows)\s+my\s+(?:book|business|portfolio)[?.!]*$|^(?:insights|book summary|business summary|my insights|book insights)[?.!]*$|^(?:mera|meri)\s+(?:book|business)\s+kaisa\s+(?:hai|chal raha hai)[?.!]*$|^मेरा बिज़नेस कैसा है/.test(t)) return "insights";
+  if (/\b(?:page|website|site) (?:stats|views|visits)\b|\bhow many (?:people )?(?:saw|visited|opened|viewed) my (?:page|website|site)\b|\bmy page (?:stats|views)\b|\b(?:page|website) par kitne log\b/.test(t)) return "pagestats";
+  return null;
 }

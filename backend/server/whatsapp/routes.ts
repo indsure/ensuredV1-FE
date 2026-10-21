@@ -32,6 +32,8 @@ import { compareMany, type WordingProfile } from "../types/wordingProfile";
 import { EXTRACTION_FIELDS } from "../services/extractionFields";
 import { extractUsage, isOverDailyCeiling, logGeminiUsage } from "../services/geminiUsage";
 import { RESPONSE_SCHEMA, normalise, systemPrompt, userPrompt, type Context } from "./understand";
+import { claimView, insightsView, pageStatsView, policyView, portfolioView, queueView } from "./bookViews";
+import { loadPolicyValueRows } from "../services/policyValueStore";
 
 type VerifyJwt = (req: any, res: any) => Promise<string | null>;
 
@@ -1268,6 +1270,172 @@ FACTS: ${JSON.stringify(facts)}`,
       });
     } catch (err: any) {
       log.error("wa claims failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Stage 1: read-only views of the book (bookViews.ts holds each portal page's rule) ──
+     Every query is scoped to the linked advisor. Nothing here writes, except the access-log
+     row a claim view leaves, exactly as the portal's claim page does. */
+
+  /** My Queue: checks that failed (with the reason) and checks still running. */
+  app.get("/api/internal/wa/queue", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const r = await pool.query(
+        `SELECT c.id, c.status, c.error_message, c.created_at, c.policyholder_name, c.name AS row_name, c.filename,
+                c.report_data, cu.name AS customer_name
+           FROM clients c
+           LEFT JOIN customers cu ON cu.id = c.customer_id AND cu.agent_id = c.agent_id
+          WHERE c.agent_id = $1 AND c.status IN ('error', 'processing', 'pending')
+          ORDER BY c.created_at DESC LIMIT 30`,
+        [agentId]
+      );
+      res.json(queueView(r.rows.map((row: any) => ({ ...row, name: displayName(row) }))));
+    } catch (err: any) {
+      log.error("wa queue failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** My Policies with its tabs and sort: view = all | expiring | switch | healthy,
+   *  sort = expiry | score | name, optional type. */
+  app.get("/api/internal/wa/book", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const view = (["all", "expiring", "switch", "healthy"] as const).find((v) => v === req.query.view) ?? "all";
+      const sort = (["expiry", "score", "name"] as const).find((v) => v === req.query.sort) ?? "expiry";
+      const t = String(req.query.type || "").toLowerCase();
+      const r = await pool.query(
+        `SELECT c.id, c.insurance_type, c.insurer, c.policy_name, c.score, c.expiry_date, c.policyholder_name,
+                c.report_data->'identity' AS identity, cu.name AS customer_name
+           FROM clients c
+           LEFT JOIN customers cu ON cu.id = c.customer_id AND cu.agent_id = c.agent_id
+          WHERE c.agent_id = $1 AND c.status = 'done'`,
+        [agentId]
+      );
+      const rows = r.rows.map((row: any) => ({ ...row, name: displayName({ ...row, report_data: { identity: row.identity } }) }));
+      res.json(policyView(rows, view, sort, Date.now(), /^[a-z_]{3,30}$/.test(t) ? t : null));
+    } catch (err: any) {
+      log.error("wa book failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** A customer's portfolio and health cover gap, by name. Several matches: just the names. */
+  app.get("/api/internal/wa/portfolio", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const q = String(req.query.q || "").trim();
+      if (q.length < 2) return res.json({ matches: [] });
+      const like = `%${q.replace(/[%_\\]/g, "\\$&")}%`;
+      const c = await pool.query(
+        `SELECT id, name, phone, city FROM customers WHERE agent_id = $1 AND name ILIKE $2 ORDER BY name LIMIT 6`,
+        [agentId, like]
+      );
+      if (c.rows.length !== 1) return res.json({ matches: c.rows });
+      const cust = c.rows[0];
+      const [pols, calc] = await Promise.all([
+        pool.query(
+          `SELECT id, insurance_type, insurer, policy_name, sum_insured, expiry_date, score, extracted_data,
+                  report_data->'coverage_structure' AS coverage
+             FROM clients WHERE agent_id = $1 AND customer_id = $2 AND status = 'done'
+            ORDER BY created_at DESC`,
+          [agentId, cust.id]
+        ),
+        pool.query(
+          `SELECT result_data FROM calculator_reports WHERE customer_id = $1 AND agent_id = $2 ORDER BY created_at DESC LIMIT 1`,
+          [cust.id, agentId]
+        ),
+      ]);
+      res.json({ matches: [cust], customer: cust, portfolio: portfolioView(pols.rows.map((p: any) => ({ ...p, name: null })), calc.rows[0] ?? null, Date.now()) });
+    } catch (err: any) {
+      log.error("wa portfolio failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Life and term rows for the surrender-value book. The bot runs the portal's own
+   *  policyBook.ts on them (synced into whatsapp-bot/src/shared), as /agent/policy-values does. */
+  app.get("/api/internal/wa/policy-values", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      res.json({ rows: await loadPolicyValueRows(pool, agentId) });
+    } catch (err: any) {
+      log.error("wa policy values failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** One claim: stage, open insurer queries, documents still missing, the document clock. */
+  app.get("/api/internal/wa/claims/:id", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID_RE.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const c = await pool.query(
+        `SELECT c.id, c.status, c.claim_type, c.insurer, c.hospital, c.ailment, c.claimed_amount, c.settled_amount,
+                cu.name AS customer_name,
+                CASE WHEN c.purge_at IS NULL THEN NULL ELSE GREATEST(0, EXTRACT(DAY FROM (c.purge_at - now()))::int) END AS days_to_purge
+           FROM claims c
+           LEFT JOIN customers cu ON cu.id = c.customer_id AND cu.agent_id = c.agent_id
+          WHERE c.id = $1 AND c.agent_id = $2`,
+        [req.params.id, agentId]
+      );
+      if (!c.rows.length) return res.status(404).json({ error: "Not found" });
+      const [docs, queries, events] = await Promise.all([
+        pool.query("SELECT category, doc_type FROM claim_documents WHERE claim_id = $1 AND agent_id = $2", [req.params.id, agentId]),
+        pool.query("SELECT seq, question, raised_on, resolved_on FROM claim_queries WHERE claim_id = $1 AND agent_id = $2 ORDER BY seq", [req.params.id, agentId]),
+        pool.query("SELECT status, note, occurred_at FROM claim_events WHERE claim_id = $1 AND agent_id = $2 ORDER BY occurred_at", [req.params.id, agentId]),
+      ]);
+      // Health paperwork was looked at: logged like the portal's claim page (action claim_view).
+      void pool.query(
+        `INSERT INTO access_audit_log (agent_id, client_id, action, route, method, ip, user_agent)
+         VALUES ($1, $2, 'claim_view', $3, 'GET', NULL, 'whatsapp-bot')`,
+        [agentId, req.params.id, "/api/internal/wa/claims/:id"]
+      ).catch((e: any) => log.warn("wa claim access log failed", { error: e?.message }));
+      res.json(claimView(c.rows[0], docs.rows, queries.rows, events.rows));
+    } catch (err: any) {
+      log.error("wa claim detail failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** Insights: renewals coming, expired, people covered, mix by type, health score. */
+  app.get("/api/internal/wa/insights", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const [rows, people] = await Promise.all([
+        pool.query("SELECT insurance_type, expiry_date, score FROM clients WHERE agent_id = $1 AND status = 'done'", [agentId]),
+        pool.query("SELECT count(*)::int AS n FROM customers WHERE agent_id = $1", [agentId]),
+      ]);
+      res.json(insightsView(rows.rows, people.rows[0]?.n ?? null, Date.now()));
+    } catch (err: any) {
+      log.error("wa insights failed", { error: err?.message });
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /** My Page in the last 30 days: views, leads from the page, where visitors came from. */
+  app.get("/api/internal/wa/page-stats", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const p = await pool.query("SELECT id, slug FROM agent_pages WHERE agent_id = $1", [agentId]);
+      if (!p.rows.length) return res.json({ page: null });
+      const since = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+      const [views, leads] = await Promise.all([
+        pool.query("SELECT utm_source, app, device, views FROM agent_page_views WHERE page_id = $1 AND viewed_on >= $2", [p.rows[0].id, since]),
+        pool.query("SELECT count(*)::int AS n FROM agent_leads WHERE agent_id = $1 AND landing_slug = $2", [agentId, p.rows[0].slug]),
+      ]);
+      res.json({ page: { slug: p.rows[0].slug }, stats: pageStatsView(views.rows, leads.rows[0]?.n ?? 0) });
+    } catch (err: any) {
+      log.error("wa page stats failed", { error: err?.message });
       res.status(500).json({ error: "Internal server error" });
     }
   });

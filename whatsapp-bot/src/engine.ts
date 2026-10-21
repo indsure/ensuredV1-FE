@@ -95,6 +95,8 @@ export type PolicyRow = {
 
 import type { LeadRow, ClaimRow } from "./core/crm.js";
 export type { LeadRow, ClaimRow };
+import type { BookData, BookSort, BookViewName, ClaimDetailData, InsightsData, PageStatsData, PortfolioData, QueueData } from "./core/bookReplies.js";
+export type { BookData, BookSort, BookViewName, ClaimDetailData, InsightsData, PageStatsData, PortfolioData, QueueData };
 
 export type SachStatus = { plan: string; paid: boolean; used: number; limit: number; resetsOn: string };
 
@@ -144,6 +146,14 @@ export interface Engine {
   lookup(agentId: string, q: string): Promise<{ policies: ClientSummary[]; leads: LeadRow[] }>;
   views(agentId: string): Promise<{ name: string | null; insurer: string | null; policyName: string | null; views: number; lastViewed: string; clientId: string }[]>;
   claims(agentId: string, q: string | null): Promise<ClaimRow[]>;
+  /* Stage 1: read-only views of the book (backend whatsapp/bookViews.ts). */
+  queue(agentId: string): Promise<QueueData>;
+  book(agentId: string, view: BookViewName, sort: BookSort, type: string | null): Promise<BookData>;
+  portfolio(agentId: string, q: string): Promise<PortfolioData>;
+  policyValueRows(agentId: string): Promise<any[]>;
+  claim(agentId: string, id: string): Promise<ClaimDetailData | null>;
+  insights(agentId: string): Promise<InsightsData>;
+  pageStats(agentId: string): Promise<PageStatsData>;
   llmPhrase(agentId: string, clientId: string, question: string): Promise<{ answer: string | null; notInReport?: boolean; guardFired?: boolean }>;
 }
 
@@ -278,6 +288,18 @@ export class HttpEngine implements Engine {
   async claims(agentId: string, q: string | null) {
     return (await this.call(`/api/internal/wa/claims${q ? `?q=${encodeURIComponent(q)}` : ""}`, { agentId })).claims;
   }
+  queue(agentId: string) { return this.call("/api/internal/wa/queue", { agentId }); }
+  book(agentId: string, view: BookViewName, sort: BookSort, type: string | null) {
+    return this.call(`/api/internal/wa/book?view=${view}&sort=${sort}${type ? `&type=${encodeURIComponent(type)}` : ""}`, { agentId });
+  }
+  portfolio(agentId: string, q: string) { return this.call(`/api/internal/wa/portfolio?q=${encodeURIComponent(q)}`, { agentId }); }
+  async policyValueRows(agentId: string) { return (await this.call("/api/internal/wa/policy-values", { agentId })).rows; }
+  async claim(agentId: string, id: string) {
+    try { return await this.call(`/api/internal/wa/claims/${encodeURIComponent(id)}`, { agentId }); }
+    catch (e: any) { if (e?.status === 404) return null; throw e; }
+  }
+  insights(agentId: string) { return this.call("/api/internal/wa/insights", { agentId }); }
+  pageStats(agentId: string) { return this.call("/api/internal/wa/page-stats", { agentId }); }
   policies(agentId: string, type: string | null) {
     return this.call(`/api/internal/wa/policies${type ? `?type=${encodeURIComponent(type)}` : ""}`, { agentId });
   }

@@ -39,6 +39,7 @@ const RULES: Rule[] = [
   // Looking someone up
   [new RegExp(`^(?:what|what's|whats|what is)\\s+(?:do\\s+(?:we|i)\\s+have|have\\s+(?:we|i)\\s+got)\\s+(?:on|for|about)\\s+(.+?)${END}`, "i"), (m) => `find ${m[1]}`],
   [new RegExp(`^(?:tell me about|show me|details of|info on|everything on)\\s+(?!my\\b|all\\b|the\\b)(.+?)${END}`, "i"), (m) => `find ${m[1]}`],
+  [new RegExp(`^(?:what'?s\\s+|what is\\s+|give me\\s+|send me\\s+)?(.+?)'s\\s+(?:number|phone|mobile|contact)(?:\\s+number)?${END}`, "i"), (m) => `find ${m[1]}`],
   [new RegExp(`^(.+?)\\s+(?:ka|ki|ke)\\s+(?:number|phone|mobile|contact)(?:\\s+number)?(?:\\s+(?:kya hai|kya h|batao|bhejo|do|dikhao))?${END}`, "i"), (m) => `find ${m[1]}`],
 
   // Sharing
@@ -58,6 +59,11 @@ const RULES: Rule[] = [
 
   // Claims: "any queries on Meena's claim"
   [new RegExp(`^(?:any\\s+)?(?:queries|query|status|update|news)\\s+(?:on|of|for|about)\\s+(.+?)(?:'s)?\\s+claim${END}`, "i"), (m) => `claims ${m[1]}`],
+
+  // One claim: "where is Sunita's claim", "Sunita ka claim kahan tak", "what's pending for Sunita"
+  [new RegExp(`^(?:where is|where'?s|status of|what'?s the status of)\\s+(.+?)'s\\s+claim${END}`, "i"), (m) => `claims ${m[1]}`, true],
+  [new RegExp(`^(.+?)\\s+(?:ka|ki)\\s+claim\\b.*$`, "i"), (m) => `claims ${m[1]}`, true],
+  [new RegExp(`^what'?s\\s+(?:pending|missing|left)\\s+(?:for|in|on)\\s+(.+?)(?:'s claim)?${END}`, "i"), (m) => `claims ${m[1]}`],
 
   // Who opened a report
   [new RegExp(`^(?:did|has)\\s+.+?\\s+(?:open|opened|see|seen|read|view|viewed)\\s+(?:the\\s+|his\\s+|her\\s+|my\\s+)?report${END}`, "i"), () => "views"],
