@@ -4,6 +4,7 @@
  */
 
 import { devanagariToLatin } from "./i18n.js";
+import { parseAddCustomer, parseConvert, parseEditAsk, parseFile } from "./editParse.js";
 
 export type Intent =
   | "link" | "unlink" | "cancel" | "help" | "renewals" | "remind" | "share" | "ask" | "unknown"
@@ -13,7 +14,9 @@ export type Intent =
   // Stage 1: read-only views of the book
   | "queue" | "status" | "book" | "portfolio" | "values" | "insights" | "pagestats"
   // Menu choices that explain rather than run
-  | "howcheck" | "howfind";
+  | "howcheck" | "howfind"
+  // Stage 2a: edits (editParse.ts reads the details; bot.ts asks YES first)
+  | "edit" | "convert" | "addcustomer" | "file";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -56,6 +59,11 @@ export function ruleIntent(textRaw: string): Intent | null {
   if (/^(more|all commands|everything|full menu|help all|all features|what else)[.!?]*$/.test(t)) return "more";
   if (/^(how (do|can) i check (a )?polic(y|ies)|how to check (a )?polic(y|ies)|check a policy|policy kaise check (karu|karein|kare))[?.!]*$/.test(t)) return "howcheck";
   if (/^(find|search)( (a|someone|somebody|customer|lead|a customer|a lead|client))?[?.!]*$/.test(t)) return "howfind";
+  // Edits before the read-only views: "add customer Sunita" must not become a portfolio question.
+  if (parseConvert(t)) return "convert";
+  if (parseFile(t)) return "file"; // before add customer: "new customer from this policy" files it
+  if (parseAddCustomer(t)) return "addcustomer";
+  if (parseEditAsk(t)) return "edit";
   const stage1 = bookIntent(t);
   if (stage1) return stage1;
   if (/^(?:(?:show|list|see|view)(?: me)?\s+(?:my |all (?:my )?)?|(?:my|all) )leads?(?: list)?[?.!]*$|^leads? list[?.!]*$|^(?:mere|meri|sab|saare|sare)\s+leads?(?:\s+(?:dikhao|batao))?[?.!]*$|^(?:मेरी|मेरे|सारी)\s+(?:लीड|लीड्स)(?:\s+(?:दिखाओ|बताओ))?[?.!।]*$/.test(t)) return "leadlist";

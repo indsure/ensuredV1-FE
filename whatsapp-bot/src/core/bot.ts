@@ -20,6 +20,8 @@ import { MIN_TEXT, inspectPdf, looksLikePdf, POLICY_TYPES, sameInsured, type Ins
 import {
   bookAsk, isAlone, isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, parsePair, pickNumber, portfolioName, ruleIntent, statusName,
 } from "./intents.js";
+import { CUSTOMER_FIELDS, FIELD_LABEL, LEAD_FIELDS, fieldOf, parseAddCustomer, parseConvert, parseEditAsk, parseFile, valueFor, type Field, type FileAsk } from "./editParse.js";
+import { cleanCustomerSet, cleanLeadSet, norm as normValue } from "../../../backend/server/whatsapp/edits.js";
 import { bookReply, claimDetailLines, insightsReply, pageStatsReply, portfolioReply, queueReply, statusReply, valuesReply } from "./bookReplies.js";
 import { SWITCH_TOPIC, isPronounName, oneLetterMissing, nameCandidates, rephrase, suggest, suggestReply, withPerson, type Suggestion } from "./converse.js";
 import { basics, ruleAnswer } from "./answers.js";
@@ -103,19 +105,35 @@ type State =
   | "IDLE" | "REPORT_READY" | "AWAITING_TYPE" | "AWAITING_DUP_CONFIRM" | "AWAITING_CUSTOMER" | "AWAITING_TOPUP"
   | "AWAITING_SHARE_LANG" | "AWAITING_CLIENT_PICK" | "AWAITING_REMIND_PICK"
   | "AWAITING_LEAD" | "AWAITING_CALC" | "AWAITING_COMPARE_PICK" | "AWAITING_LEAD_PICK" | "AWAITING_CONFIRM"
-  | "SUGGESTED";
+  | "SUGGESTED"
+  // Stage 2a: which one / which field / the new value / which policy or customer
+  | "AWAITING_EDIT_PICK" | "AWAITING_EDIT_FIELD" | "AWAITING_EDIT_VALUE" | "AWAITING_FILE_PICK";
+
+/** Someone the advisor can edit: a lead or a customer. */
+type EditTarget = { kind: "lead" | "customer"; id: string; name: string; label: string };
 
 /** A change waiting for the advisor's YES. Nothing is written until then. */
 type Op =
   | { kind: "create"; name: string; phone: string | null; interest: string | null; status: string | null; nextFollowUp: string | null; note: string | null; notFound?: boolean }
   | { kind: "update"; leadId: string; name: string; phone: string | null; status: string | null; nextFollowUp: string | null; note: string | null }
-  | { kind: "undo"; change: LastChange };
+  | { kind: "undo"; change: LastChange }
+  /* Stage 2a */
+  | { kind: "edit"; target: "lead" | "customer"; id: string; name: string; field: Field; from: unknown; to: unknown }
+  | { kind: "convert"; leadId: string; name: string }
+  | { kind: "addCustomer"; name: string; phone: string | null; city: string | null; email: string | null }
+  | { kind: "file"; clientId: string; policy: string; fromId: string | null; fromName: string | null; toId: string | null; toName: string | null; newCustomer?: { name: string; phone: string | null } };
 
+type LeadBits = { status: string | null; next_follow_up: string | null; notes: string | null };
 /** What the last saved change was, so UNDO can put things back (15 minutes). */
 type LastChange =
   | { kind: "create"; leadId: string; name: string; at: number }
-  | { kind: "update"; leadId: string; name: string; before: { status: string | null; next_follow_up: string | null; notes: string | null }; at: number }
-  | { kind: "bulk"; items: LastChange[]; name: string; at: number };
+  | { kind: "update"; leadId: string; name: string; before: LeadBits; after?: LeadBits; at: number }
+  | { kind: "bulk"; items: LastChange[]; name: string; at: number }
+  /* Stage 2a: every one is undone through a route that first checks nothing moved since */
+  | { kind: "edit"; target: "lead" | "customer"; id: string; name: string; field: Field; from: unknown; to: unknown; at: number }
+  | { kind: "convert"; leadId: string; customerId: string; name: string; status: string; at: number }
+  | { kind: "customerCreate"; customerId: string; name: string; at: number }
+  | { kind: "file"; clientId: string; name: string; fromId: string | null; toId: string | null; at: number };
 
 const UNDO_WINDOW_MS = 15 * 60_000;
 /** Short, unambiguous read-only commands go straight to the rules (no model call). */
@@ -124,7 +142,7 @@ const GREETING = /^(?:hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|ja
 
 /** Read-only views whose rules match a whole question, at any length. The model's form has
  *  no action for them, so sending these to it (paid plans) would lose the answer. */
-const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats"]);
+const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats", "edit", "convert", "addcustomer", "file"]);
 
 const FAST_RULE = new Set(["help", "howcheck", "howfind", "leadlist", "queue", "status", "book", "portfolio", "values", "insights", "pagestats", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
 
@@ -1018,6 +1036,15 @@ export class Bot {
         return this.say(to, agentId, insightsReply(this.d.links, await this.d.engine.insights(agentId)), "insights");
       case "pagestats":
         return this.say(to, agentId, pageStatsReply(this.d.links, await this.d.engine.pageStats(agentId)), "pagestats");
+      /* Stage 2a: edits. Each one is shown first and saved only on YES. */
+      case "edit":
+        return this.editStart(agentId, conv, to, text);
+      case "convert":
+        return this.convertStart(agentId, conv, to, text);
+      case "addcustomer":
+        return this.addCustomerStart(agentId, conv, to, text);
+      case "file":
+        return this.fileStart(agentId, conv, to, text);
       case "lookup": {
         const q = text.replace(/^(find|search|lookup|look up|who is|details (of|for))\s+/i, "").trim();
         const r = await this.d.engine.lookup(agentId, q);
@@ -1186,6 +1213,7 @@ export class Bot {
 
   /** Returns true when the reply was consumed by the pending question. */
   private async onAwaiting(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    if (conv.state.startsWith("AWAITING_EDIT") || conv.state === "AWAITING_FILE_PICK") return this.onEditAwaiting(agentId, conv, to, text);
     const p = conv.pending || {};
     switch (conv.state) {
       case "AWAITING_TOPUP":
@@ -1942,8 +1970,22 @@ export class Bot {
   private describe(op: Op): string {
     const ph = (p: string | null) => (p ? `${p.slice(0, 5)} ${p.slice(5)}` : null);
     if (op.kind === "undo") {
-      if (op.change.kind === "bulk") return `Undo: put ${op.change.items.length} leads back as they were`;
-      return op.change.kind === "create" ? `Undo: remove the lead ${b(op.change.name)} you just added` : `Undo: put ${b(op.change.name)} back as it was`;
+      const c = op.change;
+      if (c.kind === "bulk") return `Undo: put ${c.items.length} ${allLeads(c) ? "leads" : "changes"} back as they were`;
+      if (c.kind === "create") return `Undo: remove the lead ${b(c.name)} you just added`;
+      if (c.kind === "customerCreate") return `Undo: remove the customer ${b(c.name)} you just added`;
+      if (c.kind === "convert") return `Undo: make ${b(c.name)} a lead again`;
+      if (c.kind === "edit") return `Undo: ${FIELD_LABEL[c.field]} of ${b(c.name)} back to ${showValue(c.field, c.from)}`;
+      if (c.kind === "file") return `Undo: put ${c.name} back where it was filed`;
+      return `Undo: put ${b(c.name)} back as it was`;
+    }
+    if (op.kind === "edit") return `${b(op.name)} (${op.target}): ${FIELD_LABEL[op.field]} ${showValue(op.field, op.from)} → ${showValue(op.field, op.to)}`;
+    if (op.kind === "convert") return `Make ${b(op.name)} a customer. Their phone, email and city are copied, and the lead is marked won`;
+    if (op.kind === "addCustomer") return `Add customer ${b(op.name)}${[op.phone ? ph(op.phone) : null, op.city, op.email].filter(Boolean).map((x) => `, ${x}`).join("")}`;
+    if (op.kind === "file") {
+      if (op.newCustomer) return `Add customer ${b(op.newCustomer.name)}${op.newCustomer.phone ? `, ${ph(op.newCustomer.phone)}` : ""} and file ${op.policy} under them`;
+      if (!op.toId) return `Take ${op.policy} out of ${b(op.fromName || "its customer")}`;
+      return `File ${op.policy} under ${b(op.toName)}${op.fromName ? ` (now under ${op.fromName})` : ""}`;
     }
     const bits = [
       op.status && !(op.kind === "create" && op.status === "new") ? `mark ${op.status}` : null,
@@ -1976,20 +2018,27 @@ export class Bot {
         out.push(leadSavedReply(this.d.links, r, { name: op.name, phone: op.phone, interest: op.interest }));
       } else if (op.kind === "update") {
         const r = await this.d.engine.leadUpdate(agentId, op.leadId, { status: op.status ?? undefined, nextFollowUp: op.nextFollowUp ?? undefined, note: op.note ?? undefined });
-        changes.push({ kind: "update", leadId: op.leadId, name: r.lead.name, before: { status: r.before.status, next_follow_up: r.before.next_follow_up, notes: r.before.notes }, at: this.now() });
+        changes.push({
+          kind: "update", leadId: op.leadId, name: r.lead.name,
+          before: { status: r.before.status, next_follow_up: r.before.next_follow_up, notes: r.before.notes },
+          after: { status: r.lead.status, next_follow_up: r.lead.next_follow_up, notes: r.lead.notes }, at: this.now(),
+        });
         this.lastPerson.set(agentId, r.lead.name);
         out.push(leadUpdatedReply(this.d.links, r.lead, { name: op.name, status: op.status ?? undefined, nextFollowUp: op.nextFollowUp ?? undefined, note: op.note ?? undefined }));
-      } else {
+      } else if (op.kind === "undo") {
         const c = op.change;
-        const undoOne = async (x: LastChange): Promise<boolean> =>
-          x.kind === "create" ? this.d.engine.leadUndoCreate(agentId, x.leadId)
-          : x.kind === "update" ? !!(await this.d.engine.leadRestore(agentId, x.leadId, x.before))
-          : (await Promise.all(x.items.map(undoOne))).every(Boolean);
-        const ok = await undoOne(c);
+        const ok = await this.undoOne(agentId, c);
         this.lastChange.delete(agentId);
-        out.push(!ok ? "That change is too old to undo here. Please fix it in the portal."
-          : c.kind === "bulk" ? `Undone: ${c.items.length} leads are back as they were.`
-          : `Undone: ${c.kind === "create" ? `removed the lead ${b(c.name)}` : `${b(c.name)} is back as it was`}.`);
+        out.push(!ok ? "That can't be undone here any more: it was changed since, or something was added to it. Please fix it in the portal."
+          : c.kind === "bulk" ? `Undone: ${c.items.length} ${allLeads(c) ? "leads" : "changes"} are back as they were.`
+          : c.kind === "create" ? `Undone: removed the lead ${b(c.name)}.`
+          : c.kind === "customerCreate" ? `Undone: removed the customer ${b(c.name)}.`
+          : c.kind === "convert" ? `Undone: ${b(c.name)} is a lead again.`
+          : `Undone: ${b(c.name)} is back as it was.`);
+      } else {
+        const r = await this.applyEdit(agentId, op);
+        out.push(r.text);
+        if (r.change) changes.push(r.change);
       }
     }
     if (changes.length === 1) this.lastChange.set(agentId, changes[0]);
@@ -2016,6 +2065,284 @@ export class Bot {
     })));
   }
 
+  /* ══ Stage 2a: edits to leads, customers and filing ══════════════════ */
+
+  /** Put one saved change back. Every route checks first that nothing moved since. A batch is
+   *  undone newest first, one at a time, so a later step never blocks an earlier one. */
+  private async undoOne(agentId: string, x: LastChange): Promise<boolean> {
+    const e = this.d.engine;
+    switch (x.kind) {
+      case "create": return e.leadUndoCreate(agentId, x.leadId);
+      case "update": return !!(await e.leadRestore(agentId, x.leadId, x.before, x.after));
+      case "bulk": {
+        let all = true;
+        for (const item of [...x.items].reverse()) all = (await this.undoOne(agentId, item)) && all;
+        return all;
+      }
+      case "edit": {
+        const r = x.target === "lead"
+          ? await e.leadEdit(agentId, x.id, { [x.field]: x.from }, { [x.field]: x.to })
+          : await e.customerEdit(agentId, x.id, { [x.field]: x.from }, { [x.field]: x.to });
+        return r.ok;
+      }
+      case "convert": return (await e.leadUnconvert(agentId, x.leadId, x.customerId, x.status)).ok;
+      case "customerCreate": return e.customerUndoCreate(agentId, x.customerId);
+      case "file": return (await e.fileClient(agentId, x.clientId, x.fromId, x.toId)).ok;
+    }
+  }
+
+  /** Save one confirmed stage 2a change. A refusal is said plainly; never "saved" unless it was. */
+  private async applyEdit(agentId: string, op: Op): Promise<{ text: string; change?: LastChange }> {
+    const e = this.d.engine;
+    const o = this.d.links.origin;
+    const refused = (name: string, r: { reason: string; fields?: Record<string, string> }) =>
+      r.reason === "CHANGED" ? `Not saved: ${b(name)} was changed in the portal a moment ago. Ask again to see the latest.`
+      : r.reason === "INVALID" ? `Not saved: ${Object.values(r.fields || {}).join(", ") || "that value"}.`
+      : r.reason === "ALREADY_CUSTOMER" ? `${b(name)} is already a customer.`
+      : `Not saved: I couldn't find ${b(name)} any more.`;
+    const at = this.now();
+    if (op.kind === "edit") {
+      const set = { [op.field]: op.to };
+      const expect = { [op.field]: op.from };
+      const r = op.target === "lead" ? await e.leadEdit(agentId, op.id, set, expect) : await e.customerEdit(agentId, op.id, set, expect);
+      if (!r.ok) return { text: refused(op.name, r) };
+      this.lastPerson.set(agentId, op.name);
+      const link = `${o}/agent/${op.target === "lead" ? "leads" : "customers"}/${op.id}`;
+      return {
+        text: `✅ Saved. ${b(op.name)}: ${FIELD_LABEL[op.field]} is now ${showValue(op.field, op.to)}.\n${link}`,
+        change: { kind: "edit", target: op.target, id: op.id, name: op.name, field: op.field, from: op.from, to: op.to, at },
+      };
+    }
+    if (op.kind === "convert") {
+      const r = await e.leadConvert(agentId, op.leadId);
+      if (!r.ok) return { text: refused(op.name, r) };
+      this.lastPerson.set(agentId, op.name);
+      return {
+        text: `✅ ${b(op.name)} is now a customer.\n${o}/agent/customers/${r.customer.id}`,
+        change: { kind: "convert", leadId: op.leadId, customerId: r.customer.id, name: op.name, status: r.before.status, at },
+      };
+    }
+    if (op.kind === "addCustomer") {
+      const r = await e.customerCreate(agentId, { name: op.name, phone: op.phone, city: op.city, email: op.email });
+      if (!r.ok) return { text: refused(op.name, r) };
+      this.lastPerson.set(agentId, r.customer.name);
+      if (r.duplicate) return { text: `${b(r.customer.name)} is already your customer, with that phone number.\n${o}/agent/customers/${r.customer.id}` };
+      return {
+        text: `✅ Customer ${b(r.customer.name)} added.\n${o}/agent/customers/${r.customer.id}`,
+        change: { kind: "customerCreate", customerId: r.customer.id, name: r.customer.name, at },
+      };
+    }
+    if (op.kind === "file") {
+      let toId = op.toId;
+      let toName = op.toName;
+      let created: LastChange | null = null;
+      if (op.newCustomer) {
+        const c = await e.customerCreate(agentId, { name: op.newCustomer.name, phone: op.newCustomer.phone });
+        if (!c.ok) return { text: refused(op.newCustomer.name, c) };
+        toId = c.customer.id;
+        toName = c.customer.name;
+        if (!c.duplicate) created = { kind: "customerCreate", customerId: c.customer.id, name: c.customer.name, at };
+      }
+      const r = await e.fileClient(agentId, op.clientId, toId, op.fromId);
+      if (!r.ok) {
+        if (created) await this.undoOne(agentId, created); // the customer was only for this filing
+        return { text: refused(op.policy, r) };
+      }
+      const filed: LastChange = { kind: "file", clientId: op.clientId, name: op.policy, fromId: op.fromId, toId, at };
+      return {
+        text: toId ? `✅ Filed: ${op.policy} is now under ${b(toName)}.\n${o}/agent/customers/${toId}` : `✅ ${op.policy} is no longer filed under ${b(op.fromName || "that customer")}.`,
+        change: created ? { kind: "bulk", items: [created, filed], name: op.policy, at } : filed,
+      };
+    }
+    return { text: "" };
+  }
+
+  /** Leads and customers whose name fits, for "which one?". */
+  private async editTargets(agentId: string, who: string, kinds: ("lead" | "customer")[] = ["lead", "customer"]): Promise<EditTarget[]> {
+    const out: EditTarget[] = [];
+    if (kinds.includes("lead")) {
+      for (const l of (await this.d.engine.leadSearch(agentId, who)).filter((r) => nameMatches(who, r.name))) {
+        out.push({ kind: "lead", id: l.id, name: l.name, label: `${l.name}, lead${l.phone ? ` · ${l.phone}` : ""}` });
+      }
+    }
+    if (kinds.includes("customer")) {
+      for (const c of (await this.d.engine.searchCustomers(agentId, who)).filter((r) => nameMatches(who, r.name))) {
+        out.push({ kind: "customer", id: c.id, name: c.name, label: `${c.name}, customer${c.phone ? ` · ${c.phone}` : ""}` });
+      }
+    }
+    return out.slice(0, 6);
+  }
+
+  private async pickTarget(agentId: string, conv: Conv, to: string, targets: EditTarget[], extra: Record<string, unknown>) {
+    await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { targets, ...extra });
+    return this.say(to, agentId, `Which one?\n${targets.map((t, i) => `${i + 1}) ${t.label}`).join("\n")}\nReply with the number.`, "edit_pick");
+  }
+
+  /** "change Amit's phone to ...", "edit Amit", "Amit ka city Pune kar do". */
+  private async editStart(agentId: string, conv: Conv, to: string, text: string) {
+    const ask = parseEditAsk(text);
+    if (!ask) return this.say(to, agentId, "Type it like: change Amit's phone to 98123 45678, or: edit Amit", "edit");
+    const targets = await this.editTargets(agentId, ask.who);
+    if (!targets.length) return this.say(to, agentId, `I couldn't find a lead or customer called "${ask.who}".`, "edit");
+    if (targets.length > 1) return this.pickTarget(agentId, conv, to, targets, { mode: "edit", field: ask.field, value: ask.value });
+    return this.editWith(agentId, conv, to, targets[0], ask.field, ask.value);
+  }
+
+  private async editRow(agentId: string, t: EditTarget): Promise<Record<string, any> | null> {
+    return t.kind === "lead" ? this.d.engine.leadGet(agentId, t.id) : this.d.engine.customerGet(agentId, t.id);
+  }
+
+  private async editWith(agentId: string, conv: Conv, to: string, t: EditTarget, field: Field | null, value: string | null) {
+    const row = await this.editRow(agentId, t);
+    if (!row) return this.say(to, agentId, `I couldn't find ${b(t.name)} any more.`, "edit");
+    const fields = t.kind === "lead" ? LEAD_FIELDS : CUSTOMER_FIELDS;
+    if (field && !fields.includes(field)) {
+      return this.say(to, agentId, `${FIELD_LABEL[field]} is not kept for a ${t.kind}. For ${b(t.name)} you can change: ${fields.map((f) => FIELD_LABEL[f]).join(", ")}.`, "edit");
+    }
+    if (!field) {
+      await this.setState(agentId, to, "AWAITING_EDIT_FIELD", conv.currentClientId, { target: t });
+      return this.say(to, agentId,
+        `What should I change for ${b(t.name)} (${t.kind})?\n${fields.map((f, i) => `${i + 1}) ${FIELD_LABEL[f]}: ${showValue(f, row[f])}`).join("\n")}\nReply with the number.`,
+        "edit_field");
+    }
+    if (value === null) {
+      await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { target: t, field });
+      return this.say(to, agentId, `Type the new ${FIELD_LABEL[field]} for ${b(t.name)}. Now: ${showValue(field, row[field])}\n(Or NONE to clear it, CANCEL to stop.)`, "edit_value");
+    }
+    return this.proposeEdit(agentId, conv, to, t, row, field, value);
+  }
+
+  private async proposeEdit(agentId: string, conv: Conv, to: string, t: EditTarget, row: Record<string, any>, field: Field, raw: string) {
+    const v = valueFor(field, raw);
+    const clean = (t.kind === "lead" ? cleanLeadSet : cleanCustomerSet)({ [field]: v });
+    if (clean.errors[field]) {
+      await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { target: t, field });
+      return this.say(to, agentId, `That ${FIELD_LABEL[field]} doesn't look right (${clean.errors[field]}). Type it again, or CANCEL.`, "edit_value");
+    }
+    const next = clean.set[field] ?? null;
+    if (normValue(next) === normValue(row[field])) {
+      await this.rest(agentId, to, conv.currentClientId);
+      return this.say(to, agentId, `${b(t.name)}'s ${FIELD_LABEL[field]} is already ${showValue(field, next)}. Nothing to change.`, "edit");
+    }
+    return this.confirm(agentId, conv, to, [{ kind: "edit", target: t.kind, id: t.id, name: t.name, field, from: row[field] ?? null, to: next }]);
+  }
+
+  /** "make Amit a customer". */
+  private async convertStart(agentId: string, conv: Conv, to: string, text: string) {
+    const who = parseConvert(text);
+    if (!who) return this.say(to, agentId, "Type it like: make Amit a customer", "convert");
+    const targets = await this.editTargets(agentId, who, ["lead"]);
+    if (!targets.length) return this.say(to, agentId, `I couldn't find a lead called "${who}".`, "convert");
+    if (targets.length > 1) return this.pickTarget(agentId, conv, to, targets, { mode: "convert" });
+    return this.convertWith(agentId, conv, to, targets[0]);
+  }
+
+  private async convertWith(agentId: string, conv: Conv, to: string, t: EditTarget) {
+    const lead = await this.d.engine.leadGet(agentId, t.id);
+    if (!lead) return this.say(to, agentId, `I couldn't find ${b(t.name)} any more.`, "convert");
+    if (lead.customer_id) return this.say(to, agentId, `${b(lead.name)} is already a customer.\n${this.d.links.origin}/agent/customers/${lead.customer_id}`, "convert");
+    return this.confirm(agentId, conv, to, [{ kind: "convert", leadId: lead.id, name: lead.name }]);
+  }
+
+  /** "add customer Sunita Rao 98123 45678, Pune". */
+  private async addCustomerStart(agentId: string, conv: Conv, to: string, text: string) {
+    const a = parseAddCustomer(text);
+    if (!a?.name) return this.say(to, agentId, "Type it like: add customer Sunita Rao 98123 45678, Pune", "addcustomer");
+    const clean = cleanCustomerSet({ name: a.name, ...(a.phone ? { phone: a.phone } : {}), ...(a.email ? { email: a.email } : {}), ...(a.city ? { city: a.city } : {}) });
+    const errs = Object.values(clean.errors);
+    if (errs.length) return this.say(to, agentId, `That doesn't look right (${errs.join(", ")}). Type it like: add customer Sunita Rao 98123 45678, Pune`, "addcustomer");
+    return this.confirm(agentId, conv, to, [{ kind: "addCustomer", name: String(clean.set.name), phone: (clean.set.phone as string) ?? null, city: (clean.set.city as string) ?? null, email: (clean.set.email as string) ?? null }]);
+  }
+
+  /** "file Ramesh's policy under Sunita", "this is Sunita's", "new customer from this policy", "unfile this policy". */
+  private async fileStart(agentId: string, conv: Conv, to: string, text: string) {
+    const ask = parseFile(text);
+    if (!ask) return this.say(to, agentId, "Type it like: file Ramesh's policy under Sunita", "file");
+    const policyOf = ask.kind === "newCustomer" ? null : ask.policyOf;
+    if (policyOf) {
+      const found = await this.d.engine.findClients(agentId, policyOf);
+      if (!found.length) return this.say(to, agentId, T.noSuchCustomer(policyOf), "file");
+      if (found.length > 1) {
+        await this.setState(agentId, to, "AWAITING_FILE_PICK", conv.currentClientId, { ask, step: "policy", options: found.slice(0, 5).map((c) => c.clientId) });
+        return this.say(to, agentId, T.whichPolicy(found.slice(0, 5).map((r) => ({ name: r.policyholderName || "Unnamed", label: nicePlan(r.insurer, r.policyName) || r.insuranceType || "policy" }))), "file_pick");
+      }
+      return this.fileWith(agentId, conv, to, ask, found[0].clientId, null);
+    }
+    const last = this.lastShare.get(agentId);
+    const current = last?.kind === "policy" ? last.clientId : conv.currentClientId;
+    if (!current) return this.say(to, agentId, "Which policy? For example: file Ramesh's policy under Sunita", "file");
+    return this.fileWith(agentId, conv, to, ask, current, null);
+  }
+
+  private async fileWith(agentId: string, conv: Conv, to: string, ask: FileAsk, clientId: string, customerId: string | null) {
+    const c = await this.d.engine.getClient(agentId, clientId);
+    if (!c) return this.say(to, agentId, T.noReport(), "file");
+    const policy = `${c.policyholderName ? `${c.policyholderName}'s ` : ""}${nicePlan(c.insurer, c.policyName) || "policy"}`;
+    const from = c.customerId ? await this.d.engine.customerGet(agentId, c.customerId) : null;
+    if (ask.kind === "unfile") {
+      if (!c.customerId) return this.say(to, agentId, `${policy} is not filed under any customer.`, "file");
+      return this.confirm(agentId, conv, to, [{ kind: "file", clientId, policy, fromId: c.customerId, fromName: from?.name ?? null, toId: null, toName: null }]);
+    }
+    if (ask.kind === "newCustomer") {
+      if (!c.policyholderName) return this.say(to, agentId, "This policy has no policyholder name to make a customer from. Type it like: add customer Sunita Rao 98123 45678", "file");
+      return this.confirm(agentId, conv, to, [{
+        kind: "file", clientId, policy, fromId: c.customerId, fromName: from?.name ?? null, toId: null, toName: c.policyholderName,
+        newCustomer: { name: c.policyholderName, phone: c.customerPhone ?? null },
+      }]);
+    }
+    let target = customerId ? await this.d.engine.customerGet(agentId, customerId) : null;
+    if (!target) {
+      const matches = (await this.d.engine.searchCustomers(agentId, ask.customer)).filter((m) => nameMatches(ask.customer, m.name));
+      if (!matches.length) return this.say(to, agentId, `No customer called "${ask.customer}" yet. Add them first: add customer ${ask.customer}`, "file");
+      if (matches.length > 1) {
+        await this.setState(agentId, to, "AWAITING_FILE_PICK", conv.currentClientId, { ask, step: "customer", clientId, options: matches.slice(0, 6).map((m) => m.id) });
+        return this.say(to, agentId, `Which customer?\n${matches.slice(0, 6).map((m, i) => `${i + 1}) ${m.name}${m.phone ? ` · ${m.phone}` : ""}`).join("\n")}\nReply with the number.`, "file_pick");
+      }
+      target = await this.d.engine.customerGet(agentId, matches[0].id);
+      if (!target) return this.say(to, agentId, `I couldn't find "${ask.customer}" any more.`, "file");
+    }
+    if (c.customerId === target.id) return this.say(to, agentId, `${policy} is already filed under ${b(target.name)}.`, "file");
+    return this.confirm(agentId, conv, to, [{ kind: "file", clientId, policy, fromId: c.customerId, fromName: from?.name ?? null, toId: target.id, toName: target.name }]);
+  }
+
+  /** The stage 2a questions: which one, which field, the new value, which policy or customer. */
+  private async onEditAwaiting(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    const p = conv.pending || {};
+    if (conv.state === "AWAITING_EDIT_PICK") {
+      const targets: EditTarget[] = p.targets || [];
+      const n = pickNumber(text, targets.length);
+      if (!n) return false;
+      if (p.mode === "convert") await this.convertWith(agentId, conv, to, targets[n - 1]);
+      else await this.editWith(agentId, conv, to, targets[n - 1], p.field ?? null, p.value ?? null);
+      return true;
+    }
+    if (conv.state === "AWAITING_EDIT_FIELD") {
+      const t: EditTarget = p.target;
+      const fields = t.kind === "lead" ? LEAD_FIELDS : CUSTOMER_FIELDS;
+      const n = pickNumber(text, fields.length);
+      const f = n ? fields[n - 1] : fieldOf(text);
+      if (!f || !fields.includes(f)) { await this.say(to, agentId, `Reply with a number from 1 to ${fields.length}, or CANCEL.`, "edit_field"); return true; }
+      await this.editWith(agentId, conv, to, t, f, null);
+      return true;
+    }
+    if (conv.state === "AWAITING_EDIT_VALUE") {
+      const t: EditTarget = p.target;
+      const row = await this.editRow(agentId, t);
+      if (!row) { await this.rest(agentId, to, conv.currentClientId); await this.say(to, agentId, `I couldn't find ${b(t.name)} any more.`, "edit"); return true; }
+      await this.proposeEdit(agentId, conv, to, t, row, p.field, text);
+      return true;
+    }
+    if (conv.state === "AWAITING_FILE_PICK") {
+      const options: string[] = p.options || [];
+      const n = pickNumber(text, options.length);
+      if (!n) return false;
+      if (p.step === "policy") await this.fileWith(agentId, conv, to, p.ask, options[n - 1], null);
+      else await this.fileWith(agentId, conv, to, p.ask, p.clientId, options[n - 1]);
+      return true;
+    }
+    return false;
+  }
+
   private async proposeUndo(agentId: string, conv: Conv, to: string) {
     const c = this.lastChange.get(agentId);
     if (!c || this.now() - c.at > UNDO_WINDOW_MS) {
@@ -2023,4 +2350,17 @@ export class Bot {
     }
     return this.confirm(agentId, conv, to, [{ kind: "undo", change: c }]);
   }
+}
+
+/** A field's value as the advisor reads it in a confirm. */
+function showValue(field: Field, v: unknown): string {
+  if (v === null || v === undefined || v === "") return "(empty)";
+  if (field === "expected_value") { const n = Number(v); return Number.isFinite(n) ? `₹${n.toLocaleString("en-IN")}` : String(v); }
+  if (field === "dob") return normValue(v) ?? String(v);
+  return String(v);
+}
+
+/** A batch made only of lead changes keeps the older wording ("3 leads"), which is translated. */
+function allLeads(c: { items: { kind: string }[] }): boolean {
+  return c.items.every((x) => x.kind === "create" || x.kind === "update");
 }

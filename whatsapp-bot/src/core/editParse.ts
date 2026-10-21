@@ -76,7 +76,8 @@ export function parseConvert(textRaw: string): string | null {
     || t.match(/^convert\s+(?:lead\s+)?(.+?)(?:\s+to\s+(?:a\s+)?customer)?$/i)
     || t.match(/^(.+?)\s+(?:ko|को)\s+(?:customer|कस्टमर)\s+(?:bana do|banao|bana dijiye|बना दो|बनाओ)$/i)
     || t.match(/^(.+?)\s+(?:bought|has bought|took the policy|bought the policy)[,.]?\s+(?:make|convert)\s+(?:him|her|them|it)\s+(?:a\s+|to\s+a\s+)?customer$/i);
-  return m && okWho(m[1]) ? clean(m[1]) : null;
+  // "convert ramesh into lead that is won" is about a LEAD, never a customer.
+  return m && okWho(m[1]) && !/\b(?:into|lead|won|lost|interested|contacted|new)\b/i.test(m[1]) && m[1].trim().split(/\s+/).length <= 4 ? clean(m[1]) : null;
 }
 
 /** "add customer Sunita Rao 98123 45678, Pune" -> parts. Null when it is not that. */

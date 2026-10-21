@@ -13,7 +13,8 @@
 // functions below are unit-tested in tests/whatsappEdits.test.ts.
 // ============================================================================
 
-import type { Express } from "express";
+/** The two Express methods used here (kept local so the bot, which has no express, can import the pure rules). */
+type App = { get(path: string, h: (req: any, res: any) => unknown): unknown; post(path: string, h: (req: any, res: any) => unknown): unknown };
 
 type Db = { query(text: string, params?: unknown[]): Promise<{ rows: any[]; rowCount?: number | null }>; connect?: () => Promise<any> };
 type Deps = {
@@ -155,7 +156,7 @@ const CUSTOMER_EDIT_COLS = ["name", "phone", "email", "city", "dob"];
 const LEAD_OUT = "id, name, phone, email, city, source, insurance_interest, expected_value, status, next_follow_up, notes, customer_id, created_at, updated_at";
 const CUSTOMER_OUT = "id, name, phone, email, city, dob, created_at";
 
-export function registerWaEdits(app: Express, { pool, log, scopedAgent }: Deps) {
+export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
   const audit = (agentId: string, targetId: string | null, action: string, route: string) =>
     pool.query(
       `INSERT INTO access_audit_log (agent_id, client_id, action, route, method, ip, user_agent)
