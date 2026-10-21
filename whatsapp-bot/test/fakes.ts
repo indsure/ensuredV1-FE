@@ -8,6 +8,7 @@ import type { InboundMessage, Transport } from "../src/transport/types.js";
 import { Bot } from "../src/core/bot.js";
 import type { Inspection } from "../src/core/pdfInspect.js";
 import * as BV from "../../backend/server/whatsapp/bookViews.js";
+import * as ED from "../../backend/server/whatsapp/edits.js";
 
 export const AGENT = "11111111-1111-4111-8111-111111111111";
 export const ADVISOR = "919800000001";
@@ -79,7 +80,7 @@ export class FakeEngine implements Engine {
   /** Per engine job: how many polls before it finishes, and how it finishes. */
   plan = new Map<string, { polls: number; end: "completed" | "error"; error?: string }>();
   nextOutcome: { type?: string; end?: "completed" | "error"; error?: string; polls?: number } = {};
-  customers: { id: string; name: string; phone: string | null; dob?: string | null; city?: string | null }[] = [];
+  customers: { id: string; name: string; phone: string | null; dob?: string | null; city?: string | null; email?: string | null; fresh?: boolean }[] = [];
   attached: [string, string][] = [];
   shared: string[] = [];
   renewalData: { leads: RenewalRow[]; customers: RenewalRow[] } = { leads: [], customers: [] };
@@ -190,11 +191,99 @@ export class FakeEngine implements Engine {
   }
   async leadsList() { return { total: this.leadRows.length, leads: this.leadRows.slice(0, 15) }; }
   restored: any[] = [];
-  async leadRestore(_a: string, id: string, before: any) {
-    this.restored.push({ id, before });
+  async leadRestore(_a: string, id: string, before: any, expect?: any) {
     const r = this.leadRows.find((x) => x.id === id);
+    // Same rule as the backend: with `expect`, only if nobody changed those fields since.
+    if (r && expect && (["status", "next_follow_up", "notes"] as const).some((k) => ED.norm(r[k]) !== ED.norm(expect[k]))) return null;
+    this.restored.push({ id, before });
     if (r) Object.assign(r, { status: before.status, next_follow_up: before.next_follow_up, notes: before.notes });
     return r ?? null;
+  }
+
+  /* Stage 2a: the backend's own value rules (edits.ts) and compare-before, in memory. */
+  writes: { kind: string; id: string | null; body: any }[] = [];
+  private guarded<T extends Record<string, any>>(row: T | undefined, clean: { set: Record<string, unknown>; errors: Record<string, string> }, expect: Record<string, unknown>) {
+    if (!row) return { ok: false as const, reason: "Not found" };
+    if (Object.keys(clean.errors).length) return { ok: false as const, reason: "INVALID", fields: clean.errors };
+    if (Object.entries(expect || {}).some(([k, v]) => ED.norm(row[k]) !== ED.norm(v))) return { ok: false as const, reason: "CHANGED" };
+    const before = { ...row };
+    Object.assign(row, clean.set);
+    return { ok: true as const, before, after: row };
+  }
+  async leadGet(_a: string, id: string) {
+    const r = this.leadRows.find((x) => x.id === id);
+    return r ? { email: null, city: null, source: null, expected_value: null, customer_id: null, ...r } : null;
+  }
+  async leadEdit(_a: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>) {
+    const row = this.leadRows.find((x) => x.id === id);
+    if (row) for (const k of ["email", "city", "source", "expected_value", "customer_id"]) if (!(k in row)) row[k] = null;
+    const g = this.guarded(row, ED.cleanLeadSet(set), expect);
+    if (!g.ok) return g;
+    this.writes.push({ kind: "leadEdit", id, body: set });
+    return { ok: true as const, lead: { ...g.after }, before: g.before };
+  }
+  async leadConvert(_a: string, id: string) {
+    const lead = this.leadRows.find((x) => x.id === id);
+    if (!lead) return { ok: false as const, reason: "Not found" };
+    if (lead.customer_id) return { ok: false as const, reason: "ALREADY_CUSTOMER", customerId: lead.customer_id };
+    const customer = { id: crypto.randomUUID(), name: lead.name, phone: lead.phone ?? null, email: lead.email ?? null, city: lead.city ?? null, dob: null, fresh: true };
+    this.customers.push(customer);
+    const before = { status: lead.status };
+    Object.assign(lead, { customer_id: customer.id, status: "won" });
+    this.writes.push({ kind: "leadConvert", id, body: {} });
+    return { ok: true as const, customer, before };
+  }
+  async leadUnconvert(_a: string, id: string, customerId: string, status: string) {
+    const lead = this.leadRows.find((x) => x.id === id);
+    if (!lead || lead.customer_id !== customerId || lead.status !== "won") return { ok: false as const, reason: "CHANGED" };
+    Object.assign(lead, { customer_id: null, status });
+    const removed = this.removeIfFreshAndEmpty(customerId);
+    this.writes.push({ kind: "leadUnconvert", id, body: { customerId, status } });
+    return { ok: true as const, customerRemoved: removed };
+  }
+  async customerGet(_a: string, id: string) {
+    const c = this.customers.find((x) => x.id === id);
+    return c ? { email: null, city: null, dob: null, ...c } : null;
+  }
+  async customerCreate(_a: string, c: Record<string, unknown>) {
+    const clean = ED.cleanCustomerSet(c);
+    if (!clean.set.name) clean.errors.name = clean.errors.name || "a name is needed";
+    if (Object.keys(clean.errors).length) return { ok: false as const, reason: "INVALID", fields: clean.errors };
+    const dup = clean.set.phone ? this.customers.find((x) => x.phone === clean.set.phone) : undefined;
+    if (dup) return { ok: true as const, customer: { email: null, city: null, dob: null, ...dup }, duplicate: true };
+    const customer: any = { id: crypto.randomUUID(), name: clean.set.name, phone: clean.set.phone ?? null, email: clean.set.email ?? null, city: clean.set.city ?? null, dob: clean.set.dob ?? null, fresh: true };
+    this.customers.push(customer);
+    this.writes.push({ kind: "customerCreate", id: customer.id, body: c });
+    return { ok: true as const, customer, duplicate: false };
+  }
+  async customerEdit(_a: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>) {
+    const row: any = this.customers.find((x) => x.id === id);
+    if (row) for (const k of ["email", "city", "dob"]) if (!(k in row)) row[k] = null;
+    const g = this.guarded(row, ED.cleanCustomerSet(set), expect);
+    if (!g.ok) return g;
+    this.writes.push({ kind: "customerEdit", id, body: set });
+    return { ok: true as const, customer: { ...g.after }, before: g.before };
+  }
+  private removeIfFreshAndEmpty(customerId: string): boolean {
+    const c: any = this.customers.find((x) => x.id === customerId);
+    const used = [...this.clients.values()].some((x) => x.customerId === customerId) || this.leadRows.some((l) => l.customer_id === customerId);
+    if (!c || !c.fresh || used) return false;
+    this.customers = this.customers.filter((x) => x.id !== customerId);
+    return true;
+  }
+  async customerUndoCreate(_a: string, id: string) {
+    const ok = this.removeIfFreshAndEmpty(id);
+    if (ok) this.writes.push({ kind: "customerUndoCreate", id, body: {} });
+    return ok;
+  }
+  async fileClient(_a: string, clientId: string, customerId: string | null, expectCustomerId: string | null) {
+    const c = this.clients.get(clientId);
+    if (!c) return { ok: false as const, reason: "Not found" };
+    if (customerId && !this.customers.some((x) => x.id === customerId)) return { ok: false as const, reason: "Customer not found" };
+    if ((c.customerId ?? null) !== (expectCustomerId ?? null)) return { ok: false as const, reason: "CHANGED" };
+    c.customerId = customerId;
+    this.writes.push({ kind: "fileClient", id: clientId, body: { customerId } });
+    return { ok: true as const, customerId };
   }
   undoneCreates: string[] = [];
   async leadUndoCreate(_a: string, id: string) {

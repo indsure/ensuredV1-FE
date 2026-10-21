@@ -34,6 +34,7 @@ import { extractUsage, isOverDailyCeiling, logGeminiUsage } from "../services/ge
 import { RESPONSE_SCHEMA, normalise, systemPrompt, userPrompt, type Context } from "./understand";
 import { claimView, insightsView, pageStatsView, policyView, portfolioView, queueView } from "./bookViews";
 import { loadPolicyValueRows } from "../services/policyValueStore";
+import { cleanInterests, cleanLeadSet, freshUntouchedLeadDelete, registerWaEdits } from "./edits";
 
 type VerifyJwt = (req: any, res: any) => Promise<string | null>;
 
@@ -897,7 +898,11 @@ FACTS: ${JSON.stringify(facts)}`,
       if (name.length < 2) return res.status(400).json({ error: "name required" });
       const digits = String(b.phone || "").replace(/\D/g, "").slice(-10);
       const phone = /^[6-9]\d{9}$/.test(digits) ? digits : null;
-      const interest = typeof b.interest === "string" && b.interest.trim() ? b.interest.trim().slice(0, 40) : null;
+      // Several interests are stored the portal's way ("Health, Motor"); one word still works.
+      const interest = cleanInterests(b.interest) ?? (typeof b.interest === "string" && b.interest.trim() ? b.interest.trim().slice(0, 40) : null);
+      // The portal's other lead fields, cleaned by the same rules as an edit (edits.ts).
+      const extra = cleanLeadSet(Object.fromEntries(["city", "source", "expected_value"].filter((k) => b[k] != null && b[k] !== "").map((k) => [k, b[k]])));
+      if (Object.keys(extra.errors).length) return res.status(400).json({ error: "INVALID", fields: extra.errors });
       const status = ["new", "contacted", "interested", "won", "lost"].includes(b.status) ? b.status : "new";
       const follow = typeof b.nextFollowUp === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.nextFollowUp) ? b.nextFollowUp : null;
       const note = typeof b.note === "string" && b.note.trim() ? b.note.trim().slice(0, 1000) : null;
@@ -911,12 +916,13 @@ FACTS: ${JSON.stringify(facts)}`,
         if (dup.rows.length) return res.json({ id: dup.rows[0].id, duplicateOf: dup.rows[0].name });
       }
       const r = await pool.query(
-        `INSERT INTO agent_leads (agent_id, name, phone, insurance_interest, status, next_follow_up, notes)
+        `INSERT INTO agent_leads (agent_id, name, phone, insurance_interest, status, next_follow_up, notes, city, source, expected_value)
          VALUES ($1, $2, $3, $4, $5, $6::date,
                  CASE WHEN $7::text IS NULL THEN NULL
-                      ELSE to_char(now() AT TIME ZONE 'Asia/Kolkata', 'DD Mon') || ': ' || $7::text END)
+                      ELSE to_char(now() AT TIME ZONE 'Asia/Kolkata', 'DD Mon') || ': ' || $7::text END,
+                 $8, $9, $10)
          RETURNING id`,
-        [agentId, name, phone, interest, status, follow, note]
+        [agentId, name, phone, interest, status, follow, note, extra.set.city ?? null, extra.set.source ?? null, extra.set.expected_value ?? null]
       );
       res.json({ id: r.rows[0].id });
     } catch (err: any) {
@@ -932,12 +938,8 @@ FACTS: ${JSON.stringify(facts)}`,
       const agentId = await scopedAgent(req, res);
       if (!agentId) return;
       if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: "bad id" });
-      const r = await pool.query(
-        `DELETE FROM agent_leads
-          WHERE id = $1 AND agent_id = $2 AND created_at > now() - interval '15 minutes'
-          RETURNING id`,
-        [req.params.id, agentId]
-      );
+      // Only if untouched since and holding no lead policies (they would cascade): plan 8.
+      const r = await pool.query(freshUntouchedLeadDelete(), [req.params.id, agentId]);
       if (!r.rowCount) return res.status(409).json({ error: "too old to undo" });
       res.json({ ok: true });
     } catch (err: any) {
@@ -1121,11 +1123,19 @@ FACTS: ${JSON.stringify(facts)}`,
         const x = b.restore;
         const st = ["new", "contacted", "interested", "won", "lost"].includes(x.status) ? x.status : null;
         const fu = typeof x.next_follow_up === "string" && /^\d{4}-\d{2}-\d{2}/.test(x.next_follow_up) ? x.next_follow_up.slice(0, 10) : null;
+        // With `expect` (what the bot saved), restore only if nobody changed the lead since:
+        // a portal edit in the meantime is never overwritten. Without it: the old behaviour.
+        const e = b.expect && typeof b.expect === "object" ? b.expect : null;
         const r = await pool.query(
           `UPDATE agent_leads SET status = $3, next_follow_up = $4::date, notes = $5, updated_at = now()
-            WHERE id = $1 AND agent_id = $2 RETURNING ${LEAD_COLS}`,
-          [req.params.id, agentId, st, fu, typeof x.notes === "string" ? x.notes : null]
+            WHERE id = $1 AND agent_id = $2
+              AND ($6::boolean IS NOT TRUE OR (status::text IS NOT DISTINCT FROM $7::text
+                   AND next_follow_up::text IS NOT DISTINCT FROM $8::text AND notes IS NOT DISTINCT FROM $9::text))
+            RETURNING ${LEAD_COLS}`,
+          [req.params.id, agentId, st, fu, typeof x.notes === "string" ? x.notes : null,
+           !!e, e?.status ?? null, e?.next_follow_up ? String(e.next_follow_up).slice(0, 10) : null, e?.notes ?? null]
         );
+        if (!r.rowCount) return res.status(409).json({ error: "CHANGED" });
         return res.json({ lead: r.rows[0], before: before.rows[0] });
       }
 
@@ -1450,6 +1460,9 @@ FACTS: ${JSON.stringify(facts)}`,
       res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  /* ── Stage 2: edits from the chat (whatsapp/edits.ts; every limit enforced there) ── */
+  registerWaEdits(app, { pool, log, scopedAgent });
 
   /* ── Understanding a free-form message (model fills a fixed form; code does the rest) ──
      Model: WA_UNDERSTAND_MODEL (default gemini-3.1-flash-lite, the bake-off winner of

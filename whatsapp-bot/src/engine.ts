@@ -135,7 +135,18 @@ export interface Engine {
   morningRecipients(): Promise<{ agentId: string; waNumber: string; name: string | null }[]>;
   morningOn(agentId: string): Promise<boolean>;
   leadsList(agentId: string): Promise<{ total: number; leads: LeadRow[] }>;
-  leadRestore(agentId: string, id: string, before: { status: string | null; next_follow_up: string | null; notes: string | null }): Promise<LeadRow | null>;
+  /** `expect` (the values the bot saved): restore only if nobody changed them since. */
+  leadRestore(agentId: string, id: string, before: { status: string | null; next_follow_up: string | null; notes: string | null }, expect?: { status: string | null; next_follow_up: string | null; notes: string | null }): Promise<LeadRow | null>;
+  /* Stage 2a: edits (backend whatsapp/edits.ts). A refused write is a result, never a throw. */
+  leadGet(agentId: string, id: string): Promise<FullLead | null>;
+  leadEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>): Promise<WriteResult<{ lead: FullLead; before: FullLead }>>;
+  leadConvert(agentId: string, id: string): Promise<WriteResult<{ customer: FullCustomer; before: { status: string } }>>;
+  leadUnconvert(agentId: string, id: string, customerId: string, status: string): Promise<WriteResult<{ customerRemoved: boolean }>>;
+  customerGet(agentId: string, id: string): Promise<FullCustomer | null>;
+  customerCreate(agentId: string, c: Record<string, unknown>): Promise<WriteResult<{ customer: FullCustomer; duplicate: boolean }>>;
+  customerEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>): Promise<WriteResult<{ customer: FullCustomer; before: FullCustomer }>>;
+  customerUndoCreate(agentId: string, id: string): Promise<boolean>;
+  fileClient(agentId: string, clientId: string, customerId: string | null, expectCustomerId: string | null): Promise<WriteResult<{ customerId: string | null }>>;
   leadUndoCreate(agentId: string, id: string): Promise<boolean>;
   catalog(agentId: string): Promise<CatalogPlan[]>;
   compare(agentId: string, keys: string[]): Promise<CompareResult>;
@@ -260,8 +271,33 @@ export class HttpEngine implements Engine {
     return this.call("/api/internal/wa/understand", { method: "POST", agentId, body: { text, ctx } });
   }
   leadsList(agentId: string) { return this.call("/api/internal/wa/leads/list", { agentId }); }
-  async leadRestore(agentId: string, id: string, before: unknown) {
-    return (await this.call(`/api/internal/wa/leads/${id}/update`, { method: "POST", agentId, body: { restore: before } })).lead ?? null;
+  async leadRestore(agentId: string, id: string, before: unknown, expect?: unknown) {
+    try {
+      return (await this.call(`/api/internal/wa/leads/${id}/update`, { method: "POST", agentId, body: { restore: before, ...(expect ? { expect } : {}) } })).lead ?? null;
+    } catch (e: any) { if (e?.status === 409) return null; throw e; }
+  }
+  /* Stage 2a: edits to leads, customers and filing (backend whatsapp/edits.ts). */
+  private async write<T>(path: string, agentId: string, body: unknown): Promise<WriteResult<T>> {
+    try { return { ok: true, ...(await this.call(path, { method: "POST", agentId, body })) }; }
+    catch (e: any) {
+      if (e?.status === 409 || e?.status === 400 || e?.status === 404) return { ok: false, reason: e.body?.error || "CHANGED", fields: e.body?.fields, customerId: e.body?.customerId };
+      throw e;
+    }
+  }
+  async leadGet(agentId: string, id: string) {
+    try { return (await this.call(`/api/internal/wa/leads/${id}`, { agentId })).lead; } catch (e: any) { if (e?.status === 404) return null; throw e; }
+  }
+  leadEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>) { return this.write<{ lead: FullLead; before: FullLead }>(`/api/internal/wa/leads/${id}/edit`, agentId, { set, expect }); }
+  leadConvert(agentId: string, id: string) { return this.write<{ customer: FullCustomer; before: { status: string } }>(`/api/internal/wa/leads/${id}/convert`, agentId, {}); }
+  leadUnconvert(agentId: string, id: string, customerId: string, status: string) { return this.write<{ customerRemoved: boolean }>(`/api/internal/wa/leads/${id}/unconvert`, agentId, { customerId, status }); }
+  async customerGet(agentId: string, id: string) {
+    try { return (await this.call(`/api/internal/wa/customers/${id}`, { agentId })).customer; } catch (e: any) { if (e?.status === 404) return null; throw e; }
+  }
+  customerCreate(agentId: string, c: Record<string, unknown>) { return this.write<{ customer: FullCustomer; duplicate: boolean }>("/api/internal/wa/customers", agentId, c); }
+  customerEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>) { return this.write<{ customer: FullCustomer; before: FullCustomer }>(`/api/internal/wa/customers/${id}/edit`, agentId, { set, expect }); }
+  async customerUndoCreate(agentId: string, id: string) { return (await this.write(`/api/internal/wa/customers/${id}/undo-create`, agentId, {})).ok; }
+  fileClient(agentId: string, clientId: string, customerId: string | null, expectCustomerId: string | null) {
+    return this.write<{ customerId: string | null }>(`/api/internal/wa/clients/${clientId}/file`, agentId, { customerId, expectCustomerId });
   }
   async leadUndoCreate(agentId: string, id: string) {
     try { await this.call(`/api/internal/wa/leads/${id}/undo-create`, { method: "POST", agentId, body: {} }); return true; }
@@ -307,3 +343,15 @@ export class HttpEngine implements Engine {
     return this.call("/api/internal/wa/llm/phrase", { method: "POST", agentId, body: { clientId, question } });
   }
 }
+
+/* ── Stage 2a shapes ─────────────────────────────────────────────────── */
+
+export type FullLead = {
+  id: string; name: string; phone: string | null; email: string | null; city: string | null; source: string | null;
+  insurance_interest: string | null; expected_value: string | number | null; status: string; next_follow_up: string | null;
+  notes: string | null; customer_id: string | null; created_at?: string; updated_at?: string;
+};
+export type FullCustomer = { id: string; name: string; phone: string | null; email: string | null; city: string | null; dob: string | null; created_at?: string };
+/** A write the server refused is a plain result: CHANGED (edited meanwhile), INVALID (with
+ *  the field messages), ALREADY_CUSTOMER, NOT_REMOVABLE, Not found. */
+export type WriteResult<T> = ({ ok: true } & T) | { ok: false; reason: string; fields?: Record<string, string>; customerId?: string };
