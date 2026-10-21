@@ -190,7 +190,7 @@ const END = "[?.!।]*$";
 
 /** Words that are never a customer's name in these questions ("is my policy done?",
  *  "how is my portfolio"). The name search is a loose ILIKE, so "my" would match "Ramya". */
-const NOT_A_PERSON = /^(?:my|all|the|this|that|it|his|her|their|our|your|a|an|mera|meri|mere)$|\bmy$|^(?:how|what)\b/;
+const NOT_A_PERSON = /^(?:my|all|the|this|that|it|his|her|their|our|your|a|an|mera|meri|mere)$|\bmy$|^(?:how|what|my|all|the|mere|meri)\b/;
 
 /** "is Ramesh's policy done?", "Ramesh ki policy ho gayi?" -> "ramesh". */
 export function statusName(textRaw: string): string | null {
@@ -230,13 +230,15 @@ export function portfolioName(textRaw: string): string | null {
 }
 
 function bookIntent(t: string): Intent | null {
-  if (/^(?:what|which|any)\s+(?:checks?\s+)?(?:failed|didn'?t work|did not work|got stuck)|^failed(?: checks?| policies| uploads?)?[?.!]*$|^(?:my\s+)?queue[?.!]*$|^(?:stuck|pending|running) (?:checks?|uploads?)[?.!]*$|^(?:kya|kaun sa|konsa|kaunsi)\s+fail\b|^kya atka hai/.test(t)) return "queue";
+  // Whole messages only: these skip the model at any length, so "what failed with Ramesh,
+  // follow up friday" must stay free text for the lead rules and the model.
+  if (/^(?:what|which|any)\s+(?:checks?|uploads?|policies)?\s*(?:have\s+|has\s+)?(?:failed|didn'?t work|did not work|got stuck)(?:\s+(?:today|yet|so far))?[?.!]*$|^failed(?: checks?| policies| uploads?)?[?.!]*$|^(?:my\s+)?queue[?.!]*$|^(?:stuck|pending|running) (?:checks?|uploads?)[?.!]*$|^(?:kya|kaun sa|konsa|kaunsi)\s+fail\s+(?:hua|hui|hue)(?:\s+(?:hai|hain))?[?.!]*$|^kya atka hai[?.!]*$/.test(t)) return "queue";
   if (statusName(t)) return "status";
   if (bookAsk(t)) return "book";
   if (/^(?:all\s+|my\s+)?(?:surrender values|policy values|values list|surrender list)[?.!]*$|^(?:sab(?:hi)?|saari)\s+surrender values?[?.!]*$/.test(t)) return "values";
   if (/^(?:how is|how'?s|hows)\s+my\s+(?:book|business|portfolio)[?.!]*$|^(?:insights|book summary|business summary|my insights|book insights)[?.!]*$|^(?:mera|meri)\s+(?:book|business)\s+kaisa\s+(?:hai|chal raha hai)[?.!]*$|^मेरा बिज़नेस कैसा है/.test(t)) return "insights";
   // After insights: "how is my portfolio" is the book, not a customer called "how is my".
   if (portfolioName(t)) return "portfolio";
-  if (/\b(?:page|website|site) (?:stats|views|visits)\b|\bhow many (?:people )?(?:saw|visited|opened|viewed) my (?:page|website|site)\b|\bmy page (?:stats|views)\b|\b(?:page|website) par kitne log\b/.test(t)) return "pagestats";
+  if (/^(?:show\s+(?:me\s+)?)?(?:my\s+)?(?:page|website|site) (?:stats|views|visits)[?.!]*$|^how many (?:people )?(?:saw|visited|opened|viewed) my (?:page|website|site)(?:\s+(?:this month|so far|lately))?[?.!]*$|^(?:mere\s+)?(?:page|website) par kitne log(?:\s+aaye)?(?:\s+(?:hain|the))?[?.!]*$/.test(t)) return "pagestats";
   return null;
 }

@@ -180,6 +180,8 @@ export function failureReasonFix(error: string | null | undefined): { reason: st
   if (/scan|blurr|readable|no text|could not find a policy|image/.test(e))
     return { reason: "the scan is too unclear to read", fix: "Ask the customer for the insurer's original PDF" };
   if (/timeout|timed out/.test(e)) return { reason: "it took too long to read", fix: "Try sending it again in a few minutes" };
+  // Our own service was busy (rate limit, quota, overload): the file is fine.
+  if (/\b(429|503)\b|quota|rate.?limit|overloaded|unavailable|too many requests/.test(e)) return { reason: "our checking service was busy", fix: "Try sending it again in a few minutes" };
   return { reason: "something in the file stopped me", fix: "Try the insurer's original PDF, or upload it in the portal" };
 }
 

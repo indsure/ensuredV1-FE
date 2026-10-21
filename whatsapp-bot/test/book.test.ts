@@ -218,7 +218,7 @@ test("critic: raw pipeline errors never reach the advisor, only a plain reason",
   await bot.handle(text("what failed?"));
   const r = transport.last();
   assert.doesNotMatch(r, /Google|gemini|googleapis|\bAI\b|429/);
-  assert.match(r, /something in the file stopped me/);
+  assert.match(r, /our checking service was busy/, "a 429 is our rate limit, not the file");
 });
 
 test("critic: the extension is offered only when the portal allows it; purged paperwork is said plainly", () => {
@@ -279,4 +279,22 @@ test("critic: 'lowest health scores' counts only scored health policies", async 
   ];
   await bot.handle(text("lowest scores"));
   assert.match(transport.last(), /Lowest health scores first: 1/);
+});
+
+test("critic round 2: queue and page stats only on the whole question; long lead messages stay free text", () => {
+  for (const t of ["any failed payment for Neha? call her tomorrow", "what failed with Ramesh, follow up friday", "kya atka hai Ramesh ke saath, kal call karo", "Neha saw my website visits page yesterday and wants a call friday"]) {
+    assert.ok(!["queue", "pagestats"].includes(ruleIntent(t) as string), t);
+  }
+  for (const [t, want] of [["what failed?", "queue"], ["which checks failed today", "queue"], ["kya fail hua", "queue"], ["page stats", "pagestats"], ["how many people visited my website this month", "pagestats"]] as const) {
+    assert.equal(ruleIntent(t), want, t);
+  }
+  assert.notEqual(ruleIntent("portfolio of my clients"), "portfolio", "never a customer called \"my clients\"");
+});
+
+test("critic round 2: a busy service is not blamed on the file", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.queueRows = [{ id: "a", name: "Ramesh", status: "error", error_message: "[GoogleGenerativeAI Error]: [429 Too Many Requests] quota", created_at: "x" }];
+  await bot.handle(text("what failed?"));
+  assert.match(transport.last(), /our checking service was busy/);
+  assert.doesNotMatch(transport.last(), /file stopped me|Google/);
 });
