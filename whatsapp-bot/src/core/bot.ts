@@ -20,6 +20,7 @@ import { MIN_TEXT, inspectPdf, looksLikePdf, POLICY_TYPES, sameInsured, type Ins
 import {
   isAlone, isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, parsePair, pickNumber, ruleIntent,
 } from "./intents.js";
+import { SWITCH_TOPIC, isPronounName, oneLetterMissing, nameCandidates, rephrase, suggest, suggestReply, withPerson, type Suggestion } from "./converse.js";
 import { basics, ruleAnswer } from "./answers.js";
 import {
   T, failureReasonFix, portalPolicyUrl, renewalsReply, reportCard, shareDraft, shareReply,
@@ -100,7 +101,8 @@ type Held = { file: FileRef; topUp: boolean; names: string[]; scanned: boolean; 
 type State =
   | "IDLE" | "REPORT_READY" | "AWAITING_TYPE" | "AWAITING_DUP_CONFIRM" | "AWAITING_CUSTOMER" | "AWAITING_TOPUP"
   | "AWAITING_SHARE_LANG" | "AWAITING_CLIENT_PICK" | "AWAITING_REMIND_PICK"
-  | "AWAITING_LEAD" | "AWAITING_CALC" | "AWAITING_COMPARE_PICK" | "AWAITING_LEAD_PICK" | "AWAITING_CONFIRM";
+  | "AWAITING_LEAD" | "AWAITING_CALC" | "AWAITING_COMPARE_PICK" | "AWAITING_LEAD_PICK" | "AWAITING_CONFIRM"
+  | "SUGGESTED";
 
 /** A change waiting for the advisor's YES. Nothing is written until then. */
 type Op =
@@ -116,7 +118,10 @@ type LastChange =
 
 const UNDO_WINDOW_MS = 15 * 60_000;
 /** Short, unambiguous read-only commands go straight to the rules (no model call). */
-const FAST_RULE = new Set(["help", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
+/** A hello on its own: answered by name, with what is waiting today. */
+const GREETING = /^(?:hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|jai shri krishna|good (?:morning|afternoon|evening)|gm)(?:\s+(?:ji|sir|madam|bhai|there|team))?[.!🙏 ]*$|^(?:नमस्ते|नमस्कार|राम राम)(?:\s+जी)?[.!।🙏 ]*$/iu;
+
+const FAST_RULE = new Set(["help", "leadlist", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
 
 type Conv = { state: State; currentClientId: string | null; pending: any; updatedAt: string | null };
 
@@ -785,20 +790,50 @@ export class Bot {
 
   private async onText(agentId: string, conv: Conv, msg: InboundMessage) {
     const to = msg.replyTo;
-    const text = msg.text.trim();
+    const typed = msg.text.trim();
 
     // Reply language: HINDI / HINGLISH / ENGLISH set it; otherwise it follows whatever the
     // advisor clearly writes in (a bare command or a name keeps the current one).
-    const chosen = conv.state.startsWith("AWAITING") ? null : langCommand(text);
+    const chosen = conv.state.startsWith("AWAITING") ? null : langCommand(typed);
     if (chosen) {
       this.replyLang.set(agentId, chosen);
       await this.saveConv(agentId, conv);
       return this.say(to, agentId, LANG_SET[chosen], "lang");
     }
-    const seen = detectLang(text);
+    const seen = detectLang(typed);
     if (seen && seen !== (this.replyLang.get(agentId) ?? "english")) {
       this.replyLang.set(agentId, seen);
       await this.saveConv(agentId, conv);
+    }
+
+    // "Did you mean" list: a number runs that choice; anything else is a fresh message.
+    // SUGGESTED is not a pending question (nothing else waits on it): the next message always
+    // clears it, and only a number sent within the usual 15 minutes runs a choice.
+    let text = typed;
+    if (conv.state === "SUGGESTED") {
+      const options = (conv.pending?.options as Suggestion[] | undefined) ?? [];
+      const fresh = this.now() - Number(conv.pending?.at ?? 0) <= this.t.stateTimeoutMs;
+      const n = fresh ? pickNumber(typed, options.length) : null;
+      await this.rest(agentId, to, conv.currentClientId);
+      conv = { ...conv, state: conv.currentClientId ? "REPORT_READY" : "IDLE", pending: { to } };
+      if (n) text = options[n - 1].command;
+    }
+    // The model (paid plan) reads the advisor's own words (or the picked command); it is told
+    // who "him" is separately, in its context.
+    const modelText = text;
+
+    // Everyday phrasings become the command the rules know, and "him" / "uska" become the
+    // person we were just talking about. Never while a change waits for YES ("no wait, yes"
+    // must stay a no). While another question is pending (a city, a name, a phone), only an
+    // explicit change of topic ("chhodo, ...", "actually ...") that ends in a clear command.
+    if (text === typed && conv.state !== "AWAITING_CONFIRM") {
+      if (!conv.state.startsWith("AWAITING")) {
+        const said = rephrase(typed);
+        text = withPerson(said, this.lastPerson.get(agentId) ?? null) ?? said;
+      } else if (SWITCH_TOPIC.test(typed)) {
+        const said = rephrase(typed);
+        if (ruleIntent(said)) text = said;
+      }
     }
 
     let intent = ruleIntent(text);
@@ -817,7 +852,7 @@ export class Bot {
       return this.say(to, agentId, T.unlinked(), "unlink");
     }
     if (/^(ok|okay|thanks|thank you|thx|ty|great|done|👍|🙏)[.! ]*$/i.test(text)) {
-      if (!conv.state.startsWith("AWAITING")) return this.say(to, agentId, "Happy to help.", "thanks");
+      if (!conv.state.startsWith("AWAITING")) return this.say(to, agentId, "You're welcome. Anything else, just type it.", "thanks");
     }
 
     // A change waiting for YES gets the first word. Anything else drops it, unsaved.
@@ -840,17 +875,20 @@ export class Bot {
     // A lead change the rules read with certainty ("Aniket ka followup 3rd November",
     // "Ramesh won", "sabke reminders 1st November kardo") goes straight to its confirmation:
     // no model needed, and every change still waits for YES.
+    // This runs on the advisor's own words, as before: what the model sees is unchanged for
+    // paid advisors. The rewritten text ("mark him won" -> "mark Ramesh Kumar won") is tried
+    // further down, only when the model did not take the message.
     if (!intent && !conv.state.startsWith("AWAITING")) {
-      const one = parseBulkFollowUp(text, this.now());
-      const all = one ? { nextFollowUp: one } : parseBulkUpdate(text, this.now());
+      const one = parseBulkFollowUp(modelText, this.now());
+      const all = one ? { nextFollowUp: one } : parseBulkUpdate(modelText, this.now());
       if (all) return this.bulkFollowUp(agentId, conv, to, all);
-      const u = parseLeadUpdate(text, this.now());
-      if (u && (await this.leadUpdateStart(agentId, conv, to, u))) return;
+      const u = parseLeadUpdate(modelText, this.now());
+      if (u && !isPronounName(u.name) && (await this.leadUpdateStart(agentId, conv, to, u))) return;
     }
 
     let sachReason: string | undefined;
     if (!fastRule && !answering) {
-      const r = await this.d.engine.understand(agentId, text, this.modelContext(agentId, conv)).catch(() => null);
+      const r = await this.d.engine.understand(agentId, modelText, this.modelContext(agentId, conv)).catch(() => null);
       sachReason = r?.reason;
       if (r?.reason === "limit" && r.usage) await this.sachLimitNotice(agentId, to, r.usage);
       if (r?.enabled && r.understanding) {
@@ -859,13 +897,24 @@ export class Bot {
           await this.rest(agentId, to, conv.currentClientId);
           conv = { ...conv, state: conv.currentClientId ? "REPORT_READY" : "IDLE", pending: { to } };
         }
-        await this.dispatch(agentId, conv, to, text, r.understanding);
+        await this.dispatch(agentId, conv, to, modelText, r.understanding);
         const u = r.usage;
         if (u && u.limit > 0 && u.used === Math.ceil(u.limit * 0.8)) {
           await this.say(to, agentId, `Heads up: you've used ${u.used} of ${u.limit} Sach Assistant replies this month. They reset on ${dayMonth(u.resetsOn)}.`, "sach_warn");
         }
         return;
       }
+    }
+
+    // No model: the rewritten words get their turn at a lead change ("mark him won" with
+    // Ramesh just looked up, "Neha said no" after "spoke to Neha"). Still only after YES.
+    if (!intent && !conv.state.startsWith("AWAITING") && text !== modelText) {
+      const u = parseLeadUpdate(text, this.now());
+      if (u && (await this.leadUpdateStart(agentId, conv, to, u))) return;
+    }
+    if (!intent && !conv.state.startsWith("AWAITING")) {
+      const u = parseLeadUpdate(modelText, this.now());
+      if (u && isPronounName(u.name) && (await this.leadUpdateStart(agentId, conv, to, u))) return;
     }
 
     // "Ramesh won" / "follow up Ramesh Friday" / "note Ramesh: ...": only when no other
@@ -886,7 +935,10 @@ export class Bot {
 
     switch (intent) {
       case "help":
+        if (GREETING.test(typed)) return this.greet(agentId, to);
         return this.say(to, agentId, T.help(), "help");
+      case "leadlist":
+        return this.say(to, agentId, leadsListReply(this.d.links, await this.d.engine.leadsList(agentId)), "list_leads");
       case "balance":
         return this.balance(agentId, to);
       case "today":
@@ -928,7 +980,11 @@ export class Bot {
       case "lookup": {
         const q = text.replace(/^(find|search|lookup|look up|who is|details (of|for))\s+/i, "").trim();
         const r = await this.d.engine.lookup(agentId, q);
-        if (r.policies.length === 1) this.setLast(agentId, { kind: "policy", clientId: r.policies[0].clientId });
+        if (r.policies.length === 1) {
+          // One policy found: follow-up questions ("does it cover maternity?") are about it.
+          this.setLast(agentId, { kind: "policy", clientId: r.policies[0].clientId });
+          await this.rest(agentId, to, r.policies[0].clientId);
+        }
         const person = r.policies[0]?.policyholderName || r.leads[0]?.name;
         if (person) this.lastPerson.set(agentId, person);
         return this.say(to, agentId, lookupReply(this.d.links, q, r.policies, r.leads), "lookup");
@@ -949,9 +1005,22 @@ export class Bot {
     const fresh = !!conv.updatedAt && this.now() - new Date(conv.updatedAt).getTime() < REPORT_FRESH_MS;
     if (namedPerson(text) || (conv.currentClientId && isReportQuestion(text, fresh))) return this.ask(agentId, conv, to, text);
 
-    const guess = await this.d.engine.llmIntent(agentId, text, false).catch(() => "unknown");
+    const guess = await this.d.engine.llmIntent(agentId, modelText, false).catch(() => "unknown");
     if (guess === "renewals") return this.say(to, agentId, renewalsReply(await this.d.engine.renewals(agentId), this.d.links), "renewals");
     if (guess === "share" || guess === "ask") return this.say(to, agentId, T.noReport(), guess);
+
+    // Deleting is never done from WhatsApp: say so plainly, and where it can be done.
+    if (/^(?:please\s+)?(?:delete|remove|erase)\b|\b(?:hata do|hatao|mita do|delete karo|delete kar do)\b|हटा दो|मिटा दो/i.test(text)) {
+      return this.say(to, agentId, `I can't delete anything from WhatsApp, so nothing is lost by mistake. You can remove a lead in the portal: ${this.d.links.origin}/agent/leads`, "no_delete");
+    }
+
+    // Not a dead end: offer the closest commands, and the person if a name in the message is
+    // in the book. A number picks one.
+    const options = await this.suggestions(agentId, modelText);
+    if (options.length) {
+      await this.setState(agentId, to, "SUGGESTED", conv.currentClientId, { options, at: this.now() });
+      return this.say(to, agentId, suggestReply(options), "suggest");
+    }
     // Free plan: one line a day on what Sach Assistant would add, never more.
     const day = istClock(this.now()).iso;
     if (sachReason === "free_plan" && this.sachNudged.get(agentId) !== day && words > 2) {
@@ -973,6 +1042,34 @@ export class Bot {
       lines.push("", `Sach Assistant (type it your way, plus a 9 AM to-do Monday to Friday) comes with the paid plan: ${this.d.teamLink}`);
     }
     return this.say(to, agentId, lines.join("\n"), "balance");
+  }
+
+  /** "hi" / "namaste": a hello by name, what's waiting today if anything, then the menu. */
+  private async greet(agentId: string, to: string) {
+    const [profile, due] = await Promise.all([
+      this.d.engine.profile(agentId).catch(() => null),
+      this.d.engine.followups(agentId).catch(() => []),
+    ]);
+    const first = String(profile?.name || "").trim().split(/\s+/)[0];
+    const lines = [first ? `👋 Hi ${first}!` : "👋 Hi!"];
+    if (due.length) lines.push(`You have ${due.length} ${due.length === 1 ? "follow-up" : "follow-ups"} due. Reply FOLLOW UPS to see them.`);
+    return this.say(to, agentId, `${lines.join("\n")}\n\n${T.help()}`, "help");
+  }
+
+  /** Up to three likely commands for a message no rule understood. A word that is a name in
+   *  the advisor's book comes first as "Everything on <name>". */
+  private async suggestions(agentId: string, text: string): Promise<Suggestion[]> {
+    const out = suggest(text);
+    for (const w of nameCandidates(text)) {
+      const r = await this.d.engine.lookup(agentId, w).catch(() => null);
+      const names = [...new Set([...(r?.policies ?? []).map((p) => p.policyholderName), ...(r?.leads ?? []).map((l) => l.name)].filter(Boolean) as string[])]
+        .filter((n) => nameMatches(w, n));
+      if (names.length === 1) {
+        out.unshift({ label: `Everything on ${names[0]}`, command: `find ${names[0]}` });
+        break;
+      }
+    }
+    return out.slice(0, 3);
   }
 
   private async sachLimitNotice(agentId: string, to: string, u: SachStatus) {
@@ -1541,7 +1638,33 @@ export class Bot {
   private async leadUpdateStart(agentId: string, conv: Conv, to: string, u: LeadUpdate): Promise<boolean> {
     // The search is a loose substring match; a typed name that changes data must match
     // word starts, so "ok done" can never touch "Alok".
-    const rows = (await this.d.engine.leadSearch(agentId, u.name)).filter((r) => nameMatches(u.name, r.name));
+    if (isPronounName(u.name)) {
+      await this.say(to, agentId, "Who do you mean? Say it with the name, for example: Ramesh won", "clarify");
+      return true;
+    }
+    let rows = (await this.d.engine.leadSearch(agentId, u.name)).filter((r) => nameMatches(u.name, r.name));
+    // "Ramesh K." or "Sharma Ramesh": search on one word, then every typed word must fit.
+    const first = u.name.split(/\s+/).find((w) => w.replace(/\W/g, "").length >= 3);
+    if (!rows.length && first && first !== u.name) rows = (await this.d.engine.leadSearch(agentId, first)).filter((r) => nameMatches(u.name, r.name));
+    // A dropped or doubled letter ("Rmesh won", "Rameesh won"): never a different letter, so
+    // Rakesh is never read as Ramesh, Rohit never as Mohit, India never as Indra. Same first
+    // letter, one name only, and the confirmation still shows the real name before YES.
+    if (!rows.length && /^[a-z]{4,}$/i.test(u.name)) {
+      const typed = u.name.toLowerCase();
+      const pieces = [...new Set([typed.slice(0, 2), typed.slice(-3)])];
+      const seen = new Map<string, LeadRow>();
+      for (const p of pieces) for (const r of await this.d.engine.leadSearch(agentId, p).catch(() => [])) seen.set(r.id, r);
+      const near = [...seen.values()].filter((r) => String(r.name || "").toLowerCase().split(/\s+/).some((w) => w[0] === typed[0] && oneLetterMissing(typed, w)));
+      if (near.length === 1) {
+        // The search above returns only a few rows: look the found first name up on its own,
+        // so two people called Ramesh get the usual "Which Ramesh?" instead of a guess.
+        const firstName = String(near[0].name || "").split(/\s+/)[0];
+        const same = (await this.d.engine.leadSearch(agentId, firstName).catch(() => [])).filter((r) => nameMatches(firstName, r.name));
+        rows = same.length > 1 ? same : near;
+      } else if (near.length > 1) {
+        rows = near; // several close names: always "Which one?", never a guess
+      }
+    }
     if (!rows.length) {
       // A follow-up or a note is clearly about a lead; a bare status word may not be.
       if (!u.nextFollowUp && !u.note) return false;

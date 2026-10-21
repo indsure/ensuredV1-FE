@@ -95,9 +95,9 @@ export type LeadUpdate = { name: string; status?: string; nextFollowUp?: string;
 // Order matters: "interested nahi hai" is lost, not interested.
 const STATUS_WORDS: [RegExp, string][] = [
   [/(?:^|\s)(?:(?:ne|ko)\s+)?(?:mana kar diya|mana kar di|mana kiya|policy nahi li|nahi li|nahi lega|nahi legi|nahi chahiye|interested nahi(?: hai)?)$|(?:^|\s)(?:ने|को)?\s*(?:मना कर दिया|मना किया|पॉलिसी नहीं ली|नहीं ली|नहीं चाहिए|इंटरेस्टेड नहीं है)$/, "lost"],
-  [/\b(not interested|no interest|dropped|lost|rejected)$/, "lost"],
+  [/\b(not interested|no interest|no longer interested|dropped|lost|rejected|declined|refused|said no|says no|won'?t buy|will not buy|not buying)$/, "lost"],
   [/(?:^|\s)(?:ne\s+)?(?:policy le li|policy le liya|policy li|policy kharid li|le li|le liya|kharid li)$|(?:^|\s)ने\s+(?:पॉलिसी\s+)?(?:ले ली|ले लिया|ख़रीद ली|खरीद ली)$/, "won"],
-  [/\b(won|converted|bought|signed up|signed)$/, "won"],
+  [/\b(won|converted|bought|signed up|signed|bought the policy|bought a policy|bought it|took the policy|purchased(?: the policy)?|said yes|says yes|is buying)$/, "won"],
   [/(?:^|\s)(?:(?:ko\s+)?interest hai|interested hai|ready hai)$|(?:^|\s)(?:को\s+)?(?:इंटरेस्ट है|इंटरेस्टेड है|तैयार है)$/, "interested"],
   [/\b(interested|keen|hot)$/, "interested"],
   [/(?:^|\s)(?:(?:se|ko)\s+)?(?:baat ho gayi|baat hui|baat kar li|call kiya|call kar diya|call kar liya)$|(?:^|\s)(?:से|को)\s+(?:बात हो गई|बात हुई|कॉल किया|कॉल कर दिया)$/, "contacted"],
@@ -105,7 +105,9 @@ const STATUS_WORDS: [RegExp, string][] = [
 ];
 
 /** A typed name as the book stores it: Devanagari converted, words capitalised. */
-function bookName(name: string): string {
+function bookName(nameRaw: string): string {
+  // "Mr Sharma", "Sharma ji": the book has the name, not the courtesy.
+  const name = nameRaw.replace(/^(?:mr|mrs|ms|dr|shri|smt)\.?\s+/i, "").replace(/\s+(?:ji|sir|madam|bhai)$/i, "").trim() || nameRaw;
   return hasDevanagari(name) ? devanagariToLatin(name) : name.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
@@ -120,13 +122,14 @@ export function parseLeadUpdate(textRaw: string, nowMs: number): LeadUpdate | nu
 
   const fu = t.match(/^(?:follow[\s-]?up|call|call back|remind me to call)\s+(?:with\s+)?(.+)$/i);
   if (fu) {
-    const w = parseWhen(fu[1], nowMs);
+    // "call Ramesh back Friday": "back" is not part of the name.
+    const w = parseWhen(fu[1].replace(/\s+back\b/i, ""), nowMs);
     if (w && w.rest.length >= 2) return { name: bookName(w.rest), nextFollowUp: w.date };
     return null;
   }
 
   // "Aniket ka followup 3rd November", "Deep ki call kal", "रमेश का फॉलो अप शुक्रवार"
-  const kaFu = t.replace(/[.!?।]+$/, "").match(/^(.+?)\s+(?:ka|ki|ke|ko|का|की|के|को)\s+(?:follow[\s-]?up|followup|call|reminder|फॉलो[\s-]?अप|कॉल|रिमाइंडर)\s+(?:(?:on|for|ko|को)\s+)?(.+?)(?:\s+(?:karo|kardo|kar do|set karo|rakho|lagao|karna hai|करो|कर दो|रखो))?$/i);
+  const kaFu = t.replace(/[.!?।]+$/, "").match(/^(.+?)\s+(?:ka|ki|ke|ko|का|की|के|को)\s+(?:follow[\s-]?up|followup|call|reminder|फॉलो[\s-]?अप|कॉल|रिमाइंडर)\s+(?:(?:on|for|ko|को)\s+)?(.+?)(?:\s+(?:karo|kardo|kar do|set karo|set kar do|rakho|rakh do|rakhna|lagao|laga do|karna hai|करो|कर दो|रखो|रख दो))?$/i);
   if (kaFu) {
     const who = kaFu[1].trim();
     const w = parseWhen(kaFu[2], nowMs);
@@ -144,16 +147,41 @@ export function parseLeadUpdate(textRaw: string, nowMs: number): LeadUpdate | nu
     if (w && !w.rest && who.length >= 2 && who.split(/\s+/).length <= 4) return { name: bookName(who), nextFollowUp: w.date };
   }
 
-  const lower = t.toLowerCase().replace(/[.!]+$/, "").replace(/^mark\s+/, "").replace(/\s+(?:is|as)\s+(?=[a-z ]+$)/, " ");
-  for (const [re, status] of STATUS_WORDS) {
-    const m = lower.match(re);
-    if (!m || m.index === undefined) continue;
-    const name = lower.slice(0, m.index).trim();
-    if (name.length >= 2 && name.split(/\s+/).length <= 4 && /^[a-zऀ-ॿ .']+$/.test(name)) {
-      return { name: bookName(name), status };
+  // The whole message with commas read as pauses ("Ramesh, not interested"), then the FIRST
+  // clause only ("Ramesh won't buy, mark him lost", "Pooja bought the policy, add a note ...").
+  // Never a later clause: "Haan bhai, India won" is chit-chat, not a status.
+  const clauses = [t.replace(/\s*,\s*/g, " "), ...(t.includes(",") ? [t.split(/\s*,\s*/)[0]] : [])];
+  for (const clause of clauses) {
+    const lower = statusForm(clause);
+    for (const [re, status] of STATUS_WORDS) {
+      const m = lower.match(re);
+      if (!m || m.index === undefined) continue;
+      // "Sunita, she said no": the pronoun after the name is not part of it.
+      const name = lower.slice(0, m.index).trim().replace(/\s+(?:he|she|they)$/, "");
+      if (name.length >= 2 && name.split(/\s+/).length <= 4 && /^[a-zऀ-ॿ .']+$/.test(name) && !NOT_A_NAME.test(name)) {
+        return { name: bookName(name), status };
+      }
     }
   }
   return null;
+}
+
+/** Words before a status that are not a lead: "not interested", "nobody bought it",
+ *  "the hospital won", "doctor said no", "usne policy le li" (a pronoun, never a name). */
+const NOT_A_NAME = /^(?:not|no|nobody|no one|someone|somebody|everyone|everybody|anyone|i|we|you|he|she|it|they|him|her|them|usne|unhone|unhonne|uska|unka|the|a|an|my|our|his|their|this|that|doctor|hospital|insurer|company|team|india|haan|han|ok|okay|acha|achha|thanks|thank you|sorry|bhai|arre|are|yaar|oh|wow|great|nice|well|so|and|but)(?:\s|$)/;
+
+/** A status sentence in the shape the status words expect. "mark Ramesh as won", "Ramesh ka
+ *  lead won kar do", "Sunita ko interested mark karo" and "Sunita Rao is not interested
+ *  anymore" all end in the status, with only the name before it. */
+function statusForm(clause: string): string {
+  return clause.toLowerCase().replace(/[.!]+$/, "")
+    .replace(/^mark\s+/, "")
+    .replace(/\s+(?:anymore|any more|now|ab)$/, "")
+    .replace(/\s+(?:mark\s+)?(?:kar\s*do|karo|kardo|kar dijiye|kar dena)$/, "")
+    .replace(/\s+mark$/, "")
+    .replace(/\s+(?:ka|ki|ke)\s+lead\s+(?=(?:won|lost|interested|contacted|new)$)/, " ")
+    .replace(/\s+ko\s+(?=(?:interested|won|lost|contacted)$)/, " ")
+    .replace(/\s+(?:is|as)\s+(?=[a-z' ]+$)/, " ");
 }
 
 const ALL = /(?:^|[\s,])(?:all|everyone'?s?|everybody|all of them|sab|sabse|sabko|sabke|sab ke|sabka|sabhi|in sab|inke|in sabko|सब|सबसे|सबको|सबके|सबका|सभी)(?=[\s,]|$)/;

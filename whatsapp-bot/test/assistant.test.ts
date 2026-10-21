@@ -127,11 +127,21 @@ test("pronouns: the model is told who the chat is about", async () => {
   const { bot, engine } = withModel();
   engine.leadRows = [lead()];
   await bot.handle(text("find Ramesh"));
+  engine.understandMap.set("he finally agreed to the floater plan", says(act("update_lead", { name: "Ramesh Kumar", status: "won" })));
+  await bot.handle(text("he finally agreed to the floater plan"));
+  const last = engine.understandCalls.at(-1)!;
+  assert.equal(last.text, "he finally agreed to the floater plan", "the model reads the advisor's own words");
+  assert.equal(last.ctx.lastPerson, "Ramesh Kumar");
+});
+
+test("pronouns, model on: 'mark him won' still goes to the model in the advisor's own words", async () => {
+  const { bot, transport, engine } = withModel();
+  engine.leadRows = [lead()];
+  await bot.handle(text("find Ramesh"));
   engine.understandMap.set("mark him won", says(act("update_lead", { name: "Ramesh Kumar", status: "won" })));
   await bot.handle(text("mark him won"));
-  const last = engine.understandCalls.at(-1)!;
-  assert.equal(last.text, "mark him won");
-  assert.equal(last.ctx.lastPerson, "Ramesh Kumar");
+  assert.equal(engine.understandCalls.at(-1)!.text, "mark him won");
+  assert.match(transport.last(), /Ramesh Kumar\* \(98123 45678\): mark won/);
 });
 
 test("the model is unsure: its question is asked, nothing changes", async () => {

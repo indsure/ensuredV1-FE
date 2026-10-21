@@ -9,7 +9,7 @@ export type Intent =
   | "link" | "unlink" | "cancel" | "help" | "renewals" | "remind" | "share" | "ask" | "unknown"
   | "website" | "lead" | "calc" | "compare" | "clients"
   | "followups" | "draft" | "lookup" | "checks" | "views" | "claims" | "surrender" | "more"
-  | "balance" | "today" | "morning_off" | "morning_on";
+  | "balance" | "today" | "morning_off" | "morning_on" | "leadlist";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -24,10 +24,10 @@ function hindiIntent(t: string): Intent | null {
   if (new RegExp(`^(aaj\\s+)?(kisko|kise|kis ko)\\s+(call|phone)(\\s+(karna|karu|karun|karoon|karni))?(\\s+(hai|h))?${end}`).test(t)) return "followups";
   if (new RegExp(`^(आज\\s+)?(किसे|किसको|किस को)\\s+(कॉल|फ़ोन|फोन)(\\s+(करना|करूँ|करूं))?(\\s+है)?${end}`).test(t)) return "followups";
   if (new RegExp(`^(aaj ke|आज के)\\s+(calls?|follow[\\s-]?ups?|कॉल|फॉलो[\\s-]?अप)${end}`).test(t)) return "followups";
-  if (new RegExp(`^(follow[\\s-]?ups?|फॉलो[\\s-]?अप)\\s+(dikhao|batao|दिखाओ|बताओ)${end}`).test(t)) return "followups";
+  if (new RegExp(`^((meri|mere|my|मेरी|मेरे)\\s+)?(follow[\\s-]?ups?|फॉलो[\\s-]?अप)\\s+(dikhao|batao|दिखाओ|बताओ)${end}`).test(t)) return "followups";
   if (/रिन्यूअल|नवीनीकरण/.test(t)) return "renewals";
-  if (new RegExp(`^(madad|help karo|kya kya kar sakte ho|kya kar sakte ho|मदद|हेल्प|क्या कर सकते हो|क्या क्या कर सकते हो)${end}`).test(t)) return "help";
-  if (new RegExp(`^(mere|meri|sab|saare|sare|मेरे|सारे|सब)\\s+(clients?|customers?|policies|policy|क्लाइंट|कस्टमर|ग्राहक|पॉलिसी)(\\s+(dikhao|batao|दिखाओ|बताओ))?${end}`).test(t)) return "clients";
+  if (new RegExp(`^(madad|help karo|kya kya kar sakte ho|kya kar sakte ho|aap kya karte ho|मदद|हेल्प|क्या कर सकते हो|क्या क्या कर सकते हो)${end}`).test(t)) return "help";
+  if (new RegExp(`^(mere|meri|sab|saare|sare|मेरे|सारे|सब)\\s+(clients?|customers?|policies|policy|क्लाइंट्स|क्लाइंट|कस्टमर्स|कस्टमर|ग्राहकों|ग्राहक|पॉलिसियाँ|पॉलिसी)(\\s+(dikhao|batao|दिखाओ|बताओ))?${end}`).test(t)) return "clients";
   if (new RegExp(`^(aaj ka kaam|aaj kya karna hai|aaj ka to-?do|आज का काम|आज क्या करना है)${end}`).test(t)) return "today";
   if (new RegExp(`^((mera |मेरा )?(balance|बैलेंस)( kitna hai| कितना है)?|kitne (checks|replies|jawab) bache( hain)?|कितने (चेक|जवाब) बचे( हैं)?)${end}`).test(t)) return "balance";
   if (/कैलकुलेटर|kitna cover chahiye|कितना कवर चाहिए/.test(t)) return "calc";
@@ -44,10 +44,14 @@ export function ruleIntent(textRaw: string): Intent | null {
   const t = norm(textRaw);
   if (!t) return null;
   if (linkCode(t)) return "link";
+  // "note on Vikram: renewal in March" is a note, whatever words it contains.
+  if (/^(?:add\s+)?(?:a\s+)?note\s+(?:for\s+|on\s+)?[^:]{2,40}:/.test(t)) return null;
   if (/^unlink$/.test(t)) return "unlink";
   const hindi = hindiIntent(t);
   if (hindi) return hindi;
   if (/^(more|all commands|everything|full menu|help all|all features|what else)[.!?]*$/.test(t)) return "more";
+  if (/^(?:(?:show|list|see|view)(?: me)?\s+(?:my |all (?:my )?)?|(?:my|all) )leads?(?: list)?[?.!]*$|^leads? list[?.!]*$|^(?:mere|meri|sab|saare|sare)\s+leads?(?:\s+(?:dikhao|batao))?[?.!]*$|^(?:मेरी|मेरे|सारी)\s+(?:लीड|लीड्स)(?:\s+(?:दिखाओ|बताओ))?[?.!।]*$/.test(t)) return "leadlist";
+  if (/^(?:(?:send|share|give)(?: me)?|what'?s|whats|what is|where is)\s+(?:my|the)\s+(?:website|site|page|web page)(?:\s+link)?[?.!]*$|^(?:mera|meri)\s+(?:website|site|page)(?:\s+(?:ka\s+)?link)?(?:\s+(?:bhejo|do|dikhao|batao|kya hai))?[?.!]*$/.test(t)) return "website";
   // Bare "link" (no code) is the advisor's own website. "LINK 123456" is connecting, above.
   if (/^(link|my link|website|my website|my site|my page|site link|website link|share my (website|page|link))[.!?]*$/.test(t)) return "website";
   if (/^((please\s+)?(enter|add|new|create|save)\s+(a\s+)?(new\s+)?leads?\b|leads?\b(?!s?\s*(list|page)))/.test(t)) return "lead";
@@ -68,10 +72,12 @@ export function ruleIntent(textRaw: string): Intent | null {
   if (/^(my |all )?(clients?|customers?|policies|book)$/.test(t) ||
       /\b(list|show|all|my)\b.*\b(clients?|customers?|policies|policyholders?)\b/.test(t)) return "clients";
   if (/\b(calculator|calculate|calc|cover calculator)\b/.test(t)) return "calc";
-  if (/^(cancel|stop|band karo|rehne do)$/.test(t)) return "cancel";
-  if (/^(hi|hello|hey|hii+|namaste|namaskar|help|menu|start|\?)[.!]*$/.test(t)) return "help";
-  if (/^remind\b/.test(t)) return "remind";
-  if (/\b(renewals?|renew|who'?s due|due this week|expiring|expiry list)\b/.test(t)) return "renewals";
+  if (/^(cancel|stop|band karo|rehne do|never ?mind|leave it|forget it|chhodo|chodo)[.!]*$/.test(t)) return "cancel";
+  if (/^(hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|good (morning|afternoon|evening)|gm|help|menu|start|\?)(\s+(ji|sir|madam|bhai|there|team))?[.!🙏 ]*$/u.test(t)) return "help";
+  if (/^(what can you do|what do you do|what all can you do|how do i use (this|you)|how does this work)[?.!]*$/.test(t)) return "help";
+  if (/^(नमस्ते|नमस्कार|राम राम)(\s+जी)?[.!।🙏 ]*$/u.test(t)) return "help";
+  if (/^remind\b(?! me\b)/.test(t)) return "remind";
+  if (/\b(renewals?|renew|renewing|who'?s due|due this week|expiring|expiry list)\b/.test(t)) return "renewals";
   if (/^share\b|\bsend (it |this |the report )?to (the )?(customer|client)\b|\bshare .*report\b|\bbhej do\b/.test(t)) return "share";
   return null;
 }

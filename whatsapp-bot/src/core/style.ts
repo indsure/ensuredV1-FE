@@ -43,6 +43,7 @@ const URL_RE = /(https?:\/\/\S+)/;
 /** One emoji for the kind of reply, on the first line (only if it has none already). */
 const LEAD_EMOJI: Record<string, string> = {
   confirm_ask: "📝", confirm_saved: "✅", filed: "✅", link: "👋", lang: "🌐", balance: "📊", checks: "📊",
+  suggest: "🤔", clarify: "🤔",
   error: "⚠️", not_pdf: "⚠️", too_large: "⚠️", unreadable: "⚠️", locked: "⚠️", failed: "⚠️", gave_up: "⚠️",
   no_checks: "⚠️", no_data_entry: "⚠️", hindi: "⚠️", link_failed: "⚠️", unknown: "🤔", compare_pick: "⚖️",
   calc: "🧮", lead: "👤", lead_pick: "👤", received: "⏳", queued: "⏳", still_working: "⏳", taking_long: "⏳",
