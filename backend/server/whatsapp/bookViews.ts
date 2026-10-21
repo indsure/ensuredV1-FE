@@ -6,7 +6,30 @@
 // this too. Pure: rows in, numbers out, no database and no clock except the `now` passed in.
 // ============================================================================
 
-import { deriveCoverView } from "../../../shared/policy";
+/* ── Effective cover, copied from shared/policy.ts (deriveCoverView -> effectiveCover) ──
+   A copy, not an import: the live server's shared/policy.ts predates deriveCoverView, and
+   replacing that file would change the live policy checks. tests/whatsappCoverParity.test.ts
+   (run on this repo, not on the server) proves the copy matches the portal's function.
+   Effective cover = what the policy can pay for ONE hospitalisation (founder, 2026-09-08). */
+const pos = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 0);
+function accruedBonusRupees(ncb: { current_bonus?: number | null; cap_percentage?: number | null } | null | undefined, base: number): number {
+  const raw = pos(ncb?.current_bonus);
+  if (raw === 0 || base <= 0) return 0;
+  if (raw <= 100) return 0;
+  const capPct = pos(ncb?.cap_percentage);
+  const ceiling = capPct > 0 ? base * (capPct / 100) : base;
+  return raw > ceiling ? 0 : raw;
+}
+export function effectiveCoverOf(cs: any): number {
+  const base = pos(cs?.base_sum_insured);
+  const computed = base <= 0 ? 0 : base
+    + (cs?.no_claim_bonus?.exists ? accruedBonusRupees(cs.no_claim_bonus, base) : 0)
+    + (cs?.top_up?.exists && cs.top_up.deductible_achievable === true ? pos(cs.top_up.sum_insured) : 0)
+    + (cs?.super_top_up?.exists && cs.super_top_up.deductible_achievable === true ? pos(cs.super_top_up.sum_insured) : 0);
+  const storedTotal = pos(cs?.total_effective_coverage);
+  const canExplainGap = cs?.restoration?.exists === true;
+  return computed <= 0 ? storedTotal : computed >= storedTotal ? computed : canExplainGap ? computed : storedTotal;
+}
 
 const DAY = 86_400_000;
 
@@ -112,7 +135,7 @@ export function policyCover(p: Pick<PortfolioPolicy, "insurance_type" | "sum_ins
   if (!isHealth(p)) return si;
   const cs = p.coverage;
   if (!cs || typeof cs !== "object") return si;
-  const effective = deriveCoverView({ coverage_structure: cs } as any).effectiveCover;
+  const effective = effectiveCoverOf(cs);
   return effective > 0 ? effective : si;
 }
 
