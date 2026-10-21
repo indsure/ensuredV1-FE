@@ -260,8 +260,9 @@ export class FakeEngine implements Engine {
   async book(_a: string, view: any, sort: any, type: string | null) { return BV.policyView(this.bookRows, view, sort, this.now, type); }
   async portfolio(_a: string, q: string) {
     const matches = this.customerRows.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
-    if (matches.length !== 1) return { matches };
-    const c = matches[0];
+    const exact = matches.filter((c) => c.name.trim().toLowerCase() === q.toLowerCase());
+    const c = matches.length === 1 ? matches[0] : exact.length === 1 ? exact[0] : null;
+    if (!c) return { matches };
     return { matches, customer: c, portfolio: BV.portfolioView(this.portfolioPolicies.get(c.id) ?? [], this.calcFor.get(c.id) ?? null, this.now) };
   }
   async policyValueRows() { return this.valueRows; }

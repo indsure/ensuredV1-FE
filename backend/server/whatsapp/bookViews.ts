@@ -11,7 +11,18 @@ import { deriveCoverView } from "../../../shared/policy";
 const DAY = 86_400_000;
 
 /** Days from now to a date, rounded up (PoliciesNew getDays, Insights daysUntil). */
-export function daysUntil(date: string | null | undefined, now: number): number | null {
+/** A Postgres `date` arrives as a JS Date (lib/db.ts sets no type parser), a JSON value as a
+ *  string. Either way: "YYYY-MM-DD", read from the local calendar day so no timezone shifts it. */
+export function ymd(v: unknown): string | null {
+  if (v == null || v === "") return null;
+  if (v instanceof Date) {
+    if (Number.isNaN(v.getTime())) return null;
+    return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, "0")}-${String(v.getDate()).padStart(2, "0")}`;
+  }
+  return String(v).slice(0, 10);
+}
+
+export function daysUntil(date: string | Date | null | undefined, now: number): number | null {
   if (!date) return null;
   const t = new Date(date).getTime();
   if (Number.isNaN(t)) return null;
@@ -67,6 +78,8 @@ export function policyView(rows: BookRow[], view: PolicyView, sort: PolicySort, 
   if (view === "expiring") list = list.filter(expiring);
   if (view === "switch") list = list.filter(toSwitch);
   if (view === "healthy") list = list.filter(healthy);
+  // "Lowest scores" is a health question: only scored health policies are listed and counted.
+  if (view === "all" && sort === "score") list = list.filter((r) => isHealth(r) && r.score !== null);
   list = [...list].sort((a, b) => {
     if (sort === "expiry") return (daysUntil(a.expiry_date, now) ?? 99999) - (daysUntil(b.expiry_date, now) ?? 99999);
     // Deliberately differs from the portal table: only health scores are ranked ("lowest
@@ -121,11 +134,11 @@ export function portfolioView(policies: PortfolioPolicy[], latestCalc: { result_
       const prem = parseAmount(p.extracted_data?.premium);
       if (prem != null) totalPremium = (totalPremium ?? 0) + prem;
     }
-    const np = p.extracted_data?.next_premium_date ? String(p.extracted_data.next_premium_date) : p.expiry_date;
+    const np = ymd(p.extracted_data?.next_premium_date) ?? ymd(p.expiry_date);
     if (np) {
       const d = new Date(np);
       if (!Number.isNaN(d.getTime()) && d >= today && (!nextPremium || d < new Date(nextPremium.date))) {
-        nextPremium = { date: np.slice(0, 10), name: p.policy_name || p.insurer, clientId: p.id };
+        nextPremium = { date: np, name: p.policy_name || p.insurer, clientId: p.id };
       }
     }
   }
@@ -173,6 +186,9 @@ export function claimView(
 ) {
   const have = (category: string) => new Set(docs.filter((d) => d.category === category && d.doc_type).map((d) => d.doc_type as string));
   const closed = claim.status === "settled" || claim.status === "rejected";
+  // Paperwork already deleted on its clock: the portal hides the checklist then (even if the
+  // claim was reopened), and there is no clock left to count down.
+  const purgedOn = ymd(claim.documents_purged_at);
   const personal = have("personal");
   const caseDocs = have("case");
   return {
@@ -186,10 +202,14 @@ export function claimView(
     ailment: claim.ailment ?? null,
     claimedAmount: parseAmount(claim.claimed_amount),
     settledAmount: parseAmount(claim.settled_amount),
-    daysToPurge: claim.days_to_purge ?? null,
+    daysToPurge: purgedOn ? null : claim.days_to_purge ?? null,
+    purgedOn,
+    // The portal's rule (routes.ts GET claims/:id can_extend): once, not closed, not yet
+    // purged, and only in the last CLAIM_EXTEND_UNLOCK_DAYS days. Computed by the route's SQL.
+    canExtend: !purgedOn && claim.can_extend === true,
     documentCount: docs.length,
-    // Once closed, the paperwork is gone by design: nothing is "missing".
-    missing: closed ? [] : [
+    // Once closed or purged, the paperwork is gone by design: nothing is "missing".
+    missing: closed || purgedOn ? [] : [
       ...PERSONAL_DOCS.filter((d) => !personal.has(d)),
       ...(CASE_DOCS[claim.claim_type] ?? []).filter((d) => !caseDocs.has(d)),
     ],

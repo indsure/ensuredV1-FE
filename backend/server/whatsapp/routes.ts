@@ -1274,6 +1274,9 @@ FACTS: ${JSON.stringify(facts)}`,
     }
   });
 
+  /** Same as routes.ts CLAIM_EXTEND_UNLOCK_DAYS: the one extension unlocks this close to the purge. */
+  const CLAIM_EXTEND_UNLOCK_DAYS = 5;
+
   /* ── Stage 1: read-only views of the book (bookViews.ts holds each portal page's rule) ──
      Every query is scoped to the linked advisor. Nothing here writes, except the access-log
      row a claim view leaves, exactly as the portal's claim page does. */
@@ -1292,7 +1295,8 @@ FACTS: ${JSON.stringify(facts)}`,
           ORDER BY c.created_at DESC LIMIT 30`,
         [agentId]
       );
-      res.json(queueView(r.rows.map((row: any) => ({ ...row, name: displayName(row) }))));
+      // My Queue falls back to the file name; so does this, rather than "Unnamed".
+      res.json(queueView(r.rows.map((row: any) => ({ ...row, name: displayName(row) ?? row.row_name ?? row.filename ?? null }))));
     } catch (err: any) {
       log.error("wa queue failed", { error: err?.message });
       res.status(500).json({ error: "Internal server error" });
@@ -1336,8 +1340,11 @@ FACTS: ${JSON.stringify(facts)}`,
         `SELECT id, name, phone, city FROM customers WHERE agent_id = $1 AND name ILIKE $2 ORDER BY name LIMIT 6`,
         [agentId, like]
       );
-      if (c.rows.length !== 1) return res.json({ matches: c.rows });
-      const cust = c.rows[0];
+      // "Ram" next to "Ramesh": an exact name wins, so every customer can be reached by name.
+      const exact = c.rows.filter((r: any) => String(r.name || "").trim().toLowerCase() === q.toLowerCase());
+      const one = c.rows.length === 1 ? c.rows[0] : exact.length === 1 ? exact[0] : null;
+      if (!one) return res.json({ matches: c.rows });
+      const cust = one;
       const [pols, calc] = await Promise.all([
         pool.query(
           `SELECT id, insurance_type, insurer, policy_name, sum_insured, expiry_date, score, extracted_data,
@@ -1380,11 +1387,15 @@ FACTS: ${JSON.stringify(facts)}`,
       const c = await pool.query(
         `SELECT c.id, c.status, c.claim_type, c.insurer, c.hospital, c.ailment, c.claimed_amount, c.settled_amount,
                 cu.name AS customer_name,
-                CASE WHEN c.purge_at IS NULL THEN NULL ELSE GREATEST(0, EXTRACT(DAY FROM (c.purge_at - now()))::int) END AS days_to_purge
+                CASE WHEN c.purge_at IS NULL THEN NULL ELSE GREATEST(0, EXTRACT(DAY FROM (c.purge_at - now()))::int) END AS days_to_purge,
+                c.documents_purged_at,
+                (c.purge_at IS NOT NULL AND NOT c.extension_used AND c.status NOT IN ('settled', 'rejected')
+                   AND c.documents_purged_at IS NULL
+                   AND now() >= c.purge_at - make_interval(days => $3)) AS can_extend
            FROM claims c
            LEFT JOIN customers cu ON cu.id = c.customer_id AND cu.agent_id = c.agent_id
           WHERE c.id = $1 AND c.agent_id = $2`,
-        [req.params.id, agentId]
+        [req.params.id, agentId, CLAIM_EXTEND_UNLOCK_DAYS]
       );
       if (!c.rows.length) return res.status(404).json({ error: "Not found" });
       const [docs, queries, events] = await Promise.all([

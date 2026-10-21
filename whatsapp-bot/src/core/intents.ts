@@ -188,43 +188,55 @@ export function parseCaption(textRaw: string): { name: string | null; phone: str
 
 const END = "[?.!।]*$";
 
+/** Words that are never a customer's name in these questions ("is my policy done?",
+ *  "how is my portfolio"). The name search is a loose ILIKE, so "my" would match "Ramya". */
+const NOT_A_PERSON = /^(?:my|all|the|this|that|it|his|her|their|our|your|a|an|mera|meri|mere)$|\bmy$|^(?:how|what)\b/;
+
 /** "is Ramesh's policy done?", "Ramesh ki policy ho gayi?" -> "ramesh". */
 export function statusName(textRaw: string): string | null {
   const t = norm(textRaw);
   const m = t.match(new RegExp(`^(?:is|has)\\s+(.+?)(?:'s)?\\s+(?:policy|report|check|pdf)\\s+(?:done|ready|finished|complete|completed|checked)(?:\\s+yet)?${END}`))
     || t.match(new RegExp(`^(.+?)\\s+(?:ki|ka|के|की|का)\\s+(?:policy|report|पॉलिसी|रिपोर्ट)\\s+(?:ho gayi|ho gaya|ready hai|ban gayi|bani|aa gayi|हो गई|तैयार है)${END}`));
-  return m ? m[1].trim() : null;
+  const name = m ? m[1].trim() : null;
+  return name && !NOT_A_PERSON.test(name) ? name : null;
 }
 
 /** "which policies should switch?", "lowest scores", "healthy policies". */
 export function bookAsk(textRaw: string): { view: "all" | "switch" | "healthy"; sort: "expiry" | "score" } | null {
-  const t = norm(textRaw);
-  if (/\b(should switch|need(?:s)? (?:to )?switch|to switch|weak policies|bad policies|policies (?:are |that are )?(?:weak|bad)|switch karni|switch karna|kamzor policy|kamzor policies)\b|कमज़ोर पॉलिसी|कमजोर पॉलिसी/.test(t)) return { view: "switch", sort: "score" };
-  if (/\b(healthy|good|strong) policies\b|\bpolicies (?:are |that are )?(?:healthy|good|strong)\b|अच्छी पॉलिसी/.test(t)) return { view: "healthy", sort: "score" };
-  if (/\b(lowest|worst|weakest) (?:health )?(?:scores?|policies)\b|\bsort(?:ed)? by score\b|\bscore (?:wise|order)\b/.test(t)) return { view: "all", sort: "score" };
+  // Whole-message patterns only: "Ramesh wants to switch to Niva" is about a lead, not a list.
+  const t = norm(textRaw).replace(/[?.!।]+$/, "");
+  if (/^(?:which|what|show(?: me)?|list|any)?\s*(?:of\s+)?(?:my\s+)?(?:health\s+)?(?:policies|policy)?\s*(?:that\s+|which\s+)?(?:should|need(?:s)?\s+to|must|to)\s+(?:be\s+)?switch(?:ed)?$/.test(t)
+    || /^(?:show\s+(?:me\s+)?|list\s+)?(?:my\s+)?(?:weak|bad)\s+(?:health\s+)?policies$/.test(t)
+    || /^(?:kaun\s*si|konsi|kaunsi)\s+polic(?:y|ies)\s+(?:switch|badalni)\s*(?:karni|chahiye)?(?:\s+(?:hai|hain|chahiye))?$/.test(t)
+    || /^(?:kamzor|कमज़ोर|कमजोर)\s+(?:policies|policy|पॉलिसी|पॉलिसियाँ)$/.test(t)) return { view: "switch", sort: "score" };
+  if (/^(?:show\s+(?:me\s+)?|list\s+)?(?:my\s+)?(?:healthy|good|strong)\s+policies$|^which\s+policies\s+are\s+(?:healthy|good|strong)$|^अच्छी\s+(?:पॉलिसी|पॉलिसियाँ)$/.test(t)) return { view: "healthy", sort: "score" };
+  if (/^(?:show\s+(?:me\s+)?)?(?:my\s+)?(?:lowest|worst|weakest)\s+(?:health\s+)?(?:scores?|policies)$|^sort(?:ed)?\s+by\s+score$/.test(t)) return { view: "all", sort: "score" };
   return null;
 }
 
 /** "Sunita's portfolio", "is Sunita covered enough?", "cover gap for Sunita". */
 export function portfolioName(textRaw: string): string | null {
   const t = norm(textRaw);
-  const m = t.match(new RegExp(`^(.+?)(?:'s)?\\s+portfolio${END}`))
+  // The Hinglish form first: "Ramesh ka portfolio" is Ramesh, not "ramesh ka".
+  const m = t.match(new RegExp(`^(.+?)\\s+(?:ka|ki|के|का|की)\\s+(?:portfolio|cover gap|पोर्टफोलियो)${END}`))
+    || t.match(new RegExp(`^(.+?)(?:'s)?\\s+portfolio${END}`))
     || t.match(new RegExp(`^portfolio\\s+(?:of\\s+|for\\s+)?(.+?)${END}`))
     || t.match(new RegExp(`^(?:is|are)\\s+(.+?)\\s+(?:covered enough|under-?insured|fully covered|covered properly)${END}`))
     || t.match(new RegExp(`^(?:cover gap|gap)\\s+(?:for\\s+|of\\s+)?(.+?)${END}`))
     || t.match(new RegExp(`^(.+?)\\s+(?:ka|ki|के|का|की)\\s+(?:portfolio|cover gap|पोर्टफोलियो)${END}`))
     || t.match(new RegExp(`^(.+?)\\s+(?:ka|ki|का|की)\\s+cover\\s+(?:kaafi|kafi|enough|पूरा)\\s+(?:hai|है)${END}`));
   const name = m ? m[1].trim() : null;
-  return name && !/^(my|all|the|mera|meri)$/.test(name) ? name : null;
+  return name && !NOT_A_PERSON.test(name) ? name : null;
 }
 
 function bookIntent(t: string): Intent | null {
   if (/^(?:what|which|any)\s+(?:checks?\s+)?(?:failed|didn'?t work|did not work|got stuck)|^failed(?: checks?| policies| uploads?)?[?.!]*$|^(?:my\s+)?queue[?.!]*$|^(?:stuck|pending|running) (?:checks?|uploads?)[?.!]*$|^(?:kya|kaun sa|konsa|kaunsi)\s+fail\b|^kya atka hai/.test(t)) return "queue";
   if (statusName(t)) return "status";
   if (bookAsk(t)) return "book";
-  if (portfolioName(t)) return "portfolio";
   if (/^(?:all\s+|my\s+)?(?:surrender values|policy values|values list|surrender list)[?.!]*$|^(?:sab(?:hi)?|saari)\s+surrender values?[?.!]*$/.test(t)) return "values";
   if (/^(?:how is|how'?s|hows)\s+my\s+(?:book|business|portfolio)[?.!]*$|^(?:insights|book summary|business summary|my insights|book insights)[?.!]*$|^(?:mera|meri)\s+(?:book|business)\s+kaisa\s+(?:hai|chal raha hai)[?.!]*$|^मेरा बिज़नेस कैसा है/.test(t)) return "insights";
+  // After insights: "how is my portfolio" is the book, not a customer called "how is my".
+  if (portfolioName(t)) return "portfolio";
   if (/\b(?:page|website|site) (?:stats|views|visits)\b|\bhow many (?:people )?(?:saw|visited|opened|viewed) my (?:page|website|site)\b|\bmy page (?:stats|views)\b|\b(?:page|website) par kitne log\b/.test(t)) return "pagestats";
   return null;
 }

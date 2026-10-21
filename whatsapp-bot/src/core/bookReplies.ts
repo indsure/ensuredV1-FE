@@ -8,7 +8,7 @@
  */
 
 import { b } from "./format.js";
-import { inr } from "./templates.js";
+import { failureReasonFix, inr } from "./templates.js";
 import { bookTotals, buildBook, STATE_ORDER, type BookRow as ValueRow } from "../shared/policyBook.js";
 
 type Links = { origin: string };
@@ -33,7 +33,7 @@ export type PortfolioData = {
 };
 export type ClaimDetailData = {
   id: string; customerName: string | null; claimType: string; status: string; stage: string; daysToPurge: number | null;
-  documentCount: number; missing: string[]; openQueries: { seq: number; question: string; raisedOn: string | null }[];
+  documentCount: number; purgedOn: string | null; canExtend: boolean; missing: string[]; openQueries: { seq: number; question: string; raisedOn: string | null }[];
 };
 export type InsightsData = {
   total: number; renewing30: number; expired: number; unknownExpiry: number; people: number | null;
@@ -61,7 +61,7 @@ export function queueReply(l: Links, q: QueueData): string {
   const out: string[] = [];
   if (q.failed.length) {
     out.push(`⚠️ ${plural(q.failed.length, "check", "checks")} could not finish:`);
-    q.failed.slice(0, 10).forEach((r, i) => out.push(`${i + 1}) ${b(r.name || "Unnamed")}${r.error ? ` · ${r.error}` : ""}`));
+    q.failed.slice(0, 10).forEach((r, i) => out.push(`${i + 1}) ${b(r.name || "Unnamed")}${r.error ? ` · ${failureReasonFix(r.error).reason}` : ""}`));
     out.push("Send the PDF again to retry, or fix it in My Queue:");
   }
   if (q.processing.length) {
@@ -78,7 +78,7 @@ export function statusReply(l: Links, q: string, rows: { clientId: string; statu
   return rows.slice(0, 5).map((r) => {
     const who = `${b(r.policyholderName || q)}${plan(r.insurer, r.policyName) ? ` · ${plan(r.insurer, r.policyName)}` : ""}`;
     if (r.status === "done") return `✅ ${who}: ready.\n${l.origin}/agent/policies/${r.clientId}`;
-    if (r.status === "error") return `⚠️ ${who}: could not finish${r.errorMessage ? ` (${r.errorMessage})` : ""}. Send the PDF again to retry.`;
+    if (r.status === "error") return `⚠️ ${who}: could not finish${r.errorMessage ? ` (${failureReasonFix(r.errorMessage).reason})` : ""}. Send the PDF again to retry.`;
     return `⏳ ${who}: still being checked. It usually takes a minute or two.`;
   }).join("\n\n");
 }
@@ -109,7 +109,7 @@ export function bookReply(l: Links, view: BookViewName, sort: BookSort, d: BookD
 
 export function portfolioReply(l: Links, q: string, d: PortfolioData): string {
   if (!d.matches.length) return `I couldn't find a customer called "${q}". Customers are added in the portal, or when you file a policy under a name.`;
-  if (d.matches.length > 1 || !d.portfolio || !d.customer) {
+  if (!d.portfolio || !d.customer) {
     return `More than one customer matches "${q}":\n${d.matches.map((m, i) => `${i + 1}) ${m.name}${m.city ? ` · ${m.city}` : ""}`).join("\n")}\nSay the full name, for example: ${d.matches[0].name} portfolio`;
   }
   const p = d.portfolio;
@@ -189,14 +189,22 @@ export function valuesReply(l: Links, source: any[], asOf?: string): string {
 /** Lines added under the existing one-claim reply. The portal label "Aadhaar, patient" (a long dash in the portal) is
  *  shown with a comma: the bot never sends a long dash. */
 export function claimDetailLines(d: ClaimDetailData): string[] {
-  const out = [`Stage: ${d.stage}`];
+  // The claim reply above already shows its status, so no second "stage" line.
+  const out: string[] = [];
+  if (d.purgedOn) {
+    out.push(`The documents were deleted on ${d.purgedOn}, as planned for closed paperwork.`);
+    return out;
+  }
   if (d.missing.length) {
     out.push(`Still missing (${d.missing.length}):`);
     for (const m of d.missing.slice(0, 12)) out.push(`• ${m.replace(/\s*\u2014\s*/g, ", ")}`);
   } else if (d.status !== "settled" && d.status !== "rejected") {
     out.push("Every document on the checklist is in.");
   }
-  if (d.daysToPurge !== null) out.push(`Documents are deleted in ${plural(d.daysToPurge, "day", "days")}. You can extend once in the portal.`);
+  if (d.daysToPurge !== null) {
+    out.push(`Documents are deleted in ${plural(d.daysToPurge, "day", "days")}.`);
+    if (d.canExtend) out.push("You can extend this once, by 30 days, in the portal.");
+  }
   return out;
 }
 

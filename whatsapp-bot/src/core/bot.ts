@@ -122,6 +122,10 @@ const UNDO_WINDOW_MS = 15 * 60_000;
 /** A hello on its own: answered by name, with what is waiting today. */
 const GREETING = /^(?:hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|jai shri krishna|good (?:morning|afternoon|evening)|gm)(?:\s+(?:ji|sir|madam|bhai|there|team))?[.!🙏 ]*$|^(?:नमस्ते|नमस्कार|राम राम)(?:\s+जी)?[.!।🙏 ]*$/iu;
 
+/** Read-only views whose rules match a whole question, at any length. The model's form has
+ *  no action for them, so sending these to it (paid plans) would lose the answer. */
+const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats"]);
+
 const FAST_RULE = new Set(["help", "leadlist", "queue", "status", "book", "portfolio", "values", "insights", "pagestats", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
 
 type Conv = { state: State; currentClientId: string | null; pending: any; updatedAt: string | null };
@@ -871,7 +875,7 @@ export class Bot {
     // Free-form messages go to the model (when it is switched on): it fills a fixed form and
     // the code below does everything else. Short, clear commands skip it and cost nothing.
     const words = text.split(/\s+/).length;
-    const fastRule = !!intent && FAST_RULE.has(intent) && (words <= 4 || /^(compare|find|search|lookup|share|remind|help)\b/i.test(text));
+    const fastRule = !!intent && (ALWAYS_RULE.has(intent) || FAST_RULE.has(intent)) && (ALWAYS_RULE.has(intent) || words <= 4 || /^(compare|find|search|lookup|share|remind|help)\b/i.test(text));
     const answering = conv.state.startsWith("AWAITING") && !intent;
     // A lead change the rules read with certainty ("Aniket ka followup 3rd November",
     // "Ramesh won", "sabke reminders 1st November kardo") goes straight to its confirmation:

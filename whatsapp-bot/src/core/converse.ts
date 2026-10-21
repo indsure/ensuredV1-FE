@@ -63,7 +63,7 @@ const RULES: Rule[] = [
   // One claim: "where is Sunita's claim", "Sunita ka claim kahan tak", "what's pending for Sunita"
   [new RegExp(`^(?:where is|where'?s|status of|what'?s the status of)\\s+(.+?)'s\\s+claim${END}`, "i"), (m) => `claims ${m[1]}`, true],
   [new RegExp(`^(.+?)\\s+(?:ka|ki)\\s+claim\\b.*$`, "i"), (m) => `claims ${m[1]}`, true],
-  [new RegExp(`^what'?s\\s+(?:pending|missing|left)\\s+(?:for|in|on)\\s+(.+?)(?:'s claim)?${END}`, "i"), (m) => `claims ${m[1]}`],
+  [new RegExp(`^what'?s\\s+(?:pending|missing|left)\\s+(?:for|in|on)\\s+(?!(?:today|tomorrow|now|me|this|the|my|aaj|kal)\\b)(.+?)(?:'s claim)?${END}`, "i"), (m) => `claims ${m[1]}`],
 
   // Who opened a report
   [new RegExp(`^(?:did|has)\\s+.+?\\s+(?:open|opened|see|seen|read|view|viewed)\\s+(?:the\\s+|his\\s+|her\\s+|my\\s+)?report${END}`, "i"), () => "views"],

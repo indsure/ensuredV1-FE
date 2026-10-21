@@ -41,7 +41,8 @@ test("policy tabs: should switch and healthy are health only; expiring is 0 to 3
   assert.deepEqual(policyView(rows, "switch", "expiry", NOW).rows.map((r) => r.name), ["A"], "a motor 18 is never 'switch'");
   assert.deepEqual(policyView(rows, "expiring", "expiry", NOW).rows.map((r) => r.name), ["A", "C"]);
   assert.deepEqual(policyView(rows, "all", "score", NOW).rows.map((r) => r.name).slice(0, 2), ["A", "B"], "health scores ranked, lowest first; motor 18 never 'worst'");
-  assert.equal(policyView(rows, "all", "score", NOW).rows.find((r) => r.name === "C")!.score, null, "motor score not shown as a health score");
+  assert.equal(policyView(rows, "all", "name", NOW).rows.find((r) => r.name === "C")!.score, null, "motor score not shown as a health score");
+  assert.deepEqual(policyView(rows, "all", "score", NOW).rows.map((r) => r.name), ["A", "B"], "lowest scores lists scored health policies only");
   assert.deepEqual(policyView(rows, "all", "name", NOW).rows.map((r) => r.name), ["A", "B", "C", "D"]);
   assert.deepEqual(policyView(rows, "all", "expiry", NOW, "motor").rows.map((r) => r.name), ["C"]);
 });
@@ -106,4 +107,20 @@ test("page stats: totals, best source, app and device with plain labels", () => 
   assert.deepEqual(v.bySource[0], { label: "Whatsapp", views: 7 });
   assert.equal(v.bySource.find((s) => s.label === "Direct link")?.views, 2);
   assert.deepEqual(v.byDevice[0], { label: "Phone", views: 10 });
+});
+
+test("critic: Postgres dates arrive as JS Date objects and never crash a view", () => {
+  const pols = [{ id: "p1", name: null, insurance_type: "health", insurer: "Care", policy_name: "Supreme", sum_insured: 500000, expiry_date: new Date(2026, 11, 5), score: 70, extracted_data: null, coverage: null }];
+  assert.deepEqual(portfolioView(pols as any, null, NOW).nextPremium, { date: "2026-12-05", name: "Supreme", clientId: "p1" });
+  assert.equal(policyView([{ id: "a", name: "A", insurance_type: "health", insurer: null, policy_name: null, score: 60, expiry_date: new Date(NOW + 5 * 86_400_000) as any }], "expiring", "expiry", NOW).matched, 1);
+});
+
+test("critic: purged paperwork hides the checklist and the clock; extension only when allowed", () => {
+  const claim = { id: "c", status: "under_process", claim_type: "cashless", days_to_purge: 0, documents_purged_at: new Date(2026, 8, 30), can_extend: true };
+  const v = claimView(claim, [], [], []);
+  assert.deepEqual(v.missing, []);
+  assert.equal(v.daysToPurge, null);
+  assert.equal(v.purgedOn, "2026-09-30");
+  assert.equal(v.canExtend, false);
+  assert.equal(claimView({ ...claim, documents_purged_at: null, days_to_purge: 3, can_extend: true }, [], [], []).canExtend, true);
 });

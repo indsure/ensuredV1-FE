@@ -230,6 +230,8 @@ const LINES: Line[] = [
 
   L("No life or term policies yet. Send one as a PDF to add it.", "Abhi koi life ya term policy nahi hai. Jodne ke liye PDF bhejiye.", "अभी कोई लाइफ़ या टर्म पॉलिसी नहीं है। जोड़ने के लिए PDF भेजिए।"),
   L("📋 Surrender values: {x}", "📋 Surrender values: {x}", "📋 सरेंडर वैल्यू: {x}"),
+  L("Insurer quotes you entered: Not available", "Aapke daale insurer quotes: Uplabdh nahi", "आपके डाले बीमा कंपनी के कोट: उपलब्ध नहीं"),
+  L("Calculated from checked policy terms: Not available", "Checked policy terms se nikala: Uplabdh nahi", "चेक की हुई पॉलिसी शर्तों से निकाला: उपलब्ध नहीं"),
   L("Insurer quotes you entered: {x}", "Aapke daale insurer quotes: {x}", "आपके डाले बीमा कंपनी के कोट: {x}"),
   L("Calculated from checked policy terms: {x}", "Checked policy terms se nikala: {x}", "चेक की हुई पॉलिसी शर्तों से निकाला: {x}"),
   L("Need your attention: {n}", "Aapka dhyan chahiye: {n}", "आपका ध्यान चाहिए: {n}"),
@@ -250,11 +252,12 @@ const LINES: Line[] = [
     ["Check with the insurer that the quote is still current.", "Insurer se pakka kijiye ki quote abhi bhi sahi hai.", "बीमा कंपनी से पक्का कीजिए कि कोट अभी भी सही है।"],
   ] as const).map(([e, h, d]) => L(`   Next: ${e}`, `   Aage: ${h}`, `   आगे: ${d}`)),
 
-  L("Stage: {s}", "Stage: {s}", "चरण: {s}"),
   L("Still missing ({n}):", "Abhi baaki ({n}):", "अभी बाकी ({n}):"),
   L("Every document on the checklist is in.", "Checklist ke saare documents aa gaye hain.", "चेकलिस्ट के सारे डॉक्यूमेंट आ गए हैं।"),
-  L("Documents are deleted in 1 day. You can extend once in the portal.", "Documents 1 din mein delete ho jayenge. Portal mein ek baar badha sakte hain.", "डॉक्यूमेंट 1 दिन में डिलीट हो जाएँगे। पोर्टल में एक बार बढ़ा सकते हैं।"),
-  L("Documents are deleted in {n} days. You can extend once in the portal.", "Documents {n} din mein delete ho jayenge. Portal mein ek baar badha sakte hain.", "डॉक्यूमेंट {n} दिन में डिलीट हो जाएँगे। पोर्टल में एक बार बढ़ा सकते हैं।"),
+  L("Documents are deleted in 1 day.", "Documents 1 din mein delete ho jayenge.", "डॉक्यूमेंट 1 दिन में डिलीट हो जाएँगे।"),
+  L("Documents are deleted in {n} days.", "Documents {n} din mein delete ho jayenge.", "डॉक्यूमेंट {n} दिन में डिलीट हो जाएँगे।"),
+  L("You can extend this once, by 30 days, in the portal.", "Portal mein ek baar 30 din ke liye badha sakte hain.", "पोर्टल में एक बार 30 दिन के लिए बढ़ा सकते हैं।"),
+  L("The documents were deleted on {d}, as planned for closed paperwork.", "Documents {d} ko delete ho gaye, jaisa band claim ke liye tay tha.", "डॉक्यूमेंट {d} को डिलीट हो गए, जैसा बंद क्लेम के लिए तय था।"),
 
   L("No checked policies yet. Send a policy PDF to start your book.", "Abhi koi checked policy nahi hai. Shuru karne ke liye policy ki PDF bhejiye.", "अभी कोई चेक की हुई पॉलिसी नहीं है। शुरू करने के लिए पॉलिसी की PDF भेजिए।"),
   L("📊 Your book: {x}", "📊 Aapki book: {x}", "📊 आपकी बुक: {x}"),

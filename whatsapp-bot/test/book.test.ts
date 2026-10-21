@@ -123,7 +123,8 @@ test("one claim by name: stage, missing documents with no long dash, document cl
   });
   await bot.handle(text("where is Sunita's claim?"));
   const r = transport.lastRaw();
-  assert.match(r, /Stage: Insurer query open/);
+  assert.match(r, /Status: Query \(cashless\)/);
+  assert.doesNotMatch(r, /Stage:/, "one status line, not two");
   assert.match(r, /Still missing \(10\):/);
   assert.match(r, /Aadhaar, patient/);
   assert.doesNotMatch(r, /\u2014/);
@@ -131,7 +132,7 @@ test("one claim by name: stage, missing documents with no long dash, document cl
   assert.match(r, /deleted in 12 days/);
   assert.deepEqual(engine.claimViews, ["cl1"]);
   await bot.handle(text("Sunita ka claim kahan tak pahuncha"));
-  assert.match(transport.last(), /Stage: Insurer query open/);
+  assert.match(transport.last(), /Status: Query/);
 });
 
 test("how is my book: the Insights numbers", async () => {
@@ -181,7 +182,7 @@ test("every new fixed line has Hindi and Hinglish", () => {
     bookReply(L, "switch", "score", { counts: { total: 1, expiringSoon: 0, shouldSwitch: 0, healthy: 0 }, matched: 0, rows: [] }),
     portfolioReply(L, "x", { matches: [{ id: "c", name: "Sunita", phone: null, city: null }], customer: { id: "c", name: "Sunita" }, portfolio: { policyCount: 1, byType: { health: 1 }, totalCover: 500000, healthCover: 500000, totalPremium: 1000, nextPremium: { date: "2026-11-01", name: "Supreme", clientId: "p" }, shouldSwitch: 1, recommended: 900000, gap: 400000, policies: [] } }),
     valuesReply(L, [{ id: "v", policyholder_name: "G", insurance_type: "life", status: "done", extracted_data: {} }]),
-    claimDetailLines({ id: "c", customerName: null, claimType: "cashless", status: "opened", stage: "Claim opened", daysToPurge: 5, documentCount: 0, missing: ["PAN card"], openQueries: [] }).join("\n"),
+    claimDetailLines({ id: "c", customerName: null, claimType: "cashless", status: "opened", stage: "Claim opened", daysToPurge: 5, purgedOn: null, canExtend: true, documentCount: 0, missing: ["PAN card"], openQueries: [] }).join("\n"),
     insightsReply(L, { total: 2, renewing30: 1, expired: 0, unknownExpiry: 1, people: 1, byType: [{ type: "health", count: 2 }], renewalsByMonth: [{ label: "Oct 2026", count: 1 }], scoredHealth: 1, avgHealthScore: 60, weakHealth: 1 }),
     pageStatsReply(L, { page: { slug: "x" }, stats: { totalViews: 3, leads: 1, bySource: [{ label: "Direct link", views: 3 }], byApp: [{ label: "Web browser", views: 3 }], byDevice: [{ label: "Phone", views: 3 }] } }),
     pageStatsReply(L, { page: null }),
@@ -196,4 +197,86 @@ test("every new fixed line has Hindi and Hinglish", () => {
     }
   }
   assert.deepEqual(missing, []);
+});
+
+/* ── The critic's findings: each one must stay fixed ── */
+
+test("critic: a Postgres date (a JS Date) in a portfolio never crashes it", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.now = NOW;
+  engine.customerRows = [{ id: "c1", name: "Sunita Rao", phone: null, city: null }];
+  engine.portfolioPolicies.set("c1", [
+    { id: "p1", name: null, insurance_type: "health", insurer: "Care", policy_name: "Supreme", sum_insured: 500000, expiry_date: new Date(2026, 11, 5), score: 75, extracted_data: null, coverage: null },
+  ]);
+  await bot.handle(text("Sunita portfolio"));
+  assert.match(transport.last(), /Next premium: 5 Dec 2026 \(Supreme\)/);
+});
+
+test("critic: raw pipeline errors never reach the advisor, only a plain reason", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.queueRows = [{ id: "a", name: "Ramesh", status: "error", error_message: "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/x gemini-3.1-pro-preview [429]", created_at: "x" }];
+  await bot.handle(text("what failed?"));
+  const r = transport.last();
+  assert.doesNotMatch(r, /Google|gemini|googleapis|\bAI\b|429/);
+  assert.match(r, /something in the file stopped me/);
+});
+
+test("critic: the extension is offered only when the portal allows it; purged paperwork is said plainly", () => {
+  const base = { id: "c", customerName: null, claimType: "cashless", status: "submitted", stage: "", daysToPurge: 20, purgedOn: null, canExtend: false, documentCount: 0, missing: [], openQueries: [] };
+  assert.doesNotMatch(claimDetailLines(base).join("\n"), /extend/);
+  assert.match(claimDetailLines({ ...base, daysToPurge: 3, canExtend: true }).join("\n"), /extend this once, by 30 days/);
+  const gone = claimDetailLines({ ...base, daysToPurge: null, purgedOn: "2026-09-30", missing: [] }).join("\n");
+  assert.match(gone, /deleted on 2026-09-30/);
+  assert.doesNotMatch(gone, /missing|deleted in/i);
+});
+
+test("critic: names are read right, and 'my' is never a customer", () => {
+  assert.equal(ruleIntent("Ramesh ka portfolio"), "portfolio");
+  assert.equal(ruleIntent("how is my portfolio"), "insights");
+  assert.equal(ruleIntent("is my policy done?"), null);
+  assert.equal(ruleIntent("has the report ready"), null);
+});
+
+test("critic: 'wants to switch' about a lead is never the should-switch list", () => {
+  for (const t of ["Ramesh wants to switch to Niva", "Neha has bad policies, wants to switch", "Ramesh is looking for good policies, call friday"]) {
+    assert.notEqual(ruleIntent(t), "book", t);
+  }
+  for (const t of ["which policies should switch?", "policies to switch", "show my weak policies", "konsi policy switch karni hai"]) {
+    assert.equal(ruleIntent(t), "book", t);
+  }
+});
+
+test("critic: 'what's pending for today' is not a claim search", async () => {
+  const { bot, transport } = makeBot();
+  await bot.handle(text("what's pending for today"));
+  assert.doesNotMatch(transport.last(), /No claims matching/);
+});
+
+test("critic: paid advisors get the view for a long question too, without spending a smart reply", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.modelOn = true;
+  engine.pageRow = { slug: "deep-shah" };
+  engine.pageViewRows = [{ utm_source: "whatsapp", app: "whatsapp", device: "mobile", views: 2 }];
+  const before = engine.understandCalls.length;
+  await bot.handle(text("how many people visited my website"));
+  assert.equal(engine.understandCalls.length, before);
+  assert.match(transport.last(), /last 30 days: 2 visits/);
+});
+
+test("critic: an exact customer name wins over a longer one ('Ram' next to 'Ramesh')", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.customerRows = [{ id: "c1", name: "Ram", phone: null, city: null }, { id: "c2", name: "Ramesh", phone: null, city: null }];
+  await bot.handle(text("Ram portfolio"));
+  assert.match(transport.last(), /\*Ram\*: 0 policies/);
+});
+
+test("critic: 'lowest health scores' counts only scored health policies", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.bookRows = [
+    { id: "a", name: "A", insurance_type: "health", insurer: null, policy_name: null, score: 50, expiry_date: null },
+    { id: "b", name: "B", insurance_type: "motor", insurer: null, policy_name: null, score: 18, expiry_date: null },
+    { id: "c", name: "C", insurance_type: "health", insurer: null, policy_name: null, score: null, expiry_date: null },
+  ];
+  await bot.handle(text("lowest scores"));
+  assert.match(transport.last(), /Lowest health scores first: 1/);
 });
