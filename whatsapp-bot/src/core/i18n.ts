@@ -277,6 +277,7 @@ const LINES: Line[] = [
   L("{name} is already a customer.", "{name} pehle se customer hain.", "{name} पहले से कस्टमर हैं।"),
   L("That can't be undone here any more: it was changed since, or something was added to it. Please fix it in the portal.", "Yeh ab yahan se undo nahi ho sakta: isme badlav hua ya kuch joda gaya. Portal mein theek kijiye.", "यह अब यहाँ से undo नहीं हो सकता: इसमें बदलाव हुआ या कुछ जोड़ा गया। पोर्टल में ठीक कीजिए।"),
   L("Undone: removed the customer {name}.", "Undo ho gaya: customer {name} hata diya.", "Undo हो गया: कस्टमर {name} हटा दिया।"),
+  L("The customer {name} stays: something was added to it or it was changed. Remove it in the portal if needed.", "Customer {name} rahenge: unme kuch joda gaya ya badla gaya. Zarurat ho to portal mein hataiye.", "कस्टमर {name} रहेंगे: उनमें कुछ जोड़ा गया या बदला गया। ज़रूरत हो तो पोर्टल में हटाइए।"),
   L("Undone: {name} is a lead again.", "Undo ho gaya: {name} phir se lead hain.", "Undo हो गया: {name} फिर से लीड हैं।"),
   L("Undone: {n} changes are back as they were.", "Undo ho gaya: {n} badlav pehle jaise ho gaye.", "Undo हो गया: {n} बदलाव पहले जैसे हो गए।"),
   L("Type it like: make Amit a customer", "Aise likhiye: make Amit a customer", "ऐसे लिखिए: make Amit a customer"),

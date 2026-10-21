@@ -139,12 +139,12 @@ export interface Engine {
   leadRestore(agentId: string, id: string, before: { status: string | null; next_follow_up: string | null; notes: string | null }, expect?: { status: string | null; next_follow_up: string | null; notes: string | null }): Promise<LeadRow | null>;
   /* Stage 2a: edits (backend whatsapp/edits.ts). A refused write is a result, never a throw. */
   leadGet(agentId: string, id: string): Promise<FullLead | null>;
-  leadEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore?: boolean): Promise<WriteResult<{ lead: FullLead; before: FullLead }>>;
+  leadEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore?: boolean, token?: string): Promise<WriteResult<{ lead: FullLead; before: FullLead; undoToken?: string }>>;
   leadConvert(agentId: string, id: string): Promise<WriteResult<{ customer: FullCustomer; before: { status: string } }>>;
   leadUnconvert(agentId: string, id: string, customerId: string, status: string): Promise<WriteResult<{ customerRemoved: boolean }>>;
   customerGet(agentId: string, id: string): Promise<FullCustomer | null>;
   customerCreate(agentId: string, c: Record<string, unknown>): Promise<WriteResult<{ customer: FullCustomer; duplicate: boolean }>>;
-  customerEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore?: boolean): Promise<WriteResult<{ customer: FullCustomer; before: FullCustomer }>>;
+  customerEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore?: boolean, token?: string): Promise<WriteResult<{ customer: FullCustomer; before: FullCustomer; undoToken?: string }>>;
   /** `created`: the values it was created with; it is removed only if it still holds them. */
   customerUndoCreate(agentId: string, id: string, created: Record<string, unknown>): Promise<boolean>;
   fileClient(agentId: string, clientId: string, customerId: string | null, expectCustomerId: string | null): Promise<WriteResult<{ customerId: string | null }>>;
@@ -288,14 +288,14 @@ export class HttpEngine implements Engine {
   async leadGet(agentId: string, id: string) {
     try { return (await this.call(`/api/internal/wa/leads/${id}`, { agentId })).lead; } catch (e: any) { if (e?.status === 404) return null; throw e; }
   }
-  leadEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false) { return this.write<{ lead: FullLead; before: FullLead }>(`/api/internal/wa/leads/${id}/edit`, agentId, { set, expect, ...(restore ? { restore: true } : {}) }); }
+  leadEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false, token?: string) { return this.write<{ lead: FullLead; before: FullLead; undoToken?: string }>(`/api/internal/wa/leads/${id}/edit`, agentId, { set, expect, ...(restore ? { restore: true, token } : {}) }); }
   leadConvert(agentId: string, id: string) { return this.write<{ customer: FullCustomer; before: { status: string } }>(`/api/internal/wa/leads/${id}/convert`, agentId, {}); }
   leadUnconvert(agentId: string, id: string, customerId: string, status: string) { return this.write<{ customerRemoved: boolean }>(`/api/internal/wa/leads/${id}/unconvert`, agentId, { customerId, status }); }
   async customerGet(agentId: string, id: string) {
     try { return (await this.call(`/api/internal/wa/customers/${id}`, { agentId })).customer; } catch (e: any) { if (e?.status === 404) return null; throw e; }
   }
   customerCreate(agentId: string, c: Record<string, unknown>) { return this.write<{ customer: FullCustomer; duplicate: boolean }>("/api/internal/wa/customers", agentId, c); }
-  customerEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false) { return this.write<{ customer: FullCustomer; before: FullCustomer }>(`/api/internal/wa/customers/${id}/edit`, agentId, { set, expect, ...(restore ? { restore: true } : {}) }); }
+  customerEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false, token?: string) { return this.write<{ customer: FullCustomer; before: FullCustomer; undoToken?: string }>(`/api/internal/wa/customers/${id}/edit`, agentId, { set, expect, ...(restore ? { restore: true, token } : {}) }); }
   async customerUndoCreate(agentId: string, id: string, created: Record<string, unknown>) { return (await this.write(`/api/internal/wa/customers/${id}/undo-create`, agentId, { expect: created })).ok; }
   fileClient(agentId: string, clientId: string, customerId: string | null, expectCustomerId: string | null) {
     return this.write<{ customerId: string | null }>(`/api/internal/wa/clients/${clientId}/file`, agentId, { customerId, expectCustomerId });

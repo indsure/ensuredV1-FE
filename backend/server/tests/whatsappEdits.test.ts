@@ -191,10 +191,27 @@ test("an edit without the value seen before is refused (no blind writes)", async
   assert.ok(!h.calls.some((c) => c.sql.startsWith("UPDATE")));
 });
 
-test("undo (restore) puts back a value today's rules would reject, still compare-before", async () => {
-  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [{ ...leadRow, insurance_interest: "health insurance" }], rowCount: 1 } : { rows: [leadRow] }));
+test("undo (restore) needs the server's own token: arbitrary text can never be written that way", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [{ ...leadRow, phone: "anything at all" }], rowCount: 1 } : { rows: [leadRow] }));
+  const forged = await h.call("POST /api/internal/wa/leads/:id/edit", { id: LEAD }, { restore: true, set: { phone: "anything at all" }, expect: { phone: "9800000000" } });
+  assert.equal(forged.status, 400);
+  assert.match(forged.json.fields.token, /only for a change saved here/);
+  const wrong = await h.call("POST /api/internal/wa/leads/:id/edit", { id: LEAD }, { restore: true, set: { phone: "anything at all" }, expect: { phone: "9800000000" }, token: "f".repeat(64) });
+  assert.equal(wrong.status, 400);
+  assert.ok(!h.calls.some((c) => c.sql.startsWith("UPDATE")), "nothing written without a valid token");
+});
+
+test("undo (restore) puts back a value today's rules would reject, with the token from the save, still compare-before", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const before = { ...leadRow, insurance_interest: "health insurance", phone: "022 2345 6789" };
+  const saved = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [{ ...before, insurance_interest: "Motor", phone: "9812345678" }], rowCount: 1 } : { rows: [before] }));
+  const s1 = await saved.call("POST /api/internal/wa/leads/:id/edit", { id: LEAD }, { set: { insurance_interest: "motor", phone: "9812345678" }, expect: { insurance_interest: "health insurance", phone: "022 2345 6789" } });
+  assert.equal(s1.status, 200);
+  assert.match(s1.json.undoToken, /^[0-9a-f]{64}$/);
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [before], rowCount: 1 } : { rows: [{ ...before, insurance_interest: "Motor", phone: "9812345678" }] }));
   const r = await h.call("POST /api/internal/wa/leads/:id/edit", { id: LEAD },
-    { restore: true, set: { insurance_interest: "health insurance", phone: "022 2345 6789" }, expect: { insurance_interest: "Motor", phone: "9812345678" } });
+    { restore: true, set: { insurance_interest: "health insurance", phone: "022 2345 6789" }, expect: { insurance_interest: "Motor", phone: "9812345678" }, token: s1.json.undoToken });
   assert.equal(r.status, 200);
   const upd = h.calls.find((c) => c.sql.startsWith("UPDATE"))!;
   assert.ok(upd.params.includes("health insurance") && upd.params.includes("022 2345 6789"));

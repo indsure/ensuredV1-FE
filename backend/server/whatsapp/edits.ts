@@ -23,6 +23,24 @@ type Deps = {
   scopedAgent: (req: any, res: any) => Promise<string | null>;
 };
 
+import crypto from "crypto";
+
+/**
+ * UNDO may only put back a value the server itself saw before an edit. Each saved edit returns
+ * a token signed with the bot key over (table, id, before, after); a restore must bring the
+ * matching token. So the restore path, which skips today's format rules, can never be used to
+ * write arbitrary text.
+ */
+export function undoToken(table: string, id: string, before: Record<string, unknown>, after: Record<string, unknown>): string {
+  const keys = Object.keys(before).sort();
+  const payload = JSON.stringify([table, id, keys.map((k) => [k, norm(before[k])]), keys.map((k) => [k, norm(after[k])])]);
+  return crypto.createHmac("sha256", process.env.WA_BOT_KEY || "").update(payload).digest("hex");
+}
+function tokenOk(given: unknown, want: string): boolean {
+  const a = Buffer.from(String(given || "")); const b = Buffer.from(want);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect } from "./editRules";
 import type { FieldErrors, Clean } from "./editRules";
@@ -77,13 +95,17 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const known = Object.fromEntries(Object.entries(expect).filter(([k]) => LEAD_EDIT_COLS.includes(k)));
       const missing = missingExpect(set, known);
       if (missing.length) return bad(res, Object.fromEntries(missing.map((k) => [k, "the value seen before is required"])));
+      if (req.body?.restore === true && !tokenOk(req.body?.token, undoToken("agent_leads", req.params.id, set, known))) return bad(res, { token: "undo is only for a change saved here" });
       const before = await pool.query(`SELECT ${LEAD_OUT} FROM agent_leads WHERE id = $1 AND agent_id = $2`, [req.params.id, agentId]);
       if (!before.rows.length) return res.status(404).json({ error: "Not found" });
       const q = guardedUpdate("agent_leads", LEAD_EDIT_COLS, set, known, "updated_at = now()");
       const r = await pool.query(q.sql, [req.params.id, agentId, ...q.params]);
       if (!r.rowCount) return changed(res);
       void audit(agentId, req.params.id, "wa_lead_edit", "/api/internal/wa/leads/:id/edit");
-      res.json({ lead: pick(r.rows[0], LEAD_OUT), before: pick(before.rows[0], LEAD_OUT) });
+      const b0 = pick(before.rows[0], LEAD_OUT), a0 = pick(r.rows[0], LEAD_OUT);
+      const keys = Object.keys(set);
+      const token = undoToken("agent_leads", req.params.id, Object.fromEntries(keys.map((k) => [k, b0[k]])), Object.fromEntries(keys.map((k) => [k, a0[k]])));
+      res.json({ lead: a0, before: b0, undoToken: token });
     } catch (err) { fail(res, "lead edit", err); }
   });
 
@@ -197,13 +219,17 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const known = Object.fromEntries(Object.entries(expect).filter(([k]) => CUSTOMER_EDIT_COLS.includes(k)));
       const missing = missingExpect(set, known);
       if (missing.length) return bad(res, Object.fromEntries(missing.map((k) => [k, "the value seen before is required"])));
+      if (req.body?.restore === true && !tokenOk(req.body?.token, undoToken("customers", req.params.id, set, known))) return bad(res, { token: "undo is only for a change saved here" });
       const before = await pool.query(`SELECT ${CUSTOMER_OUT} FROM customers WHERE id = $1 AND agent_id = $2`, [req.params.id, agentId]);
       if (!before.rows.length) return res.status(404).json({ error: "Not found" });
       const q = guardedUpdate("customers", CUSTOMER_EDIT_COLS, set, known);
       const r = await pool.query(q.sql, [req.params.id, agentId, ...q.params]);
       if (!r.rowCount) return changed(res);
       void audit(agentId, req.params.id, "wa_customer_edit", "/api/internal/wa/customers/:id/edit");
-      res.json({ customer: pick(r.rows[0], CUSTOMER_OUT), before: pick(before.rows[0], CUSTOMER_OUT) });
+      const b0 = pick(before.rows[0], CUSTOMER_OUT), a0 = pick(r.rows[0], CUSTOMER_OUT);
+      const keys = Object.keys(set);
+      const token = undoToken("customers", req.params.id, Object.fromEntries(keys.map((k) => [k, b0[k]])), Object.fromEntries(keys.map((k) => [k, a0[k]])));
+      res.json({ customer: a0, before: b0, undoToken: token });
     } catch (err) { fail(res, "customer edit", err); }
   });
 

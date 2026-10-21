@@ -130,7 +130,7 @@ type LastChange =
   | { kind: "update"; leadId: string; name: string; before: LeadBits; after?: LeadBits; at: number }
   | { kind: "bulk"; items: LastChange[]; name: string; at: number }
   /* Stage 2a: every one is undone through a route that first checks nothing moved since */
-  | { kind: "edit"; target: "lead" | "customer"; id: string; name: string; field: Field; from: unknown; to: unknown; at: number }
+  | { kind: "edit"; target: "lead" | "customer"; id: string; name: string; field: Field; from: unknown; to: unknown; token?: string; at: number }
   | { kind: "convert"; leadId: string; customerId: string; name: string; status: string; at: number }
   | { kind: "customerCreate"; customerId: string; name: string; created: Record<string, unknown>; at: number }
   | { kind: "file"; clientId: string; name: string; fromId: string | null; toId: string | null; at: number };
@@ -2036,7 +2036,7 @@ export class Bot {
           : c.kind === "bulk" ? `Undone: ${c.items.length} ${allLeads(c) ? "leads" : "changes"} are back as they were.`
           : c.kind === "create" ? `Undone: removed the lead ${b(c.name)}.`
           : c.kind === "customerCreate" ? `Undone: removed the customer ${b(c.name)}.`
-          : c.kind === "convert" ? `Undone: ${b(c.name)} is a lead again.`
+          : c.kind === "convert" ? `Undone: ${b(c.name)} is a lead again.${this.takeUndoNote(agentId)}`
           : `Undone: ${b(c.name)} is back as it was.`);
       } else {
         const r = await this.applyEdit(agentId, op);
@@ -2070,6 +2070,14 @@ export class Bot {
 
   /* ══ Stage 2a: edits to leads, customers and filing ══════════════════ */
 
+  /** A plain extra line for the undo reply ("the customer stays"), said once. */
+  private readonly undoNote = new Map<string, string>();
+  private takeUndoNote(agentId: string): string {
+    const n = this.undoNote.get(agentId);
+    this.undoNote.delete(agentId);
+    return n ? `\n${n}` : "";
+  }
+
   /** Put one saved change back. Every route checks first that nothing moved since. A batch is
    *  undone newest first, one at a time, so a later step never blocks an earlier one. */
   private async undoOne(agentId: string, x: LastChange): Promise<boolean> {
@@ -2084,11 +2092,15 @@ export class Bot {
       }
       case "edit": {
         const r = x.target === "lead"
-          ? await e.leadEdit(agentId, x.id, { [x.field]: x.from }, { [x.field]: x.to }, true)
-          : await e.customerEdit(agentId, x.id, { [x.field]: x.from }, { [x.field]: x.to }, true);
+          ? await e.leadEdit(agentId, x.id, { [x.field]: x.from }, { [x.field]: x.to }, true, x.token)
+          : await e.customerEdit(agentId, x.id, { [x.field]: x.from }, { [x.field]: x.to }, true, x.token);
         return r.ok;
       }
-      case "convert": return (await e.leadUnconvert(agentId, x.leadId, x.customerId, x.status)).ok;
+      case "convert": {
+        const r = await e.leadUnconvert(agentId, x.leadId, x.customerId, x.status);
+        if (r.ok && !r.customerRemoved) this.undoNote.set(agentId, `The customer ${b(x.name)} stays: something was added to it or it was changed. Remove it in the portal if needed.`);
+        return r.ok;
+      }
       case "customerCreate": return e.customerUndoCreate(agentId, x.customerId, x.created);
       case "file": return (await e.fileClient(agentId, x.clientId, x.fromId, x.toId)).ok;
     }
@@ -2113,7 +2125,7 @@ export class Bot {
       const link = `${o}/agent/${op.target === "lead" ? "leads" : "customers"}/${op.id}`;
       return {
         text: `✅ Saved. ${b(op.name)}: ${FIELD_LABEL[op.field]} is now ${showValue(op.field, op.to)}.\n${link}`,
-        change: { kind: "edit", target: op.target, id: op.id, name: op.name, field: op.field, from: op.from, to: op.to, at },
+        change: { kind: "edit", target: op.target, id: op.id, name: op.name, field: op.field, from: op.from, to: op.to, token: r.undoToken, at },
       };
     }
     if (op.kind === "convert") {

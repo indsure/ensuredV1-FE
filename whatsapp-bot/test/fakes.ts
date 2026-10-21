@@ -223,7 +223,7 @@ export class FakeEngine implements Engine {
     const g = this.guarded(row, restore ? ED.restoreSet(set, ["name", "phone", "email", "city", "source", "insurance_interest", "expected_value", "status", "next_follow_up"]) : ED.cleanLeadSet(set), expect);
     if (!g.ok) return g;
     this.writes.push({ kind: "leadEdit", id, body: set });
-    return { ok: true as const, lead: { ...g.after }, before: g.before };
+    return { ok: true as const, lead: { ...g.after }, before: g.before, undoToken: "fake-token" };
   }
   async leadConvert(_a: string, id: string) {
     const lead = this.leadRows.find((x) => x.id === id);
@@ -266,7 +266,7 @@ export class FakeEngine implements Engine {
     const g = this.guarded(row, restore ? ED.restoreSet(set, ["name", "phone", "email", "city", "dob"]) : ED.cleanCustomerSet(set), expect);
     if (!g.ok) return g;
     this.writes.push({ kind: "customerEdit", id, body: set });
-    return { ok: true as const, customer: { ...g.after }, before: g.before };
+    return { ok: true as const, customer: { ...g.after }, before: g.before, undoToken: "fake-token" };
   }
   private removeIfFreshAndEmpty(customerId: string): boolean {
     const c: any = this.customers.find((x) => x.id === customerId);

@@ -144,7 +144,7 @@ export function restoreSet(raw: Record<string, unknown>, cols: string[]): Clean 
     if (!cols.includes(k)) { errors[k] = "cannot be changed from WhatsApp"; continue; }
     if (v === null || v === undefined || v === "") { set[k] = null; continue; }
     if (k === "status") { if (LEAD_STATUSES.includes(String(v))) set[k] = v; else errors[k] = "unknown status"; continue; }
-    if (k === "expected_value") { const n = Number(v); if (Number.isFinite(n)) set[k] = n; else errors[k] = "not an amount"; continue; }
+    if (k === "expected_value") { const n = Number(v); if (Number.isFinite(n) && n >= 0) set[k] = n; else errors[k] = "not an amount"; continue; }
     if (DATE_COLS.has(k)) { const d = String(v).slice(0, 10); if (/^\d{4}-\d{2}-\d{2}$/.test(d)) set[k] = d; else errors[k] = "not a date"; continue; }
     if (k === "name" && String(v).trim().length < 2) { errors[k] = "a name is needed"; continue; }
     set[k] = String(v).slice(0, 500);
