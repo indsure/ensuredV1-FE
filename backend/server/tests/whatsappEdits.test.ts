@@ -167,9 +167,52 @@ test("file / unfile: compare-before on the policy's current customer, and the cu
   assert.match(h2.calls.find((c) => c.sql.startsWith("UPDATE clients"))!.sql, /customer_id IS NOT DISTINCT FROM \$4::uuid/);
 });
 
-test("customer undo-create: refused unless fresh and empty", async () => {
+test("customer undo-create: needs the values it was created with; refused unless fresh, empty and unchanged", async () => {
   const h = harness(() => ({ rows: [], rowCount: 0 }));
-  const r = await h.call("POST /api/internal/wa/customers/:id/undo-create", { id: CUST });
+  const r0 = await h.call("POST /api/internal/wa/customers/:id/undo-create", { id: CUST });
+  assert.equal(r0.status, 400, "no created values, no removal");
+  assert.equal(h.calls.length, 0);
+  const r = await h.call("POST /api/internal/wa/customers/:id/undo-create", { id: CUST }, { expect: { name: "Sunita Rao", phone: "9812345678" } });
   assert.equal(r.status, 409);
   assert.equal(r.json.error, "NOT_REMOVABLE");
+  const del = h.calls.find((c) => c.sql.startsWith("DELETE"))!;
+  assert.match(del.sql, /c.name IS NOT DISTINCT FROM \$3::text/);
+  assert.match(del.sql, /c.notes IS NOT DISTINCT FROM \$8::text/);
+  assert.deepEqual(del.params.slice(2), ["Sunita Rao", "9812345678", null, null, null, null], "notes must still be empty");
+});
+
+/* ── Critic round: compare-before is required, undo restores raw values ── */
+
+test("an edit without the value seen before is refused (no blind writes)", async () => {
+  const h = harness(() => ({ rows: [leadRow] }));
+  const r = await h.call("POST /api/internal/wa/leads/:id/edit", { id: LEAD }, { set: { status: "lost" } });
+  assert.equal(r.status, 400);
+  assert.match(r.json.fields.status, /seen before is required/);
+  assert.ok(!h.calls.some((c) => c.sql.startsWith("UPDATE")));
+});
+
+test("undo (restore) puts back a value today's rules would reject, still compare-before", async () => {
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [{ ...leadRow, insurance_interest: "health insurance" }], rowCount: 1 } : { rows: [leadRow] }));
+  const r = await h.call("POST /api/internal/wa/leads/:id/edit", { id: LEAD },
+    { restore: true, set: { insurance_interest: "health insurance", phone: "022 2345 6789" }, expect: { insurance_interest: "Motor", phone: "9812345678" } });
+  assert.equal(r.status, 200);
+  const upd = h.calls.find((c) => c.sql.startsWith("UPDATE"))!;
+  assert.ok(upd.params.includes("health insurance") && upd.params.includes("022 2345 6789"));
+  assert.match(upd.sql, /insurance_interest::text IS NOT DISTINCT FROM/);
+  const bad = await h.call("POST /api/internal/wa/leads/:id/edit", { id: LEAD }, { restore: true, set: { customer_id: CUST }, expect: { customer_id: null } });
+  assert.equal(bad.status, 400, "restore never touches columns outside the whitelist");
+});
+
+test("removing a just-added lead compares every value the bot created, not the browser-written updated_at", () => {
+  const l = freshUntouchedLeadDelete(true);
+  for (const c of ["name", "phone", "email", "city", "source", "insurance_interest", "status", "notes"]) assert.match(l, new RegExp(`l.${c} IS NOT DISTINCT FROM`), c);
+  assert.match(l, /l.expected_value::text IS NOT DISTINCT FROM \$9::text/);
+  assert.doesNotMatch(l, /updated_at/);
+  assert.match(l, /lead_policies/);
+});
+
+test("dates are read as text, so the server timezone can never shift them", async () => {
+  const h = harness(() => ({ rows: [leadRow] }));
+  await h.call("GET /api/internal/wa/leads/:id", { id: LEAD });
+  assert.match(h.calls[0].sql, /next_follow_up::text AS next_follow_up/);
 });

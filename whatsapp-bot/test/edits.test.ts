@@ -202,10 +202,79 @@ test("every new fixed line has Hindi and Hinglish", () => {
     "(Or NONE to clear it, CANCEL to stop.)", "Not saved: Amit was changed in the portal a moment ago. Ask again to see the latest.",
     "✅ Saved. Amit: City is now Pune.", "✅ Amit is now a customer.", "✅ Customer Sunita added.",
     "That can't be undone here any more: it was changed since, or something was added to it. Please fix it in the portal.",
-    "• Make Amit a customer. Their phone, email and city are copied, and the lead is marked won",
+    "• Make Amit a customer. Their phone, email, city and notes are copied, and the lead is marked won",
     "• Take X out of Sunita", "Which customer?",
   ];
   const missing: string[] = [];
   for (const lang of ["hindi", "hinglish"] as const) for (const l of lines) if (localise(l, lang) === l) missing.push(`${lang}: ${l}`);
   assert.deepEqual(missing, []);
+});
+
+/* ── Critic round (code review of 2a) ── */
+
+test("critic: lead adds that mention an interest are lead adds, never edits", () => {
+  for (const t of ["add lead Amit wants health", "new lead Amit 9812345678 wants motor", "lead Amit wants motor", "add lead Kavita interested in term", "new lead: Amit, wants health and motor", "Ramesh 9812345678 wants health"]) {
+    assert.notEqual(ruleIntent(t), "edit", t);
+  }
+  assert.equal(ruleIntent("add lead Amit wants health"), "lead");
+});
+
+test("critic: other phrases that are not edits or filings", () => {
+  for (const t of ["add this to my renewals", "move this to next week", "file this under review", "edit my page", "edit my website"]) {
+    assert.ok(!["edit", "file"].includes(ruleIntent(t) as string), t);
+  }
+  assert.equal(ruleIntent("file this under Sunita"), "file");
+  assert.equal(ruleIntent("move this policy to Sunita"), "file");
+});
+
+test("critic: a question mark is never taken as the new value", async () => {
+  const { bot, transport, engine } = makeBot();
+  engine.leadRows = [lead()];
+  await bot.handle(text("Amit's city is what?"));
+  assert.doesNotMatch(transport.last(), /→ what/);
+});
+
+test("critic: UNDO restores a value today's rules would reject (old free-text interest)", async () => {
+  const { bot, transport, engine } = makeBot();
+  const l = lead({ insurance_interest: "health insurance" });
+  engine.leadRows = [l];
+  await bot.handle(text("Amit is interested in motor"));
+  await bot.handle(text("yes"));
+  assert.equal(l.insurance_interest, "Motor");
+  await bot.handle(text("undo"));
+  await bot.handle(text("yes"));
+  assert.equal(l.insurance_interest, "health insurance", "the original is back exactly");
+  assert.doesNotMatch(transport.last(), /can't be undone/);
+});
+
+test("critic: UNDO of a just-added customer is refused once the portal changed it", async () => {
+  const { bot, transport, engine } = makeBot();
+  await bot.handle(text("add customer Sunita Rao 98123 45678"));
+  await bot.handle(text("yes"));
+  engine.customers[0].city = "Pune"; // a portal edit within the 15 minutes
+  await bot.handle(text("undo"));
+  await bot.handle(text("yes"));
+  assert.match(transport.last(), /can't be undone/);
+  assert.equal(engine.customers.length, 1, "the edited customer stays");
+});
+
+test("critic: while waiting for a value, a word like Website is the value, not a command", async () => {
+  const { bot, transport, engine } = makeBot();
+  const l = lead();
+  engine.leadRows = [l];
+  await bot.handle(text("edit Amit"));
+  await bot.handle(text("6"));
+  await bot.handle(text("website"));
+  assert.match(transport.last(), /Source \(empty\) → Website/);
+});
+
+test("critic: adding a lead then a status in one go can still be undone together", async () => {
+  const { bot, transport, engine } = makeBot();
+  await bot.handle(text("lead Ravi Kumar 98123 45670 health"));
+  await bot.handle(text("yes"));
+  await bot.handle(text("Ravi won"));
+  await bot.handle(text("yes"));
+  await bot.handle(text("undo"));
+  await bot.handle(text("yes"));
+  assert.match(transport.last(), /back as it was|Undone/);
 });

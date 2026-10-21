@@ -24,137 +24,18 @@ type Deps = {
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export const LEAD_STATUSES = ["new", "contacted", "interested", "won", "lost"];
-/** The portal's interest chips (lib/leads.ts), stored as "Health, Motor" in one text column. */
-export const INTERESTS = ["Health", "Motor", "Life", "Term", "Travel", "Property"];
-export const LEAD_SOURCES = ["Referral", "WhatsApp", "Phone call", "Walk-in", "Website", "Social media", "Other"];
-
-/* ── Value rules (pure) ─────────────────────────────────────────────────── */
-
-const text = (v: unknown, max: number): string | null => {
-  const t = String(v ?? "").trim();
-  return t === "" ? null : t.slice(0, max);
-};
-
-/** An Indian mobile as its last 10 digits, or an error. Empty clears it. */
-function phone(v: unknown): { ok: true; value: string | null } | { ok: false } {
-  if (v === null || String(v).trim() === "") return { ok: true, value: null };
-  const d = String(v).replace(/\D/g, "");
-  const last = d.slice(-10);
-  if (d.length > 12 || !/^[6-9]\d{9}$/.test(last)) return { ok: false };
-  return { ok: true, value: last };
-}
-
-function email(v: unknown): { ok: true; value: string | null } | { ok: false } {
-  const t = text(v, 200);
-  if (t === null) return { ok: true, value: null };
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? { ok: true, value: t.toLowerCase() } : { ok: false };
-}
-
-function isoDate(v: unknown): { ok: true; value: string | null } | { ok: false } {
-  if (v === null || String(v).trim() === "") return { ok: true, value: null };
-  const s = String(v).trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s) || Number.isNaN(new Date(s + "T00:00:00Z").getTime())) return { ok: false };
-  return { ok: true, value: s };
-}
-
-/** "health, motor" / ["Motor","Health"] -> "Health, Motor" in the portal's chip order. */
-export function cleanInterests(v: unknown): string | null {
-  const parts = (Array.isArray(v) ? v : String(v ?? "").split(/[,/&+]|\band\b|\baur\b/i))
-    .map((x) => String(x).trim().toLowerCase()).filter(Boolean);
-  const picked = INTERESTS.filter((i) => parts.includes(i.toLowerCase()));
-  return picked.length ? picked.join(", ") : null;
-}
-
-/** lib/leads.ts num(): digits and a dot only; "25,000" -> 25000. */
-export function money(v: unknown): { ok: true; value: number | null } | { ok: false } {
-  if (v === null || v === undefined || String(v).trim() === "") return { ok: true, value: null };
-  const n = typeof v === "number" ? v : parseFloat(String(v).replace(/[^\d.]/g, ""));
-  return Number.isFinite(n) && n >= 0 && n < 1e10 ? { ok: true, value: n } : { ok: false };
-}
-
-export type FieldErrors = Record<string, string>;
-export type Clean = { set: Record<string, unknown>; errors: FieldErrors };
-
-/** Lead fields the bot may change, cleaned the portal's way. Only keys present are kept. */
-export function cleanLeadSet(raw: Record<string, unknown>): Clean {
-  const set: Record<string, unknown> = {};
-  const errors: FieldErrors = {};
-  for (const [k, v] of Object.entries(raw || {})) {
-    switch (k) {
-      case "name": { const t = text(v, 120); if (!t || t.length < 2) errors.name = "a name is needed"; else set.name = t; break; }
-      case "phone": { const p = phone(v); if (!p.ok) errors.phone = "not a 10 digit mobile number"; else set.phone = p.value; break; }
-      case "email": { const e = email(v); if (!e.ok) errors.email = "not an email address"; else set.email = e.value; break; }
-      case "city": set.city = text(v, 80); break;
-      case "source": {
-        const t = text(v, 40);
-        set.source = t === null ? null : LEAD_SOURCES.find((s) => s.toLowerCase() === t.toLowerCase()) ?? t;
-        break;
-      }
-      case "insurance_interest": {
-        const i = cleanInterests(v);
-        if (v !== null && String(v).trim() !== "" && !i) errors.insurance_interest = "pick from Health, Motor, Life, Term, Travel, Property";
-        else set.insurance_interest = i;
-        break;
-      }
-      case "expected_value": { const m = money(v); if (!m.ok) errors.expected_value = "not an amount"; else set.expected_value = m.value; break; }
-      case "status": if (LEAD_STATUSES.includes(String(v))) set.status = v; else errors.status = "unknown status"; break;
-      case "next_follow_up": { const d = isoDate(v); if (!d.ok) errors.next_follow_up = "not a date"; else set.next_follow_up = d.value; break; }
-      default: errors[k] = "cannot be changed from WhatsApp";
-    }
-  }
-  return { set, errors };
-}
-
-/** Customer fields the bot may change (lib/customers.ts cleanDraft, minus notes). */
-export function cleanCustomerSet(raw: Record<string, unknown>): Clean {
-  const set: Record<string, unknown> = {};
-  const errors: FieldErrors = {};
-  for (const [k, v] of Object.entries(raw || {})) {
-    switch (k) {
-      case "name": { const t = text(v, 120); if (!t || t.length < 2) errors.name = "a name is needed"; else set.name = t; break; }
-      case "phone": { const p = phone(v); if (!p.ok) errors.phone = "not a 10 digit mobile number"; else set.phone = p.value; break; }
-      case "email": { const e = email(v); if (!e.ok) errors.email = "not an email address"; else set.email = e.value; break; }
-      case "city": set.city = text(v, 80); break;
-      case "dob": { const d = isoDate(v); if (!d.ok) errors.dob = "not a date"; else set.dob = d.value; break; }
-      default: errors[k] = "cannot be changed from WhatsApp";
-    }
-  }
-  return { set, errors };
-}
-
-/** Normalise a stored or expected value for comparison (dates to YYYY-MM-DD, numbers to text). */
-export function norm(v: unknown): string | null {
-  if (v === null || v === undefined || v === "") return null;
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
-  if (typeof v === "number") return String(v);
-  const s = String(v);
-  return /^\d{4}-\d{2}-\d{2}T/.test(s) ? s.slice(0, 10) : s;
-}
-
-/**
- * UPDATE that writes only `set`, and only if every column in `expect` still holds the
- * expected value (compared as text, null-safe). Column names come from the whitelist
- * above, never from the request, so they are safe to interpolate.
- */
-export function guardedUpdate(table: string, cols: string[], set: Record<string, unknown>, expect: Record<string, unknown>, extraSet = "") {
-  const params: unknown[] = [];
-  const p = (v: unknown) => { params.push(v); return `$${params.length + 2}`; }; // $1 id, $2 agent
-  const sets = Object.entries(set).map(([k, v]) => `${k} = ${p(v)}`);
-  const checks = Object.entries(expect).map(([k, v]) => `${k}::text IS NOT DISTINCT FROM ${p(norm(v))}::text`);
-  for (const k of [...Object.keys(set), ...Object.keys(expect)]) if (!cols.includes(k)) throw new Error(`column ${k} not allowed`);
-  const sql = `UPDATE ${table} SET ${[...sets, extraSet].filter(Boolean).join(", ")}
-     WHERE id = $1 AND agent_id = $2${checks.length ? " AND " + checks.join(" AND ") : ""}
-     RETURNING *`;
-  return { sql, params };
-}
+import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect } from "./editRules";
+import type { FieldErrors, Clean } from "./editRules";
+export { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate } from "./editRules";
+export type { FieldErrors, Clean } from "./editRules";
 
 /* ── Routes ─────────────────────────────────────────────────────────────── */
 
 const LEAD_EDIT_COLS = ["name", "phone", "email", "city", "source", "insurance_interest", "expected_value", "status", "next_follow_up", "customer_id"];
 const CUSTOMER_EDIT_COLS = ["name", "phone", "email", "city", "dob"];
-const LEAD_OUT = "id, name, phone, email, city, source, insurance_interest, expected_value, status, next_follow_up, notes, customer_id, created_at, updated_at";
-const CUSTOMER_OUT = "id, name, phone, email, city, dob, created_at";
+// Dates as text: a JS Date would shift by the server timezone and break compare-before.
+const LEAD_OUT = "id, name, phone, email, city, source, insurance_interest, expected_value, status, next_follow_up::text AS next_follow_up, notes, customer_id, created_at, updated_at";
+const CUSTOMER_OUT = "id, name, phone, email, city, dob::text AS dob, notes, created_at";
 
 export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
   const audit = (agentId: string, targetId: string | null, action: string, route: string) =>
@@ -189,11 +70,13 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const agentId = await scopedAgent(req, res);
       if (!agentId) return;
       if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
-      const { set, errors } = cleanLeadSet(req.body?.set || {});
+      const { set, errors } = req.body?.restore === true ? restoreSet(req.body?.set || {}, LEAD_EDIT_COLS.filter((c) => c !== "customer_id")) : cleanLeadSet(req.body?.set || {});
       if (Object.keys(errors).length) return bad(res, errors);
       if (!Object.keys(set).length) return bad(res, { set: "nothing to change" });
       const expect = req.body?.expect && typeof req.body.expect === "object" ? req.body.expect : {};
       const known = Object.fromEntries(Object.entries(expect).filter(([k]) => LEAD_EDIT_COLS.includes(k)));
+      const missing = missingExpect(set, known);
+      if (missing.length) return bad(res, Object.fromEntries(missing.map((k) => [k, "the value seen before is required"])));
       const before = await pool.query(`SELECT ${LEAD_OUT} FROM agent_leads WHERE id = $1 AND agent_id = $2`, [req.params.id, agentId]);
       if (!before.rows.length) return res.status(404).json({ error: "Not found" });
       const q = guardedUpdate("agent_leads", LEAD_EDIT_COLS, set, known, "updated_at = now()");
@@ -246,11 +129,15 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       await c.query("BEGIN");
       const u = await c.query(
         `UPDATE agent_leads SET customer_id = NULL, status = $4, updated_at = now()
-          WHERE id = $1 AND agent_id = $2 AND customer_id = $3 AND status = 'won' RETURNING id`,
+          WHERE id = $1 AND agent_id = $2 AND customer_id = $3 AND status = 'won'
+          RETURNING name, phone, email, city, notes`,
         [req.params.id, agentId, customerId, status]
       );
       if (!u.rowCount) { await c.query("ROLLBACK"); return changed(res); }
-      const removed = await c.query(freshEmptyCustomerDelete(), [customerId, agentId]);
+      // The customer the convert made holds the lead's values and no date of birth; any other
+      // value means it was edited in the portal since, and it stays.
+      const l = u.rows[0];
+      const removed = await c.query(freshEmptyCustomerDelete(true), [customerId, agentId, l.name, l.phone, l.email, l.city, null, l.notes]);
       await c.query("COMMIT");
       void audit(agentId, req.params.id, "wa_lead_unconvert", "/api/internal/wa/leads/:id/unconvert");
       res.json({ ok: true, customerRemoved: !!removed.rowCount });
@@ -303,11 +190,13 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const agentId = await scopedAgent(req, res);
       if (!agentId) return;
       if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
-      const { set, errors } = cleanCustomerSet(req.body?.set || {});
+      const { set, errors } = req.body?.restore === true ? restoreSet(req.body?.set || {}, CUSTOMER_EDIT_COLS) : cleanCustomerSet(req.body?.set || {});
       if (Object.keys(errors).length) return bad(res, errors);
       if (!Object.keys(set).length) return bad(res, { set: "nothing to change" });
       const expect = req.body?.expect && typeof req.body.expect === "object" ? req.body.expect : {};
       const known = Object.fromEntries(Object.entries(expect).filter(([k]) => CUSTOMER_EDIT_COLS.includes(k)));
+      const missing = missingExpect(set, known);
+      if (missing.length) return bad(res, Object.fromEntries(missing.map((k) => [k, "the value seen before is required"])));
       const before = await pool.query(`SELECT ${CUSTOMER_OUT} FROM customers WHERE id = $1 AND agent_id = $2`, [req.params.id, agentId]);
       if (!before.rows.length) return res.status(404).json({ error: "Not found" });
       const q = guardedUpdate("customers", CUSTOMER_EDIT_COLS, set, known);
@@ -324,7 +213,12 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const agentId = await scopedAgent(req, res);
       if (!agentId) return;
       if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
-      const r = await pool.query(freshEmptyCustomerDelete(), [req.params.id, agentId]);
+      // The values the bot created it with (body.expect) must still be there, and no notes:
+      // a portal edit since then (a date of birth, notes) keeps the customer.
+      const x = req.body?.expect;
+      if (!x || typeof x !== "object" || typeof x.name !== "string") return bad(res, { expect: "the values it was created with" });
+      const r = await pool.query(freshEmptyCustomerDelete(true),
+        [req.params.id, agentId, x.name, x.phone ?? null, x.email ?? null, x.city ?? null, x.dob ?? null, null]);
       if (!r.rowCount) return res.status(409).json({ error: "NOT_REMOVABLE" });
       void audit(agentId, req.params.id, "wa_customer_undo_create", "/api/internal/wa/customers/:id/undo-create");
       res.json({ ok: true });
@@ -361,10 +255,18 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
 
 /** Remove a customer only if created in the last 15 minutes and nothing refers to it:
  *  no policy, claim, lead, calculator or comparison (all of which would be silently unfiled
- *  by the foreign keys' ON DELETE SET NULL). $1 customer id, $2 agent id. */
-export function freshEmptyCustomerDelete(): string {
+ *  by the foreign keys' ON DELETE SET NULL). $1 customer id, $2 agent id. With `unchanged`,
+ *  also only if it still holds exactly the values it was created with ($3 name, $4 phone,
+ *  $5 email, $6 city, $7 dob, $8 notes): customers has no updated_at, so the values are the proof. */
+export function freshEmptyCustomerDelete(unchanged = false): string {
+  const same = unchanged
+    ? `
+             AND c.name IS NOT DISTINCT FROM $3::text AND c.phone IS NOT DISTINCT FROM $4::text
+             AND c.email IS NOT DISTINCT FROM $5::text AND c.city IS NOT DISTINCT FROM $6::text
+             AND c.dob::text IS NOT DISTINCT FROM $7::text AND c.notes IS NOT DISTINCT FROM $8::text`
+    : "";
   return `DELETE FROM customers c
-           WHERE c.id = $1 AND c.agent_id = $2 AND c.created_at > now() - interval '15 minutes'
+           WHERE c.id = $1 AND c.agent_id = $2 AND c.created_at > now() - interval '15 minutes'${same}
              AND NOT EXISTS (SELECT 1 FROM clients x WHERE x.customer_id = c.id)
              AND NOT EXISTS (SELECT 1 FROM claims x WHERE x.customer_id = c.id)
              AND NOT EXISTS (SELECT 1 FROM agent_leads x WHERE x.customer_id = c.id)
@@ -375,17 +277,27 @@ export function freshEmptyCustomerDelete(): string {
 
 /** The SQL for removing a lead the bot just added: fresh, never changed since, no lead policies
  *  (they would cascade). $1 lead id, $2 agent id. */
-export function freshUntouchedLeadDelete(): string {
+export function freshUntouchedLeadDelete(unchanged = false): string {
+  // With `unchanged`: $3 name, $4 phone, $5 email, $6 city, $7 source, $8 interest, $9 expected value,
+  // $10 status, $11 follow-up, $12 notes must all still be what the bot created.
+  const same = unchanged
+    ? `
+             AND l.name IS NOT DISTINCT FROM $3::text AND l.phone IS NOT DISTINCT FROM $4::text
+             AND l.email IS NOT DISTINCT FROM $5::text AND l.city IS NOT DISTINCT FROM $6::text
+             AND l.source IS NOT DISTINCT FROM $7::text AND l.insurance_interest IS NOT DISTINCT FROM $8::text
+             AND l.expected_value::text IS NOT DISTINCT FROM $9::text AND l.status IS NOT DISTINCT FROM $10::text
+             AND l.next_follow_up::text IS NOT DISTINCT FROM $11::text AND l.notes IS NOT DISTINCT FROM $12::text`
+    : "";
   return `DELETE FROM agent_leads l
            WHERE l.id = $1 AND l.agent_id = $2 AND l.created_at > now() - interval '15 minutes'
-             AND l.updated_at <= l.created_at + interval '2 seconds'
-             AND l.customer_id IS NULL
-             AND NOT EXISTS (SELECT 1 FROM lead_policies x WHERE x.lead_id = l.id)
+${unchanged ? "" : "             AND l.updated_at <= l.created_at + interval '2 seconds'\n"}             AND l.customer_id IS NULL
+             AND NOT EXISTS (SELECT 1 FROM lead_policies x WHERE x.lead_id = l.id)${same}
            RETURNING l.id`;
 }
 
 function pick(row: any, cols: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  for (const c of cols.split(",").map((s) => s.trim())) out[c] = row?.[c] instanceof Date ? norm(row[c]) : row?.[c] ?? null;
+  // "next_follow_up::text AS next_follow_up" -> the key is the alias.
+  for (const c of cols.split(",").map((s) => s.trim().split(/\s+AS\s+/i).pop()!.trim())) out[c] = row?.[c] instanceof Date ? norm(row[c]) : row?.[c] ?? null;
   return out;
 }

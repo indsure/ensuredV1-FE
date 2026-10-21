@@ -17,3 +17,11 @@ for (const rel of SHARED) {
   copyFileSync(src, dst);
   console.log("synced", rel);
 }
+
+// The WhatsApp edit value rules live with the backend (it enforces them); the bot carries a copy
+// so it never imports backend code at runtime (a bot-only deploy must not depend on it).
+export const SHARED_FROM_BACKEND = ["editRules.ts"];
+for (const rel of SHARED_FROM_BACKEND) {
+  copyFileSync(path.resolve(here, "../../backend/server/whatsapp", rel), path.resolve(here, "../src/shared", rel));
+  console.log("synced backend", rel);
+}

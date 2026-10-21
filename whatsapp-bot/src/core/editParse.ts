@@ -28,10 +28,14 @@ export function fieldOf(word: string): Field | null {
 
 /** Words that are never a person in these sentences ("change city", "edit it"). */
 const NOT_WHO = /^(?:it|this|that|him|her|them|my|the|me|his|their|lead|customer|policy|details|city|phone|number|name|email|plan|cover|claim|report|everything|all)$/i;
-const okWho = (w: string | undefined) => !!w && w.trim().length >= 2 && !NOT_WHO.test(w.trim()) && !fieldOf(w);
+/** Words that mean the message is about something else: adding a lead ("add lead Amit wants
+ *  health"), my own page or book ("edit my page"), or a date ("next week"). Digits too: a
+ *  person is never "Ramesh 98123 45678". */
+const NOT_A_PERSON = /\b(?:lead|leads|add|new|naya|nayi|create|save|enter|my|mera|meri|mere|next|this week|today|tomorrow|renewals?|review|page|website|site|book)\b|\d/i;
+const okWho = (w: string | undefined) => !!w && w.trim().length >= 2 && !NOT_WHO.test(w.trim()) && !fieldOf(w) && !NOT_A_PERSON.test(w);
 /** A "value" that is really a question: "Kavita ka number kya hai" is a lookup, not an edit. */
 const QUESTION_VALUE = /^(?:kya|kya hai|kitna|kitni|kaun|kaunsa|batao|bata do|dikhao|what|which|\?)$/i;
-const clean = (s: string) => s.trim().replace(/[.!।]+$/, "").trim();
+const clean = (s: string) => s.trim().replace(/[.!?।]+$/, "").trim();
 
 /** One-shot edits with a value, and guided "edit Amit". Null when it is neither. */
 export function parseEditAsk(textRaw: string): EditAsk | null {
@@ -108,7 +112,10 @@ export type FileAsk =
 /** Filing a policy under a customer, or taking it out. */
 export function parseFile(textRaw: string): FileAsk | null {
   const t = clean(textRaw);
-  let m = t.match(/^(?:file|put|move|add|link)\s+(?:this\s+(?:policy\s+)?|(.+?)'s\s+(?:\w+\s+){0,3}?polic(?:y|ies)\s+)(?:under|to|in|with|for)\s+(.+?)(?:'s)?(?:\s+(?:customer|profile|name))?$/i);
+  // "this" on its own only with file/put + under ("file this under Sunita"); move/add/link need
+  // the word policy, so "add this to my renewals" or "move this to next week" never file anything.
+  let m = t.match(/^(?:file|put)\s+(?:this\s+(?:policy\s+)?|(.+?)'s\s+(?:\w+\s+){0,3}?polic(?:y|ies)\s+)under\s+(.+?)(?:'s)?(?:\s+(?:customer|profile|name))?$/i)
+    || t.match(/^(?:file|put|move|add|link)\s+(?:this\s+policy\s+|(.+?)'s\s+(?:\w+\s+){0,3}?polic(?:y|ies)\s+)(?:under|to|in|with|for)\s+(.+?)(?:'s)?(?:\s+(?:customer|profile|name))?$/i);
   if (m && okWho(m[2]) && (!m[1] || okWho(m[1]))) return { kind: "file", policyOf: m[1] ? clean(m[1]) : null, customer: clean(m[2]) };
   m = t.match(/^(?:this|this policy|it)\s+(?:is|belongs to)\s+(.+?)'s(?:\s+policy)?$/i) || t.match(/^(?:this|this policy)\s+belongs to\s+(.+)$/i)
     || t.match(/^(?:ye|yeh|यह|ये)\s+(.+?)\s+(?:ki|का|की)\s+(?:policy|पॉलिसी)\s+(?:hai|है)$/i);

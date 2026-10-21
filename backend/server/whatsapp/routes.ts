@@ -921,10 +921,12 @@ FACTS: ${JSON.stringify(facts)}`,
                  CASE WHEN $7::text IS NULL THEN NULL
                       ELSE to_char(now() AT TIME ZONE 'Asia/Kolkata', 'DD Mon') || ': ' || $7::text END,
                  $8, $9, $10)
-         RETURNING id`,
+         RETURNING id, name, phone, email, city, source, insurance_interest, expected_value::text AS expected_value,
+                   status, next_follow_up::text AS next_follow_up, notes`,
         [agentId, name, phone, interest, status, follow, note, extra.set.city ?? null, extra.set.source ?? null, extra.set.expected_value ?? null]
       );
-      res.json({ id: r.rows[0].id });
+      // The row as stored: the bot keeps it, and UNDO removes the lead only if it still matches.
+      res.json({ id: r.rows[0].id, created: r.rows[0] });
     } catch (err: any) {
       log.error("wa lead create failed", { error: err?.message });
       res.status(500).json({ error: "Internal server error" });
@@ -939,7 +941,13 @@ FACTS: ${JSON.stringify(facts)}`,
       if (!agentId) return;
       if (!UUID_RE.test(req.params.id)) return res.status(400).json({ error: "bad id" });
       // Only if untouched since and holding no lead policies (they would cascade): plan 8.
-      const r = await pool.query(freshUntouchedLeadDelete(), [req.params.id, agentId]);
+      // Only if it still holds exactly what the bot created (body.expect): the portal writes
+      // updated_at from the browser clock, so the values are the reliable proof.
+      const x = req.body?.expect;
+      if (!x || typeof x !== "object") return res.status(400).json({ error: "INVALID", fields: { expect: "the values it was created with" } });
+      const r = await pool.query(freshUntouchedLeadDelete(true), [req.params.id, agentId,
+        x.name ?? null, x.phone ?? null, x.email ?? null, x.city ?? null, x.source ?? null, x.insurance_interest ?? null,
+        x.expected_value ?? null, x.status ?? null, x.next_follow_up ?? null, x.notes ?? null]);
       if (!r.rowCount) return res.status(409).json({ error: "too old to undo" });
       res.json({ ok: true });
     } catch (err: any) {
@@ -1125,7 +1133,9 @@ FACTS: ${JSON.stringify(facts)}`,
         const fu = typeof x.next_follow_up === "string" && /^\d{4}-\d{2}-\d{2}/.test(x.next_follow_up) ? x.next_follow_up.slice(0, 10) : null;
         // With `expect` (what the bot saved), restore only if nobody changed the lead since:
         // a portal edit in the meantime is never overwritten. Without it: the old behaviour.
+        // `expect` (what the bot saved) is required: restore only if nobody changed the lead since.
         const e = b.expect && typeof b.expect === "object" ? b.expect : null;
+        if (!e) return res.status(400).json({ error: "INVALID", fields: { expect: "the values saved" } });
         const r = await pool.query(
           `UPDATE agent_leads SET status = $3, next_follow_up = $4::date, notes = $5, updated_at = now()
             WHERE id = $1 AND agent_id = $2

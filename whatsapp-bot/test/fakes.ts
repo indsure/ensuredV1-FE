@@ -8,7 +8,7 @@ import type { InboundMessage, Transport } from "../src/transport/types.js";
 import { Bot } from "../src/core/bot.js";
 import type { Inspection } from "../src/core/pdfInspect.js";
 import * as BV from "../../backend/server/whatsapp/bookViews.js";
-import * as ED from "../../backend/server/whatsapp/edits.js";
+import * as ED from "../../backend/server/whatsapp/editRules.js";
 
 export const AGENT = "11111111-1111-4111-8111-111111111111";
 export const ADVISOR = "919800000001";
@@ -164,8 +164,10 @@ export class FakeEngine implements Engine {
     const id = crypto.randomUUID();
     this.leads.push({ id, ...l });
     // Created leads are findable afterwards, like the real table.
-    this.leadRows.push({ id, name: l.name, phone: l.phone ?? null, status: l.status ?? "new", insurance_interest: l.interest ?? null, next_follow_up: l.nextFollowUp ?? null, notes: l.note ?? null });
-    return { id };
+    const row = { id, name: l.name, phone: l.phone ?? null, email: null, city: l.city ?? null, source: l.source ?? null, insurance_interest: l.interest ?? null, expected_value: l.expected_value ?? null, status: l.status ?? "new", next_follow_up: l.nextFollowUp ?? null, notes: l.note ?? null };
+    this.leadRows.push(row);
+    const { id: _id, ...created } = row;
+    return { id, created };
   }
   async saveCalculator(_a: string, inputs: any, result: any, customerId: string | null = null) { this.calcSaved.push({ inputs, result, customerId }); return "calc-uuid-1"; }
   /** Model stand-in: tests script what the model would return for a message. Off by default,
@@ -214,10 +216,11 @@ export class FakeEngine implements Engine {
     const r = this.leadRows.find((x) => x.id === id);
     return r ? { email: null, city: null, source: null, expected_value: null, customer_id: null, ...r } : null;
   }
-  async leadEdit(_a: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>) {
+  async leadEdit(_a: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false) {
     const row = this.leadRows.find((x) => x.id === id);
     if (row) for (const k of ["email", "city", "source", "expected_value", "customer_id"]) if (!(k in row)) row[k] = null;
-    const g = this.guarded(row, ED.cleanLeadSet(set), expect);
+    if (ED.missingExpect(set, expect).length) return { ok: false as const, reason: "INVALID", fields: { expect: "required" } };
+    const g = this.guarded(row, restore ? ED.restoreSet(set, ["name", "phone", "email", "city", "source", "insurance_interest", "expected_value", "status", "next_follow_up"]) : ED.cleanLeadSet(set), expect);
     if (!g.ok) return g;
     this.writes.push({ kind: "leadEdit", id, body: set });
     return { ok: true as const, lead: { ...g.after }, before: g.before };
@@ -256,10 +259,11 @@ export class FakeEngine implements Engine {
     this.writes.push({ kind: "customerCreate", id: customer.id, body: c });
     return { ok: true as const, customer, duplicate: false };
   }
-  async customerEdit(_a: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>) {
+  async customerEdit(_a: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false) {
     const row: any = this.customers.find((x) => x.id === id);
     if (row) for (const k of ["email", "city", "dob"]) if (!(k in row)) row[k] = null;
-    const g = this.guarded(row, ED.cleanCustomerSet(set), expect);
+    if (ED.missingExpect(set, expect).length) return { ok: false as const, reason: "INVALID", fields: { expect: "required" } };
+    const g = this.guarded(row, restore ? ED.restoreSet(set, ["name", "phone", "email", "city", "dob"]) : ED.cleanCustomerSet(set), expect);
     if (!g.ok) return g;
     this.writes.push({ kind: "customerEdit", id, body: set });
     return { ok: true as const, customer: { ...g.after }, before: g.before };
@@ -271,7 +275,9 @@ export class FakeEngine implements Engine {
     this.customers = this.customers.filter((x) => x.id !== customerId);
     return true;
   }
-  async customerUndoCreate(_a: string, id: string) {
+  async customerUndoCreate(_a: string, id: string, created: Record<string, unknown>) {
+    const c: any = this.customers.find((x) => x.id === id);
+    if (!c || Object.entries(created || {}).some(([k, v]) => ED.norm(c[k]) !== ED.norm(v))) return false;
     const ok = this.removeIfFreshAndEmpty(id);
     if (ok) this.writes.push({ kind: "customerUndoCreate", id, body: {} });
     return ok;
@@ -286,7 +292,10 @@ export class FakeEngine implements Engine {
     return { ok: true as const, customerId };
   }
   undoneCreates: string[] = [];
-  async leadUndoCreate(_a: string, id: string) {
+  async leadUndoCreate(_a: string, id: string, created?: Record<string, unknown>) {
+    // Same as the backend: only if it still holds exactly what was created.
+    const row = this.leadRows.find((x) => x.id === id);
+    if (!row || !created || Object.entries(created).some(([k, v]) => ED.norm(row[k]) !== ED.norm(v))) return false;
     this.undoneCreates.push(id);
     this.leadRows = this.leadRows.filter((x) => x.id !== id);
     return true;

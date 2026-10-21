@@ -19,6 +19,14 @@ test("the bot's copies of the portal's modules are identical to the portal's", (
   }
 });
 
+test("the bot's copy of the backend's edit rules is identical (no runtime import of backend code)", () => {
+  const a = fs.readFileSync(path.resolve(here, "../src/shared/editRules.ts"), "utf8");
+  const b = fs.readFileSync(path.resolve(here, "../../backend/server/whatsapp/editRules.ts"), "utf8");
+  assert.equal(a, b, "editRules.ts drifted: run npm run sync");
+  const bot = fs.readFileSync(path.resolve(here, "../src/core/bot.ts"), "utf8");
+  assert.ok(!bot.includes("backend/server/whatsapp/edits"), "the bot must not import backend edits.ts");
+});
+
 test("type guess: clear health and motor texts, ambiguous text asks", () => {
   const health = "Sum insured 5,00,000. Hospitalisation expenses, room rent up to 1%, pre-existing diseases after 36 months, cashless at network hospital, day care procedures, co-payment 10%.";
   const motor = "Private car package policy. IDV 6,40,000. Registration No MH12AB1234, chassis no, engine no, own damage premium, third party liability, NCB 20%.";

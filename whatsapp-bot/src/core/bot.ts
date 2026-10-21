@@ -21,7 +21,7 @@ import {
   bookAsk, isAlone, isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, parsePair, pickNumber, portfolioName, ruleIntent, statusName,
 } from "./intents.js";
 import { CUSTOMER_FIELDS, FIELD_LABEL, LEAD_FIELDS, fieldOf, parseAddCustomer, parseConvert, parseEditAsk, parseFile, valueFor, type Field, type FileAsk } from "./editParse.js";
-import { cleanCustomerSet, cleanLeadSet, norm as normValue } from "../../../backend/server/whatsapp/edits.js";
+import { cleanCustomerSet, cleanLeadSet, norm as normValue } from "../shared/editRules.js";
 import { bookReply, claimDetailLines, insightsReply, pageStatsReply, portfolioReply, queueReply, statusReply, valuesReply } from "./bookReplies.js";
 import { SWITCH_TOPIC, isPronounName, oneLetterMissing, nameCandidates, rephrase, suggest, suggestReply, withPerson, type Suggestion } from "./converse.js";
 import { basics, ruleAnswer } from "./answers.js";
@@ -126,13 +126,13 @@ type Op =
 type LeadBits = { status: string | null; next_follow_up: string | null; notes: string | null };
 /** What the last saved change was, so UNDO can put things back (15 minutes). */
 type LastChange =
-  | { kind: "create"; leadId: string; name: string; at: number }
+  | { kind: "create"; leadId: string; name: string; created?: Record<string, unknown>; at: number }
   | { kind: "update"; leadId: string; name: string; before: LeadBits; after?: LeadBits; at: number }
   | { kind: "bulk"; items: LastChange[]; name: string; at: number }
   /* Stage 2a: every one is undone through a route that first checks nothing moved since */
   | { kind: "edit"; target: "lead" | "customer"; id: string; name: string; field: Field; from: unknown; to: unknown; at: number }
   | { kind: "convert"; leadId: string; customerId: string; name: string; status: string; at: number }
-  | { kind: "customerCreate"; customerId: string; name: string; at: number }
+  | { kind: "customerCreate"; customerId: string; name: string; created: Record<string, unknown>; at: number }
   | { kind: "file"; clientId: string; name: string; fromId: string | null; toId: string | null; at: number };
 
 const UNDO_WINDOW_MS = 15 * 60_000;
@@ -863,6 +863,9 @@ export class Bot {
     // While a question is pending, a bare number is an answer to it (a phone number for
     // "whose policy?" or a new lead), never a lookup.
     if (intent === "lookup" && conv.state.startsWith("AWAITING") && /^\+?[\d\s-]+$/.test(text)) intent = null;
+    // While the bot waits for a new value, the reply IS the value ("Website" as a lead's source),
+    // never a command; only CANCEL gets out.
+    if (conv.state === "AWAITING_EDIT_VALUE" && intent !== "cancel") intent = null;
 
     if (intent === "cancel") {
       await this.dropHeldFile(conv);
@@ -1980,7 +1983,7 @@ export class Bot {
       return `Undo: put ${b(c.name)} back as it was`;
     }
     if (op.kind === "edit") return `${b(op.name)} (${op.target}): ${FIELD_LABEL[op.field]} ${showValue(op.field, op.from)} → ${showValue(op.field, op.to)}`;
-    if (op.kind === "convert") return `Make ${b(op.name)} a customer. Their phone, email and city are copied, and the lead is marked won`;
+    if (op.kind === "convert") return `Make ${b(op.name)} a customer. Their phone, email, city and notes are copied, and the lead is marked won`;
     if (op.kind === "addCustomer") return `Add customer ${b(op.name)}${[op.phone ? ph(op.phone) : null, op.city, op.email].filter(Boolean).map((x) => `, ${x}`).join("")}`;
     if (op.kind === "file") {
       if (op.newCustomer) return `Add customer ${b(op.newCustomer.name)}${op.newCustomer.phone ? `, ${ph(op.newCustomer.phone)}` : ""} and file ${op.policy} under them`;
@@ -2013,7 +2016,7 @@ export class Bot {
     for (const op of ops) {
       if (op.kind === "create") {
         const r = await this.d.engine.createLead(agentId, { name: op.name, phone: op.phone, interest: op.interest, status: op.status, nextFollowUp: op.nextFollowUp, note: op.note });
-        if (!r.duplicateOf) changes.push({ kind: "create", leadId: r.id, name: op.name, at: this.now() });
+        if (!r.duplicateOf) changes.push({ kind: "create", leadId: r.id, name: op.name, created: r.created, at: this.now() });
         this.lastPerson.set(agentId, r.duplicateOf ?? op.name);
         out.push(leadSavedReply(this.d.links, r, { name: op.name, phone: op.phone, interest: op.interest }));
       } else if (op.kind === "update") {
@@ -2072,7 +2075,7 @@ export class Bot {
   private async undoOne(agentId: string, x: LastChange): Promise<boolean> {
     const e = this.d.engine;
     switch (x.kind) {
-      case "create": return e.leadUndoCreate(agentId, x.leadId);
+      case "create": return e.leadUndoCreate(agentId, x.leadId, x.created);
       case "update": return !!(await e.leadRestore(agentId, x.leadId, x.before, x.after));
       case "bulk": {
         let all = true;
@@ -2081,12 +2084,12 @@ export class Bot {
       }
       case "edit": {
         const r = x.target === "lead"
-          ? await e.leadEdit(agentId, x.id, { [x.field]: x.from }, { [x.field]: x.to })
-          : await e.customerEdit(agentId, x.id, { [x.field]: x.from }, { [x.field]: x.to });
+          ? await e.leadEdit(agentId, x.id, { [x.field]: x.from }, { [x.field]: x.to }, true)
+          : await e.customerEdit(agentId, x.id, { [x.field]: x.from }, { [x.field]: x.to }, true);
         return r.ok;
       }
       case "convert": return (await e.leadUnconvert(agentId, x.leadId, x.customerId, x.status)).ok;
-      case "customerCreate": return e.customerUndoCreate(agentId, x.customerId);
+      case "customerCreate": return e.customerUndoCreate(agentId, x.customerId, x.created);
       case "file": return (await e.fileClient(agentId, x.clientId, x.fromId, x.toId)).ok;
     }
   }
@@ -2129,7 +2132,7 @@ export class Bot {
       if (r.duplicate) return { text: `${b(r.customer.name)} is already your customer, with that phone number.\n${o}/agent/customers/${r.customer.id}` };
       return {
         text: `✅ Customer ${b(r.customer.name)} added.\n${o}/agent/customers/${r.customer.id}`,
-        change: { kind: "customerCreate", customerId: r.customer.id, name: r.customer.name, at },
+        change: { kind: "customerCreate", customerId: r.customer.id, name: r.customer.name, created: createdOf(r.customer), at },
       };
     }
     if (op.kind === "file") {
@@ -2141,7 +2144,7 @@ export class Bot {
         if (!c.ok) return { text: refused(op.newCustomer.name, c) };
         toId = c.customer.id;
         toName = c.customer.name;
-        if (!c.duplicate) created = { kind: "customerCreate", customerId: c.customer.id, name: c.customer.name, at };
+        if (!c.duplicate) created = { kind: "customerCreate", customerId: c.customer.id, name: c.customer.name, created: createdOf(c.customer), at };
       }
       const r = await e.fileClient(agentId, op.clientId, toId, op.fromId);
       if (!r.ok) {
@@ -2350,6 +2353,11 @@ export class Bot {
     }
     return this.confirm(agentId, conv, to, [{ kind: "undo", change: c }]);
   }
+}
+
+/** The values a customer was created with: UNDO removes it only if it still holds exactly these. */
+function createdOf(c: { name: string; phone: string | null; email: string | null; city: string | null; dob: string | null }) {
+  return { name: c.name, phone: c.phone ?? null, email: c.email ?? null, city: c.city ?? null, dob: c.dob ?? null };
 }
 
 /** A field's value as the advisor reads it in a confirm. */
