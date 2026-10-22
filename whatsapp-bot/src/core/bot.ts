@@ -1074,7 +1074,7 @@ export class Bot {
     // report only gets free text that is about a policy topic, or a question while the report
     // is fresh; it must not swallow everything else the advisor says.
     const fresh = !!conv.updatedAt && this.now() - new Date(conv.updatedAt).getTime() < REPORT_FRESH_MS;
-    if (namedPerson(text) || (conv.currentClientId && isReportQuestion(text, fresh))) return this.ask(agentId, conv, to, text);
+    if (namedPerson(text) || (this.currentPolicy(agentId, conv) && isReportQuestion(text, fresh))) return this.ask(agentId, conv, to, text);
 
     const guess = await this.d.engine.llmIntent(agentId, modelText, false).catch(() => "unknown");
     if (guess === "renewals") return this.say(to, agentId, renewalsReply(await this.d.engine.renewals(agentId), this.d.links), "renewals");
@@ -1401,8 +1401,19 @@ export class Bot {
       await this.rest(agentId, to, found[0].clientId);
       return this.answerFor(agentId, to, found[0].clientId, question);
     }
-    if (!conv.currentClientId) return this.say(to, agentId, T.noReport(), "ask");
-    return this.answerFor(agentId, to, conv.currentClientId, question);
+    const current = this.currentPolicy(agentId, conv);
+    if (!current) return this.say(to, agentId, T.noReport(), "ask");
+    return this.answerFor(agentId, to, current, question);
+  }
+
+  /**
+   * The policy we are talking about: the one last shown (a lookup, a report, a share), and only
+   * then the conversation's stored one. Answering from the stored one after a newer lookup is
+   * how "is it a bad policy?" got another customer's 95 instead of this one's 65 (2026-10-22).
+   */
+  private currentPolicy(agentId: string, conv: Conv): string | null {
+    const last = this.lastShare.get(agentId);
+    return last?.kind === "policy" ? last.clientId : conv.currentClientId;
   }
 
   private async answerFor(agentId: string, to: string, clientId: string, question: string) {
@@ -1420,10 +1431,13 @@ export class Bot {
     }
     this.setLast(agentId, { kind: "policy", clientId });
     if (c.policyholderName) this.lastPerson.set(agentId, c.policyholderName);
+    // Every answer says first which policy it is about, with its stored score, so the advisor
+    // can always see that the answer and the policy they asked about are the same one.
+    const who = `${b(c.policyholderName || "This policy")} · ${nicePlan(c.insurer, c.policyName) || "Health policy"}${c.score != null ? ` · ${c.score}/100` : ""}`;
     const ruled = question ? ruleAnswer(question, c) : null;
-    if (ruled) return this.say(to, agentId, `${ruled}\n\nFull report: ${url}`, "ask");
+    if (ruled) return this.say(to, agentId, `${who}\n${ruled}\n\nFull report: ${url}`, "ask");
     const phrased = await this.d.engine.llmPhrase(agentId, clientId, question).catch(() => ({ answer: null }));
-    if (phrased.answer) return this.say(to, agentId, `${phrased.answer}\n\nFull report: ${url}`, "ask_phrased");
+    if (phrased.answer) return this.say(to, agentId, `${who}\n${phrased.answer}\n\nFull report: ${url}`, "ask_phrased");
     // Never a bare "not in the report": show what the Policies list shows about it too.
     return this.say(to, agentId, `${basics(c)}\n\n${T.notInReport(url)}`, (phrased as any).guardFired ? "ask_guard_fired" : "ask_not_in_report");
   }
@@ -1906,7 +1920,11 @@ export class Bot {
         const q = a.name || a.phone || "";
         if (!q) return this.say(to, agentId, "Who should I look up? For example: find Ramesh", "lookup");
         const r = await e.lookup(agentId, q);
-        if (r.policies.length === 1) this.setLast(agentId, { kind: "policy", clientId: r.policies[0].clientId });
+        if (r.policies.length === 1) {
+          // Same as the rule path: one policy found is now the one questions are about.
+          this.setLast(agentId, { kind: "policy", clientId: r.policies[0].clientId });
+          await this.rest(agentId, to, r.policies[0].clientId);
+        }
         const person = r.policies[0]?.policyholderName || r.leads[0]?.name;
         if (person) this.lastPerson.set(agentId, person);
         return this.say(to, agentId, lookupReply(this.d.links, q, r.policies, r.leads), "lookup");
