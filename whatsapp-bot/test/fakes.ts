@@ -10,6 +10,7 @@ import type { Inspection } from "../src/core/pdfInspect.js";
 import * as BV from "../../backend/server/whatsapp/bookViews.js";
 import * as ED from "../../backend/server/whatsapp/editRules.js";
 import * as PE from "../src/shared/policyEvidence.js";
+import * as PV from "../src/shared/policyValue.js";
 
 export const AGENT = "11111111-1111-4111-8111-111111111111";
 export const ADVISOR = "919800000001";
@@ -466,15 +467,27 @@ export class FakeEngine implements Engine {
     const p = this.pol(clientId);
     if (!p) return null;
     const { evidence } = PE.readEvidence(p.x.data.value_evidence);
-    return { type: p.c.insuranceType || "health", status: p.c.status, rev: p.x.rev, active: { payments: PE.activeRecords(evidence.payments), loans: PE.activeRecords(evidence.loans), quotes: PE.activeRecords(evidence.quotes) } };
+    return { type: p.c.insuranceType || "health", status: p.c.status, rev: p.x.rev, dues: this.duesOf(p.x.data), premium: typeof p.x.data.premium === "number" ? p.x.data.premium : null, active: { payments: PE.activeRecords(evidence.payments), loans: PE.activeRecords(evidence.loans), quotes: PE.activeRecords(evidence.quotes) } };
+  }
+  /** The value engine's schedule (shared/policyValue.ts), up to the fake today, newest first. */
+  private duesOf(d: Record<string, any>): string[] | null {
+    const per = PV.readFrequency(d.premium_frequency);
+    const n = Number(d.premium_paying_term_years || d.policy_term_years);
+    if (!d.start_date || per === null || (per !== "single" && !Number.isInteger(n))) return null;
+    return PV.scheduledDueDates(d.start_date, per, n).filter((x) => x <= "2026-10-22").reverse();
   }
   async lifeAdd(_a: string, clientId: string, kind: "payment" | "loan" | "quote", input: Record<string, unknown>, expectRev: number) {
     const p = this.pol(clientId);
     if (!p) return { ok: false as const, reason: "Not found" };
     if (!["life", "term"].includes(p.c.insuranceType || "")) return { ok: false as const, reason: "NOT_LIFE" };
     if (expectRev !== p.x.rev) return { ok: false as const, reason: "CHANGED" };
+    if (kind === "payment") {
+      const dues = this.duesOf(p.x.data);
+      if (!dues) return { ok: false as const, reason: "NO_SCHEDULE" };
+      if (!dues.includes(String(input.dueDate))) return { ok: false as const, reason: "OFF_SCHEDULE" };
+    }
     const list = kind === "payment" ? "payments" : kind === "loan" ? "loans" : "quotes";
-    const rec: any = { id: crypto.randomUUID(), enteredOn: "2026-10-22", origin: "agent_entered", confirmation: "self_reported", reference: null, note: "From WhatsApp", supersedes: null, voided: false, kind, currency: "INR", ...input };
+    const rec: any = { paidOn: "2026-10-22", asOf: "2026-10-22", quoteDate: "2026-10-22", id: crypto.randomUUID(), enteredOn: "2026-10-22", origin: "agent_entered", confirmation: "self_reported", reference: null, note: "From WhatsApp", supersedes: null, voided: false, kind, currency: "INR", ...input };
     if (kind === "loan" && input.status === "none") Object.assign(rec, { principal: 0, interest: 0 });
     const read = (PE.readEvidence({ schema: 1, [list]: [rec] }).evidence as any)[list][0];
     if (!read) return { ok: false as const, reason: "INVALID", fields: { input: "not readable" } };

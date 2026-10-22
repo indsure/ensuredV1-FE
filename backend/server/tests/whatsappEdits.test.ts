@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   cleanCustomerSet, cleanInterests, cleanLeadSet, freshEmptyCustomerDelete, freshUntouchedLeadDelete,
-  guardedUpdate, money, norm, registerWaEdits, buildLifeRecord,
+  guardedUpdate, money, norm, registerWaEdits, buildLifeRecord, lifeDueDates,
 } from "../whatsapp/edits";
 import { strictAmount, cleanFixValue, fixFieldsFor, cleanClaimSet } from "../whatsapp/editRules";
 
@@ -475,7 +475,7 @@ test("claim open needs an existing customer; undo-create compares every created 
 const LIFE = "99999999-9999-4999-8999-999999999999";
 const lifeRowFix = (evidence: any = undefined) => ({
   insurance_type: "life", status: "done", insurer: "Some Life", policy_name: "Life Plan", policyholder_name: "Ramesh Kumar", expiry_date: "2040-01-01", sum_insured: "1000000.00",
-  extracted_data: { _rev: 5, insurer: "Some Life", plan_name: "Life Plan", policyholder_name: "Ramesh Kumar", maturity_date: "2040-01-01", sum_assured: 1000000, ...(evidence ? { value_evidence: evidence } : {}) },
+  extracted_data: { _rev: 5, insurer: "Some Life", plan_name: "Life Plan", policyholder_name: "Ramesh Kumar", maturity_date: "2040-01-01", sum_assured: 1000000, premium: 25000, premium_frequency: "Yearly", start_date: "2020-10-01", policy_term_years: 20, ...(evidence ? { value_evidence: evidence } : {}) },
 });
 
 test("life record: built and read the portal's way, always self reported, never a future date", () => {
@@ -513,7 +513,7 @@ test("life record: the same payment twice is refused; stored records always surv
   const dup = harness(() => ({ rows: [lifeRowFix(stored)] }));
   assert.equal((await dup.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "payment", input: { amount: 25000, dueDate: "2026-10-01", paidOn: "2026-10-05" }, expectRev: 5 })).json.error, "DUPLICATE");
   const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [lifeRowFix(stored)] }));
-  await h.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "payment", input: { amount: 25000, dueDate: "2027-10-01", paidOn: "2026-10-05" }, expectRev: 5 });
+  await h.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "payment", input: { amount: 25000, dueDate: "2025-10-01", paidOn: "2025-10-05" }, expectRev: 5 });
   const saved = JSON.parse(String(h.calls.find((c) => c.sql.includes("UPDATE clients SET"))!.params[0]));
   assert.deepEqual(saved.value_evidence.payments.map((p: any) => p.id)[0], "p1");
   assert.equal(saved.value_evidence.payments.length, 2);
@@ -535,4 +535,18 @@ test("life record undo: a void that supersedes it (kept in the history), only wi
   assert.deepEqual([saved.value_evidence.quotes[1].supersedes, saved.value_evidence.quotes[1].voided], [rec.id, true]);
   const gone = harness(() => ({ rows: [lifeRowFix({ ...after, quotes: [rec, { ...rec, id: "v9", supersedes: rec.id, voided: true }] })] }));
   assert.equal((await gone.call("POST /api/internal/wa/clients/:id/life-record/void", { id: LIFE }, { list: "quotes", recordId: rec.id, expectRev: 6, token: added.json.undoToken })).status, 409, "already removed in the portal");
+});
+
+test("life record: a payment must cover a due date on the policy's schedule; a policy being read is refused", async () => {
+  const h = harness(() => ({ rows: [lifeRowFix()] }));
+  assert.equal((await h.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "payment", input: { amount: 25000, dueDate: "2025-10-05" }, expectRev: 5 })).json.error, "OFF_SCHEDULE");
+  const noSched = harness(() => ({ rows: [{ ...lifeRowFix(), extracted_data: { _rev: 5, premium: 25000 } }] }));
+  assert.equal((await noSched.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "payment", input: { amount: 25000, dueDate: "2025-10-01" }, expectRev: 5 })).json.error, "NO_SCHEDULE");
+  const reading = harness(() => ({ rows: [{ ...lifeRowFix(), status: "processing" }] }));
+  assert.equal((await reading.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "loan", input: { status: "none" }, expectRev: 5 })).json.error, "BEING_READ");
+  assert.deepEqual(lifeDueDates({ premium_frequency: "Yearly", start_date: "2020-10-01", policy_term_years: 20 }, "2022-12-31"), ["2020-10-01", "2021-10-01", "2022-10-01"]);
+  const g = harness(() => ({ rows: [lifeRowFix()] }));
+  const got = await g.call("GET /api/internal/wa/clients/:id/life", { id: LIFE });
+  assert.equal(got.json.premium, 25000);
+  assert.equal(got.json.dues[0] > got.json.dues[1], true, "newest first");
 });

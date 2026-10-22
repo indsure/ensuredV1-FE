@@ -138,7 +138,7 @@ type Op =
   | { kind: "claimAnswered"; claimId: string; name: string; seq: number; question: string }
   | { kind: "claimExtend"; claimId: string; name: string }
   /* Stage 2d */
-  | { kind: "lifeRecord"; clientId: string; policy: string; recKind: "payment" | "loan" | "quote"; input: Record<string, any>; rev: number };
+  | { kind: "lifeRecord"; clientId: string; policy: string; recKind: "payment" | "loan" | "quote"; input: Record<string, any>; rev: number; warn?: string | null };
 
 type LeadBits = { status: string | null; next_follow_up: string | null; notes: string | null };
 /** What the last saved change was, so UNDO can put things back (15 minutes). */
@@ -2048,7 +2048,7 @@ export class Bot {
     }
     if (op.kind === "edit") return `${b(op.name)} (${op.target}): ${FIELD_LABEL[op.field]} ${showValue(op.field, op.from)} → ${showValue(op.field, op.to)}`;
     if (op.kind === "policyEdit") return `${op.policy}: ${op.label} ${showPolicyValue(op.vkind, op.from)} → ${showPolicyValue(op.vkind, op.to)}`;
-    if (op.kind === "lifeRecord") return `${op.policy}: ${lifeLine(op.recKind, op.input)}. Saved as told by you, not checked against an insurer document`;
+    if (op.kind === "lifeRecord") return `${op.policy}: ${lifeLine(op.recKind, op.input, istToday(this.now()))}. Saved as told by you, not checked against an insurer document${op.warn ? `. Note: ${op.warn}` : ""}`;
     if (op.kind === "claimOpen") return `Open a ${op.claimType} claim for ${b(op.name)}${op.alreadyOpen ? `. Note: ${op.name} already has an open claim (${op.alreadyOpen})` : ""}`;
     if (op.kind === "claimEdit") return `${op.name}: ${CLAIM_LABELS[op.key]} ${showClaimValue(op.key, op.from)} → ${showClaimValue(op.key, op.to)}`;
     if (op.kind === "claimStage") return `${op.name}: "${CLAIM_STAGE[op.from]}" → "${CLAIM_STAGE[op.to]}"`;
@@ -2286,10 +2286,13 @@ ${link}` : refused(op.policy, r) });
       if (!r.ok) {
         return { text: r.reason === "DUPLICATE" ? `Not saved: ${op.policy} already has that payment.\n${link}`
           : r.reason === "NOT_EDITABLE" ? `Not saved: ${op.policy} has details that are only in the portal. Please add it there.\n${link}`
+          : r.reason === "BEING_READ" ? `Not saved: ${op.policy} is still being read. Try again when it is done.`
+          : r.reason === "NOT_LIFE" ? `Not saved: ${op.policy} is not a life or term policy.`
+          : r.reason === "OFF_SCHEDULE" || r.reason === "NO_SCHEDULE" ? `Not saved: that due date is not on ${op.policy}'s premium schedule. Check the policy's start date, frequency and term in the portal.\n${link}`
           : refused(op.policy, r) };
       }
       return {
-        text: `✅ Recorded on ${op.policy}: ${lifeLine(op.recKind, op.input)}.\n${link}`,
+        text: `✅ Recorded on ${op.policy}: ${lifeLine(op.recKind, op.input, istToday(this.now()))}.\n${link}`,
         change: { kind: "lifeRecord", clientId: op.clientId, name: op.policy, list: r.list, recordId: r.record.id, rev: r.rev, token: r.undoToken, at },
       };
     }
@@ -2457,7 +2460,7 @@ ${link}` : refused(op.policy, r) });
     const p = conv.pending || {};
     if (p.mode === "policy" || p.mode === "unshare") return this.onPolicyAwaiting(agentId, conv, to, text);
     if (["claim", "claimcust", "claimtype", "claimquery"].includes(p.mode)) return this.onClaimAwaiting(agentId, conv, to, text);
-    if (p.mode === "life" || p.mode === "lifedue") return this.onLifeAwaiting(agentId, conv, to, text);
+    if (p.mode === "life" || p.mode === "lifedue" || p.mode === "lifedate") return this.onLifeAwaiting(agentId, conv, to, text);
     if (conv.state === "AWAITING_EDIT_PICK") {
       const targets: EditTarget[] = p.targets || [];
       const n = pickNumber(text, targets.length);
@@ -2875,68 +2878,89 @@ ${link}`
     return this.lifeWith(agentId, conv, to, current, ask);
   }
 
-  private async lifeWith(agentId: string, conv: Conv, to: string, clientId: string, ask: LifeAsk, dueDate: string | null = null) {
+  /** Build the record from what was said; ask for what is missing (the due date a payment
+   *  covers, the date of an insurer's statement); then confirm. Dates the advisor did not say
+   *  are left to the server (its own India date), so the bot clock never matters. */
+  private async lifeWith(agentId: string, conv: Conv, to: string, clientId: string, ask: LifeAsk, picked: { dueDate?: string; quoteDate?: string | "today" } = {}) {
     const [life, c] = await Promise.all([this.d.engine.lifeGet(agentId, clientId), this.d.engine.getClient(agentId, clientId)]);
     if (!life || !c) return this.say(to, agentId, T.noReport(), "liferecord");
     const policy = policyLabel(c);
     if (!["life", "term"].includes(life.type)) return this.say(to, agentId, `${policy} is not a life or term policy. These records are kept only on life and term policies.`, "liferecord");
+    if (life.status !== "done") return this.say(to, agentId, `${policy} is still being read. Try again when it is done.`, "liferecord");
     this.setLast(agentId, { kind: "policy", clientId });
     const today = istToday(this.now());
     const amountOf = (s: string) => strictAmount(amountWords(s) ?? s);
-    const dateOf = (s: string | null) => (s === null ? today : anyDate(s));
     let input: Record<string, unknown>;
-    let kind: "payment" | "loan" | "quote" = ask.kind;
+    let warn: string | null = null;
     if (ask.kind === "payment") {
       const amount = amountOf(ask.amount);
-      const paidOn = dateOf(ask.paidOn);
       if (!amount || amount <= 0) return this.say(to, agentId, `That amount doesn't look right ("${ask.amount}"). Type it like: Ramesh paid premium 25,000 on 5 Oct 2026`, "liferecord");
-      if (!paidOn || paidOn > today) return this.say(to, agentId, "That payment date doesn't look right. Type a date up to today, like 5 Oct 2026.", "liferecord");
-      const due = dueDate ?? (ask.dueDate ? anyDate(ask.dueDate) : null);
-      if (!due) {
-        // The instalment a payment covers decides what the value engine counts; never guessed.
-        await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "lifedue", clientId, ask: { ...ask, paidOn } });
-        return this.say(to, agentId, `Which premium does this payment cover? Type its due date, like 1 Oct 2026, or SAME if it was due on ${prettyDate(paidOn)}.\n(CANCEL to stop.)`, "life_due");
+      const paidOn = ask.paidOn ? anyDate(ask.paidOn) : null;
+      if (ask.paidOn && (!paidOn || paidOn > today)) return this.say(to, agentId, "That payment date doesn't look right. Type a date up to today, like 5 Oct 2026.", "liferecord");
+      // A payment counts only on a scheduled due date (the portal offers only those).
+      if (!life.dues) return this.say(to, agentId, `${policy}'s premium schedule is not complete (start date, how often premiums are paid, or the term is missing), so a payment can't be matched to a due date. Fill those in the portal first.`, "liferecord");
+      const said = picked.dueDate ?? (ask.dueDate ? anyDate(ask.dueDate) : null);
+      if (ask.dueDate && !picked.dueDate && (!said || !life.dues.includes(said))) {
+        return this.say(to, agentId, `${ask.dueDate} is not a premium due date on ${policy}. Recent due dates: ${life.dues.slice(0, 3).map(prettyDate).join(", ")}.`, "liferecord");
       }
-      if (life.active.payments.some((p) => p.dueDate === due && Number(p.amount) === amount)) {
-        return this.say(to, agentId, `${policy} already has a payment of ₹${amount.toLocaleString("en-IN")} for the premium due ${prettyDate(due)}. Nothing to add.`, "liferecord");
+      if (!said) {
+        const options = life.dues.filter((d) => d <= (paidOn ?? today)).slice(0, 4);
+        if (!options.length) return this.say(to, agentId, `No premium on ${policy} was due by then.`, "liferecord");
+        await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { mode: "lifedue", clientId, ask, options });
+        return this.say(to, agentId, `Which premium does this payment cover?\n${options.map((d, i) => `${i + 1}) due ${prettyDate(d)}`).join("\n")}\nReply with the number.`, "life_due");
       }
-      input = { amount, paidOn, dueDate: due };
+      if (life.active.payments.some((p) => p.dueDate === said && Number(p.amount) === amount)) {
+        return this.say(to, agentId, `${policy} already has a payment of ₹${amount.toLocaleString("en-IN")} for the premium due ${prettyDate(said)}. Nothing to add.`, "liferecord");
+      }
+      if (life.premium && (amount > life.premium * 2 || amount < life.premium / 2)) warn = `the premium on file is ₹${life.premium.toLocaleString("en-IN")}`;
+      input = { amount, dueDate: said, ...(paidOn ? { paidOn } : {}) };
     } else if (ask.kind === "loan") {
-      if (ask.status === "none") input = { status: "none", asOf: today };
+      if (ask.status === "none") input = { status: "none" };
       else {
         const principal = amountOf(ask.amount);
         if (!principal || principal <= 0) return this.say(to, agentId, `That amount doesn't look right ("${ask.amount}").`, "liferecord");
-        input = { status: "outstanding", principal, interest: null, asOf: today };
+        input = { status: "outstanding", principal, interest: null };
       }
-    } else if (ask.quoteType === "policy_status") {
-      input = { quoteType: "policy_status", status: ask.status, quoteDate: today };
     } else if (ask.quoteType === "premiums_paid_to") {
       const paidTo = anyDate(ask.paidTo);
-      if (!paidTo || paidTo > today) return this.say(to, agentId, "That date doesn't look right. Type the date premiums are paid up to, up to today, like 1 Oct 2026.", "liferecord");
-      input = { quoteType: "premiums_paid_to", paidTo, quoteDate: today };
+      if (!paidTo || paidTo > today) return this.say(to, agentId, "That date doesn't look right. Type the last due date that is paid, up to today, like 1 Oct 2026.", "liferecord");
+      input = { quoteType: "premiums_paid_to", paidTo };
     } else {
-      const amount = amountOf(ask.amount);
-      if (amount === null) return this.say(to, agentId, `That amount doesn't look right ("${ask.amount}").`, "liferecord");
-      input = { quoteType: ask.quoteType, amount, quoteDate: today };
+      // An insurer's figure is dated by its statement, so it never jumps ahead of a newer one.
+      const qd = picked.quoteDate ?? (ask.quoteDate ? anyDate(ask.quoteDate) : null);
+      if (ask.quoteDate && !picked.quoteDate && (!qd || qd > today)) return this.say(to, agentId, "That date doesn't look right. Type the date of the insurer's statement, up to today, like 5 Oct 2026.", "liferecord");
+      if (!qd) {
+        await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "lifedate", clientId, ask });
+        return this.say(to, agentId, "What date is the insurer's statement or message from? Type a date like 5 Oct 2026, or TODAY.\n(CANCEL to do something else.)", "life_date");
+      }
+      const dated = qd === "today" ? {} : { quoteDate: qd };
+      if (ask.quoteType === "policy_status") input = { quoteType: "policy_status", status: ask.status, ...dated };
+      else {
+        const amount = amountOf(ask.amount);
+        if (amount === null) return this.say(to, agentId, `That amount doesn't look right ("${ask.amount}").`, "liferecord");
+        input = { quoteType: ask.quoteType, amount, ...dated };
+      }
     }
-    return this.confirm(agentId, conv, to, [{ kind: "lifeRecord", clientId, policy, recKind: kind, input, rev: life.rev }]);
+    return this.confirm(agentId, conv, to, [{ kind: "lifeRecord", clientId, policy, recKind: ask.kind, input, rev: life.rev, warn }]);
   }
 
-  /** The stage 2d questions: which policy, and the due date a payment covers. */
+  /** The stage 2d questions: which policy, which due date a payment covers, the statement date. */
   private async onLifeAwaiting(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
     const p = conv.pending || {};
-    if (conv.state === "AWAITING_EDIT_PICK" && p.mode === "life") {
+    if (conv.state === "AWAITING_EDIT_PICK") {
       const options: string[] = p.options || [];
       const n = pickNumber(text, options.length);
       if (!n) return false;
-      await this.lifeWith(agentId, conv, to, options[n - 1], p.ask);
+      if (p.mode === "lifedue") await this.lifeWith(agentId, conv, to, p.clientId, p.ask, { dueDate: options[n - 1] });
+      else await this.lifeWith(agentId, conv, to, options[n - 1], p.ask);
       return true;
     }
-    if (conv.state === "AWAITING_EDIT_VALUE" && p.mode === "lifedue") {
+    if (conv.state === "AWAITING_EDIT_VALUE" && p.mode === "lifedate") {
       const w = text.trim();
-      const due = /^(?:same|same day|wahi|वही)$/i.test(w) ? p.ask.paidOn : anyDate(w);
-      if (!due) { await this.say(to, agentId, "Type the due date like 1 Oct 2026, or SAME, or CANCEL.", "life_due"); return true; }
-      await this.lifeWith(agentId, conv, to, p.clientId, { ...p.ask, paidOn: p.ask.paidOn }, due);
+      const today = istToday(this.now());
+      const d = /^(?:today|aaj|आज)$/i.test(w) ? "today" : anyDate(w);
+      if (!d || (d !== "today" && d > today)) { await this.say(to, agentId, "Type the date like 5 Oct 2026, or TODAY. (CANCEL to do something else.)", "life_date"); return true; }
+      await this.lifeWith(agentId, conv, to, p.clientId, p.ask, { quoteDate: d });
       return true;
     }
     return false;
@@ -3058,7 +3082,7 @@ function claimValueFor(key: string, raw: string): unknown {
 
 /* ── Stage 2d helpers ── */
 
-/** India's calendar date for "today" (records carry the day they were entered). */
+/** India's calendar date for "today". */
 function istToday(now: number): string {
   return new Date(now + 330 * 60_000).toISOString().slice(0, 10);
 }
@@ -3066,12 +3090,15 @@ function istToday(now: number): string {
 const LIFE_STATUS: Record<string, string> = { in_force: "in force", lapsed: "lapsed", paid_up: "paid up", surrendered: "surrendered", matured: "matured" };
 const rupees = (v: unknown) => `₹${Number(v).toLocaleString("en-IN")}`;
 
-/** One life record as the confirm shows it. */
-function lifeLine(kind: string, input: Record<string, any>): string {
-  if (kind === "payment") return `premium ${rupees(input.amount)} paid on ${prettyDate(input.paidOn)}, for the premium due ${prettyDate(input.dueDate)}`;
+/** One life record as the confirm and the reply show it. Words are kept in phrases the i18n
+ *  fragments translate (i18n.ts FRAGMENTS, stage 2d). */
+function lifeLine(kind: string, input: Record<string, any>, today: string): string {
+  // A date not said is the server's today; shown as a date so every line reads the same.
+  const on = (d: string | undefined) => prettyDate(d ?? today);
+  if (kind === "payment") return `premium ${rupees(input.amount)} paid on ${on(input.paidOn)}, for the premium due ${prettyDate(input.dueDate)}`;
   if (kind === "loan") return input.status === "none" ? "no loan on the policy, as of today" : `a loan of ${rupees(input.principal)} outstanding, as of today`;
-  if (input.quoteType === "surrender_payable") return `the insurer's surrender value is ${rupees(input.amount)}, as of today`;
-  if (input.quoteType === "loan_available") return `the insurer says up to ${rupees(input.amount)} can be borrowed, as of today`;
-  if (input.quoteType === "policy_status") return `the insurer says the policy is ${LIFE_STATUS[input.status] ?? input.status}`;
-  return `premiums are paid up to ${prettyDate(input.paidTo)}`;
+  if (input.quoteType === "surrender_payable") return `surrender value ${rupees(input.amount)}, as quoted by the insurer on ${on(input.quoteDate)}`;
+  if (input.quoteType === "loan_available") return `up to ${rupees(input.amount)} can be borrowed, as quoted by the insurer on ${on(input.quoteDate)}`;
+  if (input.quoteType === "policy_status") return `policy status: ${LIFE_STATUS[input.status] ?? input.status}, as stated by the insurer on ${on(input.quoteDate)}`;
+  return `premiums paid up to and including the one due ${prettyDate(input.paidTo)}`;
 }

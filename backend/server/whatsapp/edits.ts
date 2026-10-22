@@ -45,6 +45,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, fixFieldsFor, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet, CLAIM_FIELDS, CLAIM_LABELS, CLAIM_OPEN_STAGES, CLAIM_TERMINAL, cleanClaimSet } from "./editRules";
 import { saveExtractedData, EVIDENCE_KEY } from "../services/policyValueStore";
 import { readEvidence, activeRecords } from "../../../shared/policyEvidence";
+import { addMonthsIso, parseIsoDate, parseWholeNumber, parseRupees } from "../../../shared/policyNumbers";
 import { deriveSharedColumns, EXTRACTION_FIELDS } from "../services/extractionFields";
 import { scoreFromExtractedData } from "../../../shared/motorScore";
 import type { FieldErrors, Clean } from "./editRules";
@@ -728,6 +729,9 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const { evidence } = readEvidence(data[EVIDENCE_KEY]);
       res.json({
         type: row.insurance_type || "health", status: row.status, rev: Number.isInteger(data._rev) ? data._rev : 0,
+        // Newest first; null when the schedule is not known (start date, frequency or term missing).
+        dues: lifeDueDates(data, todayIst())?.slice().reverse() ?? null,
+        premium: (() => { const r = parseRupees(data.premium); return r.ok ? r.value : null; })(),
         active: { payments: activeRecords(evidence.payments), loans: activeRecords(evidence.loans), quotes: activeRecords(evidence.quotes) },
       });
     } catch (err) { fail(res, "life records read", err); }
@@ -748,12 +752,19 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const row = await lifeRow(req.params.id, agentId);
       if (!row) return res.status(404).json({ error: "Not found" });
       if (!LIFE_TYPES.includes(row.insurance_type)) return notLife(res);
-      if (row.status !== "done") return res.status(400).json({ error: "NOT_EDITABLE", message: "This policy is still being read. Try again when it is done." });
+      if (row.status !== "done") return res.status(400).json({ error: "BEING_READ", message: "This policy is still being read. Try again when it is done." });
       const today = todayIst();
       const input = req.body?.input && typeof req.body.input === "object" ? req.body.input : {};
+      const data = row.extracted_data && typeof row.extracted_data === "object" ? row.extracted_data : {};
+      if (kind === "payment") {
+        // The value engine counts a payment only on a scheduled due date (policyValue.ts), so the
+        // portal offers only those; so does this. No schedule: nothing to match it to.
+        const dues = lifeDueDates(data, today);
+        if (!dues) return res.status(400).json({ error: "NO_SCHEDULE" });
+        if (!dues.includes(String(input.dueDate))) return res.status(400).json({ error: "OFF_SCHEDULE" });
+      }
       const built = buildLifeRecord(kind, input, today);
       if ("error" in built) return bad(res, { input: built.error });
-      const data = row.extracted_data && typeof row.extracted_data === "object" ? row.extracted_data : {};
       const { evidence } = readEvidence(data[EVIDENCE_KEY]);
       // A resend of the same payment must not count the premium twice.
       if (kind === "payment" && activeRecords(evidence.payments).some((p) => p.dueDate === (built.record as any).dueDate && p.amount === (built.record as any).amount)) {
@@ -895,8 +906,9 @@ export function buildLifeRecord(kind: "payment" | "loan" | "quote", input: Recor
   const future = (d: unknown) => typeof d === "string" && d > today;
   let record: Record<string, any>;
   if (kind === "payment") {
-    if (future(input.paidOn)) return { error: "the payment date is in the future" };
-    record = { ...base, kind: "payment", amount: input.amount, currency: "INR", dueDate: input.dueDate, paidOn: input.paidOn };
+    const paidOn = input.paidOn ?? today;
+    if (future(paidOn)) return { error: "the payment date is in the future" };
+    record = { ...base, kind: "payment", amount: input.amount, currency: "INR", dueDate: input.dueDate, paidOn };
   } else if (kind === "loan") {
     const asOf = input.asOf ?? today;
     if (future(asOf)) return { error: "the date is in the future" };
@@ -914,4 +926,23 @@ export function buildLifeRecord(kind: "payment" | "loan" | "quote", input: Recor
   if (issues.length || !read) return { error: "not a record the portal can read (check the amount and dates)" };
   // Store exactly what the portal's reader understood (numbers as numbers, dates as days).
   return { record: read };
+}
+
+/**
+ * The premium due dates up to `today`, exactly as the value engine schedules them
+ * (frontend/client/src/lib/policyValue.ts readInputs + scheduledDueDates; parity is tested in
+ * tests/whatsappLifeDuesParity.test.ts). Null when the schedule cannot be known.
+ */
+export function lifeDueDates(data: Record<string, any>, today: string): string[] | null {
+  const f = String(data.premium_frequency ?? "").toLowerCase().trim();
+  const per = !f ? null : /single|one.?time|lump/.test(f) ? "single" : /month/.test(f) ? 12 : /quarter/.test(f) ? 4 : /half|semi|six/.test(f) ? 2 : /annual|year/.test(f) ? 1 : null;
+  const years = (v: unknown) => { if (v === null || v === undefined || v === "") return null; const r = parseWholeNumber(v, { min: 1, max: 100 }); return r.ok ? r.value : null; };
+  const term = years(data.policy_term_years);
+  let ppt = years(data.premium_paying_term_years);
+  if (term !== null && ppt !== null && ppt > term) ppt = null;
+  const st = data.start_date === null || data.start_date === undefined || data.start_date === "" ? null : parseIsoDate(data.start_date);
+  const start = st && st.ok ? st.value : null;
+  if (!start || per === null || (per !== "single" && (ppt ?? term) === null)) return null;
+  const dues = per === "single" ? [start] : Array.from({ length: (ppt ?? term)! * per }, (_, k) => addMonthsIso(start, k * (12 / per)));
+  return dues.filter((d) => d <= today);
 }

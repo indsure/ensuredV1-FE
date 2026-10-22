@@ -415,7 +415,7 @@ export type PolicyFields = {
   fields: { key: string; label: string; kind: "money" | "percent" | "date" | "text"; value: unknown }[];
 };
 /** A life or term policy's records still in force (GET /api/internal/wa/clients/:id/life). */
-export type LifeRecords = { type: string; status: string; rev: number; active: { payments: any[]; loans: any[]; quotes: any[] } };
+export type LifeRecords = { type: string; status: string; rev: number; dues: string[] | null; premium: number | null; active: { payments: any[]; loans: any[]; quotes: any[] } };
 /** One claim as the edit routes see it (GET /api/internal/wa/claims/:id/row). */
 export type ClaimEditRow = {
   claim: {
